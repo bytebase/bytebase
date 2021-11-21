@@ -1,5 +1,5 @@
-import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, IssueId, PrincipalId, TaskId } from "./id";
+import { FieldID } from "../plugins";
+import { ActivityID, ContainerID, IssueID, PrincipalID, TaskID } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
@@ -71,7 +71,7 @@ export type ActivityLevel = "INFO" | "WARN" | "ERROR";
 
 export type ActivityIssueCreatePayload = {
   issueName: string;
-  rollbackIssueId?: IssueId;
+  rollbackIssueID?: IssueID;
 };
 
 export type ActivityIssueCommentCreatePayload = {
@@ -79,7 +79,7 @@ export type ActivityIssueCommentCreatePayload = {
 };
 
 export type ActivityIssueFieldUpdatePayload = {
-  fieldId: FieldId;
+  fieldID: FieldID;
   oldValue?: string;
   newValue?: string;
   issueName: string;
@@ -92,7 +92,7 @@ export type ActivityIssueStatusUpdatePayload = {
 };
 
 export type ActivityTaskStatusUpdatePayload = {
-  taskId: TaskId;
+  taskID: TaskID;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
   issueName: string;
@@ -100,16 +100,16 @@ export type ActivityTaskStatusUpdatePayload = {
 };
 
 export type ActivityTaskFileCommitPayload = {
-  taskId: TaskId;
+  taskID: TaskID;
   vcsInstanceUrl: string;
   repositoryFullPath: string;
   branch: string;
   filePath: string;
-  commitId: string;
+  commitID: string;
 };
 
 export type ActivityMemberCreatePayload = {
-  principalId: PrincipalId;
+  principalID: PrincipalID;
   principalName: string;
   principalEmail: string;
   memberStatus: MemberStatus;
@@ -117,7 +117,7 @@ export type ActivityMemberCreatePayload = {
 };
 
 export type ActivityMemberRoleUpdatePayload = {
-  principalId: PrincipalId;
+  principalID: PrincipalID;
   principalName: string;
   principalEmail: string;
   oldRole: RoleType;
@@ -125,7 +125,7 @@ export type ActivityMemberRoleUpdatePayload = {
 };
 
 export type ActivityMemberActivateDeactivatePayload = {
-  principalId: PrincipalId;
+  principalID: PrincipalID;
   principalName: string;
   principalEmail: string;
   role: RoleType;
@@ -133,12 +133,12 @@ export type ActivityMemberActivateDeactivatePayload = {
 
 export type ActivityProjectRepositoryPushPayload = {
   pushEvent: VCSPushEvent;
-  issueId?: number;
+  issueID?: number;
   issueName?: string;
 };
 
 export type ActivityProjectDatabaseTransferPayload = {
-  databaseId: number;
+  databaseID: number;
   databaseName: string;
 };
 
@@ -156,7 +156,7 @@ export type ActionPayloadType =
   | ActivityProjectDatabaseTransferPayload;
 
 export type Activity = {
-  id: ActivityId;
+  id: ActivityID;
 
   // Standard fields
   creator: Principal;
@@ -167,7 +167,7 @@ export type Activity = {
   // Domain specific fields
   // The object where this activity belongs
   // e.g if type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-  containerId: ContainerId;
+  containerID: ContainerID;
   type: ActivityType;
   level: ActivityLevel;
   comment: string;
@@ -176,7 +176,7 @@ export type Activity = {
 
 export type ActivityCreate = {
   // Domain specific fields
-  containerId: ContainerId;
+  containerID: ContainerID;
   type: ActivityType;
   comment: string;
   payload?: ActionPayloadType;

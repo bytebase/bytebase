@@ -197,7 +197,7 @@ export default {
         case "bb.anomaly.instance.migration-schema":
           return "Please create migration schema on the instance first.";
         case "bb.anomaly.database.backup.policy-violation": {
-          const environment = store.getters["environment/environmentById"](
+          const environment = store.getters["environment/environmentByID"](
             anomaly.instance.environment.id
           );
           const payload =

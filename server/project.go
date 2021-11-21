@@ -25,7 +25,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
-		projectCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		projectCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
@@ -35,10 +35,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		projectMember := &api.ProjectMemberCreate{
-			CreatorId:   projectCreate.CreatorId,
-			ProjectId:   project.ID,
+			CreatorID:   projectCreate.CreatorID,
+			ProjectID:   project.ID,
 			Role:        api.ProjectOwner,
-			PrincipalId: projectCreate.CreatorId,
+			PrincipalID: projectCreate.CreatorID,
 		}
 
 		_, err = s.ProjectMemberService.CreateProjectMember(ctx, projectMember)
@@ -60,12 +60,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.GET("/project", func(c echo.Context) error {
 		ctx := context.Background()
 		projectFind := &api.ProjectFind{}
-		if userIdStr := c.QueryParam("user"); userIdStr != "" {
-			userId, err := strconv.Atoi(userIdStr)
+		if userIDStr := c.QueryParam("user"); userIDStr != "" {
+			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIdStr)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
-			projectFind.PrincipalId = &userId
+			projectFind.PrincipalID = &userID
 		}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
@@ -89,14 +89,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/project/:projectId", func(c echo.Context) error {
+	g.GET("/project/:projectID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("projectId"))
+		id, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.ComposeProjectlById(ctx, id)
+		project, err := s.ComposeProjectlByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -111,16 +111,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/project/:projectId", func(c echo.Context) error {
+	g.PATCH("/project/:projectID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("projectId"))
+		id, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
 		projectPatch := &api.ProjectPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
@@ -146,7 +146,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	// When we link the repository with the project, we will also change the project workflow type to VCS
-	g.POST("/project/:projectId/repository", func(c echo.Context) error {
+	g.POST("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := context.Background()
 		repositoryCreate := &api.RepositoryCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
@@ -162,23 +162,23 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		vcsFind := &api.VCSFind{
-			ID: &repositoryCreate.VCSId,
+			ID: &repositoryCreate.VCSID,
 		}
 		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSId))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSID))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
-		repositoryCreate.WebhookEndpointId = uuid.New().String()
+		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SECRET_TOKEN_LENGTH)
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointId),
+				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
 				PushEvents:             true,
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
@@ -186,37 +186,37 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			body, err := json.Marshal(webhookPost)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
-			resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryCreate.ExternalId)
+			resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryCreate.ExternalID)
 			resp, err := gitlab.POST(vcs.InstanceURL, resourcePath, repositoryCreate.AccessToken, bytes.NewBuffer(body))
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 300 {
 				return echo.NewHTTPError(http.StatusInternalServerError,
 					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d",
-						repositoryCreate.ProjectId,
+						repositoryCreate.ProjectID,
 						resp.StatusCode,
 					))
 			}
 
 			webhookInfo := &gitlab.WebhookInfo{}
 			if err := json.NewDecoder(resp.Body).Decode(webhookInfo); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal create webhook response for project ID: %v", repositoryCreate.ProjectId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal create webhook response for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
-			repositoryCreate.ExternalWebhookId = strconv.Itoa(webhookInfo.ID)
+			repositoryCreate.ExternalWebhookID = strconv.Itoa(webhookInfo.ID)
 		}
 
-		repositoryCreate.CreatorId = c.Get(GetPrincipalIdContextKey()).(int)
+		repositoryCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectId))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectID))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
@@ -235,24 +235,24 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	// Requires a separate API to return the repository, we do this because
 	// 1. repository also contains project, which would cause circular dependency when composing it.
 	// 2. repository info is only needed when fetching a particular project by id, thus it's unnecessary to include it in the project list response.
-	g.GET("/project/:projectId/repository", func(c echo.Context) error {
+	g.GET("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
 		repositoryFind := &api.RepositoryFind{
-			ProjectId: &projectId,
+			ProjectID: &projectID,
 		}
 		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
 		if len(list) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
 		}
 
 		for _, repository := range list {
@@ -263,21 +263,21 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)
 		}
 		return nil
 	})
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
-	g.PATCH("/project/:projectId/repository", func(c echo.Context) error {
+	g.PATCH("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
 		repositoryPatch := &api.RepositoryPatch{
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
@@ -302,34 +302,34 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryFind := &api.RepositoryFind{
-			ProjectId: &projectId,
+			ProjectID: &projectID,
 		}
 		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
 		if len(list) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
 		} else if len(list) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectId))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
 		repository := list[0]
 		repositoryPatch.ID = repository.ID
 		updatedRepository, err := s.RepositoryService.PatchRepository(ctx, repositoryPatch)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		if repositoryPatch.BranchFilter != nil {
 			vcsFind := &api.VCSFind{
-				ID: &repository.VCSId,
+				ID: &repository.VCSID,
 			}
 			vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
 			// Updates the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
@@ -337,17 +337,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepository.WebhookEndpointId),
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepository.WebhookEndpointID),
 					PushEventsBranchFilter: *repositoryPatch.BranchFilter,
 				}
 				json, err := json.Marshal(webhookPut)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
-				resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalId, repository.ExternalWebhookId)
+				resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalID, repository.ExternalWebhookID)
 				resp, err := gitlab.PUT(vcs.InstanceURL, resourcePath, repository.AccessToken, bytes.NewBuffer(json))
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
 				defer resp.Body.Close()
 
@@ -356,7 +356,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					s.l.Error(("Failed to update gitlab webhook when updating repository for project"),
 						zap.Int("status_code", resp.StatusCode),
 						zap.String("status", resp.Status),
-						zap.Int("project_id", projectId),
+						zap.Int("project_id", projectID),
 						zap.Int("repository_id", repository.ID),
 						zap.String("resource_path", resourcePath),
 						zap.String("body", string(json)),
@@ -371,49 +371,49 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedRepository); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)
 		}
 		return nil
 	})
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
-	g.DELETE("/project/:projectId/repository", func(c echo.Context) error {
+	g.DELETE("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := context.Background()
-		projectId, err := strconv.Atoi(c.Param("projectId"))
+		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
 		repositoryFind := &api.RepositoryFind{
-			ProjectId: &projectId,
+			ProjectID: &projectID,
 		}
 		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
 		if len(list) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
 		} else if len(list) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectId))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
 		repository := list[0]
 		vcsFind := &api.VCSFind{
-			ID: &repository.VCSId,
+			ID: &repository.VCSID,
 		}
 		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
-			ProjectId: projectId,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
+			ProjectID: projectID,
+			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := s.RepositoryService.DeleteRepository(ctx, repositoryDelete); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Deletes the webhook after we successfully delete the repository.
@@ -421,9 +421,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
-			resp, err := gitlab.DELETE(vcs.InstanceURL, fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalId, repository.ExternalWebhookId), repository.AccessToken)
+			resp, err := gitlab.DELETE(vcs.InstanceURL, fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalID, repository.ExternalWebhookID), repository.AccessToken)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookId, projectId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 			}
 			defer resp.Body.Close()
 
@@ -431,10 +431,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if resp.StatusCode >= 300 {
 				s.l.Error(("Failed to delete gitlab webhook when unlinking repository from project"),
 					zap.Int("status_code", resp.StatusCode),
-					zap.Int("project_id", projectId),
+					zap.Int("project_id", projectID),
 					zap.Int("repository_id", repository.ID),
-					zap.String("gitlab_project_id", repository.ExternalId),
-					zap.String("gitlab_webhook_id", repository.ExternalWebhookId))
+					zap.String("gitlab_project_id", repository.ExternalID),
+					zap.String("gitlab_webhook_id", repository.ExternalWebhookID))
 			}
 		}
 
@@ -444,7 +444,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectlById(ctx context.Context, id int) (*api.Project, error) {
+func (s *Server) ComposeProjectlByID(ctx context.Context, id int) (*api.Project, error) {
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
@@ -463,17 +463,17 @@ func (s *Server) ComposeProjectlById(ctx context.Context, id int) (*api.Project,
 func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project) error {
 	var err error
 
-	project.Creator, err = s.ComposePrincipalById(ctx, project.CreatorId)
+	project.Creator, err = s.ComposePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	project.Updater, err = s.ComposePrincipalById(ctx, project.UpdaterId)
+	project.Updater, err = s.ComposePrincipalByID(ctx, project.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectId(ctx, project.ID)
+	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectID(ctx, project.ID)
 	if err != nil {
 		return err
 	}

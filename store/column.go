@@ -133,10 +133,10 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.DatabaseId,
-		create.TableId,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
+		create.TableID,
 		create.Name,
 		create.Position,
 		defaultStr,
@@ -156,12 +156,12 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 	var column api.Column
 	if err := row.Scan(
 		&column.ID,
-		&column.CreatorId,
+		&column.CreatorID,
 		&column.CreatedTs,
-		&column.UpdaterId,
+		&column.UpdaterID,
 		&column.UpdatedTs,
-		&column.DatabaseId,
-		&column.TableId,
+		&column.DatabaseID,
+		&column.TableID,
 		&column.Name,
 		&column.Position,
 		&defaultStr,
@@ -187,10 +187,10 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
-	if v := find.TableId; v != nil {
+	if v := find.TableID; v != nil {
 		where, args = append(where, "table_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -231,12 +231,12 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 		defaultStr := sql.NullString{}
 		if err := rows.Scan(
 			&column.ID,
-			&column.CreatorId,
+			&column.CreatorID,
 			&column.CreatedTs,
-			&column.UpdaterId,
+			&column.UpdaterID,
 			&column.UpdatedTs,
-			&column.DatabaseId,
-			&column.TableId,
+			&column.DatabaseID,
+			&column.TableID,
 			&column.Name,
 			&column.Position,
 			&defaultStr,
@@ -265,7 +265,7 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 // patchColumn updates a column by ID. Returns the new state of the column after update.
 func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.ColumnPatch) (*api.Column, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 
 	args = append(args, patch.ID)
 
@@ -288,12 +288,12 @@ func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.Colu
 		defaultStr := sql.NullString{}
 		if err := row.Scan(
 			&column.ID,
-			&column.CreatorId,
+			&column.CreatorID,
 			&column.CreatedTs,
-			&column.UpdaterId,
+			&column.UpdaterID,
 			&column.UpdatedTs,
-			&column.DatabaseId,
-			&column.TableId,
+			&column.DatabaseID,
+			&column.TableID,
 			&column.Name,
 			&column.Position,
 			&defaultStr,

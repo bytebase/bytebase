@@ -27,7 +27,7 @@ const (
 
 	// Signing key section. For now, this is only used for signing, not for verifying since we only
 	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
-	keyId = "v1"
+	keyID = "v1"
 
 	// Expiration section
 	refreshThresholdDuration = 1 * time.Hour
@@ -43,7 +43,7 @@ const (
 	// Context section
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
-	principalIdContextKey = "principal-id"
+	principalIDContextKey = "principal-id"
 )
 
 // Create a struct that will be encoded to a JWT.
@@ -53,8 +53,8 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func GetPrincipalIdContextKey() string {
-	return principalIdContextKey
+func GetPrincipalIDContextKey() string {
+	return principalIDContextKey
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
@@ -105,7 +105,7 @@ func generateToken(user *api.Principal, aud string, expirationTime time.Time, se
 
 	// Declare the token with the HS256 algorithm used for signing, and the claims.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = keyId
+	token.Header["kid"] = keyID
 
 	// Create the JWT string.
 	tokenString, err := token.SignedString(secret)
@@ -214,21 +214,21 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 		// We either have a valid access token or we will attempt to generate new access token and refresh token
 		if err == nil {
 			ctx := context.Background()
-			principalId, err := strconv.Atoi(claims.Subject)
+			principalID, err := strconv.Atoi(claims.Subject)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
 			}
 
 			// Even if there is no error, we still need to make sure the user still exists.
 			principalFind := &api.PrincipalFind{
-				ID: &principalId,
+				ID: &principalID,
 			}
 			user, err := p.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", principalId))
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", principalID))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalID)).SetInternal(err)
 			}
 
 			if generateToken {
@@ -257,7 +257,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 						if err == jwt.ErrSignatureInvalid {
 							return echo.NewHTTPError(http.StatusUnauthorized, "Failed to generate access token. Invalid refresh token signature.")
 						}
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 					}
 
 					if refreshTokenClaims.Audience != fmt.Sprintf(refreshTokenAudienceFmt, mode) {
@@ -271,7 +271,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 					// If we have a valid refresh token, we will generate new access token and refresh token
 					if refreshToken != nil && refreshToken.Valid {
 						if err := GenerateTokensAndSetCookies(c, user, mode, secret); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalId)).SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 						}
 					}
 
@@ -285,8 +285,8 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 				}
 			}
 
-			// Stores principalId into context.
-			c.Set(GetPrincipalIdContextKey(), principalId)
+			// Stores principalID into context.
+			c.Set(GetPrincipalIDContextKey(), principalID)
 			return next(c)
 		}
 

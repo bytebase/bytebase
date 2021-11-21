@@ -109,8 +109,8 @@
     @close="state.showCreateDatabaseModal = false"
   >
     <CreateDatabasePrepForm
-      :environmentId="instance.environment.id"
-      :instanceId="instance.id"
+      :environmentID="instance.environment.id"
+      :instanceID="instance.id"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
@@ -179,7 +179,7 @@ export default {
     });
 
     const instance = computed((): Instance => {
-      return store.getters["instance/instanceById"](
+      return store.getters["instance/instanceByID"](
         idFromSlug(props.instanceSlug)
       );
     });
@@ -241,7 +241,7 @@ export default {
     );
 
     const databaseList = computed(() => {
-      const list = store.getters["database/databaseListByInstanceId"](
+      const list = store.getters["database/databaseListByInstanceID"](
         instance.value.id
       );
       if (isDBAOrOwner(currentUser.value.role)) {
@@ -264,7 +264,7 @@ export default {
     });
 
     const instanceUserList = computed(() => {
-      return store.getters["instance/instanceUserListById"](instance.value.id);
+      return store.getters["instance/instanceUserListByID"](instance.value.id);
     });
 
     const allowEdit = computed(() => {
@@ -290,7 +290,7 @@ export default {
     const doArchive = () => {
       store
         .dispatch("instance/patchInstance", {
-          instanceId: instance.value.id,
+          instanceID: instance.value.id,
           instancePatch: {
             rowStatus: "ARCHIVED",
           },
@@ -307,7 +307,7 @@ export default {
     const doRestore = () => {
       store
         .dispatch("instance/patchInstance", {
-          instanceId: instance.value.id,
+          instanceID: instance.value.id,
           instancePatch: {
             rowStatus: "NORMAL",
           },

@@ -22,6 +22,6 @@ type TaskExecutor interface {
 
 // defaultMigrationVersion returns the default migration version string
 // Use the concatenation of current time and the task id to guarantee uniqueness in a monotonic increasing way.
-func defaultMigrationVersionFromTaskId(taskId int) string {
-	return strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(taskId)}, ".")
+func defaultMigrationVersionFromTaskID(taskID int) string {
+	return strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(taskID)}, ".")
 }

@@ -74,10 +74,10 @@
         </BBTableCell>
         <BBTableCell>
           <router-link
-            v-if="member.issueId"
-            :to="`/issue/${member.issueId}`"
+            v-if="member.issueID"
+            :to="`/issue/${member.issueID}`"
             class="normal-link"
-            >issue/{{ member.issueId }}
+            >issue/{{ member.issueID }}
           </router-link>
         </BBTableCell>
         <BBTableCell>
@@ -158,10 +158,10 @@ export default {
 
     const deleteMember = (member: DataSourceMember) => {
       store
-        .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
-          databaseId: props.dataSource.database.id,
-          dataSourceId: props.dataSource.id,
-          memberId: member.principal.id,
+        .dispatch("dataSource/deleteDataSourceMemberByMemberID", {
+          databaseID: props.dataSource.database.id,
+          dataSourceID: props.dataSource.id,
+          memberID: member.principal.id,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {

@@ -79,13 +79,13 @@ export default {
     const store = useStore();
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
+      return store.getters["project/projectByID"](
         idFromSlug(props.projectSlug)
       );
     });
 
     const projectWebhook = computed(() => {
-      return store.getters["projectWebhook/projectWebhookById"](
+      return store.getters["projectWebhook/projectWebhookByID"](
         idFromSlug(props.projectSlug),
         idFromSlug(props.projectWebhookSlug)
       );
@@ -93,9 +93,9 @@ export default {
 
     const testWebhook = () => {
       store
-        .dispatch("projectWebhook/testProjectWebhookById", {
-          projectId: idFromSlug(props.projectSlug),
-          projectWebhookId: idFromSlug(props.projectWebhookSlug),
+        .dispatch("projectWebhook/testProjectWebhookByID", {
+          projectID: idFromSlug(props.projectSlug),
+          projectWebhookID: idFromSlug(props.projectWebhookSlug),
         })
         .then((testResult: ProjectWebhookTestResult) => {
           if (testResult.error) {

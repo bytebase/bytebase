@@ -34,7 +34,7 @@ func (e TaskRunStatus) String() string {
 
 type TaskRunResultPayload struct {
 	Detail      string `json:"detail,omitempty"`
-	MigrationId int64  `json:"migrationId,omitempty"`
+	MigrationID int64  `json:"migrationID,omitempty"`
 	Version     string `json:"version,omitempty"`
 }
 
@@ -42,15 +42,15 @@ type TaskRun struct {
 	ID int `jsonapi:"primary,taskRun"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	TaskId int `jsonapi:"attr,taskId"`
+	TaskID int `jsonapi:"attr,taskID"`
 
 	// Domain specific fields
 	Name    string        `jsonapi:"attr,name"`
@@ -65,10 +65,10 @@ type TaskRun struct {
 type TaskRunCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	TaskId int
+	TaskID int
 
 	// Domain specific fields
 	Name    string   `jsonapi:"attr,name"`
@@ -80,7 +80,7 @@ type TaskRunFind struct {
 	ID *int
 
 	// Related fields
-	TaskId *int
+	TaskID *int
 
 	// Domain specific fields
 	StatusList *[]TaskRunStatus
@@ -98,10 +98,10 @@ type TaskRunStatusPatch struct {
 	ID *int
 
 	// Standard fields
-	UpdaterId int
+	UpdaterID int
 
 	// Related fields
-	TaskId *int
+	TaskID *int
 
 	// Domain specific fields
 	Status TaskRunStatus

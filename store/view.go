@@ -120,11 +120,11 @@ func (s *ViewService) createView(ctx context.Context, tx *Tx, create *api.ViewCr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`+
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment"+`
 	`,
-		create.CreatorId,
+		create.CreatorID,
 		create.CreatedTs,
-		create.CreatorId,
+		create.CreatorID,
 		create.UpdatedTs,
-		create.DatabaseId,
+		create.DatabaseID,
 		create.Name,
 		create.Definition,
 		create.Comment,
@@ -139,11 +139,11 @@ func (s *ViewService) createView(ctx context.Context, tx *Tx, create *api.ViewCr
 	var view api.View
 	if err := row.Scan(
 		&view.ID,
-		&view.CreatorId,
+		&view.CreatorID,
 		&view.CreatedTs,
-		&view.UpdaterId,
+		&view.UpdaterID,
 		&view.UpdatedTs,
-		&view.DatabaseId,
+		&view.DatabaseID,
 		&view.Name,
 		&view.Definition,
 		&view.Comment,
@@ -160,7 +160,7 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.DatabaseId; v != nil {
+	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 	if v := find.Name; v != nil {
@@ -194,11 +194,11 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 		var view api.View
 		if err := rows.Scan(
 			&view.ID,
-			&view.CreatorId,
+			&view.CreatorID,
 			&view.CreatedTs,
-			&view.UpdaterId,
+			&view.UpdaterID,
 			&view.UpdatedTs,
-			&view.DatabaseId,
+			&view.DatabaseID,
 			&view.Name,
 			&view.Definition,
 			&view.Comment,
@@ -218,7 +218,7 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 // deleteView permanently deletes views from a database.
 func deleteView(ctx context.Context, tx *Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
-	_, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = ?`, delete.DatabaseId)
+	_, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = ?`, delete.DatabaseID)
 	if err != nil {
 		return FormatError(err)
 	}

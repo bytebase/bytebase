@@ -1,9 +1,9 @@
 import { RowStatus } from "./common";
-import { EnvironmentId } from "./id";
+import { EnvironmentID } from "./id";
 import { Principal } from "./principal";
 
 export type Environment = {
-  id: EnvironmentId;
+  id: EnvironmentID;
 
   // Standard fields
   creator: Principal;

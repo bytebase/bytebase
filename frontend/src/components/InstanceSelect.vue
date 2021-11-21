@@ -8,7 +8,7 @@
       }
     "
   >
-    <option disabled :selected="undefined === state.selectedId">
+    <option disabled :selected="undefined === state.selectedID">
       Select instance
     </option>
     <template v-for="(instance, index) in instanceList" :key="index">
@@ -16,12 +16,12 @@
         v-if="instance.rowStatus == 'NORMAL'"
         :key="index"
         :value="instance.id"
-        :selected="instance.id == state.selectedId"
+        :selected="instance.id == state.selectedID"
       >
         {{ instanceName(instance) }}
       </option>
       <option
-        v-else-if="instance.id == state.selectedId"
+        v-else-if="instance.id == state.selectedID"
         :value="instance.id"
         :selected="true"
       >
@@ -37,7 +37,7 @@ import { useStore } from "vuex";
 import { Instance } from "../types";
 
 interface LocalState {
-  selectedId?: number;
+  selectedID?: number;
 }
 
 export default {
@@ -45,10 +45,10 @@ export default {
   emits: ["select-instance-id"],
   components: {},
   props: {
-    selectedId: {
+    selectedID: {
       type: Number,
     },
-    environmentId: {
+    environmentID: {
       type: Number,
     },
     disabled: {
@@ -59,13 +59,13 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedID: props.selectedID,
     });
 
     const instanceList = computed(() => {
-      if (props.environmentId) {
-        return store.getters["instance/instanceListByEnvironmentId"](
-          props.environmentId,
+      if (props.environmentID) {
+        return store.getters["instance/instanceListByEnvironmentID"](
+          props.environmentID,
           ["NORMAL", "ARCHIVED"]
         );
       }
@@ -73,23 +73,23 @@ export default {
     });
 
     watch(
-      () => props.selectedId,
+      () => props.selectedID,
       (cur, _) => {
-        state.selectedId = cur;
+        state.selectedID = cur;
       }
     );
 
-    // The instance list might change if environmentId changes, and the previous selected id
+    // The instance list might change if environmentID changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
     watch(
       () => instanceList.value,
       (curList, _) => {
         if (
-          state.selectedId &&
-          !curList.find((instance: Instance) => instance.id == state.selectedId)
+          state.selectedID &&
+          !curList.find((instance: Instance) => instance.id == state.selectedID)
         ) {
-          state.selectedId = undefined;
+          state.selectedID = undefined;
           emit("select-instance-id", undefined);
         }
       }

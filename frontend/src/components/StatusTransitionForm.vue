@@ -30,11 +30,11 @@
                 class="mt-1 w-64"
                 :disabled="true"
                 :mode="'ENVIRONMENT'"
-                :environmentId="environmentId"
-                :selectedId="state.outputValueList[index]"
+                :environmentID="environmentID"
+                :selectedID="state.outputValueList[index]"
                 @select-database-id="
-                  (databaseId) => {
-                    state.outputValueList[index] = databaseId;
+                  (databaseID) => {
+                    state.outputValueList[index] = databaseID;
                   }
                 "
               />
@@ -137,7 +137,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
-import { OutputField, IssueBuiltinFieldId } from "../plugins";
+import { OutputField, IssueBuiltinFieldID } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
 
 type CheckSummary = {
@@ -191,7 +191,7 @@ export default {
       ),
     });
 
-    const environmentId = computed(() => {
+    const environmentID = computed(() => {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
@@ -292,7 +292,7 @@ export default {
 
     return {
       state,
-      environmentId,
+      environmentID,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,

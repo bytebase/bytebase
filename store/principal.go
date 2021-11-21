@@ -152,8 +152,8 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
-		create.CreatorId,
-		create.CreatorId,
+		create.CreatorID,
+		create.CreatorID,
 		create.Type,
 		create.Name,
 		create.Email,
@@ -169,9 +169,9 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 	var principal api.Principal
 	if err := row.Scan(
 		&principal.ID,
-		&principal.CreatorId,
+		&principal.CreatorID,
 		&principal.CreatedTs,
-		&principal.UpdaterId,
+		&principal.UpdaterID,
 		&principal.UpdatedTs,
 		&principal.Type,
 		&principal.Name,
@@ -220,9 +220,9 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 		var principal api.Principal
 		if err := rows.Scan(
 			&principal.ID,
-			&principal.CreatorId,
+			&principal.CreatorID,
 			&principal.CreatedTs,
-			&principal.UpdaterId,
+			&principal.UpdaterID,
 			&principal.UpdatedTs,
 			&principal.Type,
 			&principal.Name,
@@ -243,7 +243,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
 func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
@@ -271,9 +271,9 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 		var principal api.Principal
 		if err := row.Scan(
 			&principal.ID,
-			&principal.CreatorId,
+			&principal.CreatorID,
 			&principal.CreatedTs,
-			&principal.UpdaterId,
+			&principal.UpdaterID,
 			&principal.UpdatedTs,
 			&principal.Type,
 			&principal.Name,

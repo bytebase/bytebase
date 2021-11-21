@@ -108,10 +108,10 @@
       <BBTextField
         class="mt-2 w-full"
         :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77bexa8edda'"
-        :value="config.applicationId"
-        @input="changeApplicatonId($event.target.value)"
+        :value="config.applicationID"
+        @input="changeApplicatonID($event.target.value)"
       />
-      <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
+      <p v-if="state.showApplicationIDError" class="mt-2 text-sm text-error">
         Application ID must be a 64-character alphanumeric string
       </p>
       <div class="mt-4 textlabel">
@@ -135,7 +135,7 @@ import { computed, onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import {
-  isValidVCSApplicationIdOrSecret,
+  isValidVCSApplicationIDOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
   redirectURL,
@@ -143,8 +143,8 @@ import {
 import { useStore } from "vuex";
 
 interface LocalState {
-  applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
-  showApplicationIdError: boolean;
+  applicationIDValidationTimer?: ReturnType<typeof setTimeout>;
+  showApplicationIDError: boolean;
   secretValidationTimer?: ReturnType<typeof setTimeout>;
   showSecretError: boolean;
 }
@@ -160,17 +160,17 @@ export default {
   setup(props, ctx) {
     const store = useStore();
     const state = reactive<LocalState>({
-      showApplicationIdError:
-        !isEmpty(props.config.applicationId) &&
-        !isValidVCSApplicationIdOrSecret(props.config.applicationId),
+      showApplicationIDError:
+        !isEmpty(props.config.applicationID) &&
+        !isValidVCSApplicationIDOrSecret(props.config.applicationID),
       showSecretError:
         !isEmpty(props.config.secret) &&
-        !isValidVCSApplicationIdOrSecret(props.config.secret),
+        !isValidVCSApplicationIDOrSecret(props.config.secret),
     });
 
     onUnmounted(() => {
-      if (state.applicationIdValidationTimer) {
-        clearInterval(state.applicationIdValidationTimer);
+      if (state.applicationIDValidationTimer) {
+        clearInterval(state.applicationIDValidationTimer);
       }
       if (state.secretValidationTimer) {
         clearInterval(state.secretValidationTimer);
@@ -194,28 +194,28 @@ export default {
       });
     };
 
-    const changeApplicatonId = (value: string) => {
-      props.config.applicationId = value;
+    const changeApplicatonID = (value: string) => {
+      props.config.applicationID = value;
 
-      if (state.applicationIdValidationTimer) {
-        clearInterval(state.applicationIdValidationTimer);
+      if (state.applicationIDValidationTimer) {
+        clearInterval(state.applicationIDValidationTimer);
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.applicationId)) {
-        state.showApplicationIdError = false;
+      if (isValidVCSApplicationIDOrSecret(props.config.applicationID)) {
+        state.showApplicationIDError = false;
       } else {
-        state.applicationIdValidationTimer = setTimeout(() => {
+        state.applicationIDValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
-          if (state.showApplicationIdError) {
-            state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
-              props.config.applicationId
+          if (state.showApplicationIDError) {
+            state.showApplicationIDError = !isValidVCSApplicationIDOrSecret(
+              props.config.applicationID
             );
           } else {
-            state.showApplicationIdError =
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId) &&
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId);
+            state.showApplicationIDError =
+              !isValidVCSApplicationIDOrSecret(props.config.applicationID) &&
+              !isValidVCSApplicationIDOrSecret(props.config.applicationID);
           }
         }, TEXT_VALIDATION_DELAY);
       }
@@ -229,20 +229,20 @@ export default {
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.secret)) {
+      if (isValidVCSApplicationIDOrSecret(props.config.secret)) {
         state.showSecretError = false;
       } else {
         state.secretValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showSecretError) {
-            state.showSecretError = !isValidVCSApplicationIdOrSecret(
+            state.showSecretError = !isValidVCSApplicationIDOrSecret(
               props.config.secret
             );
           } else {
             state.showSecretError =
               !isEmpty(props.config.secret) &&
-              !isValidVCSApplicationIdOrSecret(props.config.secret);
+              !isValidVCSApplicationIDOrSecret(props.config.secret);
           }
         }, TEXT_VALIDATION_DELAY);
       }
@@ -253,7 +253,7 @@ export default {
       state,
       createAdminApplicationURL,
       copyRedirecURI,
-      changeApplicatonId,
+      changeApplicatonID,
       changeSecret,
     };
   },

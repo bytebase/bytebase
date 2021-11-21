@@ -24,12 +24,12 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		password := connectionInfo.Password
 		// Instance detail page has a Test Connection button, if user doesn't input new password and doesn't specify
 		// to use empty password, we want the connection to use the existing password to test the connection, however,
-		// we do not transfer the password back to client, thus the client will pass the instanceId to let server
+		// we do not transfer the password back to client, thus the client will pass the instanceID to let server
 		// retrieve the password.
-		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceId != nil {
-			adminPassword, err := s.FindInstanceAdminPasswordById(ctx, *connectionInfo.InstanceId)
+		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceID != nil {
+			adminPassword, err := s.FindInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceId)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceID)).SetInternal(err)
 			}
 			password = adminPassword
 		}
@@ -75,12 +75,12 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceById(ctx, sync.InstanceId)
+		instance, err := s.ComposeInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceId))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceID)).SetInternal(err)
 		}
 
 		resultSet := s.SyncEngineVersionAndSchema(ctx, instance)
@@ -112,7 +112,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		if version != instance.EngineVersion {
 			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
-				UpdaterId:     api.SYSTEM_BOT_ID,
+				UpdaterID:     api.SYSTEM_BOT_ID,
 				EngineVersion: &version,
 			})
 			if err != nil {
@@ -174,10 +174,10 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			var recreateTableSchema = func(database *api.Database, table db.DBTable) error {
 				// Table
 				tableCreate := &api.TableCreate{
-					CreatorId:     api.SYSTEM_BOT_ID,
+					CreatorID:     api.SYSTEM_BOT_ID,
 					CreatedTs:     table.CreatedTs,
 					UpdatedTs:     table.UpdatedTs,
-					DatabaseId:    database.ID,
+					DatabaseID:    database.ID,
 					Name:          table.Name,
 					Type:          table.Type,
 					Engine:        table.Engine,
@@ -197,17 +197,17 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				// Column
 				for _, column := range table.ColumnList {
 					columnFind := &api.ColumnFind{
-						DatabaseId: &database.ID,
-						TableId:    &upsertedTable.ID,
+						DatabaseID: &database.ID,
+						TableID:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
 					_, err := s.ColumnService.FindColumn(ctx, columnFind)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							columnCreate := &api.ColumnCreate{
-								CreatorId:    api.SYSTEM_BOT_ID,
-								DatabaseId:   database.ID,
-								TableId:      upsertedTable.ID,
+								CreatorID:    api.SYSTEM_BOT_ID,
+								DatabaseID:   database.ID,
+								TableID:      upsertedTable.ID,
 								Name:         column.Name,
 								Position:     column.Position,
 								Default:      column.Default,
@@ -229,8 +229,8 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				// Index
 				for _, index := range table.IndexList {
 					indexFind := &api.IndexFind{
-						DatabaseId: &database.ID,
-						TableId:    &upsertedTable.ID,
+						DatabaseID: &database.ID,
+						TableID:    &upsertedTable.ID,
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
@@ -238,9 +238,9 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							indexCreate := &api.IndexCreate{
-								CreatorId:  api.SYSTEM_BOT_ID,
-								DatabaseId: database.ID,
-								TableId:    upsertedTable.ID,
+								CreatorID:  api.SYSTEM_BOT_ID,
+								DatabaseID: database.ID,
+								TableID:    upsertedTable.ID,
 								Name:       index.Name,
 								Expression: index.Expression,
 								Position:   index.Position,
@@ -263,10 +263,10 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			var recreateViewSchema = func(database *api.Database, view db.DBView) error {
 				// View
 				viewCreate := &api.ViewCreate{
-					CreatorId:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SYSTEM_BOT_ID,
 					CreatedTs:  view.CreatedTs,
 					UpdatedTs:  view.UpdatedTs,
-					DatabaseId: database.ID,
+					DatabaseID: database.ID,
 					Name:       view.Name,
 					Definition: view.Definition,
 					Comment:    view.Comment,
@@ -279,7 +279,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			instanceUserFind := &api.InstanceUserFind{
-				InstanceId: instance.ID,
+				InstanceID: instance.ID,
 			}
 			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
 			if err != nil {
@@ -289,8 +289,8 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			// Upsert user found in the instance
 			for _, user := range userList {
 				userUpsert := &api.InstanceUserUpsert{
-					CreatorId:  api.SYSTEM_BOT_ID,
-					InstanceId: instance.ID,
+					CreatorID:  api.SYSTEM_BOT_ID,
+					InstanceID: instance.ID,
 					Name:       user.Name,
 					Grant:      user.Grant,
 				}
@@ -333,7 +333,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			// we don't reference those objects and they are for information purpose.
 
 			databaseFind := &api.DatabaseFind{
-				InstanceId: &instance.ID,
+				InstanceID: &instance.ID,
 			}
 			dbList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
 			if err != nil {
@@ -354,7 +354,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
 						ID:                   matchedDb.ID,
-						UpdaterId:            api.SYSTEM_BOT_ID,
+						UpdaterID:            api.SYSTEM_BOT_ID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}
@@ -367,7 +367,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 
 					tableDelete := &api.TableDelete{
-						DatabaseId: database.ID,
+						DatabaseID: database.ID,
 					}
 					err = s.TableService.DeleteTable(ctx, tableDelete)
 					if err != nil {
@@ -382,7 +382,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 
 					viewDelete := &api.ViewDelete{
-						DatabaseId: database.ID,
+						DatabaseID: database.ID,
 					}
 					err = s.ViewService.DeleteView(ctx, viewDelete)
 					if err != nil {
@@ -398,10 +398,10 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				} else {
 					// Case 2, only appear in the synced db schema
 					databaseCreate := &api.DatabaseCreate{
-						CreatorId:     api.SYSTEM_BOT_ID,
-						ProjectId:     api.DEFAULT_PROJECT_ID,
-						InstanceId:    instance.ID,
-						EnvironmentId: instance.EnvironmentId,
+						CreatorID:     api.SYSTEM_BOT_ID,
+						ProjectID:     api.DEFAULT_PROJECT_ID,
+						InstanceID:    instance.ID,
+						EnvironmentID: instance.EnvironmentID,
 						Name:          schema.Name,
 						CharacterSet:  schema.CharacterSet,
 						Collation:     schema.Collation,
@@ -444,7 +444,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
 						ID:                   db.ID,
-						UpdaterId:            api.SYSTEM_BOT_ID,
+						UpdaterID:            api.SYSTEM_BOT_ID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}

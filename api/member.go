@@ -50,36 +50,36 @@ type Member struct {
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
 	Status      MemberStatus `jsonapi:"attr,status"`
 	Role        Role         `jsonapi:"attr,role"`
-	PrincipalId int
+	PrincipalID int
 	Principal   *Principal `jsonapi:"attr,principal"`
 }
 
 type MemberCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Domain specific fields
 	Status      MemberStatus `jsonapi:"attr,status"`
 	Role        Role         `jsonapi:"attr,role"`
-	PrincipalId int          `jsonapi:"attr,principalId"`
+	PrincipalID int          `jsonapi:"attr,principalID"`
 }
 
 type MemberFind struct {
 	ID *int
 
 	// Domain specific fields
-	PrincipalId *int
+	PrincipalID *int
 	Role        *Role
 }
 
@@ -97,7 +97,7 @@ type MemberPatch struct {
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`

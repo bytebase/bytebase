@@ -119,7 +119,7 @@ type MigrationExecutionArgs struct {
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryId int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -197,7 +197,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			statement,
 			prevSchemaBuf.String(),
 			prevSchemaBuf.String(),
-			m.IssueId,
+			m.IssueID,
 			m.Payload,
 		).Scan(&insertedID)
 	} else if dbType == db.ClickHouse {
@@ -237,7 +237,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			prevSchemaBuf.String(),
 			prevSchemaBuf.String(),
 			0,
-			m.IssueId,
+			m.IssueID,
 			m.Payload,
 		)
 		if err != nil {
@@ -280,7 +280,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			statement,
 			prevSchemaBuf.String(),
 			prevSchemaBuf.String(),
-			m.IssueId,
+			m.IssueID,
 			m.Payload,
 		)
 		if err != nil {
@@ -300,7 +300,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			statement,
 			prevSchemaBuf.String(),
 			prevSchemaBuf.String(),
-			m.IssueId,
+			m.IssueID,
 			m.Payload,
 		)
 
@@ -564,7 +564,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 			&history.Schema,
 			&history.SchemaPrev,
 			&history.ExecutionDuration,
-			&history.IssueId,
+			&history.IssueID,
 			&history.Payload,
 		); err != nil {
 			return nil, err

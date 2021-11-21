@@ -1,5 +1,5 @@
 import { Store } from "vuex";
-import { IssueBuiltinFieldId } from "../plugins";
+import { IssueBuiltinFieldID } from "../plugins";
 import {
   Activity,
   ActivityIssueFieldUpdatePayload,
@@ -25,26 +25,26 @@ export function issueActivityActionSentence(activity: Activity): string {
       let oldValue = undefined;
       let newValue = undefined;
 
-      switch (update.fieldId) {
-        case IssueBuiltinFieldId.ASSIGNEE: {
+      switch (update.fieldID) {
+        case IssueBuiltinFieldID.ASSIGNEE: {
           if (update.oldValue && update.newValue) {
-            const oldName = store.getters["principal/principalById"](
+            const oldName = store.getters["principal/principalByID"](
               update.oldValue
             ).name;
 
-            const newName = store.getters["principal/principalById"](
+            const newName = store.getters["principal/principalByID"](
               update.newValue
             ).name;
 
             return `reassigned issue from ${oldName} to ${newName}`;
           } else if (!update.oldValue && update.newValue) {
-            const newName = store.getters["principal/principalById"](
+            const newName = store.getters["principal/principalByID"](
               update.newValue
             ).name;
 
             return `assigned issue to ${newName}`;
           } else if (update.oldValue && !update.newValue) {
-            const oldName = store.getters["principal/principalById"](
+            const oldName = store.getters["principal/principalByID"](
               update.oldValue
             ).name;
 
@@ -54,20 +54,20 @@ export function issueActivityActionSentence(activity: Activity): string {
           }
         }
         // We don't display subscriber change for now
-        case IssueBuiltinFieldId.SUBSCRIBER_LIST:
+        case IssueBuiltinFieldID.SUBSCRIBER_LIST:
           break;
-        case IssueBuiltinFieldId.DESCRIPTION:
+        case IssueBuiltinFieldID.DESCRIPTION:
           // Description could be very long, so we don't display it.
           return "changed description";
-        case IssueBuiltinFieldId.NAME:
-        case IssueBuiltinFieldId.PROJECT:
-        case IssueBuiltinFieldId.SQL:
-        case IssueBuiltinFieldId.ROLLBACK_SQL: {
-          if (update.fieldId == IssueBuiltinFieldId.NAME) {
+        case IssueBuiltinFieldID.NAME:
+        case IssueBuiltinFieldID.PROJECT:
+        case IssueBuiltinFieldID.SQL:
+        case IssueBuiltinFieldID.ROLLBACK_SQL: {
+          if (update.fieldID == IssueBuiltinFieldID.NAME) {
             name = "name";
-          } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
+          } else if (update.fieldID == IssueBuiltinFieldID.SQL) {
             name = "SQL";
-          } else if (update.fieldId == IssueBuiltinFieldId.ROLLBACK_SQL) {
+          } else if (update.fieldID == IssueBuiltinFieldID.ROLLBACK_SQL) {
             name = "Rollback SQL";
           }
 

@@ -1,14 +1,14 @@
 // The database belongs to an instance which in turns belongs to an environment.
 
 import { Environment } from "../environment";
-import { EnvironmentId, StageId } from "../id";
+import { EnvironmentID, StageID } from "../id";
 import { Principal } from "../principal";
 import { Pipeline } from "./pipeline";
 import { Task, TaskCreate } from "./task";
 
 // THus stage can access both instance and environment info.
 export type Stage = {
-  id: StageId;
+  id: StageID;
 
   // Related fields
   taskList: Task[];
@@ -28,7 +28,7 @@ export type Stage = {
 export type StageCreate = {
   // Related fields
   taskList: TaskCreate[];
-  environmentId: EnvironmentId;
+  environmentID: EnvironmentID;
 
   // Domain specific fields
   name: string;

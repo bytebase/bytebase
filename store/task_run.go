@@ -41,9 +41,9 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.TaskId,
+		create.CreatorID,
+		create.CreatorID,
+		create.TaskID,
 		create.Name,
 		create.Type,
 		create.Payload,
@@ -58,11 +58,11 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 	var taskRun api.TaskRun
 	if err := row.Scan(
 		&taskRun.ID,
-		&taskRun.CreatorId,
+		&taskRun.CreatorID,
 		&taskRun.CreatedTs,
-		&taskRun.UpdaterId,
+		&taskRun.UpdaterID,
 		&taskRun.UpdatedTs,
-		&taskRun.TaskId,
+		&taskRun.TaskID,
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
@@ -105,7 +105,7 @@ func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *ap
 // PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
 func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "`status` = ?"), append(args, patch.Status)
 	if v := patch.Code; v != nil {
 		set, args = append(set, "code = ?"), append(args, *v)
@@ -122,7 +122,7 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	if v := patch.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := patch.TaskId; v != nil {
+	if v := patch.TaskID; v != nil {
 		where, args = append(where, "task_id = ?"), append(args, *v)
 	}
 
@@ -144,11 +144,11 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	var taskRun api.TaskRun
 	if err := row.Scan(
 		&taskRun.ID,
-		&taskRun.CreatorId,
+		&taskRun.CreatorID,
 		&taskRun.CreatedTs,
-		&taskRun.UpdaterId,
+		&taskRun.UpdaterID,
 		&taskRun.UpdatedTs,
-		&taskRun.TaskId,
+		&taskRun.TaskID,
 		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Type,
@@ -169,7 +169,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.TaskId; v != nil {
+	if v := find.TaskID; v != nil {
 		where, args = append(where, "task_id = ?"), append(args, *v)
 	}
 
@@ -212,11 +212,11 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 		var taskRun api.TaskRun
 		if err := rows.Scan(
 			&taskRun.ID,
-			&taskRun.CreatorId,
+			&taskRun.CreatorID,
 			&taskRun.CreatedTs,
-			&taskRun.UpdaterId,
+			&taskRun.UpdaterID,
 			&taskRun.UpdatedTs,
-			&taskRun.TaskId,
+			&taskRun.TaskID,
 			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Type,

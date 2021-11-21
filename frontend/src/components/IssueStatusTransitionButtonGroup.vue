@@ -151,7 +151,7 @@ import {
   Principal,
   SYSTEM_BOT_ID,
   Task,
-  TaskId,
+  TaskID,
   UNKNOWN_ID,
 } from "../types";
 import { IssueTemplate } from "../plugins";
@@ -400,7 +400,7 @@ export default {
         return false;
       }
 
-      if (newIssue.assigneeId == UNKNOWN_ID) {
+      if (newIssue.assigneeID == UNKNOWN_ID) {
         return false;
       }
 

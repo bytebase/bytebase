@@ -6,7 +6,7 @@ import { Bookmark } from "./bookmark";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
-import { CommandId, CommandRegisterId, PrincipalId } from "./id";
+import { CommandID, CommandRegisterID, PrincipalID } from "./id";
 import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
@@ -52,7 +52,7 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 
 // Router
 export type RouterSlug = {
-  principalId?: PrincipalId;
+  principalID?: PrincipalID;
   environmentSlug?: string;
   projectSlug?: string;
   projectWebhookSlug?: string;
@@ -67,8 +67,8 @@ export type RouterSlug = {
 
 // Quick Action Type
 export type Command = {
-  id: CommandId;
-  registerId: CommandRegisterId;
+  id: CommandID;
+  registerID: CommandRegisterID;
   run: () => void;
 };
 
@@ -152,9 +152,9 @@ export const unknown = (
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
-    creatorId: UNKNOWN_ID,
+    creatorID: UNKNOWN_ID,
     createdTs: 0,
-    updaterId: UNKNOWN_ID,
+    updaterID: UNKNOWN_ID,
     updatedTs: 0,
     type: "END_USER",
     name: "<<Unknown principal>>",
@@ -201,7 +201,7 @@ export const unknown = (
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
     id: UNKNOWN_ID,
-    projectId: UNKNOWN_ID,
+    projectID: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -270,7 +270,7 @@ export const unknown = (
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
     id: UNKNOWN_ID,
-    databaseId: UNKNOWN_ID,
+    databaseID: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
@@ -318,7 +318,7 @@ export const unknown = (
     type: "bb.issue.general",
     description: "",
     assignee: UNKNOWN_PRINCIPAL,
-    subscriberIdList: [],
+    subscriberIDList: [],
     payload: {},
   };
 
@@ -357,7 +357,7 @@ export const unknown = (
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
-    containerId: UNKNOWN_ID,
+    containerID: UNKNOWN_ID,
     type: "bb.issue.create",
     level: "INFO",
     comment: "<<Unknown comment>>",
@@ -390,7 +390,7 @@ export const unknown = (
     type: "GITLAB_SELF_HOST",
     instanceURL: "",
     apiURL: "",
-    applicationId: "",
+    applicationID: "",
     secret: "",
   };
 
@@ -409,7 +409,7 @@ export const unknown = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
-    externalId: UNKNOWN_ID.toString(),
+    externalID: UNKNOWN_ID.toString(),
   };
 
   const UNKNOWN_ANOMALY: Anomaly = {
@@ -418,14 +418,14 @@ export const unknown = (
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
-    instanceId: UNKNOWN_ID,
+    instanceID: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
-    databaseId: UNKNOWN_ID,
+    databaseID: UNKNOWN_ID,
     database: UNKNOWN_DATABASE,
     type: "bb.anomaly.database.backup.policy-violation",
     severity: "MEDIUM",
     payload: {
-      environmentId: UNKNOWN_ID,
+      environmentID: UNKNOWN_ID,
       expectedSchedule: "DAILY",
       actualSchedule: "UNSET",
     },
@@ -552,7 +552,7 @@ export const empty = (
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
     id: EMPTY_ID,
-    projectId: EMPTY_ID,
+    projectID: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
@@ -621,7 +621,7 @@ export const empty = (
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
     id: EMPTY_ID,
-    databaseId: UNKNOWN_ID,
+    databaseID: UNKNOWN_ID,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
@@ -669,7 +669,7 @@ export const empty = (
     type: "bb.issue.general",
     description: "",
     assignee: EMPTY_PRINCIPAL,
-    subscriberIdList: [],
+    subscriberIDList: [],
     payload: {},
   };
 
@@ -708,7 +708,7 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    containerId: EMPTY_ID,
+    containerID: EMPTY_ID,
     type: "bb.issue.create",
     level: "INFO",
     comment: "",
@@ -741,7 +741,7 @@ export const empty = (
     type: "GITLAB_SELF_HOST",
     instanceURL: "",
     apiURL: "",
-    applicationId: "",
+    applicationID: "",
     secret: "",
   };
 
@@ -760,7 +760,7 @@ export const empty = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
-    externalId: EMPTY_ID.toString(),
+    externalID: EMPTY_ID.toString(),
   };
 
   const EMPTY_ANOMALY: Anomaly = {
@@ -769,14 +769,14 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    instanceId: EMPTY_ID,
+    instanceID: EMPTY_ID,
     instance: EMPTY_INSTANCE,
-    databaseId: EMPTY_ID,
+    databaseID: EMPTY_ID,
     database: EMPTY_DATABASE,
     type: "bb.anomaly.database.backup.policy-violation",
     severity: "MEDIUM",
     payload: {
-      environmentId: EMPTY_ID,
+      environmentID: EMPTY_ID,
       expectedSchedule: "DAILY",
       actualSchedule: "UNSET",
     },

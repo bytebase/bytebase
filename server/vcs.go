@@ -18,7 +18,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.POST("/vcs", func(c echo.Context) error {
 		ctx := context.Background()
 		vcsCreate := &api.VCSCreate{
-			CreatorId: c.Get(GetPrincipalIdContextKey()).(int),
+			CreatorID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS request").SetInternal(err)
@@ -64,14 +64,14 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/vcs/:vcsId", func(c echo.Context) error {
+	g.GET("/vcs/:vcsID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("vcsId"))
+		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
 		}
 
-		vcs, err := s.ComposeVCSById(ctx, id)
+		vcs, err := s.ComposeVCSByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
@@ -86,16 +86,16 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/vcs/:vcsId", func(c echo.Context) error {
+	g.PATCH("/vcs/:vcsID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("vcsId"))
+		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS ID is not a number: %s", c.Param("vcsId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
 		}
 
 		vcsPatch := &api.VCSPatch{
 			ID:        id,
-			UpdaterId: c.Get(GetPrincipalIdContextKey()).(int),
+			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change VCS request").SetInternal(err)
@@ -120,16 +120,16 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/vcs/:vcsId", func(c echo.Context) error {
+	g.DELETE("/vcs/:vcsID", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("vcsId"))
+		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS is not a number: %s", c.Param("vcsId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS is not a number: %s", c.Param("vcsID"))).SetInternal(err)
 		}
 
 		vcsDelete := &api.VCSDelete{
 			ID:        id,
-			DeleterId: c.Get(GetPrincipalIdContextKey()).(int),
+			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
 		}
 		err = s.VCSService.DeleteVCS(ctx, vcsDelete)
 		if err != nil {
@@ -144,15 +144,15 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/vcs/:vcsId/repository", func(c echo.Context) error {
+	g.GET("/vcs/:vcsID/repository", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("vcsId"))
+		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
 		}
 
 		repositoryFind := &api.RepositoryFind{
-			VCSId: &id,
+			VCSID: &id,
 		}
 		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
@@ -173,7 +173,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeVCSById(ctx context.Context, id int) (*api.VCS, error) {
+func (s *Server) ComposeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	vcsFind := &api.VCSFind{
 		ID: &id,
 	}
@@ -192,12 +192,12 @@ func (s *Server) ComposeVCSById(ctx context.Context, id int) (*api.VCS, error) {
 func (s *Server) ComposeVCSRelationship(ctx context.Context, vcs *api.VCS) error {
 	var err error
 
-	vcs.Creator, err = s.ComposePrincipalById(ctx, vcs.CreatorId)
+	vcs.Creator, err = s.ComposePrincipalByID(ctx, vcs.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	vcs.Updater, err = s.ComposePrincipalById(ctx, vcs.UpdaterId)
+	vcs.Updater, err = s.ComposePrincipalByID(ctx, vcs.UpdaterID)
 	if err != nil {
 		return err
 	}

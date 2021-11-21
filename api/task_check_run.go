@@ -87,15 +87,15 @@ type TaskCheckRun struct {
 	ID int `jsonapi:"primary,taskCheckRun"`
 
 	// Standard fields
-	CreatorId int
+	CreatorID int
 	Creator   *Principal `jsonapi:"attr,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterId int
+	UpdaterID int
 	Updater   *Principal `jsonapi:"attr,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	TaskId int `jsonapi:"attr,taskId"`
+	TaskID int `jsonapi:"attr,taskID"`
 
 	// Domain specific fields
 	Status  TaskCheckRunStatus `jsonapi:"attr,status"`
@@ -109,10 +109,10 @@ type TaskCheckRun struct {
 type TaskCheckRunCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	CreatorId int
+	CreatorID int
 
 	// Related fields
-	TaskId int
+	TaskID int
 
 	// Domain specific fields
 	Type    TaskCheckType `jsonapi:"attr,type"`
@@ -120,7 +120,7 @@ type TaskCheckRunCreate struct {
 	Payload string        `jsonapi:"attr,payload"`
 
 	// If true, then we will skip creating the task check run if there has already been a DONE check run
-	// for this (TaskId, Type) pair. The check is done at the store layer so that we can wrap it in the
+	// for this (TaskID, Type) pair. The check is done at the store layer so that we can wrap it in the
 	// same transaction.
 	// This is NOT persisted into the db
 	SkipIfAlreadyTerminated bool
@@ -130,7 +130,7 @@ type TaskCheckRunFind struct {
 	ID *int
 
 	// Related fields
-	TaskId *int
+	TaskID *int
 	Type   *TaskCheckType
 
 	// Domain specific fields
@@ -151,7 +151,7 @@ type TaskCheckRunStatusPatch struct {
 	ID *int
 
 	// Standard fields
-	UpdaterId int
+	UpdaterID int
 
 	// Domain specific fields
 	Status TaskCheckRunStatus

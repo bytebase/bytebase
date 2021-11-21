@@ -78,7 +78,7 @@ export default {
       if (currentUser.value.id != UNKNOWN_ID) {
         store
           .dispatch("project/fetchProjectListByUser", {
-            userId: currentUser.value.id,
+            userID: currentUser.value.id,
           })
           .then((projectList: Project[]) => {
             state.projectList = projectList;

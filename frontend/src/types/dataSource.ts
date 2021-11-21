@@ -3,11 +3,11 @@
 
 import { Database } from "./database";
 import {
-  DatabaseId,
-  DataSourceId,
-  InstanceId,
-  IssueId,
-  PrincipalId,
+  DatabaseID,
+  DataSourceID,
+  InstanceID,
+  IssueID,
+  PrincipalID,
 } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
@@ -16,7 +16,7 @@ import { Principal } from "./principal";
 export type DataSourceType = "ADMIN" | "RW" | "RO";
 
 export type DataSource = {
-  id: DataSourceId;
+  id: DataSourceID;
 
   // Related fields
   database: Database;
@@ -41,8 +41,8 @@ export type DataSource = {
 
 export type DataSourceCreate = {
   // Related fields
-  databaseId: DatabaseId;
-  instanceId: InstanceId;
+  databaseID: DatabaseID;
+  instanceID: InstanceID;
   memberList: DataSourceMemberCreate[];
 
   // Domain specific fields
@@ -65,11 +65,11 @@ export type DataSourceMember = {
 
   // Domain specific fields
   principal: Principal;
-  issueId?: IssueId;
+  issueID?: IssueID;
 };
 
 export type DataSourceMemberCreate = {
   // Domain specific fields
-  principalId: PrincipalId;
-  issueId?: IssueId;
+  principalID: PrincipalID;
+  issueID?: IssueID;
 };

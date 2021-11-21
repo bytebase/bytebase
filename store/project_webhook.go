@@ -140,9 +140,9 @@ func createProjectWebhook(ctx context.Context, tx *Tx, create *api.ProjectWebhoo
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.ProjectId,
+		create.CreatorID,
+		create.CreatorID,
+		create.ProjectID,
 		create.Type,
 		create.Name,
 		create.URL,
@@ -159,11 +159,11 @@ func createProjectWebhook(ctx context.Context, tx *Tx, create *api.ProjectWebhoo
 	var activityList string
 	if err := row.Scan(
 		&projectWebhook.ID,
-		&projectWebhook.CreatorId,
+		&projectWebhook.CreatorID,
 		&projectWebhook.CreatedTs,
-		&projectWebhook.UpdaterId,
+		&projectWebhook.UpdaterID,
 		&projectWebhook.UpdatedTs,
-		&projectWebhook.ProjectId,
+		&projectWebhook.ProjectID,
 		&projectWebhook.Type,
 		&projectWebhook.Name,
 		&projectWebhook.URL,
@@ -182,7 +182,7 @@ func findProjectWebhookList(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
-	if v := find.ProjectId; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
@@ -214,11 +214,11 @@ func findProjectWebhookList(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 		var activityList string
 		if err := rows.Scan(
 			&projectWebhook.ID,
-			&projectWebhook.CreatorId,
+			&projectWebhook.CreatorID,
 			&projectWebhook.CreatedTs,
-			&projectWebhook.UpdaterId,
+			&projectWebhook.UpdaterID,
 			&projectWebhook.UpdatedTs,
-			&projectWebhook.ProjectId,
+			&projectWebhook.ProjectID,
 			&projectWebhook.Type,
 			&projectWebhook.Name,
 			&projectWebhook.URL,
@@ -249,7 +249,7 @@ func findProjectWebhookList(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 // patchProjectWebhook updates a projectWebhook by ID. Returns the new state of the projectWebhook after update.
 func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
@@ -281,11 +281,11 @@ func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookP
 		var activityList string
 		if err := row.Scan(
 			&projectWebhook.ID,
-			&projectWebhook.CreatorId,
+			&projectWebhook.CreatorID,
 			&projectWebhook.CreatedTs,
-			&projectWebhook.UpdaterId,
+			&projectWebhook.UpdaterID,
 			&projectWebhook.UpdatedTs,
-			&projectWebhook.ProjectId,
+			&projectWebhook.ProjectID,
 			&projectWebhook.Type,
 			&projectWebhook.Name,
 			&projectWebhook.URL,

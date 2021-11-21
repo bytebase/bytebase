@@ -81,7 +81,7 @@ export default {
     });
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
+      return store.getters["project/projectByID"](
         idFromSlug(props.projectSlug)
       );
     });

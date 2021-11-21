@@ -246,13 +246,13 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareTableList = () => {
-      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
+      store.dispatch("table/fetchTableListByDatabaseID", props.database.id);
     };
 
     watchEffect(prepareTableList);
 
     const prepareViewList = () => {
-      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
+      store.dispatch("view/fetchViewListByDatabaseID", props.database.id);
     };
 
     watchEffect(prepareViewList);
@@ -275,11 +275,11 @@ export default {
     );
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseId"](props.database.id);
+      return store.getters["table/tableListByDatabaseID"](props.database.id);
     });
 
     const viewList = computed(() => {
-      return store.getters["view/viewListByDatabaseId"](props.database.id);
+      return store.getters["view/viewListByDatabaseID"](props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -354,8 +354,8 @@ export default {
       };
       store
         .dispatch("dataSource/patchDataSource", {
-          databaseId: state.editingDataSource!.database.id,
-          dataSourceId: state.editingDataSource!.id,
+          databaseID: state.editingDataSource!.database.id,
+          dataSourceID: state.editingDataSource!.id,
           dataSource: dataSourcePatch,
         })
         .then(() => {

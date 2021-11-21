@@ -45,10 +45,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 
 	// Create * database
 	databaseCreate := &api.DatabaseCreate{
-		CreatorId:     create.CreatorId,
-		ProjectId:     api.DEFAULT_PROJECT_ID,
-		InstanceId:    instance.ID,
-		EnvironmentId: instance.EnvironmentId,
+		CreatorID:     create.CreatorID,
+		ProjectID:     api.DEFAULT_PROJECT_ID,
+		InstanceID:    instance.ID,
+		EnvironmentID: instance.EnvironmentID,
 		Name:          api.ALL_DATABASE_NAME,
 		CharacterSet:  api.DEFAULT_CHARACTER_SET_NAME,
 		Collation:     api.DEFAULT_COLLATION_NAME,
@@ -60,9 +60,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 
 	// Create admin data source
 	adminDataSourceCreate := &api.DataSourceCreate{
-		CreatorId:  create.CreatorId,
-		InstanceId: instance.ID,
-		DatabaseId: allDatabase.ID,
+		CreatorID:  create.CreatorID,
+		InstanceID: instance.ID,
+		DatabaseID: allDatabase.ID,
 		Name:       api.ADMIN_DATA_SOURCE_NAME,
 		Type:       api.Admin,
 		Username:   create.Username,
@@ -187,9 +187,9 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
 	`,
-		create.CreatorId,
-		create.CreatorId,
-		create.EnvironmentId,
+		create.CreatorID,
+		create.CreatorID,
+		create.EnvironmentID,
 		create.Name,
 		create.Engine,
 		create.ExternalLink,
@@ -207,11 +207,11 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 	if err := row.Scan(
 		&instance.ID,
 		&instance.RowStatus,
-		&instance.CreatorId,
+		&instance.CreatorID,
 		&instance.CreatedTs,
-		&instance.UpdaterId,
+		&instance.UpdaterID,
 		&instance.UpdatedTs,
-		&instance.EnvironmentId,
+		&instance.EnvironmentID,
 		&instance.Name,
 		&instance.Engine,
 		&instance.EngineVersion,
@@ -266,11 +266,11 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 		if err := rows.Scan(
 			&instance.ID,
 			&instance.RowStatus,
-			&instance.CreatorId,
+			&instance.CreatorID,
 			&instance.CreatedTs,
-			&instance.UpdaterId,
+			&instance.UpdaterID,
 			&instance.UpdatedTs,
-			&instance.EnvironmentId,
+			&instance.EnvironmentID,
 			&instance.Name,
 			&instance.Engine,
 			&instance.EngineVersion,
@@ -293,7 +293,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 // patchInstance updates a instance by ID. Returns the new state of the instance after update.
 func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.Instance, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterId}
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
 	}
@@ -334,11 +334,11 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 		if err := row.Scan(
 			&instance.ID,
 			&instance.RowStatus,
-			&instance.CreatorId,
+			&instance.CreatorID,
 			&instance.CreatedTs,
-			&instance.UpdaterId,
+			&instance.UpdaterID,
 			&instance.UpdatedTs,
-			&instance.EnvironmentId,
+			&instance.EnvironmentID,
 			&instance.Name,
 			&instance.Engine,
 			&instance.EngineVersion,

@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   Project,
-  ProjectId,
+  ProjectID,
   Repository,
   RepositoryCreate,
   RepositoryPatch,
@@ -10,7 +10,7 @@ import {
   ResourceObject,
   unknown,
   VCS,
-  VCSId,
+  VCSID,
 } from "../../types";
 
 function convert(
@@ -18,21 +18,21 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Repository {
-  const vcsId = (repository.relationships!.vcs.data as ResourceIdentifier).id;
+  const vcsID = (repository.relationships!.vcs.data as ResourceIdentifier).id;
   let vcs: VCS = unknown("VCS") as VCS;
-  vcs.id = parseInt(vcsId);
+  vcs.id = parseInt(vcsID);
 
-  const projectId = (
+  const projectID = (
     repository.relationships!.project.data as ResourceIdentifier
   ).id;
   let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectId);
+  project.id = parseInt(projectID);
 
   for (const item of includedList || []) {
-    if (item.type == "vcs" && item.id == vcsId) {
+    if (item.type == "vcs" && item.id == vcsID) {
       vcs = rootGetters["vcs/convert"](item);
     }
-    if (item.type == "project" && item.id == projectId) {
+    if (item.type == "project" && item.id == projectID) {
       project = rootGetters["project/convert"](item, includedList);
     }
   }
@@ -46,22 +46,22 @@ function convert(
 }
 
 const state: () => RepositoryState = () => ({
-  repositoryListByVCSId: new Map(),
-  repositoryByProjectId: new Map(),
+  repositoryListByVCSID: new Map(),
+  repositoryByProjectID: new Map(),
 });
 
 const getters = {
-  repositoryListByVCSId:
+  repositoryListByVCSID:
     (state: RepositoryState) =>
-    (vcsId: VCSId): Repository[] => {
-      return state.repositoryListByVCSId.get(vcsId) || [];
+    (vcsID: VCSID): Repository[] => {
+      return state.repositoryListByVCSID.get(vcsID) || [];
     },
 
-  repositoryByProjectId:
+  repositoryByProjectID:
     (state: RepositoryState) =>
-    (projectId: ProjectId): Repository => {
+    (projectID: ProjectID): Repository => {
       return (
-        state.repositoryByProjectId.get(projectId) ||
+        state.repositoryByProjectID.get(projectID) ||
         (unknown("REPOSITORY") as Repository)
       );
     },
@@ -74,7 +74,7 @@ const actions = {
   ): Promise<Repository> {
     const data = (
       await axios.post(
-        `/api/project/${repositoryCreate.projectId}/repository`,
+        `/api/project/${repositoryCreate.projectID}/repository`,
         {
           data: {
             type: "RepositoryCreate",
@@ -85,46 +85,46 @@ const actions = {
     ).data;
 
     const createdRepository = convert(data.data, data.included, rootGetters);
-    commit("setRepositoryByProjectId", {
-      projectId: repositoryCreate.projectId,
+    commit("setRepositoryByProjectID", {
+      projectID: repositoryCreate.projectID,
       repository: createdRepository,
     });
 
     // Refetch the project as the project workflow type has been updated to "VCS"
-    dispatch("project/fetchProjectById", repositoryCreate.projectId, {
+    dispatch("project/fetchProjectByID", repositoryCreate.projectID, {
       root: true,
     });
 
     return createdRepository;
   },
 
-  async fetchRepositoryListByVCSId(
+  async fetchRepositoryListByVCSID(
     { commit, rootGetters }: any,
-    vcsId: VCSId
+    vcsID: VCSID
   ): Promise<Repository[]> {
-    const data = (await axios.get(`/api/vcs/${vcsId}/repository`)).data;
+    const data = (await axios.get(`/api/vcs/${vcsID}/repository`)).data;
 
     const repositoryList = data.data.map((repository: ResourceObject) => {
       return convert(repository, data.included, rootGetters);
     });
 
-    commit("setRepositoryListByVCSId", { vcsId, repositoryList });
+    commit("setRepositoryListByVCSID", { vcsID, repositoryList });
     return repositoryList;
   },
 
-  async fetchRepositoryByProjectId(
+  async fetchRepositoryByProjectID(
     { commit, rootGetters }: any,
-    projectId: ProjectId
+    projectID: ProjectID
   ): Promise<Repository> {
-    const data = (await axios.get(`/api/project/${projectId}/repository`)).data;
+    const data = (await axios.get(`/api/project/${projectID}/repository`)).data;
     const repositoryList = data.data.map((repository: ResourceObject) => {
       return convert(repository, data.included, rootGetters);
     });
 
     // Expect server to return at most one item, otherwise it will throw error
     if (repositoryList.length > 0) {
-      commit("setRepositoryByProjectId", {
-        projectId,
+      commit("setRepositoryByProjectID", {
+        projectID,
         repository: repositoryList[0],
       });
       return repositoryList[0];
@@ -133,18 +133,18 @@ const actions = {
     return unknown("REPOSITORY") as Repository;
   },
 
-  async updateRepositoryByProjectId(
+  async updateRepositoryByProjectID(
     { commit, rootGetters }: any,
     {
-      projectId,
+      projectID,
       repositoryPatch,
     }: {
-      projectId: ProjectId;
+      projectID: ProjectID;
       repositoryPatch: RepositoryPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/project/${projectId}/repository`, {
+      await axios.patch(`/api/project/${projectID}/repository`, {
         data: {
           type: "repositoryPatch",
           attributes: repositoryPatch,
@@ -153,57 +153,57 @@ const actions = {
     ).data;
 
     const updatedRepository = convert(data.data, data.included, rootGetters);
-    commit("setRepositoryByProjectId", {
-      projectId,
+    commit("setRepositoryByProjectID", {
+      projectID,
       repository: updatedRepository,
     });
 
     return updatedRepository;
   },
 
-  async deleteRepositoryByProjectId(
+  async deleteRepositoryByProjectID(
     { dispatch, commit }: any,
-    projectId: ProjectId
+    projectID: ProjectID
   ) {
-    await axios.delete(`/api/project/${projectId}/repository`);
-    commit("deleteRepositoryByProjectId", projectId);
+    await axios.delete(`/api/project/${projectID}/repository`);
+    commit("deleteRepositoryByProjectID", projectID);
 
     // Refetch the project as the project workflow type has been updated to "UI"
-    dispatch("project/fetchProjectById", projectId, {
+    dispatch("project/fetchProjectByID", projectID, {
       root: true,
     });
   },
 };
 
 const mutations = {
-  setRepositoryListByVCSId(
+  setRepositoryListByVCSID(
     state: RepositoryState,
     {
-      vcsId,
+      vcsID,
       repositoryList,
     }: {
-      vcsId: VCSId;
+      vcsID: VCSID;
       repositoryList: Repository[];
     }
   ) {
-    state.repositoryListByVCSId.set(vcsId, repositoryList);
+    state.repositoryListByVCSID.set(vcsID, repositoryList);
   },
 
-  setRepositoryByProjectId(
+  setRepositoryByProjectID(
     state: RepositoryState,
     {
-      projectId,
+      projectID,
       repository,
     }: {
-      projectId: ProjectId;
+      projectID: ProjectID;
       repository: Repository;
     }
   ) {
-    state.repositoryByProjectId.set(projectId, repository);
+    state.repositoryByProjectID.set(projectID, repository);
   },
 
-  deleteRepositoryByProjectId(state: RepositoryState, projectId: ProjectId) {
-    state.repositoryByProjectId.delete(projectId);
+  deleteRepositoryByProjectID(state: RepositoryState, projectID: ProjectID) {
+    state.repositoryByProjectID.delete(projectID);
   },
 };
 

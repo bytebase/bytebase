@@ -1,10 +1,10 @@
-import { SettingId } from "./id";
+import { SettingID } from "./id";
 import { Principal } from "./principal";
 
 export type SettingName = "bb.console.url";
 
 export type Setting = {
-  id: SettingId;
+  id: SettingID;
 
   // Standard fields
   creator: Principal;

@@ -44,16 +44,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
 
-		webhookEndpointId := c.Param("id")
+		webhookEndpointID := c.Param("id")
 		repositoryFind := &api.RepositoryFind{
-			WebhookEndpointId: &webhookEndpointId,
+			WebhookEndpointID: &webhookEndpointID,
 		}
 		repository, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointId))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointId)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
 
 		if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
@@ -64,8 +64,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Secret token mismatch")
 		}
 
-		if strconv.Itoa(pushEvent.Project.ID) != repository.ExternalId {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repository.ExternalId))
+		if strconv.Itoa(pushEvent.Project.ID) != repository.ExternalID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repository.ExternalID))
 		}
 
 		createdMessageList := []string{}
@@ -134,8 +134,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					activityCreate := &api.ActivityCreate{
-						CreatorId:   api.SYSTEM_BOT_ID,
-						ContainerId: repository.ProjectId,
+						CreatorID:   api.SYSTEM_BOT_ID,
+						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ACTIVITY_WARN,
 						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
@@ -156,7 +156,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				// Retrieve sql by reading the file content
 				resp, err := gitlab.GET(
 					repository.VCS.InstanceURL,
-					fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalId, url.QueryEscape(added), commit.ID),
+					fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalID, url.QueryEscape(added), commit.ID),
 					repository.AccessToken,
 				)
 				if err != nil {
@@ -173,7 +173,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				// Find matching database list
 				databaseFind := &api.DatabaseFind{
-					ProjectId: &repository.ProjectId,
+					ProjectID: &repository.ProjectID,
 					Name:      &mi.Database,
 				}
 				databaseList, err := s.ComposeDatabaseListByFind(ctx, databaseFind)
@@ -181,7 +181,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					createIgnoredFileActivity(fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database))
 					continue
 				} else if len(databaseList) == 0 {
-					createIgnoredFileActivity(fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectId, mi.Database))
+					createIgnoredFileActivity(fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database))
 					continue
 				}
 
@@ -219,32 +219,32 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					// We will emit warning in this case.
 					var databaseListByEnv = map[int][]*api.Database{}
 					for _, database := range filterdDatabaseList {
-						list, ok := databaseListByEnv[database.Instance.EnvironmentId]
+						list, ok := databaseListByEnv[database.Instance.EnvironmentID]
 						if ok {
-							databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+							databaseListByEnv[database.Instance.EnvironmentID] = append(list, database)
 						} else {
 							list := make([]*api.Database, 0)
-							databaseListByEnv[database.Instance.EnvironmentId] = append(list, database)
+							databaseListByEnv[database.Instance.EnvironmentID] = append(list, database)
 						}
 
 						// Load pipeline approval policy per environment.
-						if _, ok := pipelineApprovalByEnv[database.Instance.EnvironmentId]; !ok {
-							p, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentId)
+						if _, ok := pipelineApprovalByEnv[database.Instance.EnvironmentID]; !ok {
+							p, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
 							if err != nil {
-								createIgnoredFileActivity(fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentId))
+								createIgnoredFileActivity(fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentID))
 								continue
 							}
-							pipelineApprovalByEnv[database.Instance.EnvironmentId] = p.Value
+							pipelineApprovalByEnv[database.Instance.EnvironmentID] = p.Value
 						}
 					}
 
 					var multipleDatabaseForSameEnv = false
-					for environemntId, databaseList := range databaseListByEnv {
+					for environemntID, databaseList := range databaseListByEnv {
 						if len(databaseList) > 1 {
 							multipleDatabaseForSameEnv = true
 
-							s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environemntId),
-								zap.Int("project_id", repository.ProjectId),
+							s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environemntID),
+								zap.Int("project_id", repository.ProjectID),
 								zap.String("file", added),
 							)
 						}
@@ -264,8 +264,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						taskStatus = api.TaskPending
 					}
 					task := &api.TaskCreate{
-						InstanceId:    database.InstanceId,
-						DatabaseId:    &databaseID,
+						InstanceID:    database.InstanceID,
+						DatabaseID:    &databaseID,
 						Name:          mi.Description,
 						Status:        taskStatus,
 						Type:          api.TaskDatabaseSchemaUpdate,
@@ -274,7 +274,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						MigrationType: mi.Type,
 					}
 					stageList = append(stageList, api.StageCreate{
-						EnvironmentId: database.Instance.EnvironmentId,
+						EnvironmentID: database.Instance.EnvironmentID,
 						TaskList:      []api.TaskCreate{*task},
 						Name:          database.Instance.Environment.Name,
 					})
@@ -284,12 +284,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
 				}
 				issueCreate := &api.IssueCreate{
-					ProjectId:   repository.ProjectId,
+					ProjectID:   repository.ProjectID,
 					Pipeline:    *pipeline,
 					Name:        commit.Title,
 					Type:        api.IssueDatabaseSchemaUpdate,
 					Description: commit.Message,
-					AssigneeId:  api.SYSTEM_BOT_ID,
+					AssigneeID:  api.SYSTEM_BOT_ID,
 				}
 
 				issue, err := s.CreateIssue(ctx, issueCreate, api.SYSTEM_BOT_ID)
@@ -305,7 +305,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				{
 					bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 						VCSPushEvent: vcsPushEvent,
-						IssueId:      issue.ID,
+						IssueID:      issue.ID,
 						IssueName:    issue.Name,
 					})
 					if err != nil {
@@ -313,8 +313,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					activityCreate := &api.ActivityCreate{
-						CreatorId:   api.SYSTEM_BOT_ID,
-						ContainerId: repository.ProjectId,
+						CreatorID:   api.SYSTEM_BOT_ID,
+						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ACTIVITY_INFO,
 						Comment:     fmt.Sprintf("Created issue %q.", issue.Name),

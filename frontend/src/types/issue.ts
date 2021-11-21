@@ -1,4 +1,4 @@
-import { IssueId, PrincipalId, ProjectId } from "./id";
+import { IssueID, PrincipalID, ProjectID } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -22,7 +22,7 @@ export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 export type IssuePayload = { [key: string]: any };
 
 export type Issue = {
-  id: IssueId;
+  id: IssueID;
 
   // Related fields
   project: Project;
@@ -40,21 +40,21 @@ export type Issue = {
   type: IssueType;
   description: string;
   assignee: Principal;
-  subscriberIdList: PrincipalId[];
+  subscriberIDList: PrincipalID[];
   payload: IssuePayload;
 };
 
 export type IssueCreate = {
   // Related fields
-  projectId: ProjectId;
+  projectID: ProjectID;
   pipeline: PipelineCreate;
 
   // Domain specific fields
   name: string;
   type: IssueType;
   description: string;
-  assigneeId: PrincipalId;
-  rollbackIssueId?: IssueId;
+  assigneeID: PrincipalID;
+  rollbackIssueID?: IssueID;
   payload: IssuePayload;
 };
 
@@ -62,7 +62,7 @@ export type IssuePatch = {
   // Domain specific fields
   name?: string;
   description?: string;
-  assigneeId?: PrincipalId;
+  assigneeID?: PrincipalID;
   payload?: IssuePayload;
 };
 
