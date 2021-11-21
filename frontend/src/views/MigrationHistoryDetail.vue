@@ -262,7 +262,7 @@ export default {
     const vcsBranchURL = computed((): string => {
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
-          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+          return `${pushEvent.value.repositoryURL}/-/tree/${vcsBranch.value}`;
         }
       }
       return "";
