@@ -93,7 +93,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embeded in an iframe
+	// Disallow to be embedded in an iframe
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))

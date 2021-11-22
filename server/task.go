@@ -61,7 +61,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if task.Type == api.TaskDatabaseSchemaUpdate {
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema udpate payload").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
 				}
 				payload.Statement = *taskPatch.Statement
 				bytes, err := json.Marshal(payload)
