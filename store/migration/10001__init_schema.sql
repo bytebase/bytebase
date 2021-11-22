@@ -836,9 +836,9 @@ CREATE TABLE task (
             "CANCELED"
         )
     ),
-    -- not_before_ts specifies the earliest allowed timing for a task to be executed
-    -- NOTE that the execution timing is also constrained by the allowed window period specified by the env which it belong
-    -- By default, not_before_ts is set to 0, meaning this task will be executed right after available
+    -- not_before_ts specifies the earliest allowed timing for a task to be executed.
+    -- NOTE that the execution timing is also constrained by the allowed window period specified by the env which it belongs.
+    -- By default, not_before_ts is set to 0, meaning this task will be executed right after meeting other gating logic such as manual approval.
     not_before_ts BIGINT NOT NULL DEFAULT 0,
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     payload TEXT NOT NULL DEFAULT ''
