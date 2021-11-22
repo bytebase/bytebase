@@ -36,7 +36,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
-const WEBHOOK_TAB = 3;
+const WEBHOOK_TAB = 4;
 
 type ProjectTabItem = {
   name: string;
