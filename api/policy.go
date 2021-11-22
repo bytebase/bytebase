@@ -17,17 +17,18 @@ type PipelineApprovalValue string
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
-// AllowedWindowPeriodCron is value for allowed window period policy, and is stored in cron format.
+// AllowedWindowCron is value for allowed window
+//policy, and is stored in cron format.
 // a valid cron expression should be parsed without any error by this: cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-type AllowedWindowPeriodCron string
+type AllowedWindowCron string
 
 const (
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
-	// PolicyTypeAllowedWindowPeriod is the allowed window period type and is stored in cron format
-	PolicyTypeAllowedWindowPeriod PolicyType = "bb.policy.allowed-window-period"
+	// PolicyTypeAllowedWindow is the allowed window type and is stored in cron format
+	PolicyTypeAllowedWindow PolicyType = "bb.policy.allowed-window"
 
 	// PipelineApprovalValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -41,16 +42,16 @@ const (
 	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
 	BackupPlanPolicyScheduleWeekly BackupPlanPolicySchedule = "WEEKLY"
 
-	// AllowedWindowPeriodUnset is ANYTIME allowed window period cron.
-	AllowedWindowPeriodUnset AllowedWindowPeriodCron = "* * * * *"
+	// AllowedWindowUnset is ANYTIME allowed window cron.
+	AllowedWindowUnset AllowedWindowCron = ""
 )
 
 var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
-		PolicyTypePipelineApproval:    true,
-		PolicyTypeBackupPlan:          true,
-		PolicyTypeAllowedWindowPeriod: true,
+		PolicyTypePipelineApproval: true,
+		PolicyTypeBackupPlan:       true,
+		PolicyTypeAllowedWindow:    true,
 	}
 )
 
@@ -154,12 +155,17 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	return &bp, nil
 }
 
-// AllowedWindowPeriodPolicy is the policy configuration for window period.
-type AllowedWindowPeriodPolicy struct {
-	Cron AllowedWindowPeriodCron `json:"cron"`
+// AllowedWindowPolicy is the policy configuration for window.
+type AllowedWindowPolicy struct {
+	Cron AllowedWindowCron `json:"cron"`
 }
 
-func (ap AllowedWindowPeriodPolicy) String() (string, error) {
+func GetAllowedWindowCronParser() *cron.Parser {
+	cronParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	return &cronParser
+}
+
+func (ap AllowedWindowPolicy) String() (string, error) {
 	s, err := json.Marshal(ap)
 	if err != nil {
 		return "", err
@@ -167,11 +173,11 @@ func (ap AllowedWindowPeriodPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// UnmarshalAllowedWindowPeriodPolicy will unmarshal payload to allowed window period policy.
-func UnmarshalAllowedWindowPeriodPolicy(payload string) (*AllowedWindowPeriodPolicy, error) {
-	var ap AllowedWindowPeriodPolicy
+// UnmarshalAllowedWindowPolicy will unmarshal payload to allowed window policy.
+func UnmarshalAllowedWindowPolicy(payload string) (*AllowedWindowPolicy, error) {
+	var ap AllowedWindowPolicy
 	if err := json.Unmarshal([]byte(payload), &ap); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal llowed window period %q: %q", payload, err)
+		return nil, fmt.Errorf("failed to unmarshal allowed window %q: %q", payload, err)
 	}
 	return &ap, nil
 }
@@ -202,12 +208,12 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
-	case PolicyTypeAllowedWindowPeriod:
-		ap, err := UnmarshalAllowedWindowPeriodPolicy(payload)
+	case PolicyTypeAllowedWindow:
+		ap, err := UnmarshalAllowedWindowPolicy(payload)
 		if err != nil {
 			return err
 		}
-		parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		parser := GetAllowedWindowCronParser()
 		_, err = parser.Parse(string(ap.Cron))
 		if err != nil {
 			return err
@@ -229,9 +235,9 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
-	case PolicyTypeAllowedWindowPeriod:
-		return AllowedWindowPeriodPolicy{
-			Cron: AllowedWindowPeriodUnset,
+	case PolicyTypeAllowedWindow:
+		return AllowedWindowPolicy{
+			Cron: AllowedWindowUnset,
 		}.String()
 
 	}
