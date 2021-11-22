@@ -190,6 +190,10 @@
   @apply cursor-pointer hover:underline focus:outline-none;
 }
 
+.tooltip-wrapper {
+  @apply relative;
+}
+
 .tooltip {
   @apply invisible absolute -mt-8 ml-2 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
 }
