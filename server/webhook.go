@@ -197,20 +197,20 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				//             	to identify ambiguity.
 
 				// Further filter by environment name if applicable.
-				filterdDatabaseList := []*api.Database{}
+				filteredDatabaseList := []*api.Database{}
 				if mi.Environment != "" {
 					for _, database := range databaseList {
 						// Environment name comparision is case insensitive
 						if strings.EqualFold(database.Instance.Environment.Name, mi.Environment) {
-							filterdDatabaseList = append(filterdDatabaseList, database)
+							filteredDatabaseList = append(filteredDatabaseList, database)
 						}
 					}
-					if len(filterdDatabaseList) == 0 {
+					if len(filteredDatabaseList) == 0 {
 						createIgnoredFileActivity(fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment))
 						continue
 					}
 				} else {
-					filterdDatabaseList = databaseList
+					filteredDatabaseList = databaseList
 				}
 
 				var pipelineApprovalByEnv = map[int]api.PipelineApprovalValue{}
@@ -218,7 +218,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					// It could happen that for a particular environment a project contain 2 database with the same name.
 					// We will emit warning in this case.
 					var databaseListByEnv = map[int][]*api.Database{}
-					for _, database := range filterdDatabaseList {
+					for _, database := range filteredDatabaseList {
 						list, ok := databaseListByEnv[database.Instance.EnvironmentID]
 						if ok {
 							databaseListByEnv[database.Instance.EnvironmentID] = append(list, database)
@@ -239,11 +239,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					var multipleDatabaseForSameEnv = false
-					for environemntID, databaseList := range databaseListByEnv {
+					for environmentID, databaseList := range databaseListByEnv {
 						if len(databaseList) > 1 {
 							multipleDatabaseForSameEnv = true
 
-							s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environemntID),
+							s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environmentID),
 								zap.Int("project_id", repository.ProjectID),
 								zap.String("file", added),
 							)
@@ -257,7 +257,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				// Compose the new issue
 				stageList := []api.StageCreate{}
-				for _, database := range filterdDatabaseList {
+				for _, database := range filteredDatabaseList {
 					databaseID := database.ID
 					taskStatus := api.TaskPendingApproval
 					if pipelineApprovalByEnv[database.Instance.Environment.ID] == api.PipelineApprovalValueManualNever {
@@ -301,7 +301,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
 
-				// Create a project activity after sucessfully creating the issue as the result of the push event
+				// Create a project activity after successfully creating the issue as the result of the push event
 				{
 					bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 						VCSPushEvent: vcsPushEvent,
