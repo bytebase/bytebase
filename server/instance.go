@@ -38,7 +38,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
-		// thus it's OK if it fails. Frontend will surface relavant info suggesting the "bytebase" db hasn't created yet.
+		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
 		db, err := GetDatabaseDriver(ctx, instance, "", s.l)
 		if err == nil {
 			defer db.Close(ctx)
@@ -300,7 +300,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Intance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
 		historyID, err := strconv.Atoi(c.Param("historyID"))
