@@ -19,6 +19,7 @@ require (
 	github.com/pingcap/parser v0.0.0-20200623164729-3a18f1e5dceb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.3 // indirect
 	github.com/spf13/cobra v1.2.0
 	go.uber.org/multierr v1.7.0 // indirect
