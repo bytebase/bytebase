@@ -14,6 +14,7 @@ module.exports = {
     "no-empty-pattern": "warn",
     "no-useless-escape": "warn",
     "@typescript-eslint/no-empty-interface": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
     "vue/no-mutating-props": "warn",
     "vue/multi-word-component-names": "warn",
     "vue/no-unused-components": "warn",
