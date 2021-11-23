@@ -6,12 +6,12 @@
           New database name <span class="text-red-600">*</span>
         </label>
         <input
-          required
           id="name"
+          v-model="state.databaseName"
+          required
           name="name"
           type="text"
           class="textfield mt-1 w-full"
-          v-model="state.databaseName"
         />
         <span v-if="isReservedName" class="text-red-600"
           >{{ state.databaseName }} is a reserved name</span
@@ -23,8 +23,8 @@
           Project <span style="color: red">*</span>
         </label>
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
           :disabled="!allowEditProject"
           :selectedID="state.projectID"
@@ -37,8 +37,8 @@
           Environment <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
-          class="mt-1 w-full"
           id="environment"
+          class="mt-1 w-full"
           name="environment"
           :disabled="!allowEditEnvironment"
           :selectedID="state.environmentID"
@@ -58,8 +58,8 @@
         </div>
         <div class="flex flex-row space-x-2 items-center">
           <InstanceSelect
-            class="mt-1"
             id="instance"
+            class="mt-1"
             name="instance"
             :disabled="!allowEditInstance"
             :selectedID="state.instanceID"
@@ -85,11 +85,11 @@
           >
           <input
             id="charset"
+            v-model="state.characterSet"
             name="charset"
             type="text"
             class="textfield mt-1 w-full"
             :placeholder="defaultCharset(selectedInstance.engine)"
-            v-model="state.characterSet"
           />
         </div>
 
@@ -97,13 +97,13 @@
           <label for="collation" class="textlabel"> Collation </label>
           <input
             id="collation"
+            v-model="state.collation"
             name="collation"
             type="text"
             class="textfield mt-1 w-full"
             :placeholder="
               defaultCollation(selectedInstance.engine) || 'default'
             "
-            v-model="state.collation"
           />
         </div>
       </template>
@@ -114,8 +114,8 @@
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
         <MemberSelect
-          class="mt-1"
           id="user"
+          class="mt-1"
           name="user"
           :allowedRoleList="['OWNER', 'DBA']"
           :selectedID="state.assigneeID"

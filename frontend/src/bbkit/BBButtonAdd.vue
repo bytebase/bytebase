@@ -23,8 +23,8 @@
 <script lang="ts">
 export default {
   name: "BBButtonAdd",
-  emits: ["add"],
   props: {},
+  emits: ["add"],
   setup(props, ctx) {},
 };
 </script>

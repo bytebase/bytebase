@@ -8,7 +8,7 @@
     :rowClickable="true"
     @click-row="clickTable"
   >
-    <template v-slot:body="{ rowData: table }">
+    <template #body="{ rowData: table }">
       <BBTableCell :leftPadding="4" class="w-16">
         {{ table.name }}
       </BBTableCell>

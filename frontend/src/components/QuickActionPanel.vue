@@ -442,7 +442,7 @@ import { DEFAULT_PROJECT_ID, ProjectID, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 
 interface LocalState {
-  showModal: Boolean;
+  showModal: boolean;
   modalTitle: string;
   modalSubtitle: string;
   quickActionType: QuickActionType;

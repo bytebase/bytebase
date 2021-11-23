@@ -100,8 +100,8 @@
         "
       />
       <BBTableSearch
-        class="w-72"
         ref="searchField"
+        class="w-72"
         :placeholder="
           state.selectedIndex == DATABASE_TAB
             ? 'Search database or environment'

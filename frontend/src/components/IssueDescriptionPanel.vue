@@ -33,14 +33,11 @@
           rounded-sm
           text-control
           hover:bg-control-bg-hover
-          disabled:bg-control-bg
-          disabled:opacity-50
-          disabled:cursor-not-allowed
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
           text-sm
           leading-5
           font-normal
-          focus:ring-control
-          focus:outline-none
+          focus:ring-control focus:outline-none
           focus-visible:ring-2
           focus:ring-offset-2
         "
@@ -59,14 +56,11 @@
           text-control
           bg-control-bg
           hover:bg-control-bg-hover
-          disabled:bg-control-bg
-          disabled:opacity-50
-          disabled:cursor-not-allowed
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
           text-sm
           leading-5
           font-normal
-          focus:ring-control
-          focus:outline-none
+          focus:ring-control focus:outline-none
           focus-visible:ring-2
           focus:ring-offset-2
         "
@@ -83,6 +77,7 @@
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editDescriptionTextArea"
+    v-model="state.editDescription"
     :rows="create ? 10 : 5"
     class="
       mt-2
@@ -101,7 +96,6 @@
     "
     placeholder="Add some description..."
     :readonly="!state.editing"
-    v-model="state.editDescription"
     @input="
       (e) => {
         sizeToFit(e.target);

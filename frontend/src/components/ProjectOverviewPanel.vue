@@ -6,7 +6,7 @@
       <router-link
         :to="`#activity`"
         class="mt-2 flex justify-end normal-link"
-        exact-active-class=""
+        exactActiveClass=""
       >
         View all
       </router-link>

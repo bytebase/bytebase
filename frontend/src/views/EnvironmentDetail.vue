@@ -38,7 +38,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentDetail",
-  emits: ["archive"],
   components: {
     ArchiveBanner,
     EnvironmentForm,
@@ -49,6 +48,7 @@ export default {
       type: String,
     },
   },
+  emits: ["archive"],
   setup(props, { emit }) {
     const store = useStore();
 

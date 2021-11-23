@@ -6,7 +6,7 @@
     :leftBordered="true"
     :rightBordered="true"
   >
-    <template v-slot:body="{ rowData: column }">
+    <template #body="{ rowData: column }">
       <BBTableCell :leftPadding="4" class="w-16">
         {{ column.name }}
       </BBTableCell>

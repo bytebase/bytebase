@@ -8,7 +8,7 @@
     :rightBordered="true"
     @click-row="clickHistory"
   >
-    <template v-slot:header>
+    <template #header>
       <template v-if="mode == 'DATABASE'">
         <BBTableHeaderCell
           :leftPadding="4"
@@ -37,7 +37,7 @@
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
       </template>
     </template>
-    <template v-slot:body="{ rowData: history }">
+    <template #body="{ rowData: history }">
       <BBTableCell :leftPadding="4">
         <MigrationHistoryStatusIcon :status="history.status" />
       </BBTableCell>
@@ -56,9 +56,9 @@
         <template v-if="history.issueID">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            @click.stop=""
             :to="`/issue/${history.issueID}`"
             class="normal-link"
+            @click.stop=""
             >{{ history.issueID }}
           </router-link>
         </template>

@@ -96,13 +96,13 @@
           <div class="block mt-6 min-w-0 flex-1">
             <input
               v-if="state.editing"
+              id="name"
+              ref="editNameTextField"
               required
               autocomplete="off"
-              id="name"
               name="name"
               type="text"
               class="textfield"
-              ref="editNameTextField"
               :value="state.editingPrincipal.name"
               @input="updatePrincipal('name', $event.target.value)"
             />
@@ -206,12 +206,12 @@ interface LocalState {
 
 export default {
   name: "ProfileDashboard",
+  components: { PrincipalAvatar },
   props: {
     principalID: {
       type: String,
     },
   },
-  components: { PrincipalAvatar },
   setup(props, ctx) {
     const editNameTextField = ref();
 

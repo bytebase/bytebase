@@ -7,7 +7,7 @@
     :leftBordered="true"
     :rightBordered="true"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-4"
@@ -24,7 +24,7 @@
         :title="columnList[6].title"
       />
     </template>
-    <template v-slot:body="{ rowData: backup }">
+    <template #body="{ rowData: backup }">
       <BBTableCell :leftPadding="4">
         <span
           class="flex items-center justify-center rounded-full select-none"

@@ -92,8 +92,8 @@
 
       <div class="mt-6 px-4">
         <a
-          href="#statement"
           id="statement"
+          href="#statement"
           class="flex items-center text-lg text-main mb-2 hover:underline"
         >
           Statement
@@ -122,8 +122,8 @@
           {{ migrationHistory.statement }}
         </div>
         <a
-          href="#schema"
           id="schema"
+          href="#schema"
           class="flex items-center text-lg text-main mt-6 hover:underline"
         >
           Schema Snapshot
@@ -176,9 +176,9 @@
         <code-diff
           v-if="state.showDiff"
           class="mt-4 w-full"
-          :old-string="migrationHistory.schemaPrev"
-          :new-string="migrationHistory.schema"
-          output-format="side-by-side"
+          :oldString="migrationHistory.schemaPrev"
+          :newString="migrationHistory.schema"
+          outputFormat="side-by-side"
         />
         <div
           v-else
@@ -208,11 +208,12 @@ import {
 } from "../types";
 
 interface LocalState {
-  showDiff: Boolean;
+  showDiff: boolean;
 }
 
 export default {
   name: "MigrationHistoryDetail",
+  components: { CodeDiff, ColumnTable, IndexTable, MigrationHistoryStatusIcon },
   props: {
     databaseSlug: {
       required: true,
@@ -223,7 +224,6 @@ export default {
       type: String,
     },
   },
-  components: { CodeDiff, ColumnTable, IndexTable, MigrationHistoryStatusIcon },
   setup(props, ctx) {
     const store = useStore();
 

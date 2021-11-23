@@ -10,8 +10,8 @@
             Name <span class="text-red-600">*</span>
           </label>
           <input
-            required
             id="name"
+            required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
@@ -163,7 +163,7 @@ import { useStore } from "vuex";
 
 interface LocalState {
   dataSource: DataSourceCreate;
-  showPassword: Boolean;
+  showPassword: boolean;
 }
 
 export default {

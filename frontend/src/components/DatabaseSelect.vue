@@ -49,8 +49,8 @@ interface LocalState {
 
 export default {
   name: "DatabaseSelect",
-  emits: ["select-database-id"],
   components: {},
+  emits: ["select-database-id"],
   props: {
     selectedID: {
       required: true,

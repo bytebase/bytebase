@@ -7,7 +7,7 @@
     :rightBordered="false"
     @click-row="clickProject"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         class="w-4 table-cell"
         :title="state.columnList[0].title"
@@ -21,7 +21,7 @@
         :title="state.columnList[2].title"
       />
     </template>
-    <template v-slot:body="{ rowData: project }">
+    <template #body="{ rowData: project }">
       <BBTableCell :leftPadding="4" class="table-cell text-gray-500">
         <span class="">{{ project.key }}</span>
       </BBTableCell>

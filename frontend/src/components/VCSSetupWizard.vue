@@ -13,13 +13,13 @@
     @try-finish="tryFinishSetup"
     @cancel="cancelSetup"
   >
-    <template v-slot:0>
+    <template #0>
       <VCSProviderBasicInfoPanel :config="state.config" />
     </template>
-    <template v-slot:1>
+    <template #1>
       <VCSProviderOAuthPanel :config="state.config" />
     </template>
-    <template v-slot:2>
+    <template #2>
       <VCSProviderConfirmPanel :config="state.config" />
     </template>
   </BBStepTab>
@@ -67,12 +67,12 @@ interface LocalState {
 
 export default {
   name: "VCSSetupWizard",
-  props: {},
   components: {
     VCSProviderBasicInfoPanel,
     VCSProviderOAuthPanel,
     VCSProviderConfirmPanel,
   },
+  props: {},
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

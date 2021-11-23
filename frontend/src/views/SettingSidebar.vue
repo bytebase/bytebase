@@ -3,7 +3,6 @@
   <nav class="flex-1 flex flex-col px-3 overflow-y-auto">
     <div class="space-y-1">
       <button
-        @click.prevent="goBack"
         class="
           group
           flex
@@ -17,6 +16,7 @@
           text-gray-700
           focus:outline-none
         "
+        @click.prevent="goBack"
       >
         <svg
           class="
@@ -169,13 +169,13 @@ interface LocalState {
 
 export default {
   name: "SettingSidebar",
+  components: {},
   props: {
     vcsSlug: {
       default: "",
       type: String,
     },
   },
-  components: {},
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

@@ -7,7 +7,7 @@
     :rightBordered="true"
     @click-row="clickRepository"
   >
-    <template v-slot:body="{ rowData: repository }">
+    <template #body="{ rowData: repository }">
       <BBTableCell :leftPadding="4" class="w-16">
         {{ projectName(repository.project) }}
       </BBTableCell>

@@ -31,9 +31,9 @@
         </h3>
       </div>
       <button
-        @click.prevent="testWebhook"
         type="button"
         class="btn-normal whitespace-nowrap items-center"
+        @click.prevent="testWebhook"
       >
         Test Webhook
       </button>
@@ -60,6 +60,7 @@ import {
 
 export default {
   name: "ProjectWebhookDetail",
+  components: { ProjectWebhookForm },
   props: {
     projectSlug: {
       required: true,
@@ -74,7 +75,6 @@ export default {
       type: Boolean,
     },
   },
-  components: { ProjectWebhookForm },
   setup(props, ctx) {
     const store = useStore();
 

@@ -26,8 +26,8 @@ interface LocalState {
 
 export default {
   name: "StageSelect",
-  emits: ["select-stage-id"],
   components: {},
+  emits: ["select-stage-id"],
   props: {
     pipeline: {
       required: true,

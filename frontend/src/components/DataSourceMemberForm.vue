@@ -22,8 +22,8 @@ input[type="number"] {
             Environment <span style="color: red">*</span>
           </label>
           <EnvironmentSelect
-            class="mt-1 w-full"
             id="environment"
+            class="mt-1 w-full"
             name="environment"
             :disabled="!allowConfigure"
             :selectedID="state.environmentID"
@@ -40,8 +40,8 @@ input[type="number"] {
             Instance <span class="text-red-600">*</span>
           </label>
           <InstanceSelect
-            class="mt-1 w-full"
             id="instance"
+            class="mt-1 w-full"
             name="instance"
             :disabled="!allowConfigure"
             :selectedID="state.instanceID"
@@ -58,8 +58,8 @@ input[type="number"] {
             Database <span class="text-red-600">*</span>
           </label>
           <DatabaseSelect
-            class="mt-1 w-full"
             id="database"
+            class="mt-1 w-full"
             name="database"
             :disabled="!allowConfigure"
             :mode="'INSTANCE'"
@@ -78,8 +78,8 @@ input[type="number"] {
             Data Source <span class="text-red-600">*</span>
           </label>
           <DataSourceSelect
-            class="mt-1 w-full"
             id="datasource"
+            class="mt-1 w-full"
             name="datasource"
             :disabled="!allowConfigure"
             :database="database"
@@ -101,8 +101,8 @@ input[type="number"] {
           </label>
           <!-- DBA and Owner always have all access, so we only need to grant to developer -->
           <MemberSelect
-            class="mt-1"
             id="user"
+            class="mt-1"
             name="user"
             :allowedRoleList="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
@@ -133,8 +133,8 @@ input[type="number"] {
             </div>
             <div class="flex flex-row space-x-2 items-center">
               <input
-                class="textfield w-full pl-12"
                 id="issue"
+                class="textfield w-full pl-12"
                 name="issue"
                 type="number"
                 placeholder="Your issue id (e.g. 1234)"

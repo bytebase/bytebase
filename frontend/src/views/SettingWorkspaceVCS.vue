@@ -42,11 +42,11 @@ interface LocalState {}
 
 export default {
   name: "SettingWorkspaceVCS",
-  props: {},
   components: {
     VCSCard,
     VCSSetupWizard,
   },
+  props: {},
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

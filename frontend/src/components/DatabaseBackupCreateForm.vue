@@ -10,12 +10,12 @@
             Backup name <span class="text-red-600">*</span>
           </label>
           <input
-            required
             id="name"
+            v-model="state.backupName"
+            required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
-            v-model="state.backupName"
           />
         </div>
       </div>

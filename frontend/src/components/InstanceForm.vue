@@ -96,8 +96,8 @@ input[type="number"] {
             </template>
           </label>
           <input
-            required
             id="name"
+            required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
@@ -113,8 +113,8 @@ input[type="number"] {
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
           <EnvironmentSelect
-            class="mt-1 w-full"
             id="environment"
+            class="mt-1 w-full"
             name="environment"
             :disabled="!create"
             :selectedID="
@@ -144,9 +144,9 @@ input[type="number"] {
             </template>
           </label>
           <input
+            id="host"
             required
             type="text"
-            id="host"
             name="host"
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
@@ -170,8 +170,8 @@ input[type="number"] {
         <div class="sm:col-span-1">
           <label for="port" class="textlabel block"> Port </label>
           <input
-            type="number"
             id="port"
+            type="number"
             name="port"
             class="textfield mt-1 w-full"
             :placeholder="defaultPort"
@@ -216,8 +216,8 @@ input[type="number"] {
           </label>
           <template v-if="state.instance.engine == 'SNOWFLAKE'">
             <input
-              required
               id="externallink"
+              required
               name="externallink"
               type="text"
               class="textfield mt-1 w-full"
@@ -231,8 +231,8 @@ input[type="number"] {
               console, your in-house DB instance console)
             </div>
             <input
-              required
               id="externallink"
+              required
               name="externallink"
               type="text"
               class="textfield mt-1 w-full"
@@ -435,10 +435,10 @@ input[type="number"] {
         <div v-if="showTestConnection" class="pt-8 space-y-2">
           <div class="flex flex-row space-x-2">
             <button
-              @click.prevent="testConnection"
               type="button"
               class="btn-normal whitespace-nowrap items-center"
               :disabled="!state.instance.host"
+              @click.prevent="testConnection"
             >
               Test Connection
             </button>

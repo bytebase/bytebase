@@ -322,7 +322,7 @@
                           whitespace-nowrap
                           hover:underline
                         "
-                        exact-active-class=""
+                        exactActiveClass=""
                         >{{ actionSubject(activity).name }}</router-link
                       >
                       <a
@@ -473,10 +473,10 @@
                       <label for="comment" class="sr-only">Edit Comment</label>
                       <textarea
                         ref="editCommentTextArea"
+                        v-model="editComment"
                         rows="3"
                         class="textarea block w-full resize-none"
                         placeholder="Leave a comment..."
-                        v-model="editComment"
                         @input="
                           (e) => {
                             sizeToFit(e.target);
@@ -560,10 +560,10 @@
               <label for="comment" class="sr-only">Create Comment</label>
               <textarea
                 ref="newCommentTextArea"
+                v-model="newComment"
                 rows="3"
                 class="textarea block w-full resize-none whitespace-pre-wrap"
                 placeholder="Leave a comment..."
-                v-model="newComment"
                 @input="
                   (e) => {
                     sizeToFit(e.target);

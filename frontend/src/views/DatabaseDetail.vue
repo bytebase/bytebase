@@ -176,8 +176,8 @@
         <label for="user" class="textlabel"> Project </label>
         <!-- Only allow to transfer database to the project having OWNER role -->
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
           :allowedRoleList="['OWNER']"
           :includeDefaultProject="true"
@@ -286,12 +286,6 @@ interface LocalState {
 
 export default {
   name: "DatabaseDetail",
-  props: {
-    databaseSlug: {
-      required: true,
-      type: String,
-    },
-  },
   components: {
     MemberSelect,
     ProjectSelect,
@@ -299,6 +293,12 @@ export default {
     DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
     InstanceEngineIcon,
+  },
+  props: {
+    databaseSlug: {
+      required: true,
+      type: String,
+    },
   },
   setup(props, ctx) {
     const store = useStore();

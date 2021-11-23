@@ -84,8 +84,8 @@ interface LocalState {
 
 export default {
   name: "RepositoryPanel",
-  emits: ["change-repository"],
   components: { RepositoryForm },
+  emits: ["change-repository"],
   props: {
     project: {
       required: true,

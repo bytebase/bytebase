@@ -228,6 +228,7 @@ import { isEmpty } from "lodash";
 
 export default {
   name: "TableDetail",
+  components: { ColumnTable, IndexTable, InstanceEngineIcon },
   props: {
     databaseSlug: {
       required: true,
@@ -238,7 +239,6 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable, IndexTable, InstanceEngineIcon },
   setup(props, ctx) {
     const store = useStore();
 

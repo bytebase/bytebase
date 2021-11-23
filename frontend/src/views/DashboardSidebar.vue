@@ -57,12 +57,12 @@ import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
 
 export default {
   name: "DashboardSidebar",
-  props: {},
   components: {
     BookmarkListSidePanel,
     ProjectListSidePanel,
     DatabaseListSidePanel,
   },
+  props: {},
   setup(props, ctx) {
     return {};
   },

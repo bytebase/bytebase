@@ -41,8 +41,8 @@ interface LocalState {
 
 export default {
   name: "DataSourceSelect",
-  emits: ["select-data-source-id"],
   components: {},
+  emits: ["select-data-source-id"],
   props: {
     selectedID: {
       type: Number,

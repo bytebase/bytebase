@@ -51,8 +51,8 @@
           </svg>
         </button>
         <BBTableSearch
-          class="w-56"
           ref="searchField"
+          class="w-56"
           :placeholder="database ? 'Search name' : 'Search name, database'"
           @change-text="(text) => changeSearchText(text)"
         />
@@ -65,7 +65,7 @@
       :compactSection="database != undefined"
       @click-row="clickDataSource"
     >
-      <template v-slot:header>
+      <template #header>
         <BBTableHeaderCell
           :leftPadding="4"
           class="w-24"
@@ -77,7 +77,7 @@
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
       </template>
-      <template v-slot:body="{ rowData: dataSource }">
+      <template #body="{ rowData: dataSource }">
         <BBTableCell :leftPadding="4">
           <span class="">{{ dataSource.name }}</span>
         </BBTableCell>

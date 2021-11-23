@@ -11,8 +11,8 @@
         "
       />
       <BBTableSearch
-        class="w-56"
         ref="searchField"
+        class="w-56"
         :placeholder="
           state.selectedIndex == PROJECT_TAB
             ? 'Search project name'

@@ -7,7 +7,7 @@
     :rightBordered="false"
     @click-row="clickEnvironment"
   >
-    <template v-slot:body="{ rowData: environment }">
+    <template #body="{ rowData: environment }">
       <BBTableCell :leftPadding="4" class="w-4 table-cell text-gray-500">
         <span class="">#{{ environment.id }}</span>
       </BBTableCell>

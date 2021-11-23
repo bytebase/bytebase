@@ -43,12 +43,12 @@
       </div>
       <input
         id="branch"
+        v-model="repositoryConfig.branchFilter"
         name="branch"
         type="text"
         class="textfield mt-2 w-full"
         placeholder="e.g. master"
         :disabled="!allowEdit"
-        v-model="repositoryConfig.branchFilter"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
         Tip: You can also use wildcard like 'feature/*'
@@ -62,11 +62,11 @@
       </div>
       <input
         id="basedirectory"
+        v-model="repositoryConfig.baseDirectory"
         name="basedirectory"
         type="text"
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
-        v-model="repositoryConfig.baseDirectory"
       />
     </div>
     <div>
@@ -86,11 +86,11 @@
       </div>
       <input
         id="filepathtemplate"
+        v-model="repositoryConfig.filePathTemplate"
         name="filepathtemplate"
         type="text"
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
-        v-model="repositoryConfig.filePathTemplate"
       />
       <div class="mt-2 textinfolabel">
         <span class="text-red-600">*</span> Required placeholders:
@@ -141,11 +141,11 @@
       </div>
       <input
         id="schemapathtemplate"
+        v-model="repositoryConfig.schemaPathTemplate"
         name="schemapathtemplate"
         type="text"
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
-        v-model="repositoryConfig.schemaPathTemplate"
       />
       <div class="mt-2 textinfolabel">
         <span class="text-red-600">*</span> If specified, required placeholder:
@@ -246,7 +246,7 @@ export default {
         },
       ];
 
-      let result: string = `${baseDirectory}/${filePathTemplate}`;
+      let result = `${baseDirectory}/${filePathTemplate}`;
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
@@ -270,7 +270,7 @@ export default {
         },
       ];
 
-      let result: string = `${baseDirectory}/${schemaPathTemplate}`;
+      let result = `${baseDirectory}/${schemaPathTemplate}`;
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);

@@ -26,13 +26,13 @@ const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
 
 export default {
   name: "ProjectWebhookCreate",
+  components: { ProjectWebhookForm },
   props: {
     projectSlug: {
       required: true,
       type: String,
     },
   },
-  components: { ProjectWebhookForm },
   setup(props, ctx) {
     const store = useStore();
 

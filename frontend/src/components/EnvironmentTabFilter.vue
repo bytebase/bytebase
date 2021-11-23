@@ -27,13 +27,13 @@ interface LocalState {
 
 export default {
   name: "EnvironmentTabFilter",
-  emits: ["select-environment"],
   components: {},
   props: {
     selectedID: {
       type: Number,
     },
   },
+  emits: ["select-environment"],
   setup(props, ctx) {
     const store = useStore();
 

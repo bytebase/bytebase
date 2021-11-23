@@ -37,12 +37,11 @@ import cloneDeep from "lodash-es/cloneDeep";
 import { Environment, EnvironmentID } from "../types";
 
 interface LocalState {
-  selectedID?: Number;
+  selectedID?: number;
 }
 
 export default {
   name: "EnvironmentSelect",
-  emits: ["select-environment-id"],
   components: {},
   props: {
     selectedID: {
@@ -57,6 +56,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["select-environment-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({

@@ -7,7 +7,7 @@
     :rightBordered="false"
     @click-row="clickInstance"
   >
-    <template v-slot:body="{ rowData: instance }">
+    <template #body="{ rowData: instance }">
       <BBTableCell :leftPadding="4" class="w-4">
         <InstanceEngineIcon :instance="instance" />
       </BBTableCell>

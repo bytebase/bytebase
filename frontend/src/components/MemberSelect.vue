@@ -11,7 +11,7 @@
       }
     "
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       <!--TODO(tianzhou): Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
@@ -21,7 +21,7 @@
         <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
-    <template v-slot:placeholder="{ placeholder }">
+    <template #placeholder="{ placeholder }">
       <!--TODO(tianzhou): Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
@@ -56,8 +56,8 @@ interface LocalState {
 
 export default {
   name: "MemberSelect",
-  emits: ["select-principal-id"],
   components: { PrincipalAvatar },
+  emits: ["select-principal-id"],
   props: {
     selectedID: {
       type: Number,

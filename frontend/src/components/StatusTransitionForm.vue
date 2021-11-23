@@ -15,11 +15,11 @@
             <template v-if="field.type == 'String'">
               <div class="mt-1 flex rounded-md shadow-sm">
                 <input
+                  :id="field.id"
+                  v-model="state.outputValueList[index]"
                   type="text"
                   disabled="true"
                   :name="field.id"
-                  :id="field.id"
-                  v-model="state.outputValueList[index]"
                   autocomplete="off"
                   class="w-full textfield"
                 />
@@ -81,6 +81,7 @@
         <div class="mt-1">
           <textarea
             ref="commentTextArea"
+            v-model="state.comment"
             rows="3"
             class="
               textarea
@@ -93,7 +94,6 @@
               whitespace-pre-wrap
             "
             placeholder="(Optional) Add a note..."
-            v-model="state.comment"
             @input="
               (e) => {
                 sizeToFit(e.target);
@@ -121,7 +121,7 @@
       <button
         type="button"
         class="ml-3 px-4 py-2"
-        v-bind:class="submitButtonStyle"
+        :class="submitButtonStyle"
         :disabled="!allowSubmit"
         @click.prevent="$emit('submit', state.comment)"
       >

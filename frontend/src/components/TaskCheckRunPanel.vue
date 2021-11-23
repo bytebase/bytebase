@@ -10,7 +10,7 @@
       :bottomBordered="true"
       :rowClickable="false"
     >
-      <template v-slot:body="{ rowData: checkResult }">
+      <template #body="{ rowData: checkResult }">
         <BBTableCell :leftPadding="4" class="table-cell w-4">
           <div class="flex flex-row space-x-2">
             <div

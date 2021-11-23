@@ -9,7 +9,7 @@
     :bottomBordered="bordered"
     @click-row="clickDatabase"
   >
-    <template v-slot:body="{ rowData: database }">
+    <template #body="{ rowData: database }">
       <BBTableCell :leftPadding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
           <span>
@@ -219,8 +219,8 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 
 export default {
   name: "DatabaseTable",
-  emits: ["select-database"],
   components: { InstanceEngineIcon },
+  emits: ["select-database"],
   props: {
     bordered: {
       default: true,

@@ -52,9 +52,9 @@
         <div class="text-lg leading-6 font-medium text-main">Backups</div>
         <button
           v-if="allowEdit"
-          @click.prevent="state.showCreateBackupModal = true"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
+          @click.prevent="state.showCreateBackupModal = true"
         >
           Backup now
         </button>

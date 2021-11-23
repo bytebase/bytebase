@@ -7,9 +7,7 @@
           px-4
           pb-4
           border-b border-block-border
-          md:flex
-          md:items-center
-          md:justify-between
+          md:flex md:items-center md:justify-between
         "
       >
         <div class="flex-1 min-w-0">
@@ -19,13 +17,13 @@
               <div class="flex items-center">
                 <input
                   v-if="state.editing"
-                  required
-                  ref="editNameTextField"
                   id="name"
+                  ref="editNameTextField"
+                  v-model="state.editingDataSource.name"
+                  required
                   name="name"
                   type="text"
                   class="textfield my-0.5 w-full"
-                  v-model="state.editingDataSource.name"
                 />
                 <!-- Padding value is to prevent flickering when switching between edit/non-edit mode -->
                 <h1
@@ -47,8 +45,7 @@
                 class="
                   flex flex-col
                   space-y-1
-                  sm:space-y-0
-                  sm:flex-row sm:flex-wrap
+                  sm:space-y-0 sm:flex-row sm:flex-wrap
                 "
               >
                 <dt class="sr-only">Environment</dt>
@@ -163,8 +160,8 @@
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
-            class="pt-6"
             v-if="dataSource.id != '-1'"
+            class="pt-6"
             :allowEdit="allowEdit"
             :dataSource="dataSource"
           />
@@ -205,6 +202,7 @@ interface LocalState {
 
 export default {
   name: "DataSourceDetail",
+  components: { DataSourceConnectionPanel, DataSourceMemberTable },
   props: {
     databaseSlug: {
       required: true,
@@ -215,7 +213,6 @@ export default {
       type: String,
     },
   },
-  components: { DataSourceConnectionPanel, DataSourceMemberTable },
   setup(props, ctx) {
     const editNameTextField = ref();
 

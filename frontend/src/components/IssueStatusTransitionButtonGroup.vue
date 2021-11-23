@@ -3,8 +3,8 @@
     <button
       type="button"
       class="btn-primary px-4 py-2"
-      @click.prevent="doCreate"
       :disabled="!allowCreate"
+      @click.prevent="doCreate"
     >
       Create
     </button>
@@ -28,13 +28,13 @@
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
         <button
-          type="button"
-          @click.prevent="$refs.menu.toggle($event)"
-          @contextmenu.capture.prevent="$refs.menu.toggle($event)"
-          class="text-control-light"
           id="user-menu"
+          type="button"
+          class="text-control-light"
           aria-label="User menu"
           aria-haspopup="true"
+          @click.prevent="$refs.menu.toggle($event)"
+          @contextmenu.capture.prevent="$refs.menu.toggle($event)"
         >
           <svg
             class="w-6 h-6"
@@ -57,9 +57,9 @@
             :key="index"
           >
             <div
-              @click.prevent="tryStartIssueStatusTransition(transition)"
               class="menu-item"
               role="menuitem"
+              @click.prevent="tryStartIssueStatusTransition(transition)"
             >
               {{ transition.buttonName }}
             </div>

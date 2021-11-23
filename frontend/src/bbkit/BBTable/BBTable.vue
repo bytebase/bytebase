@@ -115,7 +115,7 @@ export default {
       type: Object as PropType<BBTableColumn[]>,
     },
     dataSource: {
-      default: new Array(),
+      default: [],
       type: Object as PropType<Object[]>,
     },
     sectionDataSource: {

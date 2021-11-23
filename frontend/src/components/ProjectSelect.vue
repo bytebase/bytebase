@@ -75,8 +75,8 @@ interface LocalState {
 
 export default {
   name: "ProjectSelect",
-  emits: ["select-project-id"],
   components: {},
+  emits: ["select-project-id"],
   props: {
     selectedID: {
       default: UNKNOWN_ID,
@@ -128,7 +128,7 @@ export default {
         list.unshift(store.getters["project/projectByID"](DEFAULT_PROJECT_ID));
       }
 
-      if (!hasAdminFeature || isDBAOrOwner(currentUser.value.role)) {
+      if (!hasAdminFeature.value || isDBAOrOwner(currentUser.value.role)) {
         return list;
       }
 

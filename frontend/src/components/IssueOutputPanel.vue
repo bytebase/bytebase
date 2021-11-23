@@ -34,9 +34,7 @@
                 py-2
                 rounded-l-md
                 border border-r border-control-border
-                focus:mr-0.5
-                focus:ring-control
-                focus:border-control
+                focus:mr-0.5 focus:ring-control focus:border-control
                 sm:text-sm
                 disabled:bg-gray-50
               "
@@ -62,8 +60,7 @@
                 bg-gray-50
                 hover:bg-gray-100
                 disabled:bg-gray-50
-                focus:ring-control
-                focus:outline-none
+                focus:ring-control focus:outline-none
                 focus-visible:ring-2
                 focus:ring-offset-1
                 disabled:cursor-not-allowed
@@ -101,8 +98,7 @@
                 bg-gray-50
                 hover:bg-gray-100
                 disabled:bg-gray-50
-                focus:ring-control
-                focus:outline-none
+                focus:ring-control focus:outline-none
                 focus-visible:ring-2
                 focus:ring-offset-1
               "

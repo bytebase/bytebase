@@ -38,21 +38,21 @@
       <div class="radio-set-row">
         <div class="radio">
           <input
+            v-model="state.alterType"
             tabindex="-1"
             type="radio"
             class="btn"
             value="SINGLE_DB"
-            v-model="state.alterType"
           />
           <label class="label"> Alter single database </label>
         </div>
         <div class="radio">
           <input
+            v-model="state.alterType"
             tabindex="-1"
             type="radio"
             class="btn"
             value="MULTI_DB"
-            v-model="state.alterType"
           />
           <label class="label"> Alter multiple databases </label>
         </div>

@@ -44,7 +44,6 @@ import { ref, watch } from "vue";
 
 export default {
   name: "BBCheckbox",
-  emits: ["toggle"],
   props: {
     title: {
       default: "",
@@ -63,6 +62,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["toggle"],
   setup(props, ctx) {
     const on = ref(props.value);
     watch(

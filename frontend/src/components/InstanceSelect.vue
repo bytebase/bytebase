@@ -42,7 +42,6 @@ interface LocalState {
 
 export default {
   name: "InstanceSelect",
-  emits: ["select-instance-id"],
   components: {},
   props: {
     selectedID: {
@@ -56,6 +55,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["select-instance-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({

@@ -213,7 +213,7 @@ export default {
     });
 
     const tabItemList = computed((): BBTabItem[] => {
-      if (environmentList) {
+      if (environmentList.value) {
         const list = state.reorder
           ? state.reorderedEnvironmentList
           : environmentList.value;

@@ -17,13 +17,13 @@
       @try-finish="tryFinishSetup"
       @cancel="cancel"
     >
-      <template v-slot:0="{ next }">
+      <template #0="{ next }">
         <RepositoryVCSProviderPanel :config="state.config" @next="next()" />
       </template>
-      <template v-slot:1="{ next }">
+      <template #1="{ next }">
         <RepositorySelectionPanel :config="state.config" @next="next()" />
       </template>
-      <template v-slot:2>
+      <template #2>
         <RepositoryConfigPanel :config="state.config" />
       </template>
     </BBStepTab>
@@ -72,12 +72,12 @@ const stepList: BBStepTabItem[] = [
 
 export default {
   name: "RepositorySetupWizard",
-  emits: ["cancel", "finish"],
   components: {
     RepositoryVCSProviderPanel,
     RepositorySelectionPanel,
     RepositoryConfigPanel,
   },
+  emits: ["cancel", "finish"],
   props: {
     // If false, then we intend to change the existing linked repository intead of just linking a new repository.
     create: {

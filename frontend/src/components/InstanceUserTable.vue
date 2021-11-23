@@ -7,7 +7,7 @@
     :leftBordered="true"
     :rightBordered="true"
   >
-    <template v-slot:body="{ rowData: instanceUser }">
+    <template #body="{ rowData: instanceUser }">
       <BBTableCell :leftPadding="4" class="w-4">
         {{ instanceUser.name }}
       </BBTableCell>

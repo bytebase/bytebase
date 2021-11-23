@@ -7,7 +7,7 @@
     :showHeader="true"
     :rowClickable="false"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-auto table-cell"
@@ -23,7 +23,7 @@
         :title="COLUMN_LIST[3].title"
       />
     </template>
-    <template v-slot:body="{ rowData: member }">
+    <template #body="{ rowData: member }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">

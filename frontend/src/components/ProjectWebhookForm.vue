@@ -61,12 +61,12 @@
       </label>
       <input
         id="name"
+        v-model="state.webhook.name"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
         :placeholder="namePlaceholder"
         :disabled="!allowEdit"
-        v-model="state.webhook.name"
       />
     </div>
     <div>
@@ -136,12 +136,12 @@
       </div>
       <input
         id="url"
+        v-model="state.webhook.url"
         name="url"
         type="text"
         class="textfield mt-1 w-full"
         :placeholder="urlPlaceholder"
         :disabled="!allowEdit"
-        v-model="state.webhook.url"
       />
     </div>
     <div>

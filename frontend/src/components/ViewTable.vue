@@ -7,7 +7,7 @@
     :rightBordered="true"
     :rowClickable="false"
   >
-    <template v-slot:body="{ rowData: view }">
+    <template #body="{ rowData: view }">
       <BBTableCell :leftPadding="4" class="w-16">
         {{ view.name }}
       </BBTableCell>

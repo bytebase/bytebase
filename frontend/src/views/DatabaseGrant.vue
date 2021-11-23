@@ -38,8 +38,8 @@ interface LocalState {
 
 export default {
   name: "DatabaseGrant",
-  props: {},
   components: { DataSourceMemberForm },
+  props: {},
   async setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

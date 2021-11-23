@@ -6,7 +6,7 @@
     :disabled="disabled"
     @select-item="(status, didSelect) => changeStatus(status, didSelect)"
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       <span class="flex items-center space-x-2">
         <IssueStatusIcon :issueStatus="item" :size="'small'" />
         <span>
@@ -24,8 +24,8 @@ import { IssueStatus, IssueStatusTransitionType } from "../types";
 
 export default {
   name: "IssueStatusSelect",
-  emits: ["start-transition"],
   components: { IssueStatusIcon },
+  emits: ["start-transition"],
   props: {
     selectedStatus: {
       type: String as PropType<IssueStatus>,

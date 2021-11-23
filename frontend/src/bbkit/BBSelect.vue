@@ -1,6 +1,5 @@
 <template>
   <div
-    class="relative flex flex-shrink-0"
     v-click-inside-outside="
       (_, inside) => {
         if (!inside) {
@@ -8,6 +7,7 @@
         }
       }
     "
+    class="relative flex flex-shrink-0"
   >
     <button
       type="button"
@@ -27,7 +27,16 @@
         }}</slot>
       </template>
       <span
-        class="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none"
+        class="
+          ml-3
+          absolute
+          inset-y-0
+          right-0
+          flex
+          items-center
+          pr-2
+          pointer-events-none
+        "
       >
         <!-- Heroicon name: solid/selector -->
         <svg
@@ -57,12 +66,12 @@
         To: "opacity-0"
     -->
     <transition
-      enter-active-class=""
-      enter-class=""
-      enter-to-class=""
-      leave-active-class="transition ease-in duration-100"
-      leave-class="opacity-100"
-      leave-to-class="opacity-0"
+      enterActiveClass=""
+      enterClass=""
+      enterToClass=""
+      leaveActiveClass="transition ease-in duration-100"
+      leaveClass="opacity-100"
+      leaveToClass="opacity-0"
     >
       <div
         v-show="state.showMenu"
@@ -73,7 +82,15 @@
           role="listbox"
           aria-labelledby="listbox-label"
           aria-activedescendant="listbox-item-3"
-          class="max-h-56 rounded-md py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+          class="
+            max-h-56
+            rounded-md
+            py-1
+            ring-1 ring-black ring-opacity-5
+            overflow-auto
+            focus:outline-none
+            sm:text-sm
+          "
         >
           <!--
           Select option, manage highlight styles based on mouseenter/mouseleave and keyboard navigation.
@@ -84,7 +101,16 @@
             v-for="(item, index) in itemList"
             :key="index"
             role="option"
-            class="text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
+            class="
+              text-main
+              hover:text-main-text hover:bg-main-hover
+              cursor-default
+              select-none
+              relative
+              py-2
+              pl-3
+              pr-9
+            "
             @click="
               if (item !== state.selectedItem) {
                 $emit('select-item', item, () => {
@@ -132,11 +158,11 @@ interface LocalState {
 
 export default {
   name: "BBSelect",
-  emits: ["select-item"],
   directives: {
     "click-inside-outside": clickInsideOutside,
   },
   components: {},
+  emits: ["select-item"],
   props: {
     selectedItem: {},
     itemList: {

@@ -9,7 +9,7 @@
     :bottomBordered="bottomBordered"
     @click-row="clickIssue"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-4 table-cell"
@@ -72,7 +72,7 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: issue }">
+    <template #body="{ rowData: issue }">
       <BBTableCell :leftPadding="4" class="table-cell">
         <IssueStatusIcon
           :issueStatus="issue.status"

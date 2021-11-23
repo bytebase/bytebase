@@ -103,15 +103,15 @@ type IntroItem = {
   name: string;
   link: string;
   allowDBA: boolean;
-  allowDeveloper: Boolean;
+  allowDeveloper: boolean;
   done: ComputedRef<boolean>;
 };
 
 export default {
   name: "Quickstart",
-  emits: [""],
   components: {},
   props: {},
+  emits: [""],
   setup() {
     const store = useStore();
 

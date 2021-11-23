@@ -6,8 +6,8 @@
           Project <span style="color: red">*</span>
         </label>
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
           :selectedID="state.projectID"
           @select-project-id="
@@ -23,8 +23,8 @@
           Environment <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
-          class="mt-1 w-full"
           id="environment"
+          class="mt-1 w-full"
           name="environment"
           :selectedID="state.environmentID"
           @select-environment-id="
@@ -40,23 +40,23 @@
           <div class="hidden radio-set-row justify-between">
             <div class="radio">
               <input
+                v-model="state.create"
                 name="Create new"
                 tabindex="-1"
                 type="radio"
                 class="btn"
                 value="ON"
-                v-model="state.create"
               />
               <label class="label whitespace-nowrap">Create new</label>
             </div>
             <div class="radio">
               <input
+                v-model="state.create"
                 name="Access existing"
                 tabindex="-1"
                 type="radio"
                 class="btn"
                 value="OFF"
-                v-model="state.create"
               />
               <label class="label whitespace-nowrap">Access existing DB</label>
             </div>
@@ -147,9 +147,9 @@ interface LocalState {
 
 export default {
   name: "RequestDatabasePrepForm",
-  emits: ["dismiss"],
-  props: {},
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
+  props: {},
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

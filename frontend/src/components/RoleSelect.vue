@@ -6,7 +6,7 @@
     :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       {{
         item == "DBA"
           ? item
@@ -22,8 +22,8 @@ import { RoleType } from "../types";
 
 export default {
   name: "RoleSelect",
-  emits: ["change-role"],
   components: {},
+  emits: ["change-role"],
   props: {
     selectedRole: {
       type: String as PropType<RoleType>,

@@ -29,6 +29,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              v-model="state.approvalPolicy.payload.value"
               name="manual-approval-always"
               tabindex="-1"
               type="radio"
@@ -39,7 +40,6 @@
               "
               value="MANUAL_APPROVAL_ALWAYS"
               :disabled="!allowEdit"
-              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Require manual approval</div>
@@ -51,6 +51,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.approvalPolicy.payload.value"
               name="manual-approval-never"
               tabindex="-1"
               type="radio"
@@ -61,7 +62,6 @@
               "
               value="MANUAL_APPROVAL_NEVER"
               :disabled="!allowEdit"
-              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Skip manual approval</div>
@@ -78,6 +78,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -87,7 +88,6 @@
               "
               value="UNSET"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Not enforced</div>
@@ -98,6 +98,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -107,7 +108,6 @@
               "
               value="DAILY"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Daily backup</div>
@@ -118,6 +118,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -127,7 +128,6 @@
               "
               value="WEEKLY"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Weekly backup</div>

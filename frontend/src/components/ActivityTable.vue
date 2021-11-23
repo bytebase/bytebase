@@ -7,7 +7,7 @@
     :leftBordered="true"
     :rightBordered="true"
   >
-    <template v-slot:body="{ rowData: activity }">
+    <template #body="{ rowData: activity }">
       <BBTableCell :leftPadding="4" class="w-8">
         <div class="flex flew-row space-x-1">
           <span

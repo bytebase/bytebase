@@ -26,10 +26,10 @@ interface LocalState {}
 
 export default {
   name: "SettingWorkspaceVCSCreate",
-  props: {},
   components: {
     VCSSetupWizard,
   },
+  props: {},
   setup(props, ctx) {
     const state = reactive<LocalState>({});
 

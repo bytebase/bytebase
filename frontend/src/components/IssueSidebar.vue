@@ -91,9 +91,9 @@
           Database
         </h2>
         <div
-          @click.prevent="clickDatabase"
           class="col-span-2 text-sm font-medium text-main"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
+          @click.prevent="clickDatabase"
         >
           {{ databaseName }}
           <span class="text-control-light">{{

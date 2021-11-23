@@ -5,9 +5,12 @@
         <router-link
           to="/"
           class="select-none"
-          active-class=""
-          exact-active-class=""
-          ><img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase"
+          activeClass=""
+          exactActiveClass=""
+          ><img
+            class="h-12 w-auto"
+            src="../assets/logo-full.svg"
+            alt="Bytebase"
         /></router-link>
       </div>
       <div class="hidden sm:block">
@@ -116,7 +119,7 @@
           </div>
           <div v-else class="underline">Developer</div>
         </div>
-        <router-link to="/inbox" exact-active-class="">
+        <router-link to="/inbox" exactActiveClass="">
           <span
             v-if="inboxSummary.hasUnread"
             class="
@@ -151,8 +154,8 @@
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
           <button
-            @click.prevent="state.showMobileMenu = !state.showMobileMenu"
             class="icon-link inline-flex items-center justify-center rounded-md"
+            @click.prevent="state.showMobileMenu = !state.showMobileMenu"
           >
             <span class="sr-only">Open main menu</span>
             <!--

@@ -171,7 +171,7 @@ const getters = {
     (state: DatabaseState) =>
     (userID: PrincipalID): Database[] => {
       const list: Database[] = [];
-      for (let [_, databaseList] of state.databaseListByInstanceID) {
+      for (const [_, databaseList] of state.databaseListByInstanceID) {
         databaseList.forEach((item: Database) => {
           for (const member of item.project.memberList) {
             if (member.principal.id == userID) {
@@ -188,7 +188,7 @@ const getters = {
     (state: DatabaseState) =>
     (environmentID: EnvironmentID): Database[] => {
       const list: Database[] = [];
-      for (let [_, databaseList] of state.databaseListByInstanceID) {
+      for (const [_, databaseList] of state.databaseListByInstanceID) {
         databaseList.forEach((item: Database) => {
           if (item.instance.environment.id == environmentID) {
             list.push(item);
@@ -219,7 +219,7 @@ const getters = {
         );
       }
 
-      for (let [_, list] of state.databaseListByInstanceID) {
+      for (const [_, list] of state.databaseListByInstanceID) {
         const database = list.find((item) => item.id == databaseID);
         if (database) {
           return database;

@@ -7,7 +7,7 @@
     :leftBordered="true"
     :rightBordered="true"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-4"
@@ -18,7 +18,7 @@
       <BBTableHeaderCell :title="COLUMN_LIST[3].title" />
       <BBTableHeaderCell :title="COLUMN_LIST[4].title" />
     </template>
-    <template v-slot:body="{ rowData: anomaly }">
+    <template #body="{ rowData: anomaly }">
       <BBTableCell :leftPadding="4">
         <svg
           v-if="anomaly.severity == 'MEDIUM'"
@@ -91,10 +91,10 @@
     <div class="space-y-4">
       <code-diff
         class="w-full"
-        :old-string="state.selectedAnomaly.payload.expect"
-        :new-string="state.selectedAnomaly.payload.actual"
+        :oldString="state.selectedAnomaly.payload.expect"
+        :newString="state.selectedAnomaly.payload.actual"
         :fileName="`${state.selectedAnomaly.payload.version} (left) vs Actual (right)`"
-        output-format="side-by-side"
+        outputFormat="side-by-side"
       />
       <div class="flex justify-end px-4">
         <button type="button" class="btn-primary" @click.prevent="dimissModal">

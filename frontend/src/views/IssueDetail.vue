@@ -163,8 +163,8 @@
                 />
               </template>
               <template
-                v-else
                 v-for="(stage, index) in issue.pipeline.stageList"
+                v-else
                 :key="index"
               >
                 <template v-if="selectedStage.id == stage.id">
@@ -199,8 +199,8 @@
                 />
               </template>
               <template
-                v-else
                 v-for="(stage, index) in issue.pipeline.stageList"
+                v-else
                 :key="index"
               >
                 <template v-if="selectedStage.id == stage.id">
@@ -329,12 +329,6 @@ interface LocalState {
 
 export default {
   name: "IssueDetail",
-  props: {
-    issueSlug: {
-      required: true,
-      type: String,
-    },
-  },
   components: {
     IssueHighlightPanel,
     IssueStagePanel,
@@ -346,6 +340,12 @@ export default {
     IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
     TaskCheckBar,
+  },
+  props: {
+    issueSlug: {
+      required: true,
+      type: String,
+    },
   },
 
   setup(props, ctx) {
@@ -1207,7 +1207,7 @@ export default {
       return stage.value.taskList[0].instance;
     });
 
-    const sqlHint = (isRollBack: Boolean): string | undefined => {
+    const sqlHint = (isRollBack: boolean): string | undefined => {
       if (!isRollBack && !create && selectedMigrateType.value == "BASELINE") {
         return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
       }

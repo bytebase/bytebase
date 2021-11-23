@@ -6,7 +6,7 @@
     :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       {{ item }}
     </template>
   </BBSelect>
@@ -18,8 +18,8 @@ import { ProjectRoleType } from "../types";
 
 export default {
   name: "ProjectRoleSelect",
-  emits: ["change-role"],
   components: {},
+  emits: ["change-role"],
   props: {
     selectedRole: {
       type: String as PropType<ProjectRoleType>,

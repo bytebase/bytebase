@@ -19,7 +19,6 @@
         >
           <div class="absolute top-0 right-0 -mr-12 pt-2">
             <button
-              @click.prevent="state.showMobileOverlay = false"
               type="button"
               class="
                 ml-1
@@ -34,6 +33,7 @@
                 focus:ring-inset
                 focus:ring-white
               "
+              @click.prevent="state.showMobileOverlay = false"
             >
               <span class="sr-only">Close sidebar</span>
               <!-- Heroicon name: x -->
@@ -213,7 +213,6 @@
         >
           <div>
             <button
-              @click.prevent="state.showMobileOverlay = true"
               type="button"
               class="
                 -mr-3
@@ -226,6 +225,7 @@
                 text-gray-500
                 hover:text-gray-900
               "
+              @click.prevent="state.showMobileOverlay = true"
             >
               <span class="sr-only">Open sidebar</span>
               <!-- Heroicon name: menu -->

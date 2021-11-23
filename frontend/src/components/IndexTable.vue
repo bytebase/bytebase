@@ -5,7 +5,7 @@
     :showHeader="true"
     :compactSection="false"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         :leftPadding="4"
         class="w-16"
@@ -16,7 +16,7 @@
       <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[3].title" />
       <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[4].title" />
     </template>
-    <template v-slot:body="{ rowData: index }">
+    <template #body="{ rowData: index }">
       <BBTableCell :leftPadding="4">
         {{ index.expression }}
       </BBTableCell>

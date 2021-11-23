@@ -37,10 +37,10 @@
       </p>
       <input
         id="name"
+        v-model="state.name"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.name"
       />
     </div>
 
@@ -57,10 +57,10 @@
       </p>
       <input
         id="applicationid"
+        v-model="state.applicationID"
         name="applicationid"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.applicationID"
       />
     </div>
 
@@ -73,11 +73,11 @@
       </p>
       <input
         id="secret"
+        v-model="state.secret"
         name="secret"
         type="text"
         class="textfield mt-1 w-full"
         placeholder="sensitive - write only"
-        v-model="state.secret"
       />
     </div>
 
@@ -154,13 +154,13 @@ interface LocalState {
 
 export default {
   name: "SettingWorkspaceVCSDetail",
+  components: { RepositoryTable },
   props: {
     vcsSlug: {
       required: true,
       type: String,
     },
   },
-  components: { RepositoryTable },
   setup(props, ctx) {
     const store = useStore();
     const router = useRouter();

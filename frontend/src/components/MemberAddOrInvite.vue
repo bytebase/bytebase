@@ -12,20 +12,20 @@
         <div class="flex flex-row space-x-4">
           <div class="flex-grow">
             <input
+              v-model="user.email"
               type="email"
               name="add_or_invite_members"
               autocomplete="off"
               class="w-36 sm:w-64 textfield lowercase"
               placeholder="foo@example.com"
-              v-model="user.email"
+              aria-describedby="add_or_invite_members_helper"
               @blur="validateUser(user, index)"
               @input="clearValidationError(index)"
-              aria-describedby="add_or_invite_members_helper"
             />
             <p
               v-if="state.errorList[index]"
-              class="mt-2 text-sm text-error"
               id="email-error"
+              class="mt-2 text-sm text-error"
             >
               {{ state.errorList[index] }}
             </p>
@@ -47,34 +47,34 @@
           >
             <div class="radio">
               <input
+                v-model="user.role"
                 :name="`add_or_invite_role${index}`"
                 tabindex="-1"
                 type="radio"
                 class="btn"
                 value="OWNER"
-                v-model="user.role"
               />
               <label class="label"> Owner </label>
             </div>
             <div class="radio">
               <input
+                v-model="user.role"
                 :name="`add_or_invite_role${index}`"
                 tabindex="-1"
                 type="radio"
                 class="btn"
                 value="DBA"
-                v-model="user.role"
               />
               <label class="label"> DBA </label>
             </div>
             <div class="radio">
               <input
+                v-model="user.role"
                 :name="`add_or_invite_role${index}`"
                 tabindex="-1"
                 type="radio"
                 class="btn"
                 value="DEVELOPER"
-                v-model="user.role"
               />
               <label class="label"> Developer </label>
             </div>
