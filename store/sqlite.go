@@ -112,7 +112,7 @@ func (db *DB) Open() (err error) {
 	if db.readonly {
 		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
 	} else {
-		majorBeforeMigration, minorBeforeMigration, err := db.version()
+		verBefore, err := db.version()
 		if err != nil {
 			return fmt.Errorf("failed to get current schema version: %w", err)
 		}
@@ -121,12 +121,12 @@ func (db *DB) Open() (err error) {
 			return fmt.Errorf("failed to migrate: %w", err)
 		}
 
-		majorAfterMigration, minorAfterMigration, err := db.version()
+		verAfter, err := db.version()
 		if err != nil {
 			return fmt.Errorf("failed to get current schema version: %w", err)
 		}
 
-		if err := db.seed(majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration); err != nil {
+		if err := db.seed(verBefore, verAfter); err != nil {
 			return fmt.Errorf("failed to seed: %w."+
 				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove bytebase_dev.db,"+
 				" bytebase_dev.db-shm, bytebase_dev.db-wal under the same directory where the bytebase binary resides. and restart again to let"+
@@ -138,22 +138,24 @@ func (db *DB) Open() (err error) {
 	return nil
 }
 
-func (db *DB) version() (major int, minor int, err error) {
-	rows, err := db.Db.Query("PRAGMA user_version")
+func (db *DB) version() (ver version, err error) {
+	var rows *sql.Rows
+	rows, err = db.Db.Query("PRAGMA user_version")
 	if err != nil {
-		return 0, 0, err
+		return
 	}
 
 	var version int
 	rows.Next()
-	if err := rows.Scan(&version); err != nil {
-		return 0, 0, err
+	if err = rows.Scan(&version); err != nil {
+		return
 	}
-	return version / 10000, version % 10000, nil
+
+	return versionFromInt(version), nil
 }
 
 // seed loads the seed data for testing
-func (db *DB) seed(majorBeforeMigration int, minorBeforeMigration int, majorAfterMigration int, minorAfterMigration int) error {
+func (db *DB) seed(verBefore, verAfter version) error {
 	db.l.Info(fmt.Sprintf("Seeding database from %s, force: %t ...", db.seedDir, db.forceResetSeed))
 	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
 	if err != nil {
@@ -173,15 +175,14 @@ func (db *DB) seed(majorBeforeMigration int, minorBeforeMigration int, majorAfte
 		if err != nil {
 			return fmt.Errorf("invalid seed file format %s, expected number prefix", filepath.Base(name))
 		}
-		beforeVersion := majorBeforeMigration*10000 + minorBeforeMigration
-		afterVersion := majorAfterMigration*10000 + minorAfterMigration
-		if db.forceResetSeed || version > beforeVersion && version <= afterVersion {
+		ver := versionFromInt(version)
+		if db.forceResetSeed || ver.biggerThan(verBefore) && !ver.biggerThan(verAfter) {
 			if err := db.seedFile(name); err != nil {
 				return fmt.Errorf("seed error: name=%q err=%w", name, err)
 			}
 		} else {
-			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %d.%d is not in the applicable range (%d.%d, %d.%d].",
-				name, version/10000, version%10000, majorBeforeMigration, minorBeforeMigration, majorAfterMigration, minorAfterMigration))
+			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %s is not in the applicable range (%s, %s].",
+				name, ver, verBefore, verAfter))
 		}
 	}
 	db.l.Info("Completed database seeding.")
@@ -210,27 +211,27 @@ func (db *DB) seedFile(name string) error {
 // migrate sets up migration tracking and executes pending migration files.
 //
 // Migration files are embedded in the sqlite/migration folder and are executed
-// in lexigraphical order.
+// in lexicographical order.
 //
 // We prepend each migration file with PRAGMA user_version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
 func (db *DB) migrate() error {
 	db.l.Info("Apply database migration if needed...")
 
-	major, minor, err := db.version()
+	curVer, err := db.version()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	db.l.Info(fmt.Sprintf("Current schema version before migration: %d.%d", major, minor))
+	db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
 	// major version is 0 when the store isn't yet setup for the first time.
-	if major != 0 && major != MAJOR_SCHEMA_VERSION {
-		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, MAJOR_SCHEMA_VERSION, db.releaseVersion)
+	if curVer.major != 0 && curVer.major != MAJOR_SCHEMA_VERSION {
+		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, MAJOR_SCHEMA_VERSION, db.releaseVersion)
 	}
 
 	// Apply migrations
-	names, err := fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", "migration"))
+	names, err := fs.Glob(migrationFS, "migration/*.sql")
 	if err != nil {
 		return err
 	}
@@ -244,30 +245,30 @@ func (db *DB) migrate() error {
 		if err != nil {
 			return fmt.Errorf("invalid migration file format %s, expected number prefix", filepath.Base(name))
 		}
-		fileMajor, fileMinor := version/10000, version%10000
-		if fileMajor > major || (fileMajor == major && fileMinor > minor) {
+		v := versionFromInt(version)
+		if v.biggerThan(curVer) {
 			if err := db.migrateFile(name, true); err != nil {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
-			db.l.Info(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %d.%d has already been applied.", name, fileMajor, fileMinor))
+			db.l.Info(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %s has already been applied.", name, v))
 		}
 	}
 
-	major, minor, err = db.version()
+	curVer, err = db.version()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
-	db.l.Info(fmt.Sprintf("Current schema version after migration: %d.%d", major, minor))
+	db.l.Info(fmt.Sprintf("Current schema version after migration: %s", curVer))
 
 	// This is a sanity check to prevent us setting the incorrect user_version in the migration script.
 	// e.g. We set PRAGMA user_version = 20001 for migration script 20002__add_foo.sql
-	if major != MAJOR_SCHEMA_VERSION {
-		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", major, MAJOR_SCHEMA_VERSION)
+	if curVer.major != MAJOR_SCHEMA_VERSION {
+		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.major, MAJOR_SCHEMA_VERSION)
 	}
 
-	if minor != MINOR_SCHEMA_VERSION {
-		return fmt.Errorf("current schema minor version %d does not match the expected schema minor version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", minor, MINOR_SCHEMA_VERSION)
+	if curVer.minor != MINOR_SCHEMA_VERSION {
+		return fmt.Errorf("current schema minor version %d does not match the expected schema minor version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.minor, MINOR_SCHEMA_VERSION)
 	}
 
 	db.l.Info("Completed database migration.")
