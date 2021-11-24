@@ -185,7 +185,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		SELECT
 			TABLE_SCHEMA,
 			TABLE_NAME,
-			IFNULL(COLUMN_NAME, ''), 
+			IFNULL(COLUMN_NAME, ''),
 			ORDINAL_POSITION,
 			COLUMN_DEFAULT,
 			IS_NULLABLE,
@@ -234,7 +234,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 
 	query = fmt.Sprintf(`
 		SELECT
-			TABLE_SCHEMA, 
+			TABLE_SCHEMA,
 			TABLE_NAME,
 			DATE_PART(EPOCH_SECOND, CREATED),
 			DATE_PART(EPOCH_SECOND, LAST_ALTERED),
@@ -277,7 +277,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 
 	query = fmt.Sprintf(`
 	SELECT
-		TABLE_SCHEMA, 
+		TABLE_SCHEMA,
 		TABLE_NAME,
 		DATE_PART(EPOCH_SECOND, CREATED),
 		DATE_PART(EPOCH_SECOND, LAST_ALTERED),
@@ -380,7 +380,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	}
 
 	query := `
-		SELECT 
+		SELECT
 			DATABASE_NAME
 		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
 	rows, err := tx.QueryContext(ctx, query)
@@ -513,7 +513,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	}
 
 	const query = `
-		SELECT 
+		SELECT
 		    1
 		FROM BYTEBASE.INFORMATION_SCHEMA.TABLES
 		WHERE TABLE_SCHEMA='PUBLIC' AND TABLE_NAME = 'MIGRATION_HISTORY'
@@ -653,7 +653,6 @@ const (
 		"--\n" +
 		"-- Snowflake database structure for %s\n" +
 		"--\n"
-	useDatabaseFmt = "use %s;"
 )
 
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
@@ -681,12 +680,10 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	if database != "" {
 		dumpableDbNames = []string{database}
 	} else {
-		dbNames, err := getDatabasesTxn(ctx, txn)
+		var err error
+		dumpableDbNames, err = getDatabasesTxn(ctx, txn)
 		if err != nil {
 			return fmt.Errorf("failed to get databases: %s", err)
-		}
-		for _, dbName := range dbNames {
-			dumpableDbNames = append(dumpableDbNames, dbName)
 		}
 	}
 
