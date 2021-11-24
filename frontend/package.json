@@ -11,6 +11,7 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
+    "@vueuse/core": "^7.0.1",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.2",
     "highlight.js": "^10.6.0",
@@ -23,15 +24,21 @@
     "uuid": "^8.3.2",
     "v-code-diff": "^0.3.4",
     "vue": "^3.2.4",
+    "vue-i18n": "^9.2.0-beta.20",
     "vue-router": "^4.0.8",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
+    "@iconify/json": "^1.1.432",
+    "@intlify/vite-plugin-vue-i18n": "^3.2.1",
     "@types/lodash-es": "^4.17.4",
+    "@types/node": "^16.11.9",
     "@types/slug": "^0.9.1",
     "@types/uuid": "^8.3.0",
     "@vitejs/plugin-vue": "^1.1.4",
     "@vue/compiler-sfc": "^3.2.4",
-    "vite": "^2.5.1"
+    "vite": "^2.6.14",
+    "vite-plugin-components": "^0.13.3",
+    "vite-plugin-icons": "^0.6.5"
   }
 }

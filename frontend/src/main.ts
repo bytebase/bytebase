@@ -3,33 +3,10 @@ import isEmpty from "lodash-es/isEmpty";
 import moment from "moment";
 import { createApp } from "vue";
 import App from "./App.vue";
+import i18n from './plugins/i18n'
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
-import {
-  BBAlert,
-  BBAttention,
-  BBAvatar,
-  BBButtonAdd,
-  BBButtonConfirm,
-  BBCheckbox,
-  BBContextMenu,
-  BBModal,
-  BBNotification,
-  BBOutline,
-  BBSelect,
-  BBSpin,
-  BBStepBar,
-  BBStepTab,
-  BBSwitch,
-  BBTab,
-  BBTabFilter,
-  BBTable,
-  BBTableCell,
-  BBTableHeaderCell,
-  BBTableSearch,
-  BBTabPanel,
-  BBTextField,
-} from "./bbkit";
+
 import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
@@ -156,32 +133,10 @@ Promise.all([
     // Need to use a directive on the element.
     // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
     // to re-render the page and remove the event listener required for
-    .directive("highlight", highlight)
-    .directive("data-source-type", dataSourceType)
+    .directive('highlight', highlight)
+    .directive('data-source-type', dataSourceType)
     .use(store)
     .use(router)
-    .component("BBAlert", BBAlert)
-    .component("BBAttention", BBAttention)
-    .component("BBAvatar", BBAvatar)
-    .component("BBButtonAdd", BBButtonAdd)
-    .component("BBButtonConfirm", BBButtonConfirm)
-    .component("BBCheckbox", BBCheckbox)
-    .component("BBContextMenu", BBContextMenu)
-    .component("BBModal", BBModal)
-    .component("BBNotification", BBNotification)
-    .component("BBOutline", BBOutline)
-    .component("BBSpin", BBSpin)
-    .component("BBSelect", BBSelect)
-    .component("BBStepBar", BBStepBar)
-    .component("BBStepTab", BBStepTab)
-    .component("BBSwitch", BBSwitch)
-    .component("BBTab", BBTab)
-    .component("BBTabPanel", BBTabPanel)
-    .component("BBTable", BBTable)
-    .component("BBTableCell", BBTableCell)
-    .component("BBTableHeaderCell", BBTableHeaderCell)
-    .component("BBTableSearch", BBTableSearch)
-    .component("BBTabFilter", BBTabFilter)
-    .component("BBTextField", BBTextField)
-    .mount("#app");
+    .use(i18n)
+    .mount('#app')
 });
