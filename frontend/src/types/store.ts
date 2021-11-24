@@ -79,10 +79,13 @@ export interface IssueSubscriberState {
   subscriberListByIssue: Map<IssueID, IssueSubscriber[]>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface PipelineState {}
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface StageState {}
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TaskState {}
 
 export interface PolicyState {
@@ -146,11 +149,12 @@ export interface VCSState {
 
 export interface RepositoryState {
   // repositoryListByVCSID are used in workspace version control panel, while repositoryByProjectID are used in project version control panel.
-  // Because they are used separately, so we don't need to worry about repository inconsistency issue betweem them.
+  // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
   repositoryListByVCSID: Map<VCSID, Repository[]>;
   repositoryByProjectID: Map<ProjectID, Repository>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface AnomalyState {}
 
 export interface NotificationState {
