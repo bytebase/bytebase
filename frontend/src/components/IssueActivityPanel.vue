@@ -805,7 +805,7 @@ export default {
     };
 
     const doUpdateComment = () => {
-      const activityPatch = store
+      store
         .dispatch("activity/updateComment", {
           activityID: state.activeActivity!.id,
           updatedComment: editComment.value,
