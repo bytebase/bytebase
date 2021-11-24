@@ -1,6 +1,8 @@
 // const path = require("path");
 import vue from "@vitejs/plugin-vue";
 
+const IS_RUNNING_GITPOD = process.env["GITPOD_WORKSPACE_ID"] !== null;
+
 module.exports = {
   plugins: [vue()],
   optimizeDeps: {
@@ -21,3 +23,7 @@ module.exports = {
     // },
   },
 };
+
+if (IS_RUNNING_GITPOD === true) {
+  module.exports.server.hmr = { port: 443 };
+}
