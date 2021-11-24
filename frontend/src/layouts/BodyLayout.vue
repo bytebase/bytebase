@@ -298,7 +298,7 @@ export default {
     Quickstart,
     QuickActionPanel,
   },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

@@ -10,7 +10,6 @@
 <script lang="ts">
 export default {
   name: "DatabaseLayout",
-  components: {},
   props: {
     databaseSlug: {
       required: true,
@@ -20,6 +19,5 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

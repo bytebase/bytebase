@@ -3,7 +3,7 @@
   <Suspense>
     <template #default>
       <ProvideInstanceContext :instanceSlug="instanceSlug">
-        <!-- This if-lese looks weired because the router-view can be both-->
+        <!-- This if-lese looks weird because the router-view can be both-->
         <router-view
           v-if="dataSourceSlug"
           :instanceSlug="instanceSlug"
@@ -36,6 +36,5 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

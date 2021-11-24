@@ -70,7 +70,7 @@ export default {
       type: String,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
