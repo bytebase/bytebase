@@ -136,8 +136,6 @@ interface LocalState {
 
 export default {
   name: "BBStepTab",
-  // For try-change-step and try-finish listener, it needs to call the callback if it determines we can change the step.
-  emits: ["try-change-step", "try-finish", "cancel"],
   props: {
     stepItemList: {
       required: true,
@@ -152,6 +150,8 @@ export default {
       type: String,
     },
   },
+  // For try-change-step and try-finish listener, it needs to call the callback if it determines we can change the step.
+  emits: ["try-change-step", "try-finish", "cancel"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       done: false,

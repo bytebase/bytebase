@@ -162,7 +162,6 @@ export default {
     "click-inside-outside": clickInsideOutside,
   },
   components: {},
-  emits: ["select-item"],
   props: {
     selectedItem: {},
     itemList: {
@@ -178,7 +177,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-item"],
+  setup(props) {
     const state = reactive<LocalState>({
       showMenu: false,
       selectedItem: props.selectedItem,
@@ -186,7 +186,7 @@ export default {
 
     watch(
       () => props.selectedItem,
-      (cur, prev) => {
+      (cur) => {
         state.selectedItem = cur;
       }
     );

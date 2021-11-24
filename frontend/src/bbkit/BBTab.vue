@@ -136,7 +136,6 @@ import { BBTabItem } from "./types";
 
 export default {
   name: "BBTab",
-  emits: ["create", "reorder-index", "select-index"],
   props: {
     tabItemList: {
       required: true,
@@ -155,6 +154,7 @@ export default {
       type: String as PropType<"NEVER" | "HOVER" | "ALWAYS">,
     },
   },
+  emits: ["create", "reorder-index", "select-index"],
   setup(props, { emit }) {
     const state = reactive({
       hoverIndex: -1,

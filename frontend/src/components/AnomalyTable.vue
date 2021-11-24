@@ -163,7 +163,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

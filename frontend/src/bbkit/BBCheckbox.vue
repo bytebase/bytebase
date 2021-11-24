@@ -63,11 +63,11 @@ export default {
     },
   },
   emits: ["toggle"],
-  setup(props, ctx) {
+  setup(props) {
     const on = ref(props.value);
     watch(
       () => props.value,
-      (cur, _) => {
+      (cur) => {
         on.value = cur;
       }
     );

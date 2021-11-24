@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { nextTick, onMounted, reactive, ref, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 
 interface LocalState {
@@ -76,7 +76,7 @@ export default {
 
     watch(
       () => props.value,
-      (cur, _) => {
+      (cur) => {
         state.text = cur;
       }
     );

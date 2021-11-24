@@ -20,6 +20,5 @@ export default {
       default: 2,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

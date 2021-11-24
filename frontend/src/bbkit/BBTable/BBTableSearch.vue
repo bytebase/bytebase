@@ -60,6 +60,5 @@ export default {
     },
   },
   emits: ["change-text"],
-  setup(props, ctx) {},
 };
 </script>

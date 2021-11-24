@@ -72,7 +72,7 @@ export default {
         this.context = context;
       }, 1);
     },
-    close(evt, inside) {
+    close() {
       // Close the menu regardless of whether the click is inside the menu.
       this.isOpen = false;
       this.context = null;

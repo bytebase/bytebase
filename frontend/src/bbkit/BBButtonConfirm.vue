@@ -91,7 +91,6 @@ import { BBButtonConfirmStyle } from "./types";
 
 export default {
   name: "BBButtonConfirm",
-  emits: ["confirm"],
   props: {
     style: {
       default: "DELETE",
@@ -118,7 +117,8 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  emits: ["confirm"],
+  setup() {
     const state = reactive({
       showModal: false,
     });

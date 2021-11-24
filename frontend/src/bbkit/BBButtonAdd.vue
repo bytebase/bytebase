@@ -25,6 +25,5 @@ export default {
   name: "BBButtonAdd",
   props: {},
   emits: ["add"],
-  setup(props, ctx) {},
 };
 </script>

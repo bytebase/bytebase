@@ -69,7 +69,7 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const initials = computed(() => {
       if (props.username == "?") {
         return "?";

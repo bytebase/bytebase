@@ -224,15 +224,16 @@ interface LocalState {
 
 export default {
   name: "AlterSchemaPrepForm",
-  emits: ["dismiss"],
-  props: {
-    projectID: {
-      type: Number as PropType<ProjectID>,
-    },
-  },
   components: {
     DatabaseTable,
   },
+  props: {
+    projectID: {
+      type: Number as PropType<ProjectID>,
+      default: undefined,
+    },
+  },
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

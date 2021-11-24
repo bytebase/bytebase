@@ -217,7 +217,6 @@ const placementClassMap: Map<BBNotificationPlacement, string> = new Map([
 
 export default {
   name: "BBNotification",
-  emits: ["close"],
   props: {
     notificationList: {
       required: true,
@@ -228,6 +227,7 @@ export default {
       default: "TOP_RIGHT",
     },
   },
+  emits: ["close"],
   setup(props, { emit }) {
     const router = useRouter();
 

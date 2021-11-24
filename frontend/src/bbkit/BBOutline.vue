@@ -107,7 +107,6 @@ import { BBOutlineItem } from "./types";
 
 export default {
   name: "BBOutline",
-  emits: ["delete-index"],
   props: {
     // Used for storing the collapse state.
     // Empty id means not to store collapse state.
@@ -136,7 +135,8 @@ export default {
       type: Number,
     },
   },
-  setup(props, ctx) {
+  emits: ["delete-index"],
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

@@ -270,7 +270,6 @@ import { BBAlertStyle } from "./types";
 
 export default {
   name: "BBAlert",
-  emits: ["ok", "cancel"],
   props: {
     style: {
       type: String as PropType<BBAlertStyle>,
@@ -299,6 +298,7 @@ export default {
     // Any payload pass through to "ok" and "cancel" events
     payload: {},
   },
+  emits: ["ok", "cancel"],
   setup(props, { emit }) {
     const cancel = () => {
       emit("cancel", props.payload);
