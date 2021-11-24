@@ -15,6 +15,11 @@ module.exports = {
     "no-useless-escape": "warn",
     "@typescript-eslint/no-empty-interface": "warn",
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { varsIgnorePattern: "^_", args: "none" },
+    ],
     "vue/no-mutating-props": "warn",
     "vue/multi-word-component-names": "warn",
     "vue/no-unused-components": "warn",
