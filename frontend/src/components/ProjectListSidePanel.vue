@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 
 import { Project, UNKNOWN_ID } from "../types";
@@ -18,7 +18,7 @@ import { BBOutlineItem } from "../bbkit/types";
 export default {
   name: "ProjectListSidePanel",
   props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

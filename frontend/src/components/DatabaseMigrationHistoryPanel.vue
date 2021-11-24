@@ -68,8 +68,7 @@ import {
 } from "../types";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { instanceSlug, isDBAOrOwner, issueSlug } from "../utils";
-import { templateForType } from "../plugins";
+import { instanceSlug, isDBAOrOwner } from "../utils";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -90,7 +89,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

@@ -164,15 +164,16 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { activeEnvironment, fullDatabasePath } from "../utils";
-import { OutputField, IssueBuiltinFieldID, IssueContext } from "../plugins";
+import { activeEnvironment } from "../utils";
+import { OutputField, IssueContext } from "../plugins";
 import { DatabaseID, EnvironmentID, Issue, UNKNOWN_ID } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "IssueOutputPanel",
-  emits: ["update-custom-field"],
+  components: { DatabaseSelect },
   props: {
     issue: {
       required: true,
@@ -187,7 +188,7 @@ export default {
       type: Boolean,
     },
   },
-  components: { DatabaseSelect },
+  emits: ["update-custom-field"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

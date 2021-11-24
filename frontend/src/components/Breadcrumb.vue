@@ -95,7 +95,6 @@ import {
   BookmarkCreate,
 } from "../types";
 import { idFromSlug } from "../utils";
-import database from "../store/modules/database";
 
 interface BreadcrumbItem {
   name: string;
@@ -105,7 +104,7 @@ interface BreadcrumbItem {
 export default {
   name: "Breadcrumb",
   components: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const currentRoute = useRouter().currentRoute;
 

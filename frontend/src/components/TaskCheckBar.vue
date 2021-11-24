@@ -20,7 +20,7 @@
     <BBModal
       v-if="state.showModal"
       :title="`Check result for '${task.name}'`"
-      @close="dimissModal"
+      @close="dismissDialog"
     >
       <div class="space-y-4 w-208">
         <div>
@@ -52,7 +52,7 @@
           <button
             type="button"
             class="btn-primary py-2 px-4"
-            @click.prevent="dimissModal"
+            @click.prevent="dismissDialog"
           >
             Close
           </button>
@@ -79,14 +79,14 @@ interface LocalState {
 
 export default {
   name: "TaskCheckBar",
-  emits: ["run-checks"],
+  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
   props: {
     task: {
       required: true,
       type: Object as PropType<Task>,
     },
   },
-  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
+  emits: ["run-checks"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       showModal: false,
@@ -158,7 +158,7 @@ export default {
       state.showModal = true;
     };
 
-    const dimissModal = () => {
+    const dismissDialog = () => {
       state.showModal = false;
       state.selectedTaskCheckRun = undefined;
     };
@@ -175,7 +175,7 @@ export default {
       hasRunningTaskCheck,
       taskCheckStatus,
       viewCheckRunDetail,
-      dimissModal,
+      dismissDialog,
       runChecks,
     };
   },

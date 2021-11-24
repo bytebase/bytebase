@@ -96,7 +96,7 @@ export default {
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

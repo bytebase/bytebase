@@ -14,19 +14,20 @@ import { PropType } from "@vue/runtime-core";
 import RepositoryForm from "./RepositoryForm.vue";
 import { ProjectRepositoryConfig } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "RepositoryConfigPanel",
-  emits: ["next"],
+  components: { RepositoryForm },
   props: {
     config: {
       required: true,
       type: Object as PropType<ProjectRepositoryConfig>,
     },
   },
-  components: { RepositoryForm },
-  setup(props, { emit }) {
+  emits: ["next"],
+  setup() {
     const state = reactive<LocalState>({});
 
     return {

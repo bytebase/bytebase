@@ -41,7 +41,7 @@ export default {
       type: Object as PropType<InstanceUser[]>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     return {
       COLUMN_LIST,
     };

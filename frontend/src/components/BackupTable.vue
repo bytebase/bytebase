@@ -218,7 +218,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
     const store = useStore();
 

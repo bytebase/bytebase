@@ -34,7 +34,7 @@
 import { computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
-import { Environment, EnvironmentID } from "../types";
+import { Environment } from "../types";
 
 interface LocalState {
   selectedID?: number;
@@ -42,7 +42,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentSelect",
-  components: {},
   props: {
     selectedID: {
       type: Number,
@@ -109,7 +108,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );

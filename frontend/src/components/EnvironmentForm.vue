@@ -207,7 +207,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch, watchEffect } from "vue";
+import { computed, reactive, PropType, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -228,7 +228,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentForm",
-  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   props: {
     create: {
       type: Boolean,
@@ -247,6 +246,7 @@ export default {
       type: Object as PropType<Policy>,
     },
   },
+  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({

@@ -25,7 +25,6 @@ import { IssueStatus, IssueStatusTransitionType } from "../types";
 export default {
   name: "IssueStatusSelect",
   components: { IssueStatusIcon },
-  emits: ["start-transition"],
   props: {
     selectedStatus: {
       type: String as PropType<IssueStatus>,
@@ -35,8 +34,9 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["start-transition"],
   setup(_, { emit }) {
-    const changeStatus = (newStatus: IssueStatus, didChange: () => {}) => {
+    const changeStatus = (newStatus: IssueStatus, didChange: () => any) => {
       let transition: IssueStatusTransitionType;
       switch (newStatus) {
         case "OPEN":

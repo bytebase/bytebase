@@ -66,14 +66,14 @@
         to propagate schema changes across multiple environments.
       </div>
       <div class="space-y-4">
-        <div v-for="(environment, index) in environmentList" :key="index">
+        <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
           <div class="mb-2">{{ environment.name }}</div>
           <div class="relative bg-white rounded-md -space-y-px">
             <template
-              v-for="(database, index) in databaseList.filter(
+              v-for="(database, dbIndex) in databaseList.filter(
                 (item) => item.instance.environment.id == environment.id
               )"
-              :key="index"
+              :key="dbIndex"
             >
               <label
                 class="

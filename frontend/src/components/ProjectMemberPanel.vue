@@ -115,7 +115,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

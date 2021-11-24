@@ -178,11 +178,11 @@ const FILE_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}, {{DESCRIPTION}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 const SCHEMA_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "RepositoryForm",
-  emits: ["change-repository"],
   props: {
     allowEdit: {
       default: true,
@@ -209,8 +209,8 @@ export default {
       type: Object as PropType<RepositoryConfig>,
     },
   },
-  components: {},
-  setup(props, { emit }) {
+  emits: ["change-repository"],
+  setup() {
     const state = reactive<LocalState>({});
 
     const sampleFilePath = (

@@ -159,7 +159,7 @@ export default {
   name: "MemberAddOrInvite",
   components: { RoleSelect },
   props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

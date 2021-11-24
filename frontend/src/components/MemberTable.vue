@@ -170,6 +170,7 @@ const COLUMN_LIST: BBTableColumn[] = [
   },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -178,10 +179,10 @@ export default {
   props: {
     memberList: {
       required: true,
-      type: Object as PropType<Member[]>,
+      type: Array as PropType<Member[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

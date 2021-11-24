@@ -179,7 +179,7 @@ export default {
       type: Object as PropType<Activity[]>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const activityTypeLink = (activity: Activity): Link | undefined => {
       switch (activity.type) {
         case "bb.project.repository.push": {

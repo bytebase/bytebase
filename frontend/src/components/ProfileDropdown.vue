@@ -86,7 +86,7 @@ export default {
   name: "ProfileDropdown",
   components: { PrincipalAvatar },
   props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

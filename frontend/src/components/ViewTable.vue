@@ -28,7 +28,6 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { View } from "../types";
-import { useRouter } from "vue-router";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -54,9 +53,7 @@ export default {
       type: Object as PropType<View[]>,
     },
   },
-  setup(props, ctx) {
-    const router = useRouter();
-
+  setup() {
     return {
       COLUMN_LIST,
     };

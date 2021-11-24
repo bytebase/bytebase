@@ -55,7 +55,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

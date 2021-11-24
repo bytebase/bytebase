@@ -107,7 +107,6 @@ import { PropType } from "vue";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
-import { useStore } from "vuex";
 import { databaseSlug, instanceSlug, migrationHistorySlug } from "../utils";
 
 type CommentLink = {
@@ -142,9 +141,7 @@ export default {
       type: Object as PropType<Task>,
     },
   },
-  setup(props, ctx) {
-    const store = useStore();
-
+  setup(props) {
     const statusIconClass = (status: TaskRunStatus) => {
       switch (status) {
         case "RUNNING":

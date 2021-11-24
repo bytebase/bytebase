@@ -101,7 +101,7 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { cloneDeep, isEmpty } from "lodash";
+import { cloneDeep } from "lodash";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -113,6 +113,10 @@ interface LocalState {
 
 export default {
   name: "DatabaseBackupPanel",
+  components: {
+    BackupTable,
+    DatabaseBackupCreateForm,
+  },
   props: {
     database: {
       required: true,
@@ -127,11 +131,7 @@ export default {
       type: Boolean,
     },
   },
-  components: {
-    BackupTable,
-    DatabaseBackupCreateForm,
-  },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

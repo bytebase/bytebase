@@ -145,17 +145,8 @@
 </template>
 
 <script lang="ts">
-import {
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  reactive,
-  watch,
-  PropType,
-} from "vue";
+import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
 import { sizeToFit } from "../utils";
-import { MigrationType, Task, TaskCreate } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -232,7 +223,7 @@ export default {
 
     watch(
       () => props.statement,
-      (cur, _) => {
+      (cur) => {
         state.editStatement = cur;
       }
     );

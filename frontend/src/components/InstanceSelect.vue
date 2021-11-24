@@ -74,7 +74,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );
@@ -84,7 +84,7 @@ export default {
     // and emit the event.
     watch(
       () => instanceList.value,
-      (curList, _) => {
+      (curList) => {
         if (
           state.selectedID &&
           !curList.find((instance: Instance) => instance.id == state.selectedID)

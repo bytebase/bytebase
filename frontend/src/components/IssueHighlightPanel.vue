@@ -85,7 +85,7 @@ interface LocalState {
 
 export default {
   name: "IssueHighlightPanel",
-  emits: ["update-name"],
+  components: { IssueStatusIcon },
   props: {
     issue: {
       required: true,
@@ -100,7 +100,7 @@ export default {
       type: Boolean,
     },
   },
-  components: { IssueStatusIcon },
+  emits: ["update-name"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       editing: false,
@@ -109,7 +109,7 @@ export default {
 
     watch(
       () => props.issue,
-      (curIssue, _) => {
+      (curIssue) => {
         state.name = curIssue.name;
       }
     );

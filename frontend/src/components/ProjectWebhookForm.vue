@@ -230,7 +230,6 @@ interface LocalState {
 
 export default {
   name: "ProjectWebhookForm",
-  emits: ["change-repository"],
   props: {
     allowEdit: {
       default: true,
@@ -249,8 +248,8 @@ export default {
       type: Object as PropType<ProjectWebhook | ProjectWebhookCreate>,
     },
   },
-  components: {},
-  setup(props, { emit }) {
+  emits: ["change-repository"],
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

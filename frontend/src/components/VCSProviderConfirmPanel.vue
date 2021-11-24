@@ -69,6 +69,7 @@
 import { PropType, reactive } from "@vue/runtime-core";
 import { VCSConfig, redirectURL } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -79,7 +80,7 @@ export default {
       type: Object as PropType<VCSConfig>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({});
 
     return {

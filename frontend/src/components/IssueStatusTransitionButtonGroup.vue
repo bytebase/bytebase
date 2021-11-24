@@ -151,7 +151,6 @@ import {
   Principal,
   SYSTEM_BOT_ID,
   Task,
-  TaskID,
   UNKNOWN_ID,
 } from "../types";
 import { IssueTemplate } from "../plugins";
@@ -176,7 +175,9 @@ export type IssueContext = {
 
 export default {
   name: "IssueStatusTransitionButtonGroup",
-  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
+  components: {
+    StatusTransitionForm,
+  },
   props: {
     create: {
       required: true,
@@ -195,9 +196,8 @@ export default {
       type: Object as PropType<IssueTemplate>,
     },
   },
-  components: {
-    StatusTransitionForm,
-  },
+  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
+
   setup(props, { emit }) {
     const store = useStore();
 
@@ -244,6 +244,7 @@ export default {
             return list;
           }
         }
+        return []; // Only to make eslint happy. Should never reach this line.
       }
     );
 
@@ -350,7 +351,6 @@ export default {
     const allowIssueStatusTransition = (
       transition: IssueStatusTransition
     ): boolean => {
-      const issue: Issue = props.issue as Issue;
       if (transition.type == "RESOLVE") {
         // Returns false if any of the required output fields is not provided.
         for (let i = 0; i < props.issueTemplate.outputFieldList.length; i++) {

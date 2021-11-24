@@ -72,8 +72,7 @@ export default {
     VCSProviderOAuthPanel,
     VCSProviderConfirmPanel,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -106,7 +105,7 @@ export default {
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
             })
-            .catch((error) => {
+            .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
         }

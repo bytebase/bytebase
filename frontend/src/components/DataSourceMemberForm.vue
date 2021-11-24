@@ -1,17 +1,3 @@
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>
-
 <template>
   <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="">
@@ -196,7 +182,6 @@ import {
   PrincipalID,
   Issue,
   IssueID,
-  UNKNOWN_ID,
 } from "../types";
 import { issueSlug } from "../utils";
 
@@ -212,7 +197,13 @@ interface LocalState {
 
 export default {
   name: "DataSourceMemberCreateForm",
-  emits: ["submit", "cancel"],
+  components: {
+    EnvironmentSelect,
+    DatabaseSelect,
+    DataSourceSelect,
+    MemberSelect,
+    InstanceSelect,
+  },
   props: {
     dataSource: {
       type: Object as PropType<DataSource>,
@@ -224,13 +215,7 @@ export default {
       type: Number,
     },
   },
-  components: {
-    EnvironmentSelect,
-    DatabaseSelect,
-    DataSourceSelect,
-    MemberSelect,
-    InstanceSelect,
-  },
+  emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
 
@@ -348,7 +333,7 @@ export default {
         }
       }
 
-      const newDataSouceMember: DataSourceMemberCreate = {
+      const newDataSourceMember: DataSourceMemberCreate = {
         principalID: state.granteeID!,
         issueID: linkedIssue?.id,
       };
@@ -356,7 +341,7 @@ export default {
         .dispatch("dataSource/createDataSourceMember", {
           dataSourceID: state.dataSourceID,
           databaseID: state.databaseID,
-          newDataSouceMember,
+          newDataSourceMember,
         })
         .then((dataSource: DataSource) => {
           emit("submit", dataSource);
@@ -400,3 +385,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

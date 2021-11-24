@@ -47,14 +47,13 @@ const COLUMN_LIST = [
 
 export default {
   name: "EnvironmentTable",
-  components: {},
   props: {
     environmentList: {
       required: true,
       type: Object as PropType<Environment[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickEnvironment = function (section: number, row: number) {

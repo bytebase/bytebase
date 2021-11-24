@@ -85,7 +85,6 @@ interface LocalState {
 export default {
   name: "RepositoryPanel",
   components: { RepositoryForm },
-  emits: ["change-repository"],
   props: {
     project: {
       required: true,
@@ -100,7 +99,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  emits: ["change-repository"],
+  setup(props) {
     const store = useStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
@@ -113,7 +113,7 @@ export default {
 
     watch(
       () => props.repository,
-      (cur, _) => {
+      (cur) => {
         state.repositoryConfig = {
           baseDirectory: cur.baseDirectory,
           branchFilter: cur.branchFilter,

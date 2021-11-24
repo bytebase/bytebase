@@ -85,16 +85,16 @@ interface LocalState {
 
 export default {
   name: "TransferDatabaseForm",
-  emits: ["submit", "dismiss"],
+  components: {
+    DatabaseTable,
+  },
   props: {
     projectID: {
       required: true,
       type: Number as PropType<ProjectID>,
     },
   },
-  components: {
-    DatabaseTable,
-  },
+  emits: ["submit", "dismiss"],
   setup(props, { emit }) {
     const store = useStore();
 

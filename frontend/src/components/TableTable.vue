@@ -68,7 +68,7 @@ export default {
       type: Object as PropType<Table[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickTable = (section: number, row: number) => {

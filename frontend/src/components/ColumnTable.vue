@@ -123,7 +123,7 @@ export default {
       type: String as PropType<EngineType>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const columnNameList = computed(() => {
       switch (props.engine) {
         case "POSTGRES":

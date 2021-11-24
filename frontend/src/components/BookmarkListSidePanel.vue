@@ -16,13 +16,11 @@
 <script lang="ts">
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import { UNKNOWN_ID } from "../types";
 
 export default {
   name: "BookmarkListSidePanel",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

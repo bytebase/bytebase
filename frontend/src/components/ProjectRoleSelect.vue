@@ -18,8 +18,6 @@ import { ProjectRoleType } from "../types";
 
 export default {
   name: "ProjectRoleSelect",
-  components: {},
-  emits: ["change-role"],
   props: {
     selectedRole: {
       type: String as PropType<ProjectRoleType>,
@@ -29,8 +27,6 @@ export default {
       type: Boolean,
     },
   },
-  setup() {
-    return {};
-  },
+  emits: ["change-role"],
 };
 </script>

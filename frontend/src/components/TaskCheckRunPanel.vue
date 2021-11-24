@@ -118,7 +118,7 @@ export default {
       type: Object as PropType<TaskCheckRun>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const statusIconClass = (status: TaskCheckStatus) => {
       switch (status) {
         case "SUCCESS":

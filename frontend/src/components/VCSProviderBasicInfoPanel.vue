@@ -93,7 +93,7 @@ export default {
       type: Object as PropType<VCSConfig>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const state = reactive<LocalState>({
       showURLError:
         !isEmpty(props.config.instanceURL) && !isURL(props.config.instanceURL),

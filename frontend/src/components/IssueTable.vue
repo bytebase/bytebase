@@ -134,7 +134,6 @@ import {
   activeEnvironment,
   activeDatabase,
   activeTask,
-  allTaskList,
   stageSlug,
   activeTaskInStage,
 } from "../utils";
@@ -201,7 +200,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 ]);
 
 interface LocalState {
-  dataSource: Object[];
+  dataSource: any[];
 }
 
 export default {
@@ -233,7 +232,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -274,7 +273,7 @@ export default {
 
     const clickIssueStep = (issue: Issue, step: BBStep) => {
       const task = step.payload as Task;
-      const stageIndex = issue.pipeline.stageList.findIndex((item, index) => {
+      const stageIndex = issue.pipeline.stageList.findIndex((item) => {
         return item.id == task.stage.id;
       });
 

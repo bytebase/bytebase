@@ -97,7 +97,7 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { isDBA, isDBAOrOwner, isOwner } from "../utils";
+import { isDBA, isOwner } from "../utils";
 
 type IntroItem = {
   name: string;

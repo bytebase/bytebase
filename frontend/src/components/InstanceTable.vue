@@ -62,7 +62,7 @@ import { EnvironmentID, Instance } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
-  dataSource: Object[];
+  dataSource: any[];
 }
 
 export default {
@@ -74,7 +74,7 @@ export default {
       type: Object as PropType<Instance[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

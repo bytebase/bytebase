@@ -464,7 +464,7 @@ export default {
       type: Object as PropType<QuickActionType[]>,
     },
   },
-  setup(props) {
+  setup() {
     const router = useRouter();
     const store = useStore();
 

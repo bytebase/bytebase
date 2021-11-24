@@ -57,7 +57,6 @@ interface LocalState {
 export default {
   name: "MemberSelect",
   components: { PrincipalAvatar },
-  emits: ["select-principal-id"],
   props: {
     selectedID: {
       type: Number,
@@ -67,8 +66,8 @@ export default {
       type: Boolean,
     },
     allowedRoleList: {
-      default: ["OWNER", "DBA", "DEVELOPER"],
-      type: Object as PropType<RoleType[]>,
+      default: () => ["OWNER", "DBA", "DEVELOPER"],
+      type: Array as PropType<RoleType[]>,
     },
     placeholder: {
       default: "Not assigned",
@@ -79,7 +78,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-principal-id"],
+  setup(props) {
     const state = reactive<LocalState>({
       selectedID: props.selectedID,
       showMenu: false,
@@ -100,7 +100,7 @@ export default {
         list.unshift(store.getters["principal/principalByID"](SYSTEM_BOT_ID));
       }
       return list.filter((item: Principal) => {
-        // The previouly selected item might no longer be applicable.
+        // The previously selected item might no longer be applicable.
         // e.g. The select limits to DBA only and the selected principal is no longer a DBA
         // in such case, we still show the item.
         if (item.id == props.selectedID) {
@@ -109,7 +109,7 @@ export default {
 
         return (
           // We write this way instead of props.allowedRoleList.includes(item.role)
-          // is becaues isOwner/isDBA/isDeveloper has feature gate logic.
+          // is because isOwner/isDBA/isDeveloper has feature gate logic.
           (props.allowedRoleList.includes("OWNER") && isOwner(item.role)) ||
           (props.allowedRoleList.includes("DBA") && isDBA(item.role)) ||
           (props.allowedRoleList.includes("DEVELOPER") &&
@@ -120,7 +120,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );

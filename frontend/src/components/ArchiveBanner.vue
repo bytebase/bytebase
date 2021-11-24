@@ -19,9 +19,5 @@
 <script lang="ts">
 export default {
   name: "ArchiveBanner",
-  components: {},
-  setup() {
-    return {};
-  },
 };
 </script>

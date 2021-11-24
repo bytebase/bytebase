@@ -86,7 +86,7 @@
   <BBModal
     v-if="state.showModal"
     :title="`'${state.selectedAnomaly.database.name}' schema drift - ${state.selectedAnomaly.payload.version} vs Actual`"
-    @close="dimissModal"
+    @close="dismissModal"
   >
     <div class="space-y-4">
       <code-diff
@@ -97,7 +97,7 @@
         outputFormat="side-by-side"
       />
       <div class="flex justify-end px-4">
-        <button type="button" class="btn-primary" @click.prevent="dimissModal">
+        <button type="button" class="btn-primary" @click.prevent="dismissModal">
           Close
         </button>
       </div>
@@ -106,7 +106,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { PropType, reactive } from "vue";
 import { CodeDiff } from "v-code-diff";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import {
@@ -304,7 +304,7 @@ export default {
       }
     };
 
-    const dimissModal = () => {
+    const dismissModal = () => {
       state.showModal = false;
       state.selectedAnomaly = undefined;
     };
@@ -315,7 +315,7 @@ export default {
       typeName,
       detail,
       action,
-      dimissModal,
+      dismissModal,
     };
   },
 };

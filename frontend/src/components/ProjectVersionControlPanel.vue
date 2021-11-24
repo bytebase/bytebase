@@ -155,7 +155,7 @@ export default {
 
     watch(
       () => props.project,
-      (cur, _) => {
+      (cur) => {
         state.workflowType = cur.workflowType;
       }
     );

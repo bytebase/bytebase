@@ -120,7 +120,7 @@
             <span v-data-source-type>{{ item.type }}</span>
           </div>
           <div class="space-y-4">
-            <div v-for="(ds, index) of item.list" :key="index">
+            <div v-for="(ds, dsIndex) of item.list" :key="dsIndex">
               <div v-if="hasDataSourceFeature" class="relative mb-2">
                 <div
                   class="absolute inset-0 flex items-center"
@@ -224,12 +224,6 @@ interface LocalState {
 
 export default {
   name: "DatabaseOverviewPanel",
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
-  },
   components: {
     AnomalyTable,
     DataSourceConnectionPanel,
@@ -237,7 +231,13 @@ export default {
     TableTable,
     ViewTable,
   },
-  setup(props, ctx) {
+  props: {
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
+  },
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

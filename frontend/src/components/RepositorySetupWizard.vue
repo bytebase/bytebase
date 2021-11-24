@@ -56,7 +56,7 @@ const DEFAULT_FILE_PATH_TEMPLATE =
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
-const CHOOSE_REPOSITORY_STEP = 1;
+// const CHOOSE_REPOSITORY_STEP = 1;
 const CONFIGURE_DEPLOY_STEP = 2;
 
 interface LocalState {
@@ -77,7 +77,6 @@ export default {
     RepositorySelectionPanel,
     RepositoryConfigPanel,
   },
-  emits: ["cancel", "finish"],
   props: {
     // If false, then we intend to change the existing linked repository intead of just linking a new repository.
     create: {
@@ -89,6 +88,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
+  emits: ["cancel", "finish"],
   setup(props, { emit }) {
     const router = useRouter();
     const store = useStore();

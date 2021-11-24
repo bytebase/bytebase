@@ -68,7 +68,7 @@ export default {
       type: Object as PropType<TableIndex[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const sectionList = computed(() => {
       const sectionList: BBTableSectionDataSource<TableIndex>[] = [];
 

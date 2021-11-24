@@ -23,7 +23,7 @@
           />
         </svg>
       </button>
-      <!-- mt-0.5 is to prevent jiggling betweening switching edit/none-edit -->
+      <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
       <button
         v-if="state.editing"
         type="button"
@@ -133,7 +133,6 @@ interface LocalState {
 
 export default {
   name: "IssueDescriptionPanel",
-  emits: ["update-description"],
   props: {
     issue: {
       required: true,
@@ -148,7 +147,7 @@ export default {
       type: Boolean,
     },
   },
-  components: {},
+  emits: ["update-description"],
   setup(props, { emit }) {
     const editDescriptionTextArea = ref();
 
@@ -202,7 +201,7 @@ export default {
 
     watch(
       () => props.issue,
-      (curIssue, prevIssue) => {
+      (curIssue) => {
         state.editDescription = curIssue.description;
         nextTick(() => {
           sizeToFit(editDescriptionTextArea.value);

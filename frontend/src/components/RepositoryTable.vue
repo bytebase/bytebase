@@ -59,7 +59,7 @@ export default {
       type: Object as PropType<Repository[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickRepository = function (section: number, row: number) {

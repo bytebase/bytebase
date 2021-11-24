@@ -34,12 +34,12 @@ export default {
     },
   },
   emits: ["select-environment"],
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const environmentList = computed(() => {
       // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-      // thus we rervese the order to put more important ones first.
+      // thus we reverse the order to put more important ones first.
       return cloneDeep(
         store.getters["environment/environmentList"]()
       ).reverse();

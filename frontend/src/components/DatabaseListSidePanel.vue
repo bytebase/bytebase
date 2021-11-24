@@ -18,8 +18,7 @@ import { BBOutlineItem } from "../bbkit/types";
 
 export default {
   name: "DatabaseListSidePanel",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -51,9 +50,11 @@ export default {
       for (const environment of environmentList.value) {
         envToDbMap.set(environment.id, []);
       }
-      for (const database of databaseList.value.sort((a: any, b: any) => {
+      const list = [...databaseList.value];
+      list.sort((a: any, b: any) => {
         return a.name.localeCompare(b.name);
-      })) {
+      });
+      for (const database of list) {
         const dbList = envToDbMap.get(database.instance.environment.id)!;
         // dbList may be undefined if the environment is archived
         if (dbList) {

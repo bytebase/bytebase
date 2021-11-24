@@ -115,7 +115,7 @@
 import { computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { consoleLink, databaseSlug, isDBAOrOwner } from "../utils";
+import { consoleLink, databaseSlug } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
@@ -220,7 +220,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 export default {
   name: "DatabaseTable",
   components: { InstanceEngineIcon },
-  emits: ["select-database"],
   props: {
     bordered: {
       default: true,
@@ -243,11 +242,12 @@ export default {
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, { emit, attrs }) {
+  emits: ["select-database"],
+  setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    // const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const showInstanceColumn = computed(() => {
       return props.mode != "INSTANCE";

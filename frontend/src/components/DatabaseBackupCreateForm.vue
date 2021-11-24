@@ -53,15 +53,14 @@ interface LocalState {
 
 export default {
   name: "DatabaseBackupCreateForm",
-  emits: ["create", "cancel"],
   props: {
     database: {
       required: true,
       type: Object as PropType<Database>,
     },
   },
-  components: {},
-  setup(props, ctx) {
+  emits: ["create", "cancel"],
+  setup(props) {
     const state = reactive<LocalState>({
       // The default format is consistent with the default automatic backup name format used in the server.
       backupName: `${slug(props.database.project.name)}-${slug(

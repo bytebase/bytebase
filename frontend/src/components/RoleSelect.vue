@@ -22,8 +22,6 @@ import { RoleType } from "../types";
 
 export default {
   name: "RoleSelect",
-  components: {},
-  emits: ["change-role"],
   props: {
     selectedRole: {
       type: String as PropType<RoleType>,
@@ -33,8 +31,6 @@ export default {
       type: Boolean,
     },
   },
-  setup() {
-    return {};
-  },
+  emits: ["change-role"],
 };
 </script>

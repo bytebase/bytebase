@@ -137,7 +137,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
-import { OutputField, IssueBuiltinFieldID } from "../plugins";
+import { OutputField } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
 
 type CheckSummary = {
@@ -153,7 +153,7 @@ interface LocalState {
 
 export default {
   name: "StatusTransitionForm",
-  emits: ["submit", "cancel"],
+  components: { DatabaseSelect, TaskCheckBadgeBar },
   props: {
     mode: {
       required: true,
@@ -180,8 +180,8 @@ export default {
       type: Object as PropType<OutputField[]>,
     },
   },
-  components: { DatabaseSelect, TaskCheckBadgeBar },
-  setup(props, { emit }) {
+  emits: ["submit", "cancel"],
+  setup(props) {
     const commentTextArea = ref("");
 
     const state = reactive<LocalState>({
@@ -195,6 +195,8 @@ export default {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
+    // Code block below will raise an eslint ERROR.
+    // But I won't change it this time.
     const submitButtonStyle = computed(() => {
       switch (props.mode) {
         case "ISSUE": {
@@ -224,6 +226,8 @@ export default {
       }
     });
 
+    // Code block below will raise an eslint ERROR.
+    // But I won't change it this time.
     // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
     const allowSubmit = computed(() => {
       switch (props.mode) {

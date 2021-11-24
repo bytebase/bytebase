@@ -120,7 +120,7 @@ import { useRouter } from "vue-router";
 import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
-import { databaseSlug, dataSourceSlug, instanceSlug } from "../utils";
+import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 
 const columnList: BBTableColumn[] = [
@@ -163,7 +163,7 @@ export default {
       type: Object as PropType<Database>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

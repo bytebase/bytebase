@@ -180,7 +180,6 @@
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
 
@@ -206,9 +205,8 @@ export default {
       type: Object as PropType<DataSource>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
-    const router = useRouter();
 
     const state = reactive<LocalState>({
       showPassword: false,

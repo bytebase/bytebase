@@ -62,7 +62,7 @@ export default {
       type: Object as PropType<Project[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickProject = function (section: number, row: number) {

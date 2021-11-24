@@ -164,14 +164,14 @@ export default {
     },
     databaseSectionList: {
       required: true,
-      type: Object as PropType<Database[]>,
+      type: Array as PropType<Database[]>,
     },
     historySectionList: {
       required: true,
-      type: Object as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
+      type: Array as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickHistory = function (section: number, row: number) {

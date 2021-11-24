@@ -188,7 +188,13 @@ interface LocalState {
 
 export default {
   name: "CreateDatabasePrepForm",
-  emits: ["dismiss"],
+  components: {
+    InstanceSelect,
+    EnvironmentSelect,
+    ProjectSelect,
+    MemberSelect,
+    InstanceEngineIcon,
+  },
   props: {
     projectID: {
       type: Number as PropType<ProjectID>,
@@ -204,13 +210,7 @@ export default {
       type: Object as PropType<Backup>,
     },
   },
-  components: {
-    InstanceSelect,
-    EnvironmentSelect,
-    ProjectSelect,
-    MemberSelect,
-    InstanceEngineIcon,
-  },
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

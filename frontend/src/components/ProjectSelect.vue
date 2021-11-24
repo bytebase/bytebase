@@ -75,8 +75,6 @@ interface LocalState {
 
 export default {
   name: "ProjectSelect",
-  components: {},
-  emits: ["select-project-id"],
   props: {
     selectedID: {
       default: UNKNOWN_ID,
@@ -87,15 +85,16 @@ export default {
       type: Boolean,
     },
     allowedRoleList: {
-      default: ["OWNER", "DEVELOPER"],
-      type: Object as PropType<ProjectRoleType[]>,
+      default: () => ["OWNER", "DEVELOPER"],
+      type: Array as PropType<ProjectRoleType[]>,
     },
     includeDefaultProject: {
       default: false,
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-project-id"],
+  setup(props) {
     const store = useStore();
     const state = reactive<LocalState>({
       selectedID: props.selectedID,
@@ -163,7 +162,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );
