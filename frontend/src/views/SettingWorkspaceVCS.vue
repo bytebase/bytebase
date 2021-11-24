@@ -46,8 +46,7 @@ export default {
     VCSCard,
     VCSSetupWizard,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
     const state = reactive<LocalState>({});

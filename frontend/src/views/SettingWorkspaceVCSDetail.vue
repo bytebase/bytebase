@@ -193,7 +193,7 @@ export default {
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
             })
-            .catch((error) => {
+            .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
         }

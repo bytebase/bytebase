@@ -197,8 +197,6 @@ import { computed, reactive } from "@vue/runtime-core";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
-import ColumnTable from "../components/ColumnTable.vue";
-import IndexTable from "../components/IndexTable.vue";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
 import { idFromSlug, secondsToString } from "../utils";
 import {
@@ -213,7 +211,7 @@ interface LocalState {
 
 export default {
   name: "MigrationHistoryDetail",
-  components: { CodeDiff, ColumnTable, IndexTable, MigrationHistoryStatusIcon },
+  components: { CodeDiff, MigrationHistoryStatusIcon },
   props: {
     databaseSlug: {
       required: true,

@@ -246,7 +246,6 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
@@ -287,7 +286,6 @@ interface LocalState {
 export default {
   name: "DatabaseDetail",
   components: {
-    MemberSelect,
     ProjectSelect,
     DatabaseOverviewPanel,
     DatabaseMigrationHistoryPanel,
