@@ -67,7 +67,7 @@ const actions = {
       readCreatedAfterTs,
     }: { userID: PrincipalID; readCreatedAfterTs?: number }
   ) {
-    var url = `/api/inbox?user=${userID}`;
+    let url = `/api/inbox?user=${userID}`;
     if (readCreatedAfterTs) {
       url += `&created=${readCreatedAfterTs}`;
     }
