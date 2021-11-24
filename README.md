@@ -112,21 +112,25 @@ working on the code:
 
 ### Steps
 
-1.  Install [Air](https://github.com/cosmtrek/air#installation)
+1. Install [Air](https://github.com/cosmtrek/air#installation)
 
-1.  Pull source
+1. Pull source
 
     ```bash
     git clone https://github.com/bytebase/bytebase
     ```
 
-1.  Start backend using air (with live reload)
+1. Set up pre-commit hooks
+   - Install [pre-commit](https://pre-commit.com/index.html#install)
+   - Run `pre-commit install` inside the `bytebase` directory
+
+1. Start backend using air (with live reload)
 
     ```bash
     air -c scripts/.air.toml
     ```
 
-1.  Start frontend (with live reload)
+1. Start frontend (with live reload)
 
     ```bash
     cd frontend && yarn && yarn dev

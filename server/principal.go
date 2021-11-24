@@ -151,7 +151,9 @@ func (s *Server) ComposePrincipalByID(ctx context.Context, id int) (*api.Princip
 		return nil, err
 	}
 
-	s.ComposePrincipalRole(ctx, principal)
+	if err = s.ComposePrincipalRole(ctx, principal); err != nil {
+		return nil, err
+	}
 
 	return principal, nil
 }
