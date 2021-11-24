@@ -392,7 +392,7 @@ export default {
         store
           .dispatch(
             "database/fetchDatabaseListByInstanceID",
-            props.instance.value.id
+            props.instance.id
           )
           .then((list: Database[]) => {
             for (const database of list) {
