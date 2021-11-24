@@ -66,7 +66,7 @@ interface LocalState {
 export default {
   name: "Archive",
   components: { EnvironmentTable, InstanceTable, ProjectTable },
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
       searchText: "",

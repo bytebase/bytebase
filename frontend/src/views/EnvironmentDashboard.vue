@@ -70,26 +70,13 @@
 </template>
 
 <script lang="ts">
-import {
-  onMounted,
-  onUnmounted,
-  computed,
-  reactive,
-  watch,
-  ComputedRef,
-} from "vue";
+import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import {
-  Environment,
-  EnvironmentCreate,
-  Policy,
-  PolicyUpsert,
-  Principal,
-} from "../types";
+import { Environment, EnvironmentCreate, Policy, PolicyUpsert } from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -125,13 +112,9 @@ export default {
     EnvironmentForm,
   },
   props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
-
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -307,7 +290,7 @@ export default {
         });
     };
 
-    const doArchive = (environment: Environment) => {
+    const doArchive = (/* environment: Environment */) => {
       if (environmentList.value.length > 0) {
         selectEnvironment(0);
       }

@@ -264,7 +264,6 @@ import {
   activeStage,
   stageSlug,
   activeTask,
-  findTaskByID,
 } from "../utils";
 import IssueHighlightPanel from "../components/IssueHighlightPanel.vue";
 import IssueStagePanel from "../components/IssueStagePanel.vue";
@@ -303,7 +302,6 @@ import {
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   Project,
-  IssueID,
   MigrationType,
   TaskPatch,
   Policy,
@@ -348,7 +346,7 @@ export default {
     },
   },
 
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -381,7 +379,7 @@ export default {
     // so we need to manually watch here.
     watch(
       () => router.currentRoute.value.query.template,
-      (curTemplate, prevTemplate) => {
+      () => {
         refreshTemplate();
       }
     );
@@ -630,7 +628,7 @@ export default {
 
     const pollOnCreateStateChange = () => {
       let interval = NORMAL_POLL_INTERVAL;
-      // We will poll faster if meets either of the conditon
+      // We will poll faster if meets either of the condition
       // 1. Created the database create issue, expect creation result quickly.
       // 2. Update the database schema, will do connection and syntax check.
       if (
@@ -662,7 +660,7 @@ export default {
 
     watch(
       () => props.issueSlug,
-      (cur, prev) => {
+      (cur) => {
         const oldCreate = state.create;
         state.create = cur.toLowerCase() == "new";
         if (!state.create && oldCreate) {

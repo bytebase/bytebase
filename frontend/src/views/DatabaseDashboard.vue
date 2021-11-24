@@ -54,7 +54,7 @@ export default {
     EnvironmentTabFilter,
     DatabaseTable,
   },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

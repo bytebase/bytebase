@@ -1,17 +1,3 @@
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>
-
 <template>
   <DataSourceMemberForm
     :dataSource="state.dataSource"
@@ -39,8 +25,7 @@ interface LocalState {
 export default {
   name: "DatabaseGrant",
   components: { DataSourceMemberForm },
-  props: {},
-  async setup(props, ctx) {
+  async setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -93,3 +78,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

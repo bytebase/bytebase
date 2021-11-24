@@ -53,7 +53,7 @@ export default {
     EnvironmentTabFilter,
     InstanceTable,
   },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

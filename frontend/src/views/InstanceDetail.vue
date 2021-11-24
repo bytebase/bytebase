@@ -68,7 +68,7 @@
             :okText="'Archive'"
             :requireConfirm="true"
             :confirmTitle="`Archive instance '${instance.name}'?`"
-            :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            :confirmDescription="'Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.'"
             @confirm="doArchive"
           />
         </template>
@@ -127,14 +127,13 @@ import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
-  Anomaly,
   Database,
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
   SqlResultSet,
 } from "../types";
-import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -164,7 +163,7 @@ export default {
       type: String,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

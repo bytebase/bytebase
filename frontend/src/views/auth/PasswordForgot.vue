@@ -35,6 +35,5 @@
 <script lang="ts">
 export default {
   name: "PasswordForgot",
-  setup(props, ctx) {},
 };
 </script>

@@ -31,6 +31,7 @@ import {
   BBTextField,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";

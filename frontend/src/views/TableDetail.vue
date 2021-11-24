@@ -239,7 +239,7 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const table = computed(() => {

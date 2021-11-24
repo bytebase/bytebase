@@ -62,9 +62,5 @@ export default {
     ProjectListSidePanel,
     DatabaseListSidePanel,
   },
-  props: {},
-  setup(props, ctx) {
-    return {};
-  },
 };
 </script>

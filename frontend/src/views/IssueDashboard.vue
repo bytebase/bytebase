@@ -70,7 +70,7 @@ interface LocalState {
 export default {
   name: "IssueDashboard",
   components: { EnvironmentTabFilter, IssueTable, MemberSelect },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

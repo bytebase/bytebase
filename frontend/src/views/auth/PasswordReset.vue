@@ -85,7 +85,7 @@ interface LocalState {
 
 export default {
   name: "PasswordReset",
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({
       email: "",
     });

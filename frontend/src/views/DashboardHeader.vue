@@ -221,7 +221,7 @@ import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner, isDev, isOwner } from "../utils";
+import { isDBAOrOwner, isDev } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -230,7 +230,7 @@ interface LocalState {
 export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const state = reactive<LocalState>({

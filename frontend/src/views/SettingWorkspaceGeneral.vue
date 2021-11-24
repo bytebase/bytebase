@@ -59,8 +59,7 @@ interface LocalState {
 
 export default {
   name: "SettingWorkspaceGeneral",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const state = reactive<LocalState>({

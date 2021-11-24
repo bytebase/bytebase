@@ -25,7 +25,6 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  unknown,
 } from "../types";
 import { idFromSlug } from "../utils";
 

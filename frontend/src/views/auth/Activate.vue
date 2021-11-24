@@ -123,7 +123,7 @@ interface LocalState {
 
 export default {
   name: "Activate",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
     const token = router.currentRoute.value.query.token as string;

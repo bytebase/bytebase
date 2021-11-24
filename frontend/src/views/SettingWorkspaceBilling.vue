@@ -5,7 +5,5 @@
 <script lang="ts">
 export default {
   name: "SettingWorkspaceBilling",
-  props: {},
-  setup(props, ctx) {},
 };
 </script>

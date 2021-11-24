@@ -140,7 +140,7 @@ interface LocalState {
 
 export default {
   name: "Signin",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -154,7 +154,7 @@ export default {
       state.email = isDev() || demo ? "demo@example.com" : "";
       state.password = isDev() || demo ? "1024" : "";
       // Navigate to signup if needs admin setup.
-      // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
+      // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
       if (store.getters["actuator/needAdminSetup"]()) {
         router.push({ name: "auth.signup", replace: true });

@@ -53,10 +53,7 @@ import { computed } from "@vue/runtime-core";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
-import {
-  ProjectWebhookTestResult,
-  PROJECT_HOOK_TYPE_ITEM_LIST,
-} from "../types";
+import { ProjectWebhookTestResult } from "../types";
 
 export default {
   name: "ProjectWebhookDetail",
@@ -75,7 +72,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const project = computed(() => {

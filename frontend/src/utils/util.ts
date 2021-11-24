@@ -52,7 +52,7 @@ export function timezoneString(zoneName: string, offset: number): string {
 
 export function urlfy(str: string): string {
   let result = str.trim();
-  if (result.search(/^http[s]?\:\/\//) == -1) {
+  if (result.search(/^http[s]?:\/\//) == -1) {
     result = "http://" + result;
   }
   return result;

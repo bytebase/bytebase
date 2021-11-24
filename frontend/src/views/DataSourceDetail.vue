@@ -213,7 +213,7 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const editNameTextField = ref();
 
     const store = useStore();

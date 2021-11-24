@@ -225,7 +225,7 @@
       <template v-if="state.selectedIndex == OVERVIEW_TAB">
         <DatabaseOverviewPanel :database="database" />
       </template>
-      <template v-if="state.selectedIndex == MIGRAITON_HISTORY_TAB">
+      <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
         <DatabaseMigrationHistoryPanel
           :database="database"
           :allowEdit="allowEdit"
@@ -264,7 +264,7 @@ import { isEmpty } from "lodash";
 import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
-const MIGRAITON_HISTORY_TAB = 1;
+const MIGRATION_HISTORY_TAB = 1;
 const BACKUP_TAB = 2;
 
 type DatabaseTabItem = {
@@ -300,7 +300,7 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -331,7 +331,7 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    // Prject can be transferred if meets either of the condition below:
+    // Project can be transferred if meets either of the condition below:
     // - Database is in default project
     // - Workspace owner, dba
     // - db's project owner
@@ -496,7 +496,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
-      MIGRAITON_HISTORY_TAB,
+      MIGRATION_HISTORY_TAB,
       BACKUP_TAB,
       state,
       database,

@@ -22,7 +22,5 @@ export default {
   components: {
     PricingTable,
   },
-  props: {},
-  setup(props, ctx) {},
 };
 </script>

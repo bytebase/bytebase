@@ -203,7 +203,7 @@ interface LocalState {
 
 export default {
   name: "Signup",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

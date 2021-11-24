@@ -73,8 +73,7 @@ export default {
     EnvironmentTabFilter,
     IssueTable,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

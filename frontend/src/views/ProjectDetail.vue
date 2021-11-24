@@ -82,7 +82,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const project = computed(() => {

@@ -166,7 +166,7 @@ interface LocalState {
 export default {
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
