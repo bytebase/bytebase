@@ -80,7 +80,7 @@ export type OutputField = {
   placeholder?: string;
   // Link text
   actionText: string;
-  // Link to the place fullfilling this field resource
+  // Link to the place fulfilling this field resource
   actionLink: (ctx: IssueContext) => string;
   // Link to view the field resource
   viewLink: (ctx: IssueContext) => string;
