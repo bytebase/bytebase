@@ -6,8 +6,8 @@
     "dev": "vite --mode dev",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
     "release-docker": "vite build --mode release",
-    "lint": "eslint --ext .js,.ts,.tsx,.vue src",
-    "lint:fix": "eslint --ext .js,.ts,.tsx,.vue --fix src"
+    "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
+    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
   },
   "dependencies": {
     "@soerenmartius/vue3-clipboard": "^0.1.2",
