@@ -27,8 +27,8 @@ const (
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
-	// PolicyTypeWindow is the allowed window type and is stored in cron format
-	PolicyTypeWindow PolicyType = "bb.policy.window"
+	// PolicyTypeDeploymentWindow is the allowed window type and is stored in cron format
+	PolicyTypeDeploymentWindow PolicyType = "bb.policy.deployment-window"
 
 	// PipelineApprovalValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -51,7 +51,7 @@ var (
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
 		PolicyTypeBackupPlan:       true,
-		PolicyTypeWindow:           true,
+		PolicyTypeDeploymentWindow: true,
 	}
 )
 
@@ -218,7 +218,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
-	case PolicyTypeWindow:
+	case PolicyTypeDeploymentWindow:
 		ap, err := UnmarshalWindowPolicy(payload)
 		if err != nil {
 			return err
@@ -245,7 +245,7 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
-	case PolicyTypeWindow:
+	case PolicyTypeDeploymentWindow:
 		return WindowPolicy{
 			WindowType: WindowTypeUnknown,
 			WindowCron: WindowCronUnset,
