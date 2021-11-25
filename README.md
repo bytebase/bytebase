@@ -9,7 +9,7 @@
 
 <p align="center" >
 <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-   <image width="20%" src="https://gitpod.io/button/open-in-gitpod.svg" />
+   <image src="https://gitpod.io/button/open-in-gitpod.svg" />
 </a>
 </p>
 
@@ -121,6 +121,7 @@ working on the code:
     ```
 
 1. Set up pre-commit hooks
+
    - Install [pre-commit](https://pre-commit.com/index.html#install)
    - Run `pre-commit install` inside the `bytebase` directory
 
