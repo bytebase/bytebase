@@ -42,7 +42,7 @@ const (
 	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
 	BackupPlanPolicyScheduleWeekly BackupPlanPolicySchedule = "WEEKLY"
 
-	// WindowUnset is ANYTIME allowed window cron.
+	// WindowCronUnset is ANYTIME allowed window cron.
 	WindowCronUnset WindowCron = ""
 )
 
