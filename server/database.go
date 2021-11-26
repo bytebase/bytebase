@@ -51,13 +51,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 	g.GET("/database", func(c echo.Context) error {
 		ctx := context.Background()
-		databaseFind := &api.DatabaseFind{}
+		databaseFind := new(api.DatabaseFind)
 		if instanceIDStr := c.QueryParam("instance"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter instance is not a number: %s", instanceIDStr)).SetInternal(err)
 			}
 			databaseFind.InstanceID = &instanceID
+		}
+		if name := c.QueryParam("name"); name != "" {
+			databaseFind.Name = &name
 		}
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
@@ -72,7 +75,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
 		}
 
-		filteredList := []*api.Database{}
+		var filteredList []*api.Database
 		role := c.Get(GetRoleContextKey()).(api.Role)
 		// If caller is NOT requesting for a particular project and is NOT requesting for a paritcular
 		// instance or the caller is a Developer, then we will only return databases belonging to the
