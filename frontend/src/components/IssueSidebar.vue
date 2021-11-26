@@ -391,21 +391,19 @@ export default {
       } else {
         store
           .dispatch(
-            "database/fetchDatabaseListByInstanceID",
-            props.instance.id
-          )
-          .then((list: Database[]) => {
-            for (const database of list) {
-              if (database.name == databaseName.value) {
-                router.push({
-                  name: "workspace.database.detail",
-                  params: {
-                    databaseSlug: databaseSlug(database),
-                  },
-                });
-                break;
-              }
+            "database/fetchDatabaseByInstanceIDAndName",
+            {
+              instanceID: props.instance.id,
+              name: databaseName.value,
             }
+          )
+          .then((database: Database) => {
+            router.push({
+              name: "workspace.database.detail",
+              params: {
+                databaseSlug: databaseSlug(database),
+              },
+            });
           });
       }
     };
