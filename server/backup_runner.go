@@ -31,9 +31,10 @@ type BackupRunner struct {
 // Run is the runner for backup runner.
 func (s *BackupRunner) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
+		s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+		ctx := context.Background()
 		runningTasks := make(map[int]bool)
-		mu := sync.RWMutex{}
+		var mu sync.RWMutex
 		for {
 			s.l.Debug("New auto backup round started...")
 			func() {
@@ -46,8 +47,6 @@ func (s *BackupRunner) Run() error {
 						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-
-				ctx := context.Background()
 
 				// Find all databases that need a backup in this hour.
 				t := time.Now().UTC().Truncate(time.Hour)
@@ -77,8 +76,8 @@ func (s *BackupRunner) Run() error {
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
-							zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseID)),
-							zap.String("error", err.Error()))
+							zap.Int("databaseID", backupSetting.DatabaseID),
+							zap.Error(err))
 						continue
 					}
 					backupSetting.Database = database
@@ -97,7 +96,7 @@ func (s *BackupRunner) Run() error {
 						if err := s.scheduleBackupTask(ctx, database, backupName); err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
-								zap.String("error", err.Error()))
+								zap.Error(err))
 						}
 					}(database, backupSetting.ID, backupName)
 				}
