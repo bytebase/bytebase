@@ -3,6 +3,7 @@ package common
 import (
 	"math/rand"
 	"sort"
+	"strings"
 )
 
 func FindString(strings []string, search string) int {
@@ -17,9 +18,10 @@ func FindString(strings []string, search string) int {
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func RandomString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+	var sb strings.Builder
+	sb.Grow(n)
+	for i := 0; i < n; i++ {
+		sb.WriteRune(letters[rand.Intn(len(letters))])
 	}
-	return string(b)
+	return sb.String()
 }
