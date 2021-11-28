@@ -197,6 +197,88 @@ type Driver struct {
 	baseDSN string
 }
 
+func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
+	updateHistoryAsDoneQuery := `
+	UPDATE
+		migration_history
+	SET
+    status = 'DONE',
+	  execution_duration = $1,
+		"schema" = $2
+	WHERE id = $3
+`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery,
+		duration,
+		updatedSchema,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error {
+	updateHistoryAsFailedQuery := `
+	UPDATE
+		migration_history
+	SET
+    status = 'FAILED',
+	  execution_duration = $1
+	WHERE id = $2
+`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery,
+		duration,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) InsertPendingMigration(ctx context.Context, tx *sql.Tx, m *db.MigrationInfo, sequence int, statement string, prevSchema string) (int64, error) {
+	insertHistoryQuery := `
+	INSERT INTO migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + `"schema",` + `
+		schema_prev,
+		execution_duration,
+		issue_id,
+		payload
+	)
+	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
+	RETURNING id
+`
+	var insertedID int64
+	err := tx.QueryRowContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	).Scan(&insertedID)
+	if err != nil {
+		return -1, err
+	}
+	return insertedID, nil
+}
+
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
 		l: config.Logger,
@@ -607,54 +689,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	insertHistoryQuery := `
-	INSERT INTO migration_history (
-		created_by,
-		created_ts,
-		updated_by,
-		updated_ts,
-		release_version,
-		namespace,
-		sequence,
-		engine,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		` + `"schema",` + `
-		schema_prev,
-		execution_duration,
-		issue_id,
-		payload
-	)
-	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
-	RETURNING id
-`
-	updateHistoryAsDoneQuery := `
-	UPDATE
-		migration_history
-	SET
-    status = 'DONE',
-	  execution_duration = $1,
-		"schema" = $2
-	WHERE id = $3
-`
-
-	updateHistoryAsFailedQuery := `
-	UPDATE
-		migration_history
-	SET
-    status = 'FAILED',
-	  execution_duration = $1
-	WHERE id = $2
-`
-
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "",
+		TablePrefix: "",
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
 }

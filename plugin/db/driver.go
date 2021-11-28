@@ -332,6 +332,12 @@ type Driver interface {
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (int64, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
+	// InsertPendingMigration inserts a PENDING migration record.
+	InsertPendingMigration(ctx context.Context, tx *sql.Tx, m *MigrationInfo, sequence int, statement string, prevSchema string) (int64, error)
+	// MarkMigrationAsDone marks the last inserted migration record to be DONE.
+	MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error
+	// MarkMigrationAsFailed marks the last inserted migration record to be FAILED.
+	MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.

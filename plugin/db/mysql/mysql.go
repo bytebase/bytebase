@@ -45,6 +45,40 @@ type Driver struct {
 	db *sql.DB
 }
 
+func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
+	updateHistoryAsDoneQuery := `
+	UPDATE
+		bytebase.migration_history
+	SET
+		status = 'DONE',
+		execution_duration = ?,
+	` + "`schema` = ?" + `
+	WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery,
+		duration,
+		updatedSchema,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error {
+	updateHistoryAsFailedQuery := `
+	UPDATE
+		bytebase.migration_history
+	SET
+		status = 'FAILED',
+		execution_duration = ?
+	WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery,
+		duration,
+		insertedID,
+	)
+	return err
+}
+
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
 		l: config.Logger,
@@ -101,6 +135,58 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	driver.connectionCtx = connCtx
 
 	return driver, nil
+}
+
+func (driver *Driver) InsertPendingMigration(ctx context.Context, tx *sql.Tx, m *db.MigrationInfo, sequence int, statement string, prevSchema string) (int64, error) {
+	insertHistoryQuery := `
+	INSERT INTO bytebase.migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration,
+		issue_id,
+		payload
+	)
+	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	res, err := tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+
+	if err != nil {
+		return -1, err
+	}
+
+	insertedID, err := res.LastInsertId()
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
 }
 
 func (driver *Driver) Close(ctx context.Context) error {
@@ -572,53 +658,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	insertHistoryQuery := `
-	INSERT INTO bytebase.migration_history (
-		created_by,
-		created_ts,
-		updated_by,
-		updated_ts,
-		release_version,
-		namespace,
-		sequence,
-		engine,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		` + "`schema`," + `
-		schema_prev,
-		execution_duration,
-		issue_id,
-		payload
-	)
-	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
-`
-	updateHistoryAsDoneQuery := `
-	UPDATE
-		bytebase.migration_history
-	SET
-		status = 'DONE',
-		execution_duration = ?,
-	` + "`schema` = ?" + `
-	WHERE id = ?
-	`
-
-	updateHistoryAsFailedQuery := `
-	UPDATE
-		bytebase.migration_history
-	SET
-		status = 'FAILED',
-		execution_duration = ?
-	WHERE id = ?
-	`
-
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "bytebase.",
+		TablePrefix: "bytebase.",
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.MySQL, driver, m, statement, args)
 }

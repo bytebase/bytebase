@@ -41,6 +41,110 @@ type Driver struct {
 	db *sql.DB
 }
 
+func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
+	updateHistoryAsDoneQuery := `
+		UPDATE
+			bytebase.public.migration_history
+		SET
+			status = 'DONE',
+			execution_duration = ?,
+			schema = ?
+		WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery,
+		duration,
+		updatedSchema,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error {
+	updateHistoryAsFailedQuery := `
+		UPDATE
+			bytebase.public.migration_history
+		SET
+			status = 'FAILED',
+			execution_duration = ?
+		WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery,
+		duration,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) InsertPendingMigration(ctx context.Context, tx *sql.Tx, m *db.MigrationInfo, sequence int, statement string, prevSchema string) (int64, error) {
+	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	var id sql.NullInt64
+	for rows.Next() {
+		if err := rows.Scan(
+			&id,
+		); err != nil {
+			return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	var insertedID int64
+	if id.Valid {
+		insertedID = id.Int64
+	} else {
+		insertedID = 1
+	}
+
+	insertHistoryQuery := `
+		INSERT INTO bytebase.public.migration_history (
+			created_by,
+			created_ts,
+			updated_by,
+			updated_ts,
+			release_version,
+			namespace,
+			sequence,
+			engine,
+			type,
+			status,
+			version,
+			description,
+			statement,
+			schema,
+			schema_prev,
+			execution_duration,
+			issue_id,
+			payload
+		)
+		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
+}
+
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
 		l: config.Logger,
@@ -570,53 +674,9 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
 	}
-	insertHistoryQuery := `
-		INSERT INTO bytebase.public.migration_history (
-			created_by,
-			created_ts,
-			updated_by,
-			updated_ts,
-			release_version,
-			namespace,
-			sequence,
-			engine,
-			type,
-			status,
-			version,
-			description,
-			statement,
-			schema,
-			schema_prev,
-			execution_duration,
-			issue_id,
-			payload
-		)
-		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
-`
-	updateHistoryAsDoneQuery := `
-		UPDATE
-			bytebase.public.migration_history
-		SET
-			status = 'DONE',
-			execution_duration = ?,
-			schema = ?
-		WHERE id = ?
-	`
-
-	updateHistoryAsFailedQuery := `
-		UPDATE
-			bytebase.public.migration_history
-		SET
-			status = 'FAILED',
-			execution_duration = ?
-		WHERE id = ?
-	`
 
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "bytebase.public.",
+		TablePrefix: "bytebase.public.",
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
 }

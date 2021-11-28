@@ -40,6 +40,111 @@ type Driver struct {
 	db *sql.DB
 }
 
+func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
+	updateHistoryAsDoneQuery := `
+		ALTER TABLE
+			bytebase.migration_history
+		UPDATE
+			status = 'DONE',
+			execution_duration = ?,
+		` + "`schema` = ?" + `
+		WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery,
+		duration,
+		updatedSchema,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error {
+	updateHistoryAsFailedQuery := `
+		ALTER TABLE
+			bytebase.migration_history
+		UPDATE
+			status = 'FAILED',
+			execution_duration = ?
+		WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery,
+		duration,
+		insertedID,
+	)
+	return err
+}
+
+func (driver *Driver) InsertPendingMigration(ctx context.Context, tx *sql.Tx, m *db.MigrationInfo, sequence int, statement string, prevSchema string) (int64, error) {
+	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	var insertedID int64
+	for rows.Next() {
+		if err := rows.Scan(
+			&insertedID,
+		); err != nil {
+			return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	// Clickhouse sql driver doesn't support taking now() as prepared value.
+	now := time.Now().Unix()
+	insertHistoryQuery := `
+	INSERT INTO bytebase.migration_history (
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration,
+		issue_id,
+		payload
+	)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		insertedID,
+		m.Creator,
+		now,
+		m.Creator,
+		now,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		"PENDING",
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		0,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
+}
+
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
 		l: config.Logger,
@@ -415,53 +520,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	insertHistoryQuery := `
-	INSERT INTO bytebase.migration_history (
-		id,
-		created_by,
-		created_ts,
-		updated_by,
-		updated_ts,
-		release_version,
-		namespace,
-		sequence,
-		engine,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		` + "`schema`," + `
-		schema_prev,
-		execution_duration,
-		issue_id,
-		payload
-	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`
-	updateHistoryAsDoneQuery := `
-		ALTER TABLE
-			bytebase.migration_history
-		UPDATE
-			status = 'DONE',
-			execution_duration = ?,
-		` + "`schema` = ?" + `
-		WHERE id = ?
-	`
-	updateHistoryAsFailedQuery := `
-		ALTER TABLE
-			bytebase.migration_history
-		UPDATE
-			status = 'FAILED',
-			execution_duration = ?
-		WHERE id = ?
-	`
-
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "bytebase.",
+		TablePrefix: "bytebase.",
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
 }
