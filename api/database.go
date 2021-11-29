@@ -67,15 +67,15 @@ type DatabaseCreate struct {
 	CreatorID int
 
 	// Related fields
-	ProjectID     int `jsonapi:"attr,projectID"`
-	InstanceID    int `jsonapi:"attr,instanceID"`
+	ProjectID     int `jsonapi:"attr,projectId"`
+	InstanceID    int `jsonapi:"attr,instanceId"`
 	EnvironmentID int
 
 	// Domain specific fields
 	Name         string `jsonapi:"attr,name"`
 	CharacterSet string `jsonapi:"attr,characterSet"`
 	Collation    string `jsonapi:"attr,collation"`
-	IssueID      int    `jsonapi:"attr,issueID"`
+	IssueID      int    `jsonapi:"attr,issueId"`
 }
 
 type DatabaseFind struct {
@@ -106,7 +106,7 @@ type DatabasePatch struct {
 	UpdaterID int
 
 	// Related fields
-	ProjectID      *int `jsonapi:"attr,projectID"`
+	ProjectID      *int `jsonapi:"attr,projectId"`
 	SourceBackupID *int
 
 	// Domain specific fields

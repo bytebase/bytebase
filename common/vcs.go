@@ -31,7 +31,7 @@ type VCSPushEvent struct {
 	VCSType            VCSType       `json:"vcsType"`
 	BaseDirectory      string        `json:"baseDir"`
 	Ref                string        `json:"ref"`
-	RepositoryID       string        `json:"repositoryID"`
+	RepositoryID       string        `json:"repositoryId"`
 	RepositoryURL      string        `json:"repositoryURL"`
 	RepositoryFullPath string        `json:"repositoryFullPath"`
 	AuthorName         string        `json:"authorName"`

@@ -97,7 +97,7 @@ type ActivityIssueCreatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	// If we create a rollback issue, this field records the issue id to be rolled back.
-	RollbackIssueID int `json:"rollbackIssueID,omitempty"`
+	RollbackIssueID int `json:"rollbackIssueId,omitempty"`
 }
 
 type ActivityIssueCommentCreatePayload struct {
@@ -106,7 +106,7 @@ type ActivityIssueCommentCreatePayload struct {
 }
 
 type ActivityIssueFieldUpdatePayload struct {
-	FieldID  IssueFieldID `json:"fieldID"`
+	FieldID  IssueFieldID `json:"fieldId"`
 	OldValue string       `json:"oldValue,omitempty"`
 	NewValue string       `json:"newValue,omitempty"`
 	// Used by inbox to display info without paying the join cost
@@ -121,7 +121,7 @@ type ActivityIssueStatusUpdatePayload struct {
 }
 
 type ActivityPipelineTaskStatusUpdatePayload struct {
-	TaskID    int        `json:"taskID"`
+	TaskID    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
@@ -130,16 +130,16 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 }
 
 type ActivityPipelineTaskFileCommitPayload struct {
-	TaskID             int    `json:"taskID"`
+	TaskID             int    `json:"taskId"`
 	VCSInstanceURL     string `json:"vcsInstanceURL,omitempty"`
 	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
 	Branch             string `json:"branch,omitempty"`
 	FilePath           string `json:"filePath,omitempty"`
-	CommitID           string `json:"commitID,omitempty"`
+	CommitID           string `json:"commitId,omitempty"`
 }
 
 type ActivityMemberCreatePayload struct {
-	PrincipalID    int          `json:"principalID"`
+	PrincipalID    int          `json:"principalId"`
 	PrincipalName  string       `json:"principalName"`
 	PrincipalEmail string       `json:"principalEmail"`
 	MemberStatus   MemberStatus `json:"memberStatus"`
@@ -147,7 +147,7 @@ type ActivityMemberCreatePayload struct {
 }
 
 type ActivityMemberRoleUpdatePayload struct {
-	PrincipalID    int    `json:"principalID"`
+	PrincipalID    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`
 	OldRole        Role   `json:"oldRole"`
@@ -155,7 +155,7 @@ type ActivityMemberRoleUpdatePayload struct {
 }
 
 type ActivityMemberActivateDeactivatePayload struct {
-	PrincipalID    int    `json:"principalID"`
+	PrincipalID    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
 	PrincipalEmail string `json:"principalEmail"`
 	Role           Role   `json:"role"`
@@ -165,12 +165,12 @@ type ActivityProjectRepositoryPushPayload struct {
 	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
 	// Used by activity table to display info without paying the join cost
 	// IssueID/IssueName only exist if the push event leads to the issue creation.
-	IssueID   int    `json:"issueID,omitempty"`
+	IssueID   int    `json:"issueId,omitempty"`
 	IssueName string `json:"issueName,omitempty"`
 }
 
 type ActivityProjectDatabaseTransferPayload struct {
-	DatabaseID int `json:"databaseID,omitempty"`
+	DatabaseID int `json:"databaseId,omitempty"`
 	// Used by activity table to display info without paying the join cost
 	DatabaseName string `json:"databaseName,omitempty"`
 }
@@ -188,7 +188,7 @@ type Activity struct {
 	// Related fields
 	// The object where this activity belongs
 	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerID int `jsonapi:"attr,containerID"`
+	ContainerID int `jsonapi:"attr,containerId"`
 
 	// Domain specific fields
 	Type    ActivityType  `jsonapi:"attr,type"`
@@ -203,7 +203,7 @@ type ActivityCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	ContainerID int          `jsonapi:"attr,containerID"`
+	ContainerID int          `jsonapi:"attr,containerId"`
 	Type        ActivityType `jsonapi:"attr,type"`
 	Level       ActivityLevel
 	Comment     string `jsonapi:"attr,comment"`

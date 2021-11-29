@@ -18,7 +18,7 @@ type Stage struct {
 
 	// Related fields
 	// Just returns PipelineID otherwise would cause circular dependency.
-	PipelineID    int `jsonapi:"attr,pipelineID"`
+	PipelineID    int `jsonapi:"attr,pipelineId"`
 	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 	TaskList      []*Task      `jsonapi:"relation,task"`
@@ -33,7 +33,7 @@ type StageCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID int `jsonapi:"attr,environmentID"`
+	EnvironmentID int `jsonapi:"attr,environmentId"`
 	PipelineID    int
 	TaskList      []TaskCreate `jsonapi:"attr,taskList"`
 
