@@ -30,6 +30,44 @@
           <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
           <span class="text-accent"> {{ autoBackupHourText }}</span>
         </div>
+        <div class="mt-2">
+          <label for="hookURL" class="textlabel">
+            Webhook URL
+          </label>
+          <div class="mt-1 textinfolabel">
+            An HTTP POST request will be sent to it after a successful backup. 
+            <a
+             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook" 
+             class="normal-link inline-flex flex-row items-center"
+            >
+            Learn more.
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+            </a>
+          </div>
+          <input
+            id="hookURL"
+            name="hookURL"
+            type="text"
+            class="textfield mt-1 w-full"
+            placeholder="https://betteruptime.com/api/v1/heartbeat/..."
+            :disabled="!allowEdit"
+            v-model="state.autoBackupUpdatedHookURL"
+          />
+          <button class="btn-primary mt-2" :disabled="!allowEdit || !URLChanged" @click.prevent="updateBackupHookURL()">Update</button>
+        </div>
       </div>
       <div
         v-else
@@ -101,13 +139,15 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { cloneDeep, isEmpty } from "lodash";
+import { cloneDeep, isEmpty, isEqual } from "lodash";
 
 interface LocalState {
   showCreateBackupModal: boolean;
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
+  autoBackupHookURL: string;
+  autoBackupUpdatedHookURL: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -139,6 +179,8 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
+      autoBackupHookURL: '',
+      autoBackupUpdatedHookURL: '',
     });
 
     onUnmounted(() => {
@@ -166,6 +208,8 @@ export default {
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
+      state.autoBackupHookURL = backupSetting.hookURL;
+      state.autoBackupUpdatedHookURL = backupSetting.hookURL;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
@@ -241,6 +285,10 @@ export default {
     const allowDisableAutoBackup = computed(() => {
       return props.allowAdmin && backupPolicy.value == "UNSET";
     });
+
+    const URLChanged = computed(() => {
+      return !isEqual(state.autoBackupHookURL, state.autoBackupUpdatedHookURL);
+    })
 
     const createBackup = (backupName: string) => {
       // Create backup
@@ -330,6 +378,28 @@ export default {
         });
     };
 
+    const updateBackupHookURL = () => {
+      const newBackupSetting: BackupSettingUpsert = {
+        databaseID: props.database.id,
+        enabled: state.autoBackupEnabled,
+        hour: state.autoBackupHour,
+        dayOfWeek: state.autoBackupDayOfWeek,
+        hookURL: state.autoBackupUpdatedHookURL,
+      };
+      store
+        .dispatch("backup/upsertBackupSetting", {
+          newBackupSetting: newBackupSetting,
+        })
+        .then((backupSetting: BackupSetting) => {
+          assignBackupSetting(backupSetting);
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Updated backup hook URL for database '${props.database.name}'.`,
+          });
+        });
+    }
+
     function localToUTC(hour: number, dayOfWeek: number) {
       return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);
     }
@@ -366,6 +436,8 @@ export default {
       backupPolicy,
       createBackup,
       toggleAutoBackup,
+      URLChanged,
+      updateBackupHookURL,
     };
   },
 };
