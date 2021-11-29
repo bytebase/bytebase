@@ -57,7 +57,7 @@ const (
 // json naming convention
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
-	ProjectID    int    `json:"projectID,omitempty"`
+	ProjectID    int    `json:"projectId,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	Statement    string `json:"statement,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
@@ -74,7 +74,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
-	BackupID int `json:"backupID,omitempty"`
+	BackupID int `json:"backupId,omitempty"`
 }
 
 // TaskDatabaseRestorePayload is the task payload for database restore.
@@ -82,7 +82,7 @@ type TaskDatabaseRestorePayload struct {
 	// The database name we restore to. When we restore a backup to a new database, we only have the database name
 	// and don't have the database id upon constructing the task yet.
 	DatabaseName string `json:"databaseName,omitempty"`
-	BackupID     int    `json:"backupID,omitempty"`
+	BackupID     int    `json:"backupId,omitempty"`
 }
 
 type Task struct {
@@ -98,8 +98,8 @@ type Task struct {
 
 	// Related fields
 	// Just returns PipelineID and StageID otherwise would cause circular dependency.
-	PipelineID int `jsonapi:"attr,pipelineID"`
-	StageID    int `jsonapi:"attr,stageID"`
+	PipelineID int `jsonapi:"attr,pipelineId"`
+	StageID    int `jsonapi:"attr,stageId"`
 	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
 	// Tasks like creating database may not have database.
@@ -123,9 +123,9 @@ type TaskCreate struct {
 	// Related fields
 	PipelineID int
 	StageID    int
-	InstanceID int `jsonapi:"attr,instanceID"`
+	InstanceID int `jsonapi:"attr,instanceId"`
 	// Tasks like creating database may not have database.
-	DatabaseID *int `jsonapi:"attr,databaseID"`
+	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Name   string     `jsonapi:"attr,name"`
@@ -138,7 +138,7 @@ type TaskCreate struct {
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
-	BackupID          *int   `jsonapi:"attr,backupID"`
+	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *common.VCSPushEvent
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }

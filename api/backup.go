@@ -78,7 +78,7 @@ type Backup struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	DatabaseID int `jsonapi:"attr,databaseID"`
+	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Name           string               `jsonapi:"attr,name"`
@@ -98,7 +98,7 @@ type BackupCreate struct {
 	CreatorID int
 
 	// Related fields
-	DatabaseID int `jsonapi:"attr,databaseID"`
+	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Name                    string               `jsonapi:"attr,name"`
@@ -153,7 +153,7 @@ type BackupSetting struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	DatabaseID int `jsonapi:"attr,databaseID"`
+	DatabaseID int `jsonapi:"attr,databaseId"`
 	// Do not return this to the client since the client always has the database context and fetching the
 	// database object and all its own related objects is a bit expensive.
 	Database *Database
@@ -185,7 +185,7 @@ type BackupSettingUpsert struct {
 	UpdaterID int
 
 	// Related fields
-	DatabaseID    int `jsonapi:"attr,databaseID"`
+	DatabaseID    int `jsonapi:"attr,databaseId"`
 	EnvironmentID int
 
 	// Domain specific fields

@@ -95,7 +95,7 @@ type TaskCheckRun struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	TaskID int `jsonapi:"attr,taskID"`
+	TaskID int `jsonapi:"attr,taskId"`
 
 	// Domain specific fields
 	Status  TaskCheckRunStatus `jsonapi:"attr,status"`

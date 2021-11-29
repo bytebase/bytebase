@@ -28,9 +28,9 @@ type Principal struct {
 	ID int `jsonapi:"primary,principal"`
 
 	// Standard fields
-	CreatorID int   `jsonapi:"attr,creatorID"`
+	CreatorID int   `jsonapi:"attr,creatorId"`
 	CreatedTs int64 `jsonapi:"attr,createdTs"`
-	UpdaterID int   `jsonapi:"attr,updaterID"`
+	UpdaterID int   `jsonapi:"attr,updaterId"`
 	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
@@ -49,9 +49,9 @@ type Principal struct {
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID        int           `json:"id"`
-		CreatorID int           `json:"creatorID"`
+		CreatorID int           `json:"creatorId"`
 		CreatedTs int64         `json:"createdTs"`
-		UpdaterID int           `json:"updaterID"`
+		UpdaterID int           `json:"updaterId"`
 		UpdatedTs int64         `json:"updatedTs"`
 		Type      PrincipalType `json:"type"`
 		Name      string        `json:"name"`

@@ -4,7 +4,7 @@ import "context"
 
 type IssueSubscriber struct {
 	// Domain specific fields
-	IssueID      int `jsonapi:"attr,issueID"`
+	IssueID      int `jsonapi:"attr,issueId"`
 	SubscriberID int
 	Subscriber   *Principal `jsonapi:"attr,subscriber"`
 }
@@ -12,7 +12,7 @@ type IssueSubscriber struct {
 type IssueSubscriberCreate struct {
 	// Domain specific fields
 	IssueID      int
-	SubscriberID int `jsonapi:"attr,subscriberID"`
+	SubscriberID int `jsonapi:"attr,subscriberId"`
 }
 
 type IssueSubscriberFind struct {

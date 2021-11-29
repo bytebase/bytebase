@@ -35,7 +35,7 @@ type ProjectMember struct {
 
 	// Related fields
 	// Just returns ProjectID otherwise would cause circular dependency.
-	ProjectID int `jsonapi:"attr,projectID"`
+	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`
@@ -53,7 +53,7 @@ type ProjectMemberCreate struct {
 
 	// Domain specific fields
 	Role        ProjectRole `jsonapi:"attr,role"`
-	PrincipalID int         `jsonapi:"attr,principalID"`
+	PrincipalID int         `jsonapi:"attr,principalId"`
 }
 
 type ProjectMemberFind struct {

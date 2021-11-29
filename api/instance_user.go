@@ -9,7 +9,7 @@ type InstanceUser struct {
 	ID int `jsonapi:"primary,instanceUser"`
 
 	// Related fields
-	InstanceID int `jsonapi:"attr,instanceID"`
+	InstanceID int `jsonapi:"attr,instanceId"`
 
 	// Domain specific fields
 	Name  string `jsonapi:"attr,name"`
