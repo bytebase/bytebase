@@ -55,7 +55,7 @@
                       text-control-light
                       hover:bg-gray-100
                     "
-                    @click.prevent="copyRedirecURI"
+                    @click.prevent="copyRedirectURI"
                   >
                     <svg
                       class="w-6 h-6"
@@ -109,7 +109,7 @@
         class="mt-2 w-full"
         :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77bexa8edda'"
         :value="config.applicationID"
-        @input="changeApplicatonID($event.target.value)"
+        @input="changeApplicationID($event.target.value)"
       />
       <p v-if="state.showApplicationIDError" class="mt-2 text-sm text-error">
         Application ID must be a 64-character alphanumeric string
@@ -157,7 +157,7 @@ export default {
       type: Object as PropType<VCSConfig>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const state = reactive<LocalState>({
       showApplicationIDError:
@@ -184,7 +184,7 @@ export default {
       return "";
     });
 
-    const copyRedirecURI = () => {
+    const copyRedirectURI = () => {
       toClipboard(redirectURL()).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
@@ -194,7 +194,7 @@ export default {
       });
     };
 
-    const changeApplicatonID = (value: string) => {
+    const changeApplicationID = (value: string) => {
       props.config.applicationID = value;
 
       if (state.applicationIDValidationTimer) {
@@ -252,8 +252,8 @@ export default {
       redirectURL,
       state,
       createAdminApplicationURL,
-      copyRedirecURI,
-      changeApplicatonID,
+      copyRedirectURI,
+      changeApplicationID,
       changeSecret,
     };
   },

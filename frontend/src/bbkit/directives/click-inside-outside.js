@@ -57,13 +57,8 @@ function onEvent({ el, event, handler, middleware }) {
 }
 
 function beforeMount(el, { value }) {
-  const {
-    events,
-    handler,
-    middleware,
-    isActive,
-    detectIframe,
-  } = processDirectiveArguments(value);
+  const { events, handler, middleware, isActive, detectIframe } =
+    processDirectiveArguments(value);
   if (!isActive) {
     return;
   }

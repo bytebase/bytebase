@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="state.columnList"
-    :dataSource="instanceList"
-    :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :column-list="state.columnList"
+    :data-source="instanceList"
+    :show-header="true"
+    :left-bordered="false"
+    :right-bordered="false"
     @click-row="clickInstance"
   >
-    <template v-slot:body="{ rowData: instance }">
-      <BBTableCell :leftPadding="4" class="w-4">
+    <template #body="{ rowData: instance }">
+      <BBTableCell :left-padding="4" class="w-4">
         <InstanceEngineIcon :instance="instance" />
       </BBTableCell>
       <BBTableCell class="w-32">
@@ -62,7 +62,7 @@ import { EnvironmentID, Instance } from "../types";
 
 interface LocalState {
   columnList: BBTableColumn[];
-  dataSource: Object[];
+  dataSource: any[];
 }
 
 export default {
@@ -74,7 +74,7 @@ export default {
       type: Object as PropType<Instance[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

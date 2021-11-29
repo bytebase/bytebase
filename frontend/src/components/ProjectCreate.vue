@@ -63,8 +63,8 @@ interface LocalState {
 
 export default {
   name: "ProjectCreate",
-  emits: ["dismiss"],
   props: {},
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

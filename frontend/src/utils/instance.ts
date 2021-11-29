@@ -14,10 +14,10 @@ export function sortInstanceList(
   environmentList: Environment[]
 ): Instance[] {
   return list.sort((a: Instance, b: Instance) => {
-    var aEnvIndex = -1;
-    var bEnvIndex = -1;
+    let aEnvIndex = -1;
+    let bEnvIndex = -1;
 
-    for (var i = 0; i < environmentList.length; i++) {
+    for (let i = 0; i < environmentList.length; i++) {
       if (environmentList[i].id == a.environment.id) {
         aEnvIndex = i;
       }

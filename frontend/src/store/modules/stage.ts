@@ -1,4 +1,3 @@
-
 import {
   ResourceIdentifier,
   ResourceObject,
@@ -67,7 +66,7 @@ const getters = {
     (stage: ResourceObject, includedList: ResourceObject[]): Stage => {
       // It's only called when pipeline tries to convert itself, so we don't have a issue yet.
       const pipelineID = stage.attributes.pipelineID as PipelineID;
-      let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
+      const pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
       pipeline.id = pipelineID;
 
       const result: Stage = {

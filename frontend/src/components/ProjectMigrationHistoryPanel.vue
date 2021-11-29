@@ -7,8 +7,8 @@
       </div>
       <MigrationHistoryTable
         :mode="'PROJECT'"
-        :databaseSectionList="state.databaseSectionList"
-        :historySectionList="state.migrationHistorySectionList"
+        :database-section-list="state.databaseSectionList"
+        :history-section-list="state.migrationHistorySectionList"
       />
     </template>
     <template v-else>
@@ -49,12 +49,11 @@ import {
   MigrationHistory,
   Project,
 } from "../types";
-import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { fullDatabasePath } from "../utils";
 
 // Show at most 5 recent migration history for each database
-const MAX_MIGRAION_HISTORY_COUNT = 5;
+const MAX_MIGRATION_HISTORY_COUNT = 5;
 
 interface LocalState {
   databaseSectionList: Database[];
@@ -74,11 +73,10 @@ export default {
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const searchField = ref();
 
     const store = useStore();
-    const router = useRouter();
 
     const state = reactive<LocalState>({
       databaseSectionList: [],
@@ -97,7 +95,7 @@ export default {
                 .dispatch("instance/fetchMigrationHistory", {
                   instanceID: database.instance.id,
                   databaseName: database.name,
-                  limit: MAX_MIGRAION_HISTORY_COUNT,
+                  limit: MAX_MIGRATION_HISTORY_COUNT,
                 })
                 .then((migrationHistoryList: MigrationHistory[]) => {
                   if (migrationHistoryList.length > 0) {

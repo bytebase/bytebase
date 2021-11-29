@@ -3,7 +3,15 @@
     <label for="search" class="sr-only">Search</label>
     <div class="relative rounded-md shadow-sm">
       <div
-        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+        class="
+          absolute
+          inset-y-0
+          left-0
+          pl-3
+          flex
+          items-center
+          pointer-events-none
+        "
         aria-hidden="true"
       >
         <!-- Heroicon name: solid/search -->
@@ -22,11 +30,19 @@
         </svg>
       </div>
       <input
+        id="search"
         type="text"
         autocomplete="off"
         name="search"
-        id="search"
-        class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
+        class="
+          focus:ring-main focus:border-main
+          block
+          w-full
+          pl-9
+          sm:text-sm
+          border-control-border
+          rounded-md
+        "
         :placeholder="placeholder"
         @input="$emit('change-text', $event.target.value)"
       />
@@ -37,13 +53,12 @@
 <script lang="ts">
 export default {
   name: "BBTableSearch",
-  emits: ["change-text"],
   props: {
     placeholder: {
       default: "Search",
       type: String,
     },
   },
-  setup(props, ctx) {},
+  emits: ["change-text"],
 };
 </script>

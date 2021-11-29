@@ -31,16 +31,16 @@
         </h3>
       </div>
       <button
-        @click.prevent="testWebhook"
         type="button"
         class="btn-normal whitespace-nowrap items-center"
+        @click.prevent="testWebhook"
       >
         Test Webhook
       </button>
     </div>
     <ProjectWebhookForm
       class="pt-4"
-      :allowEdit="allowEdit"
+      :allow-edit="allowEdit"
       :create="false"
       :project="project"
       :webhook="projectWebhook"
@@ -53,13 +53,11 @@ import { computed } from "@vue/runtime-core";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
-import {
-  ProjectWebhookTestResult,
-  PROJECT_HOOK_TYPE_ITEM_LIST,
-} from "../types";
+import { ProjectWebhookTestResult } from "../types";
 
 export default {
   name: "ProjectWebhookDetail",
+  components: { ProjectWebhookForm },
   props: {
     projectSlug: {
       required: true,
@@ -74,8 +72,7 @@ export default {
       type: Boolean,
     },
   },
-  components: { ProjectWebhookForm },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const project = computed(() => {

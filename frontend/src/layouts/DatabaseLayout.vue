@@ -1,16 +1,15 @@
 <template>
   <router-view
     v-if="dataSourceSlug"
-    :databaseSlug="databaseSlug"
-    :dataSourceSlug="dataSourceSlug"
+    :database-slug="databaseSlug"
+    :data-source-slug="dataSourceSlug"
   />
-  <router-view v-else :databaseSlug="databaseSlug" />
+  <router-view v-else :database-slug="databaseSlug" />
 </template>
 
 <script lang="ts">
 export default {
   name: "DatabaseLayout",
-  components: {},
   props: {
     databaseSlug: {
       required: true,
@@ -20,6 +19,5 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

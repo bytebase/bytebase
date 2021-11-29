@@ -6,12 +6,12 @@
           New database name <span class="text-red-600">*</span>
         </label>
         <input
-          required
           id="name"
+          v-model="state.databaseName"
+          required
           name="name"
           type="text"
           class="textfield mt-1 w-full"
-          v-model="state.databaseName"
         />
         <span v-if="isReservedName" class="text-red-600"
           >{{ state.databaseName }} is a reserved name</span
@@ -22,9 +22,10 @@
         <label for="project" class="textlabel">
           Project <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
           :disabled="!allowEditProject"
           :selectedID="state.projectID"
@@ -36,9 +37,10 @@
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
-          class="mt-1 w-full"
           id="environment"
+          class="mt-1 w-full"
           name="environment"
           :disabled="!allowEditEnvironment"
           :selectedID="state.environmentID"
@@ -57,9 +59,10 @@
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
-            class="mt-1"
             id="instance"
+            class="mt-1"
             name="instance"
             :disabled="!allowEditInstance"
             :selectedID="state.instanceID"
@@ -85,11 +88,11 @@
           >
           <input
             id="charset"
+            v-model="state.characterSet"
             name="charset"
             type="text"
             class="textfield mt-1 w-full"
             :placeholder="defaultCharset(selectedInstance.engine)"
-            v-model="state.characterSet"
           />
         </div>
 
@@ -97,13 +100,13 @@
           <label for="collation" class="textlabel"> Collation </label>
           <input
             id="collation"
+            v-model="state.collation"
             name="collation"
             type="text"
             class="textfield mt-1 w-full"
             :placeholder="
               defaultCollation(selectedInstance.engine) || 'default'
             "
-            v-model="state.collation"
           />
         </div>
       </template>
@@ -113,11 +116,12 @@
           Assignee <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
-          class="mt-1"
           id="user"
+          class="mt-1"
           name="user"
-          :allowedRoleList="['OWNER', 'DBA']"
+          :allowed-role-list="['OWNER', 'DBA']"
           :selectedID="state.assigneeID"
           :placeholder="'Select assignee'"
           @select-principal-id="selectAssignee"
@@ -188,7 +192,13 @@ interface LocalState {
 
 export default {
   name: "CreateDatabasePrepForm",
-  emits: ["dismiss"],
+  components: {
+    InstanceSelect,
+    EnvironmentSelect,
+    ProjectSelect,
+    MemberSelect,
+    InstanceEngineIcon,
+  },
   props: {
     projectID: {
       type: Number as PropType<ProjectID>,
@@ -204,13 +214,7 @@ export default {
       type: Object as PropType<Backup>,
     },
   },
-  components: {
-    InstanceSelect,
-    EnvironmentSelect,
-    ProjectSelect,
-    MemberSelect,
-    InstanceEngineIcon,
-  },
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

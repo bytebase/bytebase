@@ -72,18 +72,19 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { Issue, IssueSubscriber } from "../types";
 import { useStore } from "vuex";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "IssueSubscriberPanel",
-  emits: ["add-subscriber-id", "remove-subscriber-id"],
+  components: { PrincipalAvatar },
   props: {
     issue: {
       required: true,
       type: Object as PropType<Issue>,
     },
   },
-  components: { PrincipalAvatar },
+  emits: ["add-subscriber-id", "remove-subscriber-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({});

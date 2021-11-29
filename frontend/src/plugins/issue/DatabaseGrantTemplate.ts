@@ -53,7 +53,7 @@ const template: IssueTemplate = {
       name: "Read Only",
       type: "Boolean",
       allowEditAfterCreation: false,
-      resolved: (ctx: IssueContext): boolean => {
+      resolved: (/* ctx: IssueContext */): boolean => {
         return true;
       },
     },

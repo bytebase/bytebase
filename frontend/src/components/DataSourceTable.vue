@@ -51,23 +51,23 @@
           </svg>
         </button>
         <BBTableSearch
-          class="w-56"
           ref="searchField"
+          class="w-56"
           :placeholder="database ? 'Search name' : 'Search name, database'"
           @change-text="(text) => changeSearchText(text)"
         />
       </div>
     </div>
     <BBTable
-      :columnList="columnList"
-      :sectionDataSource="dataSourceSectionList"
-      :showHeader="true"
-      :compactSection="database != undefined"
+      :column-list="columnList"
+      :section-data-source="dataSourceSectionList"
+      :show-header="true"
+      :compact-section="database != undefined"
       @click-row="clickDataSource"
     >
-      <template v-slot:header>
+      <template #header>
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-24"
           :title="columnList[0].title"
         />
@@ -77,8 +77,8 @@
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
       </template>
-      <template v-slot:body="{ rowData: dataSource }">
-        <BBTableCell :leftPadding="4">
+      <template #body="{ rowData: dataSource }">
+        <BBTableCell :left-padding="4">
           <span class="">{{ dataSource.name }}</span>
         </BBTableCell>
         <BBTableCell v-data-source-type>
@@ -105,7 +105,7 @@
     @close="state.showCreateModal = false"
   >
     <DataSourceCreateForm
-      :instanceID="instance.id"
+      :instance-i-d="instance.id"
       :database="database"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -120,7 +120,7 @@ import { useRouter } from "vue-router";
 import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
 import { BBTableColumn } from "../bbkit/types";
 
-import { databaseSlug, dataSourceSlug, instanceSlug } from "../utils";
+import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 
 const columnList: BBTableColumn[] = [
@@ -163,7 +163,7 @@ export default {
       type: Object as PropType<Database>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

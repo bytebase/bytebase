@@ -49,8 +49,6 @@ interface LocalState {
 
 export default {
   name: "DatabaseSelect",
-  emits: ["select-database-id"],
-  components: {},
   props: {
     selectedID: {
       required: true,
@@ -77,6 +75,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["select-database-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
@@ -162,7 +161,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );

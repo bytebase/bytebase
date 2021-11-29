@@ -79,7 +79,6 @@ import { computed, PropType } from "@vue/runtime-core";
 import { BBAttentionStyle } from "./types";
 export default {
   name: "BBAttention",
-  emits: ["click-action"],
   props: {
     style: {
       type: String as PropType<BBAttentionStyle>,
@@ -98,7 +97,8 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {
+  emits: ["click-action"],
+  setup(props) {
     const color = computed(() => {
       switch (props.style) {
         case "INFO":

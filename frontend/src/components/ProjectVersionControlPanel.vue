@@ -21,6 +21,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              v-model="state.workflowType"
               name="UI workflow"
               tabindex="-1"
               type="radio"
@@ -31,7 +32,6 @@
               "
               value="UI"
               :disabled="!allowEdit"
-              v-model="state.workflowType"
             />
             <div class="-mt-0.5">
               <div class="textlabel">UI workflow (no version control)</div>
@@ -45,6 +45,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.workflowType"
               name="Version control workflow"
               tabindex="-1"
               type="radio"
@@ -55,7 +56,6 @@
               "
               value="VCS"
               :disabled="!allowEdit"
-              v-model="state.workflowType"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Version control workflow</div>
@@ -100,7 +100,7 @@
         <RepositoryPanel
           :project="project"
           :repository="repository"
-          :allowEdit="allowEdit"
+          :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
         />
       </template>
@@ -155,7 +155,7 @@ export default {
 
     watch(
       () => props.project,
-      (cur, _) => {
+      (cur) => {
         state.workflowType = cur.workflowType;
       }
     );

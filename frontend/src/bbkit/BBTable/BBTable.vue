@@ -108,18 +108,17 @@ import { BBTableColumn, BBTableSectionDataSource } from "../types";
 export default {
   name: "BBTable",
   components: {},
-  emits: ["click-row"],
   props: {
     columnList: {
       required: true,
       type: Object as PropType<BBTableColumn[]>,
     },
     dataSource: {
-      default: new Array(),
-      type: Object as PropType<Object[]>,
+      default: () => [],
+      type: Array as PropType<any[]>,
     },
     sectionDataSource: {
-      type: Object as PropType<BBTableSectionDataSource<Object>[]>,
+      type: Array as PropType<BBTableSectionDataSource<any>[]>,
     },
     // Only applicable to sectionDataSource. If true, when there is only one
     // section, it won't render the extra section header. In another words, it will
@@ -153,7 +152,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  emits: ["click-row"],
+  setup(props) {
     const borderVisibility = computed(() => {
       const style = [];
       if (props.leftBordered) {

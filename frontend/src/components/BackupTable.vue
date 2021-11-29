@@ -1,15 +1,15 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :sectionDataSource="backupSectionList"
-    :showHeader="true"
-    :rowClickable="false"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="columnList"
+    :section-data-source="backupSectionList"
+    :show-header="true"
+    :row-clickable="false"
+    :left-bordered="true"
+    :right-bordered="true"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-4"
         :title="columnList[0].title"
       />
@@ -24,8 +24,8 @@
         :title="columnList[6].title"
       />
     </template>
-    <template v-slot:body="{ rowData: backup }">
-      <BBTableCell :leftPadding="4">
+    <template #body="{ rowData: backup }">
+      <BBTableCell :left-padding="4">
         <span
           class="flex items-center justify-center rounded-full select-none"
           :class="statusIconClass(backup)"
@@ -126,6 +126,7 @@
       }
     "
   >
+    <!-- eslint-disable vue/attribute-hyphenation -->
     <CreateDatabasePrepForm
       :projectID="database.project.id"
       :environmentID="database.instance.environment.id"
@@ -218,7 +219,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
     const store = useStore();
 

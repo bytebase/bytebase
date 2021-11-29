@@ -1,15 +1,15 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :sectionDataSource="anomalySectionList"
-    :compactSection="compactSection"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="COLUMN_LIST"
+    :section-data-source="anomalySectionList"
+    :compact-section="compactSection"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-4"
         :title="COLUMN_LIST[0].title"
       />
@@ -18,8 +18,8 @@
       <BBTableHeaderCell :title="COLUMN_LIST[3].title" />
       <BBTableHeaderCell :title="COLUMN_LIST[4].title" />
     </template>
-    <template v-slot:body="{ rowData: anomaly }">
-      <BBTableCell :leftPadding="4">
+    <template #body="{ rowData: anomaly }">
+      <BBTableCell :left-padding="4">
         <svg
           v-if="anomaly.severity == 'MEDIUM'"
           class="w-6 h-6 text-info"
@@ -86,18 +86,18 @@
   <BBModal
     v-if="state.showModal"
     :title="`'${state.selectedAnomaly.database.name}' schema drift - ${state.selectedAnomaly.payload.version} vs Actual`"
-    @close="dimissModal"
+    @close="dismissModal"
   >
     <div class="space-y-4">
       <code-diff
         class="w-full"
         :old-string="state.selectedAnomaly.payload.expect"
         :new-string="state.selectedAnomaly.payload.actual"
-        :fileName="`${state.selectedAnomaly.payload.version} (left) vs Actual (right)`"
+        :file-name="`${state.selectedAnomaly.payload.version} (left) vs Actual (right)`"
         output-format="side-by-side"
       />
       <div class="flex justify-end px-4">
-        <button type="button" class="btn-primary" @click.prevent="dimissModal">
+        <button type="button" class="btn-primary" @click.prevent="dismissModal">
           Close
         </button>
       </div>
@@ -106,7 +106,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { PropType, reactive } from "vue";
 import { CodeDiff } from "v-code-diff";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import {
@@ -163,7 +163,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -304,7 +304,7 @@ export default {
       }
     };
 
-    const dimissModal = () => {
+    const dismissModal = () => {
       state.showModal = false;
       state.selectedAnomaly = undefined;
     };
@@ -315,7 +315,7 @@ export default {
       typeName,
       detail,
       action,
-      dimissModal,
+      dismissModal,
     };
   },
 };

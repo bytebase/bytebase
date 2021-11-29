@@ -41,9 +41,5 @@ export default {
       type: Object as PropType<Instance>,
     },
   },
-  components: {},
-  setup(props, ctx) {
-    return {};
-  },
 };
 </script>

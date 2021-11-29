@@ -19,10 +19,8 @@ import PricingTable from "../components/PricingTable.vue";
 
 export default {
   name: "SettingWorkspacePlan",
-  props: {},
   components: {
     PricingTable,
   },
-  setup(props, ctx) {},
 };
 </script>

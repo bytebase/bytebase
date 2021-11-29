@@ -78,8 +78,7 @@ export default {
       default: "normal",
     },
   },
-  components: {},
-  setup(props, ctx) {
+  setup(props) {
     const issueIconClass = () => {
       let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
       switch (props.issueStatus) {

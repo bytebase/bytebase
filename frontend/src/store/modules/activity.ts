@@ -89,7 +89,7 @@ const actions = {
       limit?: number;
     }
   ) {
-    var queryList = [`container=${projectID}`];
+    const queryList = [`container=${projectID}`];
     if (limit) {
       queryList.push(`limit=${limit}`);
     }

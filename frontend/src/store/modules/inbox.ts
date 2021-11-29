@@ -145,7 +145,7 @@ const mutations = {
       inbox: Inbox;
     }
   ) {
-    for (let [_, inboxList] of state.inboxListByUser) {
+    for (const [_, inboxList] of state.inboxListByUser) {
       const i = inboxList.findIndex((item: Inbox) => item.id == inboxID);
       if (i >= 0) {
         inboxList[i] = inbox;

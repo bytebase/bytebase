@@ -22,15 +22,15 @@
 import { reactive } from "@vue/reactivity";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "SettingWorkspaceVCSCreate",
-  props: {},
   components: {
     VCSSetupWizard,
   },
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({});
 
     return {

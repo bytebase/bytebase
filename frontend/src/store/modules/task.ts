@@ -168,11 +168,11 @@ const getters = {
     (task: ResourceObject, includedList: ResourceObject[]): Task => {
       // It's only called when pipeline/stage tries to convert itself, so we don't have a issue yet.
       const pipelineID = task.attributes.pipelineID as PipelineID;
-      let pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
+      const pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
       pipeline.id = pipelineID;
 
       const stageID = task.attributes.stageID as StageID;
-      let stage: Stage = unknown("STAGE") as Stage;
+      const stage: Stage = unknown("STAGE") as Stage;
       stage.id = stageID;
 
       return {

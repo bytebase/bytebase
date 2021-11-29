@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :dataSource="task.taskRunList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="false"
+    :column-list="columnList"
+    :data-source="task.taskRunList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="false"
   >
-    <template v-slot:body="{ rowData: taskRun }">
-      <BBTableCell :leftPadding="4" class="table-cell w-4">
+    <template #body="{ rowData: taskRun }">
+      <BBTableCell :left-padding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
             class="
@@ -107,7 +107,6 @@ import { PropType } from "vue";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
-import { useStore } from "vuex";
 import { databaseSlug, instanceSlug, migrationHistorySlug } from "../utils";
 
 type CommentLink = {
@@ -142,9 +141,7 @@ export default {
       type: Object as PropType<Task>,
     },
   },
-  setup(props, ctx) {
-    const store = useStore();
-
+  setup(props) {
     const statusIconClass = (status: TaskRunStatus) => {
       switch (status) {
         case "RUNNING":

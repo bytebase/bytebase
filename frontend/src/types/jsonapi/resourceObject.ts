@@ -26,9 +26,8 @@ export type ResourceObjectOrObjects = ResourceObject | ResourceObjects;
 /**
  * A ResourceIdentifier identifies and individual resource.
  */
-export type ResourceIdentifier<
-  T extends ResourceObject = ResourceObject
-> = Pick<T, "type" | "id" | "meta">;
+export type ResourceIdentifier<T extends ResourceObject = ResourceObject> =
+  Pick<T, "type" | "id" | "meta">;
 
 /**
  * A representation of a new Resource Object that

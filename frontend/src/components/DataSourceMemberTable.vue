@@ -13,14 +13,14 @@
     </div>
     <BBTable
       class="mt-2"
-      :columnList="columnList"
-      :dataSource="dataSource.memberList"
-      :showHeader="true"
-      :rowClickable="false"
+      :column-list="columnList"
+      :data-source="dataSource.memberList"
+      :show-header="true"
+      :row-clickable="false"
     >
-      <template v-slot:header>
+      <template #header>
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-auto table-cell"
           :title="columnList[0].title"
         />
@@ -38,8 +38,8 @@
           :title="columnList[3].title"
         />
       </template>
-      <template v-slot:body="{ rowData: member }">
-        <BBTableCell :leftPadding="4" class="table-cell">
+      <template #body="{ rowData: member }">
+        <BBTableCell :left-padding="4" class="table-cell">
           <div class="flex flex-row items-center space-x-2">
             <PrincipalAvatar :principal="member.principal" />
             <div class="flex flex-col">
@@ -86,9 +86,9 @@
         <BBTableCell>
           <BBButtonConfirm
             v-if="allowEdit"
-            :requireConfirm="true"
-            :okText="'Revoke'"
-            :confirmTitle="`Are you sure to revoke '${member.principal.name}' access from '${dataSource.name}'?`"
+            :require-confirm="true"
+            :ok-text="'Revoke'"
+            :confirm-title="`Are you sure to revoke '${member.principal.name}' access from '${dataSource.name}'?`"
             @confirm="deleteMember(member)"
           />
         </BBTableCell>
@@ -100,7 +100,7 @@
       @close="state.showCreateModal = false"
     >
       <DataSourceMemberForm
-        :dataSource="dataSource"
+        :data-source="dataSource"
         @submit="state.showCreateModal = false"
         @cancel="state.showCreateModal = false"
       />
@@ -146,7 +146,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

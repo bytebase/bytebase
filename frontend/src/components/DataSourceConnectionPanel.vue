@@ -51,22 +51,56 @@
       <dd class="mt-2 text-sm text-main">
         <div class="space-y-4">
           <div
-            class="flex"
             v-for="(connection, index) in connectionStringList"
             :key="index"
+            class="flex"
           >
             <span
-              class="whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
+              class="
+                whitespace-nowrap
+                inline-flex
+                items-center
+                px-3
+                rounded-l-md
+                border border-l border-r-0 border-control-border
+                bg-gray-50
+                text-control-light
+                sm:text-sm
+              "
             >
               {{ connection.name }}
             </span>
             <span
-              class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm"
+              class="
+                flex-1
+                min-w-0
+                w-full
+                inline-flex
+                items-center
+                px-3
+                py-2
+                border border-r border-control-border
+                bg-gray-50
+                sm:text-sm
+              "
             >
               {{ connection.value }}
             </span>
             <button
-              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
+              class="
+                -ml-px
+                px-2
+                py-2
+                border border-gray-300
+                text-sm
+                font-medium
+                text-control-light
+                bg-gray-50
+                hover:bg-gray-100
+                focus:ring-control focus:outline-none
+                focus-visible:ring-2
+                focus:ring-offset-1
+              "
               @click.prevent="copyText(connection)"
             >
               <svg
@@ -94,11 +128,11 @@
       <dd class="mt-1 text-sm text-main">
         <input
           v-if="editing"
-          required
           id="username"
+          v-model="dataSource.username"
+          required
           type="text"
           class="textfield"
-          v-model="dataSource.username"
         />
         <div v-else class="mt-2.5 mb-3">
           {{ dataSource.username }}
@@ -111,12 +145,12 @@
       <dd class="mt-1 text-sm text-main">
         <input
           v-if="editing"
+          id="password"
+          v-model="dataSource.password"
           required
           autocomplete="off"
-          id="password"
           :type="state.showPassword ? 'text' : 'password'"
           class="textfield"
-          v-model="dataSource.password"
         />
         <div v-else class="mt-2.5 mb-3">
           <template v-if="state.showPassword">
@@ -146,7 +180,6 @@
 <script lang="ts">
 import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
 
@@ -172,9 +205,8 @@ export default {
       type: Object as PropType<DataSource>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
-    const router = useRouter();
 
     const state = reactive<LocalState>({
       showPassword: false,

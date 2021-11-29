@@ -90,17 +90,17 @@
         <div class="text-lg leading-6 font-medium text-main">Backups</div>
         <button
           v-if="allowEdit"
-          @click.prevent="state.showCreateBackupModal = true"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
+          @click.prevent="state.showCreateBackupModal = true"
         >
           Backup now
         </button>
       </div>
       <BackupTable
         :database="database"
-        :backupList="backupList"
-        :allowEdit="allowEdit"
+        :backup-list="backupList"
+        :allow-edit="allowEdit"
       />
     </div>
     <BBModal
@@ -153,6 +153,10 @@ interface LocalState {
 
 export default {
   name: "DatabaseBackupPanel",
+  components: {
+    BackupTable,
+    DatabaseBackupCreateForm,
+  },
   props: {
     database: {
       required: true,
@@ -167,11 +171,7 @@ export default {
       type: Boolean,
     },
   },
-  components: {
-    BackupTable,
-    DatabaseBackupCreateForm,
-  },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

@@ -1,20 +1,7 @@
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>
-
 <template>
+  <!-- eslint-disable vue/attribute-hyphenation -->
   <DataSourceMemberForm
-    :dataSource="state.dataSource"
+    :data-source="state.dataSource"
     :principalID="state.granteeID"
     :issueID="state.issueID"
     @submit="submit"
@@ -38,9 +25,8 @@ interface LocalState {
 
 export default {
   name: "DatabaseGrant",
-  props: {},
   components: { DataSourceMemberForm },
-  async setup(props, ctx) {
+  async setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -93,3 +79,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

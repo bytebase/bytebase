@@ -1,12 +1,12 @@
 <template>
   <BBSelect
-    :selectedItem="selectedRole"
-    :itemList="['OWNER', 'DBA', 'DEVELOPER']"
+    :selected-item="selectedRole"
+    :item-list="['OWNER', 'DBA', 'DEVELOPER']"
     :placeholder="'Select role'"
     :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       {{
         item == "DBA"
           ? item
@@ -22,8 +22,6 @@ import { RoleType } from "../types";
 
 export default {
   name: "RoleSelect",
-  emits: ["change-role"],
-  components: {},
   props: {
     selectedRole: {
       type: String as PropType<RoleType>,
@@ -33,8 +31,6 @@ export default {
       type: Boolean,
     },
   },
-  setup() {
-    return {};
-  },
+  emits: ["change-role"],
 };
 </script>

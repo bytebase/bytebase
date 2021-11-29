@@ -2,7 +2,7 @@
   <div>
     <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">Activities</p>
-      <ActivityTable :activityList="state.activityList" />
+      <ActivityTable :activity-list="state.activityList" />
     </div>
   </div>
 </template>
@@ -26,7 +26,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

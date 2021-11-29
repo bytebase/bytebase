@@ -3,7 +3,7 @@
   <template v-if="state.notificationList.length > 0">
     <BBNotification
       :placement="'BOTTOM_RIGHT'"
-      :notificationList="state.notificationList"
+      :notification-list="state.notificationList"
       @close="removeNotification"
     />
   </template>
@@ -23,8 +23,8 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 // Check expiration every 30 sec and logout if expired
 const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
 
-const NOTIFICAITON_DURATION = 6000;
-const CRITICAL_NOTIFICAITON_DURATION = 10000;
+const NOTIFICATION_DURATION = 6000;
+const CRITICAL_NOTIFICATION_DURATION = 10000;
 
 interface LocalState {
   notificationList: BBNotificationItem[];
@@ -33,8 +33,7 @@ interface LocalState {
 
 export default {
   name: "App",
-  components: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -89,8 +88,8 @@ export default {
                   removeNotification(item);
                 },
                 notification.style == "CRITICAL"
-                  ? CRITICAL_NOTIFICAITON_DURATION
-                  : NOTIFICAITON_DURATION
+                  ? CRITICAL_NOTIFICATION_DURATION
+                  : NOTIFICATION_DURATION
               );
             }
           }
@@ -99,14 +98,14 @@ export default {
 
     watchEffect(watchNotification);
 
-    onErrorCaptured((e: any, _, info) => {
+    onErrorCaptured((e: any /* , _, info */) => {
       // If e has response, then we assume it's an http error and has already been
       // handled by the axios global handler.
       if (!e.response) {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "CRITICAL",
-          title: `Internal error occured`,
+          title: `Internal error occurred`,
           description: isDev() ? e.stack : undefined,
         });
       }

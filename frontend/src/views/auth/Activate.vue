@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+      <img
+        class="h-12 w-auto"
+        src="../../assets/logo-full.svg"
+        alt="Bytebase"
+      />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         Activate your
         <span class="text-accent font-semnibold">{{
@@ -13,7 +17,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form @submit.prevent="tryActivate" class="space-y-6">
+        <form class="space-y-6" @submit.prevent="tryActivate">
           <div>
             <label
               for="email"
@@ -35,9 +39,9 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="password"
+                v-model="state.password"
                 type="password"
                 autocomplete="on"
-                v-model="state.password"
                 required
                 class="
                   appearance-none
@@ -67,8 +71,8 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="name"
-                type="text"
                 v-model="state.name"
+                type="text"
                 placeholder="Jim Gray"
                 class="
                   appearance-none
@@ -119,7 +123,7 @@ interface LocalState {
 
 export default {
   name: "Activate",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
     const token = router.currentRoute.value.query.token as string;

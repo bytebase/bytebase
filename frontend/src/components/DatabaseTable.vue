@@ -1,16 +1,16 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :dataSource="databaseList"
-    :showHeader="true"
-    :leftBordered="bordered"
-    :rightBordered="bordered"
-    :topBordered="bordered"
-    :bottomBordered="bordered"
+    :column-list="columnList"
+    :data-source="databaseList"
+    :show-header="true"
+    :left-bordered="bordered"
+    :right-bordered="bordered"
+    :top-bordered="bordered"
+    :bottom-bordered="bordered"
     @click-row="clickDatabase"
   >
-    <template v-slot:body="{ rowData: database }">
-      <BBTableCell :leftPadding="4" class="w-16">
+    <template #body="{ rowData: database }">
+      <BBTableCell :left-padding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
           <span>
             {{ database.name }}
@@ -115,7 +115,7 @@
 import { computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { consoleLink, databaseSlug, isDBAOrOwner } from "../utils";
+import { consoleLink, databaseSlug } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
@@ -219,7 +219,6 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 
 export default {
   name: "DatabaseTable",
-  emits: ["select-database"],
   components: { InstanceEngineIcon },
   props: {
     bordered: {
@@ -243,11 +242,12 @@ export default {
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, { emit, attrs }) {
+  emits: ["select-database"],
+  setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    // const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const showInstanceColumn = computed(() => {
       return props.mode != "INSTANCE";

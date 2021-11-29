@@ -10,7 +10,7 @@
       {{ hasRunningTaskCheck ? "Checking..." : "Run checks" }}
     </button>
     <TaskCheckBadgeBar
-      :taskCheckRunList="task.taskCheckRunList"
+      :task-check-run-list="task.taskCheckRunList"
       @select-task-check-run="
         (checkRun) => {
           viewCheckRunDetail(checkRun);
@@ -20,15 +20,15 @@
     <BBModal
       v-if="state.showModal"
       :title="`Check result for '${task.name}'`"
-      @close="dimissModal"
+      @close="dismissDialog"
     >
       <div class="space-y-4 w-208">
         <div>
           <TaskCheckBadgeBar
-            :taskCheckRunList="task.taskCheckRunList"
-            :allowSelection="true"
-            :stickySelection="true"
-            :selectedTaskCheckRun="state.selectedTaskCheckRun"
+            :task-check-run-list="task.taskCheckRunList"
+            :allow-selection="true"
+            :sticky-selection="true"
+            :selected-task-check-run="state.selectedTaskCheckRun"
             @select-task-check-run="
               (checkRun) => {
                 viewCheckRunDetail(checkRun);
@@ -38,8 +38,8 @@
         </div>
         <BBTabFilter
           class="pt-4"
-          :tabItemList="tabItemList"
-          :selectedIndex="state.selectedTabIndex"
+          :tab-item-list="tabItemList"
+          :selected-index="state.selectedTabIndex"
           @select-index="
             (index) => {
               state.selectedTaskCheckRun = tabTaskCheckRunList[index];
@@ -47,12 +47,12 @@
             }
           "
         />
-        <TaskCheckRunPanel :taskCheckRun="state.selectedTaskCheckRun" />
+        <TaskCheckRunPanel :task-check-run="state.selectedTaskCheckRun" />
         <div class="pt-4 flex justify-end">
           <button
             type="button"
             class="btn-primary py-2 px-4"
-            @click.prevent="dimissModal"
+            @click.prevent="dismissDialog"
           >
             Close
           </button>
@@ -79,14 +79,14 @@ interface LocalState {
 
 export default {
   name: "TaskCheckBar",
-  emits: ["run-checks"],
+  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
   props: {
     task: {
       required: true,
       type: Object as PropType<Task>,
     },
   },
-  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
+  emits: ["run-checks"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       showModal: false,
@@ -158,7 +158,7 @@ export default {
       state.showModal = true;
     };
 
-    const dimissModal = () => {
+    const dismissDialog = () => {
       state.showModal = false;
       state.selectedTaskCheckRun = undefined;
     };
@@ -175,7 +175,7 @@ export default {
       hasRunningTaskCheck,
       taskCheckStatus,
       viewCheckRunDetail,
-      dimissModal,
+      dismissDialog,
       runChecks,
     };
   },

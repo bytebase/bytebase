@@ -1,13 +1,13 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="projectList"
-    :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :column-list="COLUMN_LIST"
+    :data-source="projectList"
+    :show-header="true"
+    :left-bordered="false"
+    :right-bordered="false"
     @click-row="clickProject"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
         class="w-4 table-cell"
         :title="state.columnList[0].title"
@@ -21,8 +21,8 @@
         :title="state.columnList[2].title"
       />
     </template>
-    <template v-slot:body="{ rowData: project }">
-      <BBTableCell :leftPadding="4" class="table-cell text-gray-500">
+    <template #body="{ rowData: project }">
+      <BBTableCell :left-padding="4" class="table-cell text-gray-500">
         <span class="">{{ project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">
@@ -62,7 +62,7 @@ export default {
       type: Object as PropType<Project[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickProject = function (section: number, row: number) {
