@@ -21,8 +21,8 @@ type VCS struct {
 	// Domain specific fields
 	Name          string         `jsonapi:"attr,name"`
 	Type          common.VCSType `jsonapi:"attr,type"`
-	InstanceURL   string         `jsonapi:"attr,instanceURL"`
-	ApiURL        string         `jsonapi:"attr,apiURL"`
+	InstanceURL   string         `jsonapi:"attr,instanceUrl"`
+	ApiURL        string         `jsonapi:"attr,apiUrl"`
 	ApplicationID string         `jsonapi:"attr,applicationId"`
 	Secret        string         `jsonapi:"attr,secret"`
 }
@@ -35,7 +35,7 @@ type VCSCreate struct {
 	// Domain specific fields
 	Name        string         `jsonapi:"attr,name"`
 	Type        common.VCSType `jsonapi:"attr,type"`
-	InstanceURL string         `jsonapi:"attr,instanceURL"`
+	InstanceURL string         `jsonapi:"attr,instanceUrl"`
 	// ApiURL derives from InstanceURL
 	ApiURL        string
 	ApplicationID string `jsonapi:"attr,applicationId"`
