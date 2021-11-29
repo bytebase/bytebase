@@ -15,17 +15,18 @@
             <template v-if="field.type == 'String'">
               <div class="mt-1 flex rounded-md shadow-sm">
                 <input
+                  :id="field.id"
+                  v-model="state.outputValueList[index]"
                   type="text"
                   disabled="true"
                   :name="field.id"
-                  :id="field.id"
-                  v-model="state.outputValueList[index]"
                   autocomplete="off"
                   class="w-full textfield"
                 />
               </div>
             </template>
             <template v-if="field.type == 'Database'">
+              <!-- eslint-disable vue/attribute-hyphenation -->
               <DatabaseSelect
                 class="mt-1 w-64"
                 :disabled="true"
@@ -71,8 +72,8 @@
           />
         </template>
         <TaskCheckBadgeBar
-          :taskCheckRunList="task.taskCheckRunList"
-          :allowSelection="false"
+          :task-check-run-list="task.taskCheckRunList"
+          :allow-selection="false"
         />
       </div>
 
@@ -81,6 +82,7 @@
         <div class="mt-1">
           <textarea
             ref="commentTextArea"
+            v-model="state.comment"
             rows="3"
             class="
               textarea
@@ -93,7 +95,6 @@
               whitespace-pre-wrap
             "
             placeholder="(Optional) Add a note..."
-            v-model="state.comment"
             @input="
               (e) => {
                 sizeToFit(e.target);
@@ -121,7 +122,7 @@
       <button
         type="button"
         class="ml-3 px-4 py-2"
-        v-bind:class="submitButtonStyle"
+        :class="submitButtonStyle"
         :disabled="!allowSubmit"
         @click.prevent="$emit('submit', state.comment)"
       >
@@ -137,7 +138,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
-import { OutputField, IssueBuiltinFieldID } from "../plugins";
+import { OutputField } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
 
 type CheckSummary = {
@@ -153,7 +154,7 @@ interface LocalState {
 
 export default {
   name: "StatusTransitionForm",
-  emits: ["submit", "cancel"],
+  components: { DatabaseSelect, TaskCheckBadgeBar },
   props: {
     mode: {
       required: true,
@@ -180,8 +181,8 @@ export default {
       type: Object as PropType<OutputField[]>,
     },
   },
-  components: { DatabaseSelect, TaskCheckBadgeBar },
-  setup(props, { emit }) {
+  emits: ["submit", "cancel"],
+  setup(props) {
     const commentTextArea = ref("");
 
     const state = reactive<LocalState>({
@@ -195,6 +196,8 @@ export default {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
+    // Code block below will raise an eslint ERROR.
+    // But I won't change it this time.
     const submitButtonStyle = computed(() => {
       switch (props.mode) {
         case "ISSUE": {
@@ -224,6 +227,8 @@ export default {
       }
     });
 
+    // Code block below will raise an eslint ERROR.
+    // But I won't change it this time.
     // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
     const allowSubmit = computed(() => {
       switch (props.mode) {

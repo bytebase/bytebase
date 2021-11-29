@@ -417,7 +417,7 @@ const actions = {
       limit?: number;
     }
   ): Promise<MigrationHistory> {
-    var url = `/api/instance/${instanceID}/migration/history?database=${databaseName}`;
+    let url = `/api/instance/${instanceID}/migration/history?database=${databaseName}`;
     if (limit) {
       url += `&limit=${limit}`;
     }

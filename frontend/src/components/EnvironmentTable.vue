@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="environmentList"
-    :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :column-list="COLUMN_LIST"
+    :data-source="environmentList"
+    :show-header="true"
+    :left-bordered="false"
+    :right-bordered="false"
     @click-row="clickEnvironment"
   >
-    <template v-slot:body="{ rowData: environment }">
-      <BBTableCell :leftPadding="4" class="w-4 table-cell text-gray-500">
+    <template #body="{ rowData: environment }">
+      <BBTableCell :left-padding="4" class="w-4 table-cell text-gray-500">
         <span class="">#{{ environment.id }}</span>
       </BBTableCell>
       <BBTableCell class="w-48 table-cell">
@@ -47,14 +47,13 @@ const COLUMN_LIST = [
 
 export default {
   name: "EnvironmentTable",
-  components: {},
   props: {
     environmentList: {
       required: true,
       type: Object as PropType<Environment[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickEnvironment = function (section: number, row: number) {

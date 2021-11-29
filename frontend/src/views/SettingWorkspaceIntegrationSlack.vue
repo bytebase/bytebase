@@ -5,7 +5,5 @@
 <script lang="ts">
 export default {
   name: "SettingWorkspaceIntegrationSlack",
-  props: {},
-  setup(props, ctx) {},
 };
 </script>

@@ -5,12 +5,12 @@
   <div class="pt-4 radio-set-row">
     <div class="radio space-x-2">
       <input
+        v-model="config.type"
         name="Self-host GitLab"
         tabindex="-1"
         type="radio"
         class="btn"
         value="GITLAB_SELF_HOST"
-        v-model="config.type"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
@@ -93,7 +93,7 @@ export default {
       type: Object as PropType<VCSConfig>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const state = reactive<LocalState>({
       showURLError:
         !isEmpty(props.config.instanceURL) && !isURL(props.config.instanceURL),

@@ -6,7 +6,7 @@
       :style="'WARN'"
       :title="attentionTitle"
       :description="attentionText"
-      :actionText="attentionActionText"
+      :action-text="attentionActionText"
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
@@ -20,8 +20,8 @@
       <div v-else>
         <div class="mb-4 flex items-center justify-between">
           <BBTabFilter
-            :tabItemList="tabItemList"
-            :selectedIndex="state.selectedIndex"
+            :tab-item-list="tabItemList"
+            :selected-index="state.selectedIndex"
             @select-index="
               (index) => {
                 state.selectedIndex = index;
@@ -53,33 +53,33 @@
         <DatabaseTable
           v-if="state.selectedIndex == DATABASE_TAB"
           :mode="'INSTANCE'"
-          :databaseList="databaseList"
+          :database-list="databaseList"
         />
         <InstanceUserTable
           v-else-if="state.selectedIndex == USER_TAB"
-          :instanceUserList="instanceUserList"
+          :instance-user-list="instanceUserList"
         />
       </div>
       <template v-if="allowEdit">
         <template v-if="instance.rowStatus == 'NORMAL'">
           <BBButtonConfirm
             :style="'ARCHIVE'"
-            :buttonText="'Archive this instance'"
-            :okText="'Archive'"
-            :requireConfirm="true"
-            :confirmTitle="`Archive instance '${instance.name}'?`"
-            :confirmDescription="'Archived instsance will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            :button-text="'Archive this instance'"
+            :ok-text="'Archive'"
+            :require-confirm="true"
+            :confirm-title="`Archive instance '${instance.name}'?`"
+            :confirm-description="'Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.'"
             @confirm="doArchive"
           />
         </template>
         <template v-else-if="instance.rowStatus == 'ARCHIVED'">
           <BBButtonConfirm
             :style="'RESTORE'"
-            :buttonText="'Restore this instance'"
-            :okText="'Restore'"
-            :requireConfirm="true"
-            :confirmTitle="`Restore instance '${instance.name}' to normal state?`"
-            :confirmDescription="''"
+            :button-text="'Restore this instance'"
+            :ok-text="'Restore'"
+            :require-confirm="true"
+            :confirm-title="`Restore instance '${instance.name}' to normal state?`"
+            :confirm-description="''"
             @confirm="doRestore"
           />
         </template>
@@ -90,10 +90,10 @@
   <BBAlert
     v-if="state.showCreateMigrationSchemaModal"
     :style="'INFO'"
-    :okText="'Create'"
+    :ok-text="'Create'"
     :title="'Create migration schema?'"
     :description="'Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.'"
-    :inProgress="state.creatingMigrationSchema"
+    :in-progress="state.creatingMigrationSchema"
     @ok="
       () => {
         doCreateMigrationSchema();
@@ -108,6 +108,7 @@
     :title="'Create database'"
     @close="state.showCreateDatabaseModal = false"
   >
+    <!-- eslint-disable vue/attribute-hyphenation -->
     <CreateDatabasePrepForm
       :environmentID="instance.environment.id"
       :instanceID="instance.id"
@@ -127,14 +128,13 @@ import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
-  Anomaly,
   Database,
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
   SqlResultSet,
 } from "../types";
-import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
+import { BBTabFilterItem } from "../bbkit/types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -164,7 +164,7 @@ export default {
       type: String,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

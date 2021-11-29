@@ -1,14 +1,14 @@
 <template>
   <BBSelect
-    :selectedItem="selectedStatus"
-    :itemList="['OPEN', 'DONE', 'CANCELED']"
+    :selected-item="selectedStatus"
+    :item-list="['OPEN', 'DONE', 'CANCELED']"
     :placeholder="'Unknown Status'"
     :disabled="disabled"
     @select-item="(status, didSelect) => changeStatus(status, didSelect)"
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       <span class="flex items-center space-x-2">
-        <IssueStatusIcon :issueStatus="item" :size="'small'" />
+        <IssueStatusIcon :issue-status="item" :size="'small'" />
         <span>
           {{ item }}
         </span>
@@ -24,7 +24,6 @@ import { IssueStatus, IssueStatusTransitionType } from "../types";
 
 export default {
   name: "IssueStatusSelect",
-  emits: ["start-transition"],
   components: { IssueStatusIcon },
   props: {
     selectedStatus: {
@@ -35,8 +34,9 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["start-transition"],
   setup(_, { emit }) {
-    const changeStatus = (newStatus: IssueStatus, didChange: () => {}) => {
+    const changeStatus = (newStatus: IssueStatus, didChange: () => any) => {
       let transition: IssueStatusTransitionType;
       switch (newStatus) {
         case "OPEN":

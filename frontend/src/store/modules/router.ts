@@ -1,6 +1,7 @@
 import { RouteLocationNormalized } from "vue-router";
 import { RouterSlug } from "../../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RouterState {}
 
 const getters = {

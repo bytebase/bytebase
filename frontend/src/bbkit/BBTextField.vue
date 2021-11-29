@@ -1,7 +1,8 @@
 <template>
   <input
-    type="text"
     ref="inputField"
+    v-model="state.text"
+    type="text"
     autocomplete="off"
     class="text-main rounded-md"
     :class="
@@ -11,7 +12,6 @@
         ? 'border-control-border focus:ring-control focus:border-control disabled:bg-gray-50'
         : 'border-transparent focus:ring-control focus:border-control disabled:text-control'
     "
-    v-model="state.text"
     :disabled="disabled"
     :placeholder="placeholder"
     @focus="onFocus"
@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { nextTick, onMounted, reactive, ref, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 
 interface LocalState {
@@ -32,7 +32,6 @@ interface LocalState {
 
 export default {
   name: "BBTextField",
-  emits: ["end-editing", "input"],
   props: {
     required: {
       default: false,
@@ -58,6 +57,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["end-editing", "input"],
   setup(props, { emit }) {
     const inputField = ref();
 
@@ -76,7 +76,7 @@ export default {
 
     watch(
       () => props.value,
-      (cur, _) => {
+      (cur) => {
         state.text = cur;
       }
     );

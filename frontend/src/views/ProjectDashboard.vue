@@ -7,14 +7,14 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <ProjectTable :projectList="filteredList(state.projectList)" />
+    <ProjectTable :project-list="filteredList(state.projectList)" />
   </div>
 
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :okText="'Do not show again'"
-    :cancelText="'Dismiss'"
+    :ok-text="'Do not show again'"
+    :cancel-text="'Dismiss'"
     :title="'How to setup \'Project\' ?'"
     :description="'Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable version control workflow.'"
     @ok="
@@ -44,8 +44,7 @@ export default {
   components: {
     ProjectTable,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

@@ -61,12 +61,12 @@
       </label>
       <input
         id="name"
+        v-model="state.webhook.name"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
         :placeholder="namePlaceholder"
         :disabled="!allowEdit"
-        v-model="state.webhook.name"
       />
     </div>
     <div>
@@ -136,12 +136,12 @@
       </div>
       <input
         id="url"
+        v-model="state.webhook.url"
         name="url"
         type="text"
         class="textfield mt-1 w-full"
         :placeholder="urlPlaceholder"
         :disabled="!allowEdit"
-        v-model="state.webhook.url"
       />
     </div>
     <div>
@@ -172,10 +172,10 @@
       <BBButtonConfirm
         v-if="!create && allowEdit"
         :style="'DELETE'"
-        :buttonText="'Delete this webhook'"
-        :okText="'Delete'"
-        :confirmTitle="`Delete webhook '${webhook.name}' and all its execution history?`"
-        :requireConfirm="true"
+        :button-text="'Delete this webhook'"
+        :ok-text="'Delete'"
+        :confirm-title="`Delete webhook '${webhook.name}' and all its execution history?`"
+        :require-confirm="true"
         @confirm="deleteWebhook"
       />
       <div>
@@ -230,7 +230,6 @@ interface LocalState {
 
 export default {
   name: "ProjectWebhookForm",
-  emits: ["change-repository"],
   props: {
     allowEdit: {
       default: true,
@@ -249,8 +248,8 @@ export default {
       type: Object as PropType<ProjectWebhook | ProjectWebhookCreate>,
     },
   },
-  components: {},
-  setup(props, { emit }) {
+  emits: ["change-repository"],
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

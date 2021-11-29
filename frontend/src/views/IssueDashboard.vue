@@ -2,6 +2,7 @@
   <!-- This example requires Tailwind CSS v2.0+ -->
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
         :selectedID="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
@@ -22,6 +23,7 @@
         >
           {{ project.key }}
         </button>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           v-if="scopeByPrincipal"
           :selectedID="state.selectedPrincipalID"
@@ -35,11 +37,11 @@
       </div>
     </div>
     <IssueTable
-      :leftBordered="false"
-      :rightBordered="false"
-      :topBordered="true"
-      :bottomBordered="true"
-      :issueSectionList="sectionList"
+      :left-bordered="false"
+      :right-bordered="false"
+      :top-bordered="true"
+      :bottom-bordered="true"
+      :issue-section-list="sectionList"
     />
   </div>
 </template>
@@ -70,7 +72,7 @@ interface LocalState {
 export default {
   name: "IssueDashboard",
   components: { EnvironmentTabFilter, IssueTable, MemberSelect },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

@@ -9,6 +9,7 @@
             class="flex flex-row justify-between py-0.5 select-none space-x-4"
           >
             <div class="w-64">
+              <!-- eslint-disable vue/attribute-hyphenation -->
               <MemberSelect
                 id="user"
                 name="user"
@@ -27,23 +28,23 @@
             <div v-if="hasAdminFeature" class="radio-set-row">
               <div class="radio">
                 <input
+                  v-model="state.role"
                   :name="`member_role`"
                   tabindex="-1"
                   type="radio"
                   class="btn"
                   value="OWNER"
-                  v-model="state.role"
                 />
                 <label class="label"> Owner </label>
               </div>
               <div class="radio">
                 <input
+                  v-model="state.role"
                   :name="`member_role`"
                   tabindex="-1"
                   type="radio"
                   class="btn"
                   value="DEVELOPER"
-                  v-model="state.role"
                 />
                 <label class="label"> Developer </label>
               </div>
@@ -73,7 +74,7 @@
           </div>
         </div>
 
-        <div class="flex justify-start" id="state-error">
+        <div id="state-error" class="flex justify-start">
           <span v-if="state.error" class="text-sm text-error">
             {{ state.error }}
           </span>
@@ -115,7 +116,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

@@ -1,15 +1,15 @@
 <template>
   <BBTable
     class="mt-2"
-    :columnList="COLUMN_LIST"
-    :sectionDataSource="dataSource"
-    :compactSection="true"
-    :showHeader="true"
-    :rowClickable="false"
+    :column-list="COLUMN_LIST"
+    :section-data-source="dataSource"
+    :compact-section="true"
+    :show-header="true"
+    :row-clickable="false"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-auto table-cell"
         :title="COLUMN_LIST[0].title"
       />
@@ -23,8 +23,8 @@
         :title="COLUMN_LIST[3].title"
       />
     </template>
-    <template v-slot:body="{ rowData: member }">
-      <BBTableCell :leftPadding="4" class="table-cell">
+    <template #body="{ rowData: member }">
+      <BBTableCell :left-padding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
@@ -82,7 +82,7 @@
       <BBTableCell class="tooltip-wrapper">
         <span class="tooltip">{{ changeRoleTooltip(member) }}</span>
         <RoleSelect
-          :selectedRole="member.role"
+          :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
           @change-role="
             (role) => {
@@ -106,19 +106,19 @@
         <BBButtonConfirm
           v-if="allowDeactivateMember(member)"
           :style="'ARCHIVE'"
-          :requireConfirm="true"
-          :okText="'Deactivate'"
-          :confirmTitle="`Are you sure to deactivate '${member.principal.name}'`"
-          :confirmDescription="'You can still reactivate later'"
+          :require-confirm="true"
+          :ok-text="'Deactivate'"
+          :confirm-title="`Are you sure to deactivate '${member.principal.name}'`"
+          :confirm-description="'You can still reactivate later'"
           @confirm="changeRowStatus(member.id, 'ARCHIVED')"
         />
         <BBButtonConfirm
           v-else-if="allowActivateMember(member)"
           :style="'RESTORE'"
-          :requireConfirm="true"
-          :okText="'Reactivate'"
-          :confirmTitle="`Are you sure to reactivate '${member.principal.name}'`"
-          :confirmDescription="''"
+          :require-confirm="true"
+          :ok-text="'Reactivate'"
+          :confirm-title="`Are you sure to reactivate '${member.principal.name}'`"
+          :confirm-description="''"
           @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
       </BBTableCell>
@@ -170,6 +170,7 @@ const COLUMN_LIST: BBTableColumn[] = [
   },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -178,10 +179,10 @@ export default {
   props: {
     memberList: {
       required: true,
-      type: Object as PropType<Member[]>,
+      type: Array as PropType<Member[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

@@ -5,8 +5,8 @@
   <EnvironmentForm
     v-if="state.approvalPolicy && state.backupPolicy"
     :environment="state.environment"
-    :approvalPolicy="state.approvalPolicy"
-    :backupPolicy="state.backupPolicy"
+    :approval-policy="state.approvalPolicy"
+    :backup-policy="state.backupPolicy"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"
@@ -25,7 +25,6 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  unknown,
 } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -38,7 +37,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentDetail",
-  emits: ["archive"],
   components: {
     ArchiveBanner,
     EnvironmentForm,
@@ -49,6 +47,7 @@ export default {
       type: String,
     },
   },
+  emits: ["archive"],
   setup(props, { emit }) {
     const store = useStore();
 

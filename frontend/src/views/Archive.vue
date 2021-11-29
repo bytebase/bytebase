@@ -2,8 +2,8 @@
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
       <BBTabFilter
-        :tabItemList="tabItemList"
-        :selectedIndex="state.selectedIndex"
+        :tab-item-list="tabItemList"
+        :selected-index="state.selectedIndex"
         @select-index="
           (index) => {
             state.selectedIndex = index;
@@ -11,8 +11,8 @@
         "
       />
       <BBTableSearch
-        class="w-56"
         ref="searchField"
+        class="w-56"
         :placeholder="
           state.selectedIndex == PROJECT_TAB
             ? 'Search project name'
@@ -25,15 +25,15 @@
     </div>
     <ProjectTable
       v-if="state.selectedIndex == PROJECT_TAB"
-      :projectList="filteredProjectList(projectList)"
+      :project-list="filteredProjectList(projectList)"
     />
     <InstanceTable
       v-else-if="state.selectedIndex == INSTANCE_TAB"
-      :instanceList="filteredInstanceList(instanceList)"
+      :instance-list="filteredInstanceList(instanceList)"
     />
     <EnvironmentTable
       v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
-      :environmentList="filteredEnvironmentList(environmentList)"
+      :environment-list="filteredEnvironmentList(environmentList)"
     />
   </div>
 </template>
@@ -66,7 +66,7 @@ interface LocalState {
 export default {
   name: "Archive",
   components: { EnvironmentTable, InstanceTable, ProjectTable },
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
       searchText: "",

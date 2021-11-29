@@ -13,6 +13,5 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

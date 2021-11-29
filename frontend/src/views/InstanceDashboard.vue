@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-col">
     <div class="px-5 py-2 flex justify-between items-center">
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
         :selectedID="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
@@ -11,14 +12,14 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <InstanceTable :instanceList="filteredList(instanceList)" />
+    <InstanceTable :instance-list="filteredList(instanceList)" />
   </div>
 
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :okText="'Do not show again'"
-    :cancelText="'Dismiss'"
+    :ok-text="'Do not show again'"
+    :cancel-text="'Dismiss'"
     :title="'How to setup \'Instance\' ?'"
     :description="'Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.'"
     @ok="
@@ -53,7 +54,7 @@ export default {
     EnvironmentTabFilter,
     InstanceTable,
   },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

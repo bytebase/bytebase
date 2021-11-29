@@ -10,8 +10,8 @@
             Name <span class="text-red-600">*</span>
           </label>
           <input
-            required
             id="name"
+            required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
@@ -39,6 +39,7 @@
             />
           </div>
           <div v-else class="flex flex-row justify-between space-x-2">
+            <!-- eslint-disable vue/attribute-hyphenation -->
             <DatabaseSelect
               class="mt-1 w-full"
               :selectedID="state.dataSource.databaseID"
@@ -156,19 +157,18 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
-import { DataSourceCreate, Database, UNKNOWN_ID, Principal } from "../types";
-import { useStore } from "vuex";
+import { DataSourceCreate, Database, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   dataSource: DataSourceCreate;
-  showPassword: Boolean;
+  showPassword: boolean;
 }
 
 export default {
   name: "DataSourceCreateForm",
-  emits: ["create", "cancel"],
+  components: { DatabaseSelect },
   props: {
     instanceID: {
       required: true,
@@ -179,13 +179,13 @@ export default {
       type: Object as PropType<Database>,
     },
   },
-  components: { DatabaseSelect },
-  setup(props, ctx) {
-    const store = useStore();
+  emits: ["create", "cancel"],
+  setup(props) {
+    // const store = useStore();
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
+    // const currentUser: ComputedRef<Principal> = computed(() =>
+    //   store.getters["auth/currentUser"]()
+    // );
 
     const state = reactive<LocalState>({
       dataSource: {

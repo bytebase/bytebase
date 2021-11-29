@@ -42,7 +42,6 @@ interface LocalState {
 
 export default {
   name: "InstanceSelect",
-  emits: ["select-instance-id"],
   components: {},
   props: {
     selectedID: {
@@ -56,6 +55,7 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["select-instance-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
@@ -74,7 +74,7 @@ export default {
 
     watch(
       () => props.selectedID,
-      (cur, _) => {
+      (cur) => {
         state.selectedID = cur;
       }
     );
@@ -84,7 +84,7 @@ export default {
     // and emit the event.
     watch(
       () => instanceList.value,
-      (curList, _) => {
+      (curList) => {
         if (
           state.selectedID &&
           !curList.find((instance: Instance) => instance.id == state.selectedID)

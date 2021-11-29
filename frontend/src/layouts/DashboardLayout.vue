@@ -59,7 +59,7 @@ import { computed } from "@vue/runtime-core";
 export default {
   name: "DashboardLayout",
   components: { ProvideDashboardContext, DashboardHeader, BannerDemo },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const ping = () => {

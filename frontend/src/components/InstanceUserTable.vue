@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="instanceUserList"
-    :showHeader="true"
-    :rowClickable="false"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="COLUMN_LIST"
+    :data-source="instanceUserList"
+    :show-header="true"
+    :row-clickable="false"
+    :left-bordered="true"
+    :right-bordered="true"
   >
-    <template v-slot:body="{ rowData: instanceUser }">
-      <BBTableCell :leftPadding="4" class="w-4">
+    <template #body="{ rowData: instanceUser }">
+      <BBTableCell :left-padding="4" class="w-4">
         {{ instanceUser.name }}
       </BBTableCell>
       <BBTableCell class="whitespace-pre-wrap">
@@ -41,7 +41,7 @@ export default {
       type: Object as PropType<InstanceUser[]>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     return {
       COLUMN_LIST,
     };

@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-col">
     <div class="px-5 py-2 flex justify-between items-center">
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
         :selectedID="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
@@ -12,11 +13,11 @@
       />
     </div>
     <IssueTable
-      :leftBordered="false"
-      :rightBordered="false"
-      :topBordered="true"
-      :bottomBordered="true"
-      :issueSectionList="[
+      :left-bordered="false"
+      :right-bordered="false"
+      :top-bordered="true"
+      :bottom-bordered="true"
+      :issue-section-list="[
         {
           title: 'Assigned',
           list: filteredList(state.assignedList).sort(openIssueSorter),
@@ -73,8 +74,7 @@ export default {
     EnvironmentTabFilter,
     IssueTable,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();

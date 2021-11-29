@@ -1,13 +1,13 @@
 <template>
   <div class="relative">
     <button
-      type="button"
-      @click.prevent="$refs.menu.toggle($event)"
-      @contextmenu.capture.prevent="$refs.menu.toggle($event)"
-      class="flex text-sm text-white focus:outline-none focus:shadow-solid"
       id="user-menu"
+      type="button"
+      class="flex text-sm text-white focus:outline-none focus:shadow-solid"
       aria-label="User menu"
       aria-haspopup="true"
+      @click.prevent="$refs.menu.toggle($event)"
+      @contextmenu.capture.prevent="$refs.menu.toggle($event)"
     >
       <PrincipalAvatar :principal="currentUser" />
     </button>
@@ -27,20 +27,20 @@
       <div class="border-t border-gray-100"></div>
       <div v-if="!isRelease" class="md:hidden py-1">
         <div v-if="currentUser.role != 'OWNER'" class="py-1">
-          <a @click.prevent="switchToOwner" class="menu-item" role="menuitem">
+          <a class="menu-item" role="menuitem" @click.prevent="switchToOwner">
             Switch to Owner
           </a>
         </div>
         <div v-if="currentUser.role != 'DBA'" class="py-1">
-          <a @click.prevent="switchToDBA" class="menu-item" role="menuitem">
+          <a class="menu-item" role="menuitem" @click.prevent="switchToDBA">
             Switch to DBA
           </a>
         </div>
         <div v-if="currentUser.email != 'DEVELOPER'" class="py-1">
           <a
-            @click.prevent="switchToDeveloper"
             class="menu-item"
             role="menuitem"
+            @click.prevent="switchToDeveloper"
           >
             Switch to Developer
           </a>
@@ -48,9 +48,9 @@
       </div>
       <div
         v-if="!isRelease"
-        @click.prevent="ping"
         class="py-1 menu-item"
         role="menuitem"
+        @click.prevent="ping"
       >
         Ping
       </div>
@@ -61,15 +61,15 @@
         >
         <a
           v-if="showQuickstart"
-          @click.prevent="resetQuickstart"
           class="menu-item"
           role="menuitem"
+          @click.prevent="resetQuickstart"
           >Quickstart</a
         >
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <a @click.prevent="logout" class="menu-item" role="menuitem">Logout</a>
+        <a class="menu-item" role="menuitem" @click.prevent="logout">Logout</a>
       </div>
     </BBContextMenu>
   </div>
@@ -86,7 +86,7 @@ export default {
   name: "ProfileDropdown",
   components: { PrincipalAvatar },
   props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

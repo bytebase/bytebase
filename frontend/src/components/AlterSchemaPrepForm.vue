@@ -38,21 +38,21 @@
       <div class="radio-set-row">
         <div class="radio">
           <input
+            v-model="state.alterType"
             tabindex="-1"
             type="radio"
             class="btn"
             value="SINGLE_DB"
-            v-model="state.alterType"
           />
           <label class="label"> Alter single database </label>
         </div>
         <div class="radio">
           <input
+            v-model="state.alterType"
             tabindex="-1"
             type="radio"
             class="btn"
             value="MULTI_DB"
-            v-model="state.alterType"
           />
           <label class="label"> Alter multiple databases </label>
         </div>
@@ -66,14 +66,14 @@
         to propagate schema changes across multiple environments.
       </div>
       <div class="space-y-4">
-        <div v-for="(environment, index) in environmentList" :key="index">
+        <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
           <div class="mb-2">{{ environment.name }}</div>
           <div class="relative bg-white rounded-md -space-y-px">
             <template
-              v-for="(database, index) in databaseList.filter(
+              v-for="(database, dbIndex) in databaseList.filter(
                 (item) => item.instance.environment.id == environment.id
               )"
-              :key="index"
+              :key="dbIndex"
             >
               <label
                 class="
@@ -171,8 +171,8 @@
       <DatabaseTable
         :mode="projectID ? 'PROJECT_SHORT' : 'ALL_SHORT'"
         :bordered="true"
-        :customClick="true"
-        :databaseList="databaseList"
+        :custom-click="true"
+        :database-list="databaseList"
         @select-database="selectDatabase"
       />
     </template>
@@ -224,15 +224,16 @@ interface LocalState {
 
 export default {
   name: "AlterSchemaPrepForm",
-  emits: ["dismiss"],
-  props: {
-    projectID: {
-      type: Number as PropType<ProjectID>,
-    },
-  },
   components: {
     DatabaseTable,
   },
+  props: {
+    projectID: {
+      type: Number as PropType<ProjectID>,
+      default: undefined,
+    },
+  },
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();

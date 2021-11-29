@@ -27,8 +27,7 @@
 import { useRouter } from "vue-router";
 export default {
   name: "403",
-  components: {},
-  setup(props, ctx) {
+  setup() {
     const router = useRouter();
 
     const goHome = () => {

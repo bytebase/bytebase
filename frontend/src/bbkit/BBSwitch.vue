@@ -2,7 +2,22 @@
   <div class="flex items-center">
     <button
       type="button"
-      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:cursor-not-allowed select-none"
+      class="
+        relative
+        inline-flex
+        flex-shrink-0
+        h-6
+        w-11
+        border-2 border-transparent
+        rounded-full
+        cursor-pointer
+        transition-colors
+        ease-in-out
+        duration-200
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent
+        disabled:cursor-not-allowed
+        select-none
+      "
       :class="on ? 'bg-accent disabled:bg-accent-disabled' : 'bg-gray-200'"
       :disabled="disabled"
       aria-pressed="false"
@@ -17,7 +32,20 @@
       <!-- Enabled: "translate-x-5", Not Enabled: "translate-x-0" -->
       <span
         aria-hidden="true"
-        class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
+        class="
+          pointer-events-none
+          inline-block
+          h-5
+          w-5
+          rounded-full
+          bg-white
+          shadow
+          transform
+          ring-0
+          transition
+          ease-in-out
+          duration-200
+        "
         :class="on ? 'translate-x-5' : 'translate-x-0'"
       ></span>
     </button>
@@ -36,7 +64,6 @@ import { ref, watch } from "vue";
 
 export default {
   name: "BBSwitch",
-  emits: ["toggle"],
   props: {
     label: {
       default: "",
@@ -51,12 +78,13 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  emits: ["toggle"],
+  setup(props) {
     var on = ref(props.value);
 
     watch(
       () => props.value,
-      (cur, prev) => {
+      (cur) => {
         on.value = cur;
       }
     );

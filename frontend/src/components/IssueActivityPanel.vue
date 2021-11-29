@@ -412,7 +412,7 @@
                           Save
                         </button>
                       </template>
-                      <!-- mr-2 is to veritical align with the text description edit button-->
+                      <!-- mr-2 is to vertical align with the text description edit button-->
                       <div v-else class="mr-2 flex items-center space-x-2">
                         <!-- Delete Comment Button-->
                         <button
@@ -473,10 +473,10 @@
                       <label for="comment" class="sr-only">Edit Comment</label>
                       <textarea
                         ref="editCommentTextArea"
+                        v-model="editComment"
                         rows="3"
                         class="textarea block w-full resize-none"
                         placeholder="Leave a comment..."
-                        v-model="editComment"
                         @input="
                           (e) => {
                             sizeToFit(e.target);
@@ -560,10 +560,10 @@
               <label for="comment" class="sr-only">Create Comment</label>
               <textarea
                 ref="newCommentTextArea"
+                v-model="newComment"
                 rows="3"
                 class="textarea block w-full resize-none whitespace-pre-wrap"
                 placeholder="Leave a comment..."
-                v-model="newComment"
                 @input="
                   (e) => {
                     sizeToFit(e.target);
@@ -589,7 +589,7 @@
   <BBAlert
     v-if="state.showDeleteCommentModal"
     :style="'INFO'"
-    :okText="'Delete'"
+    :ok-text="'Delete'"
     :title="'Are you sure to delete this comment?'"
     :description="'You cannot undo this action.'"
     @ok="
@@ -635,7 +635,6 @@ import {
   issueActivityActionSentence,
   issueSlug,
   sizeToFit,
-  stageSlug,
   taskSlug,
 } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldID } from "../plugins";
@@ -665,7 +664,7 @@ type ActionIconType =
 
 export default {
   name: "IssueActivityPanel",
-  emits: ["add-subscriber-id"],
+  components: { PrincipalAvatar },
   props: {
     issue: {
       required: true,
@@ -676,7 +675,7 @@ export default {
       type: Object as PropType<IssueTemplate>,
     },
   },
-  components: { PrincipalAvatar },
+  emits: ["add-subscriber-id"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -806,7 +805,7 @@ export default {
     };
 
     const doUpdateComment = () => {
-      const activityPatch = store
+      store
         .dispatch("activity/updateComment", {
           activityID: state.activeActivity!.id,
           updatedComment: editComment.value,
@@ -839,6 +838,11 @@ export default {
               return "approve";
             }
           }
+          // TODO(ji): Next line raises an eslint ERROR because of missing `break`.
+          // But I won't change it this time.
+          // Because I don't know whether this fall-through is meaningful.
+          // If it is, write a comment line "fall-through" (without quote and dash)
+          // above it to tell eslint to ignore it.
           case "RUNNING": {
             return "run";
           }

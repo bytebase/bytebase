@@ -88,12 +88,12 @@ import { useRouter } from "vue-router";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ProjectWebhook,
-  PROJECT_HOOK_TYPE_ITEM_LIST,
   PROJECT_HOOK_ACTIVITY_ITEM_LIST,
   redirectURL,
 } from "../types";
 import { projectWebhookSlug } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -105,7 +105,7 @@ export default {
       type: Object as PropType<ProjectWebhook>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const state = reactive<LocalState>({});

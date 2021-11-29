@@ -3,8 +3,8 @@
     <button
       type="button"
       class="btn-primary px-4 py-2"
-      @click.prevent="doCreate"
       :disabled="!allowCreate"
+      @click.prevent="doCreate"
     >
       Create
     </button>
@@ -28,13 +28,13 @@
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
         <button
-          type="button"
-          @click.prevent="$refs.menu.toggle($event)"
-          @contextmenu.capture.prevent="$refs.menu.toggle($event)"
-          class="text-control-light"
           id="user-menu"
+          type="button"
+          class="text-control-light"
           aria-label="User menu"
           aria-haspopup="true"
+          @click.prevent="$refs.menu.toggle($event)"
+          @contextmenu.capture.prevent="$refs.menu.toggle($event)"
         >
           <svg
             class="w-6 h-6"
@@ -57,9 +57,9 @@
             :key="index"
           >
             <div
-              @click.prevent="tryStartIssueStatusTransition(transition)"
               class="menu-item"
               role="menuitem"
+              @click.prevent="tryStartIssueStatusTransition(transition)"
             >
               {{ transition.buttonName }}
             </div>
@@ -100,11 +100,11 @@
   >
     <StatusTransitionForm
       :mode="updateStatusModalState.mode"
-      :okText="updateStatusModalState.okText"
+      :ok-text="updateStatusModalState.okText"
       :issue="issue"
       :task="currentTask"
       :transition="updateStatusModalState.transition"
-      :outputFieldList="issueTemplate.outputFieldList"
+      :output-field-list="issueTemplate.outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;
@@ -151,7 +151,6 @@ import {
   Principal,
   SYSTEM_BOT_ID,
   Task,
-  TaskID,
   UNKNOWN_ID,
 } from "../types";
 import { IssueTemplate } from "../plugins";
@@ -176,7 +175,9 @@ export type IssueContext = {
 
 export default {
   name: "IssueStatusTransitionButtonGroup",
-  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
+  components: {
+    StatusTransitionForm,
+  },
   props: {
     create: {
       required: true,
@@ -195,9 +196,8 @@ export default {
       type: Object as PropType<IssueTemplate>,
     },
   },
-  components: {
-    StatusTransitionForm,
-  },
+  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
+
   setup(props, { emit }) {
     const store = useStore();
 
@@ -244,6 +244,7 @@ export default {
             return list;
           }
         }
+        return []; // Only to make eslint happy. Should never reach this line.
       }
     );
 
@@ -350,7 +351,6 @@ export default {
     const allowIssueStatusTransition = (
       transition: IssueStatusTransition
     ): boolean => {
-      const issue: Issue = props.issue as Issue;
       if (transition.type == "RESOLVE") {
         // Returns false if any of the required output fields is not provided.
         for (let i = 0; i < props.issueTemplate.outputFieldList.length; i++) {

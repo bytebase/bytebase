@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+      <img
+        class="h-12 w-auto"
+        src="../../assets/logo-full.svg"
+        alt="Bytebase"
+      />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         <template v-if="needAdminSetup" class="text-accent font-semnibold">
           Setup
@@ -13,7 +17,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form @submit.prevent="trySignup" class="space-y-6">
+        <form class="space-y-6" @submit.prevent="trySignup">
           <div>
             <label
               for="email"
@@ -24,8 +28,8 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="email"
-                type="email"
                 v-model="state.email"
+                type="email"
                 required
                 placeholder="jim@example.com"
                 class="
@@ -60,7 +64,6 @@
                 type="password"
                 autocomplete="off"
                 :value="state.password"
-                @input="changePassword($event.target.value)"
                 required
                 class="
                   appearance-none
@@ -76,6 +79,7 @@
                   focus:border-control-border
                   sm:text-sm sm:leading-5
                 "
+                @input="changePassword($event.target.value)"
               />
             </div>
           </div>
@@ -97,7 +101,6 @@
                 autocomplete="off"
                 :placeholder="'Confirm password'"
                 :value="state.passwordConfirm"
-                @input="changePasswordConfirm($event.target.value)"
                 required
                 class="
                   appearance-none
@@ -113,6 +116,7 @@
                   focus:border-control-border
                   sm:text-sm sm:leading-5
                 "
+                @input="changePasswordConfirm($event.target.value)"
               />
             </div>
           </div>
@@ -127,8 +131,8 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="name"
-                type="text"
                 v-model="state.name"
+                type="text"
                 placeholder="Jim Gray"
                 class="
                   appearance-none
@@ -199,7 +203,7 @@ interface LocalState {
 
 export default {
   name: "Signup",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

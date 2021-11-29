@@ -222,7 +222,7 @@ const routes: Array<RouteRecordRaw> = [
             // may refer to other principal type in the future. But from the endusers'
             // perspective, they are more familiar with the "user" concept.
             // We make an exception to use a shorthand here because it's a commonly
-            // accessed endpint, and maybe in the future, we will further provide a
+            // accessed endpoint, and maybe in the future, we will further provide a
             // shortlink like u/<<uid>>
             path: "u/:principalID",
             name: "workspace.profile",
@@ -739,7 +739,7 @@ export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   linkExactActiveClass: "bg-link-hover",
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(to /*, from, savedPosition */) {
     if (to.hash) {
       return {
         el: to.hash,
@@ -955,7 +955,7 @@ router.beforeEach((to, from, next) => {
 
   if (issueSlug) {
     if (issueSlug.toLowerCase() == "new") {
-      // For prepraing the database if user visits creating issue url directly.
+      // For preparing the database if user visits creating issue url directly.
       if (to.query.databaseList) {
         for (const databaseID of (to.query.databaseList as string).split(",")) {
           store.dispatch("database/fetchDatabaseByID", { databaseID });
@@ -1089,7 +1089,7 @@ router.beforeEach((to, from, next) => {
   });
 });
 
-router.afterEach((to, from) => {
+router.afterEach((to /*, from */) => {
   // Needs to use nextTick otherwise title will still be the one from the previous route.
   nextTick(() => {
     if (to.meta.title) {

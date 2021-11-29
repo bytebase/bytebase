@@ -130,14 +130,14 @@ import { BBStep, BBStepStatus } from "./types";
 
 export default {
   name: "BBStepBar",
-  emits: ["click-step"],
   props: {
     stepList: {
       required: true,
-      type: Object as PropType<BBStep[]>,
+      type: Array as PropType<BBStep[]>,
     },
   },
-  setup(props, ctx) {
+  emits: ["click-step"],
+  setup() {
     const stepClass = (status: BBStepStatus) => {
       switch (status) {
         case "PENDING":
