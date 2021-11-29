@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -83,7 +84,7 @@ func (s *BackupRunner) Run() error {
 					backupSetting.Database = database
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
-					go func(database *api.Database, backupSettingID int, backupName string) {
+					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 						s.l.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
 							zap.String("backup", backupName),
@@ -93,12 +94,25 @@ func (s *BackupRunner) Run() error {
 							delete(runningTasks, backupSettingID)
 							mu.Unlock()
 						}()
-						if err := s.scheduleBackupTask(ctx, database, backupName); err != nil {
+						err := s.scheduleBackupTask(ctx, database, backupName)
+						if err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
+							return
 						}
-					}(database, backupSetting.ID, backupName)
+						// Backup succeeded. POST hook URL.
+						if hookURL == "" {
+							return
+						}
+						_, err = http.PostForm(hookURL, nil)
+						if err != nil {
+							s.l.Warn("Failed to POST hook URL",
+								zap.String("hookURL", hookURL),
+								zap.Int("databaseID", database.ID),
+								zap.Error(err))
+						}
+					}(database, backupSetting.ID, backupName, backupSetting.HookURL)
 				}
 			}()
 
