@@ -1,17 +1,17 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :sectionDataSource="issueSectionList"
-    :showHeader="true"
-    :leftBordered="leftBordered"
-    :rightBordered="rightBordered"
-    :topBordered="topBordered"
-    :bottomBordered="bottomBordered"
+    :column-list="columnList"
+    :section-data-source="issueSectionList"
+    :show-header="true"
+    :left-bordered="leftBordered"
+    :right-bordered="rightBordered"
+    :top-bordered="topBordered"
+    :bottom-bordered="bottomBordered"
     @click-row="clickIssue"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-4 table-cell"
         :title="columnList[0].title"
       />
@@ -72,11 +72,11 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: issue }">
-      <BBTableCell :leftPadding="4" class="table-cell">
+    <template #body="{ rowData: issue }">
+      <BBTableCell :left-padding="4" class="table-cell">
         <IssueStatusIcon
-          :issueStatus="issue.status"
-          :taskStatus="activeTask(issue.pipeline).status"
+          :issue-status="issue.status"
+          :task-status="activeTask(issue.pipeline).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -93,7 +93,7 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <BBStepBar
-          :stepList="taskStepList(issue)"
+          :step-list="taskStepList(issue)"
           @click-step="
             (step) => {
               clickIssueStep(issue, step);
@@ -134,7 +134,6 @@ import {
   activeEnvironment,
   activeDatabase,
   activeTask,
-  allTaskList,
   stageSlug,
   activeTaskInStage,
 } from "../utils";
@@ -201,7 +200,7 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
 ]);
 
 interface LocalState {
-  dataSource: Object[];
+  dataSource: any[];
 }
 
 export default {
@@ -233,7 +232,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -274,7 +273,7 @@ export default {
 
     const clickIssueStep = (issue: Issue, step: BBStep) => {
       const task = step.payload as Task;
-      const stageIndex = issue.pipeline.stageList.findIndex((item, index) => {
+      const stageIndex = issue.pipeline.stageList.findIndex((item) => {
         return item.id == task.stage.id;
       });
 

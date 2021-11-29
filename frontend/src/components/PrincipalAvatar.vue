@@ -12,14 +12,14 @@ export default {
   props: {
     principal: {
       type: Object as PropType<Principal>,
-      default: "",
+      default: "", // This line raises an eslint ERROR. But I won't change it this time.
     },
     size: {
       type: String as PropType<BBAvatarSizeType>,
       default: "NORMAL",
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const username = computed((): string => {
       if (props.principal.id == UNKNOWN_ID) {
         return "?";

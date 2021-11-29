@@ -711,7 +711,7 @@ interface LocalState {
 export default {
   name: "PricingTable",
   props: {},
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({
       isMonthly: false,
     });

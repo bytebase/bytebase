@@ -1,13 +1,13 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :sectionDataSource="sectionList"
-    :showHeader="true"
-    :compactSection="false"
+    :column-list="COLUMN_LIST"
+    :section-data-source="sectionList"
+    :show-header="true"
+    :compact-section="false"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-16"
         :title="COLUMN_LIST[0].title"
       />
@@ -16,8 +16,8 @@
       <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[3].title" />
       <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[4].title" />
     </template>
-    <template v-slot:body="{ rowData: index }">
-      <BBTableCell :leftPadding="4">
+    <template #body="{ rowData: index }">
+      <BBTableCell :left-padding="4">
         {{ index.expression }}
       </BBTableCell>
       <BBTableCell>
@@ -68,7 +68,7 @@ export default {
       type: Object as PropType<TableIndex[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const sectionList = computed(() => {
       const sectionList: BBTableSectionDataSource<TableIndex>[] = [];
 

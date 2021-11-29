@@ -107,12 +107,7 @@
 
 <script lang="ts">
 import { computed, PropType, reactive, watch } from "vue";
-import {
-  TaskCheckRun,
-  TaskCheckRunStatus,
-  TaskCheckStatus,
-  TaskCheckType,
-} from "../types";
+import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../types";
 
 interface LocalState {
   selectedTaskCheckRun?: TaskCheckRun;
@@ -120,7 +115,6 @@ interface LocalState {
 
 export default {
   name: "TaskCheckBadgeBar",
-  emits: ["select-task-check-run"],
   props: {
     taskCheckRunList: {
       required: true,
@@ -138,7 +132,7 @@ export default {
       type: Object as PropType<TaskCheckRun>,
     },
   },
-  components: {},
+  emits: ["select-task-check-run"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       selectedTaskCheckRun: props.selectedTaskCheckRun,

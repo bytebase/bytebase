@@ -89,7 +89,7 @@ const actions = {
       limit?: number;
     }
   ) {
-    var queryList = [];
+    const queryList = [];
     if (issueStatusList) {
       queryList.push(`status=${issueStatusList.join(",")}`);
     }
@@ -102,7 +102,7 @@ const actions = {
     if (limit) {
       queryList.push(`limit=${limit}`);
     }
-    var url = "/api/issue";
+    let url = "/api/issue";
     if (queryList.length > 0) {
       url += `?${queryList.join("&")}`;
     }

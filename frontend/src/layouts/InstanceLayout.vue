@@ -2,14 +2,14 @@
   <!-- Suspense is experimental, be aware of the potential change -->
   <Suspense>
     <template #default>
-      <ProvideInstanceContext :instanceSlug="instanceSlug">
-        <!-- This if-lese looks weired because the router-view can be both-->
+      <ProvideInstanceContext :instance-slug="instanceSlug">
+        <!-- This if-lese looks weird because the router-view can be both-->
         <router-view
           v-if="dataSourceSlug"
-          :instanceSlug="instanceSlug"
-          :dataSourceSlug="dataSourceSlug"
+          :instance-slug="instanceSlug"
+          :data-source-slug="dataSourceSlug"
         />
-        <router-view v-else :instanceSlug="instanceSlug" />
+        <router-view v-else :instance-slug="instanceSlug" />
       </ProvideInstanceContext>
     </template>
     <template #fallback>
@@ -36,6 +36,5 @@ export default {
       type: String,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

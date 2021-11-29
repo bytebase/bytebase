@@ -27,14 +27,14 @@
     </div>
     <MigrationHistoryTable
       v-if="state.migrationSetupStatus == 'OK'"
-      :databaseSectionList="[database]"
-      :historySectionList="migrationHistorySectionList"
+      :database-section-list="[database]"
+      :history-section-list="migrationHistorySectionList"
     />
     <BBAttention
       v-else
       :style="`WARN`"
       :title="attentionTitle"
-      :actionText="allowConfigInstance ? 'Config instance' : ''"
+      :action-text="allowConfigInstance ? 'Config instance' : ''"
       @click-action="configInstance"
     />
   </div>
@@ -42,8 +42,8 @@
   <BBAlert
     v-if="state.showBaselineModal"
     :style="'INFO'"
-    :okText="'Establish baseline'"
-    :cancelText="'Cancel'"
+    :ok-text="'Establish baseline'"
+    :cancel-text="'Cancel'"
     :title="`Establish new baseline for \'${database.name}\'`"
     :description="'Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.\n\nFor VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.'"
     @ok="
@@ -68,8 +68,7 @@ import {
 } from "../types";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { instanceSlug, isDBAOrOwner, issueSlug } from "../utils";
-import { templateForType } from "../plugins";
+import { instanceSlug, isDBAOrOwner } from "../utils";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -90,7 +89,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

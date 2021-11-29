@@ -175,12 +175,13 @@
       <div class="col-span-1 w-64">
         <label for="user" class="textlabel"> Project </label>
         <!-- Only allow to transfer database to the project having OWNER role -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
-          :allowedRoleList="['OWNER']"
-          :includeDefaultProject="true"
+          :allowed-role-list="['OWNER']"
+          :include-default-project="true"
           :selectedID="state.editingProjectID"
           @select-project-id="
             (projectID) => {
@@ -213,8 +214,8 @@
     <BBTabFilter
       class="px-3 pb-2 border-b border-block-border"
       :responsive="false"
-      :tabItemList="tabItemList"
-      :selectedIndex="state.selectedIndex"
+      :tab-item-list="tabItemList"
+      :selected-index="state.selectedIndex"
       @select-index="
         (index) => {
           selectTab(index);
@@ -225,17 +226,17 @@
       <template v-if="state.selectedIndex == OVERVIEW_TAB">
         <DatabaseOverviewPanel :database="database" />
       </template>
-      <template v-if="state.selectedIndex == MIGRAITON_HISTORY_TAB">
+      <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
         <DatabaseMigrationHistoryPanel
           :database="database"
-          :allowEdit="allowEdit"
+          :allow-edit="allowEdit"
         />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel
           :database="database"
-          :allowAdmin="allowAdmin"
-          :allowEdit="allowEdit"
+          :allow-admin="allowAdmin"
+          :allow-edit="allowEdit"
         />
       </template>
     </div>
@@ -246,7 +247,6 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
@@ -264,7 +264,7 @@ import { isEmpty } from "lodash";
 import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
-const MIGRAITON_HISTORY_TAB = 1;
+const MIGRATION_HISTORY_TAB = 1;
 const BACKUP_TAB = 2;
 
 type DatabaseTabItem = {
@@ -286,21 +286,20 @@ interface LocalState {
 
 export default {
   name: "DatabaseDetail",
-  props: {
-    databaseSlug: {
-      required: true,
-      type: String,
-    },
-  },
   components: {
-    MemberSelect,
     ProjectSelect,
     DatabaseOverviewPanel,
     DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
     InstanceEngineIcon,
   },
-  setup(props, ctx) {
+  props: {
+    databaseSlug: {
+      required: true,
+      type: String,
+    },
+  },
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -331,7 +330,7 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    // Prject can be transferred if meets either of the condition below:
+    // Project can be transferred if meets either of the condition below:
     // - Database is in default project
     // - Workspace owner, dba
     // - db's project owner
@@ -496,7 +495,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
-      MIGRAITON_HISTORY_TAB,
+      MIGRATION_HISTORY_TAB,
       BACKUP_TAB,
       state,
       database,

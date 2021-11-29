@@ -1,29 +1,29 @@
 <template>
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
-      <ProjectGeneralSettingPanel :project="project" :allowEdit="allowEdit" />
+      <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
       <ProjectMemberPanel class="pt-4" :project="project" />
     </div>
     <template v-if="allowArchiveOrRestore">
       <template v-if="project.rowStatus == 'NORMAL'">
         <BBButtonConfirm
           :style="'ARCHIVE'"
-          :buttonText="'Archive this project'"
-          :okText="'Archive'"
-          :confirmTitle="`Archive project '${project.name}'?`"
-          :confirmDescription="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
-          :requireConfirm="true"
+          :button-text="'Archive this project'"
+          :ok-text="'Archive'"
+          :confirm-title="`Archive project '${project.name}'?`"
+          :confirm-description="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :require-confirm="true"
           @confirm="archiveOrRestoreProject(true)"
         />
       </template>
       <template v-else-if="project.rowStatus == 'ARCHIVED'">
         <BBButtonConfirm
           :style="'RESTORE'"
-          :buttonText="'Restore this project'"
-          :okText="'Restore'"
-          :confirmTitle="`Restore project '${project.name}' to normal state?`"
-          :confirmDescription="''"
-          :requireConfirm="true"
+          :button-text="'Restore this project'"
+          :ok-text="'Restore'"
+          :confirm-title="`Restore project '${project.name}' to normal state?`"
+          :confirm-description="''"
+          :require-confirm="true"
           @confirm="archiveOrRestoreProject(false)"
         />
       </template>
@@ -55,7 +55,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

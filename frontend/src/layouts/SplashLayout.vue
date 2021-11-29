@@ -31,13 +31,12 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue-demi";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 export default {
   name: "SplashLayout",
-  components: {},
-  setup(props, ctx) {
+  setup() {
     const router = useRouter();
 
     const route = computed(() => {

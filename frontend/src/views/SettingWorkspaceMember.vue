@@ -4,12 +4,12 @@
   </div>
   <div>
     <p class="text-lg font-medium leading-7 text-main">Active members</p>
-    <MemberTable :memberList="activeMemberList" />
+    <MemberTable :member-list="activeMemberList" />
     <div v-if="inactiveMemberList.length > 0" class="mt-8">
       <p class="text-lg font-medium leading-7 text-control-light">
         Inactive members
       </p>
-      <MemberTable :memberList="inactiveMemberList" />
+      <MemberTable :member-list="inactiveMemberList" />
     </div>
   </div>
 </template>
@@ -25,8 +25,7 @@ import { Member } from "../types";
 export default {
   name: "SettingWorkspaceMember",
   components: { MemberAddOrInvite, MemberTable },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 

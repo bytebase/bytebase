@@ -28,9 +28,7 @@ interface LocalState {
 
 export default {
   name: "OAuthCallback",
-  components: {},
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const router = useRouter();
 
     const state = reactive<LocalState>({

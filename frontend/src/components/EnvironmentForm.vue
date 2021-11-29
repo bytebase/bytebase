@@ -29,6 +29,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              v-model="state.approvalPolicy.payload.value"
               name="manual-approval-always"
               tabindex="-1"
               type="radio"
@@ -39,7 +40,6 @@
               "
               value="MANUAL_APPROVAL_ALWAYS"
               :disabled="!allowEdit"
-              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Require manual approval</div>
@@ -51,6 +51,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.approvalPolicy.payload.value"
               name="manual-approval-never"
               tabindex="-1"
               type="radio"
@@ -61,7 +62,6 @@
               "
               value="MANUAL_APPROVAL_NEVER"
               :disabled="!allowEdit"
-              v-model="state.approvalPolicy.payload.value"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Skip manual approval</div>
@@ -78,6 +78,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -87,7 +88,6 @@
               "
               value="UNSET"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Not enforced</div>
@@ -98,6 +98,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -107,7 +108,6 @@
               "
               value="DAILY"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Daily backup</div>
@@ -118,6 +118,7 @@
           </div>
           <div class="flex space-x-4">
             <input
+              v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
               class="
@@ -127,7 +128,6 @@
               "
               value="WEEKLY"
               :disabled="!allowEdit"
-              v-model="state.backupPolicy.payload.schedule"
             />
             <div class="-mt-0.5">
               <div class="textlabel">Weekly backup</div>
@@ -163,11 +163,11 @@
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
-          :buttonText="'Archive this environment'"
-          :okText="'Archive'"
-          :confirmTitle="`Archive environment '${state.environment.name}'?`"
-          :confirmDescription="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
-          :requireConfirm="true"
+          :button-text="'Archive this environment'"
+          :ok-text="'Archive'"
+          :confirm-title="`Archive environment '${state.environment.name}'?`"
+          :confirm-description="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :require-confirm="true"
           @confirm="archiveEnvironment"
         />
       </template>
@@ -175,11 +175,11 @@
         <BBButtonConfirm
           v-if="allowRestore"
           :style="'RESTORE'"
-          :buttonText="'Restore this environment'"
-          :okText="'Restore'"
-          :confirmTitle="`Restore environment '${state.environment.name}' to normal state?`"
-          :confirmDescription="''"
-          :requireConfirm="true"
+          :button-text="'Restore this environment'"
+          :ok-text="'Restore'"
+          :confirm-title="`Restore environment '${state.environment.name}' to normal state?`"
+          :confirm-description="''"
+          :require-confirm="true"
           @confirm="restoreEnvironment"
         />
       </template>
@@ -207,7 +207,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch, watchEffect } from "vue";
+import { computed, reactive, PropType, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -228,7 +228,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentForm",
-  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   props: {
     create: {
       type: Boolean,
@@ -247,6 +246,7 @@ export default {
       type: Object as PropType<Policy>,
     },
   },
+  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({

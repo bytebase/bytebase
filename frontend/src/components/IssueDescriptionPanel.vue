@@ -23,7 +23,7 @@
           />
         </svg>
       </button>
-      <!-- mt-0.5 is to prevent jiggling betweening switching edit/none-edit -->
+      <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
       <button
         v-if="state.editing"
         type="button"
@@ -33,14 +33,11 @@
           rounded-sm
           text-control
           hover:bg-control-bg-hover
-          disabled:bg-control-bg
-          disabled:opacity-50
-          disabled:cursor-not-allowed
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
           text-sm
           leading-5
           font-normal
-          focus:ring-control
-          focus:outline-none
+          focus:ring-control focus:outline-none
           focus-visible:ring-2
           focus:ring-offset-2
         "
@@ -59,14 +56,11 @@
           text-control
           bg-control-bg
           hover:bg-control-bg-hover
-          disabled:bg-control-bg
-          disabled:opacity-50
-          disabled:cursor-not-allowed
+          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
           text-sm
           leading-5
           font-normal
-          focus:ring-control
-          focus:outline-none
+          focus:ring-control focus:outline-none
           focus-visible:ring-2
           focus:ring-offset-2
         "
@@ -83,6 +77,7 @@
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editDescriptionTextArea"
+    v-model="state.editDescription"
     :rows="create ? 10 : 5"
     class="
       mt-2
@@ -101,7 +96,6 @@
     "
     placeholder="Add some description..."
     :readonly="!state.editing"
-    v-model="state.editDescription"
     @input="
       (e) => {
         sizeToFit(e.target);
@@ -139,7 +133,6 @@ interface LocalState {
 
 export default {
   name: "IssueDescriptionPanel",
-  emits: ["update-description"],
   props: {
     issue: {
       required: true,
@@ -154,7 +147,7 @@ export default {
       type: Boolean,
     },
   },
-  components: {},
+  emits: ["update-description"],
   setup(props, { emit }) {
     const editDescriptionTextArea = ref();
 
@@ -208,7 +201,7 @@ export default {
 
     watch(
       () => props.issue,
-      (curIssue, prevIssue) => {
+      (curIssue) => {
         state.editDescription = curIssue.description;
         nextTick(() => {
           sizeToFit(editDescriptionTextArea.value);

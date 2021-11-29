@@ -1,15 +1,15 @@
 <template>
   <BBTable
     class="mt-2"
-    :columnList="columnList"
-    :sectionDataSource="dataSource"
-    :compactSection="true"
-    :showHeader="true"
-    :rowClickable="false"
+    :column-list="columnList"
+    :section-data-source="dataSource"
+    :compact-section="true"
+    :show-header="true"
+    :row-clickable="false"
   >
-    <template v-slot:header>
+    <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-auto table-cell"
         :title="columnList[0].title"
       />
@@ -38,8 +38,8 @@
         />
       </template>
     </template>
-    <template v-slot:body="{ rowData: member }">
-      <BBTableCell :leftPadding="4" class="table-cell">
+    <template #body="{ rowData: member }">
+      <BBTableCell :left-padding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
@@ -96,7 +96,7 @@
       </BBTableCell>
       <BBTableCell v-if="hasAdminFeature" class="">
         <ProjectRoleSelect
-          :selectedRole="member.role"
+          :selected-role="member.role"
           :disabled="!allowChangeRole(member.role)"
           @change-role="
             (role) => {
@@ -119,9 +119,9 @@
       <BBTableCell>
         <BBButtonConfirm
           v-if="allowChangeRole(member.role)"
-          :requireConfirm="true"
-          :okText="'Revoke'"
-          :confirmTitle="`Are you sure to revoke '${member.role}' from '${member.principal.name}'`"
+          :require-confirm="true"
+          :ok-text="'Revoke'"
+          :confirm-title="`Are you sure to revoke '${member.role}' from '${member.principal.name}'`"
           @confirm="deleteRole(member)"
         />
       </BBTableCell>
@@ -144,6 +144,7 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -155,7 +156,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

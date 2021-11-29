@@ -26,8 +26,6 @@ interface LocalState {
 
 export default {
   name: "StageSelect",
-  emits: ["select-stage-id"],
-  components: {},
   props: {
     pipeline: {
       required: true,
@@ -38,7 +36,8 @@ export default {
       type: Number,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-stage-id"],
+  setup(props) {
     const state = reactive<LocalState>({
       selectedID: props.selectedID,
     });

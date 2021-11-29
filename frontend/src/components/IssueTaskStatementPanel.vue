@@ -11,7 +11,7 @@
       >
         {{ rollback ? "Rollback SQL" : "SQL" }}
         <span v-if="create && !rollback" class="text-red-600">*</span>
-        <span class="text-accent" v-if="sqlHint && !rollback">{{
+        <span v-if="sqlHint && !rollback" class="text-accent">{{
           `(${sqlHint})`
         }}</span>
       </div>
@@ -100,6 +100,7 @@
   <template v-if="state.editing">
     <textarea
       ref="editStatementTextArea"
+      v-model="state.editStatement"
       class="
         whitespace-pre-wrap
         mt-2
@@ -115,7 +116,6 @@
           ? 'Add SQL statement...'
           : '(Required) Add SQL statement...'
       "
-      v-model="state.editStatement"
       @input="
         (e) => {
           sizeToFit(e.target);
@@ -145,17 +145,8 @@
 </template>
 
 <script lang="ts">
-import {
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  reactive,
-  watch,
-  PropType,
-} from "vue";
+import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
 import { sizeToFit } from "../utils";
-import { MigrationType, Task, TaskCreate } from "../types";
 
 interface LocalState {
   editing: boolean;
@@ -164,7 +155,7 @@ interface LocalState {
 
 export default {
   name: "IssueTaskStatementPanel",
-  emits: ["update-statement", "apply-statement-to-other-stages"],
+  components: {},
   props: {
     statement: {
       required: true,
@@ -191,7 +182,7 @@ export default {
       type: String,
     },
   },
-  components: {},
+  emits: ["update-statement", "apply-statement-to-other-stages"],
   setup(props, { emit }) {
     const editStatementTextArea = ref();
 
@@ -232,7 +223,7 @@ export default {
 
     watch(
       () => props.statement,
-      (cur, _) => {
+      (cur) => {
         state.editStatement = cur;
       }
     );

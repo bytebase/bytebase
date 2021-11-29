@@ -8,7 +8,7 @@
         </h2>
         <div class="col-span-2">
           <span class="flex items-center space-x-2">
-            <IssueStatusIcon :issueStatus="issue.status" :size="'normal'" />
+            <IssueStatusIcon :issue-status="issue.status" :size="'normal'" />
             <span class="text-main capitalize">
               {{ issue.status.toLowerCase() }}
             </span>
@@ -21,10 +21,11 @@
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           :disabled="!allowEditAssignee"
           :selectedID="create ? issue.assigneeID : issue.assignee?.id"
-          :allowedRoleList="['OWNER', 'DBA']"
+          :allowed-role-list="['OWNER', 'DBA']"
           @select-principal-id="
             (principalID) => {
               $emit('update-assignee-id', principalID);
@@ -80,7 +81,7 @@
         <div class="col-span-2">
           <StageSelect
             :pipeline="issue.pipeline"
-            :selectedID="selectedStage.id"
+            :selected-i-d="selectedStage.id"
             @select-stage-id="(stageID) => $emit('select-stage-id', stageID)"
           />
         </div>
@@ -91,9 +92,9 @@
           Database
         </h2>
         <div
-          @click.prevent="clickDatabase"
           class="col-span-2 text-sm font-medium text-main"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
+          @click.prevent="clickDatabase"
         >
           {{ databaseName }}
           <span class="text-control-light">{{
@@ -191,12 +192,9 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
-import DatabaseSelect from "../components/DatabaseSelect.vue";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import ProjectSelect from "../components/ProjectSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
@@ -218,20 +216,22 @@ import {
   TaskDatabaseCreatePayload,
   Task,
 } from "../types";
-import { allTaskList, databaseSlug, idFromSlug, isDBAOrOwner } from "../utils";
+import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "IssueSidebar",
-  emits: [
-    "update-assignee-id",
-    "add-subscriber-id",
-    "remove-subscriber-id",
-    "update-custom-field",
-    "select-stage-id",
-  ],
+  components: {
+    PrincipalAvatar,
+    MemberSelect,
+    StageSelect,
+    IssueStatusIcon,
+    IssueSubscriberPanel,
+    InstanceEngineIcon,
+  },
   props: {
     issue: {
       required: true,
@@ -262,17 +262,13 @@ export default {
       type: Object as PropType<Instance>,
     },
   },
-  components: {
-    DatabaseSelect,
-    ProjectSelect,
-    EnvironmentSelect,
-    PrincipalAvatar,
-    MemberSelect,
-    StageSelect,
-    IssueStatusIcon,
-    IssueSubscriberPanel,
-    InstanceEngineIcon,
-  },
+  emits: [
+    "update-assignee-id",
+    "add-subscriber-id",
+    "remove-subscriber-id",
+    "update-custom-field",
+    "select-stage-id",
+  ],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -380,6 +376,8 @@ export default {
       return isDatabaseCreated.value ? "(created)" : "(pending create)";
     });
 
+    // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
+    // Will fix this in another branch.
     const clickDatabase = () => {
       if (props.database.value) {
         router.push({

@@ -1,17 +1,3 @@
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>
-
 <template>
   <form class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="">
@@ -21,9 +7,10 @@ input[type="number"] {
           <label for="environment" class="textlabel">
             Environment <span style="color: red">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <EnvironmentSelect
-            class="mt-1 w-full"
             id="environment"
+            class="mt-1 w-full"
             name="environment"
             :disabled="!allowConfigure"
             :selectedID="state.environmentID"
@@ -39,9 +26,10 @@ input[type="number"] {
           <label for="instance" class="textlabel">
             Instance <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
-            class="mt-1 w-full"
             id="instance"
+            class="mt-1 w-full"
             name="instance"
             :disabled="!allowConfigure"
             :selectedID="state.instanceID"
@@ -57,9 +45,10 @@ input[type="number"] {
           <label for="database" class="textlabel">
             Database <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DatabaseSelect
-            class="mt-1 w-full"
             id="database"
+            class="mt-1 w-full"
             name="database"
             :disabled="!allowConfigure"
             :mode="'INSTANCE'"
@@ -77,9 +66,10 @@ input[type="number"] {
           <label for="datasource" class="textlabel">
             Data Source <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DataSourceSelect
-            class="mt-1 w-full"
             id="datasource"
+            class="mt-1 w-full"
             name="datasource"
             :disabled="!allowConfigure"
             :database="database"
@@ -100,11 +90,12 @@ input[type="number"] {
             </span>
           </label>
           <!-- DBA and Owner always have all access, so we only need to grant to developer -->
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <MemberSelect
-            class="mt-1"
             id="user"
+            class="mt-1"
             name="user"
-            :allowedRoleList="['DEVELOPER']"
+            :allowed-role-list="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
             :selectedID="state.granteeID"
             @select-principal-id="
@@ -133,8 +124,8 @@ input[type="number"] {
             </div>
             <div class="flex flex-row space-x-2 items-center">
               <input
-                class="textfield w-full pl-12"
                 id="issue"
+                class="textfield w-full pl-12"
                 name="issue"
                 type="number"
                 placeholder="Your issue id (e.g. 1234)"
@@ -196,7 +187,6 @@ import {
   PrincipalID,
   Issue,
   IssueID,
-  UNKNOWN_ID,
 } from "../types";
 import { issueSlug } from "../utils";
 
@@ -212,7 +202,13 @@ interface LocalState {
 
 export default {
   name: "DataSourceMemberCreateForm",
-  emits: ["submit", "cancel"],
+  components: {
+    EnvironmentSelect,
+    DatabaseSelect,
+    DataSourceSelect,
+    MemberSelect,
+    InstanceSelect,
+  },
   props: {
     dataSource: {
       type: Object as PropType<DataSource>,
@@ -224,13 +220,7 @@ export default {
       type: Number,
     },
   },
-  components: {
-    EnvironmentSelect,
-    DatabaseSelect,
-    DataSourceSelect,
-    MemberSelect,
-    InstanceSelect,
-  },
+  emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
 
@@ -348,7 +338,7 @@ export default {
         }
       }
 
-      const newDataSouceMember: DataSourceMemberCreate = {
+      const newDataSourceMember: DataSourceMemberCreate = {
         principalID: state.granteeID!,
         issueID: linkedIssue?.id,
       };
@@ -356,7 +346,7 @@ export default {
         .dispatch("dataSource/createDataSourceMember", {
           dataSourceID: state.dataSourceID,
           databaseID: state.databaseID,
-          newDataSouceMember,
+          newDataSourceMember,
         })
         .then((dataSource: DataSource) => {
           emit("submit", dataSource);
@@ -400,3 +390,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

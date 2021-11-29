@@ -39,7 +39,7 @@ export function secondsToString(second: number): string {
 }
 
 export function timezoneString(zoneName: string, offset: number): string {
-  var sign = "+";
+  let sign = "+";
   if (offset < 0) {
     sign = "-";
   }
@@ -52,7 +52,7 @@ export function timezoneString(zoneName: string, offset: number): string {
 
 export function urlfy(str: string): string {
   let result = str.trim();
-  if (result.search(/^http[s]?\:\/\//) == -1) {
+  if (result.search(/^http[s]?:\/\//) == -1) {
     result = "http://" + result;
   }
   return result;
@@ -81,7 +81,7 @@ export function array_swap(arr: any[], old_index: number, new_index: number) {
     new_index += arr.length;
   }
   if (new_index >= arr.length) {
-    var k = new_index - arr.length + 1;
+    let k = new_index - arr.length + 1;
     while (k--) {
       arr.push(undefined);
     }
@@ -98,7 +98,7 @@ export function sizeToFit(el: HTMLTextAreaElement) {
 export function isValidEmail(email: string) {
   // Rather than using esoteric regex complying RFC 822/2822, we just use a naive but readable version
   // which should work most of the time.
-  var re = /\S+@\S+\.\S+/;
+  const re = /\S+@\S+\.\S+/;
   return re.test(email);
 }
 
@@ -106,11 +106,11 @@ export function randomString(n?: number): string {
   if (!n) {
     n = 16;
   }
-  var result = "";
-  var characters =
+  let result = "";
+  const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var charactersLength = characters.length;
-  for (var i = 0; i < n; i++) {
+  const charactersLength = characters.length;
+  for (let i = 0; i < n; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
@@ -118,7 +118,7 @@ export function randomString(n?: number): string {
 
 export function getIntCookie(name: string): number | undefined {
   const list = document.cookie.split(";");
-  for (var i = 0; i < list.length; i++) {
+  for (let i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
     if (parts[0].trim() == name) {
       return parts.length > 1 ? parseInt(parts[1]) : undefined;
@@ -130,7 +130,7 @@ export function getIntCookie(name: string): number | undefined {
 
 export function getStringCookie(name: string): string {
   const list = document.cookie.split(";");
-  for (var i = 0; i < list.length; i++) {
+  for (let i = 0; i < list.length; i++) {
     const parts = list[i].split("=");
     if (parts[0].trim() == name) {
       // For now, just assumes strings are enclosed by quotes
