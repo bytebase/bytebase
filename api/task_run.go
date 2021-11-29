@@ -34,7 +34,7 @@ func (e TaskRunStatus) String() string {
 
 type TaskRunResultPayload struct {
 	Detail      string `json:"detail,omitempty"`
-	MigrationID int64  `json:"migrationID,omitempty"`
+	MigrationID int64  `json:"migrationId,omitempty"`
 	Version     string `json:"version,omitempty"`
 }
 
@@ -50,7 +50,7 @@ type TaskRun struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	TaskID int `jsonapi:"attr,taskID"`
+	TaskID int `jsonapi:"attr,taskId"`
 
 	// Domain specific fields
 	Name    string        `jsonapi:"attr,name"`

@@ -89,9 +89,9 @@ type Issue struct {
 	Status           IssueStatus `jsonapi:"attr,status"`
 	Type             IssueType   `jsonapi:"attr,type"`
 	Description      string      `jsonapi:"attr,description"`
-	AssigneeID       int         `jsonapi:"attr,assigneeID"`
+	AssigneeID       int         `jsonapi:"attr,assigneeId"`
 	Assignee         *Principal  `jsonapi:"attr,assignee"`
-	SubscriberIDList []int       `jsonapi:"attr,subscriberIDList"`
+	SubscriberIDList []int       `jsonapi:"attr,subscriberIdList"`
 	Payload          string      `jsonapi:"attr,payload"`
 }
 
@@ -101,7 +101,7 @@ type IssueCreate struct {
 	CreatorID int
 
 	// Related fields
-	ProjectID  int `jsonapi:"attr,projectID"`
+	ProjectID  int `jsonapi:"attr,projectId"`
 	PipelineID int
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
@@ -109,9 +109,9 @@ type IssueCreate struct {
 	Name              string    `jsonapi:"attr,name"`
 	Type              IssueType `jsonapi:"attr,type"`
 	Description       string    `jsonapi:"attr,description"`
-	AssigneeID        int       `jsonapi:"attr,assigneeID"`
-	SubscriberIDList  []int     `jsonapi:"attr,subscriberIDList"`
-	RollbackIssueID   *int      `jsonapi:"attr,rollbackIssueID"`
+	AssigneeID        int       `jsonapi:"attr,assigneeId"`
+	SubscriberIDList  []int     `jsonapi:"attr,subscriberIdList"`
+	RollbackIssueID   *int      `jsonapi:"attr,rollbackIssueId"`
 	Payload           string    `jsonapi:"attr,payload"`
 }
 
@@ -150,7 +150,7 @@ type IssuePatch struct {
 	// Status is only set manualy via IssueStatusPatch
 	Status      *IssueStatus
 	Description *string `jsonapi:"attr,description"`
-	AssigneeID  *int    `jsonapi:"attr,assigneeID"`
+	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
 	Payload     *string `jsonapi:"attr,payload"`
 }
 

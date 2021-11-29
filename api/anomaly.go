@@ -46,7 +46,7 @@ type AnomalyInstanceConnectionPayload struct {
 }
 
 type AnomalyDatabaseBackupPolicyViolationPayload struct {
-	EnvironmentID          int                      `json:"environmentID,omitempty"`
+	EnvironmentID          int                      `json:"environmentId,omitempty"`
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
 }
@@ -83,9 +83,9 @@ type Anomaly struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	InstanceID int `jsonapi:"attr,instanceID"`
+	InstanceID int `jsonapi:"attr,instanceId"`
 	// Instance anomaly doesn't have databaseID
-	DatabaseID *int `jsonapi:"attr,databaseID"`
+	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Type AnomalyType `jsonapi:"attr,type"`
