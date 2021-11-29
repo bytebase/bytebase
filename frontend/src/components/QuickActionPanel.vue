@@ -397,6 +397,7 @@
         state.quickActionType == 'quickaction.bb.database.schema.update'
       "
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <AlterSchemaPrepForm
         :projectID="projectID"
         @dismiss="state.showModal = false"
@@ -405,6 +406,7 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <CreateDatabasePrepForm
         :projectID="projectID"
         @dismiss="state.showModal = false"
@@ -420,6 +422,7 @@
         state.quickActionType == 'quickaction.bb.project.database.transfer'
       "
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <TransferDatabaseForm
         :projectID="projectID"
         @dismiss="state.showModal = false"

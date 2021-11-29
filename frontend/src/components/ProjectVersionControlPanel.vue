@@ -100,7 +100,7 @@
         <RepositoryPanel
           :project="project"
           :repository="repository"
-          :allowEdit="allowEdit"
+          :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
         />
       </template>

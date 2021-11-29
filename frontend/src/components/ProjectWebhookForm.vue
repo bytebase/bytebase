@@ -172,10 +172,10 @@
       <BBButtonConfirm
         v-if="!create && allowEdit"
         :style="'DELETE'"
-        :buttonText="'Delete this webhook'"
-        :okText="'Delete'"
-        :confirmTitle="`Delete webhook '${webhook.name}' and all its execution history?`"
-        :requireConfirm="true"
+        :button-text="'Delete this webhook'"
+        :ok-text="'Delete'"
+        :confirm-title="`Delete webhook '${webhook.name}' and all its execution history?`"
+        :require-confirm="true"
         @confirm="deleteWebhook"
       />
       <div>

@@ -1,7 +1,7 @@
 <template>
   <BBSelect
-    :selectedItem="selectedRole"
-    :itemList="['OWNER', 'DEVELOPER']"
+    :selected-item="selectedRole"
+    :item-list="['OWNER', 'DEVELOPER']"
     :placeholder="'Select role'"
     :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"

@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="state.columnList"
-    :dataSource="instanceList"
-    :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :column-list="state.columnList"
+    :data-source="instanceList"
+    :show-header="true"
+    :left-bordered="false"
+    :right-bordered="false"
     @click-row="clickInstance"
   >
     <template #body="{ rowData: instance }">
-      <BBTableCell :leftPadding="4" class="w-4">
+      <BBTableCell :left-padding="4" class="w-4">
         <InstanceEngineIcon :instance="instance" />
       </BBTableCell>
       <BBTableCell class="w-32">

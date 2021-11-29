@@ -3,7 +3,7 @@
   <template v-if="state.notificationList.length > 0">
     <BBNotification
       :placement="'BOTTOM_RIGHT'"
-      :notificationList="state.notificationList"
+      :notification-list="state.notificationList"
       @close="removeNotification"
     />
   </template>

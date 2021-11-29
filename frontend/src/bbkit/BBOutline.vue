@@ -57,8 +57,8 @@
         v-if="item.childList"
         :id="[id, item.id].join('.')"
         :title="item.name"
-        :itemList="item.childList"
-        :allowCollapse="item.childCollapse"
+        :item-list="item.childList"
+        :allow-collapse="item.childCollapse"
         :level="level + 1"
       />
       <router-link

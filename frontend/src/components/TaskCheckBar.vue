@@ -10,7 +10,7 @@
       {{ hasRunningTaskCheck ? "Checking..." : "Run checks" }}
     </button>
     <TaskCheckBadgeBar
-      :taskCheckRunList="task.taskCheckRunList"
+      :task-check-run-list="task.taskCheckRunList"
       @select-task-check-run="
         (checkRun) => {
           viewCheckRunDetail(checkRun);
@@ -25,10 +25,10 @@
       <div class="space-y-4 w-208">
         <div>
           <TaskCheckBadgeBar
-            :taskCheckRunList="task.taskCheckRunList"
-            :allowSelection="true"
-            :stickySelection="true"
-            :selectedTaskCheckRun="state.selectedTaskCheckRun"
+            :task-check-run-list="task.taskCheckRunList"
+            :allow-selection="true"
+            :sticky-selection="true"
+            :selected-task-check-run="state.selectedTaskCheckRun"
             @select-task-check-run="
               (checkRun) => {
                 viewCheckRunDetail(checkRun);
@@ -38,8 +38,8 @@
         </div>
         <BBTabFilter
           class="pt-4"
-          :tabItemList="tabItemList"
-          :selectedIndex="state.selectedTabIndex"
+          :tab-item-list="tabItemList"
+          :selected-index="state.selectedTabIndex"
           @select-index="
             (index) => {
               state.selectedTaskCheckRun = tabTaskCheckRunList[index];
@@ -47,7 +47,7 @@
             }
           "
         />
-        <TaskCheckRunPanel :taskCheckRun="state.selectedTaskCheckRun" />
+        <TaskCheckRunPanel :task-check-run="state.selectedTaskCheckRun" />
         <div class="pt-4 flex justify-end">
           <button
             type="button"

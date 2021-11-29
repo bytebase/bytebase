@@ -34,8 +34,8 @@
     <DatabaseTable
       :mode="'ALL_SHORT'"
       :bordered="true"
-      :customClick="true"
-      :databaseList="databaseList"
+      :custom-click="true"
+      :database-list="databaseList"
       @select-database="selectDatabase"
     />
 
@@ -53,7 +53,7 @@
     <BBAlert
       v-if="state.showModal"
       :style="'INFO'"
-      :okText="'Transfer'"
+      :ok-text="'Transfer'"
       :title="`Are you sure to transfer '${selectedDatabaseName}' into our project?`"
       @ok="
         () => {

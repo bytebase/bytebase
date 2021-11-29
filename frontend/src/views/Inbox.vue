@@ -30,7 +30,7 @@
           <span>Mark all as read</span>
         </button>
       </div>
-      <InboxList :inboxList="state.unreadList" />
+      <InboxList :inbox-list="state.unreadList" />
     </div>
     <div class="mt-6 mx-6 space-y-2">
       <div
@@ -45,7 +45,7 @@
       >
         Read
       </div>
-      <InboxList class="opacity-70" :inboxList="state.readList" />
+      <InboxList class="opacity-70" :inbox-list="state.readList" />
       <div class="mt-2 flex justify-end">
         <button type="button" class="normal-link" @click.prevent="viewOlder">
           View older

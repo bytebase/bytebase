@@ -171,8 +171,8 @@
       <DatabaseTable
         :mode="projectID ? 'PROJECT_SHORT' : 'ALL_SHORT'"
         :bordered="true"
-        :customClick="true"
-        :databaseList="databaseList"
+        :custom-click="true"
+        :database-list="databaseList"
         @select-database="selectDatabase"
       />
     </template>

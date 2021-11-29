@@ -258,7 +258,7 @@
           </div>
           <IntroBanner v-if="showIntro" />
           <div v-if="quickActionList.length > 0" class="mx-4 mt-4">
-            <QuickActionPanel :quickActionList="quickActionList" />
+            <QuickActionPanel :quick-action-list="quickActionList" />
           </div>
         </div>
       </div>

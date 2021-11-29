@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="viewList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="false"
+    :column-list="COLUMN_LIST"
+    :data-source="viewList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="false"
   >
     <template #body="{ rowData: view }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ view.name }}
       </BBTableCell>
       <BBTableCell class="w-64">

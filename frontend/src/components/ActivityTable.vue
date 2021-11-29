@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="activityList"
-    :showHeader="true"
-    :rowClickable="false"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="COLUMN_LIST"
+    :data-source="activityList"
+    :show-header="true"
+    :row-clickable="false"
+    :left-bordered="true"
+    :right-bordered="true"
   >
     <template #body="{ rowData: activity }">
-      <BBTableCell :leftPadding="4" class="w-8">
+      <BBTableCell :left-padding="4" class="w-8">
         <div class="flex flew-row space-x-1">
           <span
             v-if="activity.level != `INFO`"

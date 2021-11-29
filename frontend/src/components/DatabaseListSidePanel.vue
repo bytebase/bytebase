@@ -2,8 +2,8 @@
   <BBOutline
     :id="'database'"
     :title="'Databases'"
-    :itemList="databaseListByEnvironment"
-    :allowCollapse="false"
+    :item-list="databaseListByEnvironment"
+    :allow-collapse="false"
   />
 </template>
 

@@ -1,15 +1,15 @@
 <template>
   <BBTable
     class="mt-2"
-    :columnList="COLUMN_LIST"
-    :sectionDataSource="dataSource"
-    :compactSection="true"
-    :showHeader="true"
-    :rowClickable="false"
+    :column-list="COLUMN_LIST"
+    :section-data-source="dataSource"
+    :compact-section="true"
+    :show-header="true"
+    :row-clickable="false"
   >
     <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-auto table-cell"
         :title="COLUMN_LIST[0].title"
       />
@@ -24,7 +24,7 @@
       />
     </template>
     <template #body="{ rowData: member }">
-      <BBTableCell :leftPadding="4" class="table-cell">
+      <BBTableCell :left-padding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
@@ -82,7 +82,7 @@
       <BBTableCell class="tooltip-wrapper">
         <span class="tooltip">{{ changeRoleTooltip(member) }}</span>
         <RoleSelect
-          :selectedRole="member.role"
+          :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
           @change-role="
             (role) => {
@@ -106,19 +106,19 @@
         <BBButtonConfirm
           v-if="allowDeactivateMember(member)"
           :style="'ARCHIVE'"
-          :requireConfirm="true"
-          :okText="'Deactivate'"
-          :confirmTitle="`Are you sure to deactivate '${member.principal.name}'`"
-          :confirmDescription="'You can still reactivate later'"
+          :require-confirm="true"
+          :ok-text="'Deactivate'"
+          :confirm-title="`Are you sure to deactivate '${member.principal.name}'`"
+          :confirm-description="'You can still reactivate later'"
           @confirm="changeRowStatus(member.id, 'ARCHIVED')"
         />
         <BBButtonConfirm
           v-else-if="allowActivateMember(member)"
           :style="'RESTORE'"
-          :requireConfirm="true"
-          :okText="'Reactivate'"
-          :confirmTitle="`Are you sure to reactivate '${member.principal.name}'`"
-          :confirmDescription="''"
+          :require-confirm="true"
+          :ok-text="'Reactivate'"
+          :confirm-title="`Are you sure to reactivate '${member.principal.name}'`"
+          :confirm-description="''"
           @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
       </BBTableCell>

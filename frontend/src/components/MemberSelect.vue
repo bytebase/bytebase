@@ -1,7 +1,7 @@
 <template>
   <BBSelect
-    :selectedItem="selectedPrincipal"
-    :itemList="principalList"
+    :selected-item="selectedPrincipal"
+    :item-list="principalList"
     :placeholder="placeholder"
     :disabled="disabled"
     @select-item="

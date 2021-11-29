@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :dataSource="task.taskRunList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="false"
+    :column-list="columnList"
+    :data-source="task.taskRunList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="false"
   >
     <template #body="{ rowData: taskRun }">
-      <BBTableCell :leftPadding="4" class="table-cell w-4">
+      <BBTableCell :left-padding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
             class="

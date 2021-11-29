@@ -71,7 +71,7 @@
         ? 'CRITICAL'
         : 'INFO'
     "
-    :okText="okText"
+    :ok-text="okText"
     :title="confirmTitle"
     :description="confirmDescription"
     @ok="

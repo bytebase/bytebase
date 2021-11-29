@@ -176,9 +176,9 @@
         <code-diff
           v-if="state.showDiff"
           class="mt-4 w-full"
-          :oldString="migrationHistory.schemaPrev"
-          :newString="migrationHistory.schema"
-          outputFormat="side-by-side"
+          :old-string="migrationHistory.schemaPrev"
+          :new-string="migrationHistory.schema"
+          output-format="side-by-side"
         />
         <div
           v-else

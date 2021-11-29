@@ -322,7 +322,7 @@
                           whitespace-nowrap
                           hover:underline
                         "
-                        exactActiveClass=""
+                        exact-active-class=""
                         >{{ actionSubject(activity).name }}</router-link
                       >
                       <a
@@ -589,7 +589,7 @@
   <BBAlert
     v-if="state.showDeleteCommentModal"
     :style="'INFO'"
-    :okText="'Delete'"
+    :ok-text="'Delete'"
     :title="'Are you sure to delete this comment?'"
     :description="'You cannot undo this action.'"
     @ok="

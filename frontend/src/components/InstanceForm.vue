@@ -98,6 +98,7 @@
             Environment <span v-if="create" style="color: red">*</span>
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <EnvironmentSelect
             id="environment"
             class="mt-1 w-full"
@@ -478,7 +479,7 @@
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
-    :okText="'Ignore and create'"
+    :ok-text="'Ignore and create'"
     :title="'Connection info seems to be incorrect'"
     :description="state.createInstanceWarning"
     @ok="

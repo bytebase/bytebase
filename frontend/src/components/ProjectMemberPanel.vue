@@ -9,6 +9,7 @@
             class="flex flex-row justify-between py-0.5 select-none space-x-4"
           >
             <div class="w-64">
+              <!-- eslint-disable vue/attribute-hyphenation -->
               <MemberSelect
                 id="user"
                 name="user"

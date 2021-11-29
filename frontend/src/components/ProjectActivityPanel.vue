@@ -2,7 +2,7 @@
   <div>
     <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">Activities</p>
-      <ActivityTable :activityList="state.activityList" />
+      <ActivityTable :activity-list="state.activityList" />
     </div>
   </div>
 </template>

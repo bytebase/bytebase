@@ -1,17 +1,17 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :sectionDataSource="issueSectionList"
-    :showHeader="true"
-    :leftBordered="leftBordered"
-    :rightBordered="rightBordered"
-    :topBordered="topBordered"
-    :bottomBordered="bottomBordered"
+    :column-list="columnList"
+    :section-data-source="issueSectionList"
+    :show-header="true"
+    :left-bordered="leftBordered"
+    :right-bordered="rightBordered"
+    :top-bordered="topBordered"
+    :bottom-bordered="bottomBordered"
     @click-row="clickIssue"
   >
     <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-4 table-cell"
         :title="columnList[0].title"
       />
@@ -73,10 +73,10 @@
       </template>
     </template>
     <template #body="{ rowData: issue }">
-      <BBTableCell :leftPadding="4" class="table-cell">
+      <BBTableCell :left-padding="4" class="table-cell">
         <IssueStatusIcon
-          :issueStatus="issue.status"
-          :taskStatus="activeTask(issue.pipeline).status"
+          :issue-status="issue.status"
+          :task-status="activeTask(issue.pipeline).status"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
@@ -93,7 +93,7 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <BBStepBar
-          :stepList="taskStepList(issue)"
+          :step-list="taskStepList(issue)"
           @click-step="
             (step) => {
               clickIssueStep(issue, step);

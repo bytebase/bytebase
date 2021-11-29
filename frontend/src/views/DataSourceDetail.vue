@@ -155,25 +155,25 @@
           <!-- Description list -->
           <DataSourceConnectionPanel
             :editing="state.editing"
-            :dataSource="state.editing ? state.editingDataSource : dataSource"
+            :data-source="state.editing ? state.editingDataSource : dataSource"
           />
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
             v-if="dataSource.id != '-1'"
             class="pt-6"
-            :allowEdit="allowEdit"
-            :dataSource="dataSource"
+            :allow-edit="allowEdit"
+            :data-source="dataSource"
           />
 
           <!-- Hide deleting data source list for now, as we don't allow deleting data source after creating the database. -->
           <div v-if="false" class="pt-4 flex justify-start">
             <BBButtonConfirm
               v-if="allowEdit"
-              :buttonText="'Delete this entire data source'"
-              :requireConfirm="true"
-              :confirmTitle="`Are you sure to delete '${dataSource.name}'?`"
-              :confirmDescription="'All existing users using this data source to connect the database will fail. You cannot undo this action.'"
+              :button-text="'Delete this entire data source'"
+              :require-confirm="true"
+              :confirm-title="`Are you sure to delete '${dataSource.name}'?`"
+              :confirm-description="'All existing users using this data source to connect the database will fail. You cannot undo this action.'"
               @confirm="doDelete"
             />
           </div>

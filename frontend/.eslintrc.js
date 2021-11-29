@@ -24,7 +24,6 @@ module.exports = {
     "vue/multi-word-component-names": "warn",
     "vue/no-unused-components": "warn",
     "vue/no-useless-template-attributes": "warn",
-    "vue/attribute-hyphenation": ["warn", "never"],
   },
   ignorePatterns: ["node_modules", "build", "dist", "public"],
   overrides: [

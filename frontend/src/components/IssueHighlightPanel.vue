@@ -6,15 +6,15 @@
           <div>
             <IssueStatusIcon
               v-if="!create"
-              :issueStatus="issue.status"
-              :taskStatus="activeTask(issue.pipeline).status"
+              :issue-status="issue.status"
+              :task-status="activeTask(issue.pipeline).status"
             />
           </div>
           <BBTextField
             class="ml-2 my-0.5 w-full text-lg font-bold"
             :disabled="!allowEdit"
             :required="true"
-            :focusOnMount="create"
+            :focus-on-mount="create"
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"

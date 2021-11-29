@@ -6,8 +6,8 @@
           v-if="index == 0"
           to="/"
           class="text-control-light hover:text-control-light-hover"
-          activeClass="link"
-          exactActiveClass="link"
+          active-class="link"
+          exact-active-class="link"
         >
           <!-- Heroicon name: home -->
           <svg
@@ -40,8 +40,8 @@
           v-if="item.path"
           :to="item.path"
           class="text-sm anchor-link max-w-prose truncate"
-          activeClass="anchor-link"
-          exactActiveClass="anchor-link"
+          active-class="anchor-link"
+          exact-active-class="anchor-link"
           >{{ item.name }}</router-link
         >
         <div v-else class="text-sm max-w-prose truncate">

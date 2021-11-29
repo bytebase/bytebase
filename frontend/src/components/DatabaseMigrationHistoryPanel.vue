@@ -27,14 +27,14 @@
     </div>
     <MigrationHistoryTable
       v-if="state.migrationSetupStatus == 'OK'"
-      :databaseSectionList="[database]"
-      :historySectionList="migrationHistorySectionList"
+      :database-section-list="[database]"
+      :history-section-list="migrationHistorySectionList"
     />
     <BBAttention
       v-else
       :style="`WARN`"
       :title="attentionTitle"
-      :actionText="allowConfigInstance ? 'Config instance' : ''"
+      :action-text="allowConfigInstance ? 'Config instance' : ''"
       @click-action="configInstance"
     />
   </div>
@@ -42,8 +42,8 @@
   <BBAlert
     v-if="state.showBaselineModal"
     :style="'INFO'"
-    :okText="'Establish baseline'"
-    :cancelText="'Cancel'"
+    :ok-text="'Establish baseline'"
+    :cancel-text="'Cancel'"
     :title="`Establish new baseline for \'${database.name}\'`"
     :description="'Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.\n\nFor VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.'"
     @ok="

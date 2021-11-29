@@ -7,6 +7,7 @@
           <label for="environment" class="textlabel">
             Environment <span style="color: red">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <EnvironmentSelect
             id="environment"
             class="mt-1 w-full"
@@ -25,6 +26,7 @@
           <label for="instance" class="textlabel">
             Instance <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
             id="instance"
             class="mt-1 w-full"
@@ -43,6 +45,7 @@
           <label for="database" class="textlabel">
             Database <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DatabaseSelect
             id="database"
             class="mt-1 w-full"
@@ -63,6 +66,7 @@
           <label for="datasource" class="textlabel">
             Data Source <span class="text-red-600">*</span>
           </label>
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DataSourceSelect
             id="datasource"
             class="mt-1 w-full"
@@ -86,11 +90,12 @@
             </span>
           </label>
           <!-- DBA and Owner always have all access, so we only need to grant to developer -->
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <MemberSelect
             id="user"
             class="mt-1"
             name="user"
-            :allowedRoleList="['DEVELOPER']"
+            :allowed-role-list="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
             :selectedID="state.granteeID"
             @select-principal-id="

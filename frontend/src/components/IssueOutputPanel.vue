@@ -125,6 +125,7 @@
           v-if="field.type == 'Database'"
           class="flex flex-row items-center space-x-2"
         >
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DatabaseSelect
             class="mt-1 w-64"
             :disabled="!allowEditDatabase"

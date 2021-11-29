@@ -22,6 +22,7 @@
         <label for="project" class="textlabel">
           Project <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
           id="project"
           class="mt-1"
@@ -36,6 +37,7 @@
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
@@ -57,6 +59,7 @@
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
             id="instance"
             class="mt-1"
@@ -113,11 +116,12 @@
           Assignee <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           id="user"
           class="mt-1"
           name="user"
-          :allowedRoleList="['OWNER', 'DBA']"
+          :allowed-role-list="['OWNER', 'DBA']"
           :selectedID="state.assigneeID"
           :placeholder="'Select assignee'"
           @select-principal-id="selectAssignee"

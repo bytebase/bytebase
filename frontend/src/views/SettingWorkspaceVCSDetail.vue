@@ -85,10 +85,10 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :buttonText="'Delete this Git provider'"
-          :okText="'Delete'"
-          :confirmTitle="`Delete Git provider '${vcs.name}'?`"
-          :requireConfirm="true"
+          :button-text="'Delete this Git provider'"
+          :ok-text="'Delete'"
+          :confirm-title="`Delete Git provider '${vcs.name}'?`"
+          :require-confirm="true"
           @confirm="deleteVCS"
         />
       </template>
@@ -122,7 +122,7 @@
       {{ `Linked repositories (${repositoryList.length})` }}
     </div>
     <div class="mt-4">
-      <RepositoryTable :repositoryList="repositoryList" />
+      <RepositoryTable :repository-list="repositoryList" />
     </div>
   </div>
 </template>

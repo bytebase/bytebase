@@ -1,17 +1,17 @@
 <template>
   <div>
     <BBTable
-      :columnList="columnList"
-      :dataSource="checkResultList"
-      :showHeader="false"
-      :leftBordered="true"
-      :rightBordered="true"
-      :topBordered="true"
-      :bottomBordered="true"
-      :rowClickable="false"
+      :column-list="columnList"
+      :data-source="checkResultList"
+      :show-header="false"
+      :left-bordered="true"
+      :right-bordered="true"
+      :top-bordered="true"
+      :bottom-bordered="true"
+      :row-clickable="false"
     >
       <template #body="{ rowData: checkResult }">
-        <BBTableCell :leftPadding="4" class="table-cell w-4">
+        <BBTableCell :left-padding="4" class="table-cell w-4">
           <div class="flex flex-row space-x-2">
             <div
               class="

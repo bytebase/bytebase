@@ -163,11 +163,11 @@
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
-          :buttonText="'Archive this environment'"
-          :okText="'Archive'"
-          :confirmTitle="`Archive environment '${state.environment.name}'?`"
-          :confirmDescription="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
-          :requireConfirm="true"
+          :button-text="'Archive this environment'"
+          :ok-text="'Archive'"
+          :confirm-title="`Archive environment '${state.environment.name}'?`"
+          :confirm-description="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :require-confirm="true"
           @confirm="archiveEnvironment"
         />
       </template>
@@ -175,11 +175,11 @@
         <BBButtonConfirm
           v-if="allowRestore"
           :style="'RESTORE'"
-          :buttonText="'Restore this environment'"
-          :okText="'Restore'"
-          :confirmTitle="`Restore environment '${state.environment.name}' to normal state?`"
-          :confirmDescription="''"
-          :requireConfirm="true"
+          :button-text="'Restore this environment'"
+          :ok-text="'Restore'"
+          :confirm-title="`Restore environment '${state.environment.name}' to normal state?`"
+          :confirm-description="''"
+          :require-confirm="true"
           @confirm="restoreEnvironment"
         />
       </template>

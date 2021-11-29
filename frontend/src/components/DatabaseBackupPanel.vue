@@ -61,8 +61,8 @@
       </div>
       <BackupTable
         :database="database"
-        :backupList="backupList"
-        :allowEdit="allowEdit"
+        :backup-list="backupList"
+        :allow-edit="allowEdit"
       />
     </div>
     <BBModal

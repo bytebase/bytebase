@@ -1,16 +1,16 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :dataSource="databaseList"
-    :showHeader="true"
-    :leftBordered="bordered"
-    :rightBordered="bordered"
-    :topBordered="bordered"
-    :bottomBordered="bordered"
+    :column-list="columnList"
+    :data-source="databaseList"
+    :show-header="true"
+    :left-bordered="bordered"
+    :right-bordered="bordered"
+    :top-bordered="bordered"
+    :bottom-bordered="bordered"
     @click-row="clickDatabase"
   >
     <template #body="{ rowData: database }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :left-padding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
           <span>
             {{ database.name }}

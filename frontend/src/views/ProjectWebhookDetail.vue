@@ -40,7 +40,7 @@
     </div>
     <ProjectWebhookForm
       class="pt-4"
-      :allowEdit="allowEdit"
+      :allow-edit="allowEdit"
       :create="false"
       :project="project"
       :webhook="projectWebhook"

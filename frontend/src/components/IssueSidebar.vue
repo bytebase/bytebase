@@ -8,7 +8,7 @@
         </h2>
         <div class="col-span-2">
           <span class="flex items-center space-x-2">
-            <IssueStatusIcon :issueStatus="issue.status" :size="'normal'" />
+            <IssueStatusIcon :issue-status="issue.status" :size="'normal'" />
             <span class="text-main capitalize">
               {{ issue.status.toLowerCase() }}
             </span>
@@ -21,10 +21,11 @@
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           :disabled="!allowEditAssignee"
           :selectedID="create ? issue.assigneeID : issue.assignee?.id"
-          :allowedRoleList="['OWNER', 'DBA']"
+          :allowed-role-list="['OWNER', 'DBA']"
           @select-principal-id="
             (principalID) => {
               $emit('update-assignee-id', principalID);
@@ -80,7 +81,7 @@
         <div class="col-span-2">
           <StageSelect
             :pipeline="issue.pipeline"
-            :selectedID="selectedStage.id"
+            :selected-i-d="selectedStage.id"
             @select-stage-id="(stageID) => $emit('select-stage-id', stageID)"
           />
         </div>

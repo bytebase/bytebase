@@ -100,11 +100,11 @@
   >
     <StatusTransitionForm
       :mode="updateStatusModalState.mode"
-      :okText="updateStatusModalState.okText"
+      :ok-text="updateStatusModalState.okText"
       :issue="issue"
       :task="currentTask"
       :transition="updateStatusModalState.transition"
-      :outputFieldList="issueTemplate.outputFieldList"
+      :output-field-list="issueTemplate.outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;

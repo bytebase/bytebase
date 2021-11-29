@@ -11,8 +11,8 @@
     </div>
     <BBStepTab
       class="pt-4"
-      :stepItemList="stepList"
-      :allowNext="allowNext"
+      :step-item-list="stepList"
+      :allow-next="allowNext"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="cancel"

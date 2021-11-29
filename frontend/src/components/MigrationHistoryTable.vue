@@ -1,17 +1,17 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :sectionDataSource="historySectionList"
-    :compactSection="mode == 'DATABASE'"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="columnList"
+    :section-data-source="historySectionList"
+    :compact-section="mode == 'DATABASE'"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
     @click-row="clickHistory"
   >
     <template #header>
       <template v-if="mode == 'DATABASE'">
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-2"
           :title="columnList[0].title"
         />
@@ -25,7 +25,7 @@
       </template>
       <template v-else>
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-2"
           :title="columnList[0].title"
         />
@@ -38,7 +38,7 @@
       </template>
     </template>
     <template #body="{ rowData: history }">
-      <BBTableCell :leftPadding="4">
+      <BBTableCell :left-padding="4">
         <MigrationHistoryStatusIcon :status="history.status" />
       </BBTableCell>
       <BBTableCell v-if="mode == 'DATABASE'">

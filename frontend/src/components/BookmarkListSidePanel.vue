@@ -2,13 +2,13 @@
   <BBOutline
     :id="'bookmark'"
     :title="'Bookmarks'"
-    :itemList="
+    :item-list="
       bookmarkList.map((item) => {
         return { name: item.name, link: item.link };
       })
     "
-    :allowDelete="true"
-    :allowCollapse="true"
+    :allow-delete="true"
+    :allow-collapse="true"
     @delete-index="deleteIndex"
   />
 </template>

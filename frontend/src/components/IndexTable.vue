@@ -1,13 +1,13 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :sectionDataSource="sectionList"
-    :showHeader="true"
-    :compactSection="false"
+    :column-list="COLUMN_LIST"
+    :section-data-source="sectionList"
+    :show-header="true"
+    :compact-section="false"
   >
     <template #header>
       <BBTableHeaderCell
-        :leftPadding="4"
+        :left-padding="4"
         class="w-16"
         :title="COLUMN_LIST[0].title"
       />
@@ -17,7 +17,7 @@
       <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[4].title" />
     </template>
     <template #body="{ rowData: index }">
-      <BBTableCell :leftPadding="4">
+      <BBTableCell :left-padding="4">
         {{ index.expression }}
       </BBTableCell>
       <BBTableCell>

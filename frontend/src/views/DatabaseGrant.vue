@@ -1,6 +1,7 @@
 <template>
+  <!-- eslint-disable vue/attribute-hyphenation -->
   <DataSourceMemberForm
-    :dataSource="state.dataSource"
+    :data-source="state.dataSource"
     :principalID="state.granteeID"
     :issueID="state.issueID"
     @submit="submit"

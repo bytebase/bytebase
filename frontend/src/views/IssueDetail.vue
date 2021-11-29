@@ -57,14 +57,14 @@
       <IssueHighlightPanel
         :issue="issue"
         :create="state.create"
-        :allowEdit="allowEditNameAndDescription"
+        :allow-edit="allowEditNameAndDescription"
         @update-name="updateName"
       >
         <IssueStatusTransitionButtonGroup
           :create="state.create"
-          :allowRollback="allowRollback"
+          :allow-rollback="allowRollback"
           :issue="issue"
-          :issueTemplate="issueTemplate"
+          :issue-template="issueTemplate"
           @create="doCreate"
           @rollback="doRollback"
           @change-issue-status="changeIssueStatus"
@@ -78,7 +78,7 @@
       <PipelineSimpleFlow
         :create="state.create"
         :pipeline="issue.pipeline"
-        :selectedStage="selectedStage"
+        :selected-stage="selectedStage"
         @select-stage-id="selectStageID"
       />
       <div v-if="!state.create" class="px-4 py-4 md:flex md:flex-col border-b">
@@ -95,8 +95,8 @@
     >
       <IssueOutputPanel
         :issue="issue"
-        :outputFieldList="issueTemplate.outputFieldList"
-        :allowEdit="allowEditOutput"
+        :output-field-list="issueTemplate.outputFieldList"
+        :allow-edit="allowEditOutput"
         @update-custom-field="updateCustomField"
       />
     </div>
@@ -126,9 +126,9 @@
               :database="database"
               :instance="instance"
               :create="state.create"
-              :selectedStage="selectedStage"
-              :inputFieldList="issueTemplate.inputFieldList"
-              :allowEdit="allowEditSidebar"
+              :selected-stage="selectedStage"
+              :input-field-list="issueTemplate.inputFieldList"
+              :allow-edit="allowEditSidebar"
               @update-assignee-id="updateAssigneeID"
               @add-subscriber-id="addSubscriberID"
               @remove-subscriber-id="removeSubscriberID"
@@ -152,12 +152,12 @@
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint(false)"
+                  :sql-hint="sqlHint(false)"
                   :statement="selectedStatement"
                   :create="state.create"
-                  :allowEdit="true"
+                  :allow-edit="true"
                   :rollback="false"
-                  :showApplyStatement="showIssueTaskStatementApply"
+                  :show-apply-statement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
                   @apply-statement-to-other-stages="applyStatementToOtherStages"
                 />
@@ -169,12 +169,12 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint(false)"
+                    :sql-hint="sqlHint(false)"
                     :statement="statement(stage)"
                     :create="state.create"
-                    :allowEdit="allowEditStatement"
+                    :allow-edit="allowEditStatement"
                     :rollback="false"
-                    :showApplyStatement="showIssueTaskStatementApply"
+                    :show-apply-statement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
                 </template>
@@ -186,12 +186,12 @@
             >
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint(true)"
+                  :sql-hint="sqlHint(true)"
                   :statement="selectedRollbackStatement"
                   :create="state.create"
-                  :allowEdit="false"
+                  :allow-edit="false"
                   :rollback="true"
-                  :showApplyStatement="showIssueTaskStatementApply"
+                  :show-apply-statement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                   @apply-statement-to-other-stages="
                     applyRollbackStatementToOtherStages
@@ -205,12 +205,12 @@
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint(true)"
+                    :sql-hint="sqlHint(true)"
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
-                    :allowEdit="false"
+                    :allow-edit="false"
                     :rollback="true"
-                    :showApplyStatement="showIssueTaskStatementApply"
+                    :show-apply-statement="showIssueTaskStatementApply"
                     @update-statement="updateRollbackStatement"
                   />
                 </template>
@@ -219,7 +219,7 @@
             <IssueDescriptionPanel
               :issue="issue"
               :create="state.create"
-              :allowEdit="allowEditNameAndDescription"
+              :allow-edit="allowEditNameAndDescription"
               @update-description="updateDescription"
             />
             <section
@@ -229,7 +229,7 @@
             >
               <IssueActivityPanel
                 :issue="issue"
-                :issueTemplate="issueTemplate"
+                :issue-template="issueTemplate"
                 @add-subscriber-id="addSubscriberID"
               />
             </section>

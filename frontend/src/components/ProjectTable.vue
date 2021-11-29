@@ -1,10 +1,10 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="projectList"
-    :showHeader="true"
-    :leftBordered="false"
-    :rightBordered="false"
+    :column-list="COLUMN_LIST"
+    :data-source="projectList"
+    :show-header="true"
+    :left-bordered="false"
+    :right-bordered="false"
     @click-row="clickProject"
   >
     <template #header>
@@ -22,7 +22,7 @@
       />
     </template>
     <template #body="{ rowData: project }">
-      <BBTableCell :leftPadding="4" class="table-cell text-gray-500">
+      <BBTableCell :left-padding="4" class="table-cell text-gray-500">
         <span class="">{{ project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">

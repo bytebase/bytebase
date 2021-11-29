@@ -6,9 +6,9 @@
   />
   <BBStepTab
     class="mt-4"
-    :stepItemList="stepList"
-    :allowNext="allowNext"
-    :finishTitle="'Confirm and add'"
+    :step-item-list="stepList"
+    :allow-next="allowNext"
+    :finish-title="'Confirm and add'"
     @try-change-step="tryChangeStep"
     @try-finish="tryFinishSetup"
     @cancel="cancelSetup"

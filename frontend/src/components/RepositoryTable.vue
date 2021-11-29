@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :dataSource="repositoryList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="columnList"
+    :data-source="repositoryList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
     @click-row="clickRepository"
   >
     <template #body="{ rowData: repository }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ projectName(repository.project) }}
       </BBTableCell>
       <BBTableCell class="w-32">

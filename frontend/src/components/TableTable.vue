@@ -1,15 +1,15 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="tableList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="true"
+    :column-list="COLUMN_LIST"
+    :data-source="tableList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="true"
     @click-row="clickTable"
   >
     <template #body="{ rowData: table }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ table.name }}
       </BBTableCell>
       <BBTableCell class="w-8">

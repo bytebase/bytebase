@@ -1,7 +1,7 @@
 <template>
   <BBTabFilter
-    :tabItemList="tabItemList"
-    :selectedIndex="state.selectedIndex"
+    :tab-item-list="tabItemList"
+    :selected-index="state.selectedIndex"
     @select-index="
       (index) => {
         state.selectedIndex = index;

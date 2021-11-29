@@ -5,6 +5,7 @@
         <label for="project" class="textlabel">
           Project <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
           id="project"
           class="mt-1"
@@ -22,6 +23,7 @@
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
@@ -80,6 +82,7 @@
               @input="state.databaseName = $event.target.value"
             />
             <div v-else class="flex flex-row space-x-4">
+              <!-- eslint-disable vue/attribute-hyphenation -->
               <DatabaseSelect
                 :selectedID="state.databaseID"
                 :mode="'ENVIRONMENT'"

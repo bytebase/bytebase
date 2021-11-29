@@ -1,9 +1,9 @@
 <template>
   <div>
     <BBTab
-      :tabItemList="tabItemList"
-      :selectedIndex="state.selectedIndex"
-      :reorderModel="state.reorder ? 'ALWAYS' : 'NEVER'"
+      :tab-item-list="tabItemList"
+      :selected-index="state.selectedIndex"
+      :reorder-model="state.reorder ? 'ALWAYS' : 'NEVER'"
       @reorder-index="reorderEnvironment"
       @select-index="selectEnvironment"
     >
@@ -31,7 +31,7 @@
         </div>
         <EnvironmentDetail
           v-else
-          :environmentSlug="environmentSlug(item)"
+          :environment-slug="environmentSlug(item)"
           @archive="doArchive"
         />
       </BBTabPanel>
@@ -45,8 +45,8 @@
     <EnvironmentForm
       :create="true"
       :environment="DEFAULT_NEW_ENVIRONMENT"
-      :approvalPolicy="DEFAULT_NEW_APPROVAL_POLICY"
-      :backupPolicy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
+      :approval-policy="DEFAULT_NEW_APPROVAL_POLICY"
+      :backup-policy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -55,8 +55,8 @@
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :okText="'Do not show again'"
-    :cancelText="'Dismiss'"
+    :ok-text="'Do not show again'"
+    :cancel-text="'Dismiss'"
     :title="'How to setup \'Environment\' ?'"
     :description="'Each environment maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment.'"
     @ok="

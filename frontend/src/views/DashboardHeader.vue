@@ -5,8 +5,8 @@
         <router-link
           to="/"
           class="select-none"
-          activeClass=""
-          exactActiveClass=""
+          active-class=""
+          exact-active-class=""
           ><img
             class="h-12 w-auto"
             src="../assets/logo-full.svg"
@@ -119,7 +119,7 @@
           </div>
           <div v-else class="underline">Developer</div>
         </div>
-        <router-link to="/inbox" exactActiveClass="">
+        <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.hasUnread"
             class="

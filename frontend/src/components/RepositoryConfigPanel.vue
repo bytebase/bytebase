@@ -1,10 +1,10 @@
 <template>
   <RepositoryForm
     :create="true"
-    :vcsType="config.vcs.type"
-    :vcsName="config.vcs.name"
-    :repositoryInfo="config.repositoryInfo"
-    :repositoryConfig="config.repositoryConfig"
+    :vcs-type="config.vcs.type"
+    :vcs-name="config.vcs.name"
+    :repository-info="config.repositoryInfo"
+    :repository-config="config.repositoryConfig"
   />
 </template>
 

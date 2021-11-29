@@ -26,6 +26,7 @@
               </div>
             </template>
             <template v-if="field.type == 'Database'">
+              <!-- eslint-disable vue/attribute-hyphenation -->
               <DatabaseSelect
                 class="mt-1 w-64"
                 :disabled="true"
@@ -71,8 +72,8 @@
           />
         </template>
         <TaskCheckBadgeBar
-          :taskCheckRunList="task.taskCheckRunList"
-          :allowSelection="false"
+          :task-check-run-list="task.taskCheckRunList"
+          :allow-selection="false"
         />
       </div>
 

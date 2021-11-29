@@ -2,8 +2,8 @@
   <BBOutline
     :id="'project'"
     :title="'Projects'"
-    :itemList="outlineItemList"
-    :allowCollapse="false"
+    :item-list="outlineItemList"
+    :allow-collapse="false"
   />
 </template>
 

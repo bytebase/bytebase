@@ -7,8 +7,8 @@
       </div>
       <MigrationHistoryTable
         :mode="'PROJECT'"
-        :databaseSectionList="state.databaseSectionList"
-        :historySectionList="state.migrationHistorySectionList"
+        :database-section-list="state.databaseSectionList"
+        :history-section-list="state.migrationHistorySectionList"
       />
     </template>
     <template v-else>

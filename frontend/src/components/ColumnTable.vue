@@ -1,13 +1,13 @@
 <template>
   <BBTable
-    :columnList="columnNameList"
-    :dataSource="columnList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="columnNameList"
+    :data-source="columnList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
   >
     <template #body="{ rowData: column }">
-      <BBTableCell :leftPadding="4" class="w-16">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ column.name }}
       </BBTableCell>
       <BBTableCell class="w-8">

@@ -5,8 +5,8 @@
   <EnvironmentForm
     v-if="state.approvalPolicy && state.backupPolicy"
     :environment="state.environment"
-    :approvalPolicy="state.approvalPolicy"
-    :backupPolicy="state.backupPolicy"
+    :approval-policy="state.approvalPolicy"
+    :backup-policy="state.backupPolicy"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"

@@ -59,15 +59,15 @@
       </div>
     </div>
     <BBTable
-      :columnList="columnList"
-      :sectionDataSource="dataSourceSectionList"
-      :showHeader="true"
-      :compactSection="database != undefined"
+      :column-list="columnList"
+      :section-data-source="dataSourceSectionList"
+      :show-header="true"
+      :compact-section="database != undefined"
       @click-row="clickDataSource"
     >
       <template #header>
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-24"
           :title="columnList[0].title"
         />
@@ -78,7 +78,7 @@
         <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
       </template>
       <template #body="{ rowData: dataSource }">
-        <BBTableCell :leftPadding="4">
+        <BBTableCell :left-padding="4">
           <span class="">{{ dataSource.name }}</span>
         </BBTableCell>
         <BBTableCell v-data-source-type>
@@ -105,7 +105,7 @@
     @close="state.showCreateModal = false"
   >
     <DataSourceCreateForm
-      :instanceID="instance.id"
+      :instance-i-d="instance.id"
       :database="database"
       @create="doCreate"
       @cancel="state.showCreateModal = false"

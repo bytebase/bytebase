@@ -32,7 +32,7 @@
           </div>
           <div v-if="hasAdminFeature" class="sm:hidden w-36">
             <RoleSelect
-              :selectedRole="user.role"
+              :selected-role="user.role"
               @change-role="
                 (role) => {
                   user.role = role;

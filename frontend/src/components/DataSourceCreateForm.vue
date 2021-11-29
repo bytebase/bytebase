@@ -39,6 +39,7 @@
             />
           </div>
           <div v-else class="flex flex-row justify-between space-x-2">
+            <!-- eslint-disable vue/attribute-hyphenation -->
             <DatabaseSelect
               class="mt-1 w-full"
               :selectedID="state.dataSource.databaseID"

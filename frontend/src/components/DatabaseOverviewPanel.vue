@@ -8,7 +8,7 @@
           minutes</span
         >
       </div>
-      <AnomalyTable :anomalySectionList="anomalySectionList" />
+      <AnomalyTable :anomaly-section-list="anomalySectionList" />
     </div>
     <div
       v-else
@@ -93,10 +93,10 @@
 
     <div class="pt-6">
       <div class="text-lg leading-6 font-medium text-main mb-4">Tables</div>
-      <TableTable :tableList="tableList" />
+      <TableTable :table-list="tableList" />
 
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">Views</div>
-      <ViewTable :viewList="viewList" />
+      <ViewTable :view-list="viewList" />
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -192,7 +192,7 @@
               </div>
               <DataSourceConnectionPanel
                 :editing="isEditingDataSource(ds)"
-                :dataSource="
+                :data-source="
                   isEditingDataSource(ds) ? state.editingDataSource : ds
                 "
               />

@@ -204,14 +204,14 @@
       <div class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Columns</div>
         <ColumnTable
-          :columnList="table.columnList"
+          :column-list="table.columnList"
           :engine="database.instance.engine"
         />
       </div>
 
       <div v-if="database.instance.engine != 'SNOWFLAKE'" class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Indexes</div>
-        <IndexTable :indexList="table.indexList" />
+        <IndexTable :index-list="table.indexList" />
       </div>
     </main>
   </div>

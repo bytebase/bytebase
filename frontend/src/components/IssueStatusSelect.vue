@@ -1,14 +1,14 @@
 <template>
   <BBSelect
-    :selectedItem="selectedStatus"
-    :itemList="['OPEN', 'DONE', 'CANCELED']"
+    :selected-item="selectedStatus"
+    :item-list="['OPEN', 'DONE', 'CANCELED']"
     :placeholder="'Unknown Status'"
     :disabled="disabled"
     @select-item="(status, didSelect) => changeStatus(status, didSelect)"
   >
     <template #menuItem="{ item }">
       <span class="flex items-center space-x-2">
-        <IssueStatusIcon :issueStatus="item" :size="'small'" />
+        <IssueStatusIcon :issue-status="item" :size="'small'" />
         <span>
           {{ item }}
         </span>

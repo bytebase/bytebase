@@ -175,12 +175,13 @@
       <div class="col-span-1 w-64">
         <label for="user" class="textlabel"> Project </label>
         <!-- Only allow to transfer database to the project having OWNER role -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
           id="project"
           class="mt-1"
           name="project"
-          :allowedRoleList="['OWNER']"
-          :includeDefaultProject="true"
+          :allowed-role-list="['OWNER']"
+          :include-default-project="true"
           :selectedID="state.editingProjectID"
           @select-project-id="
             (projectID) => {
@@ -213,8 +214,8 @@
     <BBTabFilter
       class="px-3 pb-2 border-b border-block-border"
       :responsive="false"
-      :tabItemList="tabItemList"
-      :selectedIndex="state.selectedIndex"
+      :tab-item-list="tabItemList"
+      :selected-index="state.selectedIndex"
       @select-index="
         (index) => {
           selectTab(index);
@@ -228,14 +229,14 @@
       <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
         <DatabaseMigrationHistoryPanel
           :database="database"
-          :allowEdit="allowEdit"
+          :allow-edit="allowEdit"
         />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel
           :database="database"
-          :allowAdmin="allowAdmin"
-          :allowEdit="allowEdit"
+          :allow-admin="allowAdmin"
+          :allow-edit="allowEdit"
         />
       </template>
     </div>
