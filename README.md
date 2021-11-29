@@ -7,6 +7,12 @@
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
 </p>
 
+<p align="center" >
+<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+   <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+</a>
+</p>
+
 [Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
 
 - [x] Web-based schema change and management workspace for teams
@@ -77,7 +83,14 @@ https://github.com/bytebase/bytebase/tree/main/docs/design
 
 ## 🏗 Development
 
-Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start working on the code:
+<p align="center" >
+<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+</a>
+</p>
+
+Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start
+working on the code:
 
 1. It has no external dependency.
 1. It requires zero config.
@@ -99,21 +112,26 @@ Bytebase is built with a curated tech stack. It is optimized for **developer exp
 
 ### Steps
 
-1.  Install [Air](https://github.com/cosmtrek/air#installation)
+1. Install [Air](https://github.com/cosmtrek/air#installation)
 
-1.  Pull source
+1. Pull source
 
     ```bash
     git clone https://github.com/bytebase/bytebase
     ```
 
-1.  Start backend using air (with live reload)
+1. Set up pre-commit hooks
+
+   - Install [pre-commit](https://pre-commit.com/index.html#install)
+   - Run `pre-commit install` inside the `bytebase` directory
+
+1. Start backend using air (with live reload)
 
     ```bash
     air -c scripts/.air.toml
     ```
 
-1.  Start frontend (with live reload)
+1. Start frontend (with live reload)
 
     ```bash
     cd frontend && yarn && yarn dev

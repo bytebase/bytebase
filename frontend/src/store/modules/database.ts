@@ -246,6 +246,18 @@ const actions = {
     return databaseList;
   },
 
+  async fetchDatabaseByInstanceIDAndName(
+      { commit, rootGetters }: any,
+      {
+        instanceID,
+        name,
+      }: {instanceID: InstanceID, name: string}
+  ) {
+    const data = (await axios.get(`/api/database?instance=${instanceID}&name=${name}`)).data;
+    const database = data.data[0];
+    return convert(database, data.included, rootGetters);
+  },
+
   async fetchDatabaseListByProjectID(
     { commit, rootGetters }: any,
     projectID: ProjectID
