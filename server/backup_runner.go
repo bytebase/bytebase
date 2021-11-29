@@ -109,7 +109,8 @@ func (s *BackupRunner) Run() error {
 						if err != nil {
 							s.l.Warn("Failed to POST hook URL",
 								zap.String("hookURL", hookURL),
-								zap.String("error", err.Error()))
+								zap.Int("databaseID", database.ID),
+								zap.Error(err))
 						}
 					}(database, backupSetting.ID, backupName, backupSetting.HookURL)
 				}
