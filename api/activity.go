@@ -131,7 +131,7 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 
 type ActivityPipelineTaskFileCommitPayload struct {
 	TaskID             int    `json:"taskId"`
-	VCSInstanceURL     string `json:"vcsInstanceURL,omitempty"`
+	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
 	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
 	Branch             string `json:"branch,omitempty"`
 	FilePath           string `json:"filePath,omitempty"`

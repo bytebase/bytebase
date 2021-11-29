@@ -25,7 +25,7 @@ type Repository struct {
 	// Domain specific fields
 	Name          string `jsonapi:"attr,name"`
 	FullPath      string `jsonapi:"attr,fullPath"`
-	WebURL        string `jsonapi:"attr,webURL"`
+	WebURL        string `jsonapi:"attr,webUrl"`
 	BranchFilter  string `jsonapi:"attr,branchFilter"`
 	BaseDirectory string `jsonapi:"attr,baseDirectory"`
 	// The file path template for matching the commited migration script.
@@ -56,7 +56,7 @@ type RepositoryCreate struct {
 	// Domain specific fields
 	Name               string `jsonapi:"attr,name"`
 	FullPath           string `jsonapi:"attr,fullPath"`
-	WebURL             string `jsonapi:"attr,webURL"`
+	WebURL             string `jsonapi:"attr,webUrl"`
 	BranchFilter       string `jsonapi:"attr,branchFilter"`
 	BaseDirectory      string `jsonapi:"attr,baseDirectory"`
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
