@@ -197,6 +197,10 @@ type Driver struct {
 	baseDSN string
 }
 
+func (driver *Driver) TablePrefix() string {
+	return ""
+}
+
 func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
 	updateHistoryAsDoneQuery := `
 	UPDATE
@@ -689,10 +693,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	args := util.MigrationExecutionArgs{
-		TablePrefix: "",
-	}
-	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

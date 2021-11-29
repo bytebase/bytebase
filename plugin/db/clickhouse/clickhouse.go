@@ -40,6 +40,10 @@ type Driver struct {
 	db *sql.DB
 }
 
+func (driver *Driver) TablePrefix() string {
+	return "bytebase."
+}
+
 func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
 	updateHistoryAsDoneQuery := `
 		ALTER TABLE
@@ -520,10 +524,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration for MySQL.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	args := util.MigrationExecutionArgs{
-		TablePrefix: "bytebase.",
-	}
-	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {

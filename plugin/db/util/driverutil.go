@@ -109,15 +109,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 	return true, nil
 }
 
-// MigrationExecutionArgs includes the arguments for ExecuteMigration().
-type MigrationExecutionArgs struct {
-	// TODO: Just make this a method of the Driver interface
-	TablePrefix string
-}
-
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet.
 	if !m.CreateDatabase {
@@ -138,7 +132,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has already been applied
-	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.TablePrefix())
 	if err != nil {
 		return -1, "", err
 	}
@@ -147,7 +141,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.TablePrefix())
 	if err != nil {
 		return -1, "", err
 	}
@@ -160,7 +154,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
 	if requireBaseline {
-		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, args.TablePrefix)
+		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, driver.TablePrefix())
 		if err != nil {
 			return -1, "", err
 		}
@@ -170,7 +164,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		}
 	}
 
-	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, args.TablePrefix)
+	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, driver.TablePrefix())
 	if err != nil {
 		return -1, "", err
 	}

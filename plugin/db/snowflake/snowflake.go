@@ -41,6 +41,10 @@ type Driver struct {
 	db *sql.DB
 }
 
+func (driver *Driver) TablePrefix() string {
+	return "bytebase.public."
+}
+
 func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
 	updateHistoryAsDoneQuery := `
 		UPDATE
@@ -674,11 +678,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
 	}
-
-	args := util.MigrationExecutionArgs{
-		TablePrefix: "bytebase.public.",
-	}
-	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement)
 }
 
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
