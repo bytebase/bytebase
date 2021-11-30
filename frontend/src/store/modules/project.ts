@@ -2,12 +2,12 @@ import axios from "axios";
 import {
   empty,
   EMPTY_ID,
-  MemberID,
+  MemberId,
   Principal,
-  PrincipalID,
+  PrincipalId,
   Project,
   ProjectCreate,
-  ProjectID,
+  ProjectId,
   ProjectMember,
   ProjectMemberCreate,
   ProjectMemberPatch,
@@ -44,9 +44,9 @@ function convert(
   const memberList: ProjectMember[] = [];
   for (const item of includedList || []) {
     if (item.type == "projectMember") {
-      const projectMemberIDList = project.relationships!.projectMember
+      const projectMemberIdList = project.relationships!.projectMember
         .data as ResourceIdentifier[];
-      for (const idItem of projectMemberIDList) {
+      for (const idItem of projectMemberIdList) {
         if (idItem.id == item.id) {
           const member = convertMember(item, includedList, rootGetters);
           member.project = projectWithoutMemberList;
@@ -92,7 +92,7 @@ function convertMember(
 }
 
 const state: () => ProjectState = () => ({
-  projectByID: new Map(),
+  projectById: new Map(),
 });
 
 const getters = {
@@ -104,15 +104,15 @@ const getters = {
 
   projectListByUser:
     (state: ProjectState) =>
-    (userID: PrincipalID, rowStatusList?: RowStatus[]): Project[] => {
+    (userId: PrincipalId, rowStatusList?: RowStatus[]): Project[] => {
       const result: Project[] = [];
-      for (const [_, project] of state.projectByID) {
+      for (const [_, project] of state.projectById) {
         if (
           (!rowStatusList && project.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(project.rowStatus))
         ) {
           for (const member of project.memberList) {
-            if (member.principal.id == userID) {
+            if (member.principal.id == userId) {
               result.push(project);
               break;
             }
@@ -123,15 +123,15 @@ const getters = {
       return result;
     },
 
-  projectByID:
+  projectById:
     (state: ProjectState) =>
-    (projectID: ProjectID): Project => {
-      if (projectID == EMPTY_ID) {
+    (projectId: ProjectId): Project => {
+      if (projectId == EMPTY_ID) {
         return empty("PROJECT") as Project;
       }
 
       return (
-        state.projectByID.get(projectID) || (unknown("PROJECT") as Project)
+        state.projectById.get(projectId) || (unknown("PROJECT") as Project)
       );
     },
 };
@@ -150,15 +150,15 @@ const actions = {
   async fetchProjectListByUser(
     { commit, rootGetters }: any,
     {
-      userID,
+      userId,
       rowStatusList,
     }: {
-      userID: PrincipalID;
+      userId: PrincipalId;
       rowStatusList?: RowStatus[];
     }
   ) {
     const path =
-      `/api/project?user=${userID}` +
+      `/api/project?user=${userId}` +
       (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
     const data = (await axios.get(`${path}`)).data;
     const projectList = data.data.map((project: ResourceObject) => {
@@ -169,12 +169,12 @@ const actions = {
     return projectList;
   },
 
-  async fetchProjectByID({ commit, rootGetters }: any, projectID: ProjectID) {
-    const data = (await axios.get(`/api/project/${projectID}`)).data;
+  async fetchProjectById({ commit, rootGetters }: any, projectId: ProjectId) {
+    const data = (await axios.get(`/api/project/${projectId}`)).data;
     const project = convert(data.data, data.included, rootGetters);
 
-    commit("setProjectByID", {
-      projectID,
+    commit("setProjectById", {
+      projectId,
       project,
     });
     return project;
@@ -191,8 +191,8 @@ const actions = {
     ).data;
     const createdProject = convert(data.data, data.included, rootGetters);
 
-    commit("setProjectByID", {
-      projectID: createdProject.id,
+    commit("setProjectById", {
+      projectId: createdProject.id,
       project: createdProject,
     });
 
@@ -202,15 +202,15 @@ const actions = {
   async patchProject(
     { commit, rootGetters }: any,
     {
-      projectID,
+      projectId,
       projectPatch,
     }: {
-      projectID: ProjectID;
+      projectId: ProjectId;
       projectPatch: ProjectPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/project/${projectID}`, {
+      await axios.patch(`/api/project/${projectId}`, {
         data: {
           type: "projectPatch",
           attributes: projectPatch,
@@ -219,8 +219,8 @@ const actions = {
     ).data;
     const updatedProject = convert(data.data, data.included, rootGetters);
 
-    commit("setProjectByID", {
-      projectID,
+    commit("setProjectById", {
+      projectId,
       project: updatedProject,
     });
 
@@ -228,25 +228,25 @@ const actions = {
   },
 
   // Project Role Mapping
-  // Returns existing member if the principalID has already been created.
+  // Returns existing member if the principalId has already been created.
   async createdMember(
     { dispatch }: any,
     {
-      projectID,
+      projectId,
       projectMember,
     }: {
-      projectID: ProjectID;
+      projectId: ProjectId;
       projectMember: ProjectMemberCreate;
     }
   ) {
-    await axios.post(`/api/project/${projectID}/member`, {
+    await axios.post(`/api/project/${projectId}/member`, {
       data: {
         type: "projectMemberCreate",
         attributes: projectMember,
       },
     });
 
-    const updatedProject = await dispatch("fetchProjectByID", projectID);
+    const updatedProject = await dispatch("fetchProjectById", projectId);
 
     return updatedProject;
   },
@@ -254,23 +254,23 @@ const actions = {
   async patchMember(
     { dispatch }: any,
     {
-      projectID,
-      memberID,
+      projectId,
+      memberId,
       projectMemberPatch,
     }: {
-      projectID: ProjectID;
-      memberID: MemberID;
+      projectId: ProjectId;
+      memberId: MemberId;
       projectMemberPatch: ProjectMemberPatch;
     }
   ) {
-    await axios.patch(`/api/project/${projectID}/member/${memberID}`, {
+    await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
       data: {
         type: "projectMemberPatch",
         attributes: projectMemberPatch,
       },
     });
 
-    const updatedProject = await dispatch("fetchProjectByID", projectID);
+    const updatedProject = await dispatch("fetchProjectById", projectId);
 
     return updatedProject;
   },
@@ -279,7 +279,7 @@ const actions = {
     await axios.delete(`/api/project/${member.project.id}/member/${member.id}`);
 
     const updatedProject = await dispatch(
-      "fetchProjectByID",
+      "fetchProjectById",
       member.project.id
     );
 
@@ -288,22 +288,22 @@ const actions = {
 };
 
 const mutations = {
-  setProjectByID(
+  setProjectById(
     state: ProjectState,
     {
-      projectID,
+      projectId,
       project,
     }: {
-      projectID: ProjectID;
+      projectId: ProjectId;
       project: Project;
     }
   ) {
-    state.projectByID.set(projectID, project);
+    state.projectById.set(projectId, project);
   },
 
   upsertProjectList(state: ProjectState, projectList: Project[]) {
     for (const project of projectList) {
-      state.projectByID.set(project.id, project);
+      state.projectById.set(project.id, project);
     }
   },
 };

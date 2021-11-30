@@ -196,7 +196,7 @@ export default {
             activity.payload as ActivityProjectDatabaseTransferPayload;
           return {
             title: payload.databaseName,
-            path: `/db/${payload.databaseID}`,
+            path: `/db/${payload.databaseId}`,
             external: false,
           };
         }
@@ -209,10 +209,10 @@ export default {
         case "bb.project.repository.push": {
           const payload =
             activity.payload as ActivityProjectRepositoryPushPayload;
-          if (payload.issueID && payload.issueName) {
+          if (payload.issueId && payload.issueName) {
             return {
-              title: `issue/${payload.issueID}`,
-              path: `/issue/${issueSlug(payload.issueName!, payload.issueID!)}`,
+              title: `issue/${payload.issueId}`,
+              path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
               external: false,
             };
           }

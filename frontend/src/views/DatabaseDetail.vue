@@ -76,7 +76,7 @@
               <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
                 <span class="textlabel">Restored&nbsp;from&nbsp;</span>
                 <router-link
-                  :to="`/db/${database.sourceBackup.databaseID}`"
+                  :to="`/db/${database.sourceBackup.databaseId}`"
                   class="normal-link"
                 >
                   <!-- Do not display the name of the backup's database because that requires a fetch  -->
@@ -182,10 +182,10 @@
           name="project"
           :allowed-role-list="['OWNER']"
           :include-default-project="true"
-          :selectedID="state.editingProjectID"
+          :selectedId="state.editingProjectId"
           @select-project-id="
-            (projectID) => {
-              state.editingProjectID = projectID;
+            (projectId) => {
+              state.editingProjectId = projectId;
             }
           "
         />
@@ -201,9 +201,9 @@
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="state.editingProjectID == database.project.id"
+          :disabled="state.editingProjectId == database.project.id"
           @click.prevent="
-            updateProject(state.editingProjectID);
+            updateProject(state.editingProjectId);
             state.showModal = false;
           "
         >
@@ -254,7 +254,7 @@ import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { consoleLink, idFromSlug, isDBAOrOwner } from "../utils";
 import {
-  ProjectID,
+  ProjectId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Repository,
@@ -280,7 +280,7 @@ const databaseTabItemList: DatabaseTabItem[] = [
 
 interface LocalState {
   showModal: boolean;
-  editingProjectID: ProjectID;
+  editingProjectId: ProjectId;
   selectedIndex: number;
 }
 
@@ -305,14 +305,14 @@ export default {
 
     const state = reactive<LocalState>({
       showModal: false,
-      editingProjectID: UNKNOWN_ID,
+      editingProjectId: UNKNOWN_ID,
       selectedIndex: OVERVIEW_TAB,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const database = computed(() => {
-      return store.getters["database/databaseByID"](
+      return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug)
       );
     });
@@ -411,7 +411,7 @@ export default {
     });
 
     const tryTransferProject = () => {
-      state.editingProjectID = database.value.project.id;
+      state.editingProjectId = database.value.project.id;
       state.showModal = true;
     };
 
@@ -432,7 +432,7 @@ export default {
       } else if (database.value.project.workflowType == "VCS") {
         store
           .dispatch(
-            "repository/fetchRepositoryByProjectID",
+            "repository/fetchRepositoryByProjectId",
             database.value.project.id
           )
           .then((repository: Repository) => {
@@ -441,11 +441,11 @@ export default {
       }
     };
 
-    const updateProject = (newProjectID: ProjectID) => {
+    const updateProject = (newProjectId: ProjectId) => {
       store
         .dispatch("database/transferProject", {
-          databaseID: database.value.id,
-          projectID: newProjectID,
+          databaseId: database.value.id,
+          projectId: newProjectId,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {

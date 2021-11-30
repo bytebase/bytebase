@@ -5,7 +5,7 @@
 import { Anomaly } from ".";
 import { Backup } from "./backup";
 import { DataSource } from "./dataSource";
-import { DatabaseID, InstanceID, IssueID, ProjectID } from "./id";
+import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -15,7 +15,7 @@ import { Project } from "./project";
 export type DatabaseSyncStatus = "OK" | "NOT_FOUND";
 // Database
 export type Database = {
-  id: DatabaseID;
+  id: DatabaseId;
 
   // Related fields
   instance: Instance;
@@ -40,17 +40,17 @@ export type Database = {
 
 export type DatabaseCreate = {
   // Related fields
-  instanceID: InstanceID;
-  projectID: ProjectID;
+  instanceId: InstanceId;
+  projectId: ProjectId;
 
   // Domain specific fields
   name: string;
   characterSet: string;
   collation: string;
-  issueID?: IssueID;
+  issueId?: IssueId;
 };
 
 export type DatabasePatch = {
   // Related fields
-  projectID: ProjectID;
+  projectId: ProjectId;
 };

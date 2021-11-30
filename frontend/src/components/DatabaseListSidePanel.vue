@@ -12,7 +12,7 @@ import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 
-import { Database, Environment, EnvironmentID, UNKNOWN_ID } from "../types";
+import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 
@@ -40,13 +40,13 @@ export default {
 
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalID"](
+      return store.getters["database/databaseListByPrincipalId"](
         currentUser.value.id
       );
     });
 
     const databaseListByEnvironment = computed(() => {
-      const envToDbMap: Map<EnvironmentID, BBOutlineItem[]> = new Map();
+      const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
       for (const environment of environmentList.value) {
         envToDbMap.set(environment.id, []);
       }

@@ -4,16 +4,16 @@ import {
   DataSource,
   Environment,
   Instance,
-  IssueID,
-  MigrationHistoryID,
+  IssueId,
+  MigrationHistoryId,
   Project,
   ProjectWebhook,
   Task,
   VCS,
 } from "../types";
-import { IDType } from "../types/id";
+import { IdType } from "../types/id";
 
-export function idFromSlug(slug: string): IDType {
+export function idFromSlug(slug: string): IdType {
   const parts = slug.split("-");
   return parseInt(parts[parts.length - 1]);
 }
@@ -23,8 +23,8 @@ export function indexFromSlug(slug: string): number {
   return parseInt(parts[parts.length - 1]) - 1;
 }
 
-export function issueSlug(issueName: string, issueID: IssueID): string {
-  return [slug(issueName), issueID].join("-");
+export function issueSlug(issueName: string, issueId: IssueId): string {
+  return [slug(issueName), issueId].join("-");
 }
 
 // On the other hand, it's not possible to de-slug due to slug's one-way algorithm
@@ -65,10 +65,10 @@ export function dataSourceSlug(dataSource: DataSource): string {
 }
 
 export function migrationHistorySlug(
-  migrationHistoryID: MigrationHistoryID,
+  migrationHistoryId: MigrationHistoryId,
   version: string
 ): string {
-  return [slug(version), migrationHistoryID].join("-");
+  return [slug(version), migrationHistoryId].join("-");
 }
 
 export function fullDatabasePath(database: Database): string {

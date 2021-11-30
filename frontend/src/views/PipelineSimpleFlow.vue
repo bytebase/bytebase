@@ -31,7 +31,7 @@
             >
               <template v-if="item.taskStatus === 'PENDING'">
                 <span
-                  v-if="activeTask(pipeline).id === item.taskID"
+                  v-if="activeTask(pipeline).id === item.taskId"
                   class="h-2 w-2 bg-info rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -175,9 +175,9 @@ import { computed, PropType } from "vue";
 import {
   Pipeline,
   TaskStatus,
-  TaskID,
+  TaskId,
   Stage,
-  StageID,
+  StageId,
   StageCreate,
   PipelineCreate,
   Task,
@@ -187,9 +187,9 @@ import { activeTask, activeTaskInStage } from "../utils";
 import isEmpty from "lodash-es/isEmpty";
 
 interface FlowItem {
-  stageID: StageID;
+  stageId: StageId;
   stageName: string;
-  taskID: TaskID;
+  taskId: TaskId;
   taskName: string;
   taskStatus: TaskStatus;
   valid: boolean;
@@ -245,9 +245,9 @@ export default {
         }
 
         return {
-          stageID: props.create ? index : (stage as Stage).id,
+          stageId: props.create ? index : (stage as Stage).id,
           stageName: stage.name,
-          taskID: props.create ? index : (activeTask as Task).id,
+          taskId: props.create ? index : (activeTask as Task).id,
           taskName: taskName,
           taskStatus: activeTask.status,
           valid,
@@ -260,7 +260,7 @@ export default {
         case "PENDING":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskID
+            activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
             return "bg-white border-2 border-info text-info ";
           }
@@ -268,7 +268,7 @@ export default {
         case "PENDING_APPROVAL":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskID
+            activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
             return "bg-white border-2 border-info text-info";
           }
@@ -285,7 +285,7 @@ export default {
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
         !props.create &&
-        activeTask(props.pipeline as Pipeline).id === item.taskID
+        activeTask(props.pipeline as Pipeline).id === item.taskId
           ? "font-bold "
           : "font-normal ";
       // For create, since we don't have stage id yet, we just compare name instead.
@@ -293,7 +293,7 @@ export default {
       if (
         (props.create &&
           item.stageName == (props.selectedStage as StageCreate).name) ||
-        (!props.create && item.stageID == (props.selectedStage as Stage).id)
+        (!props.create && item.stageId == (props.selectedStage as Stage).id)
       ) {
         textClass += "underline ";
       }
@@ -304,7 +304,7 @@ export default {
         case "PENDING_APPROVAL":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskID
+            activeTask(props.pipeline as Pipeline).id === item.taskId
           ) {
             return textClass + "text-info";
           }
@@ -317,7 +317,7 @@ export default {
     };
 
     const clickItem = (item: FlowItem) => {
-      emit("select-stage-id", item.stageID);
+      emit("select-stage-id", item.stageId);
     };
 
     return {

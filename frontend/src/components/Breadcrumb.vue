@@ -152,7 +152,7 @@ export default {
         });
 
         if (projectWebhookSlug) {
-          const project = store.getters["project/projectByID"](
+          const project = store.getters["project/projectById"](
             idFromSlug(projectSlug)
           );
           list.push({
@@ -172,7 +172,7 @@ export default {
         });
 
         if (tableName || dataSourceSlug || migrationHistory) {
-          const database = store.getters["database/databaseByID"](
+          const database = store.getters["database/databaseById"](
             idFromSlug(databaseSlug)
           );
           list.push({

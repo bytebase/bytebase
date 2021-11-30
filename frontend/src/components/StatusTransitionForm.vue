@@ -31,11 +31,11 @@
                 class="mt-1 w-64"
                 :disabled="true"
                 :mode="'ENVIRONMENT'"
-                :environmentID="environmentID"
-                :selectedID="state.outputValueList[index]"
+                :environmentId="environmentId"
+                :selectedId="state.outputValueList[index]"
                 @select-database-id="
-                  (databaseID) => {
-                    state.outputValueList[index] = databaseID;
+                  (databaseId) => {
+                    state.outputValueList[index] = databaseId;
                   }
                 "
               />
@@ -192,7 +192,7 @@ export default {
       ),
     });
 
-    const environmentID = computed(() => {
+    const environmentId = computed(() => {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
@@ -297,7 +297,7 @@ export default {
 
     return {
       state,
-      environmentID,
+      environmentId,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
