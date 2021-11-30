@@ -23,7 +23,7 @@ export type Repository = {
   // e.g. bytebase/sample-project
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
-  webURL: string;
+  webUrl: string;
   baseDirectory: string;
   branchFilter: string;
   filePathTemplate: string;
@@ -40,7 +40,7 @@ export type RepositoryCreate = {
   // Domain specific fields
   name: string;
   fullPath: string;
-  webURL: string;
+  webUrl: string;
   branchFilter: string;
   baseDirectory: string;
   filePathTemplate: string;
@@ -73,10 +73,10 @@ export type ExternalRepositoryInfo = {
   // e.g. bytebase/sample-project
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
-  webURL: string;
+  webUrl: string;
 };
 
-export function baseDirectoryWebURL(repository: Repository): string {
+export function baseDirectoryWebUrl(repository: Repository): string {
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
     // If branchFilter is empty (default branch) or branch filter contains wildcard,
     // then we can't locate to the exact branch name, thus we will just return the repository web url
@@ -84,14 +84,14 @@ export function baseDirectoryWebURL(repository: Repository): string {
       isEmpty(repository.branchFilter) ||
       repository.branchFilter.includes("*")
     ) {
-      return repository.webURL;
+      return repository.webUrl;
     }
-    let url = `${repository.webURL}/-/tree/${repository.branchFilter}`;
+    let url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
     return url;
   }
 
-  return repository.webURL;
+  return repository.webUrl;
 }

@@ -496,7 +496,7 @@
                       v-if="activity.type == 'bb.pipeline.task.file.commit'"
                     >
                       <a
-                        :href="`${activity.payload.vcsInstanceURL}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
+                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                         >View commit

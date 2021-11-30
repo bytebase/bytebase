@@ -4,7 +4,7 @@ export type OAuthConfig = {
   endpoint: string;
   applicationId: string;
   secret: string;
-  redirectURL: string;
+  redirectUrl: string;
 };
 
 export type OAuthToken = {
@@ -21,7 +21,7 @@ export type OAuthWindowEventPayload = {
   code: string;
 };
 
-export function redirectURL(): string {
+export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
@@ -34,7 +34,7 @@ export function openWindowForOAuth(
 
   return window.open(
     `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
-      redirectURL()
+      redirectUrl()
     )}&state=${stateQueryParameter}&response_type=code&scope=api`,
     "oauth",
     "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"

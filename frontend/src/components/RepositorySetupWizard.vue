@@ -105,7 +105,7 @@ export default {
           externalId: "",
           name: "",
           fullPath: "",
-          webURL: "",
+          webUrl: "",
         },
         repositoryConfig: {
           baseDirectory: "",
@@ -143,7 +143,7 @@ export default {
           projectId: props.project.id,
           name: state.config.repositoryInfo.name,
           fullPath: state.config.repositoryInfo.fullPath,
-          webURL: state.config.repositoryInfo.webURL,
+          webUrl: state.config.repositoryInfo.webUrl,
           branchFilter: state.config.repositoryConfig.branchFilter,
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,

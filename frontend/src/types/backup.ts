@@ -56,7 +56,7 @@ export type BackupSetting = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  hookURL: string;
+  hookUrl: string;
 };
 
 export type BackupSettingUpsert = {
@@ -67,5 +67,5 @@ export type BackupSettingUpsert = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
-  hookURL: string;
+  hookUrl: string;
 };
