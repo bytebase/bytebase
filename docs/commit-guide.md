@@ -1,12 +1,18 @@
 # Commit Messages Guide
 
-This guide describes how we adding human and machine readable meaning to commit messages.
+This guide describes how we add human and machine-readable commit messages.
 
 Refer to [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 
+## Benefits
+
+* Automatically generating CHANGELOGs and release notes.
+* Communicating the nature of changes to teammates, the public, and other stakeholders.
+* Making it easier for people to contribute to your projects, by allowing them to explore a more structured commit history.
+
 ## Summary
 
-The Conventional commits specification is a lightweight convention on top of commit message. It provides an easy set of rules for creating an explicit commit history, which dedicated to achieving better readability, velocity and automation.
+Conventional Commits specification is a lightweight convention on top of commit message. It provides an easy set of rules for creating an explicit commit history, which improves better readability, velocity and automation.
 
 ## Commit Message Style
 
@@ -18,6 +24,16 @@ The commit message should be structured as follows:
 [optional body]
 
 [optional footer(s)]
+```
+
+For example:
+
+### Commit message with description and breaking change footer
+
+```bash
+feat: allow provided config object to extend other configs
+
+BREAKING CHANGE: `extends` key in config file is now used for extending other config files
 ```
 
 ### Header
@@ -123,9 +139,3 @@ Checkout [more examples](https://www.conventionalcommits.org/en/v1.0.0/#examples
 * [cz-conventional-changelog](https://github.com/commitizen/cz-conventional-changelog) - A commitizen adapter for the angular preset of [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
 * [husky](https://github.com/typicode/husky) - Git hooks made easy 🐶 woof!
 * [conventional-changelog-cli](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-cli) - Generate changelogs and release notes from a project's commit messages and metadata.
-
-## Benefits
-
-* Automatically generating CHANGELOGs and release notes
-* Communicating the nature of changes to teammates, the public, and other stakeholders.
-* Making it easier for people to contribute to your projects, by allowing them to explore a more structured commit history.
