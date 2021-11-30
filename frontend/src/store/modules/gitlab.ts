@@ -15,7 +15,7 @@ function convertGitLabProject(project: any): ExternalRepositoryInfo {
     externalId: project.id.toString(),
     name: project.name,
     fullPath: project.path_with_namespace,
-    webURL: project.web_url,
+    webUrl: project.web_url,
   };
 }
 
@@ -32,7 +32,7 @@ const actions = {
   ): Promise<OAuthToken> {
     const data = (
       await axios.post(
-        `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectURL}&grant_type=authorization_code`
+        `${oAuthConfig.endpoint}?client_id=${oAuthConfig.applicationId}&client_secret=${oAuthConfig.secret}&code=${code}&redirect_uri=${oAuthConfig.redirectUrl}&grant_type=authorization_code`
       )
     ).data;
 
@@ -54,7 +54,7 @@ const actions = {
     // be at least the project maintainer(40)
     const data = (
       await axios.get(
-        `${vcs.instanceURL}/${GITLAB_API_PATH}/projects?membership=true&simple=true&min_access_level=40`,
+        `${vcs.instanceUrl}/${GITLAB_API_PATH}/projects?membership=true&simple=true&min_access_level=40`,
         {
           headers: {
             Authorization: "Bearer " + token,
