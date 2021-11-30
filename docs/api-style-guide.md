@@ -40,7 +40,7 @@ If the resource supports batch operation, then use a separate `/batch` endpoint 
 
 ## Property Name Convension
 
-We use json messages to communicate between backend and frontend following [Google JSON Style Guide](https://google.github.io/styleguide/jsoncstyleguide.xml). Property names must be camel-cased, ascii strings. Variable names in different languages should follow their own language styles, e.g. Go and Vue. However, we must use json annotation for every fields in Go API structs to enforce the same style on the wire and prevent any breaking changes by refactoring because Go will set the json property name based on field name automatically.
+We use json messages to communicate between backend and frontend following [Google JSON Style Guide](https://google.github.io/styleguide/jsoncstyleguide.xml). Property names must be camelCased, ascii strings. Variable names in different languages should follow their own language styles, e.g. Go and Vue. However, we must use json annotation for every fields in Go API structs to enforce the same style on the wire and prevent any breaking changes by refactoring because Go will set the json property name based on field name automatically.
 
 We can look at the following example as an interesting case. helloID follows Go style while the wired message use helloId to be consistent with Vue convension.
 
