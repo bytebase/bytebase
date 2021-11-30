@@ -35,9 +35,9 @@
             Webhook URL
           </label>
           <div class="mt-1 textinfolabel">
-            An HTTP POST request will be sent to it after a successful backup. 
+            An HTTP POST request will be sent to it after a successful backup.
             <a
-             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook" 
+             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
              class="normal-link inline-flex flex-row items-center"
             >
             Learn more.

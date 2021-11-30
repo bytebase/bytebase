@@ -125,7 +125,7 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 			issue_id,
 			subscriber_id
 		FROM issue_subscriber

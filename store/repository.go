@@ -240,7 +240,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

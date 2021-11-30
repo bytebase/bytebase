@@ -136,7 +136,7 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

@@ -175,7 +175,7 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

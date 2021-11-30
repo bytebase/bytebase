@@ -155,7 +155,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			SELECT
 				database,
 				table,
-				name, 
+				name,
 				position,
 				default_expression,
 				type,
@@ -200,7 +200,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	tableWhere := fmt.Sprintf("LOWER(database) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
 			SELECT
-				database, 
+				database,
 				name,
 				engine,
 				total_rows,
