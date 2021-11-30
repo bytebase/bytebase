@@ -219,7 +219,7 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const dataSourceID = idFromSlug(props.dataSourceSlug);
+    const dataSourceId = idFromSlug(props.dataSourceSlug);
 
     const state = reactive<LocalState>({
       editing: false,
@@ -231,7 +231,7 @@ export default {
     );
 
     const dataSource = computed((): DataSource => {
-      return store.getters["dataSource/dataSourceByID"](dataSourceID);
+      return store.getters["dataSource/dataSourceById"](dataSourceId);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -269,7 +269,7 @@ export default {
       };
       store
         .dispatch("dataSource/patchDataSource", {
-          databaseID: dataSource.value.database.id,
+          databaseId: dataSource.value.database.id,
           dataSourceid: dataSource.value.id,
           dataSource: dataSourcePatch,
         })
@@ -282,9 +282,9 @@ export default {
     const doDelete = () => {
       const name = dataSource.value.name;
       store
-        .dispatch("dataSource/deleteDataSourceByID", {
-          databaseID: dataSource.value.database.id,
-          dataSourceID,
+        .dispatch("dataSource/deleteDataSourceById", {
+          databaseId: dataSource.value.database.id,
+          dataSourceId,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {

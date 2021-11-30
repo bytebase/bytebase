@@ -1,4 +1,4 @@
-import { BackupID, BackupSettingID, DatabaseID } from "./id";
+import { BackupId, BackupSettingId, DatabaseId } from "./id";
 import { Principal } from "./principal";
 
 export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
@@ -9,10 +9,10 @@ export type BackupStorageBackend = "LOCAL";
 
 // Backup
 export type Backup = {
-  id: BackupID;
+  id: BackupId;
 
   // Related fields
-  databaseID: DatabaseID;
+  databaseId: DatabaseId;
 
   // Standard fields
   creator: Principal;
@@ -31,7 +31,7 @@ export type Backup = {
 
 export type BackupCreate = {
   // Related fields
-  databaseID: DatabaseID;
+  databaseId: DatabaseId;
 
   // Domain specific fields
   name: string;
@@ -42,10 +42,10 @@ export type BackupCreate = {
 
 // Backup setting.
 export type BackupSetting = {
-  id: BackupSettingID;
+  id: BackupSettingId;
 
   // Related fields
-  databaseID: DatabaseID;
+  databaseId: DatabaseId;
 
   // Standard fields
   creator: Principal;
@@ -61,7 +61,7 @@ export type BackupSetting = {
 
 export type BackupSettingUpsert = {
   // Related fields
-  databaseID: DatabaseID;
+  databaseId: DatabaseId;
 
   // Domain specific fields
   enabled: boolean;

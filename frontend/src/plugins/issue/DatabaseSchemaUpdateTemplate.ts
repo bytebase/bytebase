@@ -10,13 +10,13 @@ const template: IssueTemplate = {
   type: "bb.issue.database.schema.update",
   buildIssue: (
     ctx: TemplateContext
-  ): Omit<IssueCreate, "projectID" | "creatorID"> => {
+  ): Omit<IssueCreate, "projectId" | "creatorId"> => {
     const payload: any = {};
     const stageList: StageCreate[] = [];
     for (let i = 0; i < ctx.databaseList.length; i++) {
       stageList.push({
         name: `[${ctx.environmentList[i].name}] ${ctx.databaseList[i].name}`,
-        environmentID: ctx.environmentList[i].id,
+        environmentId: ctx.environmentList[i].id,
         taskList: [
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
@@ -28,8 +28,8 @@ const template: IssueTemplate = {
                 ? "PENDING_APPROVAL"
                 : "PENDING",
             type: "bb.task.database.schema.update",
-            instanceID: ctx.databaseList[i].instance.id,
-            databaseID: ctx.databaseList[i].id,
+            instanceId: ctx.databaseList[i].instance.id,
+            databaseId: ctx.databaseList[i].id,
             statement: ctx.statementList ? ctx.statementList[i] : "",
             rollbackStatement: ctx.rollbackStatementList
               ? ctx.rollbackStatementList[i]
@@ -46,7 +46,7 @@ const template: IssueTemplate = {
           : "Update database schema",
       type: "bb.issue.database.schema.update",
       description: "",
-      assigneeID: UNKNOWN_ID,
+      assigneeId: UNKNOWN_ID,
       pipeline: {
         stageList,
         name:

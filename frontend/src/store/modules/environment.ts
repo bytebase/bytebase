@@ -4,7 +4,7 @@ import {
   EMPTY_ID,
   Environment,
   EnvironmentCreate,
-  EnvironmentID,
+  EnvironmentId,
   EnvironmentPatch,
   EnvironmentState,
   ResourceObject,
@@ -48,15 +48,15 @@ const getters = {
       });
     },
 
-  environmentByID:
+  environmentById:
     (state: EnvironmentState) =>
-    (environmentID: EnvironmentID): Environment => {
-      if (environmentID == EMPTY_ID) {
+    (environmentId: EnvironmentId): Environment => {
+      if (environmentId == EMPTY_ID) {
         return empty("ENVIRONMENT") as Environment;
       }
 
       for (const environment of state.environmentList) {
-        if (environment.id == environmentID) {
+        if (environment.id == environmentId) {
           return environment;
         }
       }
@@ -83,7 +83,7 @@ const actions = {
       await dispatch(
         "policy/fetchPolicyByEnvironmentAndType",
         {
-          environmentID: environment.id,
+          environmentId: environment.id,
           type: "bb.policy.pipeline-approval",
         },
         {
@@ -114,7 +114,7 @@ const actions = {
     await dispatch(
       "policy/fetchPolicyByEnvironmentAndType",
       {
-        environmentID: createdEnvironment.id,
+        environmentId: createdEnvironment.id,
         type: "bb.policy.pipeline-approval",
       },
       {
@@ -158,15 +158,15 @@ const actions = {
   async patchEnvironment(
     { commit, rootGetters }: any,
     {
-      environmentID,
+      environmentId,
       environmentPatch,
     }: {
-      environmentID: EnvironmentID;
+      environmentId: EnvironmentId;
       environmentPatch: EnvironmentPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/environment/${environmentID}`, {
+      await axios.patch(`/api/environment/${environmentId}`, {
         data: {
           type: "environmentPatch",
           attributes: environmentPatch,

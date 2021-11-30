@@ -94,7 +94,7 @@ export default {
       if (currentUser.value.id != UNKNOWN_ID) {
         store
           .dispatch("inbox/fetchInboxListByUser", {
-            userID: currentUser.value.id,
+            userId: currentUser.value.id,
             readCreatedAfterTs: state.readCreatedAfterTs,
           })
           .then((list: Inbox[]) => {
@@ -121,7 +121,7 @@ export default {
       inboxList.forEach((item: Inbox) => {
         store
           .dispatch("inbox/patchInbox", {
-            inboxID: item.id,
+            inboxId: item.id,
             inboxPatch: {
               status: "READ",
             },

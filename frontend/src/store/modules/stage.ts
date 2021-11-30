@@ -5,7 +5,7 @@ import {
   StageState,
   Task,
   unknown,
-  PipelineID,
+  PipelineId,
   Pipeline,
   Environment,
 } from "../../types";
@@ -17,16 +17,16 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Stage, "pipeline"> {
-  const environmentID = (
+  const environmentId = (
     stage.relationships!.environment.data as ResourceIdentifier
   ).id;
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = parseInt(environmentID);
+  environment.id = parseInt(environmentId);
 
   const taskList: Task[] = [];
-  const taskIDList = stage.relationships!.task.data as ResourceIdentifier[];
-  // Needs to iterate through taskIDList to maintain the order
-  for (const idItem of taskIDList) {
+  const taskIdList = stage.relationships!.task.data as ResourceIdentifier[];
+  // Needs to iterate through taskIdList to maintain the order
+  for (const idItem of taskIdList) {
     for (const item of includedList || []) {
       if (item.type == "task") {
         if (idItem.id == item.id) {
@@ -65,9 +65,9 @@ const getters = {
     (state: StageState, getters: any, rootState: any, rootGetters: any) =>
     (stage: ResourceObject, includedList: ResourceObject[]): Stage => {
       // It's only called when pipeline tries to convert itself, so we don't have a issue yet.
-      const pipelineID = stage.attributes.pipelineID as PipelineID;
+      const pipelineId = stage.attributes.pipelineId as PipelineId;
       const pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
-      pipeline.id = pipelineID;
+      pipeline.id = pipelineId;
 
       const result: Stage = {
         ...convertPartial(stage, includedList, rootGetters),

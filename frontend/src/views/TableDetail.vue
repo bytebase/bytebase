@@ -243,7 +243,7 @@ export default {
     const store = useStore();
 
     const table = computed(() => {
-      return store.getters["table/tableListByDatabaseIDAndTableName"](
+      return store.getters["table/tableListByDatabaseIdAndTableName"](
         idFromSlug(props.databaseSlug),
         props.tableName
       );

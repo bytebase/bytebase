@@ -42,12 +42,12 @@
             <!-- eslint-disable vue/attribute-hyphenation -->
             <DatabaseSelect
               class="mt-1 w-full"
-              :selectedID="state.dataSource.databaseID"
+              :selectedId="state.dataSource.databaseId"
               :mode="'INSTANCE'"
-              :instanceID="instanceID"
+              :instanceId="instanceId"
               @select-database-id="
-                (databaseID) => {
-                  updateDataSource('databaseID', databaseID);
+                (databaseId) => {
+                  updateDataSource('databaseId', databaseId);
                 }
               "
             />
@@ -170,7 +170,7 @@ export default {
   name: "DataSourceCreateForm",
   components: { DatabaseSelect },
   props: {
-    instanceID: {
+    instanceId: {
       required: true,
       type: Number,
     },
@@ -191,8 +191,8 @@ export default {
       dataSource: {
         name: "New data source",
         type: "RO",
-        databaseID: props.database ? props.database.id : UNKNOWN_ID,
-        instanceID: props.instanceID,
+        databaseId: props.database ? props.database.id : UNKNOWN_ID,
+        instanceId: props.instanceId,
         memberList: [],
       },
       showPassword: false,

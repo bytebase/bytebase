@@ -208,7 +208,7 @@ export default {
   name: "ProfileDashboard",
   components: { PrincipalAvatar },
   props: {
-    principalID: {
+    principalId: {
       type: String,
     },
   },
@@ -250,9 +250,9 @@ export default {
     );
 
     const principal = computed(() => {
-      if (props.principalID) {
-        return store.getters["principal/principalByID"](
-          parseInt(props.principalID)
+      if (props.principalId) {
+        return store.getters["principal/principalById"](
+          parseInt(props.principalId)
         );
       }
       return currentUser.value;
@@ -304,7 +304,7 @@ export default {
     const saveEdit = () => {
       store
         .dispatch("principal/patchPrincipal", {
-          principalID: principal.value.id,
+          principalId: principal.value.id,
           principalPatch: state.editingPrincipal,
         })
         .then(() => {

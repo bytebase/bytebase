@@ -137,7 +137,7 @@
 import { computed, reactive, watchEffect } from "vue-demi";
 import { useStore } from "vuex";
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, Database, EnvironmentID } from "../types";
+import { Anomaly, Database, EnvironmentId } from "../types";
 import {
   databaseSlug,
   instanceSlug,
@@ -190,7 +190,7 @@ export default {
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalID"](
+      return store.getters["database/databaseListByPrincipalId"](
         currentUser.value.id
       );
     });
@@ -276,7 +276,7 @@ export default {
     );
 
     const databaseAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentID, Summary> = new Map();
+      const envMap: Map<EnvironmentId, Summary> = new Map();
       for (const database of databaseList.value) {
         let criticalCount = 0;
         let highCount = 0;
@@ -321,7 +321,7 @@ export default {
     });
 
     const instanceAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentID, Summary> = new Map();
+      const envMap: Map<EnvironmentId, Summary> = new Map();
       for (const instance of instanceList.value) {
         let criticalCount = 0;
         let highCount = 0;

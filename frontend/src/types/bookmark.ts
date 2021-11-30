@@ -1,8 +1,8 @@
-import { BookmarkID } from "./id";
+import { BookmarkId } from "./id";
 import { Principal } from "./principal";
 
 export type Bookmark = {
-  id: BookmarkID;
+  id: BookmarkId;
 
   // Standard fields
   creator: Principal;

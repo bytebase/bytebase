@@ -138,7 +138,7 @@ import {
   Project,
   ProjectMember,
   ProjectRoleType,
-  MemberID,
+  MemberId,
   ProjectMemberPatch,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
@@ -261,13 +261,13 @@ export default {
       return false;
     };
 
-    const changeRole = (id: MemberID, role: ProjectRoleType) => {
+    const changeRole = (id: MemberId, role: ProjectRoleType) => {
       const projectMemberPatch: ProjectMemberPatch = {
         role,
       };
       store.dispatch("project/patchMember", {
-        projectID: props.project.id,
-        memberID: id,
+        projectId: props.project.id,
+        memberId: id,
         projectMemberPatch,
       });
     };

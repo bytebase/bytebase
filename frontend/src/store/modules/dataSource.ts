@@ -1,15 +1,15 @@
 import axios from "axios";
 import {
-  DataSourceID,
+  DataSourceId,
   DataSource,
   DataSourceCreate,
   DataSourceMember,
   DataSourceMemberCreate,
   DataSourceState,
-  PrincipalID,
+  PrincipalId,
   ResourceObject,
   ResourceIdentifier,
-  DatabaseID,
+  DatabaseId,
   unknown,
   Database,
   Instance,
@@ -23,17 +23,17 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
-  const databaseID = (
+  const databaseId = (
     dataSource.relationships!.database.data as ResourceIdentifier
   ).id;
-  const instanceID = (
+  const instanceId = (
     dataSource.relationships!.instance.data as ResourceIdentifier
   ).id;
   const memberList = (dataSource.attributes.memberList as []).map(
     (item: any): DataSourceMember => {
       return {
-        principal: rootGetters["principal/principalByID"](item.principalID),
-        issueID: item.issueID,
+        principal: rootGetters["principal/principalById"](item.principalId),
+        issueId: item.issueId,
         createdTs: item.createdTs,
       };
     }
@@ -41,7 +41,7 @@ function convert(
 
   let instance: Instance = unknown("INSTANCE") as Instance;
   for (const item of includedList || []) {
-    if (item.type == "instance" && item.id == instanceID) {
+    if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item);
       break;
     }
@@ -49,7 +49,7 @@ function convert(
 
   let database: Database = unknown("DATABASE") as Database;
   for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseID) {
+    if (item.type == "database" && item.id == databaseId) {
       database = rootGetters["database/convert"](item);
       break;
     }
@@ -58,7 +58,7 @@ function convert(
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instanceID" | "database" | "memberList"
+      "id" | "instanceId" | "database" | "memberList"
     >),
     id: parseInt(dataSource.id),
     instance,
@@ -68,7 +68,7 @@ function convert(
 }
 
 const state: () => DataSourceState = () => ({
-  dataSourceByID: new Map(),
+  dataSourceById: new Map(),
 });
 
 const getters = {
@@ -81,35 +81,35 @@ const getters = {
       return convert(dataSource, [], rootGetters);
     },
 
-  dataSourceByID:
+  dataSourceById:
     (state: DataSourceState) =>
-    (dataSourceID: DataSourceID): DataSource => {
-      if (dataSourceID == EMPTY_ID) {
+    (dataSourceId: DataSourceId): DataSource => {
+      if (dataSourceId == EMPTY_ID) {
         return empty("DATA_SOURCE") as DataSource;
       }
 
       return (
-        state.dataSourceByID.get(dataSourceID) ||
+        state.dataSourceById.get(dataSourceId) ||
         (unknown("DATA_SOURCE") as DataSource)
       );
     },
 };
 
 const actions = {
-  async fetchDataSourceByID(
+  async fetchDataSourceById(
     { commit, rootGetters }: any,
     {
-      dataSourceID,
-      databaseID,
-    }: { dataSourceID: DataSourceID; databaseID: DatabaseID }
+      dataSourceId,
+      databaseId,
+    }: { dataSourceId: DataSourceId; databaseId: DatabaseId }
   ) {
     const data = (
-      await axios.get(`/api/database/${databaseID}/datasource/${dataSourceID}`)
+      await axios.get(`/api/database/${databaseId}/datasource/${dataSourceId}`)
     ).data;
     const dataSource = convert(data.data, data.included, rootGetters);
 
-    commit("setDataSourceByID", {
-      dataSourceID,
+    commit("setDataSourceById", {
+      dataSourceId,
       dataSource,
     });
 
@@ -121,7 +121,7 @@ const actions = {
     newDataSource: DataSourceCreate
   ) {
     const data = (
-      await axios.post(`/api/database/${newDataSource.databaseID}/datasource`, {
+      await axios.post(`/api/database/${newDataSource.databaseId}/datasource`, {
         data: {
           type: "DataSourceCreate",
           attributes: newDataSource,
@@ -130,15 +130,15 @@ const actions = {
     ).data;
     const createdDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("setDataSourceByID", {
-      dataSourceID: createdDataSource.id,
+    commit("setDataSourceById", {
+      dataSourceId: createdDataSource.id,
       dataSource: createdDataSource,
     });
 
     // Refresh the corresponding database as it contains data source.
     dispatch(
-      "database/fetchDatabaseByID",
-      { databaseID: newDataSource.databaseID },
+      "database/fetchDatabaseById",
+      { databaseId: newDataSource.databaseId },
       { root: true }
     );
 
@@ -148,18 +148,18 @@ const actions = {
   async patchDataSource(
     { commit, dispatch, rootGetters }: any,
     {
-      databaseID,
-      dataSourceID,
+      databaseId,
+      dataSourceId,
       dataSource,
     }: {
-      databaseID: DatabaseID;
-      dataSourceID: DataSourceID;
+      databaseId: DatabaseId;
+      dataSourceId: DataSourceId;
       dataSource: DataSourcePatch;
     }
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseID}/datasource/${dataSourceID}`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}`,
         {
           data: {
             type: "dataSourcePatch",
@@ -170,49 +170,49 @@ const actions = {
     ).data;
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("setDataSourceByID", {
-      dataSourceID: updatedDataSource.id,
+    commit("setDataSourceById", {
+      dataSourceId: updatedDataSource.id,
       dataSource: updatedDataSource,
     });
 
     // Refresh the corresponding database as it contains data source.
-    dispatch("database/fetchDatabaseByID", { databaseID }, { root: true });
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
 
     return updatedDataSource;
   },
 
-  async deleteDataSourceByID(
+  async deleteDataSourceById(
     { dispatch, commit }: any,
     {
-      databaseID,
-      dataSourceID,
-    }: { databaseID: DatabaseID; dataSourceID: DataSourceID }
+      databaseId,
+      dataSourceId,
+    }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
   ) {
     await axios.delete(
-      `/api/database/${databaseID}/datasource/${dataSourceID}`
+      `/api/database/${databaseId}/datasource/${dataSourceId}`
     );
 
-    commit("deleteDataSourceByID", dataSourceID);
+    commit("deleteDataSourceById", dataSourceId);
 
     // Refresh the corresponding database as it contains data source.
-    dispatch("database/fetchDatabaseByID", { databaseID }, { root: true });
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 
   async createDataSourceMember(
     { commit, dispatch, rootGetters }: any,
     {
-      dataSourceID,
-      databaseID,
+      dataSourceId,
+      databaseId,
       newDataSourceMember,
     }: {
-      dataSourceID: DataSourceID;
-      databaseID: DatabaseID;
+      dataSourceId: DataSourceId;
+      databaseId: DatabaseId;
       newDataSourceMember: DataSourceMemberCreate;
     }
   ) {
     const data = (
       await axios.post(
-        `/api/database/${databaseID}/datasource/${dataSourceID}/member`,
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member`,
         {
           data: {
             type: "dataSourceMember",
@@ -224,63 +224,63 @@ const actions = {
     // It's patching the data source and returns the updated data source
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("setDataSourceByID", {
-      databaseID,
+    commit("setDataSourceById", {
+      databaseId,
       dataSource: updatedDataSource,
     });
 
     // Refresh the corresponding database as it contains data source and its membership info.
-    dispatch("database/fetchDatabaseByID", { databaseID }, { root: true });
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
 
     return updatedDataSource;
   },
 
-  async deleteDataSourceMemberByMemberID(
+  async deleteDataSourceMemberByMemberId(
     { commit, dispatch, rootGetters }: any,
     {
-      databaseID,
-      dataSourceID,
-      memberID,
+      databaseId,
+      dataSourceId,
+      memberId,
     }: {
-      databaseID: DatabaseID;
-      dataSourceID: DataSourceID;
-      memberID: PrincipalID;
+      databaseId: DatabaseId;
+      dataSourceId: DataSourceId;
+      memberId: PrincipalId;
     }
   ) {
     const data = (
       await axios.delete(
-        `/api/database/${databaseID}/datasource/${dataSourceID}/member/${memberID}`
+        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}`
       )
     ).data;
     // It's patching the data source and returns the updated data source
     const updatedDataSource = convert(data.data, data.included, rootGetters);
 
-    commit("setDataSourceByID", {
-      dataSourceID: updatedDataSource.id,
+    commit("setDataSourceById", {
+      dataSourceId: updatedDataSource.id,
       dataSource: updatedDataSource,
     });
 
     // Refresh the corresponding database as it contains data source and its membership info.
-    dispatch("database/fetchDatabaseByID", { databaseID }, { root: true });
+    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 };
 
 const mutations = {
-  setDataSourceByID(
+  setDataSourceById(
     state: DataSourceState,
     {
-      dataSourceID,
+      dataSourceId,
       dataSource,
     }: {
-      dataSourceID: DataSourceID;
+      dataSourceId: DataSourceId;
       dataSource: DataSource;
     }
   ) {
-    state.dataSourceByID.set(dataSourceID, dataSource);
+    state.dataSourceById.set(dataSourceId, dataSource);
   },
 
-  deleteDataSourceByID(state: DataSourceState, dataSourceID: DataSourceID) {
-    state.dataSourceByID.delete(dataSourceID);
+  deleteDataSourceById(state: DataSourceState, dataSourceId: DataSourceId) {
+    state.dataSourceById.delete(dataSourceId);
   },
 };
 

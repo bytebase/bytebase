@@ -50,7 +50,7 @@
           Application ID
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
-          {{ config.applicationID }}
+          {{ config.applicationId }}
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
