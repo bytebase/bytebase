@@ -1,12 +1,12 @@
 import {
   Command,
-  CommandID,
-  CommandRegisterID,
+  CommandId,
+  CommandRegisterId,
   CommandState,
 } from "../../types";
 
 const state: () => CommandState = () => ({
-  commandListByID: new Map(),
+  commandListById: new Map(),
 });
 
 const actions = {
@@ -19,20 +19,20 @@ const actions = {
     { commit }: any,
     {
       id,
-      registerID,
+      registerId,
     }: {
-      id: CommandID;
-      registerID: CommandRegisterID;
+      id: CommandId;
+      registerId: CommandRegisterId;
     }
   ) {
     commit("removeCommand", {
       id,
-      registerID,
+      registerId,
     });
   },
 
-  dispatchCommand({ state }: any, commandID: CommandID) {
-    const list = state.commandListByID.get(commandID);
+  dispatchCommand({ state }: any, commandId: CommandId) {
+    const list = state.commandListById.get(commandId);
     list?.forEach((cmd: Command) => {
       cmd.run();
     });
@@ -41,19 +41,19 @@ const actions = {
 
 const mutations = {
   appendCommand(state: CommandState, command: Command) {
-    const list = state.commandListByID.get(command.id);
+    const list = state.commandListById.get(command.id);
     if (list) {
       const i = list.findIndex(
-        (item) => item.registerID === command.registerID
+        (item) => item.registerId === command.registerId
       );
       if (i > -1) {
         throw new Error(
-          `'${command.registerID}' has already registered command '${command.id}', this is likely a programming error.`
+          `'${command.registerId}' has already registered command '${command.id}', this is likely a programming error.`
         );
       }
       list.push(command);
     } else {
-      state.commandListByID.set(command.id, [command]);
+      state.commandListById.set(command.id, [command]);
     }
   },
 
@@ -61,22 +61,22 @@ const mutations = {
     state: CommandState,
     {
       id,
-      registerID,
+      registerId,
     }: {
-      id: CommandID;
-      registerID: CommandRegisterID;
+      id: CommandId;
+      registerId: CommandRegisterId;
     }
   ) {
-    const list = state.commandListByID.get(id);
+    const list = state.commandListById.get(id);
     if (list) {
-      const i = list.findIndex((item) => item.registerID === registerID);
+      const i = list.findIndex((item) => item.registerId === registerId);
       if (i >= 0) {
         list.splice(i, 1);
         return;
       }
     }
     throw new Error(
-      `'${registerID}' attempts to unregister command '${id}' which is not registered before, this is likely a programming error.`
+      `'${registerId}' attempts to unregister command '${id}' which is not registered before, this is likely a programming error.`
     );
   },
 };

@@ -2,8 +2,8 @@
   <!-- eslint-disable vue/attribute-hyphenation -->
   <DataSourceMemberForm
     :data-source="state.dataSource"
-    :principalID="state.granteeID"
-    :issueID="state.issueID"
+    :principalId="state.granteeId"
+    :issueId="state.issueId"
     @submit="submit"
     @cancel="cancel"
   />
@@ -14,13 +14,13 @@ import { reactive, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
-import { IssueID, PrincipalID, DataSource } from "../types";
+import { IssueId, PrincipalId, DataSource } from "../types";
 import { fullDataSourcePath } from "../utils";
 
 interface LocalState {
   dataSource?: DataSource;
-  granteeID?: PrincipalID;
-  issueID?: IssueID;
+  granteeId?: PrincipalId;
+  issueId?: IssueId;
 }
 
 export default {
@@ -47,16 +47,16 @@ export default {
     const dataSource =
       router.currentRoute.value.query.datasource &&
       router.currentRoute.value.query.database
-        ? await store.dispatch("dataSource/fetchDataSourceByID", {
-            dataSourceID: router.currentRoute.value.query.datasource,
-            databaseID: router.currentRoute.value.query.database,
+        ? await store.dispatch("dataSource/fetchDataSourceById", {
+            dataSourceId: router.currentRoute.value.query.datasource,
+            databaseId: router.currentRoute.value.query.database,
           })
         : undefined;
 
     const state = reactive<LocalState>({
       dataSource,
-      granteeID: router.currentRoute.value.query.grantee as PrincipalID,
-      issueID: router.currentRoute.value.query.issue as IssueID,
+      granteeId: router.currentRoute.value.query.grantee as PrincipalId,
+      issueId: router.currentRoute.value.query.issue as IssueId,
     });
 
     const cancel = () => {

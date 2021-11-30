@@ -53,13 +53,13 @@
         >
       </BBTableCell>
       <BBTableCell>
-        <template v-if="history.issueID">
+        <template v-if="history.issueId">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            :to="`/issue/${history.issueID}`"
+            :to="`/issue/${history.issueId}`"
             class="normal-link"
             @click.stop=""
-            >{{ history.issueID }}
+            >{{ history.issueId }}
           </router-link>
         </template>
       </BBTableCell>

@@ -13,10 +13,10 @@
             class="mt-1 w-full"
             name="environment"
             :disabled="!allowConfigure"
-            :selectedID="state.environmentID"
+            :selectedId="state.environmentId"
             @select-environment-id="
-              (environmentID) => {
-                updateState('environmentID', environmentID);
+              (environmentId) => {
+                updateState('environmentId', environmentId);
               }
             "
           />
@@ -32,10 +32,10 @@
             class="mt-1 w-full"
             name="instance"
             :disabled="!allowConfigure"
-            :selectedID="state.instanceID"
+            :selectedId="state.instanceId"
             @select-instance-id="
-              (instanceID) => {
-                updateState('instanceID', instanceID);
+              (instanceId) => {
+                updateState('instanceId', instanceId);
               }
             "
           />
@@ -52,11 +52,11 @@
             name="database"
             :disabled="!allowConfigure"
             :mode="'INSTANCE'"
-            :instanceID="state.instanceID"
-            :selectedID="state.databaseID"
+            :instanceId="state.instanceId"
+            :selectedId="state.databaseId"
             @select-database-id="
-              (databaseID) => {
-                updateState('databaseID', databaseID);
+              (databaseId) => {
+                updateState('databaseId', databaseId);
               }
             "
           />
@@ -73,10 +73,10 @@
             name="datasource"
             :disabled="!allowConfigure"
             :database="database"
-            :selectedID="state.dataSourceID"
+            :selectedId="state.dataSourceId"
             @select-data-source-id="
-              (dataSourceID) => {
-                updateState('dataSourceID', dataSourceID);
+              (dataSourceId) => {
+                updateState('dataSourceId', dataSourceId);
               }
             "
           />
@@ -97,10 +97,10 @@
             name="user"
             :allowed-role-list="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
-            :selectedID="state.granteeID"
+            :selectedId="state.granteeId"
             @select-principal-id="
-              (principalID) => {
-                updateState('granteeID', principalID);
+              (principalId) => {
+                updateState('granteeId', principalId);
               }
             "
           />
@@ -129,9 +129,9 @@
                 name="issue"
                 type="number"
                 placeholder="Your issue id (e.g. 1234)"
-                :disabled="!allowUpdateIssueID"
-                :value="state.issueID"
-                @input="updateState('issueID', $event.target.value)"
+                :disabled="!allowUpdateIssueId"
+                :value="state.issueId"
+                @input="updateState('issueId', $event.target.value)"
               />
               <template v-if="issueLink">
                 <router-link
@@ -177,27 +177,27 @@ import DataSourceSelect from "../components/DataSourceSelect.vue";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import {
-  DatabaseID,
+  DatabaseId,
   DataSource,
-  DataSourceID,
+  DataSourceId,
   DataSourceMember,
   DataSourceMemberCreate,
-  EnvironmentID,
-  InstanceID,
-  PrincipalID,
+  EnvironmentId,
+  InstanceId,
+  PrincipalId,
   Issue,
-  IssueID,
+  IssueId,
 } from "../types";
 import { issueSlug } from "../utils";
 
 interface LocalState {
-  environmentID?: EnvironmentID;
-  instanceID?: InstanceID;
-  databaseID?: DatabaseID;
-  dataSourceID?: DataSourceID;
-  granteeID?: PrincipalID;
+  environmentId?: EnvironmentId;
+  instanceId?: InstanceId;
+  databaseId?: DatabaseId;
+  dataSourceId?: DataSourceId;
+  granteeId?: PrincipalId;
   granteeError: string;
-  issueID?: IssueID;
+  issueId?: IssueId;
 }
 
 export default {
@@ -213,10 +213,10 @@ export default {
     dataSource: {
       type: Object as PropType<DataSource>,
     },
-    principalID: {
+    principalId: {
       type: Number,
     },
-    issueID: {
+    issueId: {
       type: Number,
     },
   },
@@ -225,20 +225,20 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      environmentID: props.dataSource
+      environmentId: props.dataSource
         ? props.dataSource.instance.environment.id
         : undefined,
-      instanceID: props.dataSource ? props.dataSource.instance.id : undefined,
-      databaseID: props.dataSource ? props.dataSource.database.id : undefined,
-      dataSourceID: props.dataSource ? props.dataSource.id : undefined,
-      granteeID: props.principalID,
+      instanceId: props.dataSource ? props.dataSource.instance.id : undefined,
+      databaseId: props.dataSource ? props.dataSource.database.id : undefined,
+      dataSourceId: props.dataSource ? props.dataSource.id : undefined,
+      granteeId: props.principalId,
       granteeError: "",
-      issueID: props.issueID,
+      issueId: props.issueId,
     });
 
     const database = computed(() => {
-      return state.databaseID
-        ? store.getters["database/databaseByID"](state.databaseID)
+      return state.databaseId
+        ? store.getters["database/databaseById"](state.databaseId)
         : undefined;
     });
 
@@ -247,14 +247,14 @@ export default {
         return props.dataSource;
       }
 
-      if (state.dataSourceID) {
-        if (state.databaseID) {
-          const database = store.getters["database/databaseByID"](
-            state.databaseID
+      if (state.dataSourceId) {
+        if (state.databaseId) {
+          const database = store.getters["database/databaseById"](
+            state.databaseId
           );
           if (database) {
             return database.dataSourceList.find(
-              (item: DataSource) => item.id == state.dataSourceID
+              (item: DataSource) => item.id == state.dataSourceId
             );
           }
         }
@@ -269,30 +269,30 @@ export default {
     });
 
     const allowUpdateDataSourceMember = computed(() => {
-      return !props.principalID && state.dataSourceID;
+      return !props.principalId && state.dataSourceId;
     });
 
-    const allowUpdateIssueID = computed(() => {
-      return !props.issueID;
+    const allowUpdateIssueId = computed(() => {
+      return !props.issueId;
     });
 
     const allowCreate = computed(() => {
-      return state.dataSourceID && state.granteeID && !state.granteeError;
+      return state.dataSourceId && state.granteeId && !state.granteeError;
     });
 
     const issueLink = computed((): string => {
-      if (state.issueID) {
-        // We intentionally not to validate whether the issueID is legit, we will do the validation
+      if (state.issueId) {
+        // We intentionally not to validate whether the issueId is legit, we will do the validation
         // when actually trying to create the database.
-        return `/issue/${state.issueID}`;
+        return `/issue/${state.issueId}`;
       }
       return "";
     });
 
     const validateGrantee = () => {
-      if (state.granteeID) {
+      if (state.granteeId) {
         const member = dataSource.value.memberList.find(
-          (item: DataSourceMember) => item.principal.id == state.granteeID
+          (item: DataSourceMember) => item.principal.id == state.granteeId
         );
         if (member) {
           state.granteeError = `${member.principal.name} already exists`;
@@ -303,19 +303,19 @@ export default {
     };
 
     const updateState = (field: string, value: number) => {
-      if (field == "environmentID") {
-        state.environmentID = value;
-      } else if (field == "instanceID") {
-        state.instanceID = value;
-      } else if (field == "databaseID") {
-        state.databaseID = value;
-      } else if (field == "dataSourceID") {
-        state.dataSourceID = value;
-      } else if (field == "granteeID") {
-        state.granteeID = value;
+      if (field == "environmentId") {
+        state.environmentId = value;
+      } else if (field == "instanceId") {
+        state.instanceId = value;
+      } else if (field == "databaseId") {
+        state.databaseId = value;
+      } else if (field == "dataSourceId") {
+        state.dataSourceId = value;
+      } else if (field == "granteeId") {
+        state.granteeId = value;
         validateGrantee();
-      } else if (field == "issueID") {
-        state.issueID = value;
+      } else if (field == "issueId") {
+        state.issueId = value;
       }
     };
 
@@ -324,28 +324,28 @@ export default {
     };
 
     const doGrant = async () => {
-      // If issueID id provided, we check its existence first.
-      // We only set the issueID if it's valid.
+      // If issueId id provided, we check its existence first.
+      // We only set the issueId if it's valid.
       let linkedIssue: Issue | undefined = undefined;
-      if (state.issueID) {
+      if (state.issueId) {
         try {
           linkedIssue = await store.dispatch(
-            "issue/fetchIssueByID",
-            state.issueID
+            "issue/fetchIssueById",
+            state.issueId
           );
         } catch (err) {
-          console.warn(`Unable to fetch linked issue id ${state.issueID}`, err);
+          console.warn(`Unable to fetch linked issue id ${state.issueId}`, err);
         }
       }
 
       const newDataSourceMember: DataSourceMemberCreate = {
-        principalID: state.granteeID!,
-        issueID: linkedIssue?.id,
+        principalId: state.granteeId!,
+        issueId: linkedIssue?.id,
       };
       store
         .dispatch("dataSource/createDataSourceMember", {
-          dataSourceID: state.dataSourceID,
-          databaseID: state.databaseID,
+          dataSourceId: state.dataSourceId,
+          databaseId: state.databaseId,
           newDataSourceMember,
         })
         .then((dataSource: DataSource) => {
@@ -353,7 +353,7 @@ export default {
 
           const addedMember = dataSource.memberList.find(
             (item: DataSourceMember) => {
-              return item.principal.id == state.granteeID;
+              return item.principal.id == state.granteeId;
             }
           );
           store.dispatch("notification/pushNotification", {
@@ -380,7 +380,7 @@ export default {
       database,
       allowConfigure,
       allowUpdateDataSourceMember,
-      allowUpdateIssueID,
+      allowUpdateIssueId,
       allowCreate,
       issueLink,
       updateState,

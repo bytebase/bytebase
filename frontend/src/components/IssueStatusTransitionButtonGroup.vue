@@ -400,7 +400,7 @@ export default {
         return false;
       }
 
-      if (newIssue.assigneeID == UNKNOWN_ID) {
+      if (newIssue.assigneeId == UNKNOWN_ID) {
         return false;
       }
 

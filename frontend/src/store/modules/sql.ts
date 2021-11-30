@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   ConnectionInfo,
-  InstanceID,
+  InstanceId,
   INSTANCE_OPERATION_TIMEOUT,
   ResourceObject,
   SqlResultSet,
@@ -34,7 +34,7 @@ const actions = {
 
     return convert(data);
   },
-  async syncSchema({ dispatch }: any, instanceID: InstanceID) {
+  async syncSchema({ dispatch }: any, instanceId: InstanceId) {
     const data = (
       await axios.post(
         `/api/sql/syncschema`,
@@ -42,7 +42,7 @@ const actions = {
           data: {
             type: "sqlSyncSchema",
             attributes: {
-              instanceID,
+              instanceId,
             },
           },
         },
@@ -55,11 +55,11 @@ const actions = {
     const resultSet = convert(data);
     if (!resultSet.error) {
       // Refresh the corresponding list.
-      dispatch("database/fetchDatabaseListByInstanceID", instanceID, {
+      dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
         root: true,
       });
 
-      dispatch("instance/fetchInstanceUserListByID", instanceID, {
+      dispatch("instance/fetchInstanceUserListById", instanceId, {
         root: true,
       });
     }

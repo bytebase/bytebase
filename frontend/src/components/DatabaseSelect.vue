@@ -4,17 +4,17 @@
     :disabled="disabled"
     @change="
       (e) => {
-        state.selectedID = e.target.value;
+        state.selectedId = e.target.value;
         $emit('select-database-id', parseInt(e.target.value));
       }
     "
   >
-    <option disabled :selected="UNKNOWN_ID === state.selectedID">
-      <template v-if="mode == 'INSTANCE' && instanceID == UNKNOWN_ID">
+    <option disabled :selected="UNKNOWN_ID === state.selectedId">
+      <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
         Select instance first
       </template>
       <template
-        v-else-if="mode == 'ENVIRONMENT' && environmentID == UNKNOWN_ID"
+        v-else-if="mode == 'ENVIRONMENT' && environmentId == UNKNOWN_ID"
       >
         Select environment first
       </template>
@@ -24,7 +24,7 @@
       v-for="(database, index) in databaseList"
       :key="index"
       :value="database.id"
-      :selected="database.id == state.selectedID"
+      :selected="database.id == state.selectedId"
     >
       {{ database.name }}
     </option>
@@ -38,19 +38,19 @@ import {
   UNKNOWN_ID,
   Database,
   Principal,
-  ProjectID,
-  InstanceID,
-  EnvironmentID,
+  ProjectId,
+  InstanceId,
+  EnvironmentId,
 } from "../types";
 
 interface LocalState {
-  selectedID?: number;
+  selectedId?: number;
 }
 
 export default {
   name: "DatabaseSelect",
   props: {
-    selectedID: {
+    selectedId: {
       required: true,
       type: Number,
     },
@@ -58,17 +58,17 @@ export default {
       required: true,
       type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
     },
-    environmentID: {
+    environmentId: {
       default: UNKNOWN_ID,
-      type: Number as PropType<EnvironmentID>,
+      type: Number as PropType<EnvironmentId>,
     },
-    instanceID: {
+    instanceId: {
       default: UNKNOWN_ID,
-      type: Number as PropType<InstanceID>,
+      type: Number as PropType<InstanceId>,
     },
-    projectID: {
+    projectId: {
       default: UNKNOWN_ID,
-      type: Number as PropType<ProjectID>,
+      type: Number as PropType<ProjectId>,
     },
     disabled: {
       default: false,
@@ -79,7 +79,7 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
     });
 
     const currentUser = computed(
@@ -89,15 +89,15 @@ export default {
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
       // to provide the database list and we just do a get here.
-      if (props.mode == "ENVIRONMENT" && props.environmentID != UNKNOWN_ID) {
+      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
         store.dispatch(
-          "database/fetchDatabaseListByEnvironmentID",
-          props.environmentID
+          "database/fetchDatabaseListByEnvironmentId",
+          props.environmentId
         );
-      } else if (props.mode == "INSTANCE" && props.instanceID != UNKNOWN_ID) {
+      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         store.dispatch(
-          "database/fetchDatabaseListByInstanceID",
-          props.instanceID
+          "database/fetchDatabaseListByInstanceId",
+          props.instanceId
         );
       } else if (props.mode == "USER") {
         // We assume the database list for the current user should have already been fetched, so we won't do a fetch here.
@@ -108,28 +108,28 @@ export default {
 
     const databaseList = computed(() => {
       let list: Database[] = [];
-      if (props.mode == "ENVIRONMENT" && props.environmentID != UNKNOWN_ID) {
-        list = store.getters["database/databaseListByEnvironmentID"](
-          props.environmentID
+      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
+        list = store.getters["database/databaseListByEnvironmentId"](
+          props.environmentId
         );
-      } else if (props.mode == "INSTANCE" && props.instanceID != UNKNOWN_ID) {
-        list = store.getters["database/databaseListByInstanceID"](
-          props.instanceID
+      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
+        list = store.getters["database/databaseListByInstanceId"](
+          props.instanceId
         );
       } else if (props.mode == "USER") {
-        list = store.getters["database/databaseListByPrincipalID"](
+        list = store.getters["database/databaseListByPrincipalId"](
           currentUser.value.id
         );
         if (
-          props.environmentID != UNKNOWN_ID ||
-          props.projectID != UNKNOWN_ID
+          props.environmentId != UNKNOWN_ID ||
+          props.projectId != UNKNOWN_ID
         ) {
           list = list.filter((database: Database) => {
             return (
-              (props.environmentID == UNKNOWN_ID ||
-                database.instance.environment.id == props.environmentID) &&
-              (props.projectID == UNKNOWN_ID ||
-                database.project.id == props.projectID)
+              (props.environmentId == UNKNOWN_ID ||
+                database.instance.environment.id == props.environmentId) &&
+              (props.projectId == UNKNOWN_ID ||
+                database.project.id == props.projectId)
             );
           });
         }
@@ -139,17 +139,17 @@ export default {
 
     const invalidateSelectionIfNeeded = () => {
       if (
-        state.selectedID != UNKNOWN_ID &&
+        state.selectedId != UNKNOWN_ID &&
         !databaseList.value.find(
-          (database: Database) => database.id == state.selectedID
+          (database: Database) => database.id == state.selectedId
         )
       ) {
-        state.selectedID = UNKNOWN_ID;
-        emit("select-database-id", state.selectedID);
+        state.selectedId = UNKNOWN_ID;
+        emit("select-database-id", state.selectedId);
       }
     };
 
-    // The database list might change if environmentID changes, and the previous selected id
+    // The database list might change if environmentId changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
     watch(
@@ -160,9 +160,9 @@ export default {
     );
 
     watch(
-      () => props.selectedID,
+      () => props.selectedId,
       (cur) => {
-        state.selectedID = cur;
+        state.selectedId = cur;
       }
     );
 

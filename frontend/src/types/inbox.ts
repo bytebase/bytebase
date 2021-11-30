@@ -1,13 +1,13 @@
 import { Activity } from "./activity";
-import { InboxID, PrincipalID } from "./id";
+import { InboxId, PrincipalId } from "./id";
 
 export type InboxStatus = "UNREAD" | "READ";
 
 export type Inbox = {
-  id: InboxID;
+  id: InboxId;
 
   // Domain specific fields
-  receiver_id: PrincipalID;
+  receiver_id: PrincipalId;
   activity: Activity;
   status: InboxStatus;
 };

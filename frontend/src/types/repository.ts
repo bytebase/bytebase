@@ -1,11 +1,11 @@
 import isEmpty from "lodash-es/isEmpty";
-import { ProjectID, RepositoryID, VCSID } from "./id";
+import { ProjectId, RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
-  id: RepositoryID;
+  id: RepositoryId;
 
   // Standard fields
   creator: Principal;
@@ -29,13 +29,13 @@ export type Repository = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   // e.g. In GitLab, this is the corresponding project id.
-  externalID: string;
+  externalId: string;
 };
 
 export type RepositoryCreate = {
   // Related fields
-  vcsID: VCSID;
-  projectID: ProjectID;
+  vcsId: VCSId;
+  projectId: ProjectId;
 
   // Domain specific fields
   name: string;
@@ -45,7 +45,7 @@ export type RepositoryCreate = {
   baseDirectory: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
-  externalID: string;
+  externalId: string;
   accessToken: string;
   expiresTs: number;
   refreshToken: string;
@@ -67,7 +67,7 @@ export type RepositoryConfig = {
 
 export type ExternalRepositoryInfo = {
   // e.g. In GitLab, this is the corresponding project id. e.g. 123
-  externalID: string;
+  externalId: string;
   // e.g. sample-project
   name: string;
   // e.g. bytebase/sample-project

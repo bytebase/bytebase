@@ -28,7 +28,7 @@
           class="mt-1"
           name="project"
           :disabled="!allowEditProject"
-          :selectedID="state.projectID"
+          :selectedId="state.projectId"
           @select-project-id="selectProject"
         />
       </div>
@@ -43,7 +43,7 @@
           class="mt-1 w-full"
           name="environment"
           :disabled="!allowEditEnvironment"
-          :selectedID="state.environmentID"
+          :selectedId="state.environmentId"
           @select-environment-id="selectEnvironment"
         />
       </div>
@@ -51,7 +51,7 @@
       <div class="col-span-2 col-start-2 w-64">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon
-            v-if="state.instanceID"
+            v-if="state.instanceId"
             :instance="selectedInstance"
           />
           <label for="instance" class="textlabel">
@@ -65,8 +65,8 @@
             class="mt-1"
             name="instance"
             :disabled="!allowEditInstance"
-            :selectedID="state.instanceID"
-            :environmentID="state.environmentID"
+            :selectedId="state.instanceId"
+            :environmentId="state.environmentId"
             @select-instance-id="selectInstance"
           />
         </div>
@@ -122,7 +122,7 @@
           class="mt-1"
           name="user"
           :allowed-role-list="['OWNER', 'DBA']"
-          :selectedID="state.assigneeID"
+          :selectedId="state.assigneeId"
           :placeholder="'Select assignee'"
           @select-principal-id="selectAssignee"
         />
@@ -166,12 +166,12 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
-  EnvironmentID,
-  InstanceID,
-  ProjectID,
+  EnvironmentId,
+  InstanceId,
+  ProjectId,
   IssueCreate,
   SYSTEM_BOT_ID,
-  PrincipalID,
+  PrincipalId,
   Backup,
   StageCreate,
   defaultCharset,
@@ -181,13 +181,13 @@ import {
 import { isDBAOrOwner, issueSlug } from "../utils";
 
 interface LocalState {
-  projectID?: ProjectID;
-  environmentID?: EnvironmentID;
-  instanceID?: InstanceID;
+  projectId?: ProjectId;
+  environmentId?: EnvironmentId;
+  instanceId?: InstanceId;
   databaseName?: string;
   characterSet: string;
   collation: string;
-  assigneeID?: PrincipalID;
+  assigneeId?: PrincipalId;
 }
 
 export default {
@@ -200,14 +200,14 @@ export default {
     InstanceEngineIcon,
   },
   props: {
-    projectID: {
-      type: Number as PropType<ProjectID>,
+    projectId: {
+      type: Number as PropType<ProjectId>,
     },
-    environmentID: {
-      type: Number as PropType<EnvironmentID>,
+    environmentId: {
+      type: Number as PropType<EnvironmentId>,
     },
-    instanceID: {
-      type: Number as PropType<InstanceID>,
+    instanceId: {
+      type: Number as PropType<InstanceId>,
     },
     // If specified, then we are creating a database from the backup.
     backup: {
@@ -247,12 +247,12 @@ export default {
     });
 
     const state = reactive<LocalState>({
-      projectID: props.projectID,
-      environmentID: props.environmentID,
-      instanceID: props.instanceID,
+      projectId: props.projectId,
+      environmentId: props.environmentId,
+      instanceId: props.instanceId,
       characterSet: "",
       collation: "",
-      assigneeID: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
+      assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
     const isReservedName = computed(() => {
@@ -263,48 +263,48 @@ export default {
       return (
         !isEmpty(state.databaseName) &&
         !isReservedName.value &&
-        state.projectID &&
-        state.environmentID &&
-        state.instanceID &&
-        state.assigneeID
+        state.projectId &&
+        state.environmentId &&
+        state.instanceId &&
+        state.assigneeId
       );
     });
 
     // If project has been specified, then we disallow changing it.
     const allowEditProject = computed(() => {
-      return !props.projectID;
+      return !props.projectId;
     });
 
     // If environment has been specified, then we disallow changing it.
     const allowEditEnvironment = computed(() => {
-      return !props.environmentID;
+      return !props.environmentId;
     });
 
     // If instance has been specified, then we disallow changing it.
     const allowEditInstance = computed(() => {
-      return !props.instanceID;
+      return !props.instanceId;
     });
 
     const selectedInstance = computed(() => {
-      return state.instanceID
-        ? store.getters["instance/instanceByID"](state.instanceID)
+      return state.instanceId
+        ? store.getters["instance/instanceById"](state.instanceId)
         : unknown("INSTANCE");
     });
 
-    const selectProject = (projectID: ProjectID) => {
-      state.projectID = projectID;
+    const selectProject = (projectId: ProjectId) => {
+      state.projectId = projectId;
     };
 
-    const selectEnvironment = (environmentID: EnvironmentID) => {
-      state.environmentID = environmentID;
+    const selectEnvironment = (environmentId: EnvironmentId) => {
+      state.environmentId = environmentId;
     };
 
-    const selectInstance = (instanceID: InstanceID) => {
-      state.instanceID = instanceID;
+    const selectInstance = (instanceId: InstanceId) => {
+      state.instanceId = instanceId;
     };
 
-    const selectAssignee = (assigneeID: PrincipalID) => {
-      state.assigneeID = assigneeID;
+    const selectAssignee = (assigneeId: PrincipalId) => {
+      state.assigneeId = assigneeId;
     };
 
     const cancel = () => {
@@ -315,7 +315,7 @@ export default {
       const stageList: StageCreate[] = [
         {
           name: "Create database",
-          environmentID: state.environmentID!,
+          environmentId: state.environmentId!,
           taskList: [
             {
               name: `Create database '${state.databaseName}'`,
@@ -325,7 +325,7 @@ export default {
                 ? "PENDING"
                 : "PENDING_APPROVAL",
               type: "bb.task.database.create",
-              instanceID: state.instanceID!,
+              instanceId: state.instanceId!,
               // statement is derived by backend.
               statement: ``,
               rollbackStatement: "",
@@ -345,18 +345,18 @@ export default {
       if (props.backup) {
         stageList.push({
           name: "Restore backup",
-          environmentID: state.environmentID!,
+          environmentId: state.environmentId!,
           taskList: [
             {
               name: `Restore backup '${props.backup.name}'`,
               // Use "PENDING" here since we consider the required approval has already been granted in the first stage.
               status: "PENDING",
               type: "bb.task.database.restore",
-              instanceID: state.instanceID!,
+              instanceId: state.instanceId!,
               statement: "",
               rollbackStatement: "",
               databaseName: state.databaseName,
-              backupID: props.backup.id,
+              backupId: props.backup.id,
             },
           ],
         });
@@ -366,8 +366,8 @@ export default {
             name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
             type: "bb.issue.database.create",
             description: `Creating database from backup '${props.backup.name}'`,
-            assigneeID: state.assigneeID!,
-            projectID: state.projectID!,
+            assigneeId: state.assigneeId!,
+            projectId: state.projectId!,
             pipeline: {
               stageList,
               name: `Pipeline - Create database '${state.databaseName}' from backup '${props.backup.name}'`,
@@ -378,8 +378,8 @@ export default {
             name: `Create database '${state.databaseName}'`,
             type: "bb.issue.database.create",
             description: "",
-            assigneeID: state.assigneeID!,
-            projectID: state.projectID!,
+            assigneeId: state.assigneeId!,
+            projectId: state.projectId!,
             pipeline: {
               stageList,
               name: `Pipeline - Create database ${state.databaseName}`,

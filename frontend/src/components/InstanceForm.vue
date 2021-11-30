@@ -104,17 +104,17 @@
             class="mt-1 w-full"
             name="environment"
             :disabled="!create"
-            :selectedID="
+            :selectedId="
               create
-                ? state.instance.environmentID
+                ? state.instance.environmentId
                 : state.instance.environment.id
             "
             @select-environment-id="
-              (environmentID) => {
+              (environmentId) => {
                 if (create) {
-                  state.instance.environmentID = environmentID;
+                  state.instance.environmentId = environmentId;
                 } else {
-                  updateInstance('environmentID', environmentID);
+                  updateInstance('environmentId', environmentId);
                 }
               }
             "
@@ -556,7 +556,7 @@ export default {
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
-            environmentID: UNKNOWN_ID,
+            environmentId: UNKNOWN_ID,
             name: "New Instance",
             engine: "MYSQL",
             // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
@@ -765,7 +765,7 @@ export default {
       state.creatingOrUpdating = true;
       store
         .dispatch("instance/patchInstance", {
-          instanceID: (state.instance as Instance).id,
+          instanceId: (state.instance as Instance).id,
           instancePatch: patchedInstance,
         })
         .then((instance) => {
@@ -785,7 +785,7 @@ export default {
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
           if (connectionInfoChanged) {
             store.dispatch(
-              "database/fetchDatabaseListByInstanceID",
+              "database/fetchDatabaseListByInstanceId",
               instance.id
             );
           }
@@ -816,7 +816,7 @@ export default {
         useEmptyPassword: state.useEmptyPassword,
         host: state.instance.host,
         port: state.instance.port,
-        instanceID: props.create ? undefined : (state.instance as Instance).id,
+        instanceId: props.create ? undefined : (state.instance as Instance).id,
       };
       store
         .dispatch("sql/ping", connectionInfo)

@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  PrincipalID,
+  PrincipalId,
   Principal,
   PrincipalCreate,
   PrincipalPatch,
@@ -17,9 +17,9 @@ import { randomString } from "../../utils";
 function convert(principal: ResourceObject): Principal {
   return {
     id: parseInt(principal.id),
-    creatorID: principal.attributes.creatorID as PrincipalID,
+    creatorId: principal.attributes.creatorId as PrincipalId,
     createdTs: principal.attributes.createdTs as number,
-    updaterID: principal.attributes.updaterID as PrincipalID,
+    updaterId: principal.attributes.updaterId as PrincipalId,
     updatedTs: principal.attributes.updatedTs as number,
     type: principal.attributes.type as PrincipalType,
     name: principal.attributes.name as string,
@@ -43,15 +43,15 @@ const getters = {
     return state.principalList;
   },
 
-  principalByID:
+  principalById:
     (state: PrincipalState) =>
-    (principalID: PrincipalID): Principal => {
-      if (principalID == EMPTY_ID) {
+    (principalId: PrincipalId): Principal => {
+      if (principalId == EMPTY_ID) {
         return empty("PRINCIPAL") as Principal;
       }
 
       return (
-        state.principalList.find((item) => item.id == principalID) ||
+        state.principalList.find((item) => item.id == principalId) ||
         (unknown("PRINCIPAL") as Principal)
       );
     },
@@ -70,9 +70,9 @@ const actions = {
     return principalList;
   },
 
-  async fetchPrincipalByID({ commit }: any, principalID: PrincipalID) {
+  async fetchPrincipalById({ commit }: any, principalId: PrincipalId) {
     const principal = convert(
-      (await axios.get(`/api/principal/${principalID}`)).data.data
+      (await axios.get(`/api/principal/${principalId}`)).data.data
     );
 
     commit("upsertPrincipalInList", principal);
@@ -105,16 +105,16 @@ const actions = {
   async patchPrincipal(
     { commit, dispatch }: any,
     {
-      principalID,
+      principalId,
       principalPatch,
     }: {
-      principalID: PrincipalID;
+      principalId: PrincipalId;
       principalPatch: PrincipalPatch;
     }
   ) {
     const updatedPrincipal = convert(
       (
-        await axios.patch(`/api/principal/${principalID}`, {
+        await axios.patch(`/api/principal/${principalId}`, {
           data: {
             type: "principalPatch",
             attributes: principalPatch,

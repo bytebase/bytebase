@@ -128,9 +128,9 @@
   >
     <!-- eslint-disable vue/attribute-hyphenation -->
     <CreateDatabasePrepForm
-      :projectID="database.project.id"
-      :environmentID="database.instance.environment.id"
-      :instanceID="database.instance.id"
+      :projectId="database.project.id"
+      :environmentId="database.instance.environment.id"
+      :instanceId="database.instance.id"
       :backup="state.restoredBackup"
       @dismiss="
         () => {
@@ -275,7 +275,7 @@ export default {
       state.loadingMigrationHistory = true;
       store
         .dispatch("instance/fetchMigrationHistoryByVersion", {
-          instanceID: props.database.instance.id,
+          instanceId: props.database.instance.id,
           databaseName: props.database.name,
           version: backup.migrationHistoryVersion,
         })

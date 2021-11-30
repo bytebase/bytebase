@@ -1,12 +1,12 @@
-import { ErrorCode, MigrationHistoryID, TaskCheckRunID } from "..";
+import { ErrorCode, MigrationHistoryId, TaskCheckRunId } from "..";
 import { Database } from "../database";
 import {
-  BackupID,
-  DatabaseID,
-  InstanceID,
-  ProjectID,
-  TaskID,
-  TaskRunID,
+  BackupId,
+  DatabaseId,
+  InstanceId,
+  ProjectId,
+  TaskId,
+  TaskRunId,
 } from "../id";
 import { Instance, MigrationType } from "../instance";
 import { Principal } from "../principal";
@@ -33,7 +33,7 @@ export type TaskGeneralPayload = {
 };
 
 export type TaskDatabaseCreatePayload = {
-  projectID: ProjectID;
+  projectId: ProjectId;
   statement: string;
   databaseName: string;
   characterSet: string;
@@ -49,7 +49,7 @@ export type TaskDatabaseSchemaUpdatePayload = {
 
 export type TaskDatabaseRestorePayload = {
   databaseName: string;
-  backupID: BackupID;
+  backupId: BackupId;
 };
 
 export type TaskPayload =
@@ -59,7 +59,7 @@ export type TaskPayload =
   | TaskDatabaseRestorePayload;
 
 export type Task = {
-  id: TaskID;
+  id: TaskId;
 
   // Related fields
   taskRunList: TaskRun[];
@@ -88,14 +88,14 @@ export type TaskCreate = {
   name: string;
   status: TaskStatus;
   type: TaskType;
-  instanceID: InstanceID;
-  databaseID?: DatabaseID;
+  instanceId: InstanceId;
+  databaseId?: DatabaseId;
   statement: string;
   rollbackStatement: string;
   databaseName?: string;
   characterSet?: string;
   collation?: string;
-  backupID?: BackupID;
+  backupId?: BackupId;
   migrationType?: MigrationType;
 };
 
@@ -114,12 +114,12 @@ export type TaskRunStatus = "RUNNING" | "DONE" | "FAILED" | "CANCELED";
 
 export type TaskRunResultPayload = {
   detail: string;
-  migrationID?: MigrationHistoryID;
+  migrationId?: MigrationHistoryId;
   version?: string;
 };
 
 export type TaskRun = {
-  id: TaskRunID;
+  id: TaskRunId;
 
   // Standard fields
   creator: Principal;
@@ -165,7 +165,7 @@ export type TaskCheckRunResultPayload = {
 };
 
 export type TaskCheckRun = {
-  id: TaskCheckRunID;
+  id: TaskCheckRunId;
 
   // Standard fields
   creator: Principal;
@@ -174,7 +174,7 @@ export type TaskCheckRun = {
   updatedTs: number;
 
   // Domain specific fields
-  taskID: TaskID;
+  taskId: TaskId;
   status: TaskCheckRunStatus;
   type: TaskCheckType;
   code: ErrorCode;

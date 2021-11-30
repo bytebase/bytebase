@@ -4,17 +4,17 @@ import {
   Backup,
   Database,
   DatabaseCreate,
-  DatabaseID,
+  DatabaseId,
   DatabaseState,
   DataSource,
   empty,
   EMPTY_ID,
-  EnvironmentID,
+  EnvironmentId,
   Instance,
-  InstanceID,
-  PrincipalID,
+  InstanceId,
+  PrincipalId,
   Project,
-  ProjectID,
+  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -28,48 +28,48 @@ function convert(
   // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
   // then we convert them to the detailed objects.
-  const instanceID = (
+  const instanceId = (
     database.relationships!.instance.data as ResourceIdentifier
   ).id;
   let instance: Instance = unknown("INSTANCE") as Instance;
-  instance.id = parseInt(instanceID);
+  instance.id = parseInt(instanceId);
 
-  const projectID = (database.relationships!.project.data as ResourceIdentifier)
+  const projectId = (database.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectID);
+  project.id = parseInt(projectId);
 
-  const dataSourceIDList = database.relationships!.dataSource
+  const dataSourceIdList = database.relationships!.dataSource
     .data as ResourceIdentifier[];
   const dataSourceList: DataSource[] = [];
-  for (const item of dataSourceIDList) {
+  for (const item of dataSourceIdList) {
     const dataSource = unknown("DATA_SOURCE") as DataSource;
     dataSource.id = parseInt(item.id);
     dataSourceList.push(dataSource);
   }
 
-  const sourceBackupID = database.relationships!.sourceBackup.data
+  const sourceBackupId = database.relationships!.sourceBackup.data
     ? (database.relationships!.sourceBackup.data as ResourceIdentifier).id
     : undefined;
   let sourceBackup: Backup | undefined = undefined;
 
-  const anomalyIDList = database.relationships!.anomaly
+  const anomalyIdList = database.relationships!.anomaly
     .data as ResourceIdentifier[];
   const anomalyList: Anomaly[] = [];
-  for (const item of anomalyIDList) {
+  for (const item of anomalyIdList) {
     const anomaly = unknown("ANOMALY") as Anomaly;
     anomaly.id = parseInt(item.id);
     anomalyList.push(anomaly);
   }
 
   for (const item of includedList || []) {
-    if (item.type == "instance" && item.id == instanceID) {
+    if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item, includedList);
     }
-    if (item.type == "project" && item.id == projectID) {
+    if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item, includedList);
     }
-    if (item.type == "backup" && item.id == sourceBackupID) {
+    if (item.type == "backup" && item.id == sourceBackupId) {
       sourceBackup = rootGetters["backup/convert"](item, includedList);
     }
   }
@@ -97,7 +97,7 @@ function convert(
   for (const item of includedList || []) {
     if (
       item.type == "data-source" &&
-      item.attributes.databaseID == database.id
+      item.attributes.databaseId == database.id
     ) {
       const i = dataSourceList.findIndex(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
@@ -109,7 +109,7 @@ function convert(
       }
     }
 
-    if (item.type == "anomaly" && item.attributes.databaseID == database.id) {
+    if (item.type == "anomaly" && item.attributes.databaseId == database.id) {
       const i = anomalyList.findIndex(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
@@ -150,8 +150,8 @@ const databaseSorter = (a: Database, b: Database): number => {
 };
 
 const state: () => DatabaseState = () => ({
-  databaseListByInstanceID: new Map(),
-  databaseListByProjectID: new Map(),
+  databaseListByInstanceId: new Map(),
+  databaseListByProjectId: new Map(),
 });
 
 const getters = {
@@ -161,20 +161,20 @@ const getters = {
       return convert(database, inlcudedList, rootGetters);
     },
 
-  databaseListByInstanceID:
+  databaseListByInstanceId:
     (state: DatabaseState) =>
-    (instanceID: InstanceID): Database[] => {
-      return state.databaseListByInstanceID.get(instanceID) || [];
+    (instanceId: InstanceId): Database[] => {
+      return state.databaseListByInstanceId.get(instanceId) || [];
     },
 
-  databaseListByPrincipalID:
+  databaseListByPrincipalId:
     (state: DatabaseState) =>
-    (userID: PrincipalID): Database[] => {
+    (userId: PrincipalId): Database[] => {
       const list: Database[] = [];
-      for (const [_, databaseList] of state.databaseListByInstanceID) {
+      for (const [_, databaseList] of state.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
           for (const member of item.project.memberList) {
-            if (member.principal.id == userID) {
+            if (member.principal.id == userId) {
               list.push(item);
               break;
             }
@@ -184,13 +184,13 @@ const getters = {
       return list;
     },
 
-  databaseListByEnvironmentID:
+  databaseListByEnvironmentId:
     (state: DatabaseState) =>
-    (environmentID: EnvironmentID): Database[] => {
+    (environmentId: EnvironmentId): Database[] => {
       const list: Database[] = [];
-      for (const [_, databaseList] of state.databaseListByInstanceID) {
+      for (const [_, databaseList] of state.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (item.instance.environment.id == environmentID) {
+          if (item.instance.environment.id == environmentId) {
             list.push(item);
           }
         });
@@ -198,29 +198,29 @@ const getters = {
       return list;
     },
 
-  databaseListByProjectID:
+  databaseListByProjectId:
     (state: DatabaseState) =>
-    (projectID: ProjectID): Database[] => {
-      return state.databaseListByProjectID.get(projectID) || [];
+    (projectId: ProjectId): Database[] => {
+      return state.databaseListByProjectId.get(projectId) || [];
     },
 
-  databaseByID:
+  databaseById:
     (state: DatabaseState) =>
-    (databaseID: DatabaseID, instanceID?: InstanceID): Database => {
-      if (databaseID == EMPTY_ID) {
+    (databaseId: DatabaseId, instanceId?: InstanceId): Database => {
+      if (databaseId == EMPTY_ID) {
         return empty("DATABASE") as Database;
       }
 
-      if (instanceID) {
-        const list = state.databaseListByInstanceID.get(instanceID) || [];
+      if (instanceId) {
+        const list = state.databaseListByInstanceId.get(instanceId) || [];
         return (
-          list.find((item) => item.id == databaseID) ||
+          list.find((item) => item.id == databaseId) ||
           (unknown("DATABASE") as Database)
         );
       }
 
-      for (const [_, list] of state.databaseListByInstanceID) {
-        const database = list.find((item) => item.id == databaseID);
+      for (const [_, list] of state.databaseListByInstanceId) {
+        const database = list.find((item) => item.id == databaseId);
         if (database) {
           return database;
         }
@@ -231,44 +231,44 @@ const getters = {
 };
 
 const actions = {
-  async fetchDatabaseListByInstanceID(
+  async fetchDatabaseListByInstanceId(
     { commit, rootGetters }: any,
-    instanceID: InstanceID
+    instanceId: InstanceId
   ) {
-    const data = (await axios.get(`/api/database?instance=${instanceID}`)).data;
+    const data = (await axios.get(`/api/database?instance=${instanceId}`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
     databaseList.sort(databaseSorter);
 
-    commit("upsertDatabaseList", { databaseList, instanceID });
+    commit("upsertDatabaseList", { databaseList, instanceId });
 
     return databaseList;
   },
 
-  async fetchDatabaseByInstanceIDAndName(
+  async fetchDatabaseByInstanceIdAndName(
       { commit, rootGetters }: any,
       {
-        instanceID,
+        instanceId,
         name,
-      }: {instanceID: InstanceID, name: string}
+      }: {instanceId: InstanceId, name: string}
   ) {
-    const data = (await axios.get(`/api/database?instance=${instanceID}&name=${name}`)).data;
+    const data = (await axios.get(`/api/database?instance=${instanceId}&name=${name}`)).data;
     const database = data.data[0];
     return convert(database, data.included, rootGetters);
   },
 
-  async fetchDatabaseListByProjectID(
+  async fetchDatabaseListByProjectId(
     { commit, rootGetters }: any,
-    projectID: ProjectID
+    projectId: ProjectId
   ) {
-    const data = (await axios.get(`/api/database?project=${projectID}`)).data;
+    const data = (await axios.get(`/api/database?project=${projectId}`)).data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
     });
     databaseList.sort(databaseSorter);
 
-    commit("setDatabaseListByProjectID", { databaseList, projectID });
+    commit("setDatabaseListByProjectId", { databaseList, projectId });
 
     return databaseList;
   },
@@ -286,13 +286,13 @@ const actions = {
     return databaseList;
   },
 
-  async fetchDatabaseListByEnvironmentID(
+  async fetchDatabaseListByEnvironmentId(
     { state, commit, rootGetters }: any,
-    environmentID: EnvironmentID
+    environmentId: EnvironmentId
   ) {
     // Don't fetch the data source info as the current user may not have access to the
     // database of this particular environment.
-    const data = (await axios.get(`/api/database?environment=${environmentID}`))
+    const data = (await axios.get(`/api/database?environment=${environmentId}`))
       .data;
     const databaseList = data.data.map((database: ResourceObject) => {
       return convert(database, data.included, rootGetters);
@@ -304,16 +304,16 @@ const actions = {
     return databaseList;
   },
 
-  async fetchDatabaseByID(
+  async fetchDatabaseById(
     { commit, rootGetters }: any,
     {
-      databaseID,
-      instanceID,
-    }: { databaseID: DatabaseID; instanceID?: InstanceID }
+      databaseId,
+      instanceId,
+    }: { databaseId: DatabaseId; instanceId?: InstanceId }
   ) {
-    const url = instanceID
-      ? `/api/instance/${instanceID}/database/${databaseID}`
-      : `/api/database/${databaseID}`;
+    const url = instanceId
+      ? `/api/instance/${instanceId}/database/${databaseId}`
+      : `/api/database/${databaseId}`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
@@ -352,19 +352,19 @@ const actions = {
   async transferProject(
     { commit, rootGetters }: any,
     {
-      databaseID,
-      projectID,
+      databaseId,
+      projectId,
     }: {
-      databaseID: DatabaseID;
-      projectID: ProjectID;
+      databaseId: DatabaseId;
+      projectId: ProjectId;
     }
   ) {
     const data = (
-      await axios.patch(`/api/database/${databaseID}`, {
+      await axios.patch(`/api/database/${databaseId}`, {
         data: {
           type: "databasePatch",
           attributes: {
-            projectID,
+            projectId,
           },
         },
       })
@@ -380,34 +380,34 @@ const actions = {
 };
 
 const mutations = {
-  setDatabaseListByProjectID(
+  setDatabaseListByProjectId(
     state: DatabaseState,
     {
       databaseList,
-      projectID,
+      projectId,
     }: {
       databaseList: Database[];
-      projectID: ProjectID;
+      projectId: ProjectId;
     }
   ) {
-    state.databaseListByProjectID.set(projectID, databaseList);
+    state.databaseListByProjectId.set(projectId, databaseList);
   },
 
   upsertDatabaseList(
     state: DatabaseState,
     {
       databaseList,
-      instanceID,
+      instanceId,
     }: {
       databaseList: Database[];
-      instanceID?: InstanceID;
+      instanceId?: InstanceId;
     }
   ) {
-    if (instanceID) {
-      state.databaseListByInstanceID.set(instanceID, databaseList);
+    if (instanceId) {
+      state.databaseListByInstanceId.set(instanceId, databaseList);
     } else {
       for (const database of databaseList) {
-        const list = state.databaseListByInstanceID.get(database.instance.id);
+        const list = state.databaseListByInstanceId.get(database.instance.id);
         if (list) {
           const i = list.findIndex((item: Database) => item.id == database.id);
           if (i != -1) {
@@ -416,7 +416,7 @@ const mutations = {
             list.push(database);
           }
         } else {
-          state.databaseListByInstanceID.set(database.instance.id, [database]);
+          state.databaseListByInstanceId.set(database.instance.id, [database]);
         }
       }
     }

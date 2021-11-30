@@ -148,7 +148,7 @@ export default {
     });
 
     const prepareRepository = () => {
-      store.dispatch("repository/fetchRepositoryByProjectID", props.project.id);
+      store.dispatch("repository/fetchRepositoryByProjectId", props.project.id);
     };
 
     watchEffect(prepareRepository);
@@ -161,7 +161,7 @@ export default {
     );
 
     const repository = computed((): Repository => {
-      return store.getters["repository/repositoryByProjectID"](
+      return store.getters["repository/repositoryByProjectId"](
         props.project.id
       );
     });

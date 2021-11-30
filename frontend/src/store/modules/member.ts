@@ -1,12 +1,12 @@
 import axios from "axios";
 import {
   Member,
-  MemberID,
+  MemberId,
   MemberCreate,
   MemberPatch,
   MemberState,
   ResourceObject,
-  PrincipalID,
+  PrincipalId,
   unknown,
   empty,
   EMPTY_ID,
@@ -38,9 +38,9 @@ const getters = {
     return state.memberList;
   },
 
-  memberByPrincipalID:
+  memberByPrincipalId:
     (state: MemberState) =>
-    (id: PrincipalID): Member => {
+    (id: PrincipalId): Member => {
       if (id == EMPTY_ID) {
         return empty("MEMBER") as Member;
       }
@@ -72,7 +72,7 @@ const actions = {
     return memberList;
   },
 
-  // Returns existing member if the principalID has already been created.
+  // Returns existing member if the principalId has already been created.
   async createdMember({ commit, rootGetters }: any, newMember: MemberCreate) {
     const data = (
       await axios.post(`/api/member`, {
@@ -91,7 +91,7 @@ const actions = {
 
   async patchMember(
     { commit, rootGetters }: any,
-    { id, memberPatch }: { id: MemberID; memberPatch: MemberPatch }
+    { id, memberPatch }: { id: MemberId; memberPatch: MemberPatch }
   ) {
     const data = (
       await axios.patch(`/api/member/${id}`, {
@@ -108,9 +108,9 @@ const actions = {
     return updatedMember;
   },
 
-  async deleteMemberByID(
+  async deleteMemberById(
     { state, commit }: { state: MemberState; commit: any },
-    id: MemberID
+    id: MemberId
   ) {
     await axios.delete(`/api/member/${id}`);
 

@@ -14,10 +14,10 @@ function convert(
   rootGetters: any
 ): Pipeline {
   const stageList: Stage[] = [];
-  const stageIDList = pipeline.relationships!.stage
+  const stageIdList = pipeline.relationships!.stage
     .data as ResourceIdentifier[];
-  // Needs to iterate through stageIDList to maintain the order
-  for (const idItem of stageIDList) {
+  // Needs to iterate through stageIdList to maintain the order
+  for (const idItem of stageIdList) {
     for (const item of includedList || []) {
       if (item.type == "stage") {
         if (idItem.id == item.id) {

@@ -1,17 +1,17 @@
-import { DatabaseID, TableID, TableIndexID } from "./id";
+import { DatabaseId, TableId, TableIndexId } from "./id";
 
 // Index
 export type TableIndex = {
-  id: TableIndexID;
+  id: TableIndexId;
 
   // Related fields
-  databaseID: DatabaseID;
-  tableID: TableID;
+  databaseId: DatabaseId;
+  tableId: TableId;
 
   // Standard fields
-  creatorID: number;
+  creatorId: number;
   createdTs: number;
-  updaterID: number;
+  updaterId: number;
   updatedTs: number;
 
   // Domain specific fields
