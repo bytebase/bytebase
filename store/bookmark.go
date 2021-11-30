@@ -155,7 +155,7 @@ func findBookmarkList(ctx context.Context, tx *Tx, find *api.BookmarkFind) (_ []
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

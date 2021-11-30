@@ -357,7 +357,7 @@
         <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block"> Username </label>
-            <!-- For mysql, username can be empty indicating anonymous user. 
+            <!-- For mysql, username can be empty indicating anonymous user.
             But it's a very bad practice to use anonymous user for admin operation,
             thus we make it REQUIRED here. -->
             <input

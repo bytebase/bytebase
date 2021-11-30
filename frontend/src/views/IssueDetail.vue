@@ -145,7 +145,7 @@
                   @run-checks="runTaskChecks"
                 />
               </div>
-              <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel. 
+              <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
                    The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
                    to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
                    doesn't seem to work well with the reactivity. So for non-edit mode when !state.create, we

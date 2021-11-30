@@ -454,14 +454,14 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 	// Query user info
 	query := `
 		SELECT usename AS role_name,
-			CASE 
-				 WHEN usesuper AND usecreatedb THEN 
+			CASE
+				 WHEN usesuper AND usecreatedb THEN
 				 CAST('superuser, create database' AS pg_catalog.text)
-				 WHEN usesuper THEN 
+				 WHEN usesuper THEN
 					CAST('superuser' AS pg_catalog.text)
-				 WHEN usecreatedb THEN 
+				 WHEN usecreatedb THEN
 					CAST('create database' AS pg_catalog.text)
-				 ELSE 
+				 ELSE
 					CAST('' AS pg_catalog.text)
 			END role_attributes
 		FROM pg_catalog.pg_user
@@ -524,7 +524,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	}
 
 	const query = `
-		SELECT 
+		SELECT
 		    1
 		FROM information_schema.tables
 		WHERE table_name = 'migration_history'
@@ -1325,7 +1325,7 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			FROM pg_catalog.pg_class c
 			WHERE
 					c.oid     = (SELECT cols.table_name::regclass::oid) AND
-					cols.table_schema=c.relnamespace::regnamespace::text AND 
+					cols.table_schema=c.relnamespace::regnamespace::text AND
 					cols.table_name = c.relname
 		) as column_comment
 	FROM INFORMATION_SCHEMA.COLUMNS AS cols
