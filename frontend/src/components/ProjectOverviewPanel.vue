@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">Recent activities</p>
-      <ActivityTable :activityList="state.activityList" />
+      <ActivityTable :activity-list="state.activityList" />
       <router-link
         :to="`#activity`"
         class="mt-2 flex justify-end normal-link"
@@ -22,7 +22,7 @@
       <DatabaseTable
         v-if="databaseList.length > 0"
         :mode="'PROJECT'"
-        :databaseList="databaseList"
+        :database-list="databaseList"
       />
       <div v-else class="text-center textinfolabel">
         No database belongs to this project. You can add database by clicking
@@ -35,7 +35,7 @@
       <p class="text-lg font-medium leading-7 text-main">Issues</p>
       <IssueTable
         :mode="'PROJECT'"
-        :issueSectionList="[
+        :issue-section-list="[
           {
             title: 'In progress',
             list: state.progressIssueList,
@@ -96,7 +96,7 @@ export default {
       type: Object as PropType<Database[]>,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

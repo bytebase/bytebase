@@ -67,7 +67,7 @@ const actions = {
       readCreatedAfterTs,
     }: { userID: PrincipalID; readCreatedAfterTs?: number }
   ) {
-    var url = `/api/inbox?user=${userID}`;
+    let url = `/api/inbox?user=${userID}`;
     if (readCreatedAfterTs) {
       url += `&created=${readCreatedAfterTs}`;
     }
@@ -145,7 +145,7 @@ const mutations = {
       inbox: Inbox;
     }
   ) {
-    for (let [_, inboxList] of state.inboxListByUser) {
+    for (const [_, inboxList] of state.inboxListByUser) {
       const i = inboxList.findIndex((item: Inbox) => item.id == inboxID);
       if (i >= 0) {
         inboxList[i] = inbox;

@@ -7,9 +7,7 @@
           px-4
           pb-4
           border-b border-block-border
-          md:flex
-          md:items-center
-          md:justify-between
+          md:flex md:items-center md:justify-between
         "
       >
         <div class="flex-1 min-w-0">
@@ -19,13 +17,13 @@
               <div class="flex items-center">
                 <input
                   v-if="state.editing"
-                  required
-                  ref="editNameTextField"
                   id="name"
+                  ref="editNameTextField"
+                  v-model="state.editingDataSource.name"
+                  required
                   name="name"
                   type="text"
                   class="textfield my-0.5 w-full"
-                  v-model="state.editingDataSource.name"
                 />
                 <!-- Padding value is to prevent flickering when switching between edit/non-edit mode -->
                 <h1
@@ -47,8 +45,7 @@
                 class="
                   flex flex-col
                   space-y-1
-                  sm:space-y-0
-                  sm:flex-row sm:flex-wrap
+                  sm:space-y-0 sm:flex-row sm:flex-wrap
                 "
               >
                 <dt class="sr-only">Environment</dt>
@@ -158,25 +155,25 @@
           <!-- Description list -->
           <DataSourceConnectionPanel
             :editing="state.editing"
-            :dataSource="state.editing ? state.editingDataSource : dataSource"
+            :data-source="state.editing ? state.editingDataSource : dataSource"
           />
 
           <!-- Guard against dataSource.id != '-1', this could happen when we delete the data source -->
           <DataSourceMemberTable
-            class="pt-6"
             v-if="dataSource.id != '-1'"
-            :allowEdit="allowEdit"
-            :dataSource="dataSource"
+            class="pt-6"
+            :allow-edit="allowEdit"
+            :data-source="dataSource"
           />
 
           <!-- Hide deleting data source list for now, as we don't allow deleting data source after creating the database. -->
           <div v-if="false" class="pt-4 flex justify-start">
             <BBButtonConfirm
               v-if="allowEdit"
-              :buttonText="'Delete this entire data source'"
-              :requireConfirm="true"
-              :confirmTitle="`Are you sure to delete '${dataSource.name}'?`"
-              :confirmDescription="'All existing users using this data source to connect the database will fail. You cannot undo this action.'"
+              :button-text="'Delete this entire data source'"
+              :require-confirm="true"
+              :confirm-title="`Are you sure to delete '${dataSource.name}'?`"
+              :confirm-description="'All existing users using this data source to connect the database will fail. You cannot undo this action.'"
               @confirm="doDelete"
             />
           </div>
@@ -205,6 +202,7 @@ interface LocalState {
 
 export default {
   name: "DataSourceDetail",
+  components: { DataSourceConnectionPanel, DataSourceMemberTable },
   props: {
     databaseSlug: {
       required: true,
@@ -215,8 +213,7 @@ export default {
       type: String,
     },
   },
-  components: { DataSourceConnectionPanel, DataSourceMemberTable },
-  setup(props, ctx) {
+  setup(props) {
     const editNameTextField = ref();
 
     const store = useStore();

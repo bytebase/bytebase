@@ -37,10 +37,10 @@
       </p>
       <input
         id="name"
+        v-model="state.name"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.name"
       />
     </div>
 
@@ -57,10 +57,10 @@
       </p>
       <input
         id="applicationid"
+        v-model="state.applicationID"
         name="applicationid"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.applicationID"
       />
     </div>
 
@@ -73,11 +73,11 @@
       </p>
       <input
         id="secret"
+        v-model="state.secret"
         name="secret"
         type="text"
         class="textfield mt-1 w-full"
         placeholder="sensitive - write only"
-        v-model="state.secret"
       />
     </div>
 
@@ -85,10 +85,10 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :buttonText="'Delete this Git provider'"
-          :okText="'Delete'"
-          :confirmTitle="`Delete Git provider '${vcs.name}'?`"
-          :requireConfirm="true"
+          :button-text="'Delete this Git provider'"
+          :ok-text="'Delete'"
+          :confirm-title="`Delete Git provider '${vcs.name}'?`"
+          :require-confirm="true"
           @confirm="deleteVCS"
         />
       </template>
@@ -122,7 +122,7 @@
       {{ `Linked repositories (${repositoryList.length})` }}
     </div>
     <div class="mt-4">
-      <RepositoryTable :repositoryList="repositoryList" />
+      <RepositoryTable :repository-list="repositoryList" />
     </div>
   </div>
 </template>
@@ -154,14 +154,14 @@ interface LocalState {
 
 export default {
   name: "SettingWorkspaceVCSDetail",
+  components: { RepositoryTable },
   props: {
     vcsSlug: {
       required: true,
       type: String,
     },
   },
-  components: { RepositoryTable },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -193,7 +193,7 @@ export default {
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
             })
-            .catch((error) => {
+            .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
         }

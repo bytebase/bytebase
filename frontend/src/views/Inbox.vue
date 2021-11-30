@@ -30,7 +30,7 @@
           <span>Mark all as read</span>
         </button>
       </div>
-      <InboxList :inboxList="state.unreadList" />
+      <InboxList :inbox-list="state.unreadList" />
     </div>
     <div class="mt-6 mx-6 space-y-2">
       <div
@@ -45,7 +45,7 @@
       >
         Read
       </div>
-      <InboxList class="opacity-70" :inboxList="state.readList" />
+      <InboxList class="opacity-70" :inbox-list="state.readList" />
       <div class="mt-2 flex justify-end">
         <button type="button" class="normal-link" @click.prevent="viewOlder">
           View older
@@ -60,7 +60,6 @@ import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
@@ -76,7 +75,7 @@ interface LocalState {
 export default {
   name: "Inbox",
   components: { InboxList },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 

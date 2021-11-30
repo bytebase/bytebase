@@ -11,7 +11,7 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 
 // "OK" means we find the database with the same name.
-// "NOT_FOUND" means no matching database name found, this ususally means someone changes the underlying db name without Bytebase knowledge.
+// "NOT_FOUND" means no matching database name found, this usually means someone changes the underlying db name without Bytebase knowledge.
 export type DatabaseSyncStatus = "OK" | "NOT_FOUND";
 // Database
 export type Database = {

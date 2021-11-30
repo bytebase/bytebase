@@ -1,7 +1,7 @@
 <template>
   <BBTabFilter
-    :tabItemList="tabItemList"
-    :selectedIndex="state.selectedIndex"
+    :tab-item-list="tabItemList"
+    :selected-index="state.selectedIndex"
     @select-index="
       (index) => {
         state.selectedIndex = index;
@@ -27,19 +27,19 @@ interface LocalState {
 
 export default {
   name: "EnvironmentTabFilter",
-  emits: ["select-environment"],
   components: {},
   props: {
     selectedID: {
       type: Number,
     },
   },
-  setup(props, ctx) {
+  emits: ["select-environment"],
+  setup(props) {
     const store = useStore();
 
     const environmentList = computed(() => {
       // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-      // thus we rervese the order to put more important ones first.
+      // thus we reverse the order to put more important ones first.
       return cloneDeep(
         store.getters["environment/environmentList"]()
       ).reverse();

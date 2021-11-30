@@ -17,13 +17,13 @@
 
       <div class="mt-4">
         <input
-          type="text"
           id="databaseURL"
+          v-model="state.consoleURL"
+          type="text"
           placeholder="http://phpmyadmin.example.com:8080/index.php?route=/database/sql&db={{DB_NAME}}"
           autocomplete="off"
           class="w-full textfield"
           :disabled="!allowEdit"
-          v-model="state.consoleURL"
         />
         <div for="databaseURL" class="mt-2 textinfolabel">
           Tip: Use {{ DB_NAME_PLACEHOLDER }} as the placeholder for the actual
@@ -59,8 +59,7 @@ interface LocalState {
 
 export default {
   name: "SettingWorkspaceGeneral",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const state = reactive<LocalState>({

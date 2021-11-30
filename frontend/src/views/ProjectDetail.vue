@@ -3,14 +3,14 @@
     <ProjectOverviewPanel
       id="overview"
       :project="project"
-      :databaseList="databaseList"
+      :database-list="databaseList"
     />
   </template>
   <template v-if="selectedTab == MIGRATION_HISTORY_TAB">
     <ProjectMigrationHistoryPanel
       id="migration-history"
       :project="project"
-      :databaseList="databaseList"
+      :database-list="databaseList"
     />
   </template>
   <template v-if="selectedTab == ACTIVITY_TAB">
@@ -20,21 +20,21 @@
     <ProjectVersionControlPanel
       id="version-control"
       :project="project"
-      :allowEdit="allowEdit"
+      :allow-edit="allowEdit"
     />
   </template>
   <template v-else-if="selectedTab == PROJECT_HOOK_TAB">
     <ProjectWebhookPanel
       id="webhook"
       :project="project"
-      :allowEdit="allowEdit"
+      :allow-edit="allowEdit"
     />
   </template>
   <template v-else-if="selectedTab == SETTING_TAB">
     <ProjectSettingPanel
       id="setting"
       :project="project"
-      :allowEdit="allowEdit"
+      :allow-edit="allowEdit"
     />
   </template>
 </template>
@@ -82,7 +82,7 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
 
     const project = computed(() => {

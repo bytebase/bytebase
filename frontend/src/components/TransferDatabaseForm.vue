@@ -9,22 +9,22 @@
         <div class="flex flex-row">
           <div class="radio">
             <input
+              v-model="state.transferSource"
               tabindex="-1"
               type="radio"
               class="btn"
               value="DEFAULT"
-              v-model="state.transferSource"
             />
             <label class="label"> From Default project </label>
           </div>
         </div>
         <div class="radio">
           <input
+            v-model="state.transferSource"
             tabindex="-1"
             type="radio"
             class="btn"
             value="OTHER"
-            v-model="state.transferSource"
           />
           <label class="label"> From other projects </label>
         </div>
@@ -34,8 +34,8 @@
     <DatabaseTable
       :mode="'ALL_SHORT'"
       :bordered="true"
-      :customClick="true"
-      :databaseList="databaseList"
+      :custom-click="true"
+      :database-list="databaseList"
       @select-database="selectDatabase"
     />
 
@@ -53,7 +53,7 @@
     <BBAlert
       v-if="state.showModal"
       :style="'INFO'"
-      :okText="'Transfer'"
+      :ok-text="'Transfer'"
       :title="`Are you sure to transfer '${selectedDatabaseName}' into our project?`"
       @ok="
         () => {
@@ -85,16 +85,16 @@ interface LocalState {
 
 export default {
   name: "TransferDatabaseForm",
-  emits: ["submit", "dismiss"],
+  components: {
+    DatabaseTable,
+  },
   props: {
     projectID: {
       required: true,
       type: Number as PropType<ProjectID>,
     },
   },
-  components: {
-    DatabaseTable,
-  },
+  emits: ["submit", "dismiss"],
   setup(props, { emit }) {
     const store = useStore();
 

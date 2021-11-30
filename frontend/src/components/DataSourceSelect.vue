@@ -31,8 +31,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
-import { useStore } from "vuex";
+import { PropType, reactive } from "vue";
 import { Database } from "../types";
 
 interface LocalState {
@@ -41,8 +40,6 @@ interface LocalState {
 
 export default {
   name: "DataSourceSelect",
-  emits: ["select-data-source-id"],
-  components: {},
   props: {
     selectedID: {
       type: Number,
@@ -55,7 +52,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-data-source-id"],
+  setup(props) {
     const state = reactive<LocalState>({
       selectedID: props.selectedID,
     });

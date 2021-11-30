@@ -1,17 +1,17 @@
 <template>
   <BBTable
-    :columnList="columnList"
-    :sectionDataSource="historySectionList"
-    :compactSection="mode == 'DATABASE'"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="columnList"
+    :section-data-source="historySectionList"
+    :compact-section="mode == 'DATABASE'"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
     @click-row="clickHistory"
   >
-    <template v-slot:header>
+    <template #header>
       <template v-if="mode == 'DATABASE'">
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-2"
           :title="columnList[0].title"
         />
@@ -25,7 +25,7 @@
       </template>
       <template v-else>
         <BBTableHeaderCell
-          :leftPadding="4"
+          :left-padding="4"
           class="w-2"
           :title="columnList[0].title"
         />
@@ -37,8 +37,8 @@
         <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
       </template>
     </template>
-    <template v-slot:body="{ rowData: history }">
-      <BBTableCell :leftPadding="4">
+    <template #body="{ rowData: history }">
+      <BBTableCell :left-padding="4">
         <MigrationHistoryStatusIcon :status="history.status" />
       </BBTableCell>
       <BBTableCell v-if="mode == 'DATABASE'">
@@ -56,9 +56,9 @@
         <template v-if="history.issueID">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            @click.stop=""
             :to="`/issue/${history.issueID}`"
             class="normal-link"
+            @click.stop=""
             >{{ history.issueID }}
           </router-link>
         </template>
@@ -164,14 +164,14 @@ export default {
     },
     databaseSectionList: {
       required: true,
-      type: Object as PropType<Database[]>,
+      type: Array as PropType<Database[]>,
     },
     historySectionList: {
       required: true,
-      type: Object as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
+      type: Array as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickHistory = function (section: number, row: number) {

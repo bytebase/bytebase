@@ -6,20 +6,20 @@
   />
   <BBStepTab
     class="mt-4"
-    :stepItemList="stepList"
-    :allowNext="allowNext"
-    :finishTitle="'Confirm and add'"
+    :step-item-list="stepList"
+    :allow-next="allowNext"
+    :finish-title="'Confirm and add'"
     @try-change-step="tryChangeStep"
     @try-finish="tryFinishSetup"
     @cancel="cancelSetup"
   >
-    <template v-slot:0>
+    <template #0>
       <VCSProviderBasicInfoPanel :config="state.config" />
     </template>
-    <template v-slot:1>
+    <template #1>
       <VCSProviderOAuthPanel :config="state.config" />
     </template>
-    <template v-slot:2>
+    <template #2>
       <VCSProviderConfirmPanel :config="state.config" />
     </template>
   </BBStepTab>
@@ -67,13 +67,12 @@ interface LocalState {
 
 export default {
   name: "VCSSetupWizard",
-  props: {},
   components: {
     VCSProviderBasicInfoPanel,
     VCSProviderOAuthPanel,
     VCSProviderConfirmPanel,
   },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -106,7 +105,7 @@ export default {
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
             })
-            .catch((error) => {
+            .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
         }

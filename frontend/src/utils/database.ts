@@ -51,10 +51,10 @@ export function sortDatabaseList(
   environmentList: Environment[]
 ): Database[] {
   return list.sort((a: Database, b: Database) => {
-    var aEnvIndex = -1;
-    var bEnvIndex = -1;
+    let aEnvIndex = -1;
+    let bEnvIndex = -1;
 
-    for (var i = 0; i < environmentList.length; i++) {
+    for (let i = 0; i < environmentList.length; i++) {
       if (environmentList[i].id == a.instance.environment.id) {
         aEnvIndex = i;
       }

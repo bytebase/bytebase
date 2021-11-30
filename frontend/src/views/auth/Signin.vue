@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+      <img
+        class="h-12 w-auto"
+        src="../../assets/logo-full.svg"
+        alt="Bytebase"
+      />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         Sign in to your account
       </h2>
@@ -9,7 +13,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form @submit.prevent="trySignin" class="space-y-6">
+        <form class="space-y-6" @submit.prevent="trySignin">
           <div>
             <label
               for="email"
@@ -20,8 +24,8 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="email"
-                type="email"
                 v-model="state.email"
+                type="email"
                 required
                 placeholder="jim@example.com"
                 class="
@@ -71,9 +75,9 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="password"
+                v-model="state.password"
                 type="password"
                 autocomplete="on"
-                v-model="state.password"
                 required
                 class="
                   appearance-none
@@ -136,7 +140,7 @@ interface LocalState {
 
 export default {
   name: "Signin",
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const router = useRouter();
 
@@ -150,7 +154,7 @@ export default {
       state.email = isDev() || demo ? "demo@example.com" : "";
       state.password = isDev() || demo ? "1024" : "";
       // Navigate to signup if needs admin setup.
-      // Unable to achieve it in router.beforeEach because actutor/info is fetched async and returns
+      // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
       if (store.getters["actuator/needAdminSetup"]()) {
         router.push({ name: "auth.signup", replace: true });

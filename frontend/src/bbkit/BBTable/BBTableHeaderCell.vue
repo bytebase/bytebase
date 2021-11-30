@@ -1,7 +1,14 @@
 <template>
   <th
     scope="col"
-    class="table-cell text-left text-xs font-medium text-gray-500 tracking-wider py-2"
+    class="
+      table-cell
+      text-left text-xs
+      font-medium
+      text-gray-500
+      tracking-wider
+      py-2
+    "
     :class="`pl-` + leftPadding"
   >
     {{ title }}
@@ -21,6 +28,5 @@ export default {
       default: 2,
     },
   },
-  setup(props, ctx) {},
 };
 </script>

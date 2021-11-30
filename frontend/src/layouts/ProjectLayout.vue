@@ -8,8 +8,8 @@
   <BBTabFilter
     class="px-3 pb-2 border-b border-block-border"
     :responsive="false"
-    :tabItemList="tabItemList"
-    :selectedIndex="state.selectedIndex"
+    :tab-item-list="tabItemList"
+    :selected-index="state.selectedIndex"
     @select-index="
       (index) => {
         selectTab(index);
@@ -19,10 +19,10 @@
 
   <div class="py-6 px-6">
     <router-view
-      :projectSlug="projectSlug"
-      :projectWebhookSlug="projectWebhookSlug"
-      :selectedTab="state.selectedIndex"
-      :allowEdit="allowEdit"
+      :project-slug="projectSlug"
+      :project-webhook-slug="projectWebhookSlug"
+      :selected-tab="state.selectedIndex"
+      :allow-edit="allowEdit"
     />
   </div>
 </template>
@@ -36,7 +36,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
-const WEBHOOK_TAB = 3;
+const WEBHOOK_TAB = 4;
 
 type ProjectTabItem = {
   name: string;
@@ -70,7 +70,7 @@ export default {
       type: String,
     },
   },
-  setup(props, { emit }) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 

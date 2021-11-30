@@ -172,7 +172,6 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
-import { useRouter } from "vue-router";
 import {
   Pipeline,
   TaskStatus,
@@ -198,7 +197,6 @@ interface FlowItem {
 
 export default {
   name: "PipelineSimpleFlow",
-  emits: ["select-stage-id"],
   props: {
     create: {
       required: true,
@@ -213,10 +211,8 @@ export default {
       type: Object as PropType<Stage | StageCreate>,
     },
   },
-  components: {},
+  emits: ["select-stage-id"],
   setup(props, { emit }) {
-    const router = useRouter();
-
     const itemList = computed<FlowItem[]>(() => {
       return props.pipeline.stageList.map((stage, index) => {
         let activeTask = stage.taskList[0];

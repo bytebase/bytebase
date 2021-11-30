@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="viewList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="false"
+    :column-list="COLUMN_LIST"
+    :data-source="viewList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="false"
   >
-    <template v-slot:body="{ rowData: view }">
-      <BBTableCell :leftPadding="4" class="w-16">
+    <template #body="{ rowData: view }">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ view.name }}
       </BBTableCell>
       <BBTableCell class="w-64">
@@ -28,7 +28,6 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { View } from "../types";
-import { useRouter } from "vue-router";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -54,9 +53,7 @@ export default {
       type: Object as PropType<View[]>,
     },
   },
-  setup(props, ctx) {
-    const router = useRouter();
-
+  setup() {
     return {
       COLUMN_LIST,
     };

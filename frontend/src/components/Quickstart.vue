@@ -97,21 +97,21 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { isDBA, isDBAOrOwner, isOwner } from "../utils";
+import { isDBA, isOwner } from "../utils";
 
 type IntroItem = {
   name: string;
   link: string;
   allowDBA: boolean;
-  allowDeveloper: Boolean;
+  allowDeveloper: boolean;
   done: ComputedRef<boolean>;
 };
 
 export default {
   name: "Quickstart",
-  emits: [""],
   components: {},
   props: {},
+  emits: [""],
   setup() {
     const store = useStore();
 

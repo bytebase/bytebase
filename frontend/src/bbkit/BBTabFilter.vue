@@ -73,7 +73,6 @@ import { BBTabFilterItem } from "./types";
 
 export default {
   name: "BBTabFilter",
-  emits: ["select-index"],
   props: {
     tabItemList: {
       required: true,
@@ -88,7 +87,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  emits: ["select-index"],
+  setup() {
     const buttonClass = (selected: boolean) => {
       if (selected) {
         return "bg-gray-200 text-gray-800 whitespace-nowrap";

@@ -2,13 +2,13 @@
   <BBOutline
     :id="'bookmark'"
     :title="'Bookmarks'"
-    :itemList="
+    :item-list="
       bookmarkList.map((item) => {
         return { name: item.name, link: item.link };
       })
     "
-    :allowDelete="true"
-    :allowCollapse="true"
+    :allow-delete="true"
+    :allow-collapse="true"
     @delete-index="deleteIndex"
   />
 </template>
@@ -16,13 +16,11 @@
 <script lang="ts">
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import { UNKNOWN_ID } from "../types";
 
 export default {
   name: "BookmarkListSidePanel",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());

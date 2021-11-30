@@ -7,7 +7,10 @@
           class="select-none"
           active-class=""
           exact-active-class=""
-          ><img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase"
+          ><img
+            class="h-12 w-auto"
+            src="../assets/logo-full.svg"
+            alt="Bytebase"
         /></router-link>
       </div>
       <div class="hidden sm:block">
@@ -142,8 +145,8 @@
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
           <button
-            @click.prevent="state.showMobileMenu = !state.showMobileMenu"
             class="icon-link inline-flex items-center justify-center rounded-md"
+            @click.prevent="state.showMobileMenu = !state.showMobileMenu"
           >
             <span class="sr-only">Open main menu</span>
             <!--
@@ -212,7 +215,7 @@ import { useLocalStorage } from '@vueuse/core'
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner, isDev, isOwner } from "../utils";
+import { isDBAOrOwner, isDev } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -221,7 +224,7 @@ interface LocalState {
 export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const state = reactive<LocalState>({

@@ -26,29 +26,25 @@
 </template>
 
 <script lang="ts">
-import { reactive, watch, PropType, computed } from "vue";
+import { reactive, PropType, computed } from "vue";
 import TaskRunTable from "../components/TaskRunTable.vue";
 import { Stage, Task } from "../types";
 import { activeTaskInStage } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "IssueStagePanel",
+  components: { TaskRunTable },
   props: {
     stage: {
       required: true,
       type: Object as PropType<Stage>,
     },
   },
-  components: { TaskRunTable },
-  setup(props, { emit }) {
+  setup(props) {
     const state = reactive<LocalState>({});
-
-    watch(
-      () => props.stage,
-      (curStage, _) => {}
-    );
 
     const activeTask = computed((): Task => {
       return activeTaskInStage(props.stage);

@@ -1,10 +1,10 @@
 <template>
   <RepositoryForm
     :create="true"
-    :vcsType="config.vcs.type"
-    :vcsName="config.vcs.name"
-    :repositoryInfo="config.repositoryInfo"
-    :repositoryConfig="config.repositoryConfig"
+    :vcs-type="config.vcs.type"
+    :vcs-name="config.vcs.name"
+    :repository-info="config.repositoryInfo"
+    :repository-config="config.repositoryConfig"
   />
 </template>
 
@@ -14,19 +14,20 @@ import { PropType } from "@vue/runtime-core";
 import RepositoryForm from "./RepositoryForm.vue";
 import { ProjectRepositoryConfig } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "RepositoryConfigPanel",
-  emits: ["next"],
+  components: { RepositoryForm },
   props: {
     config: {
       required: true,
       type: Object as PropType<ProjectRepositoryConfig>,
     },
   },
-  components: { RepositoryForm },
-  setup(props, { emit }) {
+  emits: ["next"],
+  setup() {
     const state = reactive<LocalState>({});
 
     return {

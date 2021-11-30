@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -31,9 +32,10 @@ type BackupRunner struct {
 // Run is the runner for backup runner.
 func (s *BackupRunner) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Auto backup runner started and will run every %v", s.backupRunnerInterval))
+		s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+		ctx := context.Background()
 		runningTasks := make(map[int]bool)
-		mu := sync.RWMutex{}
+		var mu sync.RWMutex
 		for {
 			s.l.Debug("New auto backup round started...")
 			func() {
@@ -46,8 +48,6 @@ func (s *BackupRunner) Run() error {
 						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-
-				ctx := context.Background()
 
 				// Find all databases that need a backup in this hour.
 				t := time.Now().UTC().Truncate(time.Hour)
@@ -77,14 +77,14 @@ func (s *BackupRunner) Run() error {
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
-							zap.String("databaseID", fmt.Sprintf("%v", backupSetting.DatabaseID)),
-							zap.String("error", err.Error()))
+							zap.Int("databaseID", backupSetting.DatabaseID),
+							zap.Error(err))
 						continue
 					}
 					backupSetting.Database = database
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
-					go func(database *api.Database, backupSettingID int, backupName string) {
+					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 						s.l.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
 							zap.String("backup", backupName),
@@ -94,12 +94,25 @@ func (s *BackupRunner) Run() error {
 							delete(runningTasks, backupSettingID)
 							mu.Unlock()
 						}()
-						if err := s.scheduleBackupTask(ctx, database, backupName); err != nil {
+						err := s.scheduleBackupTask(ctx, database, backupName)
+						if err != nil {
 							s.l.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
-								zap.String("error", err.Error()))
+								zap.Error(err))
+							return
 						}
-					}(database, backupSetting.ID, backupName)
+						// Backup succeeded. POST hook URL.
+						if hookURL == "" {
+							return
+						}
+						_, err = http.PostForm(hookURL, nil)
+						if err != nil {
+							s.l.Warn("Failed to POST hook URL",
+								zap.String("hookURL", hookURL),
+								zap.Int("databaseID", database.ID),
+								zap.Error(err))
+						}
+					}(database, backupSetting.ID, backupName, backupSetting.HookURL)
 				}
 			}()
 

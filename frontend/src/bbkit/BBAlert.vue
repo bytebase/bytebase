@@ -190,6 +190,7 @@
               </svg>
             </div>
             <h3
+              id="modal-headline"
               class="
                 ml-4
                 flex
@@ -199,7 +200,6 @@
                 font-medium
                 text-gray-900
               "
-              id="modal-headline"
             >
               {{ title }}
             </h3>
@@ -224,8 +224,8 @@
             <button
               type="button"
               class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
-              @click.prevent="cancel"
               :disabled="inProgress"
+              @click.prevent="cancel"
             >
               {{ cancelText }}
             </button>
@@ -251,9 +251,9 @@
                 focus:ring-offset-2 focus:ring-red-500
                 sm:w-auto sm:text-sm
               "
-              v-bind:class="okButtonStyle"
-              @click.prevent="$emit('ok', payload)"
+              :class="okButtonStyle"
               :disabled="inProgress"
+              @click.prevent="$emit('ok', payload)"
             >
               {{ okText }}
             </button>
@@ -270,7 +270,6 @@ import { BBAlertStyle } from "./types";
 
 export default {
   name: "BBAlert",
-  emits: ["ok", "cancel"],
   props: {
     style: {
       type: String as PropType<BBAlertStyle>,
@@ -299,6 +298,7 @@ export default {
     // Any payload pass through to "ok" and "cancel" events
     payload: {},
   },
+  emits: ["ok", "cancel"],
   setup(props, { emit }) {
     const cancel = () => {
       emit("cancel", props.payload);

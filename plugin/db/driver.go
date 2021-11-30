@@ -396,27 +396,26 @@ func (p *QueryParams) QueryString() string {
 		if len(params) == 0 {
 			return ""
 		}
-		var parts []string
-		for _, param := range params {
-			v := fmt.Sprintf("%s = ?", param)
-			if strings.Contains(param, "?") {
-				v = param
+		for i, param := range params {
+			if !strings.Contains(param, "?") {
+				params[i] = param + " = ?"
 			}
-			parts = append(parts, v)
 		}
-		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+		return fmt.Sprintf("WHERE %s ", strings.Join(params, " AND "))
 	}
 	pgQuery := func(params []string) string {
 		if len(params) == 0 {
 			return ""
 		}
-		var parts []string
+		parts := make([]string, 0, len(params))
 		for i, param := range params {
-			v := fmt.Sprintf("%s=$%v", param, i+1)
+			idx := fmt.Sprintf("$%d", i+1)
 			if strings.Contains(param, "?") {
-				v = strings.ReplaceAll(param, "?", fmt.Sprintf("$%v", i+1))
+				param = strings.ReplaceAll(param, "?", idx)
+			} else {
+				param = param + "=" + idx
 			}
-			parts = append(parts, v)
+			parts = append(parts, param)
 		}
 		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 	}

@@ -50,6 +50,7 @@ import { useRouter } from "vue-router";
 import { VCS, redirectURL } from "../types";
 import { vcsSlug } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -61,7 +62,7 @@ export default {
       type: Object as PropType<VCS>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const state = reactive<LocalState>({});
