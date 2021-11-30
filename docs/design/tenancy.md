@@ -106,7 +106,7 @@ deployment_config:
           operator: IN
           values: prod
 ```
-Example 2: Deploy to canary tenants, then all company tenants.
+Example 2: Deploy to canary company tenants, then all company tenants.
 ```
 deployment_config:
   deployments:
