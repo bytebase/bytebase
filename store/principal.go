@@ -195,7 +195,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

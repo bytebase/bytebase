@@ -144,7 +144,7 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 			creator_id,
 			updater_id,
 			name,
-			`+"`status`"+`	
+			`+"`status`"+`
 		)
 		VALUES (?, ?, ?, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
@@ -187,7 +187,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

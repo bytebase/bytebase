@@ -161,7 +161,7 @@ END;
 
 -- Policy
 -- policy stores the policies for each environment.
--- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy. 
+-- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
 CREATE TABLE policy (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (

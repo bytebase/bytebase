@@ -13,7 +13,7 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
-WORKDIR /bb-build 
+WORKDIR /bb-build
 
 COPY . .
 

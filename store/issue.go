@@ -212,7 +212,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	}
 
 	var query = `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,
