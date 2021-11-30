@@ -119,10 +119,10 @@ Checkout [more examples](https://www.conventionalcommits.org/en/v1.0.0/#examples
 
 ## Tools
 
-* commitizen
-* cz-conventional-changelog
-* husky
-* conventional-changelog-cli
+* [commitizen](https://github.com/commitizen/cz-cli) - The commitizen command line utility.
+* [cz-conventional-changelog](https://github.com/commitizen/cz-conventional-changelog) - A commitizen adapter for the angular preset of [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
+* [husky](https://github.com/typicode/husky) - Git hooks made easy 🐶 woof!
+* [conventional-changelog-cli](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-cli) - Generate changelogs and release notes from a project's commit messages and metadata.
 
 ## Benefits
 
