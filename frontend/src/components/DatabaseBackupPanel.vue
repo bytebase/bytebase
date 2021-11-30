@@ -31,7 +31,7 @@
           <span class="text-accent"> {{ autoBackupHourText }}</span>
         </div>
         <div class="mt-2">
-          <label for="hookURL" class="textlabel">
+          <label for="hookUrl" class="textlabel">
             Webhook URL
           </label>
           <div class="mt-1 textinfolabel">
@@ -58,15 +58,15 @@
             </a>
           </div>
           <input
-            id="hookURL"
-            name="hookURL"
+            id="hookUrl"
+            name="hookUrl"
             type="text"
             class="textfield mt-1 w-full"
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
             :disabled="!allowEdit"
-            v-model="state.autoBackupUpdatedHookURL"
+            v-model="state.autoBackupUpdatedHookUrl"
           />
-          <button class="btn-primary mt-2" :disabled="!allowEdit || !URLChanged" @click.prevent="updateBackupHookURL()">Update</button>
+          <button class="btn-primary mt-2" :disabled="!allowEdit || !UrlChanged" @click.prevent="updateBackupHookUrl()">Update</button>
         </div>
       </div>
       <div
@@ -146,8 +146,8 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
-  autoBackupHookURL: string;
-  autoBackupUpdatedHookURL: string;
+  autoBackupHookUrl: string;
+  autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -179,8 +179,8 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
-      autoBackupHookURL: '',
-      autoBackupUpdatedHookURL: '',
+      autoBackupHookUrl: '',
+      autoBackupUpdatedHookUrl: '',
     });
 
     onUnmounted(() => {
@@ -208,8 +208,8 @@ export default {
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
-      state.autoBackupHookURL = backupSetting.hookURL;
-      state.autoBackupUpdatedHookURL = backupSetting.hookURL;
+      state.autoBackupHookUrl = backupSetting.hookUrl;
+      state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
@@ -286,8 +286,8 @@ export default {
       return props.allowAdmin && backupPolicy.value == "UNSET";
     });
 
-    const URLChanged = computed(() => {
-      return !isEqual(state.autoBackupHookURL, state.autoBackupUpdatedHookURL);
+    const UrlChanged = computed(() => {
+      return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
     })
 
     const createBackup = (backupName: string) => {
@@ -361,7 +361,7 @@ export default {
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
-        hookURL: "",
+        hookUrl: "",
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -378,13 +378,13 @@ export default {
         });
     };
 
-    const updateBackupHookURL = () => {
+    const updateBackupHookUrl = () => {
       const newBackupSetting: BackupSettingUpsert = {
         databaseId: props.database.id,
         enabled: state.autoBackupEnabled,
         hour: state.autoBackupHour,
         dayOfWeek: state.autoBackupDayOfWeek,
-        hookURL: state.autoBackupUpdatedHookURL,
+        hookUrl: state.autoBackupUpdatedHookUrl,
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -436,8 +436,8 @@ export default {
       backupPolicy,
       createBackup,
       toggleAutoBackup,
-      URLChanged,
-      updateBackupHookURL,
+      UrlChanged,
+      updateBackupHookUrl,
     };
   },
 };

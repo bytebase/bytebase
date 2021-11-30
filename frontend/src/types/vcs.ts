@@ -6,7 +6,7 @@ export type VCSType = "GITLAB_SELF_HOST";
 export interface VCSConfig {
   type: VCSType;
   name: string;
-  instanceURL: string;
+  instanceUrl: string;
   applicationId: string;
   secret: string;
 }
@@ -23,8 +23,8 @@ export type VCS = {
   // Domain specific fields
   name: string;
   type: VCSType;
-  instanceURL: string;
-  apiURL: string;
+  instanceUrl: string;
+  apiUrl: string;
   applicationId: string;
   secret: string;
 };
@@ -33,7 +33,7 @@ export type VCSCreate = {
   // Domain specific fields
   name: string;
   type: VCSType;
-  instanceURL: string;
+  instanceUrl: string;
   applicationId: string;
   secret: string;
 };
@@ -47,7 +47,7 @@ export type VCSPatch = {
 
 export type VCSTokenCreate = {
   code: string;
-  redirectURL: string;
+  redirectUrl: string;
 };
 
 export type VCSFileCommit = {
@@ -64,7 +64,7 @@ export type VCSPushEvent = {
   vcsType: VCSType;
   ref: string;
   repositoryId: string;
-  repositoryURL: string;
+  repositoryUrl: string;
   repositoryFullPath: string;
   authorName: string;
   fileCommit: VCSFileCommit;

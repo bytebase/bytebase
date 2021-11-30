@@ -25,7 +25,7 @@
         type="text"
         class="textfield mt-1 w-full"
         disabled="true"
-        :value="vcs.instanceURL"
+        :value="vcs.instanceUrl"
       />
     </div>
 
@@ -50,7 +50,7 @@
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
           Application ID for the registered GitLab instance-wide OAuth
           application.
-          <a :href="adminApplicationURL" target="_blank" class="normal-link"
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link"
             >View in GitLab</a
           >
         </template>
@@ -141,7 +141,7 @@ import {
   OAuthWindowEvent,
   OAuthWindowEventPayload,
   OAuthConfig,
-  redirectURL,
+  redirectUrl,
   OAuthToken,
 } from "../types";
 
@@ -180,10 +180,10 @@ export default {
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
           const oAuthConfig: OAuthConfig = {
-            endpoint: `${vcs.value.instanceURL}/oauth/token`,
+            endpoint: `${vcs.value.instanceUrl}/oauth/token`,
             applicationId: state.applicationId,
             secret: state.secret,
-            redirectURL: redirectURL(),
+            redirectUrl: redirectUrl(),
           };
           store
             .dispatch("gitlab/exchangeToken", {
@@ -210,9 +210,9 @@ export default {
 
     watchEffect(prepareRepositoryList);
 
-    const adminApplicationURL = computed(() => {
+    const adminApplicationUrl = computed(() => {
       if (vcs.value.type == "GITLAB_SELF_HOST") {
-        return `${vcs.value.instanceURL}/admin/applications`;
+        return `${vcs.value.instanceUrl}/admin/applications`;
       }
       return "";
     });
@@ -235,7 +235,7 @@ export default {
         !isEmpty(state.secret)
       ) {
         const newWindow = openWindowForOAuth(
-          `${vcs.value.instanceURL}/oauth/authorize`,
+          `${vcs.value.instanceUrl}/oauth/authorize`,
           vcs.value.applicationId
         );
         if (newWindow) {
@@ -325,7 +325,7 @@ export default {
       state,
       vcs,
       repositoryList,
-      adminApplicationURL,
+      adminApplicationUrl,
       allowUpdate,
       doUpdate,
       cancel,

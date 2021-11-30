@@ -46,7 +46,7 @@
     </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
-    {{ instanceURLLabel }} <span class="text-red-600">*</span>
+    {{ instanceUrlLabel }} <span class="text-red-600">*</span>
   </div>
   <p class="mt-1 textinfolabel">
     The VCS instance URL. Make sure this instance and Bytebase are network
@@ -55,10 +55,10 @@
   <BBTextField
     class="mt-2 w-full"
     :placeholder="'https://gitlab.example.com'"
-    :value="config.instanceURL"
-    @input="changeURL($event.target.value)"
+    :value="config.instanceUrl"
+    @input="changeUrl($event.target.value)"
   />
-  <p v-if="state.showURLError" class="mt-2 text-sm text-error">
+  <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
     Instance URL must begin with https:// or http://
   </p>
   <div class="mt-4 textlabel">Display name</div>
@@ -78,11 +78,11 @@
 import { computed, onUnmounted, PropType, reactive } from "@vue/runtime-core";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
-import { isURL } from "../utils";
+import { isUrl } from "../utils";
 
 interface LocalState {
   urlValidationTimer?: ReturnType<typeof setTimeout>;
-  showURLError: boolean;
+  showUrlError: boolean;
 }
 
 export default {
@@ -95,8 +95,8 @@ export default {
   },
   setup(props) {
     const state = reactive<LocalState>({
-      showURLError:
-        !isEmpty(props.config.instanceURL) && !isURL(props.config.instanceURL),
+      showUrlError:
+        !isEmpty(props.config.instanceUrl) && !isUrl(props.config.instanceUrl),
     });
 
     onUnmounted(() => {
@@ -112,39 +112,39 @@ export default {
       return "";
     });
 
-    const instanceURLLabel = computed((): string => {
+    const instanceUrlLabel = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return "GitLab Instance URL";
       }
       return "";
     });
 
-    const changeURL = (value: string) => {
-      props.config.instanceURL = value;
+    const changeUrl = (value: string) => {
+      props.config.instanceUrl = value;
 
       if (state.urlValidationTimer) {
         clearInterval(state.urlValidationTimer);
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isURL(props.config.instanceURL)) {
-        state.showURLError = false;
+      if (isUrl(props.config.instanceUrl)) {
+        state.showUrlError = false;
       } else {
         state.urlValidationTimer = setTimeout(() => {
           // If error is already displayed, we hide the error only if there is valid input.
           // Otherwise, we hide the error if input is either empty or valid.
-          if (state.showURLError) {
-            state.showURLError = !isURL(props.config.instanceURL);
+          if (state.showUrlError) {
+            state.showUrlError = !isUrl(props.config.instanceUrl);
           } else {
-            state.showURLError =
-              !isEmpty(props.config.instanceURL) &&
-              !isURL(props.config.instanceURL);
+            state.showUrlError =
+              !isEmpty(props.config.instanceUrl) &&
+              !isUrl(props.config.instanceUrl);
           }
         }, TEXT_VALIDATION_DELAY);
       }
     };
 
-    return { state, namePlaceholder, instanceURLLabel, changeURL };
+    return { state, namePlaceholder, instanceUrlLabel, changeUrl };
   },
 };
 </script>

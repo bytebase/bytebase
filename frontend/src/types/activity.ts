@@ -101,7 +101,7 @@ export type ActivityTaskStatusUpdatePayload = {
 
 export type ActivityTaskFileCommitPayload = {
   taskId: TaskId;
-  vcsInstanceURL: string;
+  vcsInstanceUrl: string;
   repositoryFullPath: string;
   branch: string;
   filePath: string;
