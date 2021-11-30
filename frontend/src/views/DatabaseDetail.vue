@@ -258,7 +258,7 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Repository,
-  baseDirectoryWebURL,
+  baseDirectoryWebUrl,
 } from "../types";
 import { isEmpty } from "lodash";
 import { BBTabFilterItem } from "../bbkit/types";
@@ -318,10 +318,10 @@ export default {
     });
 
     const databaseConsoleLink = computed(() => {
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleURL)) {
-        return consoleLink(consoleURL, database.value.name);
+      if (!isEmpty(consoleUrl)) {
+        return consoleLink(consoleUrl, database.value.name);
       }
       return "";
     });
@@ -436,7 +436,7 @@ export default {
             database.value.project.id
           )
           .then((repository: Repository) => {
-            window.open(baseDirectoryWebURL(repository), "_blank");
+            window.open(baseDirectoryWebUrl(repository), "_blank");
           });
       }
     };

@@ -44,10 +44,10 @@ import {
   OAuthWindowEventPayload,
   OAuthWindowEvent,
   OAuthConfig,
-  redirectURL,
+  redirectUrl,
   OAuthToken,
 } from "../types";
-import { isURL } from "../utils";
+import { isUrl } from "../utils";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -80,7 +80,7 @@ export default {
       config: {
         type: "GITLAB_SELF_HOST",
         name: "GitLab self-host",
-        instanceURL: "",
+        instanceUrl: "",
         applicationId: "",
         secret: "",
       },
@@ -92,10 +92,10 @@ export default {
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
           const oAuthConfig: OAuthConfig = {
-            endpoint: `${state.config.instanceURL}/oauth/token`,
+            endpoint: `${state.config.instanceUrl}/oauth/token`,
             applicationId: state.config.applicationId,
             secret: state.config.secret,
-            redirectURL: redirectURL(),
+            redirectUrl: redirectUrl(),
           };
           store
             .dispatch("gitlab/exchangeToken", {
@@ -118,7 +118,7 @@ export default {
 
     const allowNext = computed((): boolean => {
       if (state.currentStep == BASIC_INFO_STEP) {
-        return isURL(state.config.instanceURL);
+        return isUrl(state.config.instanceUrl);
       } else if (state.currentStep == OAUTH_INFO_STEP) {
         return (
           isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
@@ -150,7 +150,7 @@ export default {
       // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         const newWindow = openWindowForOAuth(
-          `${state.config.instanceURL}/oauth/authorize`,
+          `${state.config.instanceUrl}/oauth/authorize`,
           state.config.applicationId
         );
         if (newWindow) {

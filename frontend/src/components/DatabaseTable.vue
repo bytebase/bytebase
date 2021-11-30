@@ -280,16 +280,16 @@ export default {
         return false;
       }
 
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      return !isEmpty(consoleURL);
+      return !isEmpty(consoleUrl);
     });
 
     const databaseConsoleLink = (databaseName: string) => {
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleURL)) {
-        return consoleLink(consoleURL, databaseName);
+      if (!isEmpty(consoleUrl)) {
+        return consoleLink(consoleUrl, databaseName);
       }
       return "";
     };

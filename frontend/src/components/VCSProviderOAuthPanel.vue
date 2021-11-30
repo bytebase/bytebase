@@ -17,7 +17,7 @@
           2. Go to the Admin page by clicking the wrench icon, then navigate to
           "Applications" section and click "New application" button.
           <a
-            :href="createAdminApplicationURL"
+            :href="createAdminApplicationUrl"
             target="_blank"
             class="normal-link"
             >Direct link</a
@@ -45,7 +45,7 @@
                   Redirect URI
                 </dt>
                 <dd class="text-sm text-main items-center flex">
-                  {{ redirectURL() }}
+                  {{ redirectUrl() }}
                   <button
                     tabindex="-1"
                     class="
@@ -138,7 +138,7 @@ import {
   isValidVCSApplicationIdOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
-  redirectURL,
+  redirectUrl,
 } from "../types";
 import { useStore } from "vuex";
 
@@ -177,15 +177,15 @@ export default {
       }
     });
 
-    const createAdminApplicationURL = computed((): string => {
+    const createAdminApplicationUrl = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return `${props.config.instanceURL}/admin/applications/new`;
+        return `${props.config.instanceUrl}/admin/applications/new`;
       }
       return "";
     });
 
     const copyRedirectURI = () => {
-      toClipboard(redirectURL()).then(() => {
+      toClipboard(redirectUrl()).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
@@ -249,9 +249,9 @@ export default {
     };
 
     return {
-      redirectURL,
+      redirectUrl,
       state,
-      createAdminApplicationURL,
+      createAdminApplicationUrl,
       copyRedirectURI,
       changeApplicationId,
       changeSecret,

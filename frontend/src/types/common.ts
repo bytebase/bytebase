@@ -278,7 +278,7 @@ export const unknown = (
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
-    hookURL: "",
+    hookUrl: "",
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -388,8 +388,8 @@ export const unknown = (
     updatedTs: 0,
     name: "",
     type: "GITLAB_SELF_HOST",
-    instanceURL: "",
-    apiURL: "",
+    instanceUrl: "",
+    apiUrl: "",
     applicationId: "",
     secret: "",
   };
@@ -404,7 +404,7 @@ export const unknown = (
     project: UNKNOWN_PROJECT,
     name: "",
     fullPath: "",
-    webURL: "",
+    webUrl: "",
     baseDirectory: "",
     branchFilter: "",
     filePathTemplate: "",
@@ -629,7 +629,7 @@ export const empty = (
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
-    hookURL: "",
+    hookUrl: "",
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -739,8 +739,8 @@ export const empty = (
     updatedTs: 0,
     name: "",
     type: "GITLAB_SELF_HOST",
-    instanceURL: "",
-    apiURL: "",
+    instanceUrl: "",
+    apiUrl: "",
     applicationId: "",
     secret: "",
   };
@@ -755,7 +755,7 @@ export const empty = (
     project: EMPTY_PROJECT,
     name: "",
     fullPath: "",
-    webURL: "",
+    webUrl: "",
     baseDirectory: "",
     branchFilter: "",
     filePathTemplate: "",

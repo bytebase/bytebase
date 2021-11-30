@@ -203,7 +203,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
-  baseDirectoryWebURL,
+  baseDirectoryWebUrl,
   Database,
   DatabaseId,
   EnvironmentId,
@@ -337,7 +337,7 @@ export default {
             database.project.id
           )
           .then((repository: Repository) => {
-            window.open(baseDirectoryWebURL(repository), "_blank");
+            window.open(baseDirectoryWebUrl(repository), "_blank");
           });
       }
     };
