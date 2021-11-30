@@ -338,8 +338,8 @@ type Driver interface {
 	MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error
 	// MarkMigrationAsFailed marks the last inserted migration record to be FAILED.
 	MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error
-	// TablePrefix returns the prefix to be added to the migration history table.
-	TablePrefix() string
+	// BytebaseTablePrefix returns the prefix to be added to the migration history table.
+	BytebaseTablePrefix() string
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.

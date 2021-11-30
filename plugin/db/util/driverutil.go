@@ -132,7 +132,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has already been applied
-	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.TablePrefix())
+	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.BytebaseTablePrefix())
 	if err != nil {
 		return -1, "", err
 	}
@@ -141,7 +141,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.TablePrefix())
+	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, driver.BytebaseTablePrefix())
 	if err != nil {
 		return -1, "", err
 	}
@@ -154,7 +154,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
 	if requireBaseline {
-		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, driver.TablePrefix())
+		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, driver.BytebaseTablePrefix())
 		if err != nil {
 			return -1, "", err
 		}
@@ -164,7 +164,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		}
 	}
 
-	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, driver.TablePrefix())
+	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, driver.BytebaseTablePrefix())
 	if err != nil {
 		return -1, "", err
 	}

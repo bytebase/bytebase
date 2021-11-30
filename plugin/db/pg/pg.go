@@ -197,7 +197,7 @@ type Driver struct {
 	baseDSN string
 }
 
-func (driver *Driver) TablePrefix() string {
+func (driver *Driver) BytebaseTablePrefix() string {
 	return ""
 }
 

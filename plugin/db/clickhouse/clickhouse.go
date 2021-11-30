@@ -40,7 +40,7 @@ type Driver struct {
 	db *sql.DB
 }
 
-func (driver *Driver) TablePrefix() string {
+func (driver *Driver) BytebaseTablePrefix() string {
 	return "bytebase."
 }
 
