@@ -203,13 +203,13 @@ func (driver *Driver) BytebaseTablePrefix() string {
 
 func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64, updatedSchema string) error {
 	updateHistoryAsDoneQuery := `
-	UPDATE
-		migration_history
-	SET
-    status = 'DONE',
-	  execution_duration = $1,
-		"schema" = $2
-	WHERE id = $3
+    UPDATE
+    	migration_history
+    SET
+        status = 'DONE',
+        execution_duration = $1,
+        "schema" = $2
+    WHERE id = $3
 `
 	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery,
 		duration,
@@ -221,12 +221,12 @@ func (driver *Driver) MarkMigrationAsDone(ctx context.Context, tx *sql.Tx, durat
 
 func (driver *Driver) MarkMigrationAsFailed(ctx context.Context, tx *sql.Tx, duration int64, insertedID int64) error {
 	updateHistoryAsFailedQuery := `
-	UPDATE
-		migration_history
-	SET
-    status = 'FAILED',
-	  execution_duration = $1
-	WHERE id = $2
+    UPDATE
+    	migration_history
+    SET
+        status = 'FAILED',
+        execution_duration = $1
+    WHERE id = $2
 `
 	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery,
 		duration,
