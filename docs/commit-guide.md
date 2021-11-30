@@ -1,0 +1,131 @@
+# Commit Messages Guide
+
+This guide describes how we adding human and machine readable meaning to commit messages.
+
+Refer to [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
+
+## Summary
+
+The Conventional commits specification is a lightweight convention on top of commit message. It provides an easy set of rules for creating an explicit commit history, which dedicated to achieving better readability, velocity and automation.
+
+## Commit Message Style
+
+The commit message should be structured as follows:
+
+```bash
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Header
+
+The header is a `mandatory` line that simply describes the purpose of the change.
+
+```bash
+<type>[optional scope]: <description>
+```
+
+It consists of three parts in itself:
+
+* `Type` - a short prefix that represents the kind of the change
+* `Scope` - optional information that represents the context of the change
+* `Subject` - represents a concise description of actual change
+
+> 💡 Notice that there also has a colon and space(`:<space>`), which separated the type and description
+
+### Body
+
+The body is optional lines that introduce the motivation behind the change or just describing slightly more detailed information.
+
+### Footer
+
+The footer is optional lines that mention consequences which stems from the change - such as announcing a breaking change, linking closed issues, mentioning contributors and so on.
+
+## Common Types
+
+On top of defining the commit message format, the [Angular commit message conventions](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines) specify a list of useful types that cover various sorts of changes.
+
+### feat
+
+Used for add some feature
+
+```bash
+feat: add some feature
+feat(frontend): add some feature in frontend
+```
+
+### fix
+
+Used for fixed some bug
+
+```bash
+fix: fixed typo
+fix(frontend): fixed some error in frontend scope
+```
+
+### docs
+
+Used for write some docs
+
+```bash
+docs: add a new docs
+```
+
+### refactor
+
+Used for refactor some old code or maybe rewrite、enchance it
+
+```bash
+refactor: rewrite some logic
+```
+
+### style
+
+Generally used for front-end
+
+```bash
+style: update the ui colors
+```
+
+### test
+
+Used for add some test case
+
+```bash
+test: test some case
+```
+
+### perf
+
+Used for some preformance improvements.
+
+```bash
+perf: reduce the api requests when page loading
+```
+
+### chore
+
+Used for changes the build process, bump up version, add some configs etc.
+
+```bash
+chore: release v0.0.1
+chore: bump up dependencies version
+```
+
+Checkout [more examples](https://www.conventionalcommits.org/en/v1.0.0/#examples)
+
+## Tools
+
+* commitizen
+* cz-conventional-changelog
+* husky
+* conventional-changelog-cli
+
+## Benefits
+
+* Automatically generating CHANGELOGs and release notes
+* Communicating the nature of changes to teammates, the public, and other stakeholders.
+* Making it easier for people to contribute to your projects, by allowing them to explore a more structured commit history.
