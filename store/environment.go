@@ -211,7 +211,7 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 			row_status,
 		    creator_id,

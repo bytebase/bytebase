@@ -185,7 +185,7 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

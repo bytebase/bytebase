@@ -131,7 +131,7 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 	where, args = append(where, "instance_id = ?"), append(args, find.InstanceID)
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 			id,
 			instance_id,
 			name,

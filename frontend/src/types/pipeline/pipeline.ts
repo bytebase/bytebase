@@ -4,11 +4,11 @@ import { Stage, StageCreate } from "./stage";
 
 /*
  An example
- 
+
  An alter schema PIPELINE
   Dev STAGE (db_dev, env_dev)
     Change dev database schema
-  
+
   Testing STAGE (db_test, env_test)
     Change testing database schema
     Verify integration test pass

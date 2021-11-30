@@ -176,7 +176,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

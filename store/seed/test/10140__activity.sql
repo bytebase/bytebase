@@ -924,7 +924,7 @@ VALUES
         'Applied migration version 20210830011437.11014 to database "testdb_integration"',
         '{"taskID":11014,"oldStatus":"RUNNING","newStatus":"DONE","issueName":"Create a new table ''tbl2'' using multi-stage SQL review workflow","taskName":"Update testdb_integration"}'
     );
-    
+
 INSERT INTO
     activity (
         creator_id,

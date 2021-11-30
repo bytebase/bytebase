@@ -180,7 +180,7 @@ VALUES
         ''
     );
 
--- Index for database 7004 blog, table 7107 user 
+-- Index for database 7004 blog, table 7107 user
 INSERT INTO
     idx (
         creator_id,
@@ -210,7 +210,7 @@ VALUES
         ''
     );
 
--- Index for database 7004 blog, table 7108 post 
+-- Index for database 7004 blog, table 7108 post
 INSERT INTO
     idx (
         creator_id,
@@ -240,7 +240,7 @@ VALUES
         ''
     );
 
--- Index for database 7004 blog, table 7109 comment 
+-- Index for database 7004 blog, table 7109 comment
 INSERT INTO
     idx (
         creator_id,
@@ -270,7 +270,7 @@ VALUES
         ''
     );
 
--- Index for database 7008 blog, table 7110 user 
+-- Index for database 7008 blog, table 7110 user
 INSERT INTO
     idx (
         creator_id,
@@ -300,7 +300,7 @@ VALUES
         ''
     );
 
--- Index for database 7008 blog, table 7111 post 
+-- Index for database 7008 blog, table 7111 post
 INSERT INTO
     idx (
         creator_id,
@@ -330,7 +330,7 @@ VALUES
         ''
     );
 
--- Index for database 7008 blog, table 7112 comment 
+-- Index for database 7008 blog, table 7112 comment
 INSERT INTO
     idx (
         creator_id,
@@ -360,7 +360,7 @@ VALUES
         ''
     );
 
--- Index for database 7012 blog, table 7113 user 
+-- Index for database 7012 blog, table 7113 user
 INSERT INTO
     idx (
         creator_id,
@@ -390,7 +390,7 @@ VALUES
         ''
     );
 
--- Index for database 7012 blog, table 7114 post 
+-- Index for database 7012 blog, table 7114 post
 INSERT INTO
     idx (
         creator_id,
@@ -420,7 +420,7 @@ VALUES
         ''
     );
 
--- Index for database 7012 blog, table 7115 comment 
+-- Index for database 7012 blog, table 7115 comment
 INSERT INTO
     idx (
         creator_id,
@@ -450,7 +450,7 @@ VALUES
         ''
     );
 
--- Index for database 7016 blog, table 7116 user 
+-- Index for database 7016 blog, table 7116 user
 INSERT INTO
     idx (
         creator_id,
@@ -480,7 +480,7 @@ VALUES
         ''
     );
 
--- Index for database 7016 blog, table 7117 post 
+-- Index for database 7016 blog, table 7117 post
 INSERT INTO
     idx (
         creator_id,
@@ -510,7 +510,7 @@ VALUES
         ''
     );
 
--- Index for database 7016 blog, table 7118 comment 
+-- Index for database 7016 blog, table 7118 comment
 INSERT INTO
     idx (
         creator_id,
