@@ -8,7 +8,7 @@
       }
     "
   >
-    <option disabled :selected="undefined === state.selectedID">
+    <option disabled :selected="undefined === state.selectedId">
       <template v-if="!database"> Select database first </template>
       <template v-else> Select data source </template>
     </option>
@@ -17,7 +17,7 @@
         v-for="(dataSource, index) in database.dataSourceList"
         :key="index"
         :value="dataSource.id"
-        :selected="dataSource.id == state.selectedID"
+        :selected="dataSource.id == state.selectedId"
       >
         <template v-if="dataSource.type == 'RO'">
           {{ dataSource.name }} (readonly)
@@ -35,13 +35,13 @@ import { PropType, reactive } from "vue";
 import { Database } from "../types";
 
 interface LocalState {
-  selectedID?: number;
+  selectedId?: number;
 }
 
 export default {
   name: "DataSourceSelect",
   props: {
-    selectedID: {
+    selectedId: {
       type: Number,
     },
     database: {
@@ -55,7 +55,7 @@ export default {
   emits: ["select-data-source-id"],
   setup(props) {
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
     });
 
     return {

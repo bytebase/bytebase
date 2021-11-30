@@ -86,7 +86,7 @@ export default {
     const store = useStore();
 
     const project = computed(() => {
-      return store.getters["project/projectByID"](
+      return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );
     });
@@ -96,14 +96,14 @@ export default {
     });
 
     const prepareDatabaseList = () => {
-      store.dispatch("database/fetchDatabaseListByProjectID", project.value.id);
+      store.dispatch("database/fetchDatabaseListByProjectId", project.value.id);
     };
 
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
       const list = cloneDeep(
-        store.getters["database/databaseListByProjectID"](project.value.id)
+        store.getters["database/databaseListByProjectId"](project.value.id)
       );
       return sortDatabaseList(list, environmentList.value);
     });

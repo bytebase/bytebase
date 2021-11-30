@@ -1,4 +1,4 @@
-import { Environment, PolicyID, Principal } from ".";
+import { Environment, PolicyId, Principal } from ".";
 
 export type PolicyType =
   | "bb.policy.pipeline-approval"
@@ -23,7 +23,7 @@ export type PolicyPayload =
   | PolicyBackupPlanPolicyPayload;
 
 export type Policy = {
-  id: PolicyID;
+  id: PolicyId;
 
   // Standard fields
   creator: Principal;

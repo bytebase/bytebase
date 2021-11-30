@@ -2,7 +2,7 @@ import { randomString } from "../utils";
 
 export type OAuthConfig = {
   endpoint: string;
-  applicationID: string;
+  applicationId: string;
   secret: string;
   redirectURL: string;
 };
@@ -27,13 +27,13 @@ export function redirectURL(): string {
 
 export function openWindowForOAuth(
   endpoint: string,
-  applicationID: string
+  applicationId: string
 ): Window | null {
   const stateQueryParameter = randomString(40);
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   return window.open(
-    `${endpoint}?client_id=${applicationID}&redirect_uri=${encodeURIComponent(
+    `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
       redirectURL()
     )}&state=${stateQueryParameter}&response_type=code&scope=api`,
     "oauth",

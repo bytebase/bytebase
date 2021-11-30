@@ -4,7 +4,7 @@
     <div class="px-4 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedID="state.selectedEnvironment?.id"
+        :selectedId="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <div class="flex flex-row space-x-4">
@@ -26,7 +26,7 @@
         <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           v-if="scopeByPrincipal"
-          :selectedID="state.selectedPrincipalID"
+          :selectedId="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
         <BBTableSearch
@@ -53,7 +53,7 @@ import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
-import { Environment, Issue, PrincipalID, ProjectID } from "../types";
+import { Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { computed, onMounted, watchEffect } from "@vue/runtime-core";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -64,9 +64,9 @@ interface LocalState {
   openList: Issue[];
   closedList: Issue[];
   searchText: string;
-  selectedPrincipalID: PrincipalID;
+  selectedPrincipalId: PrincipalId;
   selectedEnvironment?: Environment;
-  selectedProjectID?: ProjectID;
+  selectedProjectId?: ProjectId;
 }
 
 export default {
@@ -100,13 +100,13 @@ export default {
       openList: [],
       closedList: [],
       searchText: "",
-      selectedPrincipalID: currentUser.value.id,
+      selectedPrincipalId: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentByID"](
+        ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
           )
         : undefined,
-      selectedProjectID: router.currentRoute.value.query.project
+      selectedProjectId: router.currentRoute.value.query.project
         ? parseInt(router.currentRoute.value.query.project as string)
         : undefined,
     });
@@ -117,8 +117,8 @@ export default {
     });
 
     const project = computed(() => {
-      if (state.selectedProjectID) {
-        return store.getters["project/projectByID"](state.selectedProjectID);
+      if (state.selectedProjectId) {
+        return store.getters["project/projectById"](state.selectedProjectId);
       }
       return undefined;
     });
@@ -130,8 +130,8 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
-            userID: scopeByPrincipal ? state.selectedPrincipalID : undefined,
-            projectID: state.selectedProjectID,
+            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
+            projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
             state.openList = issueList;
@@ -142,8 +142,8 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
-            userID: scopeByPrincipal ? state.selectedPrincipalID : undefined,
-            projectID: state.selectedProjectID,
+            userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
+            projectId: state.selectedProjectId,
           })
           .then((issueList: Issue[]) => {
             state.closedList = issueList;
@@ -211,13 +211,13 @@ export default {
       }
     };
 
-    const selectPrincipal = (principalID: PrincipalID) => {
-      state.selectedPrincipalID = principalID;
+    const selectPrincipal = (principalId: PrincipalId) => {
+      state.selectedPrincipalId = principalId;
       router.replace({
         name: "workspace.issue",
         query: {
           ...router.currentRoute.value.query,
-          user: principalID,
+          user: principalId,
         },
       });
     };

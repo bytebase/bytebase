@@ -79,7 +79,7 @@ export default {
         rowStatus: archive ? "ARCHIVED" : "NORMAL",
       };
       store.dispatch("project/patchProject", {
-        projectID: props.project.id,
+        projectId: props.project.id,
         projectPatch,
       });
     };

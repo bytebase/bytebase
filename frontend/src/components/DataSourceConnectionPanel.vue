@@ -213,7 +213,7 @@ export default {
     });
 
     const database = computed(() => {
-      return store.getters["database/databaseByID"](
+      return store.getters["database/databaseById"](
         props.dataSource.database.id,
         props.dataSource.instance.id
       );

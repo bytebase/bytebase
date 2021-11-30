@@ -1,4 +1,4 @@
-import { EnvironmentID, MigrationHistoryID, Policy, PolicyType, View } from ".";
+import { EnvironmentId, MigrationHistoryId, Policy, PolicyType, View } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -8,14 +8,14 @@ import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
 import {
-  CommandID,
-  DatabaseID,
-  DataSourceID,
-  InstanceID,
-  IssueID,
-  PrincipalID,
-  ProjectID,
-  VCSID,
+  CommandId,
+  DatabaseId,
+  DataSourceId,
+  InstanceId,
+  IssueId,
+  PrincipalId,
+  ProjectId,
+  VCSId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -58,25 +58,25 @@ export interface PrincipalState {
 }
 
 export interface BookmarkState {
-  bookmarkListByUser: Map<PrincipalID, Bookmark[]>;
+  bookmarkListByUser: Map<PrincipalId, Bookmark[]>;
 }
 
 export interface ActivityState {
-  activityListByUser: Map<PrincipalID, Activity[]>;
-  activityListByIssue: Map<IssueID, Activity[]>;
+  activityListByUser: Map<PrincipalId, Activity[]>;
+  activityListByIssue: Map<IssueId, Activity[]>;
 }
 
 export interface InboxState {
-  inboxListByUser: Map<PrincipalID, Inbox[]>;
-  inboxSummaryByUser: Map<PrincipalID, InboxSummary>;
+  inboxListByUser: Map<PrincipalId, Inbox[]>;
+  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
 }
 
 export interface IssueState {
-  issueByID: Map<IssueID, Issue>;
+  issueById: Map<IssueId, Issue>;
 }
 
 export interface IssueSubscriberState {
-  subscriberListByIssue: Map<IssueID, IssueSubscriber[]>;
+  subscriberListByIssue: Map<IssueId, IssueSubscriber[]>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -89,15 +89,15 @@ export interface StageState {}
 export interface TaskState {}
 
 export interface PolicyState {
-  policyMapByEnvironmentID: Map<EnvironmentID, Map<PolicyType, Policy>>;
+  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
 }
 
 export interface ProjectState {
-  projectByID: Map<ProjectID, Project>;
+  projectById: Map<ProjectId, Project>;
 }
 
 export interface ProjectWebhookState {
-  projectWebhookListByProjectID: Map<ProjectID, ProjectWebhook[]>;
+  projectWebhookListByProjectId: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {
@@ -105,15 +105,15 @@ export interface EnvironmentState {
 }
 
 export interface InstanceState {
-  instanceByID: Map<InstanceID, Instance>;
-  instanceUserListByID: Map<InstanceID, InstanceUser[]>;
-  migrationHistoryByID: Map<MigrationHistoryID, MigrationHistory>;
+  instanceById: Map<InstanceId, Instance>;
+  instanceUserListById: Map<InstanceId, InstanceUser[]>;
+  migrationHistoryById: Map<MigrationHistoryId, MigrationHistory>;
   // The key is a concatenation of instance id and database name
-  migrationHistoryListByIDAndDatabaseName: Map<string, MigrationHistory[]>;
+  migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
 
 export interface DataSourceState {
-  dataSourceByID: Map<DataSourceID, DataSource>;
+  dataSourceById: Map<DataSourceId, DataSource>;
 }
 
 export interface DatabaseState {
@@ -121,37 +121,37 @@ export interface DatabaseState {
   // In those cases, we will iterate through this map and compute the list on the fly.
   // We save it by instance because database belongs to instance and saving this way
   // follows that hierarchy.
-  databaseListByInstanceID: Map<InstanceID, Database[]>;
-  // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceID
-  // where updating databaseListByInstanceID will cause reloading project related UI due to reactivity
-  databaseListByProjectID: Map<ProjectID, Database[]>;
+  databaseListByInstanceId: Map<InstanceId, Database[]>;
+  // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
+  // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
+  databaseListByProjectId: Map<ProjectId, Database[]>;
 }
 
 export interface TableState {
-  tableListByDatabaseID: Map<DatabaseID, Table[]>;
+  tableListByDatabaseId: Map<DatabaseId, Table[]>;
 }
 
 export interface ViewState {
-  viewListByDatabaseID: Map<DatabaseID, View[]>;
+  viewListByDatabaseId: Map<DatabaseId, View[]>;
 }
 
 export interface BackupState {
-  backupListByDatabaseID: Map<DatabaseID, Backup[]>;
+  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
 }
 
 export interface BackupSettingState {
-  backupSettingByDatabaseID: Map<DatabaseID, BackupSetting>;
+  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
-  vcsByID: Map<VCSID, VCS>;
+  vcsById: Map<VCSId, VCS>;
 }
 
 export interface RepositoryState {
-  // repositoryListByVCSID are used in workspace version control panel, while repositoryByProjectID are used in project version control panel.
+  // repositoryListByVCSId are used in workspace version control panel, while repositoryByProjectId are used in project version control panel.
   // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
-  repositoryListByVCSID: Map<VCSID, Repository[]>;
-  repositoryByProjectID: Map<ProjectID, Repository>;
+  repositoryListByVCSId: Map<VCSId, Repository[]>;
+  repositoryByProjectId: Map<ProjectId, Repository>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -162,5 +162,5 @@ export interface NotificationState {
 }
 
 export interface CommandState {
-  commandListByID: Map<CommandID, Command[]>;
+  commandListById: Map<CommandId, Command[]>;
 }

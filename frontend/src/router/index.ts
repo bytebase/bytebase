@@ -224,12 +224,12 @@ const routes: Array<RouteRecordRaw> = [
             // We make an exception to use a shorthand here because it's a commonly
             // accessed endpoint, and maybe in the future, we will further provide a
             // shortlink like u/<<uid>>
-            path: "u/:principalID",
+            path: "u/:principalId",
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalID = route.params.principalID as string;
-                return store.getters["principal/principalByID"](principalID)
+                const principalId = route.params.principalId as string;
+                return store.getters["principal/principalById"](principalId)
                   .name;
               },
             },
@@ -302,7 +302,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return store.getters["vcs/vcsByID"](idFromSlug(slug)).name;
+                    return store.getters["vcs/vcsById"](idFromSlug(slug)).name;
                   },
                 },
                 component: () =>
@@ -381,7 +381,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return store.getters["environment/environmentByID"](
+                return store.getters["environment/environmentById"](
                   idFromSlug(slug)
                 ).name;
               },
@@ -439,7 +439,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = store.getters["project/projectByID"](
+                const project = store.getters["project/projectById"](
                   idFromSlug(slug)
                 );
 
@@ -481,7 +481,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
-                    return store.getters["project/projectByID"](
+                    return store.getters["project/projectById"](
                       idFromSlug(slug)
                     ).name;
                   },
@@ -509,7 +509,7 @@ const routes: Array<RouteRecordRaw> = [
                       .projectWebhookSlug as string;
                     return (
                       "Webhook - " +
-                      store.getters["projectWebhook/projectWebhookByID"](
+                      store.getters["projectWebhook/projectWebhookById"](
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
@@ -624,7 +624,7 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return "New";
                     }
-                    return store.getters["database/databaseByID"](
+                    return store.getters["database/databaseById"](
                       idFromSlug(slug)
                     ).name;
                   },
@@ -656,7 +656,7 @@ const routes: Array<RouteRecordRaw> = [
                     }
                     return (
                       "Data source - " +
-                      store.getters["dataSource/dataSourceByID"](
+                      store.getters["dataSource/dataSourceById"](
                         idFromSlug(slug)
                       ).name
                     );
@@ -672,7 +672,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return store.getters["instance/migrationHistoryByID"](
+                    return store.getters["instance/migrationHistoryById"](
                       idFromSlug(slug)
                     ).version;
                   },
@@ -700,7 +700,7 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return "New";
                     }
-                    return store.getters["instance/instanceByID"](
+                    return store.getters["instance/instanceById"](
                       idFromSlug(slug)
                     ).name;
                   },
@@ -719,7 +719,7 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return "New";
                 }
-                return store.getters["issue/issueByID"](idFromSlug(slug)).name;
+                return store.getters["issue/issueById"](idFromSlug(slug)).name;
               },
               allowBookmark: true,
             },
@@ -878,7 +878,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = store.getters["router/routeSlug"](to);
-  const principalID = routerSlug.principalID;
+  const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
   const projectWebhookSlug = routerSlug.projectWebhookSlug;
@@ -890,9 +890,9 @@ router.beforeEach((to, from, next) => {
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
 
-  if (principalID) {
+  if (principalId) {
     store
-      .dispatch("principal/fetchPrincipalByID", principalID)
+      .dispatch("principal/fetchPrincipalById", principalId)
       .then(() => {
         next();
       })
@@ -908,7 +908,7 @@ router.beforeEach((to, from, next) => {
 
   if (environmentSlug) {
     if (
-      store.getters["environment/environmentByID"](idFromSlug(environmentSlug))
+      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
     ) {
       next();
       return;
@@ -921,15 +921,15 @@ router.beforeEach((to, from, next) => {
 
   if (projectSlug) {
     store
-      .dispatch("project/fetchProjectByID", idFromSlug(projectSlug))
+      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
       .then(() => {
         if (!projectWebhookSlug) {
           next();
         } else {
           store
-            .dispatch("projectWebhook/fetchProjectWebhookByID", {
-              projectID: idFromSlug(projectSlug),
-              projectWebhookID: idFromSlug(projectWebhookSlug),
+            .dispatch("projectWebhook/fetchProjectWebhookById", {
+              projectId: idFromSlug(projectSlug),
+              projectWebhookId: idFromSlug(projectWebhookSlug),
             })
             .then(() => {
               next();
@@ -957,15 +957,15 @@ router.beforeEach((to, from, next) => {
     if (issueSlug.toLowerCase() == "new") {
       // For preparing the database if user visits creating issue url directly.
       if (to.query.databaseList) {
-        for (const databaseID of (to.query.databaseList as string).split(",")) {
-          store.dispatch("database/fetchDatabaseByID", { databaseID });
+        for (const databaseId of (to.query.databaseList as string).split(",")) {
+          store.dispatch("database/fetchDatabaseById", { databaseId });
         }
       }
       next();
       return;
     }
     store
-      .dispatch("issue/fetchIssueByID", idFromSlug(issueSlug))
+      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
       .then(() => {
         next();
       })
@@ -985,16 +985,16 @@ router.beforeEach((to, from, next) => {
       return;
     }
     store
-      .dispatch("database/fetchDatabaseByID", {
-        databaseID: idFromSlug(databaseSlug),
+      .dispatch("database/fetchDatabaseById", {
+        databaseId: idFromSlug(databaseSlug),
       })
       .then((database: Database) => {
         if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();
         } else if (tableName) {
           store
-            .dispatch("table/fetchTableByDatabaseIDAndTableName", {
-              databaseID: database.id,
+            .dispatch("table/fetchTableByDatabaseIdAndTableName", {
+              databaseId: database.id,
               tableName,
             })
             .then(() => {
@@ -1009,9 +1009,9 @@ router.beforeEach((to, from, next) => {
             });
         } else if (dataSourceSlug) {
           store
-            .dispatch("dataSource/fetchDataSourceByID", {
-              dataSourceID: idFromSlug(dataSourceSlug),
-              databaseID: database.id,
+            .dispatch("dataSource/fetchDataSourceById", {
+              dataSourceId: idFromSlug(dataSourceSlug),
+              databaseId: database.id,
             })
             .then(() => {
               next();
@@ -1025,9 +1025,9 @@ router.beforeEach((to, from, next) => {
             });
         } else if (migrationHistorySlug) {
           store
-            .dispatch("instance/fetchMigrationHistoryByID", {
-              instanceID: database.instance.id,
-              migrationHistoryID: idFromSlug(migrationHistorySlug),
+            .dispatch("instance/fetchMigrationHistoryById", {
+              instanceId: database.instance.id,
+              migrationHistoryId: idFromSlug(migrationHistorySlug),
             })
             .then(() => {
               next();
@@ -1053,7 +1053,7 @@ router.beforeEach((to, from, next) => {
 
   if (instanceSlug) {
     store
-      .dispatch("instance/fetchInstanceByID", idFromSlug(instanceSlug))
+      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
       .then(() => {
         next();
       })
@@ -1069,7 +1069,7 @@ router.beforeEach((to, from, next) => {
 
   if (vcsSlug) {
     store
-      .dispatch("vcs/fetchVCSByID", idFromSlug(vcsSlug))
+      .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
       .then(() => {
         next();
       })

@@ -1,7 +1,7 @@
 import { Anomaly } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { EnvironmentID, InstanceID, MigrationHistoryID } from "./id";
+import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
@@ -42,7 +42,7 @@ export function defaultCollation(type: EngineType): string {
 }
 
 export type Instance = {
-  id: InstanceID;
+  id: InstanceId;
 
   // Related fields
   environment: Environment;
@@ -69,7 +69,7 @@ export type Instance = {
 
 export type InstanceCreate = {
   // Related fields
-  environmentID: EnvironmentID;
+  environmentId: EnvironmentId;
 
   // Domain specific fields
   name: string;
@@ -114,7 +114,7 @@ export type MigrationHistoryPayload = {
 };
 
 export type MigrationHistory = {
-  id: MigrationHistoryID;
+  id: MigrationHistoryId;
   creator: string;
   createdTs: number;
   updater: string;
@@ -130,6 +130,6 @@ export type MigrationHistory = {
   schema: string;
   schemaPrev: string;
   executionDuration: number;
-  issueID: number;
+  issueId: number;
   payload?: MigrationHistoryPayload;
 };
