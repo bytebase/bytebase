@@ -58,6 +58,7 @@ type Server struct {
 	VCSService             api.VCSService
 	RepositoryService      api.RepositoryService
 	AnomalyService         api.AnomalyService
+	LabelService           api.LabelService
 
 	e *echo.Echo
 
