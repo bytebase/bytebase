@@ -22,8 +22,8 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeys retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind) ([]api.LabelKey, error) {
+// FindLabelKeyList retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -46,7 +46,7 @@ func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	var ret []api.LabelKey
+	var ret []*api.LabelKey
 	for rows.Next() {
 		var labelKey api.LabelKey
 		if err := rows.Scan(
@@ -60,7 +60,7 @@ func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind
 			return nil, FormatError(err)
 		}
 
-		ret = append(ret, labelKey)
+		ret = append(ret, &labelKey)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
