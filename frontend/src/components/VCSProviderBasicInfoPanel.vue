@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts">
-import { computed, onUnmounted, PropType, reactive } from "@vue/runtime-core";
+import { computed, onUnmounted, PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
 import { isUrl } from "../utils";

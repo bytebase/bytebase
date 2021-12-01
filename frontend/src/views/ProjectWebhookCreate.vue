@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import { computed } from "@vue/runtime-core";
+import { computed } from "vue";
 import { useStore } from "vuex";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
