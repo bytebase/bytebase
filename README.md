@@ -3,6 +3,14 @@
 </p>
 
 <p align="center">
+  <a href="https://demo.bytebase.com" target="_blank">Live Demo</a> •
+  <a href="#installation">Install</a> •
+  <a href="#-docs">Help</a> •
+  <a href="#-development">Development</a> •
+  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a>
+</p>
+
+<p align="center">
 <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
 <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
