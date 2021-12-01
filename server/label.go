@@ -12,7 +12,7 @@ import (
 var ()
 
 func (s *Server) registerLabelRoutes(g *echo.Group) {
-	g.GET("/labelkey", func(c echo.Context) error {
+	g.GET("/label", func(c echo.Context) error {
 		ctx := context.Background()
 		find := &api.LabelKeyFind{}
 		list, err := s.LabelService.FindLabelKeyList(ctx, find)
