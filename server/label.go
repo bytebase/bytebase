@@ -15,7 +15,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 	g.GET("/labelkey", func(c echo.Context) error {
 		ctx := context.Background()
 		find := &api.LabelKeyFind{}
-		list, err := s.LabelService.FindLabelKeys(ctx, find)
+		list, err := s.LabelService.FindLabelKeyList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
 		}

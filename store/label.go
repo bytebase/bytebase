@@ -22,8 +22,8 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeys retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+// FindLabelKeyList retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
