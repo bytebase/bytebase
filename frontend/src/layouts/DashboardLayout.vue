@@ -54,7 +54,7 @@ import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import { ServerInfo } from "../types";
-import { computed } from "@vue/runtime-core";
+import { computed } from "vue";
 
 export default {
   name: "DashboardLayout",

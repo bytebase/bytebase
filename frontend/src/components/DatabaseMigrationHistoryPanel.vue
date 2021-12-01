@@ -57,7 +57,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watchEffect } from "@vue/runtime-core";
+import { computed, PropType, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {

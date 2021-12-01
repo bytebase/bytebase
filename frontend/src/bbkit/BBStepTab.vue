@@ -126,7 +126,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "@vue/runtime-core";
+import { PropType, reactive } from "vue";
 import { BBStepTabItem } from "./types";
 
 interface LocalState {

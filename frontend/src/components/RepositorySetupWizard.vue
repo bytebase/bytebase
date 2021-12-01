@@ -31,8 +31,7 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
-import { computed, PropType } from "@vue/runtime-core";
+import { reactive, computed, PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
