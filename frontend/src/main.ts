@@ -3,7 +3,7 @@ import isEmpty from "lodash-es/isEmpty";
 import moment from "moment";
 import { createApp } from "vue";
 import App from "./App.vue";
-import i18n from './plugins/i18n'
+import i18n from "./plugins/i18n";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -134,10 +134,10 @@ Promise.all([
     // Need to use a directive on the element.
     // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
     // to re-render the page and remove the event listener required for
-    .directive('highlight', highlight)
-    .directive('data-source-type', dataSourceType)
+    .directive("highlight", highlight)
+    .directive("data-source-type", dataSourceType)
     .use(store)
     .use(router)
     .use(i18n)
-    .mount('#app')
+    .mount("#app");
 });

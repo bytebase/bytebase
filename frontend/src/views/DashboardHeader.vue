@@ -15,28 +15,30 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md" >
-            {{ $t('common.projects') }}
+          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
+            {{ $t("common.projects") }}
           </router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
-            >{{ $t('common.databases') }}</router-link
-          >
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
+            $t("common.databases")
+          }}</router-link>
 
           <router-link
             v-if="showDBAItem"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
-            >{{ $t('common.instances') }}</router-link
+            >{{ $t("common.instances") }}</router-link
           >
 
-          <router-link to="/environment" class="bar-link px-2 py-2 rounded-md"
-            >{{ $t('common.environments') }}</router-link
+          <router-link
+            to="/environment"
+            class="bar-link px-2 py-2 rounded-md"
+            >{{ $t("common.environments") }}</router-link
           >
           <router-link
             to="/setting/general"
             class="bar-link px-2 py-2 rounded-md"
-            >{{ $t('common.settings') }}</router-link
+            >{{ $t("common.settings") }}</router-link
           >
         </div>
       </div>
@@ -202,7 +204,7 @@
     <router-link
       to="/setting/general"
       class="bar-link rounded-md block px-3 py-2"
-      >{{ $t('common.settings') }}</router-link
+      >{{ $t("common.settings") }}</router-link
     >
   </div>
 </template>
@@ -210,8 +212,8 @@
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { useI18n } from 'vue-i18n';
-import { useLocalStorage } from '@vueuse/core'
+import { useI18n } from "vue-i18n";
+import { useLocalStorage } from "@vueuse/core";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
@@ -292,19 +294,20 @@ export default {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
 
-    const { availableLocales, locale } = useI18n()
-    const storage = useLocalStorage('bytebase_options', {}) as any
+    const { availableLocales, locale } = useI18n();
+    const storage = useLocalStorage("bytebase_options", {}) as any;
 
     const toggleLocales = () => {
       // TODO change to some real logic
-      const locales = availableLocales
-      locale.value = locales[(locales.indexOf(locale.value) + 1) % locales.length]
+      const locales = availableLocales;
+      locale.value =
+        locales[(locales.indexOf(locale.value) + 1) % locales.length];
       storage.value = {
         appearance: {
-          language: locale.value
-        }
-      }
-    }
+          language: locale.value,
+        },
+      };
+    };
 
     return {
       state,
@@ -319,7 +322,7 @@ export default {
       switchToFree,
       switchToTeam,
       switchToEnterprise,
-      toggleLocales
+      toggleLocales,
     };
   },
 };
