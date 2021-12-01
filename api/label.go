@@ -27,5 +27,5 @@ type LabelKeyFind struct {
 // LabelService is the service for labels.
 type LabelService interface {
 	// FindLabelKeys finds all available keys for labels.
-	FindLabelKeys(ctx context.Context, find *LabelKeyFind) ([]LabelKey, error)
+	FindLabelKeys(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
 }
