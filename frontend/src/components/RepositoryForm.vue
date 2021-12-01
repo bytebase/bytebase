@@ -169,8 +169,7 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
-import { PropType } from "@vue/runtime-core";
+import { reactive, PropType } from "vue";
 import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "../types";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";

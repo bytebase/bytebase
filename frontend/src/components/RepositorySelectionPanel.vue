@@ -61,9 +61,8 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
-import { computed, PropType, watchEffect } from "@vue/runtime-core";
+import { reactive, computed, PropType, watchEffect } from "vue";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 
 interface LocalState {

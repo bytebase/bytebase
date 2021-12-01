@@ -208,8 +208,7 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
-import { computed, PropType, watch } from "@vue/runtime-core";
+import { reactive, computed, PropType, watch } from "vue";
 import {
   ActivityType,
   Project,
