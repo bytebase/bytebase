@@ -8,12 +8,12 @@ import {
   ActivateInfo,
   ResourceObject,
   unknown,
-  PrincipalID,
+  PrincipalId,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 
 function convert(user: ResourceObject, rootGetters: any): Principal {
-  return rootGetters["principal/principalByID"](user.id);
+  return rootGetters["principal/principalById"](user.id);
 }
 
 const state: () => AuthState = () => ({
@@ -39,7 +39,7 @@ const actions = {
     ).data.data;
 
     // Refresh the corresponding principal
-    await dispatch("principal/fetchPrincipalByID", loggedInUser.id, {
+    await dispatch("principal/fetchPrincipalById", loggedInUser.id, {
       root: true,
     });
 
@@ -64,7 +64,7 @@ const actions = {
     ).data.data;
 
     // Refresh the corresponding principal
-    await dispatch("principal/fetchPrincipalByID", newUser.id, { root: true });
+    await dispatch("principal/fetchPrincipalById", newUser.id, { root: true });
 
     // The conversion relies on the above refresh.
     const convertedUser = convert(newUser, rootGetters);
@@ -83,7 +83,7 @@ const actions = {
     ).data.data;
 
     // Refresh the corresponding principal
-    dispatch("principal/fetchPrincipalByID", activatedUser.id, { root: true });
+    dispatch("principal/fetchPrincipalById", activatedUser.id, { root: true });
 
     // The conversion relies on the above task to get the lastest data
     const convertedUser = convert(activatedUser, rootGetters);
@@ -92,11 +92,11 @@ const actions = {
   },
 
   async restoreUser({ commit, dispatch }: any) {
-    const userID = getIntCookie("user");
-    if (userID) {
+    const userId = getIntCookie("user");
+    if (userId) {
       const loggedInUser = await dispatch(
-        "principal/fetchPrincipalByID",
-        userID,
+        "principal/fetchPrincipalById",
+        userId,
         {
           root: true,
         }
@@ -110,10 +110,10 @@ const actions = {
 
   async refreshUserIfNeeded(
     { commit, state, rootGetters }: any,
-    principalID: PrincipalID
+    principalId: PrincipalId
   ) {
-    if (principalID == state.currentUser.id) {
-      const refreshedUser = rootGetters["principal/principalByID"](
+    if (principalId == state.currentUser.id) {
+      const refreshedUser = rootGetters["principal/principalById"](
         state.currentUser.id
       );
       if (!isEqual(refreshedUser, state.currentUser)) {

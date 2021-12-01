@@ -1,14 +1,14 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="activityList"
-    :showHeader="true"
-    :rowClickable="false"
-    :leftBordered="true"
-    :rightBordered="true"
+    :column-list="COLUMN_LIST"
+    :data-source="activityList"
+    :show-header="true"
+    :row-clickable="false"
+    :left-bordered="true"
+    :right-bordered="true"
   >
-    <template v-slot:body="{ rowData: activity }">
-      <BBTableCell :leftPadding="4" class="w-8">
+    <template #body="{ rowData: activity }">
+      <BBTableCell :left-padding="4" class="w-8">
         <div class="flex flew-row space-x-1">
           <span
             v-if="activity.level != `INFO`"
@@ -179,7 +179,7 @@ export default {
       type: Object as PropType<Activity[]>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const activityTypeLink = (activity: Activity): Link | undefined => {
       switch (activity.type) {
         case "bb.project.repository.push": {
@@ -196,7 +196,7 @@ export default {
             activity.payload as ActivityProjectDatabaseTransferPayload;
           return {
             title: payload.databaseName,
-            path: `/db/${payload.databaseID}`,
+            path: `/db/${payload.databaseId}`,
             external: false,
           };
         }
@@ -209,10 +209,10 @@ export default {
         case "bb.project.repository.push": {
           const payload =
             activity.payload as ActivityProjectRepositoryPushPayload;
-          if (payload.issueID && payload.issueName) {
+          if (payload.issueId && payload.issueName) {
             return {
-              title: `issue/${payload.issueID}`,
-              path: `/issue/${issueSlug(payload.issueName!, payload.issueID!)}`,
+              title: `issue/${payload.issueId}`,
+              path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
               external: false,
             };
           }

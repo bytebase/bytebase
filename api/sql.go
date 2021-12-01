@@ -13,11 +13,11 @@ type ConnectionInfo struct {
 	Username         string  `jsonapi:"attr,username"`
 	Password         string  `jsonapi:"attr,password"`
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
-	InstanceID       *int    `jsonapi:"attr,instanceID"`
+	InstanceID       *int    `jsonapi:"attr,instanceId"`
 }
 
 type SqlSyncSchema struct {
-	InstanceID int `jsonapi:"attr,instanceID"`
+	InstanceID int `jsonapi:"attr,instanceId"`
 }
 
 type SqlResultSet struct {

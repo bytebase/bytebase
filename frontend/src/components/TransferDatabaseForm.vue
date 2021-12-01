@@ -1,6 +1,6 @@
 <template>
   <div class="px-4 space-y-6 w-208">
-    <div v-if="projectID != DEFAULT_PROJECT_ID" class="textlabel">
+    <div v-if="projectId != DEFAULT_PROJECT_ID" class="textlabel">
       <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
         Bytebase periodically syncs the instance schema. Newly synced databases
         are first placed in this default project.
@@ -9,22 +9,22 @@
         <div class="flex flex-row">
           <div class="radio">
             <input
+              v-model="state.transferSource"
               tabindex="-1"
               type="radio"
               class="btn"
               value="DEFAULT"
-              v-model="state.transferSource"
             />
             <label class="label"> From Default project </label>
           </div>
         </div>
         <div class="radio">
           <input
+            v-model="state.transferSource"
             tabindex="-1"
             type="radio"
             class="btn"
             value="OTHER"
-            v-model="state.transferSource"
           />
           <label class="label"> From other projects </label>
         </div>
@@ -34,8 +34,8 @@
     <DatabaseTable
       :mode="'ALL_SHORT'"
       :bordered="true"
-      :customClick="true"
-      :databaseList="databaseList"
+      :custom-click="true"
+      :database-list="databaseList"
       @select-database="selectDatabase"
     />
 
@@ -53,7 +53,7 @@
     <BBAlert
       v-if="state.showModal"
       :style="'INFO'"
-      :okText="'Transfer'"
+      :ok-text="'Transfer'"
       :title="`Are you sure to transfer '${selectedDatabaseName}' into our project?`"
       @ok="
         () => {
@@ -72,7 +72,7 @@ import { computed, PropType, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { cloneDeep } from "lodash";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Database, ProjectID, DEFAULT_PROJECT_ID } from "../types";
+import { Database, ProjectId, DEFAULT_PROJECT_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 
 type TransferSource = "DEFAULT" | "OTHER";
@@ -85,22 +85,22 @@ interface LocalState {
 
 export default {
   name: "TransferDatabaseForm",
-  emits: ["submit", "dismiss"],
-  props: {
-    projectID: {
-      required: true,
-      type: Number as PropType<ProjectID>,
-    },
-  },
   components: {
     DatabaseTable,
   },
+  props: {
+    projectId: {
+      required: true,
+      type: Number as PropType<ProjectId>,
+    },
+  },
+  emits: ["submit", "dismiss"],
   setup(props, { emit }) {
     const store = useStore();
 
     const state = reactive<LocalState>({
       transferSource:
-        props.projectID == DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+        props.projectId == DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
       showModal: false,
     });
 
@@ -108,7 +108,7 @@ export default {
 
     const prepareDatabaseListForDefaultProject = () => {
       store.dispatch(
-        "database/fetchDatabaseListByProjectID",
+        "database/fetchDatabaseListByProjectId",
         DEFAULT_PROJECT_ID
       );
     };
@@ -123,14 +123,14 @@ export default {
       var list;
       if (state.transferSource == "DEFAULT") {
         list = cloneDeep(
-          store.getters["database/databaseListByProjectID"](DEFAULT_PROJECT_ID)
+          store.getters["database/databaseListByProjectId"](DEFAULT_PROJECT_ID)
         );
       } else {
         list = cloneDeep(
-          store.getters["database/databaseListByPrincipalID"](
+          store.getters["database/databaseListByPrincipalId"](
             currentUser.value.id
           )
-        ).filter((item: Database) => item.project.id != props.projectID);
+        ).filter((item: Database) => item.project.id != props.projectId);
       }
 
       return sortDatabaseList(list, environmentList.value);
@@ -148,8 +148,8 @@ export default {
     const transferDatabase = () => {
       store
         .dispatch("database/transferProject", {
-          databaseID: state.selectedDatabase!.id,
-          projectID: props.projectID,
+          databaseId: state.selectedDatabase!.id,
+          projectId: props.projectId,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {

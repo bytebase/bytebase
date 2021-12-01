@@ -4,7 +4,7 @@
   </div>
   <div class="mt-2 textinfolabel">
     Database migration scripts are stored in
-    <a class="normal-link" :href="repository.webURL" target="_blank">{{
+    <a class="normal-link" :href="repository.webUrl" target="_blank">{{
       repository.fullPath
     }}</a
     >. To make schema changes, a developer would create a migration script
@@ -35,21 +35,21 @@
   </div>
   <RepositoryForm
     class="mt-4"
-    :allowEdit="allowEdit"
-    :vcsType="repository.vcs.type"
-    :vcsName="repository.vcs.name"
-    :repositoryInfo="repositoryInfo"
-    :repositoryConfig="state.repositoryConfig"
+    :allow-edit="allowEdit"
+    :vcs-type="repository.vcs.type"
+    :vcs-name="repository.vcs.name"
+    :repository-info="repositoryInfo"
+    :repository-config="state.repositoryConfig"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
       :style="'RESTORE'"
-      :buttonText="'Restore to UI workflow'"
-      :requireConfirm="true"
-      :okText="'Restore'"
-      :confirmTitle="'Restore to UI workflow?'"
-      :confirmDescription="'When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.'"
+      :button-text="'Restore to UI workflow'"
+      :require-confirm="true"
+      :ok-text="'Restore'"
+      :confirm-title="'Restore to UI workflow?'"
+      :confirm-description="'When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.'"
       @confirm="restoreToUIWorkflowType"
     />
     <div>
@@ -84,7 +84,6 @@ interface LocalState {
 
 export default {
   name: "RepositoryPanel",
-  emits: ["change-repository"],
   components: { RepositoryForm },
   props: {
     project: {
@@ -100,7 +99,8 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  emits: ["change-repository"],
+  setup(props) {
     const store = useStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
@@ -113,7 +113,7 @@ export default {
 
     watch(
       () => props.repository,
-      (cur, _) => {
+      (cur) => {
         state.repositoryConfig = {
           baseDirectory: cur.baseDirectory,
           branchFilter: cur.branchFilter,
@@ -125,10 +125,10 @@ export default {
 
     const repositoryInfo = computed((): ExternalRepositoryInfo => {
       return {
-        externalID: props.repository.externalID,
+        externalId: props.repository.externalId,
         name: props.repository.name,
         fullPath: props.repository.fullPath,
-        webURL: props.repository.webURL,
+        webUrl: props.repository.webUrl,
       };
     });
 
@@ -148,7 +148,7 @@ export default {
 
     const restoreToUIWorkflowType = () => {
       store
-        .dispatch("repository/deleteRepositoryByProjectID", props.project.id)
+        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
         .then(() => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -185,8 +185,8 @@ export default {
           state.repositoryConfig.schemaPathTemplate;
       }
       store
-        .dispatch("repository/updateRepositoryByProjectID", {
-          projectID: props.project.id,
+        .dispatch("repository/updateRepositoryByProjectId", {
+          projectId: props.project.id,
           repositoryPatch,
         })
         .then(() => {

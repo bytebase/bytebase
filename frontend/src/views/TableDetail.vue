@@ -204,14 +204,14 @@
       <div class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Columns</div>
         <ColumnTable
-          :columnList="table.columnList"
+          :column-list="table.columnList"
           :engine="database.instance.engine"
         />
       </div>
 
       <div v-if="database.instance.engine != 'SNOWFLAKE'" class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">Indexes</div>
-        <IndexTable :indexList="table.indexList" />
+        <IndexTable :index-list="table.indexList" />
       </div>
     </main>
   </div>
@@ -228,6 +228,7 @@ import { isEmpty } from "lodash";
 
 export default {
   name: "TableDetail",
+  components: { ColumnTable, IndexTable, InstanceEngineIcon },
   props: {
     databaseSlug: {
       required: true,
@@ -238,12 +239,11 @@ export default {
       type: String,
     },
   },
-  components: { ColumnTable, IndexTable, InstanceEngineIcon },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const table = computed(() => {
-      return store.getters["table/tableListByDatabaseIDAndTableName"](
+      return store.getters["table/tableListByDatabaseIdAndTableName"](
         idFromSlug(props.databaseSlug),
         props.tableName
       );
@@ -254,10 +254,10 @@ export default {
     });
 
     const databaseConsoleLink = computed(() => {
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleURL)) {
-        return consoleLink(consoleURL, database.value.name);
+      if (!isEmpty(consoleUrl)) {
+        return consoleLink(consoleUrl, database.value.name);
       }
       return "";
     });

@@ -76,7 +76,7 @@ DELETE FROM
 
 DELETE FROM
     policy;
-    
+
 DELETE FROM
     environment;
 

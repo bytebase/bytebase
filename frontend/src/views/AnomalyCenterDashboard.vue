@@ -91,8 +91,8 @@
 
     <div class="mt-4 py-2 flex justify-between items-center">
       <BBTabFilter
-        :tabItemList="tabItemList"
-        :selectedIndex="state.selectedIndex"
+        :tab-item-list="tabItemList"
+        :selected-index="state.selectedIndex"
         @select-index="
           (index) => {
             state.selectedIndex = index;
@@ -100,8 +100,8 @@
         "
       />
       <BBTableSearch
-        class="w-72"
         ref="searchField"
+        class="w-72"
         :placeholder="
           state.selectedIndex == DATABASE_TAB
             ? 'Search database or environment'
@@ -113,8 +113,8 @@
     <template v-if="state.selectedIndex == DATABASE_TAB">
       <AnomalyTable
         v-if="databaseAnomalySectionList.length > 0"
-        :anomalySectionList="databaseAnomalySectionList"
-        :compactSection="false"
+        :anomaly-section-list="databaseAnomalySectionList"
+        :compact-section="false"
       />
       <div v-else class="text-center text-control-light">
         Hooray, no database anomaly detected!
@@ -123,8 +123,8 @@
     <template v-else>
       <AnomalyTable
         v-if="instanceAnomalySectionList.length > 0"
-        :anomalySectionList="instanceAnomalySectionList"
-        :compactSection="false"
+        :anomaly-section-list="instanceAnomalySectionList"
+        :compact-section="false"
       />
       <div v-else class="text-center text-control-light">
         Hooray, no instance anomaly detected!
@@ -137,7 +137,7 @@
 import { computed, reactive, watchEffect } from "vue-demi";
 import { useStore } from "vuex";
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, Database, EnvironmentID } from "../types";
+import { Anomaly, Database, EnvironmentId } from "../types";
 import {
   databaseSlug,
   instanceSlug,
@@ -166,7 +166,7 @@ interface LocalState {
 export default {
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -190,7 +190,7 @@ export default {
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalID"](
+      return store.getters["database/databaseListByPrincipalId"](
         currentUser.value.id
       );
     });
@@ -276,7 +276,7 @@ export default {
     );
 
     const databaseAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentID, Summary> = new Map();
+      const envMap: Map<EnvironmentId, Summary> = new Map();
       for (const database of databaseList.value) {
         let criticalCount = 0;
         let highCount = 0;
@@ -321,7 +321,7 @@ export default {
     });
 
     const instanceAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentID, Summary> = new Map();
+      const envMap: Map<EnvironmentId, Summary> = new Map();
       for (const instance of instanceList.value) {
         let criticalCount = 0;
         let highCount = 0;

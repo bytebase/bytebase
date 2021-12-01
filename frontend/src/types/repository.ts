@@ -1,11 +1,11 @@
 import isEmpty from "lodash-es/isEmpty";
-import { ProjectID, RepositoryID, VCSID } from "./id";
+import { ProjectId, RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
-  id: RepositoryID;
+  id: RepositoryId;
 
   // Standard fields
   creator: Principal;
@@ -23,29 +23,29 @@ export type Repository = {
   // e.g. bytebase/sample-project
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
-  webURL: string;
+  webUrl: string;
   baseDirectory: string;
   branchFilter: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
   // e.g. In GitLab, this is the corresponding project id.
-  externalID: string;
+  externalId: string;
 };
 
 export type RepositoryCreate = {
   // Related fields
-  vcsID: VCSID;
-  projectID: ProjectID;
+  vcsId: VCSId;
+  projectId: ProjectId;
 
   // Domain specific fields
   name: string;
   fullPath: string;
-  webURL: string;
+  webUrl: string;
   branchFilter: string;
   baseDirectory: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
-  externalID: string;
+  externalId: string;
   accessToken: string;
   expiresTs: number;
   refreshToken: string;
@@ -67,16 +67,16 @@ export type RepositoryConfig = {
 
 export type ExternalRepositoryInfo = {
   // e.g. In GitLab, this is the corresponding project id. e.g. 123
-  externalID: string;
+  externalId: string;
   // e.g. sample-project
   name: string;
   // e.g. bytebase/sample-project
   fullPath: string;
   // e.g. http://gitlab.bytebase.com/bytebase/sample-project
-  webURL: string;
+  webUrl: string;
 };
 
-export function baseDirectoryWebURL(repository: Repository): string {
+export function baseDirectoryWebUrl(repository: Repository): string {
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
     // If branchFilter is empty (default branch) or branch filter contains wildcard,
     // then we can't locate to the exact branch name, thus we will just return the repository web url
@@ -84,14 +84,14 @@ export function baseDirectoryWebURL(repository: Repository): string {
       isEmpty(repository.branchFilter) ||
       repository.branchFilter.includes("*")
     ) {
-      return repository.webURL;
+      return repository.webUrl;
     }
-    let url = `${repository.webURL}/-/tree/${repository.branchFilter}`;
+    let url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
     return url;
   }
 
-  return repository.webURL;
+  return repository.webUrl;
 }

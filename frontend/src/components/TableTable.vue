@@ -1,15 +1,15 @@
 <template>
   <BBTable
-    :columnList="COLUMN_LIST"
-    :dataSource="tableList"
-    :showHeader="true"
-    :leftBordered="true"
-    :rightBordered="true"
-    :rowClickable="true"
+    :column-list="COLUMN_LIST"
+    :data-source="tableList"
+    :show-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :row-clickable="true"
     @click-row="clickTable"
   >
-    <template v-slot:body="{ rowData: table }">
-      <BBTableCell :leftPadding="4" class="w-16">
+    <template #body="{ rowData: table }">
+      <BBTableCell :left-padding="4" class="w-16">
         {{ table.name }}
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -68,7 +68,7 @@ export default {
       type: Object as PropType<Table[]>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const clickTable = (section: number, row: number) => {

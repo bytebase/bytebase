@@ -51,10 +51,10 @@ export function sortDatabaseList(
   environmentList: Environment[]
 ): Database[] {
   return list.sort((a: Database, b: Database) => {
-    var aEnvIndex = -1;
-    var bEnvIndex = -1;
+    let aEnvIndex = -1;
+    let bEnvIndex = -1;
 
-    for (var i = 0; i < environmentList.length; i++) {
+    for (let i = 0; i < environmentList.length; i++) {
       if (environmentList[i].id == a.instance.environment.id) {
         aEnvIndex = i;
       }
@@ -70,8 +70,8 @@ export function sortDatabaseList(
   });
 }
 
-// templateURL corresponds to the "bb.console.url" setting.
+// templateUrl corresponds to the "bb.console.url" setting.
 // This method replaces {{DB_NAME}} with the actual database name.
-export function consoleLink(templateURL: string, databaseName: string): string {
-  return templateURL.replace("{{DB_NAME}}", databaseName);
+export function consoleLink(templateUrl: string, databaseName: string): string {
+  return templateUrl.replace("{{DB_NAME}}", databaseName);
 }

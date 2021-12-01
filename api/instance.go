@@ -43,7 +43,7 @@ type InstanceCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID int `jsonapi:"attr,environmentID"`
+	EnvironmentID int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
@@ -139,7 +139,7 @@ type MigrationHistory struct {
 	SchemaPrev        string             `jsonapi:"attr,schemaPrev"`
 	ExecutionDuration int                `jsonapi:"attr,executionDuration"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
-	IssueID string `jsonapi:"attr,issueID"`
+	IssueID string `jsonapi:"attr,issueId"`
 	Payload string `jsonapi:"attr,payload"`
 }
 

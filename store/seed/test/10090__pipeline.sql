@@ -1,4 +1,4 @@
--- A single stage, single task "hello world" 
+-- A single stage, single task "hello world"
 INSERT INTO
     pipeline (
         id,

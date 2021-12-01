@@ -1,8 +1,9 @@
 <template>
   <div class="flex flex-col">
     <div class="px-5 py-2 flex justify-between items-center">
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedID="state.selectedEnvironment?.id"
+        :selectedId="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <BBTableSearch
@@ -12,11 +13,11 @@
       />
     </div>
     <IssueTable
-      :leftBordered="false"
-      :rightBordered="false"
-      :topBordered="true"
-      :bottomBordered="true"
-      :issueSectionList="[
+      :left-bordered="false"
+      :right-bordered="false"
+      :top-bordered="true"
+      :bottom-bordered="true"
+      :issue-section-list="[
         {
           title: 'Assigned',
           list: filteredList(state.assignedList).sort(openIssueSorter),
@@ -73,8 +74,7 @@ export default {
     EnvironmentTabFilter,
     IssueTable,
   },
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();
@@ -87,7 +87,7 @@ export default {
       closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentByID"](
+        ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
           )
         : undefined,
@@ -106,7 +106,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["OPEN"],
-            userID: currentUser.value.id,
+            userId: currentUser.value.id,
           })
           .then((issueList: Issue[]) => {
             state.assignedList = [];
@@ -118,7 +118,7 @@ export default {
               } else if (issue.creator.id === currentUser.value.id) {
                 state.createdList.push(issue);
               } else if (
-                issue.subscriberIDList.includes(currentUser.value.id)
+                issue.subscriberIdList.includes(currentUser.value.id)
               ) {
                 state.subscribeList.push(issue);
               }
@@ -128,7 +128,7 @@ export default {
         store
           .dispatch("issue/fetchIssueList", {
             issueStatusList: ["DONE", "CANCELED"],
-            userID: currentUser.value.id,
+            userId: currentUser.value.id,
             limit: MAX_CLOSED_ISSUE_COUNT,
           })
           .then((issueList: Issue[]) => {
@@ -137,7 +137,7 @@ export default {
               if (
                 issue.creator.id === currentUser.value.id ||
                 issue.assignee?.id === currentUser.value.id ||
-                issue.subscriberIDList.includes(currentUser.value.id)
+                issue.subscriberIdList.includes(currentUser.value.id)
               ) {
                 state.closedList.push(issue);
               }

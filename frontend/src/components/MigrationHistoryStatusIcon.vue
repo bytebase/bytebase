@@ -47,8 +47,7 @@ export default {
       type: String as PropType<MigrationStatus>,
     },
   },
-  components: {},
-  setup(props, ctx) {
+  setup(props) {
     const iconClass = () => {
       let iconClass = "w-5 h-5";
       switch (props.status) {

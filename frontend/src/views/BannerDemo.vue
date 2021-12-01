@@ -97,8 +97,7 @@ import { useStore } from "vuex";
 
 export default {
   name: "BannerDemo",
-  props: {},
-  setup(props, ctx) {
+  setup() {
     const store = useStore();
     const show = ref(true);
 

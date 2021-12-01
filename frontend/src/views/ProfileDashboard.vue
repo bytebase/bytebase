@@ -96,13 +96,13 @@
           <div class="block mt-6 min-w-0 flex-1">
             <input
               v-if="state.editing"
+              id="name"
+              ref="editNameTextField"
               required
               autocomplete="off"
-              id="name"
               name="name"
               type="text"
               class="textfield"
-              ref="editNameTextField"
               :value="state.editingPrincipal.name"
               @input="updatePrincipal('name', $event.target.value)"
             />
@@ -206,13 +206,13 @@ interface LocalState {
 
 export default {
   name: "ProfileDashboard",
+  components: { PrincipalAvatar },
   props: {
-    principalID: {
+    principalId: {
       type: String,
     },
   },
-  components: { PrincipalAvatar },
-  setup(props, ctx) {
+  setup(props) {
     const editNameTextField = ref();
 
     const store = useStore();
@@ -250,9 +250,9 @@ export default {
     );
 
     const principal = computed(() => {
-      if (props.principalID) {
-        return store.getters["principal/principalByID"](
-          parseInt(props.principalID)
+      if (props.principalId) {
+        return store.getters["principal/principalById"](
+          parseInt(props.principalId)
         );
       }
       return currentUser.value;
@@ -304,7 +304,7 @@ export default {
     const saveEdit = () => {
       store
         .dispatch("principal/patchPrincipal", {
-          principalID: principal.value.id,
+          principalId: principal.value.id,
           principalPatch: state.editingPrincipal,
         })
         .then(() => {

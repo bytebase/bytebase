@@ -1,7 +1,11 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+      <img
+        class="h-12 w-auto"
+        src="../../assets/logo-full.svg"
+        alt="Bytebase"
+      />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         Reset your password
       </h2>
@@ -9,7 +13,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form @submit.prevent="tryReset" class="space-y-6">
+        <form class="space-y-6" @submit.prevent="tryReset">
           <div>
             <label
               for="email"
@@ -21,11 +25,24 @@
             <div class="mt-4 rounded-md shadow-sm">
               <input
                 id="email"
-                type="email"
                 v-model="state.email"
+                type="email"
                 required
                 placeholder="jim@example.com"
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
+                class="
+                  appearance-none
+                  block
+                  w-full
+                  px-3
+                  py-2
+                  border border-control-border
+                  rounded-md
+                  placeholder-control-placeholder
+                  focus:outline-none
+                  focus:shadow-outline-blue
+                  focus:border-control-border
+                  sm:text-sm sm:leading-5
+                "
               />
             </div>
           </div>
@@ -68,7 +85,7 @@ interface LocalState {
 
 export default {
   name: "PasswordReset",
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({
       email: "",
     });

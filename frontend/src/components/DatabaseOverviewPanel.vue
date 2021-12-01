@@ -8,7 +8,7 @@
           minutes</span
         >
       </div>
-      <AnomalyTable :anomalySectionList="anomalySectionList" />
+      <AnomalyTable :anomaly-section-list="anomalySectionList" />
     </div>
     <div
       v-else
@@ -93,10 +93,10 @@
 
     <div class="pt-6">
       <div class="text-lg leading-6 font-medium text-main mb-4">Tables</div>
-      <TableTable :tableList="tableList" />
+      <TableTable :table-list="tableList" />
 
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">Views</div>
-      <ViewTable :viewList="viewList" />
+      <ViewTable :view-list="viewList" />
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -120,7 +120,7 @@
             <span v-data-source-type>{{ item.type }}</span>
           </div>
           <div class="space-y-4">
-            <div v-for="(ds, index) of item.list" :key="index">
+            <div v-for="(ds, dsIndex) of item.list" :key="dsIndex">
               <div v-if="hasDataSourceFeature" class="relative mb-2">
                 <div
                   class="absolute inset-0 flex items-center"
@@ -192,7 +192,7 @@
               </div>
               <DataSourceConnectionPanel
                 :editing="isEditingDataSource(ds)"
-                :dataSource="
+                :data-source="
                   isEditingDataSource(ds) ? state.editingDataSource : ds
                 "
               />
@@ -224,12 +224,6 @@ interface LocalState {
 
 export default {
   name: "DatabaseOverviewPanel",
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
-  },
   components: {
     AnomalyTable,
     DataSourceConnectionPanel,
@@ -237,7 +231,13 @@ export default {
     TableTable,
     ViewTable,
   },
-  setup(props, ctx) {
+  props: {
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
+  },
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -246,13 +246,13 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareTableList = () => {
-      store.dispatch("table/fetchTableListByDatabaseID", props.database.id);
+      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
     };
 
     watchEffect(prepareTableList);
 
     const prepareViewList = () => {
-      store.dispatch("view/fetchViewListByDatabaseID", props.database.id);
+      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
     };
 
     watchEffect(prepareViewList);
@@ -275,11 +275,11 @@ export default {
     );
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseID"](props.database.id);
+      return store.getters["table/tableListByDatabaseId"](props.database.id);
     });
 
     const viewList = computed(() => {
-      return store.getters["view/viewListByDatabaseID"](props.database.id);
+      return store.getters["view/viewListByDatabaseId"](props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -354,8 +354,8 @@ export default {
       };
       store
         .dispatch("dataSource/patchDataSource", {
-          databaseID: state.editingDataSource!.database.id,
-          dataSourceID: state.editingDataSource!.id,
+          databaseId: state.editingDataSource!.database.id,
+          dataSourceId: state.editingDataSource!.id,
           dataSource: dataSourcePatch,
         })
         .then(() => {

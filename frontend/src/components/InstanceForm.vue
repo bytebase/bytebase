@@ -1,17 +1,3 @@
-<style scoped>
-/*  Removed the ticker in the number field  */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-</style>
-
 <template>
   <form class="space-y-6 divide-y divide-block-border">
     <div class="space-y-6 divide-y divide-block-border px-1">
@@ -96,8 +82,8 @@ input[type="number"] {
             </template>
           </label>
           <input
-            required
             id="name"
+            required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
@@ -112,22 +98,23 @@ input[type="number"] {
             Environment <span v-if="create" style="color: red">*</span>
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <EnvironmentSelect
-            class="mt-1 w-full"
             id="environment"
+            class="mt-1 w-full"
             name="environment"
             :disabled="!create"
-            :selectedID="
+            :selectedId="
               create
-                ? state.instance.environmentID
+                ? state.instance.environmentId
                 : state.instance.environment.id
             "
             @select-environment-id="
-              (environmentID) => {
+              (environmentId) => {
                 if (create) {
-                  state.instance.environmentID = environmentID;
+                  state.instance.environmentId = environmentId;
                 } else {
-                  updateInstance('environmentID', environmentID);
+                  updateInstance('environmentId', environmentId);
                 }
               }
             "
@@ -144,9 +131,9 @@ input[type="number"] {
             </template>
           </label>
           <input
+            id="host"
             required
             type="text"
-            id="host"
             name="host"
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
@@ -170,8 +157,8 @@ input[type="number"] {
         <div class="sm:col-span-1">
           <label for="port" class="textlabel block"> Port </label>
           <input
-            type="number"
             id="port"
+            type="number"
             name="port"
             class="textfield mt-1 w-full"
             :placeholder="defaultPort"
@@ -216,8 +203,8 @@ input[type="number"] {
           </label>
           <template v-if="state.instance.engine == 'SNOWFLAKE'">
             <input
-              required
               id="externallink"
+              required
               name="externallink"
               type="text"
               class="textfield mt-1 w-full"
@@ -231,8 +218,8 @@ input[type="number"] {
               console, your in-house DB instance console)
             </div>
             <input
-              required
               id="externallink"
+              required
               name="externallink"
               type="text"
               class="textfield mt-1 w-full"
@@ -370,7 +357,7 @@ input[type="number"] {
         <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block"> Username </label>
-            <!-- For mysql, username can be empty indicating anonymous user. 
+            <!-- For mysql, username can be empty indicating anonymous user.
             But it's a very bad practice to use anonymous user for admin operation,
             thus we make it REQUIRED here. -->
             <input
@@ -435,10 +422,10 @@ input[type="number"] {
         <div v-if="showTestConnection" class="pt-8 space-y-2">
           <div class="flex flex-row space-x-2">
             <button
-              @click.prevent="testConnection"
               type="button"
               class="btn-normal whitespace-nowrap items-center"
               :disabled="!state.instance.host"
+              @click.prevent="testConnection"
             >
               Test Connection
             </button>
@@ -492,7 +479,7 @@ input[type="number"] {
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
-    :okText="'Ignore and create'"
+    :ok-text="'Ignore and create'"
     :title="'Connection info seems to be incorrect'"
     :description="state.createInstanceWarning"
     @ok="
@@ -542,10 +529,10 @@ interface LocalState {
 
 export default {
   name: "DataSourceCreateForm",
-  emits: ["dismiss"],
+  components: { EnvironmentSelect, InstanceEngineIcon },
   props: {
     create: {
-      default: "false",
+      default: "false", // TODO(ji): The string value raises an eslint ERROR. But I won't change it this time.
       type: Boolean,
     },
     instance: {
@@ -554,7 +541,7 @@ export default {
       type: Object as PropType<Instance>,
     },
   },
-  components: { EnvironmentSelect, InstanceEngineIcon },
+  emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -565,11 +552,11 @@ export default {
 
     const state = reactive<LocalState>({
       originalInstance: props.instance,
-      // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+      // Make hard copy since we are going to make equal comparison to determine the update button enable state.
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
-            environmentID: UNKNOWN_ID,
+            environmentId: UNKNOWN_ID,
             name: "New Instance",
             engine: "MYSQL",
             // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
@@ -720,7 +707,7 @@ export default {
     // We will also create the database * denoting all databases
     // and its RW data source. The username, password is actually
     // stored in that data source object instead of in the instance self.
-    // Conceptually, data source is the proper place to store connnection info (thinking of DSN)
+    // Conceptually, data source is the proper place to store connection info (thinking of DSN)
     const doCreate = () => {
       state.creatingOrUpdating = true;
       if (state.useEmptyPassword) {
@@ -742,7 +729,7 @@ export default {
           });
 
           // After creating the instance, we will check if migration schema exists on the instance.
-          setTimeout(() => {}, 1000);
+          // setTimeout(() => {}, 1000);
         });
     };
 
@@ -778,13 +765,13 @@ export default {
       state.creatingOrUpdating = true;
       store
         .dispatch("instance/patchInstance", {
-          instanceID: (state.instance as Instance).id,
+          instanceId: (state.instance as Instance).id,
           instancePatch: patchedInstance,
         })
         .then((instance) => {
           state.creatingOrUpdating = false;
           state.originalInstance = instance;
-          // Make hard copy since we are going to make equal comparsion to determine the update button enable state.
+          // Make hard copy since we are going to make equal comparison to determine the update button enable state.
           state.instance = cloneDeep(state.originalInstance!);
           state.updatedPassword = "";
           state.useEmptyPassword = false;
@@ -798,7 +785,7 @@ export default {
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
           if (connectionInfoChanged) {
             store.dispatch(
-              "database/fetchDatabaseListByInstanceID",
+              "database/fetchDatabaseListByInstanceId",
               instance.id
             );
           }
@@ -829,7 +816,7 @@ export default {
         useEmptyPassword: state.useEmptyPassword,
         host: state.instance.host,
         port: state.instance.port,
-        instanceID: props.create ? undefined : (state.instance as Instance).id,
+        instanceId: props.create ? undefined : (state.instance as Instance).id,
       };
       store
         .dispatch("sql/ping", connectionInfo)
@@ -876,3 +863,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

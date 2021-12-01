@@ -57,14 +57,14 @@
       <IssueHighlightPanel
         :issue="issue"
         :create="state.create"
-        :allowEdit="allowEditNameAndDescription"
+        :allow-edit="allowEditNameAndDescription"
         @update-name="updateName"
       >
         <IssueStatusTransitionButtonGroup
           :create="state.create"
-          :allowRollback="allowRollback"
+          :allow-rollback="allowRollback"
           :issue="issue"
-          :issueTemplate="issueTemplate"
+          :issue-template="issueTemplate"
           @create="doCreate"
           @rollback="doRollback"
           @change-issue-status="changeIssueStatus"
@@ -78,8 +78,8 @@
       <PipelineSimpleFlow
         :create="state.create"
         :pipeline="issue.pipeline"
-        :selectedStage="selectedStage"
-        @select-stage-id="selectStageID"
+        :selected-stage="selectedStage"
+        @select-stage-id="selectStageId"
       />
       <div v-if="!state.create" class="px-4 py-4 md:flex md:flex-col border-b">
         <IssueStagePanel :stage="selectedStage" />
@@ -95,8 +95,8 @@
     >
       <IssueOutputPanel
         :issue="issue"
-        :outputFieldList="issueTemplate.outputFieldList"
-        :allowEdit="allowEditOutput"
+        :output-field-list="issueTemplate.outputFieldList"
+        :allow-edit="allowEditOutput"
         @update-custom-field="updateCustomField"
       />
     </div>
@@ -126,14 +126,14 @@
               :database="database"
               :instance="instance"
               :create="state.create"
-              :selectedStage="selectedStage"
-              :inputFieldList="issueTemplate.inputFieldList"
-              :allowEdit="allowEditSidebar"
-              @update-assignee-id="updateAssigneeID"
-              @add-subscriber-id="addSubscriberID"
-              @remove-subscriber-id="removeSubscriberID"
+              :selected-stage="selectedStage"
+              :input-field-list="issueTemplate.inputFieldList"
+              :allow-edit="allowEditSidebar"
+              @update-assignee-id="updateAssigneeId"
+              @add-subscriber-id="addSubscriberId"
+              @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
-              @select-stage-id="selectStageID"
+              @select-stage-id="selectStageId"
             />
           </div>
           <div class="lg:hidden border-t border-block-border" />
@@ -145,36 +145,36 @@
                   @run-checks="runTaskChecks"
                 />
               </div>
-              <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel. 
+              <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
                    The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
                    to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
                    doesn't seem to work well with the reactivity. So for non-edit mode when !state.create, we
                    list every IssueTaskStatementPanel for each stage and use v-if to show the active one. -->
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint(false)"
+                  :sql-hint="sqlHint(false)"
                   :statement="selectedStatement"
                   :create="state.create"
-                  :allowEdit="true"
+                  :allow-edit="true"
                   :rollback="false"
-                  :showApplyStatement="showIssueTaskStatementApply"
+                  :show-apply-statement="showIssueTaskStatementApply"
                   @update-statement="updateStatement"
                   @apply-statement-to-other-stages="applyStatementToOtherStages"
                 />
               </template>
               <template
-                v-else
                 v-for="(stage, index) in issue.pipeline.stageList"
+                v-else
                 :key="index"
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint(false)"
+                    :sql-hint="sqlHint(false)"
                     :statement="statement(stage)"
                     :create="state.create"
-                    :allowEdit="allowEditStatement"
+                    :allow-edit="allowEditStatement"
                     :rollback="false"
-                    :showApplyStatement="showIssueTaskStatementApply"
+                    :show-apply-statement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                   />
                 </template>
@@ -186,12 +186,12 @@
             >
               <template v-if="state.create">
                 <IssueTaskStatementPanel
-                  :sqlHint="sqlHint(true)"
+                  :sql-hint="sqlHint(true)"
                   :statement="selectedRollbackStatement"
                   :create="state.create"
-                  :allowEdit="false"
+                  :allow-edit="false"
                   :rollback="true"
-                  :showApplyStatement="showIssueTaskStatementApply"
+                  :show-apply-statement="showIssueTaskStatementApply"
                   @update-statement="updateRollbackStatement"
                   @apply-statement-to-other-stages="
                     applyRollbackStatementToOtherStages
@@ -199,18 +199,18 @@
                 />
               </template>
               <template
-                v-else
                 v-for="(stage, index) in issue.pipeline.stageList"
+                v-else
                 :key="index"
               >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
-                    :sqlHint="sqlHint(true)"
+                    :sql-hint="sqlHint(true)"
                     :statement="rollbackStatement(stage)"
                     :create="state.create"
-                    :allowEdit="false"
+                    :allow-edit="false"
                     :rollback="true"
-                    :showApplyStatement="showIssueTaskStatementApply"
+                    :show-apply-statement="showIssueTaskStatementApply"
                     @update-statement="updateRollbackStatement"
                   />
                 </template>
@@ -219,7 +219,7 @@
             <IssueDescriptionPanel
               :issue="issue"
               :create="state.create"
-              :allowEdit="allowEditNameAndDescription"
+              :allow-edit="allowEditNameAndDescription"
               @update-description="updateDescription"
             />
             <section
@@ -229,8 +229,8 @@
             >
               <IssueActivityPanel
                 :issue="issue"
-                :issueTemplate="issueTemplate"
-                @add-subscriber-id="addSubscriberID"
+                :issue-template="issueTemplate"
+                @add-subscriber-id="addSubscriberId"
               />
             </section>
           </div>
@@ -264,7 +264,6 @@ import {
   activeStage,
   stageSlug,
   activeTask,
-  findTaskByID,
 } from "../utils";
 import IssueHighlightPanel from "../components/IssueHighlightPanel.vue";
 import IssueStagePanel from "../components/IssueStagePanel.vue";
@@ -282,14 +281,14 @@ import {
   IssueCreate,
   IssueType,
   IssuePatch,
-  PrincipalID,
+  PrincipalId,
   Database,
   Instance,
   Environment,
   Stage,
-  StageID,
+  StageId,
   IssueStatus,
-  TaskID,
+  TaskId,
   TaskStatusPatch,
   TaskStatus,
   IssueStatusPatch,
@@ -303,7 +302,6 @@ import {
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   Project,
-  IssueID,
   MigrationType,
   TaskPatch,
   Policy,
@@ -329,12 +327,6 @@ interface LocalState {
 
 export default {
   name: "IssueDetail",
-  props: {
-    issueSlug: {
-      required: true,
-      type: String,
-    },
-  },
   components: {
     IssueHighlightPanel,
     IssueStagePanel,
@@ -347,8 +339,14 @@ export default {
     PipelineSimpleFlow,
     TaskCheckBar,
   },
+  props: {
+    issueSlug: {
+      required: true,
+      type: String,
+    },
+  },
 
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
@@ -381,7 +379,7 @@ export default {
     // so we need to manually watch here.
     watch(
       () => router.currentRoute.value.query.template,
-      (curTemplate, prevTemplate) => {
+      () => {
         refreshTemplate();
       }
     );
@@ -393,7 +391,7 @@ export default {
 
       // Create rollback issue
       if (router.currentRoute.value.query.rollbackIssue) {
-        const rollbackIssue: Issue = store.getters["issue/issueByID"](
+        const rollbackIssue: Issue = store.getters["issue/issueById"](
           parseInt(router.currentRoute.value.query.rollbackIssue as string)
         );
 
@@ -466,7 +464,7 @@ export default {
               ) {
                 environmentList.push(stage.environment);
                 approvalPolicyList.push(
-                  store.getters["policy/policyByEnvironmentIDAndType"](
+                  store.getters["policy/policyByEnvironmentIdAndType"](
                     stage.environment.id,
                     "bb.policy.pipeline-approval"
                   )
@@ -492,7 +490,7 @@ export default {
                 currentUser: currentUser.value,
               }),
               name: "INVALID STATE, no applicable update schema task to rollback.",
-              projectID: UNKNOWN_ID,
+              projectId: UNKNOWN_ID,
             };
           } else {
             newIssue = {
@@ -504,12 +502,12 @@ export default {
                 rollbackStatementList,
                 currentUser: currentUser.value,
               }),
-              projectID: rollbackIssue.project.id,
+              projectId: rollbackIssue.project.id,
               name: `[Rollback] issue/${rollbackIssue.id} - ${rollbackIssue.name}`,
               description: rollbackIssue.description
                 ? `====Original issue description BEGIN====\n\n${rollbackIssue.description}\n\n====Original issue description END====\n\n`
                 : "",
-              assigneeID: rollbackIssue.assignee.id,
+              assigneeId: rollbackIssue.assignee.id,
             };
           }
         } else {
@@ -521,20 +519,20 @@ export default {
               currentUser: currentUser.value,
             }),
             name: title,
-            projectID: UNKNOWN_ID,
+            projectId: UNKNOWN_ID,
           };
         }
-        newIssue.rollbackIssueID = rollbackIssue.id;
+        newIssue.rollbackIssueId = rollbackIssue.id;
       }
       // Create issue from normal query parameter
       else {
         const databaseList: Database[] = [];
         if (router.currentRoute.value.query.databaseList) {
-          for (const databaseID of (
+          for (const databaseId of (
             router.currentRoute.value.query.databaseList as string
           ).split(","))
             databaseList.push(
-              store.getters["database/databaseByID"](databaseID)
+              store.getters["database/databaseById"](databaseId)
             );
         }
 
@@ -542,7 +540,7 @@ export default {
         const approvalPolicyList: Policy[] = [];
         if (router.currentRoute.value.query.environment) {
           environmentList.push(
-            store.getters["environment/environmentByID"](
+            store.getters["environment/environmentById"](
               router.currentRoute.value.query.environment
             )
           );
@@ -558,7 +556,7 @@ export default {
 
         for (const environment of environmentList) {
           approvalPolicyList.push(
-            store.getters["policy/policyByEnvironmentIDAndType"](
+            store.getters["policy/policyByEnvironmentIdAndType"](
               environment.id,
               "bb.policy.pipeline-approval"
             )
@@ -572,14 +570,14 @@ export default {
             databaseList,
             currentUser: currentUser.value,
           }),
-          projectID: router.currentRoute.value.query.project
+          projectId: router.currentRoute.value.query.project
             ? parseInt(router.currentRoute.value.query.project as string)
             : UNKNOWN_ID,
         };
 
         // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
         if (store.getters["actuator/isDemo"]()) {
-          newIssue.assigneeID = currentUser.value.id;
+          newIssue.assigneeId = currentUser.value.id;
         }
 
         if (router.currentRoute.value.query.name) {
@@ -590,7 +588,7 @@ export default {
             .description as string;
         }
         if (router.currentRoute.value.query.assignee) {
-          newIssue.assigneeID = parseInt(
+          newIssue.assigneeId = parseInt(
             router.currentRoute.value.query.assignee as string
           );
         }
@@ -623,14 +621,14 @@ export default {
       }
 
       state.pollIssueTimer = setTimeout(() => {
-        store.dispatch("issue/fetchIssueByID", idFromSlug(props.issueSlug));
+        store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
         pollIssue(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
       }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
 
     const pollOnCreateStateChange = () => {
       let interval = NORMAL_POLL_INTERVAL;
-      // We will poll faster if meets either of the conditon
+      // We will poll faster if meets either of the condition
       // 1. Created the database create issue, expect creation result quickly.
       // 2. Update the database schema, will do connection and syntax check.
       if (
@@ -662,7 +660,7 @@ export default {
 
     watch(
       () => props.issueSlug,
-      (cur, prev) => {
+      (cur) => {
         const oldCreate = state.create;
         state.create = cur.toLowerCase() == "new";
         if (!state.create && oldCreate) {
@@ -677,7 +675,7 @@ export default {
     const issue = computed((): Issue | IssueCreate => {
       return state.create
         ? state.newIssue
-        : store.getters["issue/issueByID"](idFromSlug(props.issueSlug));
+        : store.getters["issue/issueById"](idFromSlug(props.issueSlug));
     });
 
     const issueTemplate = computed(
@@ -686,8 +684,8 @@ export default {
 
     const project = computed((): Project => {
       if (state.create) {
-        return store.getters["project/projectByID"](
-          (issue.value as IssueCreate).projectID
+        return store.getters["project/projectById"](
+          (issue.value as IssueCreate).projectId
         );
       }
       return (issue.value as Issue).project;
@@ -772,27 +770,27 @@ export default {
       }
     };
 
-    const updateAssigneeID = (newAssigneeID: PrincipalID) => {
+    const updateAssigneeId = (newAssigneeId: PrincipalId) => {
       if (state.create) {
-        state.newIssue!.assigneeID = newAssigneeID;
+        state.newIssue!.assigneeId = newAssigneeId;
       } else {
         patchIssue({
-          assigneeID: newAssigneeID,
+          assigneeId: newAssigneeId,
         });
       }
     };
 
-    const addSubscriberID = (subscriberID: PrincipalID) => {
+    const addSubscriberId = (subscriberId: PrincipalId) => {
       store.dispatch("issueSubscriber/createSubscriber", {
-        issueID: (issue.value as Issue).id,
-        subscriberID,
+        issueId: (issue.value as Issue).id,
+        subscriberId,
       });
     };
 
-    const removeSubscriberID = (subscriberID: PrincipalID) => {
+    const removeSubscriberId = (subscriberId: PrincipalId) => {
       store.dispatch("issueSubscriber/deleteSubscriber", {
-        issueID: (issue.value as Issue).id,
-        subscriberID,
+        issueId: (issue.value as Issue).id,
+        subscriberId,
       });
     };
 
@@ -842,7 +840,7 @@ export default {
 
       store
         .dispatch("issue/updateIssueStatus", {
-          issueID: (issue.value as Issue).id,
+          issueId: (issue.value as Issue).id,
           issueStatusPatch,
         })
         .then(() => {
@@ -856,7 +854,7 @@ export default {
       comment: string
     ) => {
       // Switch to the stage view containing this task
-      selectStageID(task.stage.id);
+      selectStageId(task.stage.id);
 
       const taskStatusPatch: TaskStatusPatch = {
         status: newStatus,
@@ -865,9 +863,9 @@ export default {
 
       store
         .dispatch("task/updateStatus", {
-          issueID: (issue.value as Issue).id,
-          pipelineID: (issue.value as Issue).pipeline.id,
-          taskID: task.id,
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId: task.id,
           taskStatusPatch,
         })
         .then(() => {
@@ -878,9 +876,9 @@ export default {
     const runTaskChecks = (task: Task) => {
       store
         .dispatch("task/runChecks", {
-          issueID: (issue.value as Issue).id,
-          pipelineID: (issue.value as Issue).pipeline.id,
-          taskID: task.id,
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId: task.id,
         })
         .then(() => {
           pollIssue(POST_CHANGE_POLL_INTERVAL);
@@ -893,7 +891,7 @@ export default {
     ) => {
       store
         .dispatch("issue/patchIssue", {
-          issueID: (issue.value as Issue).id,
+          issueId: (issue.value as Issue).id,
           issuePatch,
         })
         .then((updatedIssue) => {
@@ -907,15 +905,15 @@ export default {
     };
 
     const patchTask = (
-      taskID: TaskID,
+      taskId: TaskId,
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
       store
         .dispatch("task/patchTask", {
-          issueID: (issue.value as Issue).id,
-          pipelineID: (issue.value as Issue).pipeline.id,
-          taskID,
+          issueId: (issue.value as Issue).id,
+          pipelineId: (issue.value as Issue).pipeline.id,
+          taskId,
           taskPatch,
         })
         .then((updatedTask) => {
@@ -937,25 +935,25 @@ export default {
       const taskSlug = router.currentRoute.value.query.task as string;
       // For stage slug, we support both index based and id based.
       // Index based is used when creating the new task and is the one used when clicking the UI.
-      // Id based is used when the context only has access to the stage id (e.g. Task only contains StageID)
+      // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
         if (index < issue.value.pipeline.stageList.length) {
           return issue.value.pipeline.stageList[index];
         }
-        const stageID = idFromSlug(stageSlug);
+        const stageId = idFromSlug(stageSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
         for (const stage of stageList) {
-          if (stage.id == stageID) {
+          if (stage.id == stageId) {
             return stage;
           }
         }
       } else if (!state.create && taskSlug) {
-        const taskID = idFromSlug(taskSlug);
+        const taskId = idFromSlug(taskSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
         for (const stage of stageList) {
           for (const task of stage.taskList) {
-            if (task.id == taskID) {
+            if (task.id == taskId) {
               return stage;
             }
           }
@@ -968,13 +966,13 @@ export default {
       return activeStage((issue.value as Issue).pipeline);
     });
 
-    const selectStageID = (stageID: StageID) => {
+    const selectStageId = (stageId: StageId) => {
       const stageList = issue.value.pipeline.stageList;
       const index = stageList.findIndex((item, index) => {
         if (state.create) {
-          return index == stageID;
+          return index == stageId;
         }
-        return (item as Stage).id == stageID;
+        return (item as Stage).id == stageId;
       });
       router.replace({
         name: "workspace.issue.detail",
@@ -1179,9 +1177,9 @@ export default {
       const temp = selectedStage as unknown;
       if (create) {
         const stage = temp as ComputedRef<StageCreate>;
-        const databaseID = stage.value.taskList[0].databaseID;
-        if (databaseID) {
-          return store.getters["database/databaseByID"](databaseID);
+        const databaseId = stage.value.taskList[0].databaseId;
+        if (databaseId) {
+          return store.getters["database/databaseById"](databaseId);
         }
 
         return undefined;
@@ -1194,20 +1192,20 @@ export default {
       const temp = selectedStage as unknown;
       if (create) {
         // If database is available, then we derive the instance from database because we always fetch database's instance.
-        // On the other hand, instance for stage.taskList[0].instanceID might not be loaded (e.g. when creating an update schema issue)
+        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
         if (database.value) {
           return database.value.instance;
         }
         const stage = temp as ComputedRef<StageCreate>;
-        return store.getters["instance/instanceByID"](
-          stage.value.taskList[0].instanceID
+        return store.getters["instance/instanceById"](
+          stage.value.taskList[0].instanceId
         );
       }
       const stage = temp as ComputedRef<Stage>;
       return stage.value.taskList[0].instance;
     });
 
-    const sqlHint = (isRollBack: Boolean): string | undefined => {
+    const sqlHint = (isRollBack: boolean): string | undefined => {
       if (!isRollBack && !create && selectedMigrateType.value == "BASELINE") {
         return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
       }
@@ -1229,9 +1227,9 @@ export default {
       applyStatementToOtherStages,
       updateRollbackStatement,
       applyRollbackStatementToOtherStages,
-      updateAssigneeID,
-      addSubscriberID,
-      removeSubscriberID,
+      updateAssigneeId,
+      addSubscriberId,
+      removeSubscriberId,
       updateCustomField,
       doCreate,
       doRollback,
@@ -1243,7 +1241,7 @@ export default {
       issueTemplate,
       selectedStage,
       selectedTask,
-      selectStageID,
+      selectStageId,
       statement,
       rollbackStatement,
       selectedStatement,

@@ -8,19 +8,19 @@
       }
     "
   >
-    <option disabled :selected="undefined === state.selectedID">
+    <option disabled :selected="undefined === state.selectedId">
       Select environment
     </option>
     <template v-for="(environment, index) in environmentList" :key="index">
       <option
         v-if="environment.rowStatus == 'NORMAL'"
         :value="environment.id"
-        :selected="environment.id == state.selectedID"
+        :selected="environment.id == state.selectedId"
       >
         {{ environmentName(environment) }}
       </option>
       <option
-        v-else-if="environment.id == state.selectedID"
+        v-else-if="environment.id == state.selectedId"
         :value="environment.id"
         :selected="true"
       >
@@ -34,18 +34,16 @@
 import { computed, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
-import { Environment, EnvironmentID } from "../types";
+import { Environment } from "../types";
 
 interface LocalState {
-  selectedID?: Number;
+  selectedId?: number;
 }
 
 export default {
   name: "EnvironmentSelect",
-  emits: ["select-environment-id"],
-  components: {},
   props: {
-    selectedID: {
+    selectedId: {
       type: Number,
     },
     selectDefault: {
@@ -57,10 +55,11 @@ export default {
       type: Boolean,
     },
   },
+  emits: ["select-environment-id"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
     });
 
     const environmentList = computed(() => {
@@ -71,16 +70,16 @@ export default {
 
     if (environmentList.value && environmentList.value.length > 0) {
       if (
-        !props.selectedID ||
+        !props.selectedId ||
         !environmentList.value.find(
-          (item: Environment) => item.id == props.selectedID
+          (item: Environment) => item.id == props.selectedId
         )
       ) {
         if (props.selectDefault) {
           for (const environment of environmentList.value) {
             if (environment.rowStatus == "NORMAL") {
-              state.selectedID = environment.id;
-              emit("select-environment-id", state.selectedID);
+              state.selectedId = environment.id;
+              emit("select-environment-id", state.selectedId);
               break;
             }
           }
@@ -90,13 +89,13 @@ export default {
 
     const invalidateSelectionIfNeeded = () => {
       if (
-        state.selectedID &&
+        state.selectedId &&
         !environmentList.value.find(
-          (item: Environment) => item.id == state.selectedID
+          (item: Environment) => item.id == state.selectedId
         )
       ) {
-        state.selectedID = undefined;
-        emit("select-environment-id", state.selectedID);
+        state.selectedId = undefined;
+        emit("select-environment-id", state.selectedId);
       }
     };
 
@@ -108,9 +107,9 @@ export default {
     );
 
     watch(
-      () => props.selectedID,
-      (cur, _) => {
-        state.selectedID = cur;
+      () => props.selectedId,
+      (cur) => {
+        state.selectedId = cur;
       }
     );
 

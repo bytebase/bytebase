@@ -15,7 +15,7 @@
           v-for="(projectWebhook, index) in projectWebhookList"
           :key="index"
         >
-          <ProjectWebhookCard :projectWebhook="projectWebhook" />
+          <ProjectWebhookCard :project-webhook="projectWebhook" />
         </template>
       </div>
       <template v-else>
@@ -69,13 +69,13 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
     const prepareProjectWebhookList = () => {
       store.dispatch(
-        "projectWebhook/fetchProjectWebhookListByProjectID",
+        "projectWebhook/fetchProjectWebhookListByProjectId",
         props.project.id
       );
     };
@@ -83,7 +83,7 @@ export default {
     watchEffect(prepareProjectWebhookList);
 
     const projectWebhookList = computed(() => {
-      return store.getters["projectWebhook/projectWebhookListByProjectID"](
+      return store.getters["projectWebhook/projectWebhookListByProjectId"](
         props.project.id
       );
     });

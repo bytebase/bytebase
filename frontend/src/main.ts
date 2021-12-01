@@ -31,6 +31,7 @@ import {
   BBTextField,
 } from "./bbkit";
 import dataSourceType from "./directives/data-source-type";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";
@@ -92,7 +93,7 @@ axios.interceptors.response.use(
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
         const host = store.getters["actuator/info"]().host;
-        if (error.response.request.responseURL.startsWith(host))
+        if (error.response.request.responseUrl.startsWith(host))
           store.dispatch("auth/logout").then(() => {
             router.push({ name: "auth.signin" });
           });

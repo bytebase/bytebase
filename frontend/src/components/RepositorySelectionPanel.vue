@@ -73,14 +73,13 @@ interface LocalState {
 
 export default {
   name: "RepositorySelectionPanel",
-  emits: ["next"],
   props: {
     config: {
       required: true,
       type: Object as PropType<ProjectRepositoryConfig>,
     },
   },
-  components: {},
+  emits: ["next"],
   setup(props, { emit }) {
     const store = useStore();
     const state = reactive<LocalState>({

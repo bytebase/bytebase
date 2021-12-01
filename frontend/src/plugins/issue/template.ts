@@ -1,5 +1,5 @@
 import { IssueType } from "../../types";
-import { FieldID, FieldInfo, IssueTemplate } from "../types";
+import { FieldId, FieldInfo, IssueTemplate } from "../types";
 import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
 import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaBaselineTemplate from "./DatabaseSchemaBaselineTemplate";
@@ -24,12 +24,12 @@ export function templateForType(type: TemplateType): IssueTemplate | undefined {
   return allIssueTemplateList.find((template) => template.type === type);
 }
 
-export function fieldInfoFromID(
+export function fieldInfoFromId(
   template: IssueTemplate,
-  fieldID: FieldID
+  fieldId: FieldId
 ): FieldInfo {
   if (template.inputFieldList) {
-    const field = template.inputFieldList.find((field) => field.id == fieldID);
+    const field = template.inputFieldList.find((field) => field.id == fieldId);
     if (field) {
       return {
         name: field.name,
@@ -39,7 +39,7 @@ export function fieldInfoFromID(
   }
 
   if (template.outputFieldList) {
-    const field = template.outputFieldList.find((field) => field.id == fieldID);
+    const field = template.outputFieldList.find((field) => field.id == fieldId);
     if (field) {
       return {
         name: field.name,

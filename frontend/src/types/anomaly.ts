@@ -1,11 +1,11 @@
 import {
-  AnomalyID,
+  AnomalyId,
   BackupPlanPolicySchedule,
   Database,
-  DatabaseID,
-  EnvironmentID,
+  DatabaseId,
+  EnvironmentId,
   Instance,
-  InstanceID,
+  InstanceId,
   Principal,
 } from ".";
 
@@ -22,7 +22,7 @@ export type AnomalyInstanceConnectionPayload = {
 };
 
 export type AnomalyDatabaseBackupPolicyViolationPayload = {
-  environmentID: EnvironmentID;
+  environmentId: EnvironmentId;
   expectedSchedule: BackupPlanPolicySchedule;
   actualSchedule: BackupPlanPolicySchedule;
 };
@@ -51,12 +51,12 @@ export type AnomalyPayload =
 export type AnomalySeverity = "MEDIUM" | "HIGH" | "CRITICAL";
 
 export type Anomaly = {
-  id: AnomalyID;
+  id: AnomalyId;
 
   // Related fields
-  instanceID: InstanceID;
+  instanceId: InstanceId;
   instance: Instance;
-  databaseID?: DatabaseID;
+  databaseId?: DatabaseId;
   database?: Database;
 
   // Standard fields

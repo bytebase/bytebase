@@ -8,7 +8,7 @@
         change across multiple environments. One can also store the schemas in
         VCS and trigger a new pipeline upon commit push. Follow the
         <span class="text-accent">Quickstart</span> on the bottom left to get
-        familar with the product. If you encounter problems, visit
+        familiar with the product. If you encounter problems, visit
         <a class="normal-link" href="https://docs.bytebase.com" target="__blank"
           >doc</a
         >

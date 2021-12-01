@@ -26,18 +26,18 @@ const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
 
 export default {
   name: "ProjectWebhookCreate",
+  components: { ProjectWebhookForm },
   props: {
     projectSlug: {
       required: true,
       type: String,
     },
   },
-  components: { ProjectWebhookForm },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const project = computed(() => {
-      return store.getters["project/projectByID"](
+      return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );
     });

@@ -185,7 +185,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 	}
 
 	var query = `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

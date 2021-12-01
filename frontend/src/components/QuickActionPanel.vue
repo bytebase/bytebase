@@ -397,16 +397,18 @@
         state.quickActionType == 'quickaction.bb.database.schema.update'
       "
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <AlterSchemaPrepForm
-        :projectID="projectID"
+        :projectId="projectId"
         @dismiss="state.showModal = false"
       />
     </template>
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <CreateDatabasePrepForm
-        :projectID="projectID"
+        :projectId="projectId"
         @dismiss="state.showModal = false"
       />
     </template>
@@ -420,8 +422,9 @@
         state.quickActionType == 'quickaction.bb.project.database.transfer'
       "
     >
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <TransferDatabaseForm
-        :projectID="projectID"
+        :projectId="projectId"
         @dismiss="state.showModal = false"
       />
     </template>
@@ -438,11 +441,11 @@ import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import { DEFAULT_PROJECT_ID, ProjectID, QuickActionType } from "../types";
+import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 
 interface LocalState {
-  showModal: Boolean;
+  showModal: boolean;
   modalTitle: string;
   modalSubtitle: string;
   quickActionType: QuickActionType;
@@ -464,7 +467,7 @@ export default {
       type: Object as PropType<QuickActionType[]>,
     },
   },
-  setup(props) {
+  setup() {
     const router = useRouter();
     const store = useStore();
 
@@ -475,7 +478,7 @@ export default {
       quickActionType: "quickaction.bb.instance.create",
     });
 
-    const projectID = computed((): ProjectID | undefined => {
+    const projectId = computed((): ProjectId | undefined => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         const parts = router.currentRoute.value.path.split("/");
         return idFromSlug(parts[parts.length - 1]);
@@ -544,7 +547,7 @@ export default {
 
     return {
       state,
-      projectID,
+      projectId,
       createProject,
       goDefaultProject,
       transferDatabase,

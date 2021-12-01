@@ -1,4 +1,4 @@
--- Table for database 7002 testdb_dev 
+-- Table for database 7002 testdb_dev
 INSERT INTO
     tbl (
         id,
@@ -34,7 +34,7 @@ VALUES
         ''
     );
 
--- Table for database 7006 testdb_integration 
+-- Table for database 7006 testdb_integration
 INSERT INTO
     tbl (
         creator_id,
@@ -68,7 +68,7 @@ VALUES
         ''
     );
 
--- Table for database 7010 testdb_staging 
+-- Table for database 7010 testdb_staging
 INSERT INTO
     tbl (
         creator_id,

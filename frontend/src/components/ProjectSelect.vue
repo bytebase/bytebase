@@ -8,14 +8,14 @@
       }
     "
   >
-    <option disabled :selected="UNKNOWN_ID == state.selectedID">
+    <option disabled :selected="UNKNOWN_ID == state.selectedId">
       Select project
     </option>
     <!-- If includeDefaultProject is false but the selected project is the default
          project, we will show it. If includeDefaultProject is true, then it's
          already in the list, so no need to show it twice -->
     <option
-      v-if="!includeDefaultProject && state.selectedID == DEFAULT_PROJECT_ID"
+      v-if="!includeDefaultProject && state.selectedId == DEFAULT_PROJECT_ID"
       :selected="true"
     >
       Default
@@ -25,22 +25,22 @@
          are unable to cleanup properly. In such case, the seleted project id
          is orphaned and we just display the id.  -->
     <option
-      v-else-if="selectedIDNotInList"
-      :value="state.selectedID"
+      v-else-if="selectedIdNotInList"
+      :value="state.selectedId"
       :selected="true"
     >
-      {{ state.selectedID }}
+      {{ state.selectedId }}
     </option>
     <template v-for="(project, index) in projectList" :key="index">
       <option
         v-if="project.rowStatus == 'NORMAL'"
         :value="project.id"
-        :selected="project.id == state.selectedID"
+        :selected="project.id == state.selectedId"
       >
         {{ projectName(project) }}
       </option>
       <option
-        v-else-if="project.id == state.selectedID"
+        v-else-if="project.id == state.selectedId"
         :value="project.id"
         :selected="true"
       >
@@ -70,15 +70,13 @@ import {
 import { isDBAOrOwner } from "../utils";
 
 interface LocalState {
-  selectedID: number;
+  selectedId: number;
 }
 
 export default {
   name: "ProjectSelect",
-  emits: ["select-project-id"],
-  components: {},
   props: {
-    selectedID: {
+    selectedId: {
       default: UNKNOWN_ID,
       type: Number,
     },
@@ -87,18 +85,19 @@ export default {
       type: Boolean,
     },
     allowedRoleList: {
-      default: ["OWNER", "DEVELOPER"],
-      type: Object as PropType<ProjectRoleType[]>,
+      default: () => ["OWNER", "DEVELOPER"],
+      type: Array as PropType<ProjectRoleType[]>,
     },
     includeDefaultProject: {
       default: false,
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-project-id"],
+  setup(props) {
     const store = useStore();
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
     });
 
     const currentUser: ComputedRef<Principal> = computed(() =>
@@ -107,7 +106,7 @@ export default {
 
     const prepareProjectList = () => {
       store.dispatch("project/fetchProjectListByUser", {
-        userID: currentUser.value.id,
+        userId: currentUser.value.id,
         rowStatusList: ["NORMAL", "ARCHIVED"],
       });
     };
@@ -125,10 +124,10 @@ export default {
       );
 
       if (props.includeDefaultProject) {
-        list.unshift(store.getters["project/projectByID"](DEFAULT_PROJECT_ID));
+        list.unshift(store.getters["project/projectById"](DEFAULT_PROJECT_ID));
       }
 
-      if (!hasAdminFeature || isDBAOrOwner(currentUser.value.role)) {
+      if (!hasAdminFeature.value || isDBAOrOwner(currentUser.value.role)) {
         return list;
       }
 
@@ -149,22 +148,22 @@ export default {
       });
     });
 
-    const selectedIDNotInList = computed((): boolean => {
-      if (props.selectedID == UNKNOWN_ID) {
+    const selectedIdNotInList = computed((): boolean => {
+      if (props.selectedId == UNKNOWN_ID) {
         return false;
       }
 
       return (
         projectList.value.find((item) => {
-          return item.id == props.selectedID;
+          return item.id == props.selectedId;
         }) == null
       );
     });
 
     watch(
-      () => props.selectedID,
-      (cur, _) => {
-        state.selectedID = cur;
+      () => props.selectedId,
+      (cur) => {
+        state.selectedId = cur;
       }
     );
 
@@ -173,7 +172,7 @@ export default {
       DEFAULT_PROJECT_ID,
       state,
       projectList,
-      selectedIDNotInList,
+      selectedIdNotInList,
     };
   },
 };

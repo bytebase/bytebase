@@ -7,7 +7,7 @@ import {
   PipelineCreate,
   Stage,
   Task,
-  TaskID,
+  TaskId,
   TaskStatus,
   unknown,
   UNKNOWN_ID,
@@ -59,10 +59,10 @@ export function lastTask(pipeline: Pipeline): Task {
   return empty("TASK") as Task;
 }
 
-export function findTaskByID(pipeline: Pipeline, taskID: TaskID): Task {
+export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
-      if (task.id == taskID) {
+      if (task.id == taskId) {
         return task;
       }
     }

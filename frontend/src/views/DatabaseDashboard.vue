@@ -1,8 +1,9 @@
 <template>
   <div class="flex flex-col">
     <div class="px-5 py-2 flex justify-between items-center">
+      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedID="state.selectedEnvironment?.id"
+        :selectedId="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <BBTableSearch
@@ -11,14 +12,14 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <DatabaseTable :bordered="false" :databaseList="filteredList" />
+    <DatabaseTable :bordered="false" :database-list="filteredList" />
   </div>
 
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :okText="'Do not show again'"
-    :cancelText="'Dismiss'"
+    :ok-text="'Do not show again'"
+    :cancel-text="'Dismiss'"
     :title="'How to setup \'Database\' ?'"
     :description="'Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.'"
     @ok="
@@ -54,7 +55,7 @@ export default {
     EnvironmentTabFilter,
     DatabaseTable,
   },
-  setup(props, ctx) {
+  setup() {
     const searchField = ref();
 
     const store = useStore();
@@ -64,7 +65,7 @@ export default {
       searchText: "",
       databaseList: [],
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentByID"](
+        ? store.getters["environment/environmentById"](
             router.currentRoute.value.query.environment
           )
         : undefined,

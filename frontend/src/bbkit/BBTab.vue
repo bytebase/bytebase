@@ -3,11 +3,21 @@
     <nav class="-mb-px flex" aria-label="Tabs">
       <a
         v-for="(item, index) in tabItemList"
-        :key="index"
         :id="item.id"
+        :key="index"
         :href="`#${item.id}`"
-        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent whitespace-nowrap"
-        v-bind:class="tabClass(index == selectedIndex)"
+        class="
+          select-none
+          cursor-pointer
+          flex
+          justify-between
+          py-2
+          px-1
+          font-medium
+          border-b-2 border-transparent
+          whitespace-nowrap
+        "
+        :class="tabClass(index == selectedIndex)"
         @click.self="selectTabIndex(index)"
         @mouseenter="state.hoverIndex = index"
         @mouseleave="state.hoverIndex = -1"
@@ -18,14 +28,20 @@
             (reorderModel == 'ALWAYS' ||
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
+          type="button"
+          class="
+            text-control
+            hover:text-control-hover
+            focus:outline-none
+            focus-visible:ring-2
+            focus:ring-accent
+          "
           @click.prevent="
             () => {
               selectTabIndex(index);
               $emit('reorder-index', index, index - 1);
             }
           "
-          type="button"
-          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         >
           <svg
             class="w-6 h-6"
@@ -48,14 +64,20 @@
             (reorderModel == 'ALWAYS' ||
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
+          type="button"
+          class="
+            text-control
+            hover:text-control-hover
+            focus:outline-none
+            focus-visible:ring-2
+            focus:ring-accent
+          "
           @click.prevent="
             () => {
               selectTabIndex(index);
               $emit('reorder-index', index, index + 1);
             }
           "
-          type="button"
-          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         >
           <svg
             class="w-6 h-6"
@@ -74,10 +96,19 @@
       </a>
       <button
         v-if="allowCreate"
-        @click.prevent="$emit('create')"
         type="button"
-        class="flex justify-center py-2 text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
-        v-bind:class="addTabClass()"
+        class="
+          flex
+          justify-center
+          py-2
+          text-control
+          hover:text-control-hover
+          focus:outline-none
+          focus-visible:ring-2
+          focus:ring-accent
+        "
+        :class="addTabClass()"
+        @click.prevent="$emit('create')"
       >
         <svg
           class="w-6 h-6"
@@ -105,7 +136,6 @@ import { BBTabItem } from "./types";
 
 export default {
   name: "BBTab",
-  emits: ["create", "reorder-index", "select-index"],
   props: {
     tabItemList: {
       required: true,
@@ -124,9 +154,7 @@ export default {
       type: String as PropType<"NEVER" | "HOVER" | "ALWAYS">,
     },
   },
-  data: function () {
-    return {};
-  },
+  emits: ["create", "reorder-index", "select-index"],
   setup(props, { emit }) {
     const state = reactive({
       hoverIndex: -1,
@@ -161,6 +189,9 @@ export default {
       selectTabIndex,
       state,
     };
+  },
+  data: function () {
+    return {};
   },
 };
 </script>

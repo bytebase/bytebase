@@ -1,17 +1,17 @@
 <template>
   <div>
     <BBTable
-      :columnList="columnList"
-      :dataSource="checkResultList"
-      :showHeader="false"
-      :leftBordered="true"
-      :rightBordered="true"
-      :topBordered="true"
-      :bottomBordered="true"
-      :rowClickable="false"
+      :column-list="columnList"
+      :data-source="checkResultList"
+      :show-header="false"
+      :left-bordered="true"
+      :right-bordered="true"
+      :top-bordered="true"
+      :bottom-bordered="true"
+      :row-clickable="false"
     >
-      <template v-slot:body="{ rowData: checkResult }">
-        <BBTableCell :leftPadding="4" class="table-cell w-4">
+      <template #body="{ rowData: checkResult }">
+        <BBTableCell :left-padding="4" class="table-cell w-4">
           <div class="flex flex-row space-x-2">
             <div
               class="
@@ -118,7 +118,7 @@ export default {
       type: Object as PropType<TaskCheckRun>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const statusIconClass = (status: TaskCheckStatus) => {
       switch (status) {
         case "SUCCESS":

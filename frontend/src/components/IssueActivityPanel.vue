@@ -344,14 +344,14 @@
                       <span
                         v-if="
                           activity.type == 'bb.issue.create' &&
-                          activity.payload.rollbackIssueID
+                          activity.payload.rollbackIssueId
                         "
                       >
                         (rollback
                         <router-link
-                          :to="`/issue/${activity.payload.rollbackIssueID}`"
+                          :to="`/issue/${activity.payload.rollbackIssueId}`"
                           class="normal-link"
-                          >{{ `issue/${activity.payload.rollbackIssueID}` }}
+                          >{{ `issue/${activity.payload.rollbackIssueId}` }}
                         </router-link>
                         )
                       </span>
@@ -412,7 +412,7 @@
                           Save
                         </button>
                       </template>
-                      <!-- mr-2 is to veritical align with the text description edit button-->
+                      <!-- mr-2 is to vertical align with the text description edit button-->
                       <div v-else class="mr-2 flex items-center space-x-2">
                         <!-- Delete Comment Button-->
                         <button
@@ -473,10 +473,10 @@
                       <label for="comment" class="sr-only">Edit Comment</label>
                       <textarea
                         ref="editCommentTextArea"
+                        v-model="editComment"
                         rows="3"
                         class="textarea block w-full resize-none"
                         placeholder="Leave a comment..."
-                        v-model="editComment"
                         @input="
                           (e) => {
                             sizeToFit(e.target);
@@ -496,7 +496,7 @@
                       v-if="activity.type == 'bb.pipeline.task.file.commit'"
                     >
                       <a
-                        :href="`${activity.payload.vcsInstanceURL}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitID}`"
+                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                         >View commit
@@ -560,10 +560,10 @@
               <label for="comment" class="sr-only">Create Comment</label>
               <textarea
                 ref="newCommentTextArea"
+                v-model="newComment"
                 rows="3"
                 class="textarea block w-full resize-none whitespace-pre-wrap"
                 placeholder="Leave a comment..."
-                v-model="newComment"
                 @input="
                   (e) => {
                     sizeToFit(e.target);
@@ -589,7 +589,7 @@
   <BBAlert
     v-if="state.showDeleteCommentModal"
     :style="'INFO'"
-    :okText="'Delete'"
+    :ok-text="'Delete'"
     :title="'Are you sure to delete this comment?'"
     :description="'You cannot undo this action.'"
     @ok="
@@ -631,14 +631,13 @@ import {
   ActivityTaskFileCommitPayload,
 } from "../types";
 import {
-  findTaskByID,
+  findTaskById,
   issueActivityActionSentence,
   issueSlug,
   sizeToFit,
-  stageSlug,
   taskSlug,
 } from "../utils";
-import { IssueTemplate, IssueBuiltinFieldID } from "../plugins";
+import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -665,7 +664,7 @@ type ActionIconType =
 
 export default {
   name: "IssueActivityPanel",
-  emits: ["add-subscriber-id"],
+  components: { PrincipalAvatar },
   props: {
     issue: {
       required: true,
@@ -676,7 +675,7 @@ export default {
       type: Object as PropType<IssueTemplate>,
     },
   },
-  components: { PrincipalAvatar },
+  emits: ["add-subscriber-id"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -746,8 +745,8 @@ export default {
       return list.filter((activity: Activity) => {
         if (activity.type == "bb.issue.field.update") {
           let containUserVisibleChange =
-            (activity.payload as ActivityIssueFieldUpdatePayload).fieldID !=
-            IssueBuiltinFieldID.SUBSCRIBER_LIST;
+            (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
+            IssueBuiltinFieldId.SUBSCRIBER_LIST;
           return containUserVisibleChange;
         }
         return true;
@@ -769,7 +768,7 @@ export default {
     const doCreateComment = () => {
       const createActivity: ActivityCreate = {
         type: "bb.issue.comment.create",
-        containerID: props.issue.id,
+        containerId: props.issue.id,
         comment: newComment.value,
       };
       store.dispatch("activity/createActivity", createActivity).then(() => {
@@ -806,9 +805,9 @@ export default {
     };
 
     const doUpdateComment = () => {
-      const activityPatch = store
+      store
         .dispatch("activity/updateComment", {
-          activityID: state.activeActivity!.id,
+          activityId: state.activeActivity!.id,
           updatedComment: editComment.value,
         })
         .then(() => {
@@ -839,6 +838,11 @@ export default {
               return "approve";
             }
           }
+          // TODO(ji): Next line raises an eslint ERROR because of missing `break`.
+          // But I won't change it this time.
+          // Because I don't know whether this fall-through is meaningful.
+          // If it is, write a comment line "fall-through" (without quote and dash)
+          // above it to tell eslint to ignore it.
           case "RUNNING": {
             return "run";
           }
@@ -870,7 +874,7 @@ export default {
         if (activity.type == "bb.pipeline.task.status.update") {
           if (props.issue.pipeline.id != EMPTY_ID) {
             const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-            const task = findTaskByID(props.issue.pipeline, payload.taskID);
+            const task = findTaskById(props.issue.pipeline, payload.taskId);
             var link = "";
             if (task.id != UNKNOWN_ID) {
               link = `/issue/${issueSlug(
@@ -924,7 +928,7 @@ export default {
           if (activity.creator.id != SYSTEM_BOT_ID) {
             // If creator is not the robot (which means we do NOT use task name in the subject),
             // then we append the task name here.
-            const task = findTaskByID(props.issue.pipeline, payload.taskID);
+            const task = findTaskById(props.issue.pipeline, payload.taskId);
             str += ` task ${task.name}`;
           }
           return str;

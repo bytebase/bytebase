@@ -165,7 +165,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					if err != nil {
 						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
 							zap.String("issue_name", meta.issue.Name),
-							zap.String("old_assignee_id", update.NewValue),
+							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
 						return webhookCtx, err
 					}

@@ -5,8 +5,8 @@
   <EnvironmentForm
     v-if="state.approvalPolicy && state.backupPolicy"
     :environment="state.environment"
-    :approvalPolicy="state.approvalPolicy"
-    :backupPolicy="state.backupPolicy"
+    :approval-policy="state.approvalPolicy"
+    :backup-policy="state.backupPolicy"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"
@@ -21,11 +21,10 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
   Environment,
-  EnvironmentID,
+  EnvironmentId,
   EnvironmentPatch,
   Policy,
   PolicyType,
-  unknown,
 } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -38,7 +37,6 @@ interface LocalState {
 
 export default {
   name: "EnvironmentDetail",
-  emits: ["archive"],
   components: {
     ArchiveBanner,
     EnvironmentForm,
@@ -49,11 +47,12 @@ export default {
       type: String,
     },
   },
+  emits: ["archive"],
   setup(props, { emit }) {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      environment: store.getters["environment/environmentByID"](
+      environment: store.getters["environment/environmentById"](
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
@@ -62,7 +61,7 @@ export default {
     const preparePolicy = () => {
       store
         .dispatch("policy/fetchPolicyByEnvironmentAndType", {
-          environmentID: (state.environment as Environment).id,
+          environmentId: (state.environment as Environment).id,
           type: "bb.policy.pipeline-approval",
         })
         .then((policy: Policy) => {
@@ -71,7 +70,7 @@ export default {
 
       store
         .dispatch("policy/fetchPolicyByEnvironmentAndType", {
-          environmentID: (state.environment as Environment).id,
+          environmentId: (state.environment as Environment).id,
           type: "bb.policy.backup-plan",
         })
         .then((policy: Policy) => {
@@ -88,7 +87,7 @@ export default {
     const doUpdate = (environmentPatch: EnvironmentPatch) => {
       store
         .dispatch("environment/patchEnvironment", {
-          environmentID: idFromSlug(props.environmentSlug),
+          environmentId: idFromSlug(props.environmentSlug),
           environmentPatch,
         })
         .then((environment) => {
@@ -99,7 +98,7 @@ export default {
     const doArchive = (environment: Environment) => {
       store
         .dispatch("environment/patchEnvironment", {
-          environmentID: environment.id,
+          environmentId: environment.id,
           environmentPatch: {
             rowStatus: "ARCHIVED",
           },
@@ -113,7 +112,7 @@ export default {
     const doRestore = (environment: Environment) => {
       store
         .dispatch("environment/patchEnvironment", {
-          environmentID: environment.id,
+          environmentId: environment.id,
           environmentPatch: {
             rowStatus: "NORMAL",
           },
@@ -124,13 +123,13 @@ export default {
     };
 
     const updatePolicy = (
-      environmentID: EnvironmentID,
+      environmentId: EnvironmentId,
       type: PolicyType,
       policy: Policy
     ) => {
       store
         .dispatch("policy/upsertPolicyByEnvironmentAndType", {
-          environmentID,
+          environmentId,
           type: type,
           policyUpsert: {
             payload: policy.payload,

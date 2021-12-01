@@ -216,7 +216,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    inbox.id,
 		    receiver_id,
 			`+"`status`,"+`

@@ -29,7 +29,7 @@ ARG BUILD_USER="unknown"
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apk --no-cache add gcc musl-dev
 
-WORKDIR /backend-build 
+WORKDIR /backend-build
 
 COPY . .
 

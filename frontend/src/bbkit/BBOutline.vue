@@ -1,8 +1,8 @@
 <template>
   <div
-    @click.prevent="toggleCollapse"
     class="outline-title flex py-1"
     :class="dynamicItemClass()"
+    @click.prevent="toggleCollapse"
     @mouseenter="state.hoverTitle = true"
     @mouseleave="state.hoverTitle = false"
   >
@@ -15,7 +15,8 @@
           h-4
           w-4
           transform
-          group-hover:text-gray-400 group-focus:text-gray-400
+          group-hover:text-gray-400
+          group-focus:text-gray-400
           transition-colors
           ease-in-out
           duration-150
@@ -32,7 +33,8 @@
           w-4
           transform
           rotate-90
-          group-hover:text-gray-400 group-focus:text-gray-400
+          group-hover:text-gray-400
+          group-focus:text-gray-400
           transition-colors
           ease-in-out
           duration-150
@@ -45,9 +47,9 @@
   </div>
   <div v-if="!allowCollapse || !collapseState">
     <div
-      role="group"
       v-for="(item, index) in itemList"
       :key="index"
+      role="group"
       @mouseenter="state.hoverIndex = index"
       @mouseleave="state.hoverIndex = -1"
     >
@@ -55,8 +57,8 @@
         v-if="item.childList"
         :id="[id, item.id].join('.')"
         :title="item.name"
-        :itemList="item.childList"
-        :allowCollapse="item.childCollapse"
+        :item-list="item.childList"
+        :allow-collapse="item.childCollapse"
         :level="level + 1"
       />
       <router-link
@@ -105,7 +107,6 @@ import { BBOutlineItem } from "./types";
 
 export default {
   name: "BBOutline",
-  emits: ["delete-index"],
   props: {
     // Used for storing the collapse state.
     // Empty id means not to store collapse state.
@@ -134,7 +135,8 @@ export default {
       type: Number,
     },
   },
-  setup(props, ctx) {
+  emits: ["delete-index"],
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({

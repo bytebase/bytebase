@@ -24,13 +24,13 @@
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">Instance URL</dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ vcs.instanceURL }}
+            {{ vcs.instanceUrl }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">Application ID</dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ vcs.applicationID }}
+            {{ vcs.applicationId }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
@@ -47,9 +47,10 @@
 <script lang="ts">
 import { reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { VCS, redirectURL } from "../types";
+import { VCS, redirectUrl } from "../types";
 import { vcsSlug } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -61,7 +62,7 @@ export default {
       type: Object as PropType<VCS>,
     },
   },
-  setup(props, ctx) {
+  setup(props) {
     const router = useRouter();
 
     const state = reactive<LocalState>({});
@@ -77,7 +78,7 @@ export default {
 
     return {
       state,
-      redirectURL,
+      redirectUrl,
       editVCS,
     };
   },

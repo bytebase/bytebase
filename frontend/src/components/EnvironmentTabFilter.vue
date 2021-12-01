@@ -1,7 +1,7 @@
 <template>
   <BBTabFilter
-    :tabItemList="tabItemList"
-    :selectedIndex="state.selectedIndex"
+    :tab-item-list="tabItemList"
+    :selected-index="state.selectedIndex"
     @select-index="
       (index) => {
         state.selectedIndex = index;
@@ -27,38 +27,38 @@ interface LocalState {
 
 export default {
   name: "EnvironmentTabFilter",
-  emits: ["select-environment"],
   components: {},
   props: {
-    selectedID: {
+    selectedId: {
       type: Number,
     },
   },
-  setup(props, ctx) {
+  emits: ["select-environment"],
+  setup(props) {
     const store = useStore();
 
     const environmentList = computed(() => {
       // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-      // thus we rervese the order to put more important ones first.
+      // thus we reverse the order to put more important ones first.
       return cloneDeep(
         store.getters["environment/environmentList"]()
       ).reverse();
     });
 
     const state = reactive<LocalState>({
-      selectedIndex: props.selectedID
+      selectedIndex: props.selectedId
         ? environmentList.value.findIndex(
-            (environment: Environment) => environment.id == props.selectedID
+            (environment: Environment) => environment.id == props.selectedId
           ) + 1
         : 0,
     });
 
     watch(
-      () => props.selectedID,
+      () => props.selectedId,
       () => {
-        state.selectedIndex = props.selectedID
+        state.selectedIndex = props.selectedId
           ? environmentList.value.findIndex(
-              (environment: Environment) => environment.id == props.selectedID
+              (environment: Environment) => environment.id == props.selectedId
             ) + 1
           : 0;
       }

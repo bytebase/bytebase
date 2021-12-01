@@ -34,9 +34,7 @@
                 py-2
                 rounded-l-md
                 border border-r border-control-border
-                focus:mr-0.5
-                focus:ring-control
-                focus:border-control
+                focus:mr-0.5 focus:ring-control focus:border-control
                 sm:text-sm
                 disabled:bg-gray-50
               "
@@ -62,8 +60,7 @@
                 bg-gray-50
                 hover:bg-gray-100
                 disabled:bg-gray-50
-                focus:ring-control
-                focus:outline-none
+                focus:ring-control focus:outline-none
                 focus-visible:ring-2
                 focus:ring-offset-1
                 disabled:cursor-not-allowed
@@ -101,8 +98,7 @@
                 bg-gray-50
                 hover:bg-gray-100
                 disabled:bg-gray-50
-                focus:ring-control
-                focus:outline-none
+                focus:ring-control focus:outline-none
                 focus-visible:ring-2
                 focus:ring-offset-1
               "
@@ -129,15 +125,16 @@
           v-if="field.type == 'Database'"
           class="flex flex-row items-center space-x-2"
         >
+          <!-- eslint-disable vue/attribute-hyphenation -->
           <DatabaseSelect
             class="mt-1 w-64"
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
-            :environmentID="environmentID"
-            :selectedID="fieldValue(field) || UNKNOWN_ID"
+            :environmentId="environmentId"
+            :selectedId="fieldValue(field) || UNKNOWN_ID"
             @select-database-id="
-              (databaseID) => {
-                trySaveCustomField(field, databaseID);
+              (databaseId) => {
+                trySaveCustomField(field, databaseId);
               }
             "
           />
@@ -168,15 +165,16 @@ import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { activeEnvironment, fullDatabasePath } from "../utils";
-import { OutputField, IssueBuiltinFieldID, IssueContext } from "../plugins";
-import { DatabaseID, EnvironmentID, Issue, UNKNOWN_ID } from "../types";
+import { activeEnvironment } from "../utils";
+import { OutputField, IssueContext } from "../plugins";
+import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
   name: "IssueOutputPanel",
-  emits: ["update-custom-field"],
+  components: { DatabaseSelect },
   props: {
     issue: {
       required: true,
@@ -191,7 +189,7 @@ export default {
       type: Boolean,
     },
   },
-  components: { DatabaseSelect },
+  emits: ["update-custom-field"],
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -200,7 +198,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentID = computed((): EnvironmentID => {
+    const environmentId = computed((): EnvironmentId => {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
@@ -257,7 +255,7 @@ export default {
 
     const trySaveCustomField = (
       field: OutputField,
-      value: string | DatabaseID
+      value: string | DatabaseId
     ) => {
       if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
@@ -267,7 +265,7 @@ export default {
     return {
       UNKNOWN_ID,
       state,
-      environmentID,
+      environmentId,
       fieldValue,
       issueContext,
       allowEditDatabase,

@@ -72,7 +72,7 @@ type MemberCreate struct {
 	// Domain specific fields
 	Status      MemberStatus `jsonapi:"attr,status"`
 	Role        Role         `jsonapi:"attr,role"`
-	PrincipalID int          `jsonapi:"attr,principalID"`
+	PrincipalID int          `jsonapi:"attr,principalId"`
 }
 
 type MemberFind struct {

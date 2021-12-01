@@ -42,7 +42,7 @@
           Instance URL
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
-          {{ config.instanceURL }}
+          {{ config.instanceUrl }}
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
@@ -50,7 +50,7 @@
           Application ID
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
-          {{ config.applicationID }}
+          {{ config.applicationId }}
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
@@ -67,8 +67,9 @@
 
 <script lang="ts">
 import { PropType, reactive } from "@vue/runtime-core";
-import { VCSConfig, redirectURL } from "../types";
+import { VCSConfig, redirectUrl } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
 export default {
@@ -79,11 +80,11 @@ export default {
       type: Object as PropType<VCSConfig>,
     },
   },
-  setup(props, ctx) {
+  setup() {
     const state = reactive<LocalState>({});
 
     return {
-      redirectURL,
+      redirectUrl,
       state,
     };
   },

@@ -76,7 +76,7 @@
               <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
                 <span class="textlabel">Restored&nbsp;from&nbsp;</span>
                 <router-link
-                  :to="`/db/${database.sourceBackup.databaseID}`"
+                  :to="`/db/${database.sourceBackup.databaseId}`"
                   class="normal-link"
                 >
                   <!-- Do not display the name of the backup's database because that requires a fetch  -->
@@ -175,16 +175,17 @@
       <div class="col-span-1 w-64">
         <label for="user" class="textlabel"> Project </label>
         <!-- Only allow to transfer database to the project having OWNER role -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
-          class="mt-1"
           id="project"
+          class="mt-1"
           name="project"
-          :allowedRoleList="['OWNER']"
-          :includeDefaultProject="true"
-          :selectedID="state.editingProjectID"
+          :allowed-role-list="['OWNER']"
+          :include-default-project="true"
+          :selectedId="state.editingProjectId"
           @select-project-id="
-            (projectID) => {
-              state.editingProjectID = projectID;
+            (projectId) => {
+              state.editingProjectId = projectId;
             }
           "
         />
@@ -200,9 +201,9 @@
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="state.editingProjectID == database.project.id"
+          :disabled="state.editingProjectId == database.project.id"
           @click.prevent="
-            updateProject(state.editingProjectID);
+            updateProject(state.editingProjectId);
             state.showModal = false;
           "
         >
@@ -213,8 +214,8 @@
     <BBTabFilter
       class="px-3 pb-2 border-b border-block-border"
       :responsive="false"
-      :tabItemList="tabItemList"
-      :selectedIndex="state.selectedIndex"
+      :tab-item-list="tabItemList"
+      :selected-index="state.selectedIndex"
       @select-index="
         (index) => {
           selectTab(index);
@@ -225,17 +226,17 @@
       <template v-if="state.selectedIndex == OVERVIEW_TAB">
         <DatabaseOverviewPanel :database="database" />
       </template>
-      <template v-if="state.selectedIndex == MIGRAITON_HISTORY_TAB">
+      <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
         <DatabaseMigrationHistoryPanel
           :database="database"
-          :allowEdit="allowEdit"
+          :allow-edit="allowEdit"
         />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel
           :database="database"
-          :allowAdmin="allowAdmin"
-          :allowEdit="allowEdit"
+          :allow-admin="allowAdmin"
+          :allow-edit="allowEdit"
         />
       </template>
     </div>
@@ -246,7 +247,6 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import MemberSelect from "../components/MemberSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
@@ -254,17 +254,17 @@ import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { consoleLink, idFromSlug, isDBAOrOwner } from "../utils";
 import {
-  ProjectID,
+  ProjectId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Repository,
-  baseDirectoryWebURL,
+  baseDirectoryWebUrl,
 } from "../types";
 import { isEmpty } from "lodash";
 import { BBTabFilterItem } from "../bbkit/types";
 
 const OVERVIEW_TAB = 0;
-const MIGRAITON_HISTORY_TAB = 1;
+const MIGRATION_HISTORY_TAB = 1;
 const BACKUP_TAB = 2;
 
 type DatabaseTabItem = {
@@ -280,49 +280,48 @@ const databaseTabItemList: DatabaseTabItem[] = [
 
 interface LocalState {
   showModal: boolean;
-  editingProjectID: ProjectID;
+  editingProjectId: ProjectId;
   selectedIndex: number;
 }
 
 export default {
   name: "DatabaseDetail",
-  props: {
-    databaseSlug: {
-      required: true,
-      type: String,
-    },
-  },
   components: {
-    MemberSelect,
     ProjectSelect,
     DatabaseOverviewPanel,
     DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
     InstanceEngineIcon,
   },
-  setup(props, ctx) {
+  props: {
+    databaseSlug: {
+      required: true,
+      type: String,
+    },
+  },
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
       showModal: false,
-      editingProjectID: UNKNOWN_ID,
+      editingProjectId: UNKNOWN_ID,
       selectedIndex: OVERVIEW_TAB,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const database = computed(() => {
-      return store.getters["database/databaseByID"](
+      return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug)
       );
     });
 
     const databaseConsoleLink = computed(() => {
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleURL)) {
-        return consoleLink(consoleURL, database.value.name);
+      if (!isEmpty(consoleUrl)) {
+        return consoleLink(consoleUrl, database.value.name);
       }
       return "";
     });
@@ -331,7 +330,7 @@ export default {
       return isDBAOrOwner(currentUser.value.role);
     });
 
-    // Prject can be transferred if meets either of the condition below:
+    // Project can be transferred if meets either of the condition below:
     // - Database is in default project
     // - Workspace owner, dba
     // - db's project owner
@@ -412,7 +411,7 @@ export default {
     });
 
     const tryTransferProject = () => {
-      state.editingProjectID = database.value.project.id;
+      state.editingProjectId = database.value.project.id;
       state.showModal = true;
     };
 
@@ -433,20 +432,20 @@ export default {
       } else if (database.value.project.workflowType == "VCS") {
         store
           .dispatch(
-            "repository/fetchRepositoryByProjectID",
+            "repository/fetchRepositoryByProjectId",
             database.value.project.id
           )
           .then((repository: Repository) => {
-            window.open(baseDirectoryWebURL(repository), "_blank");
+            window.open(baseDirectoryWebUrl(repository), "_blank");
           });
       }
     };
 
-    const updateProject = (newProjectID: ProjectID) => {
+    const updateProject = (newProjectId: ProjectId) => {
       store
         .dispatch("database/transferProject", {
-          databaseID: database.value.id,
-          projectID: newProjectID,
+          databaseId: database.value.id,
+          projectId: newProjectId,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {
@@ -496,7 +495,7 @@ export default {
 
     return {
       OVERVIEW_TAB,
-      MIGRAITON_HISTORY_TAB,
+      MIGRATION_HISTORY_TAB,
       BACKUP_TAB,
       state,
       database,

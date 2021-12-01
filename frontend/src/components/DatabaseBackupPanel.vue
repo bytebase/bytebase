@@ -30,6 +30,44 @@
           <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
           <span class="text-accent"> {{ autoBackupHourText }}</span>
         </div>
+        <div class="mt-2">
+          <label for="hookUrl" class="textlabel">
+            Webhook URL
+          </label>
+          <div class="mt-1 textinfolabel">
+            An HTTP POST request will be sent to it after a successful backup.
+            <a
+             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
+             class="normal-link inline-flex flex-row items-center"
+            >
+            Learn more.
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+            </a>
+          </div>
+          <input
+            id="hookUrl"
+            name="hookUrl"
+            type="text"
+            class="textfield mt-1 w-full"
+            placeholder="https://betteruptime.com/api/v1/heartbeat/..."
+            :disabled="!allowEdit"
+            v-model="state.autoBackupUpdatedHookUrl"
+          />
+          <button class="btn-primary mt-2" :disabled="!allowEdit || !UrlChanged" @click.prevent="updateBackupHookUrl()">Update</button>
+        </div>
       </div>
       <div
         v-else
@@ -52,17 +90,17 @@
         <div class="text-lg leading-6 font-medium text-main">Backups</div>
         <button
           v-if="allowEdit"
-          @click.prevent="state.showCreateBackupModal = true"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
+          @click.prevent="state.showCreateBackupModal = true"
         >
           Backup now
         </button>
       </div>
       <BackupTable
         :database="database"
-        :backupList="backupList"
-        :allowEdit="allowEdit"
+        :backup-list="backupList"
+        :allow-edit="allowEdit"
       />
     </div>
     <BBModal
@@ -101,18 +139,24 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { cloneDeep, isEmpty } from "lodash";
+import { cloneDeep, isEmpty, isEqual } from "lodash";
 
 interface LocalState {
   showCreateBackupModal: boolean;
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
+  autoBackupHookUrl: string;
+  autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
 export default {
   name: "DatabaseBackupPanel",
+  components: {
+    BackupTable,
+    DatabaseBackupCreateForm,
+  },
   props: {
     database: {
       required: true,
@@ -127,11 +171,7 @@ export default {
       type: Boolean,
     },
   },
-  components: {
-    BackupTable,
-    DatabaseBackupCreateForm,
-  },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
 
     const state = reactive<LocalState>({
@@ -139,6 +179,8 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
+      autoBackupHookUrl: '',
+      autoBackupUpdatedHookUrl: '',
     });
 
     onUnmounted(() => {
@@ -148,14 +190,14 @@ export default {
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseID", props.database.id);
+      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
     };
 
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
       store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
-        environmentID: props.database.instance.environment.id,
+        environmentId: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
     };
@@ -166,12 +208,14 @@ export default {
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
+      state.autoBackupHookUrl = backupSetting.hookUrl;
+      state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseID"](props.database.id)
+        store.getters["backup/backupListByDatabaseId"](props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -231,7 +275,7 @@ export default {
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIDAndType"](
+      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
@@ -242,17 +286,21 @@ export default {
       return props.allowAdmin && backupPolicy.value == "UNSET";
     });
 
+    const UrlChanged = computed(() => {
+      return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
+    })
+
     const createBackup = (backupName: string) => {
       // Create backup
       const newBackup: BackupCreate = {
-        databaseID: props.database.id!,
+        databaseId: props.database.id!,
         name: backupName,
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
       store.dispatch("backup/createBackup", {
-        databaseID: props.database.id,
+        databaseId: props.database.id,
         newBackup: newBackup,
       });
       pollBackups(POST_CHANGE_POLL_INTERVAL);
@@ -265,7 +313,7 @@ export default {
       }
       state.pollBackupsTimer = setTimeout(() => {
         store
-          .dispatch("backup/fetchBackupListByDatabaseID", props.database.id)
+          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -283,7 +331,7 @@ export default {
 
     const prepareBackupSetting = () => {
       store
-        .dispatch("backup/fetchBackupSettingByDatabaseID", props.database.id)
+        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -305,7 +353,7 @@ export default {
         DEFAULT_BACKUP_DAYOFWEEK
       );
       const newBackupSetting: BackupSettingUpsert = {
-        databaseID: props.database.id,
+        databaseId: props.database.id,
         enabled: on,
         hour: on ? hour : state.autoBackupHour,
         dayOfWeek: on
@@ -313,7 +361,7 @@ export default {
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
-        hookURL: "",
+        hookUrl: "",
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -329,6 +377,28 @@ export default {
           });
         });
     };
+
+    const updateBackupHookUrl = () => {
+      const newBackupSetting: BackupSettingUpsert = {
+        databaseId: props.database.id,
+        enabled: state.autoBackupEnabled,
+        hour: state.autoBackupHour,
+        dayOfWeek: state.autoBackupDayOfWeek,
+        hookUrl: state.autoBackupUpdatedHookUrl,
+      };
+      store
+        .dispatch("backup/upsertBackupSetting", {
+          newBackupSetting: newBackupSetting,
+        })
+        .then((backupSetting: BackupSetting) => {
+          assignBackupSetting(backupSetting);
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: `Updated backup hook URL for database '${props.database.name}'.`,
+          });
+        });
+    }
 
     function localToUTC(hour: number, dayOfWeek: number) {
       return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);
@@ -366,6 +436,8 @@ export default {
       backupPolicy,
       createBackup,
       toggleAutoBackup,
+      UrlChanged,
+      updateBackupHookUrl,
     };
   },
 };

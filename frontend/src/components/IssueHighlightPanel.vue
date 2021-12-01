@@ -6,15 +6,15 @@
           <div>
             <IssueStatusIcon
               v-if="!create"
-              :issueStatus="issue.status"
-              :taskStatus="activeTask(issue.pipeline).status"
+              :issue-status="issue.status"
+              :task-status="activeTask(issue.pipeline).status"
             />
           </div>
           <BBTextField
             class="ml-2 my-0.5 w-full text-lg font-bold"
             :disabled="!allowEdit"
             :required="true"
-            :focusOnMount="create"
+            :focus-on-mount="create"
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"
@@ -45,7 +45,7 @@
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
             </template>
-            <a :href="vcsBranchURL" target="_blank" class="normal-link">
+            <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
             <span>
@@ -85,7 +85,7 @@ interface LocalState {
 
 export default {
   name: "IssueHighlightPanel",
-  emits: ["update-name"],
+  components: { IssueStatusIcon },
   props: {
     issue: {
       required: true,
@@ -100,7 +100,7 @@ export default {
       type: Boolean,
     },
   },
-  components: { IssueStatusIcon },
+  emits: ["update-name"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
       editing: false,
@@ -109,7 +109,7 @@ export default {
 
     watch(
       () => props.issue,
-      (curIssue, _) => {
+      (curIssue) => {
         state.name = curIssue.name;
       }
     );
@@ -142,10 +142,10 @@ export default {
       return "";
     });
 
-    const vcsBranchURL = computed((): string => {
+    const vcsBranchUrl = computed((): string => {
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
-          return `${pushEvent.value.repositoryURL}/-/tree/${vcsBranch.value}`;
+          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
         }
       }
       return "";
@@ -164,7 +164,7 @@ export default {
       pushEvent,
       vcsType,
       vcsBranch,
-      vcsBranchURL,
+      vcsBranchUrl,
       trySaveName,
     };
   },

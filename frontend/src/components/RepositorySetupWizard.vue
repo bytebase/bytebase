@@ -11,19 +11,19 @@
     </div>
     <BBStepTab
       class="pt-4"
-      :stepItemList="stepList"
-      :allowNext="allowNext"
+      :step-item-list="stepList"
+      :allow-next="allowNext"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="cancel"
     >
-      <template v-slot:0="{ next }">
+      <template #0="{ next }">
         <RepositoryVCSProviderPanel :config="state.config" @next="next()" />
       </template>
-      <template v-slot:1="{ next }">
+      <template #1="{ next }">
         <RepositorySelectionPanel :config="state.config" @next="next()" />
       </template>
-      <template v-slot:2>
+      <template #2>
         <RepositoryConfigPanel :config="state.config" />
       </template>
     </BBStepTab>
@@ -56,7 +56,7 @@ const DEFAULT_FILE_PATH_TEMPLATE =
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
-const CHOOSE_REPOSITORY_STEP = 1;
+// const CHOOSE_REPOSITORY_STEP = 1;
 const CONFIGURE_DEPLOY_STEP = 2;
 
 interface LocalState {
@@ -72,7 +72,6 @@ const stepList: BBStepTabItem[] = [
 
 export default {
   name: "RepositorySetupWizard",
-  emits: ["cancel", "finish"],
   components: {
     RepositoryVCSProviderPanel,
     RepositorySelectionPanel,
@@ -89,6 +88,7 @@ export default {
       type: Object as PropType<Project>,
     },
   },
+  emits: ["cancel", "finish"],
   setup(props, { emit }) {
     const router = useRouter();
     const store = useStore();
@@ -102,10 +102,10 @@ export default {
           refreshToken: "",
         },
         repositoryInfo: {
-          externalID: "",
+          externalId: "",
           name: "",
           fullPath: "",
-          webURL: "",
+          webUrl: "",
         },
         repositoryConfig: {
           baseDirectory: "",
@@ -139,16 +139,16 @@ export default {
     const tryFinishSetup = (allowFinishCallback: () => void) => {
       const createFunc = () => {
         const repositoryCreate: RepositoryCreate = {
-          vcsID: state.config.vcs.id,
-          projectID: props.project.id,
+          vcsId: state.config.vcs.id,
+          projectId: props.project.id,
           name: state.config.repositoryInfo.name,
           fullPath: state.config.repositoryInfo.fullPath,
-          webURL: state.config.repositoryInfo.webURL,
+          webUrl: state.config.repositoryInfo.webUrl,
           branchFilter: state.config.repositoryConfig.branchFilter,
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
-          externalID: state.config.repositoryInfo.externalID,
+          externalId: state.config.repositoryInfo.externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
@@ -167,7 +167,7 @@ export default {
         // Though the delete can succeed while the create fails, this is rare, and
         // even it happens, user can still configure it again.
         store
-          .dispatch("repository/deleteRepositoryByProjectID", props.project.id)
+          .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
           .then(() => {
             createFunc();
           });

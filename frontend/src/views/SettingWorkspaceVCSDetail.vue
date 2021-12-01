@@ -25,7 +25,7 @@
         type="text"
         class="textfield mt-1 w-full"
         disabled="true"
-        :value="vcs.instanceURL"
+        :value="vcs.instanceUrl"
       />
     </div>
 
@@ -37,10 +37,10 @@
       </p>
       <input
         id="name"
+        v-model="state.name"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.name"
       />
     </div>
 
@@ -50,17 +50,17 @@
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
           Application ID for the registered GitLab instance-wide OAuth
           application.
-          <a :href="adminApplicationURL" target="_blank" class="normal-link"
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link"
             >View in GitLab</a
           >
         </template>
       </p>
       <input
         id="applicationid"
+        v-model="state.applicationId"
         name="applicationid"
         type="text"
         class="textfield mt-1 w-full"
-        v-model="state.applicationID"
       />
     </div>
 
@@ -73,11 +73,11 @@
       </p>
       <input
         id="secret"
+        v-model="state.secret"
         name="secret"
         type="text"
         class="textfield mt-1 w-full"
         placeholder="sensitive - write only"
-        v-model="state.secret"
       />
     </div>
 
@@ -85,10 +85,10 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :buttonText="'Delete this Git provider'"
-          :okText="'Delete'"
-          :confirmTitle="`Delete Git provider '${vcs.name}'?`"
-          :requireConfirm="true"
+          :button-text="'Delete this Git provider'"
+          :ok-text="'Delete'"
+          :confirm-title="`Delete Git provider '${vcs.name}'?`"
+          :require-confirm="true"
           @confirm="deleteVCS"
         />
       </template>
@@ -122,7 +122,7 @@
       {{ `Linked repositories (${repositoryList.length})` }}
     </div>
     <div class="mt-4">
-      <RepositoryTable :repositoryList="repositoryList" />
+      <RepositoryTable :repository-list="repositoryList" />
     </div>
   </div>
 </template>
@@ -141,37 +141,37 @@ import {
   OAuthWindowEvent,
   OAuthWindowEventPayload,
   OAuthConfig,
-  redirectURL,
+  redirectUrl,
   OAuthToken,
 } from "../types";
 
 interface LocalState {
   name: string;
-  applicationID: string;
+  applicationId: string;
   secret: string;
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
 export default {
   name: "SettingWorkspaceVCSDetail",
+  components: { RepositoryTable },
   props: {
     vcsSlug: {
       required: true,
       type: String,
     },
   },
-  components: { RepositoryTable },
-  setup(props, ctx) {
+  setup(props) {
     const store = useStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
-      return store.getters["vcs/vcsByID"](idFromSlug(props.vcsSlug));
+      return store.getters["vcs/vcsById"](idFromSlug(props.vcsSlug));
     });
 
     const state = reactive<LocalState>({
       name: vcs.value.name,
-      applicationID: vcs.value.applicationID,
+      applicationId: vcs.value.applicationId,
       secret: "",
     });
 
@@ -180,10 +180,10 @@ export default {
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
           const oAuthConfig: OAuthConfig = {
-            endpoint: `${vcs.value.instanceURL}/oauth/token`,
-            applicationID: state.applicationID,
+            endpoint: `${vcs.value.instanceUrl}/oauth/token`,
+            applicationId: state.applicationId,
             secret: state.secret,
-            redirectURL: redirectURL(),
+            redirectUrl: redirectUrl(),
           };
           store
             .dispatch("gitlab/exchangeToken", {
@@ -193,7 +193,7 @@ export default {
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
             })
-            .catch((error) => {
+            .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
         }
@@ -205,38 +205,38 @@ export default {
     };
 
     const prepareRepositoryList = () => {
-      store.dispatch("repository/fetchRepositoryListByVCSID", vcs.value.id);
+      store.dispatch("repository/fetchRepositoryListByVCSId", vcs.value.id);
     };
 
     watchEffect(prepareRepositoryList);
 
-    const adminApplicationURL = computed(() => {
+    const adminApplicationUrl = computed(() => {
       if (vcs.value.type == "GITLAB_SELF_HOST") {
-        return `${vcs.value.instanceURL}/admin/applications`;
+        return `${vcs.value.instanceUrl}/admin/applications`;
       }
       return "";
     });
 
     const repositoryList = computed(() =>
-      store.getters["repository/repositoryListByVCSID"](vcs.value.id)
+      store.getters["repository/repositoryListByVCSId"](vcs.value.id)
     );
 
     const allowUpdate = computed(() => {
       return (
         state.name != vcs.value.name ||
-        state.applicationID != vcs.value.applicationID ||
+        state.applicationId != vcs.value.applicationId ||
         !isEmpty(state.secret)
       );
     });
 
     const doUpdate = () => {
       if (
-        state.applicationID != vcs.value.applicationID ||
+        state.applicationId != vcs.value.applicationId ||
         !isEmpty(state.secret)
       ) {
         const newWindow = openWindowForOAuth(
-          `${vcs.value.instanceURL}/oauth/authorize`,
-          vcs.value.applicationID
+          `${vcs.value.instanceUrl}/oauth/authorize`,
+          vcs.value.applicationId
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -245,15 +245,15 @@ export default {
               if (state.name != vcs.value.name) {
                 vcsPatch.name = state.name;
               }
-              if (state.applicationID != vcs.value.applicationID) {
-                vcsPatch.applicationID = state.applicationID;
+              if (state.applicationId != vcs.value.applicationId) {
+                vcsPatch.applicationId = state.applicationId;
               }
               if (!isEmpty(state.secret)) {
                 vcsPatch.secret = state.secret;
               }
               store
                 .dispatch("vcs/patchVCS", {
-                  vcsID: vcs.value.id,
+                  vcsId: vcs.value.id,
                   vcsPatch,
                 })
                 .then((vcs: VCS) => {
@@ -288,7 +288,7 @@ export default {
         };
         store
           .dispatch("vcs/patchVCS", {
-            vcsID: vcs.value.id,
+            vcsId: vcs.value.id,
             vcsPatch,
           })
           .then((updatedVCS: VCS) => {
@@ -309,7 +309,7 @@ export default {
 
     const deleteVCS = () => {
       const name = vcs.value.name;
-      store.dispatch("vcs/deleteVCSByID", vcs.value.id).then(() => {
+      store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
@@ -325,7 +325,7 @@ export default {
       state,
       vcs,
       repositoryList,
-      adminApplicationURL,
+      adminApplicationUrl,
       allowUpdate,
       doUpdate,
       cancel,

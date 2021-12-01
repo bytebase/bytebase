@@ -8,7 +8,7 @@
     "
   >
     <template v-for="(stage, index) in pipeline.stageList" :key="index">
-      <option :value="stage.id" :selected="stage.id == state.selectedID">
+      <option :value="stage.id" :selected="stage.id == state.selectedId">
         {{ isActiveStage(stage.id) ? stage.name + " (active)" : stage.name }}
       </option>
     </template>
@@ -17,42 +17,41 @@
 
 <script lang="ts">
 import { PropType, reactive, watch } from "vue";
-import { UNKNOWN_ID, Pipeline, StageID } from "../types";
+import { UNKNOWN_ID, Pipeline, StageId } from "../types";
 import { activeStage } from "../utils";
 
 interface LocalState {
-  selectedID: number;
+  selectedId: number;
 }
 
 export default {
   name: "StageSelect",
-  emits: ["select-stage-id"],
-  components: {},
   props: {
     pipeline: {
       required: true,
       type: Object as PropType<Pipeline>,
     },
-    selectedID: {
+    selectedId: {
       default: UNKNOWN_ID,
       type: Number,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-stage-id"],
+  setup(props) {
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
     });
 
     watch(
-      () => props.selectedID,
+      () => props.selectedId,
       (cur, _) => {
-        state.selectedID = cur;
+        state.selectedId = cur;
       }
     );
 
-    const isActiveStage = (stageID: StageID): boolean => {
+    const isActiveStage = (stageId: StageId): boolean => {
       const stage = activeStage(props.pipeline);
-      return stage.id == stageID;
+      return stage.id == stageId;
     };
 
     return {

@@ -1,17 +1,17 @@
 <template>
   <BBSelect
-    :selectedItem="selectedPrincipal"
-    :itemList="principalList"
+    :selected-item="selectedPrincipal"
+    :item-list="principalList"
     :placeholder="placeholder"
     :disabled="disabled"
     @select-item="
       (principal) => {
-        state.selectedID = principal.id;
+        state.selectedId = principal.id;
         $emit('select-principal-id', parseInt(principal.id));
       }
     "
   >
-    <template v-slot:menuItem="{ item }">
+    <template #menuItem="{ item }">
       <!--TODO(tianzhou): Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
@@ -21,7 +21,7 @@
         <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
-    <template v-slot:placeholder="{ placeholder }">
+    <template #placeholder="{ placeholder }">
       <!--TODO(tianzhou): Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
@@ -43,23 +43,22 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
   Member,
   Principal,
-  PrincipalID,
+  PrincipalId,
   RoleType,
   SYSTEM_BOT_ID,
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
-  selectedID?: PrincipalID;
+  selectedId?: PrincipalId;
   showMenu: boolean;
 }
 
 export default {
   name: "MemberSelect",
-  emits: ["select-principal-id"],
   components: { PrincipalAvatar },
   props: {
-    selectedID: {
+    selectedId: {
       type: Number,
     },
     disabled: {
@@ -67,8 +66,8 @@ export default {
       type: Boolean,
     },
     allowedRoleList: {
-      default: ["OWNER", "DBA", "DEVELOPER"],
-      type: Object as PropType<RoleType[]>,
+      default: () => ["OWNER", "DBA", "DEVELOPER"],
+      type: Array as PropType<RoleType[]>,
     },
     placeholder: {
       default: "Not assigned",
@@ -79,9 +78,10 @@ export default {
       type: Boolean,
     },
   },
-  setup(props, { emit }) {
+  emits: ["select-principal-id"],
+  setup(props) {
     const state = reactive<LocalState>({
-      selectedID: props.selectedID,
+      selectedId: props.selectedId,
       showMenu: false,
     });
     const store = useStore();
@@ -96,20 +96,20 @@ export default {
         });
       // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
       // Then we add system bot to the list so it can display properly.
-      if (props.selectedID == SYSTEM_BOT_ID) {
-        list.unshift(store.getters["principal/principalByID"](SYSTEM_BOT_ID));
+      if (props.selectedId == SYSTEM_BOT_ID) {
+        list.unshift(store.getters["principal/principalById"](SYSTEM_BOT_ID));
       }
       return list.filter((item: Principal) => {
-        // The previouly selected item might no longer be applicable.
+        // The previously selected item might no longer be applicable.
         // e.g. The select limits to DBA only and the selected principal is no longer a DBA
         // in such case, we still show the item.
-        if (item.id == props.selectedID) {
+        if (item.id == props.selectedId) {
           return true;
         }
 
         return (
           // We write this way instead of props.allowedRoleList.includes(item.role)
-          // is becaues isOwner/isDBA/isDeveloper has feature gate logic.
+          // is because isOwner/isDBA/isDeveloper has feature gate logic.
           (props.allowedRoleList.includes("OWNER") && isOwner(item.role)) ||
           (props.allowedRoleList.includes("DBA") && isDBA(item.role)) ||
           (props.allowedRoleList.includes("DEVELOPER") &&
@@ -119,15 +119,15 @@ export default {
     });
 
     watch(
-      () => props.selectedID,
-      (cur, _) => {
-        state.selectedID = cur;
+      () => props.selectedId,
+      (cur) => {
+        state.selectedId = cur;
       }
     );
 
     const selectedPrincipal = computed(() =>
       principalList.value.find(
-        (principal: Principal) => principal.id == state.selectedID
+        (principal: Principal) => principal.id == state.selectedId
       )
     );
 

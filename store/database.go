@@ -255,7 +255,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 			id,
 			creator_id,
 			created_ts,
