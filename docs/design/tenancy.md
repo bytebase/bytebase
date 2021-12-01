@@ -286,7 +286,7 @@ This will be a new ENUM field on the existing [project table](https://github.com
 
 ### API
 - Available Label Keys: workspace level:Create(), Delete(), List(). Note: Create() and Delete() methods are not provided at first as described in the Label Design section. 
-- Labels: database level Create(), Update(), Delete(), List().
+- Labels: labels should be a field of database object.
 - Deployment Configuration: project level Create(), Update(), Delete(), List().
 
 ## Appendix
