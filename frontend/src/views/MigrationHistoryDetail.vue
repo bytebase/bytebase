@@ -193,7 +193,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "@vue/runtime-core";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";

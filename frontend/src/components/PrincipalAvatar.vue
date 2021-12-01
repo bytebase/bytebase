@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "@vue/runtime-core";
+import { computed, PropType } from "vue";
 import { BBAvatarSizeType } from "../bbkit/types";
 import { Principal, UNKNOWN_ID } from "../types";
 

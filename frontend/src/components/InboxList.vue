@@ -82,7 +82,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "@vue/runtime-core";
+import { computed, PropType } from "vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ActivityIssueCommentCreatePayload,

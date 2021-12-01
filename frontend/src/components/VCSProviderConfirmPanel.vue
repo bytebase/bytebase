@@ -66,7 +66,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "@vue/runtime-core";
+import { PropType, reactive } from "vue";
 import { VCSConfig, redirectUrl } from "../types";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

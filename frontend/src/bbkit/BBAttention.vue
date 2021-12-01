@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "@vue/runtime-core";
+import { computed, PropType } from "vue";
 import { BBAttentionStyle } from "./types";
 export default {
   name: "BBAttention",

@@ -31,8 +31,7 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "@vue/runtime-core";
-import { reactive } from "@vue/reactivity";
+import { reactive, computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";

@@ -110,7 +110,7 @@
 
 <script lang="ts">
 import { reactive, watchEffect, watch } from "vue";
-import { computed, PropType } from "@vue/runtime-core";
+import { computed, PropType } from "vue";
 import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
