@@ -5,6 +5,7 @@
 <p align="center">
 <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
 <img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
+<img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
 </p>
 
 <p align="center" >
