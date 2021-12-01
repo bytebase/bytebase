@@ -137,8 +137,12 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <!-- TODO For test for now, will delete -->
-        <div class="cursor-pointer" @click="toggleLocales">
+        <!-- TODO test for now, will delete -->
+        <div
+          v-if="showSwitchPlan"
+          class="cursor-pointer"
+          @click="toggleLocales"
+        >
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
