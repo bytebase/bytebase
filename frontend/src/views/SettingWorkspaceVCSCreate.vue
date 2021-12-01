@@ -19,7 +19,7 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
+import { reactive } from "vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
