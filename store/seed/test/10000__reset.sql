@@ -86,6 +86,9 @@ DELETE FROM
 DELETE FROM
     project_member;
 
+DELETE FROM
+    label_key;
+
 -- Project 1 refers to DEFAULT project which is considered as part of schema
 DELETE FROM
     project

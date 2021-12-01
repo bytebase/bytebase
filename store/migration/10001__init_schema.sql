@@ -1265,3 +1265,37 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- Label
+-- label_key stores available label keys at workspace level.
+CREATE TABLE label_key (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    key TEXT NOT NULL UNIQUE
+);
+
+CREATE UNIQUE INDEX idx_label_key_key ON label_key(key);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('label_key', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_label_key_modification_time`
+AFTER
+UPDATE
+    ON `label_key` FOR EACH ROW BEGIN
+UPDATE
+    `label_key`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
