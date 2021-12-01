@@ -58,7 +58,7 @@ export function urlfy(str: string): string {
   return result;
 }
 
-export function isURL(str: string): boolean {
+export function isUrl(str: string): boolean {
   let url;
 
   try {

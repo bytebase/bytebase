@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   Environment,
-  EnvironmentID,
+  EnvironmentId,
   PolicyState,
   ResourceIdentifier,
   ResourceObject,
@@ -14,11 +14,11 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Policy {
-  const environmentID = (
+  const environmentId = (
     policy.relationships!.environment.data as ResourceIdentifier
   ).id;
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = parseInt(environmentID);
+  environment.id = parseInt(environmentId);
 
   for (const item of includedList || []) {
     if (
@@ -39,14 +39,14 @@ function convert(
 }
 
 const state: () => PolicyState = () => ({
-  policyMapByEnvironmentID: new Map(),
+  policyMapByEnvironmentId: new Map(),
 });
 
 const getters = {
-  policyByEnvironmentIDAndType:
+  policyByEnvironmentIdAndType:
     (state: PolicyState) =>
-    (environmentID: EnvironmentID, type: PolicyType): Policy | undefined => {
-      const map = state.policyMapByEnvironmentID.get(environmentID);
+    (environmentId: EnvironmentId, type: PolicyType): Policy | undefined => {
+      const map = state.policyMapByEnvironmentId.get(environmentId);
       if (map) {
         return map.get(type);
       }
@@ -57,13 +57,13 @@ const getters = {
 const actions = {
   async fetchPolicyByEnvironmentAndType(
     { commit, rootGetters }: any,
-    { environmentID, type }: { environmentID: EnvironmentID; type: PolicyType }
+    { environmentId, type }: { environmentId: EnvironmentId; type: PolicyType }
   ): Promise<Policy> {
     const data = (
-      await axios.get(`/api/policy/environment/${environmentID}?type=${type}`)
+      await axios.get(`/api/policy/environment/${environmentId}?type=${type}`)
     ).data;
     const policy = convert(data.data, data.included, rootGetters);
-    commit("setPolicyByEnvironmentID", { environmentID, policy });
+    commit("setPolicyByEnvironmentId", { environmentId, policy });
 
     return policy;
   },
@@ -71,18 +71,18 @@ const actions = {
   async upsertPolicyByEnvironmentAndType(
     { commit, rootGetters }: any,
     {
-      environmentID,
+      environmentId,
       type,
       policyUpsert,
     }: {
-      environmentID: EnvironmentID;
+      environmentId: EnvironmentId;
       type: PolicyType;
       policyUpsert: PolicyUpsert;
     }
   ): Promise<Policy> {
     const data = (
       await axios.patch(
-        `/api/policy/environment/${environmentID}?type=${type}`,
+        `/api/policy/environment/${environmentId}?type=${type}`,
         {
           data: {
             type: "policyUpsert",
@@ -95,29 +95,29 @@ const actions = {
     ).data;
     const policy = convert(data.data, data.included, rootGetters);
 
-    commit("setPolicyByEnvironmentID", { environmentID, policy });
+    commit("setPolicyByEnvironmentId", { environmentId, policy });
 
     return policy;
   },
 };
 
 const mutations = {
-  setPolicyByEnvironmentID(
+  setPolicyByEnvironmentId(
     state: PolicyState,
     {
-      environmentID,
+      environmentId,
       policy,
     }: {
-      environmentID: EnvironmentID;
+      environmentId: EnvironmentId;
       policy: Policy;
     }
   ) {
-    const map = state.policyMapByEnvironmentID.get(environmentID);
+    const map = state.policyMapByEnvironmentId.get(environmentId);
     if (map) {
       map.set(policy.type, policy);
     } else {
-      state.policyMapByEnvironmentID.set(
-        environmentID,
+      state.policyMapByEnvironmentId.set(
+        environmentId,
         new Map([[policy.type, policy]])
       );
     }

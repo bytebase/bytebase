@@ -111,4 +111,3 @@ VALUES
         'bb.anomaly.instance.connection',
         '{"detail":"failed to connect database at mysql.staging.example.com:3306 with user \"admin\": dial tcp: lookup mysql.staging.example.com: no such host"}'
     );
-

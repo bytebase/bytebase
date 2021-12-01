@@ -51,7 +51,7 @@ import {
   OAuthWindowEventPayload,
   openWindowForOAuth,
   ProjectRepositoryConfig,
-  redirectURL,
+  redirectUrl,
   VCS,
 } from "../types";
 import { isOwner } from "../utils";
@@ -90,10 +90,10 @@ export default {
       if (isEmpty(payload.error)) {
         props.config.code = payload.code;
         const oAuthConfig: OAuthConfig = {
-          endpoint: `${state.selectedVCS!.instanceURL}/oauth/token`,
-          applicationID: state.selectedVCS!.applicationID,
+          endpoint: `${state.selectedVCS!.instanceUrl}/oauth/token`,
+          applicationId: state.selectedVCS!.applicationId,
           secret: state.selectedVCS!.secret,
-          redirectURL: redirectURL(),
+          redirectUrl: redirectUrl(),
         };
         store
           .dispatch("gitlab/exchangeToken", {
@@ -125,8 +125,8 @@ export default {
     const selectVCS = (vcs: VCS) => {
       state.selectedVCS = vcs;
       const newWindow = openWindowForOAuth(
-        `${vcs.instanceURL}/oauth/authorize`,
-        vcs.applicationID
+        `${vcs.instanceUrl}/oauth/authorize`,
+        vcs.applicationId
       );
       if (newWindow) {
         window.addEventListener(OAuthWindowEvent, eventListener, false);

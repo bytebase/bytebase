@@ -1,4 +1,4 @@
--- Database for sandbox environment instance 6001 
+-- Database for sandbox environment instance 6001
 INSERT INTO
     db (
         id,

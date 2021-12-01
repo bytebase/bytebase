@@ -130,11 +130,11 @@
             class="mt-1 w-64"
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
-            :environmentID="environmentID"
-            :selectedID="fieldValue(field) || UNKNOWN_ID"
+            :environmentId="environmentId"
+            :selectedId="fieldValue(field) || UNKNOWN_ID"
             @select-database-id="
-              (databaseID) => {
-                trySaveCustomField(field, databaseID);
+              (databaseId) => {
+                trySaveCustomField(field, databaseId);
               }
             "
           />
@@ -167,7 +167,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import { activeEnvironment } from "../utils";
 import { OutputField, IssueContext } from "../plugins";
-import { DatabaseID, EnvironmentID, Issue, UNKNOWN_ID } from "../types";
+import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -198,7 +198,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentID = computed((): EnvironmentID => {
+    const environmentId = computed((): EnvironmentId => {
       return activeEnvironment(props.issue.pipeline).id;
     });
 
@@ -255,7 +255,7 @@ export default {
 
     const trySaveCustomField = (
       field: OutputField,
-      value: string | DatabaseID
+      value: string | DatabaseId
     ) => {
       if (!isEqual(value, fieldValue(field))) {
         emit("update-custom-field", field, value);
@@ -265,7 +265,7 @@ export default {
     return {
       UNKNOWN_ID,
       state,
-      environmentID,
+      environmentId,
       fieldValue,
       issueContext,
       allowEditDatabase,

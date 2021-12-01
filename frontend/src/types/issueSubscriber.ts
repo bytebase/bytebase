@@ -1,8 +1,8 @@
-import { IssueID } from "./id";
+import { IssueId } from "./id";
 import { Principal } from "./principal";
 
 export type IssueSubscriber = {
   // Domain specific fields
-  issueID: IssueID;
+  issueId: IssueId;
   subscriber: Principal;
 };

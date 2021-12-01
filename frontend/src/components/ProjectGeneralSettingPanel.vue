@@ -105,7 +105,7 @@ export default {
       }
       store
         .dispatch("project/patchProject", {
-          projectID: props.project.id,
+          projectId: props.project.id,
           projectPatch,
         })
         .then((updatedProject: Project) => {

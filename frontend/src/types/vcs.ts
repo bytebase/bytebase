@@ -1,4 +1,4 @@
-import { VCSID } from "./id";
+import { VCSId } from "./id";
 import { Principal } from "./principal";
 
 export type VCSType = "GITLAB_SELF_HOST";
@@ -6,13 +6,13 @@ export type VCSType = "GITLAB_SELF_HOST";
 export interface VCSConfig {
   type: VCSType;
   name: string;
-  instanceURL: string;
-  applicationID: string;
+  instanceUrl: string;
+  applicationId: string;
   secret: string;
 }
 
 export type VCS = {
-  id: VCSID;
+  id: VCSId;
 
   // Standard fields
   creator: Principal;
@@ -23,9 +23,9 @@ export type VCS = {
   // Domain specific fields
   name: string;
   type: VCSType;
-  instanceURL: string;
-  apiURL: string;
-  applicationID: string;
+  instanceUrl: string;
+  apiUrl: string;
+  applicationId: string;
   secret: string;
 };
 
@@ -33,21 +33,21 @@ export type VCSCreate = {
   // Domain specific fields
   name: string;
   type: VCSType;
-  instanceURL: string;
-  applicationID: string;
+  instanceUrl: string;
+  applicationId: string;
   secret: string;
 };
 
 export type VCSPatch = {
   // Domain specific fields
   name?: string;
-  applicationID?: string;
+  applicationId?: string;
   secret?: string;
 };
 
 export type VCSTokenCreate = {
   code: string;
-  redirectURL: string;
+  redirectUrl: string;
 };
 
 export type VCSFileCommit = {
@@ -63,13 +63,13 @@ export type VCSFileCommit = {
 export type VCSPushEvent = {
   vcsType: VCSType;
   ref: string;
-  repositoryID: string;
-  repositoryURL: string;
+  repositoryId: string;
+  repositoryUrl: string;
   repositoryFullPath: string;
   authorName: string;
   fileCommit: VCSFileCommit;
 };
 
-export function isValidVCSApplicationIDOrSecret(str: string): boolean {
+export function isValidVCSApplicationIdOrSecret(str: string): boolean {
   return /^[a-zA-Z0-9_]{64}$/.test(str);
 }

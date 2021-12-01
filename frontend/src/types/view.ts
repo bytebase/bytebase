@@ -1,10 +1,10 @@
 import { Database } from "./database";
-import { ViewID } from "./id";
+import { ViewId } from "./id";
 import { Principal } from "./principal";
 
 // View
 export type View = {
-  id: ViewID;
+  id: ViewId;
 
   // Related fields
   database: Database;

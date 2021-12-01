@@ -31,13 +31,13 @@
           <span class="text-accent"> {{ autoBackupHourText }}</span>
         </div>
         <div class="mt-2">
-          <label for="hookURL" class="textlabel">
+          <label for="hookUrl" class="textlabel">
             Webhook URL
           </label>
           <div class="mt-1 textinfolabel">
-            An HTTP POST request will be sent to it after a successful backup. 
+            An HTTP POST request will be sent to it after a successful backup.
             <a
-             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook" 
+             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
              class="normal-link inline-flex flex-row items-center"
             >
             Learn more.
@@ -58,15 +58,15 @@
             </a>
           </div>
           <input
-            id="hookURL"
-            name="hookURL"
+            id="hookUrl"
+            name="hookUrl"
             type="text"
             class="textfield mt-1 w-full"
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
             :disabled="!allowEdit"
-            v-model="state.autoBackupUpdatedHookURL"
+            v-model="state.autoBackupUpdatedHookUrl"
           />
-          <button class="btn-primary mt-2" :disabled="!allowEdit || !URLChanged" @click.prevent="updateBackupHookURL()">Update</button>
+          <button class="btn-primary mt-2" :disabled="!allowEdit || !UrlChanged" @click.prevent="updateBackupHookUrl()">Update</button>
         </div>
       </div>
       <div
@@ -146,8 +146,8 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
-  autoBackupHookURL: string;
-  autoBackupUpdatedHookURL: string;
+  autoBackupHookUrl: string;
+  autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -179,8 +179,8 @@ export default {
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
-      autoBackupHookURL: '',
-      autoBackupUpdatedHookURL: '',
+      autoBackupHookUrl: '',
+      autoBackupUpdatedHookUrl: '',
     });
 
     onUnmounted(() => {
@@ -190,14 +190,14 @@ export default {
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseID", props.database.id);
+      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
     };
 
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
       store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
-        environmentID: props.database.instance.environment.id,
+        environmentId: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
     };
@@ -208,14 +208,14 @@ export default {
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
-      state.autoBackupHookURL = backupSetting.hookURL;
-      state.autoBackupUpdatedHookURL = backupSetting.hookURL;
+      state.autoBackupHookUrl = backupSetting.hookUrl;
+      state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseID"](props.database.id)
+        store.getters["backup/backupListByDatabaseId"](props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -275,7 +275,7 @@ export default {
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIDAndType"](
+      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
@@ -286,21 +286,21 @@ export default {
       return props.allowAdmin && backupPolicy.value == "UNSET";
     });
 
-    const URLChanged = computed(() => {
-      return !isEqual(state.autoBackupHookURL, state.autoBackupUpdatedHookURL);
+    const UrlChanged = computed(() => {
+      return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
     })
 
     const createBackup = (backupName: string) => {
       // Create backup
       const newBackup: BackupCreate = {
-        databaseID: props.database.id!,
+        databaseId: props.database.id!,
         name: backupName,
         status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
       store.dispatch("backup/createBackup", {
-        databaseID: props.database.id,
+        databaseId: props.database.id,
         newBackup: newBackup,
       });
       pollBackups(POST_CHANGE_POLL_INTERVAL);
@@ -313,7 +313,7 @@ export default {
       }
       state.pollBackupsTimer = setTimeout(() => {
         store
-          .dispatch("backup/fetchBackupListByDatabaseID", props.database.id)
+          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -331,7 +331,7 @@ export default {
 
     const prepareBackupSetting = () => {
       store
-        .dispatch("backup/fetchBackupSettingByDatabaseID", props.database.id)
+        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -353,7 +353,7 @@ export default {
         DEFAULT_BACKUP_DAYOFWEEK
       );
       const newBackupSetting: BackupSettingUpsert = {
-        databaseID: props.database.id,
+        databaseId: props.database.id,
         enabled: on,
         hour: on ? hour : state.autoBackupHour,
         dayOfWeek: on
@@ -361,7 +361,7 @@ export default {
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
-        hookURL: "",
+        hookUrl: "",
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -378,13 +378,13 @@ export default {
         });
     };
 
-    const updateBackupHookURL = () => {
+    const updateBackupHookUrl = () => {
       const newBackupSetting: BackupSettingUpsert = {
-        databaseID: props.database.id,
+        databaseId: props.database.id,
         enabled: state.autoBackupEnabled,
         hour: state.autoBackupHour,
         dayOfWeek: state.autoBackupDayOfWeek,
-        hookURL: state.autoBackupUpdatedHookURL,
+        hookUrl: state.autoBackupUpdatedHookUrl,
       };
       store
         .dispatch("backup/upsertBackupSetting", {
@@ -436,8 +436,8 @@ export default {
       backupPolicy,
       createBackup,
       toggleAutoBackup,
-      URLChanged,
-      updateBackupHookURL,
+      UrlChanged,
+      updateBackupHookUrl,
     };
   },
 };

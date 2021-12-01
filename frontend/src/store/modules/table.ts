@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   Database,
-  DatabaseID,
+  DatabaseId,
   ResourceIdentifier,
   ResourceObject,
   Table,
@@ -14,12 +14,12 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Table {
-  const databaseID = (table.relationships!.database.data as ResourceIdentifier)
+  const databaseId = (table.relationships!.database.data as ResourceIdentifier)
     .id;
 
   let database: Database = unknown("DATABASE") as Database;
   for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseID) {
+    if (item.type == "database" && item.id == databaseId) {
       database = rootGetters["database/convert"](item, includedList);
       break;
     }
@@ -32,73 +32,73 @@ function convert(
 }
 
 const state: () => TableState = () => ({
-  tableListByDatabaseID: new Map(),
+  tableListByDatabaseId: new Map(),
 });
 
 const getters = {
-  tableListByDatabaseIDAndTableName:
+  tableListByDatabaseIdAndTableName:
     (state: TableState) =>
-    (databaseID: DatabaseID, tableName: string): Table | undefined => {
-      const list = state.tableListByDatabaseID.get(databaseID);
+    (databaseId: DatabaseId, tableName: string): Table | undefined => {
+      const list = state.tableListByDatabaseId.get(databaseId);
       if (list) {
         return list.find((item: Table) => item.name == tableName);
       }
       return undefined;
     },
 
-  tableListByDatabaseID:
+  tableListByDatabaseId:
     (state: TableState) =>
-    (databaseID: DatabaseID): Table[] => {
-      return state.tableListByDatabaseID.get(databaseID) || [];
+    (databaseId: DatabaseId): Table[] => {
+      return state.tableListByDatabaseId.get(databaseId) || [];
     },
 };
 
 const actions = {
-  async fetchTableByDatabaseIDAndTableName(
+  async fetchTableByDatabaseIdAndTableName(
     { commit, rootGetters }: any,
-    { databaseID, tableName }: { databaseID: DatabaseID; tableName: string }
+    { databaseId, tableName }: { databaseId: DatabaseId; tableName: string }
   ) {
     const data = (
-      await axios.get(`/api/database/${databaseID}/table/${tableName}`)
+      await axios.get(`/api/database/${databaseId}/table/${tableName}`)
     ).data;
     const table = convert(data.data, data.included, rootGetters);
 
-    commit("setTableByDatabaseIDAndTableName", {
-      databaseID,
+    commit("setTableByDatabaseIdAndTableName", {
+      databaseId,
       tableName,
       table,
     });
     return table;
   },
 
-  async fetchTableListByDatabaseID(
+  async fetchTableListByDatabaseId(
     { commit, rootGetters }: any,
-    databaseID: DatabaseID
+    databaseId: DatabaseId
   ) {
-    const data = (await axios.get(`/api/database/${databaseID}/table`)).data;
+    const data = (await axios.get(`/api/database/${databaseId}/table`)).data;
     const tableList = data.data.map((table: ResourceObject) => {
       return convert(table, data.included, rootGetters);
     });
 
-    commit("setTableListByDatabaseID", { databaseID, tableList });
+    commit("setTableListByDatabaseId", { databaseId, tableList });
     return tableList;
   },
 };
 
 const mutations = {
-  setTableByDatabaseIDAndTableName(
+  setTableByDatabaseIdAndTableName(
     state: TableState,
     {
-      databaseID,
+      databaseId,
       tableName,
       table,
     }: {
-      databaseID: DatabaseID;
+      databaseId: DatabaseId;
       tableName: string;
       table: Table;
     }
   ) {
-    const list = state.tableListByDatabaseID.get(databaseID);
+    const list = state.tableListByDatabaseId.get(databaseId);
     if (list) {
       const i = list.findIndex((item: Table) => item.name == tableName);
       if (i != -1) {
@@ -107,21 +107,21 @@ const mutations = {
         list.push(table);
       }
     } else {
-      state.tableListByDatabaseID.set(databaseID, [table]);
+      state.tableListByDatabaseId.set(databaseId, [table]);
     }
   },
 
-  setTableListByDatabaseID(
+  setTableListByDatabaseId(
     state: TableState,
     {
-      databaseID,
+      databaseId,
       tableList,
     }: {
-      databaseID: DatabaseID;
+      databaseId: DatabaseId;
       tableList: Table[];
     }
   ) {
-    state.tableListByDatabaseID.set(databaseID, tableList);
+    state.tableListByDatabaseId.set(databaseId, tableList);
   },
 };
 

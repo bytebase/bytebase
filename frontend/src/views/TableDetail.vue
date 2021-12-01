@@ -243,7 +243,7 @@ export default {
     const store = useStore();
 
     const table = computed(() => {
-      return store.getters["table/tableListByDatabaseIDAndTableName"](
+      return store.getters["table/tableListByDatabaseIdAndTableName"](
         idFromSlug(props.databaseSlug),
         props.tableName
       );
@@ -254,10 +254,10 @@ export default {
     });
 
     const databaseConsoleLink = computed(() => {
-      const consoleURL =
+      const consoleUrl =
         store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleURL)) {
-        return consoleLink(consoleURL, database.value.name);
+      if (!isEmpty(consoleUrl)) {
+        return consoleLink(consoleUrl, database.value.name);
       }
       return "";
     });

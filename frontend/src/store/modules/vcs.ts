@@ -1,6 +1,6 @@
 import axios from "axios";
 import {
-  VCSID,
+  VCSId,
   VCS,
   VCSCreate,
   VCSState,
@@ -19,8 +19,8 @@ function convert(vcs: ResourceObject): VCS {
 }
 
 const state: () => VCSState = () => ({
-  vcsByID: new Map(),
-  repositoryListByVCSID: new Map(),
+  vcsById: new Map(),
+  repositoryListByVCSId: new Map(),
 });
 
 const getters = {
@@ -32,20 +32,20 @@ const getters = {
 
   vcsList: (state: VCSState) => (): VCS[] => {
     const list = [];
-    for (const [_, vcs] of state.vcsByID) {
+    for (const [_, vcs] of state.vcsById) {
       list.push(vcs);
     }
     return list;
   },
 
-  vcsByID:
+  vcsById:
     (state: VCSState) =>
-    (vcsID: VCSID): VCS => {
-      if (vcsID == EMPTY_ID) {
+    (vcsId: VCSId): VCS => {
+      if (vcsId == EMPTY_ID) {
         return empty("VCS") as VCS;
       }
 
-      return state.vcsByID.get(vcsID) || (unknown("VCS") as VCS);
+      return state.vcsById.get(vcsId) || (unknown("VCS") as VCS);
     },
 };
 
@@ -66,12 +66,12 @@ const actions = {
     return vcsList;
   },
 
-  async fetchVCSByID({ commit }: any, vcsID: VCSID) {
-    const data = (await axios.get(`/api/vcs/${vcsID}`)).data;
+  async fetchVCSById({ commit }: any, vcsId: VCSId) {
+    const data = (await axios.get(`/api/vcs/${vcsId}`)).data;
     const vcs = convert(data.data);
 
-    commit("setVCSByID", {
-      vcsID,
+    commit("setVCSById", {
+      vcsId,
       vcs,
     });
     return vcs;
@@ -88,8 +88,8 @@ const actions = {
     ).data;
     const createdVCS = convert(data.data);
 
-    commit("setVCSByID", {
-      vcsID: createdVCS.id,
+    commit("setVCSById", {
+      vcsId: createdVCS.id,
       vcs: createdVCS,
     });
 
@@ -99,15 +99,15 @@ const actions = {
   async patchVCS(
     { commit }: any,
     {
-      vcsID,
+      vcsId,
       vcsPatch,
     }: {
-      vcsID: VCSID;
+      vcsId: VCSId;
       vcsPatch: VCSPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/vcs/${vcsID}`, {
+      await axios.patch(`/api/vcs/${vcsId}`, {
         data: {
           type: "VCSCreate",
           attributes: vcsPatch,
@@ -116,46 +116,46 @@ const actions = {
     ).data;
     const updatedVCS = convert(data.data);
 
-    commit("setVCSByID", {
-      vcsID: updatedVCS.id,
+    commit("setVCSById", {
+      vcsId: updatedVCS.id,
       vcs: updatedVCS,
     });
 
     return updatedVCS;
   },
 
-  async deleteVCSByID(
+  async deleteVCSById(
     { commit }: { state: VCSState; commit: any },
-    vcsID: VCSID
+    vcsId: VCSId
   ) {
-    await axios.delete(`/api/vcs/${vcsID}`);
+    await axios.delete(`/api/vcs/${vcsId}`);
 
-    commit("deleteVCSByID", vcsID);
+    commit("deleteVCSById", vcsId);
   },
 };
 
 const mutations = {
   setVCSList(state: VCSState, vcsList: VCS[]) {
     vcsList.forEach((vcs) => {
-      state.vcsByID.set(vcs.id, vcs);
+      state.vcsById.set(vcs.id, vcs);
     });
   },
 
-  setVCSByID(
+  setVCSById(
     state: VCSState,
     {
-      vcsID,
+      vcsId,
       vcs,
     }: {
-      vcsID: VCSID;
+      vcsId: VCSId;
       vcs: VCS;
     }
   ) {
-    state.vcsByID.set(vcsID, vcs);
+    state.vcsById.set(vcsId, vcs);
   },
 
-  deleteVCSByID(state: VCSState, vcsID: VCSID) {
-    state.vcsByID.delete(vcsID);
+  deleteVCSById(state: VCSState, vcsId: VCSId) {
+    state.vcsById.delete(vcsId);
   },
 };
 

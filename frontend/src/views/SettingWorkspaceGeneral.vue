@@ -17,15 +17,15 @@
 
       <div class="mt-4">
         <input
-          id="databaseURL"
-          v-model="state.consoleURL"
+          id="databaseUrl"
+          v-model="state.consoleUrl"
           type="text"
           placeholder="http://phpmyadmin.example.com:8080/index.php?route=/database/sql&db={{DB_NAME}}"
           autocomplete="off"
           class="w-full textfield"
           :disabled="!allowEdit"
         />
-        <div for="databaseURL" class="mt-2 textinfolabel">
+        <div for="databaseUrl" class="mt-2 textinfolabel">
           Tip: Use {{ DB_NAME_PLACEHOLDER }} as the placeholder for the actual
           database name
         </div>
@@ -54,7 +54,7 @@ import { Setting } from "../types/setting";
 const DB_NAME_PLACEHOLDER = "{{DB_NAME}}";
 
 interface LocalState {
-  consoleURL: string;
+  consoleUrl: string;
 }
 
 export default {
@@ -63,7 +63,7 @@ export default {
     const store = useStore();
 
     const state = reactive<LocalState>({
-      consoleURL:
+      consoleUrl:
         store.getters["setting/settingByName"]("bb.console.url").value,
     });
 
@@ -75,23 +75,23 @@ export default {
 
     const allowSave = computed((): boolean => {
       return (
-        state.consoleURL !=
+        state.consoleUrl !=
         store.getters["setting/settingByName"]("bb.console.url").value
       );
     });
 
     const doSave = () => {
       if (
-        state.consoleURL !=
+        state.consoleUrl !=
         store.getters["setting/settingByName"]("bb.console.url").value
       ) {
         store
           .dispatch("setting/updateSettingByName", {
             name: "bb.console.url",
-            value: state.consoleURL,
+            value: state.consoleUrl,
           })
           .then((setting: Setting) => {
-            state.consoleURL = setting.value;
+            state.consoleUrl = setting.value;
           });
       }
     };

@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { MemberID, PrincipalID, ProjectID } from "./id";
+import { MemberId, PrincipalId, ProjectId } from "./id";
 import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
@@ -13,7 +13,7 @@ export type ProjectVisibility = "PUBLIC" | "PRIVATE";
 
 // Project
 export type Project = {
-  id: ProjectID;
+  id: ProjectId;
 
   // Standard fields
   creator: Principal;
@@ -49,7 +49,7 @@ export type ProjectPatch = {
 
 // Project Member
 export type ProjectMember = {
-  id: MemberID;
+  id: MemberId;
 
   // Related fields
   project: Project;
@@ -67,7 +67,7 @@ export type ProjectMember = {
 
 export type ProjectMemberCreate = {
   // Domain specific fields
-  principalID: PrincipalID;
+  principalId: PrincipalId;
   role: ProjectRoleType;
 };
 

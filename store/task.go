@@ -135,9 +135,9 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			stage_id,
 			instance_id,
 			name,
-			`+"`status`,"+`	
+			`+"`status`,"+`
 			`+"`type`,"+`
-			payload	
+			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
@@ -162,9 +162,9 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			instance_id,
 			database_id,
 			name,
-			`+"`status`,"+`	
+			`+"`status`,"+`
 			`+"`type`,"+`
-			payload	
+			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
@@ -252,7 +252,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT 
+		SELECT
 		    id,
 		    creator_id,
 		    created_ts,

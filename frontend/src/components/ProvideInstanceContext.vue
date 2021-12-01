@@ -21,11 +21,11 @@ export default {
     const prepareInstanceContext = async function () {
       await Promise.all([
         store.dispatch(
-          "database/fetchDatabaseListByInstanceID",
+          "database/fetchDatabaseListByInstanceId",
           idFromSlug(props.instanceSlug)
         ),
         store.dispatch(
-          "instance/fetchInstanceUserListByID",
+          "instance/fetchInstanceUserListById",
           idFromSlug(props.instanceSlug)
         ),
       ]);

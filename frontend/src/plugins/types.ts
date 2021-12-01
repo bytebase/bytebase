@@ -10,9 +10,9 @@ import {
 
 // Issue
 // It has to be string type because the id for stage field contain multiple parts.
-export type FieldID = string;
+export type FieldId = string;
 
-export enum IssueBuiltinFieldID {
+export enum IssueBuiltinFieldId {
   NAME = "1",
   STATUS = "2",
   ASSIGNEE = "3",
@@ -46,7 +46,7 @@ export type InputField = {
   // Used as the key to store the data. This must NOT be changed after
   // in use, otherwise, it will cause data loss/corruption. Its design
   // is very similar to the message field id in Protocol Buffers.
-  id: FieldID;
+  id: FieldId;
   // Used as the key to generate UI artifacts (e.g. query parameter).
   // Though changing it won't have catastrophic consequence like changing
   // id, we strongly recommend NOT to change it as well, otherwise, previous
@@ -68,7 +68,7 @@ export type InputField = {
 
 export type OutputField = {
   // Same as InputField.id
-  id: FieldID;
+  id: FieldId;
   // Same as InputField.name
   name: string;
   // Same as InputField.type
@@ -102,7 +102,7 @@ export type IssueTemplate = {
   type: string;
   buildIssue: (
     ctx: TemplateContext
-  ) => Omit<IssueCreate, "projectID" | "creatorID">;
+  ) => Omit<IssueCreate, "projectId" | "creatorId">;
   inputFieldList: InputField[];
   outputFieldList: OutputField[];
 };

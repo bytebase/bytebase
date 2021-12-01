@@ -33,10 +33,10 @@
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel">Issue&nbsp;-&nbsp;</span>
               <router-link
-                :to="`/issue/${migrationHistory.issueID}`"
+                :to="`/issue/${migrationHistory.issueId}`"
                 class="normal-link"
               >
-                {{ migrationHistory.issueID }}
+                {{ migrationHistory.issueId }}
               </router-link>
             </dd>
             <dt class="sr-only">Duration</dt>
@@ -69,7 +69,7 @@
             <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
             </template>
-            <a :href="vcsBranchURL" target="_blank" class="normal-link">
+            <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
             <span>
@@ -226,7 +226,7 @@ export default {
     const store = useStore();
 
     const migrationHistory = computed((): MigrationHistory => {
-      return store.getters["instance/migrationHistoryByID"](
+      return store.getters["instance/migrationHistoryById"](
         idFromSlug(props.migrationHistorySlug)
       );
     });
@@ -237,7 +237,7 @@ export default {
     });
 
     const database = computed(() => {
-      return store.getters["database/databaseByID"](
+      return store.getters["database/databaseById"](
         idFromSlug(props.databaseSlug)
       );
     });
@@ -257,10 +257,10 @@ export default {
       return "";
     });
 
-    const vcsBranchURL = computed((): string => {
+    const vcsBranchUrl = computed((): string => {
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
-          return `${pushEvent.value.repositoryURL}/-/tree/${vcsBranch.value}`;
+          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
         }
       }
       return "";
@@ -293,7 +293,7 @@ export default {
       migrationHistory,
       pushEvent,
       vcsBranch,
-      vcsBranchURL,
+      vcsBranchUrl,
       copyStatement,
       copySchema,
     };

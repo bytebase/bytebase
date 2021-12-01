@@ -1,14 +1,14 @@
-import { PipelineID } from "../id";
+import { PipelineId } from "../id";
 import { Principal } from "../principal";
 import { Stage, StageCreate } from "./stage";
 
 /*
  An example
- 
+
  An alter schema PIPELINE
   Dev STAGE (db_dev, env_dev)
     Change dev database schema
-  
+
   Testing STAGE (db_test, env_test)
     Change testing database schema
     Verify integration test pass
@@ -25,7 +25,7 @@ import { Stage, StageCreate } from "./stage";
 export type PipelineStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type Pipeline = {
-  id: PipelineID;
+  id: PipelineId;
 
   // Related fields
   stageList: Stage[];

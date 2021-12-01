@@ -4,7 +4,7 @@
   </div>
   <div class="mt-2 textinfolabel">
     Database migration scripts are stored in
-    <a class="normal-link" :href="repository.webURL" target="_blank">{{
+    <a class="normal-link" :href="repository.webUrl" target="_blank">{{
       repository.fullPath
     }}</a
     >. To make schema changes, a developer would create a migration script
@@ -125,10 +125,10 @@ export default {
 
     const repositoryInfo = computed((): ExternalRepositoryInfo => {
       return {
-        externalID: props.repository.externalID,
+        externalId: props.repository.externalId,
         name: props.repository.name,
         fullPath: props.repository.fullPath,
-        webURL: props.repository.webURL,
+        webUrl: props.repository.webUrl,
       };
     });
 
@@ -148,7 +148,7 @@ export default {
 
     const restoreToUIWorkflowType = () => {
       store
-        .dispatch("repository/deleteRepositoryByProjectID", props.project.id)
+        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
         .then(() => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -185,8 +185,8 @@ export default {
           state.repositoryConfig.schemaPathTemplate;
       }
       store
-        .dispatch("repository/updateRepositoryByProjectID", {
-          projectID: props.project.id,
+        .dispatch("repository/updateRepositoryByProjectId", {
+          projectId: props.project.id,
           repositoryPatch,
         })
         .then(() => {

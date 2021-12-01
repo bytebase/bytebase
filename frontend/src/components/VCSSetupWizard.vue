@@ -36,7 +36,7 @@ import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import {
-  isValidVCSApplicationIDOrSecret,
+  isValidVCSApplicationIdOrSecret,
   VCSConfig,
   VCSCreate,
   VCS,
@@ -44,10 +44,10 @@ import {
   OAuthWindowEventPayload,
   OAuthWindowEvent,
   OAuthConfig,
-  redirectURL,
+  redirectUrl,
   OAuthToken,
 } from "../types";
-import { isURL } from "../utils";
+import { isUrl } from "../utils";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -80,8 +80,8 @@ export default {
       config: {
         type: "GITLAB_SELF_HOST",
         name: "GitLab self-host",
-        instanceURL: "",
-        applicationID: "",
+        instanceUrl: "",
+        applicationId: "",
         secret: "",
       },
       currentStep: 0,
@@ -92,10 +92,10 @@ export default {
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
           const oAuthConfig: OAuthConfig = {
-            endpoint: `${state.config.instanceURL}/oauth/token`,
-            applicationID: state.config.applicationID,
+            endpoint: `${state.config.instanceUrl}/oauth/token`,
+            applicationId: state.config.applicationId,
             secret: state.config.secret,
-            redirectURL: redirectURL(),
+            redirectUrl: redirectUrl(),
           };
           store
             .dispatch("gitlab/exchangeToken", {
@@ -118,11 +118,11 @@ export default {
 
     const allowNext = computed((): boolean => {
       if (state.currentStep == BASIC_INFO_STEP) {
-        return isURL(state.config.instanceURL);
+        return isUrl(state.config.instanceUrl);
       } else if (state.currentStep == OAUTH_INFO_STEP) {
         return (
-          isValidVCSApplicationIDOrSecret(state.config.applicationID) &&
-          isValidVCSApplicationIDOrSecret(state.config.secret)
+          isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
+          isValidVCSApplicationIdOrSecret(state.config.secret)
         );
       }
       return true;
@@ -150,8 +150,8 @@ export default {
       // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         const newWindow = openWindowForOAuth(
-          `${state.config.instanceURL}/oauth/authorize`,
-          state.config.applicationID
+          `${state.config.instanceUrl}/oauth/authorize`,
+          state.config.applicationId
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {

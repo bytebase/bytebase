@@ -91,7 +91,7 @@ CREATE FUNCTION public.author_post_count (author_id INT)
 CREATE OR REPLACE FUNCTION update_updated_ts()
 RETURNS TRIGGER AS $$
 BEGIN
-   NEW.updated_ts = now(); 
+   NEW.updated_ts = now();
    RETURN NEW;
 END;
 $$ language 'plpgsql';

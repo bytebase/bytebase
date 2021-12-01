@@ -1,17 +1,17 @@
-import { ColumnID, DatabaseID, TableID } from "./id";
+import { ColumnId, DatabaseId, TableId } from "./id";
 
 // Column
 export type Column = {
-  id: ColumnID;
+  id: ColumnId;
 
   // Related fields
-  databaseID: DatabaseID;
-  tableID: TableID;
+  databaseId: DatabaseId;
+  tableId: TableId;
 
   // Standard fields
-  creatorID: number;
+  creatorId: number;
   createdTs: number;
-  updaterID: number;
+  updaterId: number;
   updatedTs: number;
 
   // Domain specific fields

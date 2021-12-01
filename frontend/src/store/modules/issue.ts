@@ -4,15 +4,15 @@ import {
   EMPTY_ID,
   Issue,
   IssueCreate,
-  IssueID,
+  IssueId,
   IssuePatch,
   IssueState,
   IssueStatus,
   IssueStatusPatch,
   Pipeline,
-  PrincipalID,
+  PrincipalId,
   Project,
-  ProjectID,
+  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -23,15 +23,15 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Issue {
-  const projectID = (issue.relationships!.project.data as ResourceIdentifier)
+  const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectID);
+  project.id = parseInt(projectId);
 
-  const pipelineID = (issue.relationships!.pipeline.data as ResourceIdentifier)
+  const pipelineId = (issue.relationships!.pipeline.data as ResourceIdentifier)
     .id;
   let pipeline = unknown("PIPELINE") as Pipeline;
-  pipeline.id = parseInt(pipelineID);
+  pipeline.id = parseInt(pipelineId);
 
   for (const item of includedList || []) {
     if (
@@ -59,18 +59,18 @@ function convert(
 }
 
 const state: () => IssueState = () => ({
-  issueByID: new Map(),
+  issueById: new Map(),
 });
 
 const getters = {
-  issueByID:
+  issueById:
     (state: IssueState) =>
-    (issueID: IssueID): Issue => {
-      if (issueID == EMPTY_ID) {
+    (issueId: IssueId): Issue => {
+      if (issueId == EMPTY_ID) {
         return empty("ISSUE") as Issue;
       }
 
-      return state.issueByID.get(issueID) || (unknown("ISSUE") as Issue);
+      return state.issueById.get(issueId) || (unknown("ISSUE") as Issue);
     },
 };
 
@@ -79,13 +79,13 @@ const actions = {
     { rootGetters }: any,
     {
       issueStatusList,
-      userID,
-      projectID,
+      userId,
+      projectId,
       limit,
     }: {
       issueStatusList?: IssueStatus[];
-      userID?: PrincipalID;
-      projectID?: ProjectID;
+      userId?: PrincipalId;
+      projectId?: ProjectId;
       limit?: number;
     }
   ) {
@@ -93,11 +93,11 @@ const actions = {
     if (issueStatusList) {
       queryList.push(`status=${issueStatusList.join(",")}`);
     }
-    if (userID) {
-      queryList.push(`user=${userID}`);
+    if (userId) {
+      queryList.push(`user=${userId}`);
     }
-    if (projectID) {
-      queryList.push(`project=${projectID}`);
+    if (projectId) {
+      queryList.push(`project=${projectId}`);
     }
     if (limit) {
       queryList.push(`limit=${limit}`);
@@ -115,11 +115,11 @@ const actions = {
     return issueList;
   },
 
-  async fetchIssueByID({ commit, rootGetters }: any, issueID: IssueID) {
-    const data = (await axios.get(`/api/issue/${issueID}`)).data;
+  async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
+    const data = (await axios.get(`/api/issue/${issueId}`)).data;
     const issue = convert(data.data, data.included, rootGetters);
-    commit("setIssueByID", {
-      issueID,
+    commit("setIssueById", {
+      issueId,
       issue,
     });
 
@@ -132,9 +132,9 @@ const actions = {
     for (const stage of issue.pipeline.stageList) {
       for (const task of stage.taskList) {
         commit(
-          "instance/setInstanceByID",
+          "instance/setInstanceById",
           {
-            instanceID: task.instance.id,
+            instanceId: task.instance.id,
             instance: task.instance,
           },
           { root: true }
@@ -169,8 +169,8 @@ const actions = {
     ).data;
     const createdIssue = convert(data.data, data.included, rootGetters);
 
-    commit("setIssueByID", {
-      issueID: createdIssue.id,
+    commit("setIssueById", {
+      issueId: createdIssue.id,
       issue: createdIssue,
     });
 
@@ -180,15 +180,15 @@ const actions = {
   async patchIssue(
     { commit, dispatch, rootGetters }: any,
     {
-      issueID,
+      issueId,
       issuePatch,
     }: {
-      issueID: IssueID;
+      issueId: IssueId;
       issuePatch: IssuePatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/issue/${issueID}`, {
+      await axios.patch(`/api/issue/${issueId}`, {
         data: {
           type: "issuePatch",
           attributes: issuePatch,
@@ -197,12 +197,12 @@ const actions = {
     ).data;
     const updatedIssue = convert(data.data, data.included, rootGetters);
 
-    commit("setIssueByID", {
-      issueID: issueID,
+    commit("setIssueById", {
+      issueId: issueId,
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueID, { root: true });
+    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
 
     return updatedIssue;
   },
@@ -210,15 +210,15 @@ const actions = {
   async updateIssueStatus(
     { commit, dispatch, rootGetters }: any,
     {
-      issueID,
+      issueId,
       issueStatusPatch,
     }: {
-      issueID: IssueID;
+      issueId: IssueId;
       issueStatusPatch: IssueStatusPatch;
     }
   ) {
     const data = (
-      await axios.patch(`/api/issue/${issueID}/status`, {
+      await axios.patch(`/api/issue/${issueId}/status`, {
         data: {
           type: "issueStatusPatch",
           attributes: issueStatusPatch,
@@ -227,29 +227,29 @@ const actions = {
     ).data;
     const updatedIssue = convert(data.data, data.included, rootGetters);
 
-    commit("setIssueByID", {
-      issueID: issueID,
+    commit("setIssueById", {
+      issueId: issueId,
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueID, { root: true });
+    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
 
     return updatedIssue;
   },
 };
 
 const mutations = {
-  setIssueByID(
+  setIssueById(
     state: IssueState,
     {
-      issueID,
+      issueId,
       issue,
     }: {
-      issueID: IssueID;
+      issueId: IssueId;
       issue: Issue;
     }
   ) {
-    state.issueByID.set(issueID, issue);
+    state.issueById.set(issueId, issue);
   },
 };
 

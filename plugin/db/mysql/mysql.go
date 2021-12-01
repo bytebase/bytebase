@@ -238,7 +238,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
-				IFNULL(COLUMN_NAME, ''), 
+				IFNULL(COLUMN_NAME, ''),
 				ORDINAL_POSITION,
 				COLUMN_DEFAULT,
 				IS_NULLABLE,
@@ -295,7 +295,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
 			SELECT
-				TABLE_SCHEMA, 
+				TABLE_SCHEMA,
 				TABLE_NAME,
 				IFNULL(UNIX_TIMESTAMP(CREATE_TIME), 0),
 				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
@@ -377,7 +377,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
 			SELECT
-				TABLE_SCHEMA, 
+				TABLE_SCHEMA,
 				TABLE_NAME,
 				VIEW_DEFINITION
 			FROM information_schema.VIEWS
@@ -418,7 +418,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
-			SELECT 
+			SELECT
 		    SCHEMA_NAME,
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
@@ -531,7 +531,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 // Migration related
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
-		SELECT 
+		SELECT
 		    1
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'

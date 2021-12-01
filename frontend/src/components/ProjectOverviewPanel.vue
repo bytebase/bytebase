@@ -108,7 +108,7 @@ export default {
     const prepareActivityList = () => {
       store
         .dispatch("activity/fetchActivityListForProject", {
-          projectID: props.project.id,
+          projectId: props.project.id,
           limit: ACTIVITY_LIMIT,
         })
         .then((list) => {
@@ -121,7 +121,7 @@ export default {
     const prepareIssueList = () => {
       store
         .dispatch("issue/fetchIssueList", {
-          projectID: props.project.id,
+          projectId: props.project.id,
         })
         .then((issueList: Issue[]) => {
           state.progressIssueList = [];

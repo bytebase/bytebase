@@ -89,7 +89,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ProjectWebhook,
   PROJECT_HOOK_ACTIVITY_ITEM_LIST,
-  redirectURL,
+  redirectUrl,
 } from "../types";
 import { projectWebhookSlug } from "../utils";
 
@@ -134,7 +134,7 @@ export default {
 
     return {
       state,
-      redirectURL,
+      redirectUrl,
       viewProjectWebhook,
       activityListStr,
     };
