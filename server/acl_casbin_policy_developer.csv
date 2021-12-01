@@ -66,3 +66,4 @@ p, DEVELOPER, /vcs/{id}, GET
 p, DEVELOPER, /plan, GET
 p, DEVELOPER, /plan, PATCH
 p, DEVELOPER, /setting, GET
+p, DEVELOPER, /label, GET
