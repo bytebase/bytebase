@@ -34,7 +34,7 @@ var (
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := db.TlsConfig{
+			tlsCfg := db.TLSConfig{
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
@@ -46,7 +46,7 @@ var (
 
 // dumpDatabase exports the schema of a database instance.
 // When file isn't specified, the schema will be exported to stdout.
-func dumpDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig, schemaOnly bool) error {
+func dumpDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TLSConfig, schemaOnly bool) error {
 	var dbType db.Type
 	switch databaseType {
 	case "mysql":
@@ -70,7 +70,7 @@ func dumpDatabase(ctx context.Context, databaseType, username, password, hostnam
 			Username:  username,
 			Password:  password,
 			Database:  database,
-			TlsConfig: tlsCfg,
+			TLSConfig: tlsCfg,
 		},
 		db.ConnectionContext{},
 	)

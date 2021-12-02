@@ -10,16 +10,19 @@ import (
 	"time"
 )
 
+// DingTalkWebhookResponse is the API message for DingTalk webhook response.
 type DingTalkWebhookResponse struct {
 	ErrorCode    int    `json:"errcode"`
 	ErrorMessage string `json:"errmsg"`
 }
 
+// DingTalkWebhookMarkdown is the API message for DingTalk webhook markdown.
 type DingTalkWebhookMarkdown struct {
 	Title string `json:"title"`
 	Text  string `json:"text"`
 }
 
+// DingTalkWebhook is the API message for DingTalk webhook.
 type DingTalkWebhook struct {
 	MessageType string                  `json:"msgtype"`
 	Markdown    DingTalkWebhookMarkdown `json:"markdown"`
@@ -29,10 +32,11 @@ func init() {
 	register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
 }
 
+// DingTalkReceiver is the receiver for DingTalk.
 type DingTalkReceiver struct {
 }
 
-func (receiver *DingTalkReceiver) post(context WebhookContext) error {
+func (receiver *DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.MetaList {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
