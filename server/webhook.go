@@ -134,7 +134,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					activityCreate := &api.ActivityCreate{
-						CreatorID:   api.SYSTEM_BOT_ID,
+						CreatorID:   api.SystemBotID,
 						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ActivityWarn,
@@ -289,10 +289,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					Name:        commit.Title,
 					Type:        api.IssueDatabaseSchemaUpdate,
 					Description: commit.Message,
-					AssigneeID:  api.SYSTEM_BOT_ID,
+					AssigneeID:  api.SystemBotID,
 				}
 
-				issue, err := s.CreateIssue(ctx, issueCreate, api.SYSTEM_BOT_ID)
+				issue, err := s.CreateIssue(ctx, issueCreate, api.SystemBotID)
 				if err != nil {
 					s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
 						zap.String("file", added))
@@ -313,7 +313,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 
 					activityCreate := &api.ActivityCreate{
-						CreatorID:   api.SYSTEM_BOT_ID,
+						CreatorID:   api.SystemBotID,
 						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ActivityInfo,

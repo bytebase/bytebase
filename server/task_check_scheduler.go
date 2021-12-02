@@ -105,7 +105,7 @@ func (s *TaskCheckScheduler) Run() error {
 
 							taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
 								ID:        &taskCheckRun.ID,
-								UpdaterID: api.SYSTEM_BOT_ID,
+								UpdaterID: api.SystemBotID,
 								Status:    api.TaskCheckRunDone,
 								Code:      common.Ok,
 								Result:    string(bytes),
@@ -141,7 +141,7 @@ func (s *TaskCheckScheduler) Run() error {
 
 							taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
 								ID:        &taskCheckRun.ID,
-								UpdaterID: api.SYSTEM_BOT_ID,
+								UpdaterID: api.SystemBotID,
 								Status:    api.TaskCheckRunFailed,
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),

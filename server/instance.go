@@ -224,7 +224,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 		}
 
-		resultSet := &api.SqlResultSet{}
+		resultSet := &api.SQLResultSet{}
 		db, err := db.Open(
 			ctx,
 			instance.Engine,

@@ -235,7 +235,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	result := &config{}
 	{
 		configCreate := &api.SettingCreate{
-			CreatorID:   api.SYSTEM_BOT_ID,
+			CreatorID:   api.SystemBotID,
 			Name:        api.SettingAuthSecret,
 			Value:       common.RandomString(SECRET_LENGTH),
 			Description: "Random string used to sign the JWT auth token.",
@@ -249,7 +249,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 
 	{
 		configCreate := &api.SettingCreate{
-			CreatorID:   api.SYSTEM_BOT_ID,
+			CreatorID:   api.SystemBotID,
 			Name:        api.SettingConsoleURL,
 			Value:       "",
 			Description: "URL for the external console (e.g. phpMyAdmin).",

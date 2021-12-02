@@ -6,6 +6,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// ConnectionInfo is the API message for connection infos.
 type ConnectionInfo struct {
 	Engine           db.Type `jsonapi:"attr,engine"`
 	Host             string  `jsonapi:"attr,host"`
@@ -16,15 +17,18 @@ type ConnectionInfo struct {
 	InstanceID       *int    `jsonapi:"attr,instanceId"`
 }
 
-type SqlSyncSchema struct {
+// SQLSyncSchema is the API message for sync schemas.
+type SQLSyncSchema struct {
 	InstanceID int `jsonapi:"attr,instanceId"`
 }
 
-type SqlResultSet struct {
+// SQLResultSet is the API message for SQL results.
+type SQLResultSet struct {
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
 	Error string `jsonapi:"attr,error"`
 }
 
-type SqlService interface {
-	Ping(ctx context.Context, config *ConnectionInfo) (*SqlResultSet, error)
+// SQLService is the service for SQL.
+type SQLService interface {
+	Ping(ctx context.Context, config *ConnectionInfo) (*SQLResultSet, error)
 }

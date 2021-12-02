@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Repository is the API message for a repository.
 type Repository struct {
 	ID int `jsonapi:"primary,repository"`
 
@@ -44,6 +45,7 @@ type Repository struct {
 	RefreshToken string
 }
 
+// RepositoryCreate is the API message for creating a repository.
 type RepositoryCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -74,6 +76,7 @@ type RepositoryCreate struct {
 	WebhookSecretToken string
 }
 
+// RepositoryFind is the API message for finding repositories.
 type RepositoryFind struct {
 	ID *int
 
@@ -93,6 +96,7 @@ func (find *RepositoryFind) String() string {
 	return string(str)
 }
 
+// RepositoryPatch is the API message for patching a repository.
 type RepositoryPatch struct {
 	ID int `jsonapi:"primary,repositoryPatch"`
 
@@ -107,6 +111,7 @@ type RepositoryPatch struct {
 	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
 }
 
+// RepositoryDelete is the API message for deleting a repository.
 type RepositoryDelete struct {
 	// Related fields
 	// When deleting the repository, we need to update the correponding project workflow type to "UI",
@@ -118,6 +123,7 @@ type RepositoryDelete struct {
 	DeleterID int
 }
 
+// RepositoryService is the service for repositories.
 type RepositoryService interface {
 	CreateRepository(ctx context.Context, create *RepositoryCreate) (*Repository, error)
 	FindRepositoryList(ctx context.Context, find *RepositoryFind) ([]*Repository, error)

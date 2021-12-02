@@ -5,31 +5,27 @@ import (
 	"encoding/json"
 )
 
+// MemberStatus is the status of an member.
 type MemberStatus string
 
 const (
+	// Unknown is the member status for UNKNOWN.
 	Unknown MemberStatus = "UNKNOWN"
+	// Invited is the member status for INVITED.
 	Invited MemberStatus = "INVITED"
-	Active  MemberStatus = "ACTIVE"
+	// Active is the member status for ACTIVE.
+	Active MemberStatus = "ACTIVE"
 )
 
-func (e MemberStatus) String() string {
-	switch e {
-	case Unknown:
-		return "UNKNOWN"
-	case Invited:
-		return "INVITED"
-	case Active:
-		return "ACTIVE"
-	}
-	return ""
-}
-
+// Role is the type of a role.
 type Role string
 
 const (
-	Owner     Role = "OWNER"
-	DBA       Role = "DBA"
+	// Owner is the OWNER role.
+	Owner Role = "OWNER"
+	// DBA is the DBA role.
+	DBA Role = "DBA"
+	// Developer is the DEVELOPER role.
 	Developer Role = "DEVELOPER"
 )
 
@@ -45,6 +41,7 @@ func (e Role) String() string {
 	return ""
 }
 
+// Member is the API message for a member.
 type Member struct {
 	ID int `jsonapi:"primary,member"`
 
@@ -64,6 +61,7 @@ type Member struct {
 	Principal   *Principal `jsonapi:"attr,principal"`
 }
 
+// MemberCreate is the API message for creating a member.
 type MemberCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -75,6 +73,7 @@ type MemberCreate struct {
 	PrincipalID int          `jsonapi:"attr,principalId"`
 }
 
+// MemberFind is the API message for finding members.
 type MemberFind struct {
 	ID *int
 
@@ -91,6 +90,7 @@ func (find *MemberFind) String() string {
 	return string(str)
 }
 
+// MemberPatch is the API message for patching a member.
 type MemberPatch struct {
 	ID int
 
@@ -103,6 +103,7 @@ type MemberPatch struct {
 	Role *string `jsonapi:"attr,role"`
 }
 
+// MemberService is the service for members.
 type MemberService interface {
 	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
 	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)

@@ -164,7 +164,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SYSTEM_BOT_ID,
+				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
 				Payload:    string(payload),
@@ -202,7 +202,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 		} else {
 			if setup {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
@@ -245,7 +245,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SYSTEM_BOT_ID,
+				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
@@ -336,7 +336,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				} else {
 					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-						CreatorID:  api.SYSTEM_BOT_ID,
+						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
@@ -423,7 +423,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
@@ -507,7 +507,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,

@@ -136,7 +136,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	backupCreate := &api.BackupCreate{
-		CreatorID:               api.SYSTEM_BOT_ID,
+		CreatorID:               api.SystemBotID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
 		Status:                  api.BackupStatusPendingCreate,

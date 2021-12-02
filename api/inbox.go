@@ -5,23 +5,27 @@ import (
 	"encoding/json"
 )
 
+// InboxStatus is the status for inboxes.
 type InboxStatus string
 
 const (
-	UNREAD InboxStatus = "UNREAD"
-	READ   InboxStatus = "READ"
+	// Unread is the inbox status for UNREAD.
+	Unread InboxStatus = "UNREAD"
+	// Read is the inbox status for READ.
+	Read InboxStatus = "READ"
 )
 
 func (e InboxStatus) String() string {
 	switch e {
-	case UNREAD:
+	case Unread:
 		return "UNREAD"
-	case READ:
+	case Read:
 		return "READ"
 	}
 	return "UNKNOWN"
 }
 
+// Inbox is the API message for an inbox.
 type Inbox struct {
 	ID int `jsonapi:"primary,inbox"`
 
@@ -31,12 +35,14 @@ type Inbox struct {
 	Status     InboxStatus `jsonapi:"attr,status"`
 }
 
+// InboxCreate is the API message for creating an inbox.
 type InboxCreate struct {
 	// Domain specific fields
 	ReceiverID int
 	ActivityID int
 }
 
+// InboxFind is the API message for finding inboxes.
 type InboxFind struct {
 	ID *int
 
@@ -54,6 +60,7 @@ func (find *InboxFind) String() string {
 	return string(str)
 }
 
+// InboxPatch is the API message for patching an inbox.
 type InboxPatch struct {
 	ID int
 
@@ -61,7 +68,7 @@ type InboxPatch struct {
 	Status InboxStatus `jsonapi:"attr,status"`
 }
 
-// Contains the inbox summary info.
+// InboxSummary is the API message for inbox summary info.
 // This is used by the frontend to render the inbox sidebar item without fetching the actual inbox items.
 // This returns json instead of jsonapi since it't not dealing with a particular resource.
 type InboxSummary struct {
@@ -69,6 +76,7 @@ type InboxSummary struct {
 	HasUnreadError bool `json:"hasUnreadError"`
 }
 
+// InboxService is the service for inboxes.
 type InboxService interface {
 	CreateInbox(ctx context.Context, create *InboxCreate) (*Inbox, error)
 	// Find the inbox list and return most recent created item first.
