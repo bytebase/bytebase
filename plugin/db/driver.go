@@ -14,22 +14,30 @@ import (
 	"go.uber.org/zap"
 )
 
+// Type is the type of a database.
 type Type string
 
 const (
+	// ClickHouse is the database type for CLICKHOUSE.
 	ClickHouse Type = "CLICKHOUSE"
-	MySQL      Type = "MYSQL"
-	Postgres   Type = "POSTGRES"
-	Snowflake  Type = "SNOWFLAKE"
-	TiDB       Type = "TIDB"
+	// MySQL is the database type for MYSQL.
+	MySQL Type = "MYSQL"
+	// Postgres is the database type for POSTGRES.
+	Postgres Type = "POSTGRES"
+	// Snowflake is the database type for SNOWFLAKE.
+	Snowflake Type = "SNOWFLAKE"
+	// TiDB is the database type for TIDB.
+	TiDB Type = "TIDB"
 )
 
-type DBUser struct {
+// User is the database user.
+type User struct {
 	Name  string
 	Grant string
 }
 
-type DBView struct {
+// View is the database view.
+type View struct {
 	Name string
 	// CreatedTs isn't supported for ClickHouse.
 	CreatedTs  int64
@@ -38,7 +46,8 @@ type DBView struct {
 	Comment    string
 }
 
-type DBIndex struct {
+// Index is the database index.
+type Index struct {
 	Name string
 	// This could refer to a column or an expression
 	Expression string
@@ -50,7 +59,8 @@ type DBIndex struct {
 	Comment string
 }
 
-type DBColumn struct {
+// Column the database table column.
+type Column struct {
 	Name     string
 	Position int
 	Default  *string
@@ -64,7 +74,8 @@ type DBColumn struct {
 	Comment   string
 }
 
-type DBTable struct {
+// Table is the database table.
+type Table struct {
 	Name string
 	// CreatedTs isn't supported for ClickHouse.
 	CreatedTs int64
@@ -83,37 +94,42 @@ type DBTable struct {
 	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake.
 	CreateOptions string
 	Comment       string
-	ColumnList    []DBColumn
+	ColumnList    []Column
 	// IndexList isn't supported for ClickHouse, Snowflake.
-	IndexList []DBIndex
+	IndexList []Index
 }
 
-type DBSchema struct {
+// Schema is the database schema.
+type Schema struct {
 	Name string
 	// CharacterSet isn't supported for ClickHouse, Snowflake.
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake.
 	Collation string
-	UserList  []DBUser
-	TableList []DBTable
-	ViewList  []DBView
+	UserList  []User
+	TableList []Table
+	ViewList  []View
 }
 
 var (
 	driversMu sync.RWMutex
-	drivers   = make(map[Type]DriverFunc)
+	drivers   = make(map[Type]driverFunc)
 )
 
+// DriverConfig is the driver configuration.
 type DriverConfig struct {
 	Logger *zap.Logger
 }
 
-type DriverFunc func(DriverConfig) Driver
+type driverFunc func(DriverConfig) Driver
 
+// MigrationEngine is the migration engine.
 type MigrationEngine string
 
 const (
-	UI  MigrationEngine = "UI"
+	// UI is the migration engine type for UI.
+	UI MigrationEngine = "UI"
+	// VCS is the migration engine type for VCSUI.
 	VCS MigrationEngine = "VCS"
 )
 
@@ -127,12 +143,16 @@ func (e MigrationEngine) String() string {
 	return "UNKNOWN"
 }
 
+// MigrationType is the type of a migration.
 type MigrationType string
 
 const (
+	// Baseline is the migration type for BASELINE.
 	Baseline MigrationType = "BASELINE"
-	Migrate  MigrationType = "MIGRATE"
-	Branch   MigrationType = "BRANCH"
+	// Migrate is the migration type for MIGRATE.
+	Migrate MigrationType = "MIGRATE"
+	// Branch is the migration type for BRANCH.
+	Branch MigrationType = "BRANCH"
 )
 
 func (e MigrationType) String() string {
@@ -147,12 +167,16 @@ func (e MigrationType) String() string {
 	return "UNKNOWN"
 }
 
+// MigrationStatus is the status of migration.
 type MigrationStatus string
 
 const (
+	// Pending is the migration status for PENDING.
 	Pending MigrationStatus = "PENDING"
-	Done    MigrationStatus = "DONE"
-	Failed  MigrationStatus = "FAILED"
+	// Done is the migration status for DONE.
+	Done MigrationStatus = "DONE"
+	// Failed is the migration status for FAILED.
+	Failed MigrationStatus = "FAILED"
 )
 
 func (e MigrationStatus) String() string {
@@ -167,10 +191,12 @@ func (e MigrationStatus) String() string {
 	return "UNKNOWN"
 }
 
+// MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {
 	VCSPushEvent *common.VCSPushEvent `json:"pushEvent,omitempty"`
 }
 
+// MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	ReleaseVersion string
 	Version        string
@@ -262,6 +288,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	return mi, nil
 }
 
+// MigrationHistory is the API message for migration history.
 type MigrationHistory struct {
 	ID int
 
@@ -286,6 +313,7 @@ type MigrationHistory struct {
 	Payload           string
 }
 
+// MigrationHistoryFind is the API message for finding migration historys.
 type MigrationHistoryFind struct {
 	ID *int
 
@@ -295,21 +323,24 @@ type MigrationHistoryFind struct {
 	Limit *int
 }
 
+// ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
 	Host      string
 	Port      string
 	Username  string
 	Password  string
 	Database  string
-	TlsConfig TlsConfig
+	TLSConfig TLSConfig
 }
 
-// Context not used for establishing the db connection, but is useful for logging.
+// ConnectionContext is the context for connection.
+// It's not used for establishing the db connection, but is useful for logging.
 type ConnectionContext struct {
 	EnvironmentName string
 	InstanceName    string
 }
 
+// Driver is the interface for database driver.
 type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
@@ -319,7 +350,7 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
-	SyncSchema(ctx context.Context) ([]*DBUser, []*DBSchema, error)
+	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
 	Execute(ctx context.Context, statement string) error
 
 	// Migration related
@@ -343,7 +374,7 @@ type Driver interface {
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func Register(dbType Type, f DriverFunc) {
+func Register(dbType Type, f driverFunc) {
 	driversMu.Lock()
 	defer driversMu.Unlock()
 	if f == nil {

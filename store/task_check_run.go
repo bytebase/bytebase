@@ -21,12 +21,12 @@ type TaskCheckRunService struct {
 	db *DB
 }
 
-// newTaskCheckRunService returns a new TaskCheckRunService.
+// NewTaskCheckRunService returns a new TaskCheckRunService.
 func NewTaskCheckRunService(logger *zap.Logger, db *DB) *TaskCheckRunService {
 	return &TaskCheckRunService{l: logger, db: db}
 }
 
-// CreateTaskCheckRun creates a new taskCheckRun. See interface for the expected behavior
+// CreateTaskCheckRunIfNeeded creates a new taskCheckRun. See interface for the expected behavior
 func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

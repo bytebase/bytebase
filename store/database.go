@@ -57,6 +57,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	return database, nil
 }
 
+// CreateDatabaseTx creates a database with a transaction.
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
 	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
 	if err != nil {

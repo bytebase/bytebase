@@ -35,7 +35,7 @@ var (
 		Use:   "restore",
 		Short: "restores the schema of a database instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := db.TlsConfig{
+			tlsCfg := db.TLSConfig{
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
@@ -46,7 +46,7 @@ var (
 )
 
 // restoreDatabase restores the schema of a database instance.
-func restoreDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TlsConfig) error {
+func restoreDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TLSConfig) error {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
@@ -76,7 +76,7 @@ func restoreDatabase(ctx context.Context, databaseType, username, password, host
 			Username:  username,
 			Password:  password,
 			Database:  database,
-			TlsConfig: tlsCfg,
+			TLSConfig: tlsCfg,
 		},
 		db.ConnectionContext{},
 	)

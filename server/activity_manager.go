@@ -110,8 +110,8 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	return activity, nil
 }
 
-func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.WebhookContext, error) {
-	var webhookCtx webhook.WebhookContext
+func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
+	var webhookCtx webhook.Context
 	level := webhook.WebhookInfo
 	title := ""
 	link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
@@ -242,7 +242,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		}
 	}
 
-	metaList := []webhook.WebhookMeta{
+	metaList := []webhook.Meta{
 		{
 			Name:  "Issue",
 			Value: meta.issue.Name,
@@ -252,7 +252,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			Value: meta.issue.Project.Name,
 		},
 	}
-	webhookCtx = webhook.WebhookContext{
+	webhookCtx = webhook.Context{
 		Level:        level,
 		Title:        title,
 		Description:  activity.Comment,

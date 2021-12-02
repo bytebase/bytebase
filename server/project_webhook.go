@@ -219,7 +219,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		result := &api.ProjectWebhookTestResult{}
 		err = webhook.Post(
 			hook.Type,
-			webhook.WebhookContext{
+			webhook.Context{
 				URL:          hook.URL,
 				Level:        webhook.WebhookInfo,
 				Title:        fmt.Sprintf("Test webhook %q", hook.Name),
@@ -228,7 +228,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
-				MetaList: []webhook.WebhookMeta{
+				MetaList: []webhook.Meta{
 					{
 						Name:  "Project",
 						Value: project.Name,

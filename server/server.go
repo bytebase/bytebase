@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	// embed will embeds the acl policy.
 	_ "embed"
 
 	"github.com/bytebase/bytebase/api"
