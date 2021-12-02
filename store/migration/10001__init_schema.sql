@@ -1317,7 +1317,7 @@ CREATE TABLE deployment_config (
     config TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_deployment_config_project_id_name ON deployment_config(project_id, name);
+CREATE UNIQUE INDEX idx_deployment_config_project_id ON deployment_config(project_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
