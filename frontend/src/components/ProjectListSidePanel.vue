@@ -14,12 +14,15 @@ import { useStore } from "vuex";
 import { Project, UNKNOWN_ID } from "../types";
 import { projectName, projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
+import { Action, createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { useRouter } from "vue-router";
 
 export default {
   name: "ProjectListSidePanel",
   props: {},
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -51,6 +54,22 @@ export default {
           return a.name.localeCompare(b.name);
         });
     });
+
+    const kbarActions = computed((): Action[] => {
+      const actions = outlineItemList.value.map((proj: any) =>
+        createAction({
+          id: `projects-${proj.id}`,
+          section: "Projects",
+          name: proj.name,
+          keywords: "projects",
+          perform: () => {
+            router.push({ path: proj.link });
+          },
+        })
+      );
+      return actions;
+    });
+    useRegisterActions(kbarActions);
 
     return {
       outlineItemList,

@@ -217,7 +217,9 @@
 </template>
 
 <script lang="ts">
+import { createAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
@@ -232,6 +234,7 @@ export default {
   components: { ProfileDropdown },
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
@@ -297,6 +300,53 @@ export default {
     const switchToEnterprise = () => {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
+
+    const kbarActions = [
+      createAction({
+        id: "projects",
+        name: "Projects",
+        shortcut: ["g", "p"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.project" }),
+      }),
+      createAction({
+        id: "databases",
+        name: "Databases",
+        keywords: "db",
+        shortcut: ["g", "d"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.database" }),
+      }),
+      createAction({
+        id: "instances",
+        name: "Instances",
+        shortcut: ["g", "i"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.instance" }),
+      }),
+      createAction({
+        id: "environments",
+        name: "Environments",
+        shortcut: ["g", "e"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.environment" }),
+      }),
+      createAction({
+        id: "settings",
+        name: "Settings",
+        shortcut: ["g", "s"],
+        section: "Navigation",
+        perform: () => router.push({ name: "setting.workspace.general" }),
+      }),
+      createAction({
+        id: "inbox",
+        name: "Inbox",
+        shortcut: ["g", "m"],
+        section: "Navigation",
+        perform: () => router.push({ name: "setting.inbox" }),
+      }),
+    ];
+    useRegisterActions(kbarActions);
 
     return {
       state,
