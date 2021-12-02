@@ -89,6 +89,9 @@ DELETE FROM
 DELETE FROM
     label_key;
 
+DELETE FROM
+    deployment_config;
+
 -- Project 1 refers to DEFAULT project which is considered as part of schema
 DELETE FROM
     project
