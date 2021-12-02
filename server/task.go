@@ -240,22 +240,6 @@ func (s *Server) composeTaskListByPipelineAndStageID(ctx context.Context, pipeli
 	return taskList, nil
 }
 
-func (s *Server) composeTaskByID(ctx context.Context, id int) (*api.Task, error) {
-	taskFind := &api.TaskFind{
-		ID: &id,
-	}
-	task, err := s.TaskService.FindTask(ctx, taskFind)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.composeTaskRelationship(ctx, task); err != nil {
-		return nil, err
-	}
-
-	return task, nil
-}
-
 func (s *Server) composeTaskRelationship(ctx context.Context, task *api.Task) error {
 	var err error
 
