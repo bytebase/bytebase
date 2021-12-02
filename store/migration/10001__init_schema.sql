@@ -1300,3 +1300,39 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- Deployment Configuration.
+-- deployment_config stores deployment configurations at project level.
+CREATE TABLE deployment_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    name TEXT NOT NULL,
+    config TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_deployment_config_project_id ON deployment_config(project_id);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('deployment_config', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_deployment_config_modification_time`
+AFTER
+UPDATE
+    ON `deployment_config` FOR EACH ROW BEGIN
+UPDATE
+    `deployment_config`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
