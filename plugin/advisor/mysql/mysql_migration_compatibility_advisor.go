@@ -24,7 +24,7 @@ func init() {
 type CompatibilityAdvisor struct {
 }
 
-// A fake advisor to report 1 advice for each severity.
+// Check checks schema backward compatibility.
 func (adv *CompatibilityAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	p := parser.New()
 
@@ -60,59 +60,54 @@ type compatibilityChecker struct {
 
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := common.Ok
+	switch node := in.(type) {
 	// DROP DATABASE
-	if _, ok := in.(*ast.DropDatabaseStmt); ok {
+	case *ast.DropDatabaseStmt:
 		code = common.CompatibilityDropDatabase
-		goto END
-	}
 	// RENAME TABLE
-	if _, ok := in.(*ast.RenameTableStmt); ok {
+	case *ast.RenameTableStmt:
 		code = common.CompatibilityRenameTable
-		goto END
-	}
 	// DROP TABLE/VIEW
-	if _, ok := in.(*ast.DropTableStmt); ok {
+	case *ast.DropTableStmt:
 		code = common.CompatibilityDropTable
-		goto END
-	}
 	// ALTER TABLE
-	if node, ok := in.(*ast.AlterTableStmt); ok {
+	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			fmt.Printf("spec %d: %+v\n\n", spec.Tp, spec)
 			// RENAME COLUMN
 			if spec.Tp == ast.AlterTableRenameColumn {
 				code = common.CompatibilityRenameColumn
-				goto END
+				break
 			}
 			// DROP COLUMN
 			if spec.Tp == ast.AlterTableDropColumn {
 				code = common.CompatibilityDropColumn
-				goto END
+				break
 			}
 
 			if spec.Tp == ast.AlterTableAddConstraint {
 				// ADD PRIMARY KEY
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
 					code = common.CompatibilityAddPrimaryKey
-					goto END
+					break
 				}
 				// ADD UNIQUE/UNIQUE KEY/UNIQUE INDEX
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 					spec.Constraint.Tp == ast.ConstraintUniq ||
 					spec.Constraint.Tp == ast.ConstraintUniqKey {
 					code = common.CompatibilityAddUniqueKey
-					goto END
+					break
 				}
 				// ADD FOREIGN KEY
 				if spec.Constraint.Tp == ast.ConstraintForeignKey {
 					code = common.CompatibilityAddForeignKey
-					goto END
+					break
 				}
 				// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 				// ADD CHECK ENFORCED
 				if spec.Constraint.Tp == ast.ConstraintCheck && spec.Constraint.Enforced {
 					code = common.CompatibilityAddCheck
-					goto END
+					break
 				}
 			}
 
@@ -121,7 +116,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			if spec.Tp == ast.AlterTableAlterCheck {
 				if spec.Constraint.Enforced {
 					code = common.CompatibilityAlterCheck
-					goto END
+					break
 				}
 			}
 
@@ -132,23 +127,20 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// 2. Change property like comment, change it to NULL
 			if spec.Tp == ast.AlterTableModifyColumn || spec.Tp == ast.AlterTableChangeColumn {
 				code = common.CompatibilityAlterColumn
-				goto END
+				break
 			}
 		}
-	}
+
 	// ALTER VIEW TBD: https://github.com/pingcap/parser/pull/1252
-	// if node, ok := in.(*ast.AlterViewStmt); ok {
-	// }
+	// case *ast.AlterViewStmt:
 
 	// CREATE UNIQUE INDEX
-	if node, ok := in.(*ast.CreateIndexStmt); ok {
+	case *ast.CreateIndexStmt:
 		if node.KeyType == ast.IndexKeyTypeUnique {
 			code = common.CompatibilityAddUniqueKey
-			goto END
 		}
 	}
 
-END:
 	if code != common.Ok {
 		v.advisorList = append(v.advisorList, advisor.Advice{
 			Status:  advisor.Warn,
