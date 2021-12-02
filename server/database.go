@@ -185,7 +185,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 						ContainerID: existingDatabase.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
-						Level:       api.ACTIVITY_INFO,
+						Level:       api.ActivityInfo,
 						Comment: fmt.Sprintf("Transferred out database %q to project %q.",
 							database.Name, database.Project.Name),
 						Payload: string(bytes),
@@ -207,7 +207,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 						ContainerID: database.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
-						Level:       api.ACTIVITY_INFO,
+						Level:       api.ActivityInfo,
 						Comment: fmt.Sprintf("Transferred in database %q from project %q.",
 							existingDatabase.Name, existingDatabase.Project.Name),
 						Payload: string(bytes),
@@ -586,7 +586,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.NotFound {
 				// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
 				backupSetting = &api.BackupSetting{
-					ID: api.UNKNOWN_ID,
+					ID: api.UnknownID,
 				}
 			} else {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)

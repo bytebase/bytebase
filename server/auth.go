@@ -146,7 +146,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				CreatorID:   user.ID,
 				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})

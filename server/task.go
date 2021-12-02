@@ -384,9 +384,9 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	if issue != nil {
 		containerID = issue.ID
 	}
-	level := api.ACTIVITY_INFO
+	level := api.ActivityInfo
 	if updatedTask.Status == api.TaskFailed {
-		level = api.ACTIVITY_ERROR
+		level = api.ActivityError
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   taskStatusPatch.UpdaterID,

@@ -66,6 +66,7 @@ func (e BackupStorageBackend) String() string {
 	return "UNKNOWN"
 }
 
+// Backup is the API message for a backup.
 type Backup struct {
 	ID int `jsonapi:"primary,backup"`
 
@@ -92,6 +93,7 @@ type Backup struct {
 	Comment                 string `jsonapi:"attr,comment"`
 }
 
+// BackupCreate is the API message for creating a backup.
 type BackupCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -109,6 +111,7 @@ type BackupCreate struct {
 	Path                    string               `jsonapi:"attr,path"`
 }
 
+// BackupFind is the API message for finding backups.
 type BackupFind struct {
 	ID *int
 
@@ -128,6 +131,7 @@ func (find *BackupFind) String() string {
 	return string(str)
 }
 
+// BackupPatch is the API message for patching a backup.
 type BackupPatch struct {
 	ID int
 
@@ -201,7 +205,7 @@ type BackupSettingsMatch struct {
 	DayOfWeek int
 }
 
-// BackupService is the backend for backups.
+// BackupService is the service for backups.
 type BackupService interface {
 	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
 	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
