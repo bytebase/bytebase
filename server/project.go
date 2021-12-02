@@ -25,7 +25,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
-		projectCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
@@ -46,7 +46,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(ctx, project); err != nil {
+		if err := s.composeProjectRelationship(ctx, project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch relationship after creating project").SetInternal(err)
 		}
 
@@ -77,7 +77,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, project := range list {
-			if err := s.ComposeProjectRelationship(ctx, project); err != nil {
+			if err := s.composeProjectRelationship(ctx, project); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
 		}
@@ -96,7 +96,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.ComposeProjectlByID(ctx, id)
+		project, err := s.composeProjectlByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -120,7 +120,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		projectPatch := &api.ProjectPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
@@ -134,7 +134,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectRelationship(ctx, project); err != nil {
+		if err := s.composeProjectRelationship(ctx, project); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
 
@@ -174,7 +174,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
-		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SECRET_TOKEN_LENGTH)
+		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
@@ -210,7 +210,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.ExternalWebhookID = strconv.Itoa(webhookInfo.ID)
 		}
 
-		repositoryCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		repositoryCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
@@ -221,7 +221,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
+		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
@@ -256,7 +256,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		for _, repository := range list {
-			if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
+			if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 			}
 		}
@@ -277,7 +277,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryPatch := &api.RepositoryPatch{
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
@@ -365,7 +365,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeRepositoryRelationship(ctx, updatedRepository); err != nil {
+		if err := s.composeRepositoryRelationship(ctx, updatedRepository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to updating repository for project").SetInternal(err)
 		}
 
@@ -410,7 +410,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryDelete := &api.RepositoryDelete{
 			ProjectID: projectID,
-			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.RepositoryService.DeleteRepository(ctx, repositoryDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
@@ -444,7 +444,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectlByID(ctx context.Context, id int) (*api.Project, error) {
+func (s *Server) composeProjectlByID(ctx context.Context, id int) (*api.Project, error) {
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
@@ -453,27 +453,27 @@ func (s *Server) ComposeProjectlByID(ctx context.Context, id int) (*api.Project,
 		return nil, err
 	}
 
-	if err := s.ComposeProjectRelationship(ctx, project); err != nil {
+	if err := s.composeProjectRelationship(ctx, project); err != nil {
 		return nil, err
 	}
 
 	return project, nil
 }
 
-func (s *Server) ComposeProjectRelationship(ctx context.Context, project *api.Project) error {
+func (s *Server) composeProjectRelationship(ctx context.Context, project *api.Project) error {
 	var err error
 
-	project.Creator, err = s.ComposePrincipalByID(ctx, project.CreatorID)
+	project.Creator, err = s.composePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	project.Updater, err = s.ComposePrincipalByID(ctx, project.UpdaterID)
+	project.Updater, err = s.composePrincipalByID(ctx, project.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	project.ProjectMemberList, err = s.ComposeProjectMemberListByProjectID(ctx, project.ID)
+	project.ProjectMemberList, err = s.composeProjectMemberListByProjectID(ctx, project.ID)
 	if err != nil {
 		return err
 	}

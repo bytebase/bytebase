@@ -43,7 +43,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
-	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
+	if err := server.composeTaskRelationship(ctx, task); err != nil {
 		return true, nil, err
 	}
 
@@ -85,7 +85,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 // backupDatabase will take a backup of a database.
 func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := GetDatabaseDriver(ctx, instance, databaseName, exec.l)
+	driver, err := getDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func getAndCreateBackupPath(dataDir string, database *api.Database, name string)
 }
 
 func getMigrationVersion(ctx context.Context, database *api.Database, logger *zap.Logger) (string, error) {
-	driver, err := GetDatabaseDriver(ctx, database.Instance, database.Name, logger)
+	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, logger)
 	if err != nil {
 		return "", err
 	}

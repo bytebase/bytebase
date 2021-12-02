@@ -23,7 +23,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberCreate := &api.ProjectMemberCreate{
 			ProjectID: projectID,
-			CreatorID: c.Get(GetPrincipalIDContextKey()).(int),
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
@@ -37,13 +37,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project member").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
+		if err := s.composeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
 		{
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberCreate,
 				Level:       api.ActivityInfo,
@@ -90,7 +90,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberPatch := &api.ProjectMemberPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
@@ -104,13 +104,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project membership ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
+		if err := s.composeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
 		{
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberRoleUpdate,
 				Level:       api.ActivityInfo,
@@ -158,7 +158,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberDelete := &api.ProjectMemberDelete{
 			ID:        id,
-			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		err = s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete)
 		if err != nil {
@@ -169,10 +169,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.ComposePrincipalByID(ctx, projectMember.PrincipalID)
+			projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 					ContainerID: projectID,
 					Type:        api.ActivityProjectMemberDelete,
 					Level:       api.ActivityInfo,
@@ -197,7 +197,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectMemberListByProjectID(ctx context.Context, projectID int) ([]*api.ProjectMember, error) {
+func (s *Server) composeProjectMemberListByProjectID(ctx context.Context, projectID int) ([]*api.ProjectMember, error) {
 	projectMemberFind := &api.ProjectMemberFind{
 		ProjectID: &projectID,
 	}
@@ -207,27 +207,27 @@ func (s *Server) ComposeProjectMemberListByProjectID(ctx context.Context, projec
 	}
 
 	for _, projectMember := range projectMemberList {
-		if err := s.ComposeProjectMemberRelationship(ctx, projectMember); err != nil {
+		if err := s.composeProjectMemberRelationship(ctx, projectMember); err != nil {
 			return nil, err
 		}
 	}
 	return projectMemberList, nil
 }
 
-func (s *Server) ComposeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember) error {
+func (s *Server) composeProjectMemberRelationship(ctx context.Context, projectMember *api.ProjectMember) error {
 	var err error
 
-	projectMember.Creator, err = s.ComposePrincipalByID(ctx, projectMember.CreatorID)
+	projectMember.Creator, err = s.composePrincipalByID(ctx, projectMember.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Updater, err = s.ComposePrincipalByID(ctx, projectMember.UpdaterID)
+	projectMember.Updater, err = s.composePrincipalByID(ctx, projectMember.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	projectMember.Principal, err = s.ComposePrincipalByID(ctx, projectMember.PrincipalID)
+	projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
 	if err != nil {
 		return err
 	}

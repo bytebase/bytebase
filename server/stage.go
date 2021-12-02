@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) ComposeStageListByPipelineID(ctx context.Context, pipelineID int) ([]*api.Stage, error) {
+func (s *Server) composeStageListByPipelineID(ctx context.Context, pipelineID int) ([]*api.Stage, error) {
 	stageFind := &api.StageFind{
 		PipelineID: &pipelineID,
 	}
@@ -16,7 +16,7 @@ func (s *Server) ComposeStageListByPipelineID(ctx context.Context, pipelineID in
 	}
 
 	for _, stage := range stageList {
-		if err := s.ComposeStageRelationship(ctx, stage); err != nil {
+		if err := s.composeStageRelationship(ctx, stage); err != nil {
 			return nil, err
 		}
 	}
@@ -24,24 +24,24 @@ func (s *Server) ComposeStageListByPipelineID(ctx context.Context, pipelineID in
 	return stageList, nil
 }
 
-func (s *Server) ComposeStageRelationship(ctx context.Context, stage *api.Stage) error {
+func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage) error {
 	var err error
-	stage.Creator, err = s.ComposePrincipalByID(ctx, stage.CreatorID)
+	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	stage.Updater, err = s.ComposePrincipalByID(ctx, stage.UpdaterID)
+	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	stage.Environment, err = s.ComposeEnvironmentByID(ctx, stage.EnvironmentID)
+	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return err
 	}
 
-	stage.TaskList, err = s.ComposeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
 	if err != nil {
 		return err
 	}

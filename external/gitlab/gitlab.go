@@ -7,17 +7,21 @@ import (
 )
 
 const (
-	ApiPath             = "api/v4"
-	SECRET_TOKEN_LENGTH = 16
+	// APIPath is the API path.
+	APIPath = "api/v4"
+	// SecretTokenLength is the length of secret token.
+	SecretTokenLength = 16
 )
 
-type GitLabWebhookType string
+// WebhookType is the gitlab webhook type.
+type WebhookType string
 
 const (
-	WebhookPush GitLabWebhookType = "push"
+	// WebhookPush is the webhook type for push.
+	WebhookPush WebhookType = "push"
 )
 
-func (e GitLabWebhookType) String() string {
+func (e WebhookType) String() string {
 	switch e {
 	case WebhookPush:
 		return "push"
@@ -25,10 +29,12 @@ func (e GitLabWebhookType) String() string {
 	return "UNKNOWN"
 }
 
+// WebhookInfo is the API message for webhook info.
 type WebhookInfo struct {
 	ID int `json:"id"`
 }
 
+// WebhookPost is the API message for webhook POST.
 type WebhookPost struct {
 	URL         string `json:"url"`
 	SecretToken string `json:"token"`
@@ -45,21 +51,25 @@ type WebhookPost struct {
 	EnableSSLVerification bool `json:"enable_ssl_verification"`
 }
 
+// WebhookPut is the API message for webhook PUT.
 type WebhookPut struct {
 	URL                    string `json:"url"`
 	PushEventsBranchFilter string `json:"push_events_branch_filter"`
 }
 
+// WebhookProject is the API message for webhook project.
 type WebhookProject struct {
 	ID       int    `json:"id"`
 	WebURL   string `json:"web_url"`
 	FullPath string `json:"path_with_namespace"`
 }
 
+// WebhookCommitAuthor is the API message for webhook commit author.
 type WebhookCommitAuthor struct {
 	Name string `json:"name"`
 }
 
+// WebhookCommit is the API message for webhook commit.
 type WebhookCommit struct {
 	ID        string              `json:"id"`
 	Title     string              `json:"title"`
@@ -70,14 +80,16 @@ type WebhookCommit struct {
 	AddedList []string            `json:"added"`
 }
 
+// WebhookPushEvent is the API message for webhook push event.
 type WebhookPushEvent struct {
-	ObjectKind GitLabWebhookType `json:"object_kind"`
-	Ref        string            `json:"ref"`
-	AuthorName string            `json:"user_name"`
-	Project    WebhookProject    `json:"project"`
-	CommitList []WebhookCommit   `json:"commits"`
+	ObjectKind WebhookType     `json:"object_kind"`
+	Ref        string          `json:"ref"`
+	AuthorName string          `json:"user_name"`
+	Project    WebhookProject  `json:"project"`
+	CommitList []WebhookCommit `json:"commits"`
 }
 
+// FileCommit is the API message for file commit.
 type FileCommit struct {
 	Branch        string `json:"branch"`
 	Content       string `json:"content"`
@@ -85,12 +97,14 @@ type FileCommit struct {
 	LastCommitID  string `json:"last_commit_id,omitempty"`
 }
 
+// File is the API message for file.
 type File struct {
 	LastCommitID string `json:"last_commit_id"`
 }
 
+// POST sends a POST request.
 func POST(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
 	req, err := http.NewRequest("POST",
 		url, body)
 	if err != nil {
@@ -108,8 +122,9 @@ func POST(instanceURL string, resourcePath string, token string, body io.Reader)
 	return resp, nil
 }
 
+// GET sends a GET request.
 func GET(instanceURL string, resourcePath string, token string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
 	req, err := http.NewRequest("GET",
 		url, nil)
 	if err != nil {
@@ -127,8 +142,9 @@ func GET(instanceURL string, resourcePath string, token string) (*http.Response,
 	return resp, nil
 }
 
+// PUT sends a PUT request.
 func PUT(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
 	req, err := http.NewRequest("PUT",
 		url, body)
 	if err != nil {
@@ -146,8 +162,9 @@ func PUT(instanceURL string, resourcePath string, token string, body io.Reader) 
 	return resp, nil
 }
 
+// DELETE sends a DELETE request.
 func DELETE(instanceURL string, resourcePath string, token string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, ApiPath, resourcePath)
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
 	req, err := http.NewRequest("DELETE",
 		url, nil)
 	if err != nil {

@@ -21,7 +21,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
 		}
 
-		memberCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		memberCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		member, err := s.MemberService.CreateMember(ctx, memberCreate)
 		if err != nil {
@@ -55,7 +55,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 			}
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
 				Level:       api.ActivityInfo,
@@ -67,7 +67,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeMemberRelationship(ctx, member); err != nil {
+		if err := s.composeMemberRelationship(ctx, member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created member relationship").SetInternal(err)
 		}
 
@@ -87,7 +87,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		for _, member := range list {
-			if err := s.ComposeMemberRelationship(ctx, member); err != nil {
+			if err := s.composeMemberRelationship(ctx, member); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
 			}
 		}
@@ -119,7 +119,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		memberPatch := &api.MemberPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
@@ -158,7 +158,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 					ContainerID: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
 					Level:       api.ActivityInfo,
@@ -183,7 +183,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					theType = api.ActivityMemberDeactivate
 				}
 				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 					ContainerID: updatedMember.ID,
 					Type:        theType,
 					Level:       api.ActivityInfo,
@@ -196,7 +196,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeMemberRelationship(ctx, updatedMember); err != nil {
+		if err := s.composeMemberRelationship(ctx, updatedMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated member relationship: %v", updatedMember.ID)).SetInternal(err)
 		}
 
@@ -208,20 +208,20 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeMemberRelationship(ctx context.Context, member *api.Member) error {
+func (s *Server) composeMemberRelationship(ctx context.Context, member *api.Member) error {
 	var err error
 
-	member.Creator, err = s.ComposePrincipalByID(ctx, member.CreatorID)
+	member.Creator, err = s.composePrincipalByID(ctx, member.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	member.Updater, err = s.ComposePrincipalByID(ctx, member.UpdaterID)
+	member.Updater, err = s.composePrincipalByID(ctx, member.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	member.Principal, err = s.ComposePrincipalByID(ctx, member.PrincipalID)
+	member.Principal, err = s.composePrincipalByID(ctx, member.PrincipalID)
 	if err != nil {
 		return err
 	}

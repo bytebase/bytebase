@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	TASK_CHECK_SCHEDULE_INTERVAL = time.Duration(1) * time.Second
+	taskCheckScheduleInterval = time.Duration(1) * time.Second
 )
 
+// NewTaskCheckScheduler creates a task check scheduler.
 func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
 		l:         logger,
@@ -25,6 +26,7 @@ func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckSchedul
 	}
 }
 
+// TaskCheckScheduler is the task check scheduler.
 type TaskCheckScheduler struct {
 	l         *zap.Logger
 	executors map[string]TaskCheckExecutor
@@ -32,9 +34,10 @@ type TaskCheckScheduler struct {
 	server *Server
 }
 
+// Run will run the task check scheduler once.
 func (s *TaskCheckScheduler) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", TASK_SCHEDULE_INTERVAL))
+		s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
 		runningTaskChecks := make(map[int]bool)
 		mu := sync.RWMutex{}
 		for {
@@ -160,13 +163,14 @@ func (s *TaskCheckScheduler) Run() error {
 				}
 			}()
 
-			time.Sleep(TASK_SCHEDULE_INTERVAL)
+			time.Sleep(taskSchedulerInterval)
 		}
 	}()
 
 	return nil
 }
 
+// Register will register the task check executor.
 func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
@@ -177,6 +181,7 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
+// ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
@@ -187,7 +192,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		databaseFind := &api.DatabaseFind{
 			ID: task.DatabaseID,
 		}
-		database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
+		database, err := s.server.composeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			return nil, err
 		}

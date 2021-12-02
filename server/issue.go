@@ -100,7 +100,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		issue, err := s.CreateIssue(ctx, issueCreate, c.Get(GetPrincipalIDContextKey()).(int))
+		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
@@ -162,7 +162,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, issue := range list {
-			if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
+			if err := s.composeIssueRelationship(ctx, issue); err != nil {
 				return err
 			}
 		}
@@ -181,7 +181,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueByID(ctx, id)
+		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -205,7 +205,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issuePatch := &api.IssuePatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
@@ -267,7 +267,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, payload := range payloadList {
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: issue.ID,
 				Type:        api.ActivityIssueFieldUpdate,
 				Level:       api.ActivityInfo,
@@ -281,7 +281,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeIssueRelationship(ctx, updatedIssue); err != nil {
+		if err := s.composeIssueRelationship(ctx, updatedIssue); err != nil {
 			return err
 		}
 
@@ -301,13 +301,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issueStatusPatch := &api.IssueStatusPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.ComposeIssueByID(ctx, id)
+		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
@@ -315,7 +315,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
 
-		updatedIssue, err := s.ChangeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
+		updatedIssue, err := s.changeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
@@ -325,7 +325,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
-		if err := s.ComposeIssueRelationship(ctx, updatedIssue); err != nil {
+		if err := s.composeIssueRelationship(ctx, updatedIssue); err != nil {
 			return err
 		}
 
@@ -337,7 +337,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeIssueByID(ctx context.Context, id int) (*api.Issue, error) {
+func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	issueFind := &api.IssueFind{
 		ID: &id,
 	}
@@ -346,27 +346,27 @@ func (s *Server) ComposeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 		return nil, err
 	}
 
-	if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
+	if err := s.composeIssueRelationship(ctx, issue); err != nil {
 		return nil, err
 	}
 
 	return issue, nil
 }
 
-func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue) error {
+func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.ComposePrincipalByID(ctx, issue.CreatorID)
+	issue.Creator, err = s.composePrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.ComposePrincipalByID(ctx, issue.UpdaterID)
+	issue.Updater, err = s.composePrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.ComposePrincipalByID(ctx, issue.AssigneeID)
+	issue.Assignee, err = s.composePrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}
@@ -384,12 +384,12 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 		issue.SubscriberIDList = append(issue.SubscriberIDList, subscriber.SubscriberID)
 	}
 
-	issue.Project, err = s.ComposeProjectlByID(ctx, issue.ProjectID)
+	issue.Project, err = s.composeProjectlByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
 
-	issue.Pipeline, err = s.ComposePipelineByID(ctx, issue.PipelineID)
+	issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (s *Server) ComposeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
-func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	issueCreate.Pipeline.CreatorID = creatorID
 	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 	if err != nil {
@@ -551,7 +551,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if err := s.ComposeIssueRelationship(ctx, issue); err != nil {
+	if err := s.composeIssueRelationship(ctx, issue); err != nil {
 		return nil, err
 	}
 
@@ -562,7 +562,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.IssueOpen:
@@ -584,7 +584,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.ChangeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
+					if _, err := s.changeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -643,11 +643,11 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	return updatedIssue, nil
 }
 
-func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, activity_id int) error {
+func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
 	if issue.CreatorID != api.SystemBotID {
 		inboxCreate := &api.InboxCreate{
 			ReceiverID: issue.CreatorID,
-			ActivityID: activity_id,
+			ActivityID: activityID,
 		}
 		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
@@ -658,7 +658,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
 		inboxCreate := &api.InboxCreate{
 			ReceiverID: issue.AssigneeID,
-			ActivityID: activity_id,
+			ActivityID: activityID,
 		}
 		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 		if err != nil {
@@ -670,7 +670,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		if subscriberID != api.SystemBotID && subscriberID != issue.CreatorID && subscriberID != issue.AssigneeID {
 			inboxCreate := &api.InboxCreate{
 				ReceiverID: subscriberID,
-				ActivityID: activity_id,
+				ActivityID: activityID,
 			}
 			_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 			if err != nil {

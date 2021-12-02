@@ -56,7 +56,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
 
-		if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
+		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
 
@@ -176,7 +176,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					ProjectID: &repository.ProjectID,
 					Name:      &mi.Database,
 				}
-				databaseList, err := s.ComposeDatabaseListByFind(ctx, databaseFind)
+				databaseList, err := s.composeDatabaseListByFind(ctx, databaseFind)
 				if err != nil {
 					createIgnoredFileActivity(fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database))
 					continue
@@ -292,7 +292,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					AssigneeID:  api.SystemBotID,
 				}
 
-				issue, err := s.CreateIssue(ctx, issueCreate, api.SystemBotID)
+				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 				if err != nil {
 					s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
 						zap.String("file", added))

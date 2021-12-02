@@ -13,8 +13,8 @@ import (
 
 var (
 	// 32 MiB
-	CACHE_SIZE                  = 1024 * 1024 * 32
-	_          api.CacheService = (*CacheService)(nil)
+	cacheSize                  = 1024 * 1024 * 32
+	_         api.CacheService = (*CacheService)(nil)
 )
 
 // CacheService implements a cache.
@@ -24,13 +24,15 @@ type CacheService struct {
 	l *zap.Logger
 }
 
+// NewCacheService creates a cache service.
 func NewCacheService(logger *zap.Logger) *CacheService {
 	return &CacheService{
-		cache: fastcache.New(CACHE_SIZE),
+		cache: fastcache.New(cacheSize),
 		l:     logger,
 	}
 }
 
+// FindCache finds the value in cache.
 func (s *CacheService) FindCache(namespace api.CacheNamespace, id int, entry interface{}) (bool, error) {
 	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 	binary.LittleEndian.PutUint64(buf1, uint64(id))
@@ -47,6 +49,7 @@ func (s *CacheService) FindCache(namespace api.CacheNamespace, id int, entry int
 	return false, nil
 }
 
+// UpsertCache upserts the value to cache.
 func (s *CacheService) UpsertCache(namespace api.CacheNamespace, id int, entry interface{}) error {
 	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 	binary.LittleEndian.PutUint64(buf1, uint64(id))

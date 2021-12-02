@@ -36,7 +36,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		taskPatch := &api.TaskPatch{
 			ID:        taskID,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
@@ -81,7 +81,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 		}
 
-		if err := s.ComposeTaskRelationship(ctx, updatedTask); err != nil {
+		if err := s.composeTaskRelationship(ctx, updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
@@ -148,7 +148,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		taskStatusPatch := &api.TaskStatusPatch{
 			ID:        taskID,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
@@ -165,7 +165,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 
-		updatedTask, err := s.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+		updatedTask, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -173,7 +173,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
 
-		if err := s.ComposeTaskRelationship(ctx, updatedTask); err != nil {
+		if err := s.composeTaskRelationship(ctx, updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
@@ -203,13 +203,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		skipIfAlreadyTerminated := false
-		updatedTask, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, c.Get(GetPrincipalIDContextKey()).(int), skipIfAlreadyTerminated)
+		updatedTask, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, c.Get(getPrincipalIDContextKey()).(int), skipIfAlreadyTerminated)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}
 
-		if err := s.ComposeTaskRelationship(ctx, updatedTask); err != nil {
+		if err := s.composeTaskRelationship(ctx, updatedTask); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
 		}
 
@@ -221,7 +221,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeTaskListByPipelineAndStageID(ctx context.Context, pipelineID int, stageID int) ([]*api.Task, error) {
+func (s *Server) composeTaskListByPipelineAndStageID(ctx context.Context, pipelineID int, stageID int) ([]*api.Task, error) {
 	taskFind := &api.TaskFind{
 		PipelineID: &pipelineID,
 		StageID:    &stageID,
@@ -232,7 +232,7 @@ func (s *Server) ComposeTaskListByPipelineAndStageID(ctx context.Context, pipeli
 	}
 
 	for _, task := range taskList {
-		if err := s.ComposeTaskRelationship(ctx, task); err != nil {
+		if err := s.composeTaskRelationship(ctx, task); err != nil {
 			return nil, err
 		}
 	}
@@ -240,7 +240,7 @@ func (s *Server) ComposeTaskListByPipelineAndStageID(ctx context.Context, pipeli
 	return taskList, nil
 }
 
-func (s *Server) ComposeTaskByID(ctx context.Context, id int) (*api.Task, error) {
+func (s *Server) composeTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	taskFind := &api.TaskFind{
 		ID: &id,
 	}
@@ -249,51 +249,51 @@ func (s *Server) ComposeTaskByID(ctx context.Context, id int) (*api.Task, error)
 		return nil, err
 	}
 
-	if err := s.ComposeTaskRelationship(ctx, task); err != nil {
+	if err := s.composeTaskRelationship(ctx, task); err != nil {
 		return nil, err
 	}
 
 	return task, nil
 }
 
-func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) error {
+func (s *Server) composeTaskRelationship(ctx context.Context, task *api.Task) error {
 	var err error
 
-	task.Creator, err = s.ComposePrincipalByID(ctx, task.CreatorID)
+	task.Creator, err = s.composePrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	task.Updater, err = s.ComposePrincipalByID(ctx, task.UpdaterID)
+	task.Updater, err = s.composePrincipalByID(ctx, task.UpdaterID)
 	if err != nil {
 		return err
 	}
 
 	for _, taskRun := range task.TaskRunList {
-		taskRun.Creator, err = s.ComposePrincipalByID(ctx, taskRun.CreatorID)
+		taskRun.Creator, err = s.composePrincipalByID(ctx, taskRun.CreatorID)
 		if err != nil {
 			return err
 		}
 
-		taskRun.Updater, err = s.ComposePrincipalByID(ctx, taskRun.UpdaterID)
+		taskRun.Updater, err = s.composePrincipalByID(ctx, taskRun.UpdaterID)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, taskCheckRun := range task.TaskCheckRunList {
-		taskCheckRun.Creator, err = s.ComposePrincipalByID(ctx, taskCheckRun.CreatorID)
+		taskCheckRun.Creator, err = s.composePrincipalByID(ctx, taskCheckRun.CreatorID)
 		if err != nil {
 			return err
 		}
 
-		taskCheckRun.Updater, err = s.ComposePrincipalByID(ctx, taskCheckRun.UpdaterID)
+		taskCheckRun.Updater, err = s.composePrincipalByID(ctx, taskCheckRun.UpdaterID)
 		if err != nil {
 			return err
 		}
 	}
 
-	task.Instance, err = s.ComposeInstanceByID(ctx, task.InstanceID)
+	task.Instance, err = s.composeInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) er
 		databaseFind := &api.DatabaseFind{
 			ID: task.DatabaseID,
 		}
-		task.Database, err = s.ComposeDatabaseByFind(ctx, databaseFind)
+		task.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
 			return err
 		}
@@ -311,16 +311,16 @@ func (s *Server) ComposeTaskRelationship(ctx context.Context, task *api.Task) er
 	return nil
 }
 
-func (s *Server) ChangeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
+func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,
 		UpdaterID: updaterID,
 		Status:    newStatus,
 	}
-	return s.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+	return s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 }
 
-func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			s.l.Error("Failed to change task status.",
@@ -465,18 +465,18 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
 	if (updatedTask.Type == api.TaskDatabaseCreate || updatedTask.Type == api.TaskDatabaseSchemaUpdate) &&
 		updatedTask.Status == api.TaskDone {
-		instance, err := s.ComposeInstanceByID(ctx, task.InstanceID)
+		instance, err := s.composeInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}
-		s.SyncEngineVersionAndSchema(ctx, instance)
+		s.syncEngineVersionAndSchema(ctx, instance)
 	}
 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
 	if updatedTask.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
-		pipeline, err := s.ComposePipelineByID(ctx, updatedTask.PipelineID)
+		pipeline, err := s.composePipelineByID(ctx, updatedTask.PipelineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", updatedTask.Name)
 		}
@@ -494,7 +494,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				}
 			} else {
 				issue.Pipeline = pipeline
-				_, err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
+				_, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
 				if err != nil {
 					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, updatedTask.Name, err)
 				}

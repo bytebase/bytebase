@@ -17,16 +17,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewSchemaUpdateTaskExecutor creates a schema update task executor.
 func NewSchemaUpdateTaskExecutor(logger *zap.Logger) TaskExecutor {
 	return &SchemaUpdateTaskExecutor{
 		l: logger,
 	}
 }
 
+// SchemaUpdateTaskExecutor is the schema update task executor.
 type SchemaUpdateTaskExecutor struct {
 	l *zap.Logger
 }
 
+// RunOnce will run the schema update task executor once.
 func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -57,7 +60,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	}
 	if payload.VCSPushEvent == nil {
 		mi.Engine = db.UI
-		creator, err := server.ComposePrincipalByID(ctx, task.CreatorID)
+		creator, err := server.composePrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -122,11 +125,11 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, fmt.Errorf("empty statement")
 	}
 
-	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
+	if err := server.composeTaskRelationship(ctx, task); err != nil {
 		return true, nil, err
 	}
 
-	driver, err := GetDatabaseDriver(ctx, task.Instance, databaseName, exec.l)
+	driver, err := getDatabaseDriver(ctx, task.Instance, databaseName, exec.l)
 	if err != nil {
 		return true, nil, err
 	}
@@ -159,7 +162,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		repository.VCS, err = server.ComposeVCSByID(ctx, repository.VCSID)
+		repository.VCS, err = server.composeVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
