@@ -206,7 +206,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 				CreatorID:   task.CreatorID,
 				ContainerID: containerID,
 				Type:        api.ActivityPipelineTaskFileCommit,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
 					mi.Version,
 					mi.Database,

@@ -251,7 +251,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
-		where = append(where, "name != '"+api.ALL_DATABASE_NAME+"'")
+		where = append(where, "name != '"+api.AllDatabaseName+"'")
 	}
 
 	rows, err := tx.QueryContext(ctx, `
