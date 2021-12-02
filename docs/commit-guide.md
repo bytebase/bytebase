@@ -28,12 +28,35 @@ The commit message should be structured as follows:
 
 For example:
 
+### Commit message with no body
+
+```bash
+docs: correct spelling of CHANGELOG
+```
+
+### Commit message with scope
+
+```bash
+feat(lang): add polish language
+```
+
 ### Commit message with description and breaking change footer
 
 ```bash
 feat: allow provided config object to extend other configs
 
 BREAKING CHANGE: `extends` key in config file is now used for extending other config files
+```
+
+### Commit message with body and footer
+
+```bash
+fix: prevent racing of requests
+
+Introduce a request id and a reference to latest request. Dismiss
+incoming responses other than from latest request.
+
+Reviewed-by: Z
 ```
 
 ### Header
