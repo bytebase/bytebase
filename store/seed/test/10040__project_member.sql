@@ -243,3 +243,20 @@ VALUES
         'DEVELOPER',
         102
     );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3006,
+        'DEVELOPER',
+        103
+    );
