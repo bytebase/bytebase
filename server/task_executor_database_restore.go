@@ -101,7 +101,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
 	databasePatch := &api.DatabasePatch{
 		ID:             targetDatabase.ID,
-		UpdaterID:      api.SYSTEM_BOT_ID,
+		UpdaterID:      api.SystemBotID,
 		SourceBackupID: &backup.ID,
 	}
 	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {

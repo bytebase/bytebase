@@ -46,7 +46,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	// Create * database
 	databaseCreate := &api.DatabaseCreate{
 		CreatorID:     create.CreatorID,
-		ProjectID:     api.DEFAULT_PROJECT_ID,
+		ProjectID:     api.DefaultProjectID,
 		InstanceID:    instance.ID,
 		EnvironmentID: instance.EnvironmentID,
 		Name:          api.AllDatabaseName,

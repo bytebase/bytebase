@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 )
 
+// ProjectRole is the role in projects.
 type ProjectRole string
 
 const (
-	ProjectOwner     ProjectRole = "OWNER"
+	// ProjectOwner is the owner of a project.
+	ProjectOwner ProjectRole = "OWNER"
+	// ProjectDeveloper is the developer of a project.
 	ProjectDeveloper ProjectRole = "DEVELOPER"
 )
 
@@ -22,6 +25,7 @@ func (e ProjectRole) String() string {
 	return ""
 }
 
+// ProjectMember is the API message for project members.
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
 
@@ -43,6 +47,7 @@ type ProjectMember struct {
 	Principal   *Principal `jsonapi:"attr,principal"`
 }
 
+// ProjectMemberCreate is the API message for creating a project member.
 type ProjectMemberCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -56,6 +61,7 @@ type ProjectMemberCreate struct {
 	PrincipalID int         `jsonapi:"attr,principalId"`
 }
 
+// ProjectMemberFind is the API message for finding project members.
 type ProjectMemberFind struct {
 	ID *int
 
@@ -71,6 +77,7 @@ func (find *ProjectMemberFind) String() string {
 	return string(str)
 }
 
+// ProjectMemberPatch is the API message for patching a project member.
 type ProjectMemberPatch struct {
 	ID int
 
@@ -82,6 +89,7 @@ type ProjectMemberPatch struct {
 	Role *string `jsonapi:"attr,role"`
 }
 
+// ProjectMemberDelete is the API message for deleting a project member.
 type ProjectMemberDelete struct {
 	ID int
 
@@ -90,6 +98,7 @@ type ProjectMemberDelete struct {
 	DeleterID int
 }
 
+// ProjectMemberService is the service for project members.
 type ProjectMemberService interface {
 	CreateProjectMember(ctx context.Context, create *ProjectMemberCreate) (*ProjectMember, error)
 	FindProjectMemberList(ctx context.Context, find *ProjectMemberFind) ([]*ProjectMember, error)

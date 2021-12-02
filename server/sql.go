@@ -47,7 +47,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			db.ConnectionContext{},
 		)
 
-		resultSet := &api.SqlResultSet{}
+		resultSet := &api.SQLResultSet{}
 		if err != nil {
 			hostPort := connectionInfo.Host
 			if connectionInfo.Port != "" {
@@ -70,7 +70,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 
 	g.POST("/sql/syncschema", func(c echo.Context) error {
 		ctx := context.Background()
-		sync := &api.SqlSyncSchema{}
+		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
@@ -93,8 +93,8 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SqlResultSet) {
-	resultSet := &api.SqlResultSet{}
+func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
+	resultSet := &api.SQLResultSet{}
 	err := func() error {
 		driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
@@ -112,7 +112,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		if version != instance.EngineVersion {
 			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
-				UpdaterID:     api.SYSTEM_BOT_ID,
+				UpdaterID:     api.SystemBotID,
 				EngineVersion: &version,
 			})
 			if err != nil {
@@ -174,7 +174,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			var recreateTableSchema = func(database *api.Database, table db.DBTable) error {
 				// Table
 				tableCreate := &api.TableCreate{
-					CreatorID:     api.SYSTEM_BOT_ID,
+					CreatorID:     api.SystemBotID,
 					CreatedTs:     table.CreatedTs,
 					UpdatedTs:     table.UpdatedTs,
 					DatabaseID:    database.ID,
@@ -205,7 +205,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							columnCreate := &api.ColumnCreate{
-								CreatorID:    api.SYSTEM_BOT_ID,
+								CreatorID:    api.SystemBotID,
 								DatabaseID:   database.ID,
 								TableID:      upsertedTable.ID,
 								Name:         column.Name,
@@ -238,7 +238,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							indexCreate := &api.IndexCreate{
-								CreatorID:  api.SYSTEM_BOT_ID,
+								CreatorID:  api.SystemBotID,
 								DatabaseID: database.ID,
 								TableID:    upsertedTable.ID,
 								Name:       index.Name,
@@ -263,7 +263,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			var recreateViewSchema = func(database *api.Database, view db.DBView) error {
 				// View
 				viewCreate := &api.ViewCreate{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					CreatedTs:  view.CreatedTs,
 					UpdatedTs:  view.UpdatedTs,
 					DatabaseID: database.ID,
@@ -289,7 +289,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			// Upsert user found in the instance
 			for _, user := range userList {
 				userUpsert := &api.InstanceUserUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Name:       user.Name,
 					Grant:      user.Grant,
@@ -354,7 +354,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
 						ID:                   matchedDb.ID,
-						UpdaterID:            api.SYSTEM_BOT_ID,
+						UpdaterID:            api.SystemBotID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}
@@ -398,8 +398,8 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				} else {
 					// Case 2, only appear in the synced db schema
 					databaseCreate := &api.DatabaseCreate{
-						CreatorID:     api.SYSTEM_BOT_ID,
-						ProjectID:     api.DEFAULT_PROJECT_ID,
+						CreatorID:     api.SystemBotID,
+						ProjectID:     api.DefaultProjectID,
 						InstanceID:    instance.ID,
 						EnvironmentID: instance.EnvironmentID,
 						Name:          schema.Name,
@@ -444,7 +444,7 @@ func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
 						ID:                   db.ID,
-						UpdaterID:            api.SYSTEM_BOT_ID,
+						UpdaterID:            api.SystemBotID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
 					}

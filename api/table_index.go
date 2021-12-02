@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Index is the API message for an index.
 type Index struct {
 	ID int `jsonapi:"primary,index"`
 
@@ -28,6 +29,7 @@ type Index struct {
 	Comment    string `json:"comment"`
 }
 
+// IndexCreate is the API message for creating an index.
 type IndexCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -47,6 +49,7 @@ type IndexCreate struct {
 	Comment    string
 }
 
+// IndexFind is the API message for finding indices.
 type IndexFind struct {
 	ID *int
 
@@ -67,6 +70,7 @@ func (find *IndexFind) String() string {
 	return string(str)
 }
 
+// IndexService is the service for indices.
 type IndexService interface {
 	CreateIndex(ctx context.Context, create *IndexCreate) (*Index, error)
 	FindIndexList(ctx context.Context, find *IndexFind) ([]*Index, error)

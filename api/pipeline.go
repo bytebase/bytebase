@@ -5,29 +5,34 @@ import (
 	"encoding/json"
 )
 
-const ONBOARDING_PIPELINE_ID = 101
+// OnboardingPipelineID is the ID for onboarding pipelines.
+const OnboardingPipelineID = 101
 
-// Pipeline status
+// PipelineStatus is the status for pipelines.
 type PipelineStatus string
 
 const (
-	Pipeline_Open     PipelineStatus = "OPEN"
-	Pipeline_Done     PipelineStatus = "DONE"
-	Pipeline_Canceled PipelineStatus = "CANCELED"
+	// PipelineOpen is the pipeline status for OPEN.
+	PipelineOpen PipelineStatus = "OPEN"
+	// PipelineDone is the pipeline status for DONE.
+	PipelineDone PipelineStatus = "DONE"
+	// PipelineCanceled is the pipeline status for CANCELED.
+	PipelineCanceled PipelineStatus = "CANCELED"
 )
 
 func (e PipelineStatus) String() string {
 	switch e {
-	case Pipeline_Open:
+	case PipelineOpen:
 		return "OPEN"
-	case Pipeline_Done:
+	case PipelineDone:
 		return "DONE"
-	case Pipeline_Canceled:
+	case PipelineCanceled:
 		return "CANCELED"
 	}
 	return ""
 }
 
+// Pipeline is the API message for pipelines.
 type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`
 
@@ -47,6 +52,7 @@ type Pipeline struct {
 	Status PipelineStatus `jsonapi:"attr,status"`
 }
 
+// PipelineCreate is the API message for creating a pipeline.
 type PipelineCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -59,6 +65,7 @@ type PipelineCreate struct {
 	Name string `jsonapi:"attr,name"`
 }
 
+// PipelineFind is the API message for finding pipelines.
 type PipelineFind struct {
 	ID *int
 
@@ -74,6 +81,7 @@ func (find *PipelineFind) String() string {
 	return string(str)
 }
 
+// PipelinePatch is the API message for patching a pipeline.
 type PipelinePatch struct {
 	ID int `jsonapi:"primary,pipelinePatch"`
 
@@ -85,6 +93,7 @@ type PipelinePatch struct {
 	Status *PipelineStatus `jsonapi:"attr,status"`
 }
 
+// PipelineService is the service for pipelines.
 type PipelineService interface {
 	CreatePipeline(ctx context.Context, create *PipelineCreate) (*Pipeline, error)
 	FindPipelineList(ctx context.Context, find *PipelineFind) ([]*Pipeline, error)

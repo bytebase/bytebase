@@ -9,18 +9,29 @@ import (
 )
 
 // These are special onboarding tasks for demo purpose when bootstraping the workspace.
-const ONBOARDING_TASK_ID1 = 101
-const ONBOARDING_TASK_ID2 = 102
 
+// OnboardingTaskID1 is the ID for onboarding task1.
+const OnboardingTaskID1 = 101
+
+// OnboardingTaskID2 is the ID for onboarding task2.
+const OnboardingTaskID2 = 102
+
+// TaskStatus is the status of a task.
 type TaskStatus string
 
 const (
-	TaskPending         TaskStatus = "PENDING"
+	// TaskPending is the task status for PENDING.
+	TaskPending TaskStatus = "PENDING"
+	// TaskPendingApproval is the task status for PENDING_APPROVAL.
 	TaskPendingApproval TaskStatus = "PENDING_APPROVAL"
-	TaskRunning         TaskStatus = "RUNNING"
-	TaskDone            TaskStatus = "DONE"
-	TaskFailed          TaskStatus = "FAILED"
-	TaskCanceled        TaskStatus = "CANCELED"
+	// TaskRunning is the task status for RUNNING.
+	TaskRunning TaskStatus = "RUNNING"
+	// TaskDone is the task status for DONE.
+	TaskDone TaskStatus = "DONE"
+	// TaskFailed is the task status for FAILED.
+	TaskFailed TaskStatus = "FAILED"
+	// TaskCanceled is the task status for CANCELED.
+	TaskCanceled TaskStatus = "CANCELED"
 )
 
 func (e TaskStatus) String() string {
@@ -45,16 +56,23 @@ func (e TaskStatus) String() string {
 type TaskType string
 
 const (
-	TaskGeneral              TaskType = "bb.task.general"
-	TaskDatabaseCreate       TaskType = "bb.task.database.create"
+	// TaskGeneral is the task type for general tasks.
+	TaskGeneral TaskType = "bb.task.general"
+	// TaskDatabaseCreate is the task type for creating databases.
+	TaskDatabaseCreate TaskType = "bb.task.database.create"
+	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
-	TaskDatabaseBackup       TaskType = "bb.task.database.backup"
-	TaskDatabaseRestore      TaskType = "bb.task.database.restore"
+	// TaskDatabaseBackup is the task type for creating database backups.
+	TaskDatabaseBackup TaskType = "bb.task.database.backup"
+	// TaskDatabaseRestore is the task type for restoring databases.
+	TaskDatabaseRestore TaskType = "bb.task.database.restore"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
+
+// TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
 	ProjectID    int    `json:"projectId,omitempty"`
@@ -85,6 +103,7 @@ type TaskDatabaseRestorePayload struct {
 	BackupID     int    `json:"backupId,omitempty"`
 }
 
+// Task is the API message for a task.
 type Task struct {
 	ID int `jsonapi:"primary,task"`
 
@@ -115,6 +134,7 @@ type Task struct {
 	Payload string     `jsonapi:"attr,payload"`
 }
 
+// TaskCreate is the API message for creating a task.
 type TaskCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -143,6 +163,7 @@ type TaskCreate struct {
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
+// TaskFind is the API message for finding tasks.
 type TaskFind struct {
 	ID *int
 
@@ -162,6 +183,7 @@ func (find *TaskFind) String() string {
 	return string(str)
 }
 
+// TaskPatch is the API message for patching a task.
 type TaskPatch struct {
 	ID int
 
@@ -174,6 +196,7 @@ type TaskPatch struct {
 	Payload   *string
 }
 
+// TaskStatusPatch is the API message for patching a task status.
 type TaskStatusPatch struct {
 	ID int
 
@@ -188,6 +211,7 @@ type TaskStatusPatch struct {
 	Result  *string
 }
 
+// TaskService is the service for tasks.
 type TaskService interface {
 	CreateTask(ctx context.Context, create *TaskCreate) (*Task, error)
 	FindTaskList(ctx context.Context, find *TaskFind) ([]*Task, error)

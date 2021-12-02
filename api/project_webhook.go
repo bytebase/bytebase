@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// ProjectWebhook is the API message for project webhooks.
 type ProjectWebhook struct {
 	ID int `jsonapi:"primary,projectWebhookMember"`
 
@@ -27,6 +28,7 @@ type ProjectWebhook struct {
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
 
+// ProjectWebhookCreate is the API message for creating a project webhook.
 type ProjectWebhookCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -42,6 +44,7 @@ type ProjectWebhookCreate struct {
 	ActivityList []string `jsonapi:"attr,activityList"`
 }
 
+// ProjectWebhookFind is the API message for finding project webhooks.
 type ProjectWebhookFind struct {
 	ID *int
 
@@ -58,6 +61,7 @@ func (find *ProjectWebhookFind) String() string {
 	return string(str)
 }
 
+// ProjectWebhookPatch is the API message for patching a project webhook.
 type ProjectWebhookPatch struct {
 	ID int
 
@@ -71,6 +75,7 @@ type ProjectWebhookPatch struct {
 	ActivityList *string `jsonapi:"attr,activityList"`
 }
 
+// ProjectWebhookDelete is the API message for deleting a project webhook.
 type ProjectWebhookDelete struct {
 	ID int
 
@@ -79,10 +84,12 @@ type ProjectWebhookDelete struct {
 	DeleterID int
 }
 
+// ProjectWebhookTestResult is the test result of a project webhook.
 type ProjectWebhookTestResult struct {
 	Error string `jsonapi:"attr,error"`
 }
 
+// ProjectWebhookService is the service for project webhooks.
 type ProjectWebhookService interface {
 	CreateProjectWebhook(ctx context.Context, create *ProjectWebhookCreate) (*ProjectWebhook, error)
 	FindProjectWebhookList(ctx context.Context, find *ProjectWebhookFind) ([]*ProjectWebhook, error)

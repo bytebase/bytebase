@@ -87,7 +87,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		principalCreate := &api.PrincipalCreate{
-			CreatorID:    api.SYSTEM_BOT_ID,
+			CreatorID:    api.SystemBotID,
 			Type:         api.EndUser,
 			Name:         signup.Name,
 			Email:        signup.Email,
