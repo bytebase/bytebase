@@ -180,18 +180,18 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 			}
 		}
 		return
-	} else {
-		defer driver.Close(ctx)
-		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			InstanceID: &instance.ID,
-			Type:       api.AnomalyInstanceConnection,
-		})
-		if err != nil && common.ErrorCode(err) != common.NotFound {
-			s.l.Error("Failed to close anomaly",
-				zap.String("instance", instance.Name),
-				zap.String("type", string(api.AnomalyInstanceConnection)),
-				zap.Error(err))
-		}
+	}
+
+	defer driver.Close(ctx)
+	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		InstanceID: &instance.ID,
+		Type:       api.AnomalyInstanceConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		s.l.Error("Failed to close anomaly",
+			zap.String("instance", instance.Name),
+			zap.String("type", string(api.AnomalyInstanceConnection)),
+			zap.Error(err))
 	}
 
 	// Check migration schema
@@ -263,19 +263,18 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			}
 		}
 		return
-	} else {
-		defer driver.Close(ctx)
-		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			DatabaseID: &database.ID,
-			Type:       api.AnomalyDatabaseConnection,
-		})
-		if err != nil && common.ErrorCode(err) != common.NotFound {
-			s.l.Error("Failed to close anomaly",
-				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
-				zap.String("type", string(api.AnomalyDatabaseConnection)),
-				zap.Error(err))
-		}
+	}
+	defer driver.Close(ctx)
+	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		DatabaseID: &database.ID,
+		Type:       api.AnomalyDatabaseConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		s.l.Error("Failed to close anomaly",
+			zap.String("instance", instance.Name),
+			zap.String("database", database.Name),
+			zap.String("type", string(api.AnomalyDatabaseConnection)),
+			zap.Error(err))
 	}
 
 	// Check schema drift
