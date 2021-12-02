@@ -211,7 +211,8 @@ CREATE TABLE project (
     name TEXT NOT NULL,
     `key` TEXT NOT NULL UNIQUE,
     workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
-    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE'))
+    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
+    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT'))
 );
 
 INSERT INTO
