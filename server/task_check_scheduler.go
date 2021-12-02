@@ -13,10 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	taskCheckScheduleInterval = time.Duration(1) * time.Second
-)
-
 // NewTaskCheckScheduler creates a task check scheduler.
 func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
