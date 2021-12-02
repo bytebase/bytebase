@@ -58,7 +58,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
@@ -161,7 +161,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 					ContainerID: updatedMember.ID,
 					Type:        api.ActivityMemberRoleUpdate,
-					Level:       api.ACTIVITY_INFO,
+					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
@@ -186,7 +186,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 					ContainerID: updatedMember.ID,
 					Type:        theType,
-					Level:       api.ACTIVITY_INFO,
+					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})

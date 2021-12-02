@@ -137,7 +137,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						CreatorID:   api.SYSTEM_BOT_ID,
 						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
-						Level:       api.ACTIVITY_WARN,
+						Level:       api.ActivityWarn,
 						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
 						Payload:     string(bytes),
 					}
@@ -316,7 +316,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						CreatorID:   api.SYSTEM_BOT_ID,
 						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
-						Level:       api.ACTIVITY_INFO,
+						Level:       api.ActivityInfo,
 						Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 						Payload:     string(bytes),
 					}

@@ -21,7 +21,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
 		}
 
-		activityCreate.Level = api.ACTIVITY_INFO
+		activityCreate.Level = api.ActivityInfo
 		activityCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
 		var foundIssue *api.Issue
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
