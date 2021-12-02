@@ -42,6 +42,16 @@ func (e ProjectVisibility) String() string {
 	return ""
 }
 
+// ProjectTenantMode is the tenant mode setting for project.
+type ProjectTenantMode string
+
+const (
+	// TenantModeDisabled is the DISABLED value for ProjectTenantMode.
+	TenantModeDisabled ProjectTenantMode = "DISABLED"
+	// TenantModeTenant is the TENANT value for ProjectTenantMode.
+	TenantModeTenant ProjectTenantMode = "TENANT"
+)
+
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 
@@ -62,6 +72,7 @@ type Project struct {
 	Key          string              `jsonapi:"attr,key"`
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
+	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 }
 
 type ProjectCreate struct {
@@ -105,6 +116,7 @@ type ProjectPatch struct {
 	Name         *string              `jsonapi:"attr,name"`
 	Key          *string              `jsonapi:"attr,key"`
 	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	TenantMode   *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 }
 
 type ProjectService interface {
