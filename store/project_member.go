@@ -61,6 +61,7 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 	return list, nil
 }
 
+// FindProjectMember finds project members.
 func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) (*api.ProjectMember, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

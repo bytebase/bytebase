@@ -7,15 +7,15 @@ import (
 	"io/ioutil"
 )
 
-// TlsConfig is the configuration for SSL connection.
-type TlsConfig struct {
+// TLSConfig is the configuration for SSL connection.
+type TLSConfig struct {
 	SslCA   string
 	SslCert string
 	SslKey  string
 }
 
 // GetSslConfig gets the SSL config for connection.
-func (tc TlsConfig) GetSslConfig() (*tls.Config, error) {
+func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 	if tc.SslCA == "" {
 		return nil, nil
 	}

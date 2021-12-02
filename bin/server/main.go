@@ -6,18 +6,25 @@ import (
 
 	"github.com/bytebase/bytebase/bin/server/cmd"
 
-	// Register clickhouse driver
+	// Import sqlite3 driver.
+	_ "github.com/mattn/go-sqlite3"
+
+	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
-	// Register mysql driver
+	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
-	// Register postgres driver
+	// Register postgres driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
-	// Register snowflake driver
+	_ "github.com/lib/pq"
+
+	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
 
-	// Register fake advisor
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
-	// Register mysql advisor
+	// Register mysql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
 )
 
