@@ -36,7 +36,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		for _, setting := range filteredList {
-			if err := s.ComposeSettingRelationship(ctx, setting); err != nil {
+			if err := s.composeSettingRelationship(ctx, setting); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch setting relationship: %v", setting.Name)).SetInternal(err)
 			}
 		}
@@ -52,7 +52,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		ctx := context.Background()
 		settingPatch := &api.SettingPatch{
 			Name:      api.SettingName(c.Param("name")),
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
@@ -74,15 +74,15 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeSettingRelationship(ctx context.Context, setting *api.Setting) error {
+func (s *Server) composeSettingRelationship(ctx context.Context, setting *api.Setting) error {
 	var err error
 
-	setting.Creator, err = s.ComposePrincipalByID(ctx, setting.CreatorID)
+	setting.Creator, err = s.composePrincipalByID(ctx, setting.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	setting.Updater, err = s.ComposePrincipalByID(ctx, setting.UpdaterID)
+	setting.Updater, err = s.composePrincipalByID(ctx, setting.UpdaterID)
 	if err != nil {
 		return err
 	}

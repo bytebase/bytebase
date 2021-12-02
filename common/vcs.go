@@ -1,14 +1,16 @@
 package common
 
+// VCSType is the type of VCS.
 type VCSType string
 
 const (
-	GITLAB_SELF_HOST VCSType = "GITLAB_SELF_HOST"
+	// GitSelfHost is the VCS type for gitlab self host.
+	GitSelfHost VCSType = "GITLAB_SELF_HOST"
 )
 
 func (e VCSType) String() string {
 	switch e {
-	case GITLAB_SELF_HOST:
+	case GitSelfHost:
 		return "GITLAB_SELF_HOST"
 	}
 	return "UNKNOWN"
@@ -17,6 +19,8 @@ func (e VCSType) String() string {
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
+
+// VCSFileCommit is the API message for a VCS file commit.
 type VCSFileCommit struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
@@ -27,6 +31,7 @@ type VCSFileCommit struct {
 	Added      string `json:"added"`
 }
 
+// VCSPushEvent is the API message for a VCS push event.
 type VCSPushEvent struct {
 	VCSType            VCSType       `json:"vcsType"`
 	BaseDirectory      string        `json:"baseDir"`

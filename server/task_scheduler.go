@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	TASK_SCHEDULE_INTERVAL = time.Duration(1) * time.Second
+	taskSchedulerInterval = time.Duration(1) * time.Second
 )
 
+// NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
 	return &TaskScheduler{
 		l:         logger,
@@ -25,6 +26,7 @@ func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
 	}
 }
 
+// TaskScheduler is the task scheduler.
 type TaskScheduler struct {
 	l         *zap.Logger
 	executors map[string]TaskExecutor
@@ -32,9 +34,10 @@ type TaskScheduler struct {
 	server *Server
 }
 
+// Run will run the task scheduler.
 func (s *TaskScheduler) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", TASK_SCHEDULE_INTERVAL))
+		s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
 		runningTasks := make(map[int]bool)
 		mu := sync.RWMutex{}
 		for {
@@ -65,7 +68,7 @@ func (s *TaskScheduler) Run() error {
 					if pipeline.ID == api.OnboardingPipelineID {
 						continue
 					}
-					if err := s.server.ComposePipelineRelationship(ctx, pipeline); err != nil {
+					if err := s.server.composePipelineRelationship(ctx, pipeline); err != nil {
 						s.l.Error("Failed to fetch pipeline relationship",
 							zap.Int("id", pipeline.ID),
 							zap.String("name", pipeline.Name),
@@ -110,7 +113,7 @@ func (s *TaskScheduler) Run() error {
 
 					// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 					// We may optimize this in the future since only some relationship info is needed by the executor
-					if err := s.server.ComposeTaskRelationship(ctx, task); err != nil {
+					if err := s.server.composeTaskRelationship(ctx, task); err != nil {
 						s.l.Error("Failed to fetch task relationship",
 							zap.Int("id", task.ID),
 							zap.String("name", task.Name),
@@ -154,7 +157,7 @@ func (s *TaskScheduler) Run() error {
 									Code:      &code,
 									Result:    &result,
 								}
-								_, err = s.server.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
 									s.l.Error("Failed to mark task as DONE",
 										zap.Int("id", task.ID),
@@ -189,7 +192,7 @@ func (s *TaskScheduler) Run() error {
 									Code:      &code,
 									Result:    &result,
 								}
-								_, err = s.server.ChangeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
 									s.l.Error("Failed to mark task as FAILED",
 										zap.Int("id", task.ID),
@@ -210,13 +213,14 @@ func (s *TaskScheduler) Run() error {
 				}
 			}()
 
-			time.Sleep(TASK_SCHEDULE_INTERVAL)
+			time.Sleep(taskSchedulerInterval)
 		}
 	}()
 
 	return nil
 }
 
+// Register will register a task executor.
 func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
@@ -227,7 +231,7 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-// We will schedule the task if its required check does not contain error in the latest run
+// ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	// For now, only schema update task has required task check
 	if task.Type == api.TaskDatabaseSchemaUpdate {
@@ -273,7 +277,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 	}
-	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
+	updatedTask, err := s.server.changeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}

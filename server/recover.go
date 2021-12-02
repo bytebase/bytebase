@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func RecoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
+func recoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		defer func() {
 			if r := recover(); r != nil {

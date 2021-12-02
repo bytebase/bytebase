@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	SCHEMA_SYNC_INTERVAL = time.Duration(30) * time.Minute
+	schemaSyncInterval = time.Duration(30) * time.Minute
 )
 
+// NewSchemaSyncer creates a schema syncer.
 func NewSchemaSyncer(logger *zap.Logger, server *Server) *SchemaSyncer {
 	return &SchemaSyncer{
 		l:      logger,
@@ -21,14 +22,16 @@ func NewSchemaSyncer(logger *zap.Logger, server *Server) *SchemaSyncer {
 	}
 }
 
+// SchemaSyncer is the schema syncer.
 type SchemaSyncer struct {
 	l      *zap.Logger
 	server *Server
 }
 
+// Run will run the schema syncer once.
 func (s *SchemaSyncer) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", SCHEMA_SYNC_INTERVAL))
+		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
 		runningTasks := make(map[int]bool)
 		mu := sync.RWMutex{}
 		for {
@@ -65,7 +68,7 @@ func (s *SchemaSyncer) Run() error {
 					runningTasks[instance.ID] = true
 					mu.Unlock()
 
-					if err := s.server.ComposeInstanceRelationship(ctx, instance); err != nil {
+					if err := s.server.composeInstanceRelationship(ctx, instance); err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
 							zap.String("name", instance.Name),
@@ -79,7 +82,7 @@ func (s *SchemaSyncer) Run() error {
 							delete(runningTasks, instance.ID)
 							mu.Unlock()
 						}()
-						resultSet := s.server.SyncEngineVersionAndSchema(ctx, instance)
+						resultSet := s.server.syncEngineVersionAndSchema(ctx, instance)
 						if resultSet.Error != "" {
 							s.l.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),
@@ -90,7 +93,7 @@ func (s *SchemaSyncer) Run() error {
 				}
 			}()
 
-			time.Sleep(SCHEMA_SYNC_INTERVAL)
+			time.Sleep(schemaSyncInterval)
 		}
 	}()
 

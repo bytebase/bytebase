@@ -31,7 +31,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 
 		for _, hook := range list {
-			if err := s.ComposeProjectWebhookRelationship(ctx, hook); err != nil {
+			if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch webhook relationship: %v", hook.Name)).SetInternal(err)
 			}
 		}
@@ -51,7 +51,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 
 		hookCreate := &api.ProjectWebhookCreate{
-			CreatorID: c.Get(GetPrincipalIDContextKey()).(int),
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 			ProjectID: projectID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, hookCreate); err != nil {
@@ -66,7 +66,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project webhook").SetInternal(err)
 		}
 
-		if err := s.ComposeProjectWebhookRelationship(ctx, hook); err != nil {
+		if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch webhook relationship").SetInternal(err)
 		}
 
@@ -100,7 +100,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectWebhookRelationship(ctx, hook); err != nil {
+		if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch webhook relationship").SetInternal(err)
 		}
 
@@ -125,7 +125,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 		hookPatch := &api.ProjectWebhookPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, hookPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project webhook").SetInternal(err)
@@ -142,7 +142,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project webhook ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeProjectWebhookRelationship(ctx, hook); err != nil {
+		if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project webhook relationship").SetInternal(err)
 		}
 
@@ -167,7 +167,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 
 		hookDelete := &api.ProjectWebhookDelete{
 			ID:        id,
-			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		err = s.ProjectWebhookService.DeleteProjectWebhook(ctx, hookDelete)
 		if err != nil {
@@ -249,15 +249,15 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeProjectWebhookRelationship(ctx context.Context, hook *api.ProjectWebhook) error {
+func (s *Server) composeProjectWebhookRelationship(ctx context.Context, hook *api.ProjectWebhook) error {
 	var err error
 
-	hook.Creator, err = s.ComposePrincipalByID(ctx, hook.CreatorID)
+	hook.Creator, err = s.composePrincipalByID(ctx, hook.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	hook.Updater, err = s.ComposePrincipalByID(ctx, hook.UpdaterID)
+	hook.Updater, err = s.composePrincipalByID(ctx, hook.UpdaterID)
 	if err != nil {
 		return err
 	}

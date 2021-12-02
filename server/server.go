@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Server is the Bytebase server.
 type Server struct {
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
@@ -89,6 +90,7 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
+// NewServer creates a server.
 func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.HideBanner = true
@@ -178,7 +180,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		}))
 	}
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return RecoverMiddleware(logger, next)
+		return recoverMiddleware(logger, next)
 	})
 
 	webhookGroup := e.Group("/hook")
@@ -200,7 +202,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		e.Logger.Fatal(err)
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return ACLMiddleware(logger, s, ce, next, readonly)
+		return aclMiddleware(logger, s, ce, next, readonly)
 	})
 	s.registerSettingRoutes(apiGroup)
 	s.registerActuatorRoutes(apiGroup)
@@ -220,7 +222,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerActivityRoutes(apiGroup)
 	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
-	s.registerSqlRoutes(apiGroup)
+	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
@@ -235,6 +237,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	return s
 }
 
+// Run will run the server.
 func (server *Server) Run() error {
 	if !server.readonly {
 		if err := server.TaskScheduler.Run(); err != nil {
@@ -264,6 +267,7 @@ func (server *Server) Run() error {
 	return server.e.Start(fmt.Sprintf(":%d", server.port))
 }
 
+// Shutdown will shut down the server.
 func (server *Server) Shutdown(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)

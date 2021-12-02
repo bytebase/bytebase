@@ -13,7 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *Server) registerSqlRoutes(g *echo.Group) {
+func (s *Server) registerSQLRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
 		ctx := context.Background()
 		connectionInfo := &api.ConnectionInfo{}
@@ -27,7 +27,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 		// we do not transfer the password back to client, thus the client will pass the instanceID to let server
 		// retrieve the password.
 		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceID != nil {
-			adminPassword, err := s.FindInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
+			adminPassword, err := s.findInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceID)).SetInternal(err)
 			}
@@ -75,7 +75,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, sync.InstanceID)
+		instance, err := s.composeInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
@@ -83,7 +83,7 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceID)).SetInternal(err)
 		}
 
-		resultSet := s.SyncEngineVersionAndSchema(ctx, instance)
+		resultSet := s.syncEngineVersionAndSchema(ctx, instance)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
@@ -93,10 +93,10 @@ func (s *Server) registerSqlRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) SyncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
+func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
 	resultSet := &api.SQLResultSet{}
 	err := func() error {
-		driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return err
 		}

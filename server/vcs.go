@@ -18,21 +18,21 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.POST("/vcs", func(c echo.Context) error {
 		ctx := context.Background()
 		vcsCreate := &api.VCSCreate{
-			CreatorID: c.Get(GetPrincipalIDContextKey()).(int),
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS request").SetInternal(err)
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.APIURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.ApiPath)
+		vcsCreate.APIURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.APIPath)
 
 		vcs, err := s.VCSService.CreateVCS(ctx, vcsCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create VCS").SetInternal(err)
 		}
 
-		if err := s.ComposeVCSRelationship(ctx, vcs); err != nil {
+		if err := s.composeVCSRelationship(ctx, vcs); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created VCS relationship").SetInternal(err)
 		}
 
@@ -52,7 +52,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 
 		for _, vcs := range list {
-			if err := s.ComposeVCSRelationship(ctx, vcs); err != nil {
+			if err := s.composeVCSRelationship(ctx, vcs); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs relationship: %v", vcs.ID)).SetInternal(err)
 			}
 		}
@@ -71,7 +71,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
 		}
 
-		vcs, err := s.ComposeVCSByID(ctx, id)
+		vcs, err := s.composeVCSByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
@@ -95,7 +95,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 		vcsPatch := &api.VCSPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change VCS request").SetInternal(err)
@@ -109,7 +109,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change VCS ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeVCSRelationship(ctx, vcs); err != nil {
+		if err := s.composeVCSRelationship(ctx, vcs); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated VCS relationship").SetInternal(err)
 		}
 
@@ -129,7 +129,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 		vcsDelete := &api.VCSDelete{
 			ID:        id,
-			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		err = s.VCSService.DeleteVCS(ctx, vcsDelete)
 		if err != nil {
@@ -160,7 +160,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 
 		for _, repository := range list {
-			if err := s.ComposeRepositoryRelationship(ctx, repository); err != nil {
+			if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.ID)).SetInternal(err)
 			}
 		}
@@ -173,7 +173,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
+func (s *Server) composeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	vcsFind := &api.VCSFind{
 		ID: &id,
 	}
@@ -182,22 +182,22 @@ func (s *Server) ComposeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 		return nil, err
 	}
 
-	if err := s.ComposeVCSRelationship(ctx, vcs); err != nil {
+	if err := s.composeVCSRelationship(ctx, vcs); err != nil {
 		return nil, err
 	}
 
 	return vcs, nil
 }
 
-func (s *Server) ComposeVCSRelationship(ctx context.Context, vcs *api.VCS) error {
+func (s *Server) composeVCSRelationship(ctx context.Context, vcs *api.VCS) error {
 	var err error
 
-	vcs.Creator, err = s.ComposePrincipalByID(ctx, vcs.CreatorID)
+	vcs.Creator, err = s.composePrincipalByID(ctx, vcs.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	vcs.Updater, err = s.ComposePrincipalByID(ctx, vcs.UpdaterID)
+	vcs.Updater, err = s.composePrincipalByID(ctx, vcs.UpdaterID)
 	if err != nil {
 		return err
 	}
