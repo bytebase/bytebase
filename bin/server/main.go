@@ -6,6 +6,9 @@ import (
 
 	"github.com/bytebase/bytebase/bin/server/cmd"
 
+	// Import sqlite3 driver.
+	_ "github.com/mattn/go-sqlite3"
+
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
 	// Register mysql driver.
