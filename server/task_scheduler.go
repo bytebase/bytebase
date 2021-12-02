@@ -52,7 +52,7 @@ func (s *TaskScheduler) Run() error {
 				ctx := context.Background()
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
-				pipelineStatus := api.Pipeline_Open
+				pipelineStatus := api.PipelineOpen
 				pipelineFind := &api.PipelineFind{
 					Status: &pipelineStatus,
 				}
@@ -62,7 +62,7 @@ func (s *TaskScheduler) Run() error {
 					return
 				}
 				for _, pipeline := range pipelineList {
-					if pipeline.ID == api.ONBOARDING_PIPELINE_ID {
+					if pipeline.ID == api.OnboardingPipelineID {
 						continue
 					}
 					if err := s.server.ComposePipelineRelationship(ctx, pipeline); err != nil {
@@ -94,7 +94,7 @@ func (s *TaskScheduler) Run() error {
 				}
 
 				for _, task := range taskList {
-					if task.ID == api.ONBOARDING_TASK_ID1 || task.ID == api.ONBOARDING_TASK_ID2 {
+					if task.ID == api.OnboardingTaskID1 || task.ID == api.OnboardingTaskID2 {
 						continue
 					}
 
@@ -149,7 +149,7 @@ func (s *TaskScheduler) Run() error {
 								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
-									UpdaterID: api.SYSTEM_BOT_ID,
+									UpdaterID: api.SystemBotID,
 									Status:    api.TaskDone,
 									Code:      &code,
 									Result:    &result,
@@ -184,7 +184,7 @@ func (s *TaskScheduler) Run() error {
 								result := string(bytes)
 								taskStatusPatch := &api.TaskStatusPatch{
 									ID:        task.ID,
-									UpdaterID: api.SYSTEM_BOT_ID,
+									UpdaterID: api.SystemBotID,
 									Status:    api.TaskFailed,
 									Code:      &code,
 									Result:    &result,
@@ -273,7 +273,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 	}
-	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SYSTEM_BOT_ID)
+	updatedTask, err := s.server.ChangeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}

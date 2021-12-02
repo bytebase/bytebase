@@ -146,7 +146,7 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		create.Name,
 		create.Type,
 		create.InstanceURL,
-		create.ApiURL,
+		create.APIURL,
 		create.ApplicationID,
 		create.Secret,
 	)
@@ -167,7 +167,7 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 		&vcs.Name,
 		&vcs.Type,
 		&vcs.InstanceURL,
-		&vcs.ApiURL,
+		&vcs.APIURL,
 		&vcs.ApplicationID,
 		&vcs.Secret,
 	); err != nil {
@@ -219,7 +219,7 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 			&vcs.Name,
 			&vcs.Type,
 			&vcs.InstanceURL,
-			&vcs.ApiURL,
+			&vcs.APIURL,
 			&vcs.ApplicationID,
 			&vcs.Secret,
 		); err != nil {
@@ -275,7 +275,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 			&vcs.Name,
 			&vcs.Type,
 			&vcs.InstanceURL,
-			&vcs.ApiURL,
+			&vcs.APIURL,
 			&vcs.ApplicationID,
 			&vcs.Secret,
 		); err != nil {

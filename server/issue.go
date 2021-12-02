@@ -565,9 +565,9 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
-	case api.Issue_Open:
-		pipelineStatus = api.Pipeline_Open
-	case api.Issue_Done:
+	case api.IssueOpen:
+		pipelineStatus = api.PipelineOpen
+	case api.IssueDone:
 		// Returns error if any of the tasks is not DONE.
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
@@ -576,8 +576,8 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 				}
 			}
 		}
-		pipelineStatus = api.Pipeline_Done
-	case api.Issue_Canceled:
+		pipelineStatus = api.PipelineDone
+	case api.IssueCanceled:
 		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
 		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
 		// keep those tasks in the same state before the issue was canceled.
@@ -590,7 +590,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 				}
 			}
 		}
-		pipelineStatus = api.Pipeline_Canceled
+		pipelineStatus = api.PipelineCanceled
 	}
 
 	pipelinePatch := &api.PipelinePatch{
@@ -644,7 +644,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 }
 
 func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, activity_id int) error {
-	if issue.CreatorID != api.SYSTEM_BOT_ID {
+	if issue.CreatorID != api.SystemBotID {
 		inboxCreate := &api.InboxCreate{
 			ReceiverID: issue.CreatorID,
 			ActivityID: activity_id,
@@ -655,7 +655,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 	}
 
-	if issue.AssigneeID != api.SYSTEM_BOT_ID && issue.AssigneeID != issue.CreatorID {
+	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
 		inboxCreate := &api.InboxCreate{
 			ReceiverID: issue.AssigneeID,
 			ActivityID: activity_id,
@@ -667,7 +667,7 @@ func (s *Server) PostInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	}
 
 	for _, subscriberID := range issue.SubscriberIDList {
-		if subscriberID != api.SYSTEM_BOT_ID && subscriberID != issue.CreatorID && subscriberID != issue.AssigneeID {
+		if subscriberID != api.SystemBotID && subscriberID != issue.CreatorID && subscriberID != issue.AssigneeID {
 			inboxCreate := &api.InboxCreate{
 				ReceiverID: subscriberID,
 				ActivityID: activity_id,

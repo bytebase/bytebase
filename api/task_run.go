@@ -8,13 +8,19 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+// TaskRunStatus is the status of a task run.
 type TaskRunStatus string
 
 const (
-	TaskRunUnknown  TaskRunStatus = "UNKNOWN"
-	TaskRunRunning  TaskRunStatus = "RUNNING"
-	TaskRunDone     TaskRunStatus = "DONE"
-	TaskRunFailed   TaskRunStatus = "FAILED"
+	// TaskRunUnknown is the task run status for UNKNOWN.
+	TaskRunUnknown TaskRunStatus = "UNKNOWN"
+	// TaskRunRunning is the task run status for RUNNING.
+	TaskRunRunning TaskRunStatus = "RUNNING"
+	// TaskRunDone is the task run status for DONE.
+	TaskRunDone TaskRunStatus = "DONE"
+	// TaskRunFailed is the task run status for FAILED.
+	TaskRunFailed TaskRunStatus = "FAILED"
+	// TaskRunCanceled is the task run status for CANCELED.
 	TaskRunCanceled TaskRunStatus = "CANCELED"
 )
 
@@ -32,12 +38,14 @@ func (e TaskRunStatus) String() string {
 	return "UNKNOWN"
 }
 
+// TaskRunResultPayload is the result payload for a task run.
 type TaskRunResultPayload struct {
 	Detail      string `json:"detail,omitempty"`
 	MigrationID int64  `json:"migrationId,omitempty"`
 	Version     string `json:"version,omitempty"`
 }
 
+// TaskRun is the API message for a task run.
 type TaskRun struct {
 	ID int `jsonapi:"primary,taskRun"`
 
@@ -62,6 +70,7 @@ type TaskRun struct {
 	Payload string        `jsonapi:"attr,payload"`
 }
 
+// TaskRunCreate is the API message for creating a task run.
 type TaskRunCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -76,6 +85,7 @@ type TaskRunCreate struct {
 	Payload string   `jsonapi:"attr,payload"`
 }
 
+// TaskRunFind is the API message for finding task runs.
 type TaskRunFind struct {
 	ID *int
 
@@ -94,6 +104,7 @@ func (find *TaskRunFind) String() string {
 	return string(str)
 }
 
+// TaskRunStatusPatch is the API message for patching a task run.
 type TaskRunStatusPatch struct {
 	ID *int
 
@@ -111,6 +122,7 @@ type TaskRunStatusPatch struct {
 	Result  *string
 }
 
+// TaskRunService is the service for task runs.
 type TaskRunService interface {
 	CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
 	FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
