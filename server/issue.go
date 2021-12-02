@@ -27,7 +27,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		// since we are not creating pipeline/stage list/task list in a single transaction.
 		// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
 		// quite unlikely so we will live with it for now.
-		if issueCreate.AssigneeID == api.UNKNOWN_ID {
+		if issueCreate.AssigneeID == api.UnknownID {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 		}
 
@@ -270,7 +270,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 				ContainerID: issue.ID,
 				Type:        api.ActivityIssueFieldUpdate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Payload:     string(payload),
 			}
 			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
@@ -510,7 +510,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		CreatorID:   creatorID,
 		ContainerID: issue.ID,
 		Type:        api.ActivityIssueCreate,
-		Level:       api.ACTIVITY_INFO,
+		Level:       api.ActivityInfo,
 		Payload:     string(bytes),
 	}
 	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
@@ -539,7 +539,7 @@ func (s *Server) CreateIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			CreatorID:   creatorID,
 			ContainerID: *issueCreate.RollbackIssueID,
 			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ACTIVITY_INFO,
+			Level:       api.ActivityInfo,
 			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
 			Payload:     string(bytes),
 		}
@@ -628,7 +628,7 @@ func (s *Server) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		CreatorID:   updaterID,
 		ContainerID: issue.ID,
 		Type:        api.ActivityIssueStatusUpdate,
-		Level:       api.ACTIVITY_INFO,
+		Level:       api.ActivityInfo,
 		Comment:     comment,
 		Payload:     string(payload),
 	}

@@ -9,22 +9,33 @@ import (
 type AnomalyType string
 
 const (
-	AnomalyInstanceConnection            AnomalyType = "bb.anomaly.instance.connection"
-	AnomalyInstanceMigrationSchema       AnomalyType = "bb.anomaly.instance.migration-schema"
+	// AnomalyInstanceConnection is the anomaly type for instance connections.
+	AnomalyInstanceConnection AnomalyType = "bb.anomaly.instance.connection"
+	// AnomalyInstanceMigrationSchema is the anomaly type for schema migrations.
+	AnomalyInstanceMigrationSchema AnomalyType = "bb.anomaly.instance.migration-schema"
+	// AnomalyDatabaseBackupPolicyViolation is the anomaly type for backup policy violations.
 	AnomalyDatabaseBackupPolicyViolation AnomalyType = "bb.anomaly.database.backup.policy-violation"
-	AnomalyDatabaseBackupMissing         AnomalyType = "bb.anomaly.database.backup.missing"
-	AnomalyDatabaseConnection            AnomalyType = "bb.anomaly.database.connection"
-	AnomalyDatabaseSchemaDrift           AnomalyType = "bb.anomaly.database.schema.drift"
+	// AnomalyDatabaseBackupMissing is the anomaly type for missing backups.
+	AnomalyDatabaseBackupMissing AnomalyType = "bb.anomaly.database.backup.missing"
+	// AnomalyDatabaseConnection is the anomaly type for database connections.
+	AnomalyDatabaseConnection AnomalyType = "bb.anomaly.database.connection"
+	// AnomalyDatabaseSchemaDrift is the anomaly type for database schema drifts.
+	AnomalyDatabaseSchemaDrift AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
+// AnomalySeverity is the severity of anamoly.
 type AnomalySeverity string
 
 const (
-	AnomalySeverityMedium   AnomalySeverity = "MEDIUM"
-	AnomalySeverityHigh     AnomalySeverity = "HIGH"
+	// AnomalySeverityMedium is the medium severity.
+	AnomalySeverityMedium AnomalySeverity = "MEDIUM"
+	// AnomalySeverityHigh is the high severity.
+	AnomalySeverityHigh AnomalySeverity = "HIGH"
+	// AnomalySeverityCritical is the critical severity.
 	AnomalySeverityCritical AnomalySeverity = "CRITICAL"
 )
 
+// AnomalySeverityFromType maps the severity from a anomaly type.
 func AnomalySeverityFromType(anomalyType AnomalyType) AnomalySeverity {
 	switch anomalyType {
 	case AnomalyDatabaseBackupPolicyViolation:
@@ -40,28 +51,33 @@ func AnomalySeverityFromType(anomalyType AnomalyType) AnomalySeverity {
 	return AnomalySeverityCritical
 }
 
+// AnomalyInstanceConnectionPayload is the API message for instance connection payloads.
 type AnomalyInstanceConnectionPayload struct {
 	// Connection failure detail
 	Detail string `json:"detail,omitempty"`
 }
 
+// AnomalyDatabaseBackupPolicyViolationPayload is the API message for backup policy violation payloads.
 type AnomalyDatabaseBackupPolicyViolationPayload struct {
 	EnvironmentID          int                      `json:"environmentId,omitempty"`
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
 }
 
+// AnomalyDatabaseBackupMissingPayload is the API message for missing backup payloads.
 type AnomalyDatabaseBackupMissingPayload struct {
 	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
 	// Time of last successful backup created
 	LastBackupTs int64 `json:"lastBackupTs,omitempty"`
 }
 
+// AnomalyDatabaseConnectionPayload is the API message for database connection payloads.
 type AnomalyDatabaseConnectionPayload struct {
 	// Connection failure detail
 	Detail string `json:"detail,omitempty"`
 }
 
+// AnomalyDatabaseSchemaDriftPayload is the API message for database schema drift payloads.
 type AnomalyDatabaseSchemaDriftPayload struct {
 	// The schema version corresponds to the expected schema
 	Version string `json:"version,omitempty"`
@@ -71,6 +87,7 @@ type AnomalyDatabaseSchemaDriftPayload struct {
 	Actual string `json:"actual,omitempty"`
 }
 
+// Anomaly is the API message for an anomaly.
 type Anomaly struct {
 	ID int `jsonapi:"primary,anomaly"`
 
@@ -94,6 +111,7 @@ type Anomaly struct {
 	Payload  string          `jsonapi:"attr,payload"`
 }
 
+// AnomalyUpsert is the API message for creating an anomaly.
 type AnomalyUpsert struct {
 	// Standard fields
 	CreatorID int
@@ -107,6 +125,7 @@ type AnomalyUpsert struct {
 	Payload string      `jsonapi:"attr,payload"`
 }
 
+// AnomalyFind is the API message for finding anomalies.
 type AnomalyFind struct {
 	// Standard fields
 	RowStatus *RowStatus
@@ -127,12 +146,14 @@ func (find *AnomalyFind) String() string {
 	return string(str)
 }
 
+// AnomalyArchive is the API message for archiving an anomoly.
 type AnomalyArchive struct {
 	InstanceID *int
 	DatabaseID *int
 	Type       AnomalyType
 }
 
+// AnomalyService is the service for anomaly.
 type AnomalyService interface {
 	// UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
 	UpsertActiveAnomaly(ctx context.Context, upsert *AnomalyUpsert) (*Anomaly, error)

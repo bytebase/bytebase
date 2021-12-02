@@ -7,15 +7,20 @@ import (
 )
 
 const (
-	ADMIN_DATA_SOURCE_NAME = "Admin data source"
+	// AdminDataSourceName is the name for administrative data source.
+	AdminDataSourceName = "Admin data source"
 )
 
+// DataSourceType is the type of data source.
 type DataSourceType string
 
 const (
+	// Admin is the ADMIN type of data source.
 	Admin DataSourceType = "ADMIN"
-	RW    DataSourceType = "RW"
-	RO    DataSourceType = "RO"
+	// RW is the read/write type of data source.
+	RW DataSourceType = "RW"
+	// RO is the read-only type of data source.
+	RO DataSourceType = "RO"
 )
 
 func (e DataSourceType) String() string {
@@ -30,6 +35,7 @@ func (e DataSourceType) String() string {
 	return ""
 }
 
+// DataSource is the API message for a data source.
 type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`
 
@@ -53,6 +59,7 @@ type DataSource struct {
 	Password string         `jsonapi:"attr,password"`
 }
 
+// DataSourceCreate is the API message for creating a data source.
 type DataSourceCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -69,6 +76,7 @@ type DataSourceCreate struct {
 	Password string         `jsonapi:"attr,password"`
 }
 
+// DataSourceFind is the API message for finding data sources.
 type DataSourceFind struct {
 	// Related fields
 	InstanceID *int
@@ -86,6 +94,7 @@ func (find *DataSourceFind) String() string {
 	return string(str)
 }
 
+// DataSourcePatch is the API message for data source.
 type DataSourcePatch struct {
 	ID int `jsonapi:"primary,dataSourcePatch"`
 
@@ -98,6 +107,7 @@ type DataSourcePatch struct {
 	Password *string `jsonapi:"attr,password"`
 }
 
+// DataSourceService is the service for data source.
 type DataSourceService interface {
 	CreateDataSource(ctx context.Context, create *DataSourceCreate) (*DataSource, error)
 	// This is specifically used to create the admin data source when creating the instance.

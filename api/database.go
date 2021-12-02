@@ -7,17 +7,23 @@ import (
 )
 
 const (
-	ALL_DATABASE_NAME          = "*"
-	DEFAULT_CHARACTER_SET_NAME = "utf8mb4"
+	// AllDatabaseName is the wild expression for all databases.
+	AllDatabaseName = "*"
+	// DefaultCharactorSetName is the default charactor set.
+	DefaultCharactorSetName = "utf8mb4"
+	// DefaultCollationName is the default collation name.
 	// Use utf8mb4_general_ci instead of the new MySQL 8.0.1 default utf8mb4_0900_ai_ci
 	// because the former is compatible with more other MySQL flavors (e.g. MariaDB)
-	DEFAULT_COLLATION_NAME = "utf8mb4_general_ci"
+	DefaultCollationName = "utf8mb4_general_ci"
 )
 
+// SyncStatus is the database sync status.
 type SyncStatus string
 
 const (
-	OK       SyncStatus = "OK"
+	// OK is the OK sync status.
+	OK SyncStatus = "OK"
+	// NotFound is the NOT_FOUND sync status.
 	NotFound SyncStatus = "NOT_FOUND"
 )
 
@@ -31,6 +37,7 @@ func (e SyncStatus) String() string {
 	return ""
 }
 
+// Database is the API message for a database.
 type Database struct {
 	ID int `jsonapi:"primary,database"`
 
@@ -61,6 +68,7 @@ type Database struct {
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
 }
 
+// DatabaseCreate is the API message for creating a database.
 type DatabaseCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -78,6 +86,7 @@ type DatabaseCreate struct {
 	IssueID      int    `jsonapi:"attr,issueId"`
 }
 
+// DatabaseFind is the API message for finding databases.
 type DatabaseFind struct {
 	ID *int
 
@@ -98,6 +107,7 @@ func (find *DatabaseFind) String() string {
 	return string(str)
 }
 
+// DatabasePatch is the API message for patching a database.
 type DatabasePatch struct {
 	ID int
 
@@ -114,6 +124,7 @@ type DatabasePatch struct {
 	LastSuccessfulSyncTs *int64
 }
 
+// DatabaseService is the service for databases.
 type DatabaseService interface {
 	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*Database, error)
 	// This is specifically used to create the * database when creating the instance.

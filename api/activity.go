@@ -7,29 +7,47 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// Activity type
+// ActivityType is the type for an activity.
 type ActivityType string
 
 const (
-	// Issue related
-	ActivityIssueCreate              ActivityType = "bb.issue.create"
-	ActivityIssueCommentCreate       ActivityType = "bb.issue.comment.create"
-	ActivityIssueFieldUpdate         ActivityType = "bb.issue.field.update"
-	ActivityIssueStatusUpdate        ActivityType = "bb.issue.status.update"
+	// Issue related.
+
+	// ActivityIssueCreate is the type for creating issues.
+	ActivityIssueCreate ActivityType = "bb.issue.create"
+	// ActivityIssueCommentCreate is the type for creating issue comments.
+	ActivityIssueCommentCreate ActivityType = "bb.issue.comment.create"
+	// ActivityIssueFieldUpdate is the type for updating issue fields.
+	ActivityIssueFieldUpdate ActivityType = "bb.issue.field.update"
+	// ActivityIssueStatusUpdate is the type for updating issue status.
+	ActivityIssueStatusUpdate ActivityType = "bb.issue.status.update"
+	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
-	ActivityPipelineTaskFileCommit   ActivityType = "bb.pipeline.task.file.commit"
+	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
+	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
 
 	// Member related
-	ActivityMemberCreate     ActivityType = "bb.member.create"
+
+	// ActivityMemberCreate is the type for creating members.
+	ActivityMemberCreate ActivityType = "bb.member.create"
+	// ActivityMemberRoleUpdate is the type for updating member roles.
 	ActivityMemberRoleUpdate ActivityType = "bb.member.role.update"
-	ActivityMemberActivate   ActivityType = "bb.member.activate"
+	// ActivityMemberActivate is the type for activating members.
+	ActivityMemberActivate ActivityType = "bb.member.activate"
+	// ActivityMemberDeactivate is the type for deactivating members.
 	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
 
 	// Project related
-	ActivityProjectRepositoryPush   ActivityType = "bb.project.repository.push"
+
+	// ActivityProjectRepositoryPush is the type for pushing repositories.
+	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
+	// ActivityProjectDatabaseTransfer is the type for transfering databases.
 	ActivityProjectDatabaseTransfer ActivityType = "bb.project.database.transfer"
-	ActivityProjectMemberCreate     ActivityType = "bb.project.member.create"
-	ActivityProjectMemberDelete     ActivityType = "bb.project.member.delete"
+	// ActivityProjectMemberCreate is the type for creating project members.
+	ActivityProjectMemberCreate ActivityType = "bb.project.member.create"
+	// ActivityProjectMemberDelete is the type for deleting project members.
+	ActivityProjectMemberDelete ActivityType = "bb.project.member.delete"
+	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
 	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 )
 
@@ -69,26 +87,31 @@ func (e ActivityType) String() string {
 	return "bb.activity.unknown"
 }
 
+// ActivityLevel is the level of activities.
 type ActivityLevel string
 
 const (
-	ACTIVITY_INFO  ActivityLevel = "INFO"
-	ACTIVITY_WARN  ActivityLevel = "WARN"
-	ACTIVITY_ERROR ActivityLevel = "ERROR"
+	// ActivityInfo is the INFO level of activities.
+	ActivityInfo ActivityLevel = "INFO"
+	// ActivityWarn is the WARN level of activities.
+	ActivityWarn ActivityLevel = "WARN"
+	// ActivityError is the ERROR level of activities.
+	ActivityError ActivityLevel = "ERROR"
 )
 
 func (e ActivityLevel) String() string {
 	switch e {
-	case ACTIVITY_INFO:
+	case ActivityInfo:
 		return "INFO"
-	case ACTIVITY_WARN:
+	case ActivityWarn:
 		return "WARN"
-	case ACTIVITY_ERROR:
+	case ActivityError:
 		return "ERROR"
 	}
 	return "UNKNOWN"
 }
 
+// ActivityIssueCreatePayload is the API message payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
@@ -100,11 +123,13 @@ type ActivityIssueCreatePayload struct {
 	RollbackIssueID int `json:"rollbackIssueId,omitempty"`
 }
 
+// ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
+// ActivityIssueFieldUpdatePayload is the API message payloads for updating issue fields.
 type ActivityIssueFieldUpdatePayload struct {
 	FieldID  IssueFieldID `json:"fieldId"`
 	OldValue string       `json:"oldValue,omitempty"`
@@ -113,6 +138,7 @@ type ActivityIssueFieldUpdatePayload struct {
 	IssueName string `json:"issueName"`
 }
 
+// ActivityIssueStatusUpdatePayload is the API message payloads for updating issue status.
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
@@ -120,6 +146,7 @@ type ActivityIssueStatusUpdatePayload struct {
 	IssueName string `json:"issueName"`
 }
 
+// ActivityPipelineTaskStatusUpdatePayload is the API message payloads for updating pipeline task status.
 type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskID    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
@@ -129,6 +156,7 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskName  string `json:"taskName"`
 }
 
+// ActivityPipelineTaskFileCommitPayload is the API message payloads for committing pipeline task files.
 type ActivityPipelineTaskFileCommitPayload struct {
 	TaskID             int    `json:"taskId"`
 	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
@@ -138,6 +166,7 @@ type ActivityPipelineTaskFileCommitPayload struct {
 	CommitID           string `json:"commitId,omitempty"`
 }
 
+// ActivityMemberCreatePayload is the API message payloads for creating members.
 type ActivityMemberCreatePayload struct {
 	PrincipalID    int          `json:"principalId"`
 	PrincipalName  string       `json:"principalName"`
@@ -146,6 +175,7 @@ type ActivityMemberCreatePayload struct {
 	Role           Role         `json:"role"`
 }
 
+// ActivityMemberRoleUpdatePayload is the API message payloads for updating member roles.
 type ActivityMemberRoleUpdatePayload struct {
 	PrincipalID    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
@@ -154,6 +184,7 @@ type ActivityMemberRoleUpdatePayload struct {
 	NewRole        Role   `json:"newRole"`
 }
 
+// ActivityMemberActivateDeactivatePayload is the API message payloads for activating or deactivating members.
 type ActivityMemberActivateDeactivatePayload struct {
 	PrincipalID    int    `json:"principalId"`
 	PrincipalName  string `json:"principalName"`
@@ -161,6 +192,7 @@ type ActivityMemberActivateDeactivatePayload struct {
 	Role           Role   `json:"role"`
 }
 
+// ActivityProjectRepositoryPushPayload is the API message payloads for pushing repositories.
 type ActivityProjectRepositoryPushPayload struct {
 	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
 	// Used by activity table to display info without paying the join cost
@@ -169,12 +201,14 @@ type ActivityProjectRepositoryPushPayload struct {
 	IssueName string `json:"issueName,omitempty"`
 }
 
+// ActivityProjectDatabaseTransferPayload is the API message payloads for transfering databases.
 type ActivityProjectDatabaseTransferPayload struct {
 	DatabaseID int `json:"databaseId,omitempty"`
 	// Used by activity table to display info without paying the join cost
 	DatabaseName string `json:"databaseName,omitempty"`
 }
 
+// Activity is the API message for an activity.
 type Activity struct {
 	ID int `jsonapi:"primary,activity"`
 
@@ -197,6 +231,7 @@ type Activity struct {
 	Payload string        `jsonapi:"attr,payload"`
 }
 
+// ActivityCreate is the API message for creating an activity.
 type ActivityCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -210,6 +245,7 @@ type ActivityCreate struct {
 	Payload     string `jsonapi:"attr,payload"`
 }
 
+// ActivityFind is the API message for finding activities.
 type ActivityFind struct {
 	ID *int
 
@@ -226,6 +262,7 @@ func (find *ActivityFind) String() string {
 	return string(str)
 }
 
+// ActivityPatch is the API message for patching an activity.
 type ActivityPatch struct {
 	ID int `jsonapi:"primary,activityPatch"`
 
@@ -237,6 +274,7 @@ type ActivityPatch struct {
 	Comment *string `jsonapi:"attr,comment"`
 }
 
+// ActivityDelete is the API message for deleting an activity.
 type ActivityDelete struct {
 	ID int
 
@@ -245,6 +283,7 @@ type ActivityDelete struct {
 	DeleterID int
 }
 
+// ActivityService is the service for activities.
 type ActivityService interface {
 	CreateActivity(ctx context.Context, create *ActivityCreate) (*Activity, error)
 	FindActivityList(ctx context.Context, find *ActivityFind) ([]*Activity, error)

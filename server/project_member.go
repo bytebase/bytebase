@@ -46,7 +46,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberCreate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Granted %s to %s (%s).",
 					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
 			}
@@ -113,7 +113,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberRoleUpdate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Changed %s (%s) from %s to %s.",
 					projectMember.Principal.Name, projectMember.Principal.Email, existingProjectMember.Role, projectMember.Role),
 			}
@@ -175,7 +175,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					CreatorID:   c.Get(GetPrincipalIDContextKey()).(int),
 					ContainerID: projectID,
 					Type:        api.ActivityProjectMemberDelete,
-					Level:       api.ACTIVITY_INFO,
+					Level:       api.ActivityInfo,
 					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
 						projectMember.Role, projectMember.Principal.Name, projectMember.Principal.Email),
 				}
