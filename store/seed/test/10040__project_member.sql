@@ -173,3 +173,90 @@ VALUES
         'DEVELOPER',
         103
     );
+
+-- Project 3005 membership
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3005,
+        'OWNER',
+        101
+    );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3005,
+        'DEVELOPER',
+        102
+    );
+
+-- Project 3006 membership
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3006,
+        'OWNER',
+        101
+    );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3006,
+        'DEVELOPER',
+        102
+    );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        `role`,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3006,
+        'DEVELOPER',
+        103
+    );
