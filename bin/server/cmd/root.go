@@ -20,11 +20,12 @@ import (
 
 // -----------------------------------Global constant BEGIN----------------------------------------
 const (
-	// Length for the secret used to sign the JWT auth token
-	SECRET_LENGTH = 32
+	// secretLength is the length for the secret used to sign the JWT auth token
+	secretLength = 32
 
+	// greetingBanner is the greeting banner.
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
-	GREETING_BANNER = `
+	greetingBanner = `
 ██████╗ ██╗   ██╗████████╗███████╗██████╗  █████╗ ███████╗███████╗
 ██╔══██╗╚██╗ ██╔╝╚══██╔══╝██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
 ██████╔╝ ╚████╔╝    ██║   █████╗  ██████╔╝███████║███████╗█████╗
@@ -36,8 +37,9 @@ const (
 ___________________________________________________________________________________________
 
 `
+	// byeBanner is the bye banner.
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=BYE
-	BYE_BANNER = `
+	byeBanner = `
 ██████╗ ██╗   ██╗███████╗
 ██╔══██╗╚██╗ ██╔╝██╔════╝
 ██████╔╝ ╚████╔╝ █████╗
@@ -103,7 +105,7 @@ var (
 
 			start()
 
-			fmt.Print(BYE_BANNER)
+			fmt.Print(byeBanner)
 		},
 	}
 )
@@ -237,7 +239,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 		configCreate := &api.SettingCreate{
 			CreatorID:   api.SystemBotID,
 			Name:        api.SettingAuthSecret,
-			Value:       common.RandomString(SECRET_LENGTH),
+			Value:       common.RandomString(secretLength),
 			Description: "Random string used to sign the JWT auth token.",
 		}
 		config, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
@@ -313,7 +315,7 @@ func (m *main) Run(ctx context.Context) error {
 
 	m.server = s
 
-	fmt.Printf(GREETING_BANNER, fmt.Sprintf("Version %s has started at %s:%d", version, host, port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, port))
 
 	if err := s.Run(); err != nil {
 		return err

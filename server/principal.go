@@ -22,7 +22,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create principal request").SetInternal(err)
 		}
 
-		principalCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		principalCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		principalCreate.Type = api.EndUser
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -56,7 +56,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		filteredList := []*api.Principal{}
 		for _, principal := range list {
-			if err := s.ComposePrincipalRole(ctx, principal); err != nil {
+			if err := s.composePrincipalRole(ctx, principal); err != nil {
 				// Normally this should not happen since we create the member together with the principal
 				// and we don't allow deleting the member. Just in case.
 				if common.ErrorCode(err) == common.NotFound {
@@ -85,7 +85,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principal, err := s.ComposePrincipalByID(ctx, id)
+		principal, err := s.composePrincipalByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -109,7 +109,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principalPatch := &api.PrincipalPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
@@ -130,7 +130,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)
 		}
-		if err := s.ComposePrincipalRole(ctx, principal); err != nil {
+		if err := s.composePrincipalRole(ctx, principal); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch role for principal: %v", principal.Name)).SetInternal(err)
 		}
 
@@ -142,7 +142,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposePrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
+func (s *Server) composePrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}
@@ -151,14 +151,14 @@ func (s *Server) ComposePrincipalByID(ctx context.Context, id int) (*api.Princip
 		return nil, err
 	}
 
-	if err = s.ComposePrincipalRole(ctx, principal); err != nil {
+	if err = s.composePrincipalRole(ctx, principal); err != nil {
 		return nil, err
 	}
 
 	return principal, nil
 }
 
-func (s *Server) ComposePrincipalRole(ctx context.Context, principal *api.Principal) error {
+func (s *Server) composePrincipalRole(ctx context.Context, principal *api.Principal) error {
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	} else {

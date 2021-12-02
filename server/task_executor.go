@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
+// TaskExecutor is the task executor.
 type TaskExecutor interface {
 	// RunOnce will be called periodically by the scheduler until terminated is true.
 	//

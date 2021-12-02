@@ -22,7 +22,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
 		}
 
-		instanceCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		instanceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		instance, err := s.InstanceService.CreateInstance(ctx, instanceCreate)
 		if err != nil {
@@ -32,19 +32,19 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.ComposeInstanceRelationship(ctx, instance); err != nil {
+		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 			return err
 		}
 
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
 		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-		db, err := GetDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err == nil {
 			defer db.Close(ctx)
 			db.SetupMigrationIfNeeded(ctx)
 			// Try immediately sync the engine version and schema after instance creation.
-			s.SyncEngineVersionAndSchema(ctx, instance)
+			s.syncEngineVersionAndSchema(ctx, instance)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -67,7 +67,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, instance := range list {
-			if err := s.ComposeInstanceRelationship(ctx, instance); err != nil {
+			if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 				return err
 			}
 		}
@@ -86,7 +86,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, id)
+		instance, err := s.composeInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -110,7 +110,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instancePatch := &api.InstancePatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
@@ -151,7 +151,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 			dataSourcePatch := &api.DataSourcePatch{
 				ID:        adminDataSource.ID,
-				UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 				Username:  instancePatch.Username,
 			}
 			if instancePatch.Password != nil {
@@ -166,17 +166,17 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.ComposeInstanceRelationship(ctx, instance); err != nil {
+		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
-			db, err := GetDatabaseDriver(ctx, instance, "", s.l)
+			db, err := getDatabaseDriver(ctx, instance, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
 				db.SetupMigrationIfNeeded(ctx)
-				s.SyncEngineVersionAndSchema(ctx, instance)
+				s.syncEngineVersionAndSchema(ctx, instance)
 			}
 		}
 
@@ -216,7 +216,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, id)
+		instance, err := s.composeInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -263,7 +263,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, id)
+		instance, err := s.composeInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -272,7 +272,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := GetDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -308,7 +308,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("History ID is not a number: %s", c.Param("historyID"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, id)
+		instance, err := s.composeInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -317,7 +317,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -364,7 +364,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.ComposeInstanceByID(ctx, id)
+		instance, err := s.composeInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -390,7 +390,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -431,7 +431,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
+func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
@@ -440,27 +440,27 @@ func (s *Server) ComposeInstanceByID(ctx context.Context, id int) (*api.Instance
 		return nil, err
 	}
 
-	if err := s.ComposeInstanceRelationship(ctx, instance); err != nil {
+	if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.Instance) error {
+func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.Instance) error {
 	var err error
 
-	instance.Creator, err = s.ComposePrincipalByID(ctx, instance.CreatorID)
+	instance.Creator, err = s.composePrincipalByID(ctx, instance.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	instance.Updater, err = s.ComposePrincipalByID(ctx, instance.UpdaterID)
+	instance.Updater, err = s.composePrincipalByID(ctx, instance.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	instance.Environment, err = s.ComposeEnvironmentByID(ctx, instance.EnvironmentID)
+	instance.Environment, err = s.composeEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
 		return err
 	}
@@ -475,20 +475,20 @@ func (s *Server) ComposeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 	for _, anomaly := range instance.AnomalyList {
-		anomaly.Creator, err = s.ComposePrincipalByID(ctx, anomaly.CreatorID)
+		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
 		if err != nil {
 			return err
 		}
-		anomaly.Updater, err = s.ComposePrincipalByID(ctx, anomaly.UpdaterID)
+		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
 		if err != nil {
 			return err
 		}
 	}
 
-	return s.ComposeInstanceAdminDataSource(ctx, instance)
+	return s.composeInstanceAdminDataSource(ctx, instance)
 }
 
-func (s *Server) ComposeInstanceAdminDataSource(ctx context.Context, instance *api.Instance) error {
+func (s *Server) composeInstanceAdminDataSource(ctx context.Context, instance *api.Instance) error {
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	}
@@ -506,7 +506,7 @@ func (s *Server) ComposeInstanceAdminDataSource(ctx context.Context, instance *a
 	return nil
 }
 
-func (s *Server) FindInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
+func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}

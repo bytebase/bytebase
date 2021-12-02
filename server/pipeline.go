@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) ComposePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
+func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
@@ -15,27 +15,27 @@ func (s *Server) ComposePipelineByID(ctx context.Context, id int) (*api.Pipeline
 		return nil, err
 	}
 
-	if err := s.ComposePipelineRelationship(ctx, pipeline); err != nil {
+	if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
 		return nil, err
 	}
 
 	return pipeline, nil
 }
 
-func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
+func (s *Server) composePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
-	pipeline.Creator, err = s.ComposePrincipalByID(ctx, pipeline.CreatorID)
+	pipeline.Creator, err = s.composePrincipalByID(ctx, pipeline.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	pipeline.Updater, err = s.ComposePrincipalByID(ctx, pipeline.UpdaterID)
+	pipeline.Updater, err = s.composePrincipalByID(ctx, pipeline.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	pipeline.StageList, err = s.ComposeStageListByPipelineID(ctx, pipeline.ID)
+	pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func (s *Server) ComposePipelineRelationship(ctx context.Context, pipeline *api.
 	return nil
 }
 
-// Try to schedule the next task if needed.
+// ScheduleNextTaskIfNeeded tries to schedule the next task if needed.
 // Returns nil if no task applicable can be scheduled
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) (*api.Task, error) {
 	for _, stage := range pipeline.StageList {
