@@ -8,46 +8,54 @@ import (
 
 var (
 	receiverMu sync.RWMutex
-	receivers  = make(map[string]WebhookReceiver)
+	receivers  = make(map[string]Receiver)
 	// Based on the local test, Teams sometimes cannot finish the request in 1 second, so use 3s.
 	timeout    = 3 * time.Second
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-type WebhookMeta struct {
+// Meta is the webhook metadata.
+type Meta struct {
 	Name  string
 	Value string
 }
 
-type WebhookLevel string
+// Level is the level of webhook.
+type Level string
 
 const (
-	WebhookInfo    WebhookLevel = "INFO"
-	WebhookSuccess WebhookLevel = "SUCCESS"
-	WebhookWarn    WebhookLevel = "WARN"
-	WebhookError   WebhookLevel = "ERROR"
+	// WebhookInfo is the webhook level for INFO.
+	WebhookInfo Level = "INFO"
+	// WebhookSuccess is the webhook level for SUCCESS.
+	WebhookSuccess Level = "SUCCESS"
+	// WebhookWarn is the webhook level for WARN.
+	WebhookWarn Level = "WARN"
+	// WebhookError is the webhook level for ERROR.
+	WebhookError Level = "ERROR"
 )
 
-type WebhookContext struct {
+// Context is the context of webhook.
+type Context struct {
 	URL          string
-	Level        WebhookLevel
+	Level        Level
 	Title        string
 	Description  string
 	Link         string
 	CreatorName  string
 	CreatorEmail string
 	CreatedTs    int64
-	MetaList     []WebhookMeta
+	MetaList     []Meta
 }
 
-type WebhookReceiver interface {
-	post(context WebhookContext) error
+// Receiver is the webhook receiver.
+type Receiver interface {
+	post(context Context) error
 }
 
 // Register makes a receiver available by the url host
 // If Register is called twice with the same url host or if receiver is nil,
 // it panics.
-func register(host string, r WebhookReceiver) {
+func register(host string, r Receiver) {
 	receiverMu.Lock()
 	defer receiverMu.Unlock()
 	if r == nil {
@@ -59,7 +67,8 @@ func register(host string, r WebhookReceiver) {
 	receivers[host] = r
 }
 
-func Post(webhookType string, context WebhookContext) error {
+// Post posts the message to webhook.
+func Post(webhookType string, context Context) error {
 	receiverMu.RLock()
 	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()

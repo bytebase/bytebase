@@ -9,20 +9,24 @@ import (
 	"time"
 )
 
+// DiscordWebhookResponse is the API message for Discord webhook response.
 type DiscordWebhookResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
+// DiscordWebhookEmbedField is the API message for Discord webhook embed field.
 type DiscordWebhookEmbedField struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
+// DiscordWebhookEmbedAuthor is the API message for Discord webhook embed Author.
 type DiscordWebhookEmbedAuthor struct {
 	Name string `json:"name"`
 }
 
+// DiscordWebhookEmbed is the API message for Discord webhook embed.
 type DiscordWebhookEmbed struct {
 	Title       string                     `json:"title"`
 	Type        string                     `json:"type"`
@@ -33,6 +37,7 @@ type DiscordWebhookEmbed struct {
 	FieldList   []DiscordWebhookEmbedField `json:"fields,omitempty"`
 }
 
+// DiscordWebhook is the API message for Discord webhook.
 type DiscordWebhook struct {
 	EmbedList []DiscordWebhookEmbed `json:"embeds"`
 }
@@ -41,10 +46,11 @@ func init() {
 	register("bb.plugin.webhook.discord", &DiscordReceiver{})
 }
 
+// DiscordReceiver is the receiver for Discord.
 type DiscordReceiver struct {
 }
 
-func (receiver *DiscordReceiver) post(context WebhookContext) error {
+func (receiver *DiscordReceiver) post(context Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}

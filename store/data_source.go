@@ -46,6 +46,7 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	return dataSource, nil
 }
 
+// CreateDataSourceTx creates a data source with a transaction.
 func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
 	return s.createDataSource(ctx, tx, create)
 }

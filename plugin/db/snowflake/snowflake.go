@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
 	"io"
 	"strings"
+
+	// embed will embeds the migration schema.
+	_ "embed"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -33,6 +35,7 @@ func init() {
 	db.Register(db.Snowflake, newDriver)
 }
 
+// Driver is the Snowflake driver.
 type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
@@ -47,6 +50,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
+// Open opens a Snowflake driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	prefixParts, loggedPrefixParts := []string{config.Username}, []string{config.Username}
 	if config.Password != "" {
@@ -97,18 +101,22 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	return driver, nil
 }
 
+// Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
 	return driver.db.Close()
 }
 
+// Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+// GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	return driver.db, nil
 }
 
+// GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
@@ -125,7 +133,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) UseRole(ctx context.Context, role string) error {
+func (driver *Driver) useRole(ctx context.Context, role string) error {
 	query := fmt.Sprintf("USE ROLE %s", role)
 	if _, err := driver.db.ExecContext(ctx, query); err != nil {
 		return util.FormatErrorWithQuery(err, query)
@@ -133,9 +141,10 @@ func (driver *Driver) UseRole(ctx context.Context, role string) error {
 	return nil
 }
 
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+// SyncSchema synces the schema.
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query user info
-	if err := driver.UseRole(ctx, accountAdminRole); err != nil {
+	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, nil, err
 	}
 
@@ -150,13 +159,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		return nil, nil, err
 	}
 
-	var schemaList []*db.DBSchema
+	var schemaList []*db.Schema
 	for _, database := range databases {
 		if database == bytebaseDatabase {
 			continue
 		}
 
-		var schema db.DBSchema
+		var schema db.Schema
 		schema.Name = database
 		tableList, viewList, err := driver.syncTableSchema(ctx, database)
 		if err != nil {
@@ -170,7 +179,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	return userList, schemaList, nil
 }
 
-func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]db.DBTable, []db.DBView, error) {
+func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]db.Table, []db.View, error) {
 	// Query table info
 	var excludedSchemaList []string
 
@@ -202,13 +211,13 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	defer columnRows.Close()
 
 	// schemaName.tableName -> columnList map
-	columnMap := make(map[string][]db.DBColumn)
+	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
 		var schemaName string
 		var tableName string
 		var nullable string
 		var defaultStr sql.NullString
-		var column db.DBColumn
+		var column db.Column
 		if err := columnRows.Scan(
 			&schemaName,
 			&tableName,
@@ -250,10 +259,10 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	}
 	defer tableRows.Close()
 
-	var tables []db.DBTable
+	var tables []db.Table
 	for tableRows.Next() {
 		var schemaName, tableName string
-		var table db.DBTable
+		var table db.Table
 		if err := tableRows.Scan(
 			&schemaName,
 			&tableName,
@@ -291,11 +300,11 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	}
 	defer viewRows.Close()
 
-	var views []db.DBView
+	var views []db.View
 	for viewRows.Next() {
 		var schemaName, viewName string
 		var createdTs, updatedTs sql.NullInt64
-		var view db.DBView
+		var view db.View
 		if err := viewRows.Scan(
 			&schemaName,
 			&viewName,
@@ -408,7 +417,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	return databases, nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 	query := `
 		SELECT
 			GRANTEE_NAME,
@@ -440,7 +449,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
 	`
-	userList := make([]*db.DBUser, 0)
+	userList := make([]*db.User, 0)
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -456,7 +465,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 			return nil, err
 		}
 
-		userList = append(userList, &db.DBUser{
+		userList = append(userList, &db.User{
 			Name:  name,
 			Grant: strings.Join(grants[name], ", "),
 		})
@@ -464,6 +473,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 	return userList, nil
 }
 
+// Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	count := 0
 	f := func(stmt string) error {
@@ -479,7 +489,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return nil
 	}
 
-	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return nil
 	}
 	tx, err := driver.db.BeginTx(ctx, nil)
@@ -502,7 +512,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return err
 }
 
-// Migration related
+// NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	exist, err := driver.hasBytebaseDatabase(ctx)
 	if err != nil {
@@ -536,6 +546,7 @@ func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
 	return exist, nil
 }
 
+// SetupMigrationIfNeeded sets up migration if needed.
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
@@ -567,7 +578,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
 	}
 	insertHistoryQuery := `
@@ -621,6 +632,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
 }
 
+// FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
@@ -655,6 +667,7 @@ const (
 		"--\n"
 )
 
+// Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -767,8 +780,9 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 	return nil
 }
 
+// Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	if err := driver.UseRole(ctx, sysAdminRole); err != nil {
+	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return nil
 	}
 	txn, err := driver.db.BeginTx(ctx, nil)
