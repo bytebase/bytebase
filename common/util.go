@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// FindString returns the search index of sorted strings.
 func FindString(strings []string, search string) int {
 	sort.Strings(strings)
 	i := sort.SearchStrings(strings, search)
@@ -17,6 +18,7 @@ func FindString(strings []string, search string) int {
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// RandomString returns a random string with length n.
 func RandomString(n int) string {
 	var sb strings.Builder
 	sb.Grow(n)

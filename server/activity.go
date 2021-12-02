@@ -22,7 +22,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		activityCreate.Level = api.ActivityInfo
-		activityCreate.CreatorID = c.Get(GetPrincipalIDContextKey()).(int)
+		activityCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		var foundIssue *api.Issue
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
 			issueFind := &api.IssueFind{
@@ -53,7 +53,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(ctx, activity); err != nil {
+		if err := s.composeActivityRelationship(ctx, activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created activity relationship").SetInternal(err)
 		}
 
@@ -87,7 +87,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 
 		for _, activity := range list {
-			if err := s.ComposeActivityRelationship(ctx, activity); err != nil {
+			if err := s.composeActivityRelationship(ctx, activity); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activity.ID)).SetInternal(err)
 			}
 		}
@@ -108,7 +108,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 		activityPatch := &api.ActivityPatch{
 			ID:        id,
-			UpdaterID: c.Get(GetPrincipalIDContextKey()).(int),
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)
@@ -122,7 +122,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch activity ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(ctx, activity); err != nil {
+		if err := s.composeActivityRelationship(ctx, activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activity.ID)).SetInternal(err)
 		}
 
@@ -142,7 +142,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 
 		activityDelete := &api.ActivityDelete{
 			ID:        id,
-			DeleterID: c.Get(GetPrincipalIDContextKey()).(int),
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		err = s.ActivityService.DeleteActivity(ctx, activityDelete)
 		if err != nil {
@@ -158,15 +158,15 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeActivityRelationship(ctx context.Context, activity *api.Activity) error {
+func (s *Server) composeActivityRelationship(ctx context.Context, activity *api.Activity) error {
 	var err error
 
-	activity.Creator, err = s.ComposePrincipalByID(ctx, activity.CreatorID)
+	activity.Creator, err = s.composePrincipalByID(ctx, activity.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	activity.Updater, err = s.ComposePrincipalByID(ctx, activity.UpdaterID)
+	activity.Updater, err = s.composePrincipalByID(ctx, activity.UpdaterID)
 	if err != nil {
 		return err
 	}

@@ -19,11 +19,11 @@ const (
 	roleContextKey = "role"
 )
 
-func GetRoleContextKey() string {
+func getRoleContextKey() string {
 	return roleContextKey
 }
 
-func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
+func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := context.Background()
 		// Skips auth, actuator, plan
@@ -37,7 +37,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 
 		// Gets principal id from the context.
-		principalID := c.Get(GetPrincipalIDContextKey()).(int)
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
 
 		memberFind := &api.MemberFind{
 			PrincipalID: &principalID,
@@ -149,7 +149,7 @@ func ACLMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 
 		// Stores role into context.
-		c.Set(GetRoleContextKey(), role)
+		c.Set(getRoleContextKey(), role)
 
 		return next(c)
 	}

@@ -12,16 +12,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewDatabaseCreateTaskExecutor creates a database create task executor.
 func NewDatabaseCreateTaskExecutor(logger *zap.Logger) TaskExecutor {
 	return &DatabaseCreateTaskExecutor{
 		l: logger,
 	}
 }
 
+// DatabaseCreateTaskExecutor is the database create task executor.
 type DatabaseCreateTaskExecutor struct {
 	l *zap.Logger
 }
 
+// RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -45,12 +48,12 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("empty create database statement")
 	}
 
-	if err := server.ComposeTaskRelationship(ctx, task); err != nil {
+	if err := server.composeTaskRelationship(ctx, task); err != nil {
 		return true, nil, err
 	}
 
 	instance := task.Instance
-	driver, err := GetDatabaseDriver(ctx, task.Instance, "", exec.l)
+	driver, err := getDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
 		return true, nil, err
 	}
@@ -74,7 +77,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Description:    "Create database",
 		CreateDatabase: true,
 	}
-	creator, err := server.ComposePrincipalByID(ctx, task.CreatorID)
+	creator, err := server.composePrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.

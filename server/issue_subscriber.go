@@ -35,7 +35,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
-		if err := s.ComposeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
+		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
@@ -62,7 +62,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		}
 
 		for _, issueSubscriber := range list {
-			if err := s.ComposeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
+			if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
 			}
 		}
@@ -104,10 +104,10 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposeIssueSubscriberRelationship(ctx context.Context, issueSubscriber *api.IssueSubscriber) error {
+func (s *Server) composeIssueSubscriberRelationship(ctx context.Context, issueSubscriber *api.IssueSubscriber) error {
 	var err error
 
-	issueSubscriber.Subscriber, err = s.ComposePrincipalByID(ctx, issueSubscriber.SubscriberID)
+	issueSubscriber.Subscriber, err = s.composePrincipalByID(ctx, issueSubscriber.SubscriberID)
 	if err != nil {
 		return err
 	}
