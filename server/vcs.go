@@ -25,7 +25,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.ApiURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.ApiPath)
+		vcsCreate.APIURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.ApiPath)
 
 		vcs, err := s.VCSService.CreateVCS(ctx, vcsCreate)
 		if err != nil {

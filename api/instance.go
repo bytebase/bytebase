@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// Instance is the API message for an instance.
 type Instance struct {
 	ID int `jsonapi:"primary,instance"`
 
@@ -37,6 +38,7 @@ type Instance struct {
 	Password string
 }
 
+// InstanceCreate is the API message for creating an instance.
 type InstanceCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -55,6 +57,7 @@ type InstanceCreate struct {
 	Password     string  `jsonapi:"attr,password"`
 }
 
+// InstanceFind is the API message for finding instances.
 type InstanceFind struct {
 	ID *int
 
@@ -70,6 +73,7 @@ func (find *InstanceFind) String() string {
 	return string(str)
 }
 
+// InstancePatch is the API message for patching an instance.
 type InstancePatch struct {
 	ID int `jsonapi:"primary,instancePatch"`
 
@@ -89,12 +93,15 @@ type InstancePatch struct {
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
 }
 
-// Instance migration schema status
+// InstanceMigrationSchemaStatus is the schema status for instance migration.
 type InstanceMigrationSchemaStatus string
 
 const (
-	InstanceMigrationSchemaUnknown  InstanceMigrationSchemaStatus = "UNKNOWN"
-	InstanceMigrationSchemaOK       InstanceMigrationSchemaStatus = "OK"
+	// InstanceMigrationSchemaUnknown is the UNKNOWN InstanceMigrationSchemaStatus.
+	InstanceMigrationSchemaUnknown InstanceMigrationSchemaStatus = "UNKNOWN"
+	// InstanceMigrationSchemaOK is the OK InstanceMigrationSchemaStatus.
+	InstanceMigrationSchemaOK InstanceMigrationSchemaStatus = "OK"
+	// InstanceMigrationSchemaNotExist is the NOT_EXIST InstanceMigrationSchemaStatus.
 	InstanceMigrationSchemaNotExist InstanceMigrationSchemaStatus = "NOT_EXIST"
 )
 
@@ -110,6 +117,7 @@ func (e InstanceMigrationSchemaStatus) String() string {
 	return "UNKNOWN"
 }
 
+// InstanceMigration is the API message for instance migration.
 type InstanceMigration struct {
 	Status InstanceMigrationSchemaStatus `jsonapi:"attr,status"`
 	Error  string                        `jsonapi:"attr,error"`
@@ -143,6 +151,7 @@ type MigrationHistory struct {
 	Payload string `jsonapi:"attr,payload"`
 }
 
+// InstanceService is the service for instances.
 type InstanceService interface {
 	// CreateInstance should also create the * database and the admin data source.
 	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)

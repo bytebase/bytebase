@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// InstanceUser is the API message for instance user.
 type InstanceUser struct {
 	ID int `jsonapi:"primary,instanceUser"`
 
@@ -16,6 +17,7 @@ type InstanceUser struct {
 	Grant string `jsonapi:"attr,grant"`
 }
 
+// InstanceUserUpsert is the API message for upserting an instance user.
 type InstanceUserUpsert struct {
 	// Standard fields
 	CreatorID int
@@ -28,6 +30,7 @@ type InstanceUserUpsert struct {
 	Grant string `jsonapi:"attr,grant"`
 }
 
+// InstanceUserFind is the API message for finding instance users.
 type InstanceUserFind struct {
 	InstanceID int
 }
@@ -40,10 +43,12 @@ func (find *InstanceUserFind) String() string {
 	return string(str)
 }
 
+// InstanceUserDelete is the API message for deleting an instance user.
 type InstanceUserDelete struct {
 	ID int
 }
 
+// InstanceUserService is the service for instance users.
 type InstanceUserService interface {
 	// UpsertInstanceUser would update the existing user if name matches.
 	UpsertInstanceUser(ctx context.Context, upsert *InstanceUserUpsert) (*InstanceUser, error)

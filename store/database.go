@@ -71,7 +71,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	// Enable automatic backup setting based on backup plan policy.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:  api.SYSTEM_BOT_ID,
+			UpdaterID:  api.SystemBotID,
 			DatabaseID: database.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),

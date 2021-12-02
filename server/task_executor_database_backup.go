@@ -68,7 +68,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if _, err = server.BackupService.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,
 		Status:    newBackupStatus,
-		UpdaterID: api.SYSTEM_BOT_ID,
+		UpdaterID: api.SystemBotID,
 		Comment:   comment,
 	}); err != nil {
 		return true, nil, fmt.Errorf("failed to patch backup: %w", err)

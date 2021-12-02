@@ -159,7 +159,7 @@ func (s *Server) ComposePrincipalByID(ctx context.Context, id int) (*api.Princip
 }
 
 func (s *Server) ComposePrincipalRole(ctx context.Context, principal *api.Principal) error {
-	if principal.ID == api.SYSTEM_BOT_ID {
+	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	} else {
 		memberFind := &api.MemberFind{

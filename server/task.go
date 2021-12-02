@@ -99,7 +99,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
 				}
 				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SYSTEM_BOT_ID,
+					CreatorID:               api.SystemBotID,
 					TaskID:                  task.ID,
 					Type:                    api.TaskCheckDatabaseStatementSyntax,
 					Payload:                 string(payload),
@@ -115,7 +115,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 
 				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SYSTEM_BOT_ID,
+					CreatorID:               api.SystemBotID,
 					TaskID:                  task.ID,
 					Type:                    api.TaskCheckDatabaseStatementCompatibility,
 					Payload:                 string(payload),
@@ -411,7 +411,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Schedule the task if it's being just approved
 	if task.Status == api.TaskPendingApproval && updatedTask.Status == api.TaskPending {
 		skipIfAlreadyTerminated := false
-		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SYSTEM_BOT_ID, skipIfAlreadyTerminated); err != nil {
+		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, updatedTask, api.SystemBotID, skipIfAlreadyTerminated); err != nil {
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 
@@ -475,7 +475,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if updatedTask.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SYSTEM_BOT_ID) {
+	if updatedTask.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
 		pipeline, err := s.ComposePipelineByID(ctx, updatedTask.PipelineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", updatedTask.Name)
@@ -483,7 +483,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == updatedTask.ID {
 			if issue == nil {
-				status := api.Pipeline_Done
+				status := api.PipelineDone
 				pipelinePatch := &api.PipelinePatch{
 					ID:        pipeline.ID,
 					UpdaterID: taskStatusPatch.UpdaterID,
@@ -494,7 +494,7 @@ func (s *Server) ChangeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				}
 			} else {
 				issue.Pipeline = pipeline
-				_, err := s.ChangeIssueStatus(ctx, issue, api.Issue_Done, taskStatusPatch.UpdaterID, "")
+				_, err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
 				if err != nil {
 					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, updatedTask.Name, err)
 				}

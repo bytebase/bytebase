@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Table is the API message for a table.
 type Table struct {
 	ID int `jsonapi:"primary,table"`
 
@@ -35,6 +36,7 @@ type Table struct {
 	IndexList     []*Index  `jsonapi:"attr,indexList"`
 }
 
+// TableCreate is the API message for creating a table.
 type TableCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -58,6 +60,7 @@ type TableCreate struct {
 	Comment       string
 }
 
+// TableFind is the API message for finding tables.
 type TableFind struct {
 	ID *int
 
@@ -76,11 +79,13 @@ func (find *TableFind) String() string {
 	return string(str)
 }
 
+// TableDelete is the API message for deleting a table.
 type TableDelete struct {
 	// Related fields
 	DatabaseID int
 }
 
+// TableService is the service for tables.
 type TableService interface {
 	CreateTable(ctx context.Context, create *TableCreate) (*Table, error)
 	FindTableList(ctx context.Context, find *TableFind) ([]*Table, error)
