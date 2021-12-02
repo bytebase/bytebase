@@ -70,11 +70,6 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// DROP TABLE/VIEW
 	case *ast.DropTableStmt:
 		code = common.CompatibilityDropTable
-	// CREATE UNIQUE INDEX
-	case *ast.CreateIndexStmt:
-		if node.KeyType == ast.IndexKeyTypeUnique {
-			code = common.CompatibilityAddUniqueKey
-		}
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
@@ -135,8 +130,15 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 				break
 			}
 		}
-		// ALTER VIEW TBD: https://github.com/pingcap/parser/pull/1252
-		// case *ast.AlterViewStmt:
+
+	// ALTER VIEW TBD: https://github.com/pingcap/parser/pull/1252
+	// case *ast.AlterViewStmt:
+
+	// CREATE UNIQUE INDEX
+	case *ast.CreateIndexStmt:
+		if node.KeyType == ast.IndexKeyTypeUnique {
+			code = common.CompatibilityAddUniqueKey
+		}
 	}
 
 	if code != common.Ok {
