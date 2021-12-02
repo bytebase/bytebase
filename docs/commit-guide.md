@@ -26,7 +26,31 @@ The commit message should be structured as follows:
 [optional footer(s)]
 ```
 
-For example:
+### Header
+
+The header is a `mandatory` line that simply describes the purpose of the change.
+
+```bash
+<type>[optional scope]: <description>
+```
+
+It consists of three parts in itself:
+
+* `Type` - a short prefix that represents the kind of the change
+* `Scope` - optional information that represents the context of the change
+* `Subject` - represents a concise description of actual change
+
+> 💡 Notice that there also has a colon and space(`:<space>`), which separated the type and description
+
+### Body
+
+The body is optional lines that introduce the motivation behind the change or just describing slightly more detailed information.
+
+### Footer
+
+The footer is optional lines that mention consequences which stems from the change - such as announcing a breaking change, linking closed issues, mentioning contributors and so on.
+
+## Examples
 
 ### Commit message with no body
 
@@ -58,30 +82,6 @@ incoming responses other than from latest request.
 
 Reviewed-by: Z
 ```
-
-### Header
-
-The header is a `mandatory` line that simply describes the purpose of the change.
-
-```bash
-<type>[optional scope]: <description>
-```
-
-It consists of three parts in itself:
-
-* `Type` - a short prefix that represents the kind of the change
-* `Scope` - optional information that represents the context of the change
-* `Subject` - represents a concise description of actual change
-
-> 💡 Notice that there also has a colon and space(`:<space>`), which separated the type and description
-
-### Body
-
-The body is optional lines that introduce the motivation behind the change or just describing slightly more detailed information.
-
-### Footer
-
-The footer is optional lines that mention consequences which stems from the change - such as announcing a breaking change, linking closed issues, mentioning contributors and so on.
 
 ## Common Types
 
