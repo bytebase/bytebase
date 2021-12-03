@@ -8,7 +8,8 @@
     "release-docker": "vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:summary": "SORT_BY=rule DESC=true eslint -f summary --cache --ext .js,.ts,.tsx,.vue src",
-    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
+    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
+    "prepare": "cd .. && husky install"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "^0.1.2",
