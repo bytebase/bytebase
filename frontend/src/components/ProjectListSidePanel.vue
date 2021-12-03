@@ -58,10 +58,11 @@ export default {
     const kbarActions = computed((): Action[] => {
       const actions = outlineItemList.value.map((proj: any) =>
         createAction({
-          id: `projects-${proj.id}`,
+          // here `id` looks like "project.1234"
+          id: `project.${proj.id}`,
           section: "Projects",
           name: proj.name,
-          keywords: "projects",
+          keywords: "project",
           perform: () => {
             router.push({ path: proj.link });
           },

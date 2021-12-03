@@ -597,7 +597,10 @@ export default defineComponent({
         .filter((item) => item in QuickActionMap)
         .map((item) => {
           return createAction({
-            id: `quick-action-${item}`,
+            // a QuickActionType starts with "quickaction"
+            // it's already namespaced so we don't need prefix here
+            // here `id` looks like "quickaction.bb.instance.create"
+            id: item,
             section: "Quick Action",
             ...QuickActionMap[item],
           });

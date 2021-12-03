@@ -51,10 +51,11 @@ export default {
     const kbarActions = computed((): Action[] => {
       const actions = bookmarkList.value.map((item: any) =>
         createAction({
-          id: `bookmark-${item.id}`,
+          // here `id` looks like "bookmark.12345"
+          id: `bookmark.${item.id}`,
           section: "Bookmarks",
           name: item.name,
-          keywords: "bookmarks",
+          keywords: "bookmark",
           perform: () => {
             router.push({ path: item.link });
           },
