@@ -217,7 +217,7 @@
 </template>
 
 <script lang="ts">
-import { createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
@@ -302,14 +302,14 @@ export default {
     };
 
     const kbarActions = [
-      createAction({
+      defineAction({
         id: "navigation.projects",
         name: "Projects",
         shortcut: ["g", "p"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.project" }),
       }),
-      createAction({
+      defineAction({
         id: "navigation.databases",
         name: "Databases",
         keywords: "db",
@@ -317,28 +317,28 @@ export default {
         section: "Navigation",
         perform: () => router.push({ name: "workspace.database" }),
       }),
-      createAction({
+      defineAction({
         id: "navigation.instances",
         name: "Instances",
         shortcut: ["g", "i"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.instance" }),
       }),
-      createAction({
+      defineAction({
         id: "navigation.environments",
         name: "Environments",
         shortcut: ["g", "e"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.environment" }),
       }),
-      createAction({
+      defineAction({
         id: "navigation.settings",
         name: "Settings",
         shortcut: ["g", "s"],
         section: "Navigation",
         perform: () => router.push({ name: "setting.workspace.general" }),
       }),
-      createAction({
+      defineAction({
         id: "navigation.inbox",
         name: "Inbox",
         shortcut: ["g", "m"],

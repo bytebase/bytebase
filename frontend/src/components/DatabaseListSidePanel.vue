@@ -15,7 +15,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
-import { Action, createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 
 export default {
@@ -86,7 +86,7 @@ export default {
     const kbarActions = computed((): Action[] => {
       const actions = databaseListByEnvironment.value.flatMap((env: any) =>
         env.childList.map((db: any) =>
-          createAction({
+          defineAction({
             // `env.id` starts with "env", while `db.id` is a number
             // so here `id` looks like "database.env.1234.5678"
             id: `database.${env.id}.${db.id}`,

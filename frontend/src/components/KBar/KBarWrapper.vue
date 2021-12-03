@@ -23,7 +23,7 @@ import {
   KBarPositioner,
   KBarAnimator,
   KBarSearch,
-  createAction,
+  defineAction,
 } from "@bytebase/vue-kbar";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -55,14 +55,14 @@ export default defineComponent({
     });
 
     const globalActions = [
-      createAction({
+      defineAction({
         id: "home",
         name: "Home",
         shortcut: ["g", "h"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.home" }),
       }),
-      createAction({
+      defineAction({
         id: "anomaly-center",
         name: "Anomaly Center",
         shortcut: ["g", "a", "c"],

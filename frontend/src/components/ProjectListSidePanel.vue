@@ -14,7 +14,7 @@ import { useStore } from "vuex";
 import { Project, UNKNOWN_ID } from "../types";
 import { projectName, projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
-import { Action, createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 
 export default {
@@ -57,7 +57,7 @@ export default {
 
     const kbarActions = computed((): Action[] => {
       const actions = outlineItemList.value.map((proj: any) =>
-        createAction({
+        defineAction({
           // here `id` looks like "project.1234"
           id: `project.${proj.id}`,
           section: "Projects",

@@ -61,10 +61,10 @@
     "@babel/helper-validator-identifier" "^7.15.7"
     to-fast-properties "^2.0.0"
 
-"@bytebase/vue-kbar@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.npmmirror.com/@bytebase/vue-kbar/download/@bytebase/vue-kbar-0.1.1.tgz#4c0d1dd8557f8d3835d787a3317d50b2280b86eb"
-  integrity sha512-dsJ8KKUVDFcnhFEDWt64SNtZiT9KqhcIcpfjN5hyDU+/hzPl9hhSHSvh8MxPWxV9obN3aKtCcvozEXoEOAvp0g==
+"@bytebase/vue-kbar@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.npmmirror.com/@bytebase/vue-kbar/download/@bytebase/vue-kbar-0.1.2.tgz#9b325d1a5a366d1fe68c983a85400651b1436ce7"
+  integrity sha512-cKBv61M1LkCibpxy5WFOzd15uqka1XYYM91Pm1Wo57ojgljZJPJhmu2+oE9pGYr+NSAIryIw2Hglgv0b6E/8Vg==
   dependencies:
     "@vueuse/core" "^7.1.2"
     match-sorter "^6.3.1"

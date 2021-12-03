@@ -17,7 +17,7 @@
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { UNKNOWN_ID } from "../types";
-import { Action, createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 
 export default {
@@ -50,7 +50,7 @@ export default {
 
     const kbarActions = computed((): Action[] => {
       const actions = bookmarkList.value.map((item: any) =>
-        createAction({
+        defineAction({
           // here `id` looks like "bookmark.12345"
           id: `bookmark.${item.id}`,
           section: "Bookmarks",

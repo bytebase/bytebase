@@ -443,7 +443,7 @@ import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
 import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
-import { Action, createAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 
 interface LocalState {
   showModal: boolean;
@@ -596,7 +596,7 @@ export default defineComponent({
       return props.quickActionList
         .filter((item) => item in QuickActionMap)
         .map((item) => {
-          return createAction({
+          return defineAction({
             // a QuickActionType starts with "quickaction"
             // it's already namespaced so we don't need prefix here
             // here `id` looks like "quickaction.bb.instance.create"
