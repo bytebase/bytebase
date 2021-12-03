@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, watchEffect } from "@vue/runtime-core";
+import { computed, PropType, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import ProjectWebhookCard from "./ProjectWebhookCard.vue";
 import { Project } from "../types";

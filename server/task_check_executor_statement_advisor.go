@@ -11,16 +11,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewTaskCheckStatementAdvisorExecutor creates a task check statement advisor executor.
 func NewTaskCheckStatementAdvisorExecutor(logger *zap.Logger) TaskCheckExecutor {
 	return &TaskCheckStatementAdvisorExecutor{
 		l: logger,
 	}
 }
 
+// TaskCheckStatementAdvisorExecutor is the task check statement advisor executor.
 type TaskCheckStatementAdvisorExecutor struct {
 	l *zap.Logger
 }
 
+// Run will run the task check statement advisor executor once.
 func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {

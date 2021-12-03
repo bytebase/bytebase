@@ -29,14 +29,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 		policyUpsert.EnvironmentID = environmentID
 		policyUpsert.Type = pType
-		policyUpsert.UpdaterID = c.Get(GetPrincipalIDContextKey()).(int)
+		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.ComposePolicyRelationship(ctx, policy); err != nil {
+		if err := s.composePolicyRelationship(ctx, policy); err != nil {
 			return err
 		}
 
@@ -66,7 +66,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.ComposePolicyRelationship(ctx, policy); err != nil {
+		if err := s.composePolicyRelationship(ctx, policy); err != nil {
 			return err
 		}
 
@@ -78,20 +78,20 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) ComposePolicyRelationship(ctx context.Context, policy *api.Policy) error {
+func (s *Server) composePolicyRelationship(ctx context.Context, policy *api.Policy) error {
 	var err error
 
-	policy.Creator, err = s.ComposePrincipalByID(ctx, policy.CreatorID)
+	policy.Creator, err = s.composePrincipalByID(ctx, policy.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	policy.Updater, err = s.ComposePrincipalByID(ctx, policy.UpdaterID)
+	policy.Updater, err = s.composePrincipalByID(ctx, policy.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	policy.Environment, err = s.ComposeEnvironmentByID(ctx, policy.EnvironmentID)
+	policy.Environment, err = s.composeEnvironmentByID(ctx, policy.EnvironmentID)
 	if err != nil {
 		return err
 	}

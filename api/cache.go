@@ -1,18 +1,28 @@
 package api
 
+// CacheNamespace is the type of a cache.
 type CacheNamespace string
 
 const (
-	PrincipalCache   CacheNamespace = "p"
+	// PrincipalCache is the cache type of principals.
+	PrincipalCache CacheNamespace = "p"
+	// EnvironmentCache is the cache type of environments.
 	EnvironmentCache CacheNamespace = "e"
-	ProjectCache     CacheNamespace = "r"
-	InstanceCache    CacheNamespace = "i"
-	DatabaseCache    CacheNamespace = "d"
-	MemberCache      CacheNamespace = "m"
-	PipelineCache    CacheNamespace = "pl"
-	IssueCache       CacheNamespace = "is"
+	// ProjectCache is the cache type of projects.
+	ProjectCache CacheNamespace = "r"
+	// InstanceCache is the cache type of instances.
+	InstanceCache CacheNamespace = "i"
+	// DatabaseCache is the cache type of databases.
+	DatabaseCache CacheNamespace = "d"
+	// MemberCache is the cache type of members.
+	MemberCache CacheNamespace = "m"
+	// PipelineCache is the cache type of pipelines.
+	PipelineCache CacheNamespace = "pl"
+	// IssueCache is the cache type of issues.
+	IssueCache CacheNamespace = "is"
 )
 
+// CacheService is the service for caches.
 type CacheService interface {
 	FindCache(namespace CacheNamespace, id int, entry interface{}) (bool, error)
 	UpsertCache(namespace CacheNamespace, id int, entry interface{}) error

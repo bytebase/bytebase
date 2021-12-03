@@ -5,7 +5,7 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM mhart/alpine-node:14.16.1 as frontend
+FROM mhart/alpine-node:14.17.3 as frontend
 
 WORKDIR /frontend-build
 

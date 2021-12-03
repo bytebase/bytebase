@@ -9,16 +9,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewTaskCheckDatabaseConnectExecutor creates a task check database connect executor.
 func NewTaskCheckDatabaseConnectExecutor(logger *zap.Logger) TaskCheckExecutor {
 	return &TaskCheckDatabaseConnectExecutor{
 		l: logger,
 	}
 }
 
+// TaskCheckDatabaseConnectExecutor is the task check database connect executor.
 type TaskCheckDatabaseConnectExecutor struct {
 	l *zap.Logger
 }
 
+// Run will run the task check database connector executor once.
 func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	taskFind := &api.TaskFind{
 		ID: &taskCheckRun.TaskID,
@@ -31,12 +34,12 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	databaseFind := &api.DatabaseFind{
 		ID: task.DatabaseID,
 	}
-	database, err := server.ComposeDatabaseByFind(ctx, databaseFind)
+	database, err := server.composeDatabaseByFind(ctx, databaseFind)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
 
-	driver, err := GetDatabaseDriver(ctx, database.Instance, database.Name, exec.l)
+	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{
 			{

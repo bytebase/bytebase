@@ -6,7 +6,8 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode
     )
 VALUES
     (
@@ -16,7 +17,8 @@ VALUES
         'Test (UI)',
         'TEST',
         'UI',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED'
     );
 
 INSERT INTO
@@ -27,7 +29,8 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode
     )
 VALUES
     (
@@ -37,7 +40,8 @@ VALUES
         'Shop (Git)',
         'SHP',
         'VCS',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED'
     );
 
 INSERT INTO
@@ -48,7 +52,8 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode
     )
 VALUES
     (
@@ -58,7 +63,8 @@ VALUES
         'Blog (Git)',
         'BLG',
         'VCS',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED'
     );
 
 INSERT INTO
@@ -70,7 +76,8 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode
     )
 VALUES
     (
@@ -81,5 +88,52 @@ VALUES
         'Retired Project',
         'RTR',
         'UI',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED'
+    );
+
+INSERT INTO
+    project (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `key`,
+        workflow_type,
+        visibility,
+        tenant_mode
+    )
+VALUES
+    (
+        3005,
+        101,
+        101,
+        'Tenant (Git)',
+        'TNTG',
+        'VCS',
+        'PUBLIC',
+        'TENANT'
+    );
+
+INSERT INTO
+    project (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `key`,
+        workflow_type,
+        visibility,
+        tenant_mode
+    )
+VALUES
+    (
+        3006,
+        101,
+        101,
+        'Tenant (UI)',
+        'TNTU',
+        'UI',
+        'PUBLIC',
+        'TENANT'
     );

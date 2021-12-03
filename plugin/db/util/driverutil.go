@@ -369,7 +369,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// Branch migration type always has empty sql.
 	// Baseline migration type could also has empty sql when the database is newly created.
 	if statement != "" {
-		// Switch to the database if we're creating a new database
+		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
 			_, err := driver.GetDbConnection(ctx, m.Database)
 			if err != nil {

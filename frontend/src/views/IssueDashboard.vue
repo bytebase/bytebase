@@ -47,14 +47,13 @@
 </template>
 
 <script lang="ts">
-import { reactive, ref } from "@vue/reactivity";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import IssueTable from "../components/IssueTable.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { Environment, Issue, PrincipalId, ProjectId } from "../types";
-import { computed, onMounted, watchEffect } from "@vue/runtime-core";
+import { reactive, ref, computed, onMounted, watchEffect } from "vue";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 

@@ -9,28 +9,33 @@ import (
 	"time"
 )
 
+// SlackWebhookBlockMarkdown is the API message for Slack webhook block markdown.
 type SlackWebhookBlockMarkdown struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
+// SlackWebhookElementButton is the API message for Slack webhook element button.
 type SlackWebhookElementButton struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
 }
 
+// SlackWebhookElement is the API message for Slack webhook element.
 type SlackWebhookElement struct {
 	Type   string                    `json:"type"`
 	Button SlackWebhookElementButton `json:"text,omitempty"`
 	URL    string                    `json:"url,omitempty"`
 }
 
+// SlackWebhookBlock is the API message for Slack webhook block.
 type SlackWebhookBlock struct {
 	Type        string                     `json:"type"`
 	Text        *SlackWebhookBlockMarkdown `json:"text,omitempty"`
 	ElementList []SlackWebhookElement      `json:"elements,omitempty"`
 }
 
+// SlackWebhook is the API message for Slack webhook.
 type SlackWebhook struct {
 	Text      string              `json:"text"`
 	BlockList []SlackWebhookBlock `json:"blocks"`
@@ -40,10 +45,11 @@ func init() {
 	register("bb.plugin.webhook.slack", &SlackReceiver{})
 }
 
+// SlackReceiver is the receiver for Slack.
 type SlackReceiver struct {
 }
 
-func (receiver *SlackReceiver) post(context WebhookContext) error {
+func (receiver *SlackReceiver) post(context Context) error {
 	blockList := []SlackWebhookBlock{}
 
 	status := ""

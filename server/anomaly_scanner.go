@@ -16,9 +16,10 @@ import (
 
 const (
 	// The chosen interval is a balance between anomaly staleness tolerance and background load.
-	ANOMALY_SCAN_INTERVAL = time.Duration(10) * time.Minute
+	anomalyScanInterval = time.Duration(10) * time.Minute
 )
 
+// NewAnomalyScanner creates a anomaly scanner
 func NewAnomalyScanner(logger *zap.Logger, server *Server) *AnomalyScanner {
 	return &AnomalyScanner{
 		l:      logger,
@@ -26,14 +27,16 @@ func NewAnomalyScanner(logger *zap.Logger, server *Server) *AnomalyScanner {
 	}
 }
 
+// AnomalyScanner is the anomaly scanner.
 type AnomalyScanner struct {
 	l      *zap.Logger
 	server *Server
 }
 
+// Run will run the anomaly scanner once.
 func (s *AnomalyScanner) Run() error {
 	go func() {
-		s.l.Debug(fmt.Sprintf("Anomaly scanner started and will run every %v", ANOMALY_SCAN_INTERVAL))
+		s.l.Debug(fmt.Sprintf("Anomaly scanner started and will run every %v", anomalyScanInterval))
 		runningTasks := make(map[int]bool)
 		mu := sync.RWMutex{}
 		for {
@@ -90,7 +93,7 @@ func (s *AnomalyScanner) Run() error {
 						}
 					}
 
-					if err := s.server.ComposeInstanceAdminDataSource(ctx, instance); err != nil {
+					if err := s.server.composeInstanceAdminDataSource(ctx, instance); err != nil {
 						s.l.Error("Failed to retrieve instance admin connection info",
 							zap.String("instance", instance.Name),
 							zap.Error(err))
@@ -141,7 +144,7 @@ func (s *AnomalyScanner) Run() error {
 				}
 			}()
 
-			time.Sleep(ANOMALY_SCAN_INTERVAL)
+			time.Sleep(anomalyScanInterval)
 		}
 	}()
 
@@ -149,7 +152,7 @@ func (s *AnomalyScanner) Run() error {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := GetDatabaseDriver(ctx, instance, "", s.l)
+	driver, err := getDatabaseDriver(ctx, instance, "", s.l)
 
 	// Check connection
 	if err != nil {
@@ -164,7 +167,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SYSTEM_BOT_ID,
+				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
 				Payload:    string(payload),
@@ -177,18 +180,18 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 			}
 		}
 		return
-	} else {
-		defer driver.Close(ctx)
-		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			InstanceID: &instance.ID,
-			Type:       api.AnomalyInstanceConnection,
-		})
-		if err != nil && common.ErrorCode(err) != common.NotFound {
-			s.l.Error("Failed to close anomaly",
-				zap.String("instance", instance.Name),
-				zap.String("type", string(api.AnomalyInstanceConnection)),
-				zap.Error(err))
-		}
+	}
+
+	defer driver.Close(ctx)
+	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		InstanceID: &instance.ID,
+		Type:       api.AnomalyInstanceConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		s.l.Error("Failed to close anomaly",
+			zap.String("instance", instance.Name),
+			zap.String("type", string(api.AnomalyInstanceConnection)),
+			zap.Error(err))
 	}
 
 	// Check migration schema
@@ -202,7 +205,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 		} else {
 			if setup {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
@@ -229,7 +232,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := GetDatabaseDriver(ctx, instance, database.Name, s.l)
+	driver, err := getDatabaseDriver(ctx, instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {
@@ -245,7 +248,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-				CreatorID:  api.SYSTEM_BOT_ID,
+				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
@@ -260,19 +263,18 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			}
 		}
 		return
-	} else {
-		defer driver.Close(ctx)
-		err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			DatabaseID: &database.ID,
-			Type:       api.AnomalyDatabaseConnection,
-		})
-		if err != nil && common.ErrorCode(err) != common.NotFound {
-			s.l.Error("Failed to close anomaly",
-				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
-				zap.String("type", string(api.AnomalyDatabaseConnection)),
-				zap.Error(err))
-		}
+	}
+	defer driver.Close(ctx)
+	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		DatabaseID: &database.ID,
+		Type:       api.AnomalyDatabaseConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		s.l.Error("Failed to close anomaly",
+			zap.String("instance", instance.Name),
+			zap.String("database", database.Name),
+			zap.String("type", string(api.AnomalyDatabaseConnection)),
+			zap.Error(err))
 	}
 
 	// Check schema drift
@@ -336,7 +338,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				} else {
 					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-						CreatorID:  api.SYSTEM_BOT_ID,
+						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
@@ -423,7 +425,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
@@ -507,7 +509,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.Error(err))
 			} else {
 				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
-					CreatorID:  api.SYSTEM_BOT_ID,
+					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,

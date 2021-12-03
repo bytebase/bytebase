@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
 	"io"
 	"strings"
 	"time"
+
+	// embed will embeds the migration schema.
+	_ "embed"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/bytebase/bytebase/common"
@@ -32,6 +34,7 @@ func init() {
 	db.Register(db.ClickHouse, newDriver)
 }
 
+// Driver is the ClickHouse driver.
 type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
@@ -46,6 +49,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
+// Open opens a ClickHouse driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
@@ -67,7 +71,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		params = append(params, fmt.Sprintf("database=%s", config.Database))
 	}
 	// Set SSL configuration.
-	tlsConfig, err := config.TlsConfig.GetSslConfig()
+	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, fmt.Errorf("sql: tls config error: %v", err)
 	}
@@ -104,18 +108,22 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	return driver, nil
 }
 
+// Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
 	return driver.db.Close()
 }
 
+// Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+// GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	return driver.db, nil
 }
 
+// GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	versionRow, err := driver.db.QueryContext(ctx, query)
@@ -132,7 +140,8 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+// SyncSchema synces the schema.
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := []string{
 		// Skip our internal "bytebase" database
 		"'bytebase'",
@@ -169,11 +178,11 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	defer columnRows.Close()
 
 	// dbName/tableName -> columnList map
-	columnMap := make(map[string][]db.DBColumn)
+	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
 		var dbName string
 		var tableName string
-		var column db.DBColumn
+		var column db.Column
 		if err := columnRows.Scan(
 			&dbName,
 			&tableName,
@@ -191,7 +200,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		if ok {
 			columnMap[key] = append(tableList, column)
 		} else {
-			list := make([]db.DBColumn, 0)
+			list := make([]db.Column, 0)
 			columnMap[key] = append(list, column)
 		}
 	}
@@ -217,9 +226,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	defer tableRows.Close()
 
 	// dbName -> tableList map
-	tableMap := make(map[string][]db.DBTable)
+	tableMap := make(map[string][]db.Table)
 	// dbName -> viewList map
-	viewMap := make(map[string][]db.DBView)
+	viewMap := make(map[string][]db.View)
 
 	for tableRows.Next() {
 		var dbName, name, engine, definition, comment string
@@ -239,14 +248,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		}
 
 		if engine == "View" {
-			var view db.DBView
+			var view db.View
 			view.Name = name
 			view.UpdatedTs = lastUpdatedTime.Unix()
 			view.Definition = definition
 			view.Comment = comment
 			viewMap[dbName] = append(viewMap[dbName], view)
 		} else {
-			var table db.DBTable
+			var table db.Table
 			table.Type = "BASE TABLE"
 			table.Name = name
 			table.Engine = engine
@@ -264,7 +273,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		}
 	}
 
-	schemaList := make([]*db.DBSchema, 0)
+	schemaList := make([]*db.Schema, 0)
 	// Query db info
 	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
@@ -278,7 +287,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schema db.DBSchema
+		var schema db.Schema
 		if err := rows.Scan(
 			&schema.Name,
 		); err != nil {
@@ -296,7 +305,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	return userList, schemaList, nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 	// Query user info
 	// host_ip isn't used for user identifier.
 	query := `
@@ -304,7 +313,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 			name
 		FROM system.users
 	`
-	userList := make([]*db.DBUser, 0)
+	userList := make([]*db.User, 0)
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -341,7 +350,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 			grantList = append(grantList, grant)
 		}
 
-		userList = append(userList, &db.DBUser{
+		userList = append(userList, &db.User{
 			Name:  user,
 			Grant: strings.Join(grantList, "\n"),
 		})
@@ -349,6 +358,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 	return userList, nil
 }
 
+// Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -374,7 +384,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return err
 }
 
-// Migration related
+// NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
 		SELECT
@@ -385,6 +395,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
+// SetupMigrationIfNeeded sets up migration if needed.
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
@@ -413,7 +424,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// ExecuteMigration will execute the migration for MySQL.
+// ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	insertHistoryQuery := `
 	INSERT INTO bytebase.migration_history (
@@ -466,6 +477,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
 }
 
+// FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
@@ -511,6 +523,7 @@ const (
 		"%s;\n"
 )
 
+// Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -671,6 +684,7 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 	return tables, nil
 }
 
+// Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {

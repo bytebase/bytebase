@@ -35,14 +35,8 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "@vue/reactivity";
 import { useStore } from "vuex";
-import {
-  computed,
-  onUnmounted,
-  PropType,
-  watchEffect,
-} from "@vue/runtime-core";
+import { reactive, computed, onUnmounted, PropType, watchEffect } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthConfig,

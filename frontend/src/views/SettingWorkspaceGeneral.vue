@@ -46,7 +46,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "@vue/runtime-core";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { Setting } from "../types/setting";

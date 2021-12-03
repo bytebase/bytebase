@@ -9,16 +9,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
 func NewTaskCheckMigrationSchemaExecutor(logger *zap.Logger) TaskCheckExecutor {
 	return &TaskCheckMigrationSchemaExecutor{
 		l: logger,
 	}
 }
 
+// TaskCheckMigrationSchemaExecutor is the task check migration schema executor.
 type TaskCheckMigrationSchemaExecutor struct {
 	l *zap.Logger
 }
 
+// Run will run the task check migration schema executor once.
 func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	taskFind := &api.TaskFind{
 		ID: &taskCheckRun.TaskID,
@@ -28,12 +31,12 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
 
-	instance, err := server.ComposeInstanceByID(ctx, task.InstanceID)
+	instance, err := server.composeInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := GetDatabaseDriver(ctx, instance, "", exec.l)
+	driver, err := getDatabaseDriver(ctx, instance, "", exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

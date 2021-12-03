@@ -16,10 +16,11 @@ func init() {
 	advisor.Register(db.TiDB, advisor.Fake, &Advisor{})
 }
 
+// Advisor is the fake sql advisor.
 type Advisor struct {
 }
 
-// A fake advisor to report 1 advice for each severity.
+// Check is a fake advisor check reporting 1 advice for each severity.
 func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	return []advisor.Advice{
 		{

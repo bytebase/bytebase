@@ -9,34 +9,41 @@ import (
 	"time"
 )
 
+// FeishuWebhookResponse is the API message for Feishu webhook response.
 type FeishuWebhookResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
 }
 
+// FeishuWebhookPostSection is the API message for Feishu webhook POST section.
 type FeishuWebhookPostSection struct {
 	Tag  string `json:"tag"`
 	Text string `json:"text"`
 	Href string `json:"href,omitempty"`
 }
 
+// FeishuWebhookPostLine is the API message for Feishu webhook POST line.
 type FeishuWebhookPostLine struct {
 	SectionList []FeishuWebhookPostSection `json:""`
 }
 
+// FeishuWebhookPost is the API message for Feishu webhook POST.
 type FeishuWebhookPost struct {
 	Title       string                       `json:"title"`
 	ContentList [][]FeishuWebhookPostSection `json:"content"`
 }
 
+// FeishuWebhookPostLanguage is the API message for Feishu webhook POST language.
 type FeishuWebhookPostLanguage struct {
 	English FeishuWebhookPost `json:"en_us"`
 }
 
+// FeishuWebhookContent is the API message for Feishu webhook content.
 type FeishuWebhookContent struct {
 	Post FeishuWebhookPostLanguage `json:"post"`
 }
 
+// FeishuWebhook is the API message for Feishu webhook.
 type FeishuWebhook struct {
 	MessageType string               `json:"msg_type"`
 	Content     FeishuWebhookContent `json:"content"`
@@ -46,10 +53,11 @@ func init() {
 	register("bb.plugin.webhook.feishu", &FeishuReceiver{})
 }
 
+// FeishuReceiver is the receiver for Feishu.
 type FeishuReceiver struct {
 }
 
-func (receiver *FeishuReceiver) post(context WebhookContext) error {
+func (receiver *FeishuReceiver) post(context Context) error {
 	contentList := [][]FeishuWebhookPostSection{}
 	if context.Description != "" {
 		sectionList := []FeishuWebhookPostSection{}

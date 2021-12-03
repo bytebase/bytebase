@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive, ref, watchEffect } from "@vue/runtime-core";
+import { PropType, reactive, ref, watchEffect } from "vue";
 import { useStore } from "vuex";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {

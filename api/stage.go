@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Stage is the API message for a stage.
 type Stage struct {
 	ID int `jsonapi:"primary,stage"`
 
@@ -27,6 +28,7 @@ type Stage struct {
 	Name string `jsonapi:"attr,name"`
 }
 
+// StageCreate is the API message for creating a stage.
 type StageCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -41,6 +43,7 @@ type StageCreate struct {
 	Name string `jsonapi:"attr,name"`
 }
 
+// StageFind is the API message for finding stages.
 type StageFind struct {
 	ID *int
 
@@ -56,6 +59,7 @@ func (find *StageFind) String() string {
 	return string(str)
 }
 
+// StageService is the service for stages.
 type StageService interface {
 	CreateStage(ctx context.Context, create *StageCreate) (*Stage, error)
 	FindStageList(ctx context.Context, find *StageFind) ([]*Stage, error)

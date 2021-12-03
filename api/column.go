@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Column is the API message for a table column.
 type Column struct {
 	ID int `jsonapi:"primary,column"`
 
@@ -29,6 +30,7 @@ type Column struct {
 	Comment      string  `json:"comment"`
 }
 
+// ColumnCreate is the API message for creating a column.
 type ColumnCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -49,6 +51,7 @@ type ColumnCreate struct {
 	Comment      string
 }
 
+// ColumnFind is the API message for finding columns.
 type ColumnFind struct {
 	ID *int
 
@@ -68,6 +71,7 @@ func (find *ColumnFind) String() string {
 	return string(str)
 }
 
+// ColumnPatch is the API message for patching a columns.
 type ColumnPatch struct {
 	ID int
 
@@ -76,6 +80,7 @@ type ColumnPatch struct {
 	UpdaterID int
 }
 
+// ColumnService is the service for columns.
 type ColumnService interface {
 	CreateColumn(ctx context.Context, create *ColumnCreate) (*Column, error)
 	FindColumnList(ctx context.Context, find *ColumnFind) ([]*Column, error)

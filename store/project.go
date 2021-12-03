@@ -164,10 +164,11 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 			name,
 			key,
 			workflow_type,
-			visibility
+			visibility,
+			tenant_mode
 		)
-		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC')
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility"+`
+		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', 'DISABLED')
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode"+`
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -193,6 +194,7 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		&project.Key,
 		&project.WorkflowType,
 		&project.Visibility,
+		&project.TenantMode,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -224,7 +226,8 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			name,
 			key,
 			workflow_type,
-			visibility
+			visibility,
+			tenant_mode
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -249,6 +252,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			&project.Key,
 			&project.WorkflowType,
 			&project.Visibility,
+			&project.TenantMode,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -278,6 +282,9 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, "`workflow_type` = ?"), append(args, *v)
 	}
+	if v := patch.TenantMode; v != nil {
+		set, args = append(set, "`tenant_mode` = ?"), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -286,7 +293,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode"+`
 	`,
 		args...,
 	)
@@ -308,6 +315,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 			&project.Key,
 			&project.WorkflowType,
 			&project.Visibility,
+			&project.TenantMode,
 		); err != nil {
 			return nil, FormatError(err)
 		}

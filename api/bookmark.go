@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Bookmark is the API message for a bookmark.
 type Bookmark struct {
 	ID int `jsonapi:"primary,bookmark"`
 
@@ -21,6 +22,7 @@ type Bookmark struct {
 	Link string `jsonapi:"attr,link"`
 }
 
+// BookmarkCreate is the API message for creating a bookmark.
 type BookmarkCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -31,6 +33,7 @@ type BookmarkCreate struct {
 	Link string `jsonapi:"attr,link"`
 }
 
+// BookmarkFind is the API message for finding bookmarks.
 type BookmarkFind struct {
 	ID *int
 
@@ -46,6 +49,7 @@ func (find *BookmarkFind) String() string {
 	return string(str)
 }
 
+// BookmarkDelete is the API message for deleting a bookmark.
 type BookmarkDelete struct {
 	ID int
 
@@ -54,6 +58,7 @@ type BookmarkDelete struct {
 	DeleterID int
 }
 
+// BookmarkService is the service for bookmarks.
 type BookmarkService interface {
 	CreateBookmark(ctx context.Context, create *BookmarkCreate) (*Bookmark, error)
 	FindBookmarkList(ctx context.Context, find *BookmarkFind) ([]*Bookmark, error)
