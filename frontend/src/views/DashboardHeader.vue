@@ -303,14 +303,14 @@ export default {
 
     const kbarActions = [
       defineAction({
-        id: "navigation.projects",
+        id: "bb.navigation.projects",
         name: "Projects",
         shortcut: ["g", "p"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.project" }),
       }),
       defineAction({
-        id: "navigation.databases",
+        id: "bb.navigation.databases",
         name: "Databases",
         keywords: "db",
         shortcut: ["g", "d"],
@@ -318,28 +318,28 @@ export default {
         perform: () => router.push({ name: "workspace.database" }),
       }),
       defineAction({
-        id: "navigation.instances",
+        id: "bb.navigation.instances",
         name: "Instances",
         shortcut: ["g", "i"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.instance" }),
       }),
       defineAction({
-        id: "navigation.environments",
+        id: "bb.navigation.environments",
         name: "Environments",
         shortcut: ["g", "e"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.environment" }),
       }),
       defineAction({
-        id: "navigation.settings",
+        id: "bb.navigation.settings",
         name: "Settings",
         shortcut: ["g", "s"],
         section: "Navigation",
         perform: () => router.push({ name: "setting.workspace.general" }),
       }),
       defineAction({
-        id: "navigation.inbox",
+        id: "bb.navigation.inbox",
         name: "Inbox",
         shortcut: ["g", "m"],
         section: "Navigation",

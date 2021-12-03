@@ -56,14 +56,14 @@ export default defineComponent({
 
     const globalActions = [
       defineAction({
-        id: "home",
+        id: "bb.navigation.home",
         name: "Home",
         shortcut: ["g", "h"],
         section: "Navigation",
         perform: () => router.push({ name: "workspace.home" }),
       }),
       defineAction({
-        id: "anomaly-center",
+        id: "bb.navigation.anomaly-center",
         name: "Anomaly Center",
         shortcut: ["g", "a", "c"],
         section: "Navigation",

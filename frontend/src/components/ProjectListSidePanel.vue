@@ -58,8 +58,8 @@ export default {
     const kbarActions = computed((): Action[] => {
       const actions = outlineItemList.value.map((proj: any) =>
         defineAction({
-          // here `id` looks like "project.1234"
-          id: `project.${proj.id}`,
+          // here `id` looks like "bb.project.1234"
+          id: `bb.project.${proj.id}`,
           section: "Projects",
           name: proj.name,
           keywords: "project",

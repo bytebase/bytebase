@@ -87,9 +87,9 @@ export default {
       const actions = databaseListByEnvironment.value.flatMap((env: any) =>
         env.childList.map((db: any) =>
           defineAction({
-            // `env.id` starts with "env", while `db.id` is a number
-            // so here `id` looks like "database.env.1234.5678"
-            id: `database.${env.id}.${db.id}`,
+            // `db.id` is global unique, so need not to specify `env.id`
+            // so here `id` looks like "bb.database.1234"
+            id: `bb.database.${db.id}`,
             section: "Databases",
             name: db.name,
             keywords: "database db",

@@ -51,8 +51,8 @@ export default {
     const kbarActions = computed((): Action[] => {
       const actions = bookmarkList.value.map((item: any) =>
         defineAction({
-          // here `id` looks like "bookmark.12345"
-          id: `bookmark.${item.id}`,
+          // here `id` looks like "bb.bookmark.12345"
+          id: `bb.bookmark.${item.id}`,
           section: "Bookmarks",
           name: item.name,
           keywords: "bookmark",

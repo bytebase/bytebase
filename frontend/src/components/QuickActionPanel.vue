@@ -594,15 +594,17 @@ export default defineComponent({
     };
     const kbarActions = computed(() => {
       return props.quickActionList
-        .filter((item) => item in QuickActionMap)
-        .map((item) => {
+        .filter((qa) => qa in QuickActionMap)
+        .map((qa) => {
+          // a QuickActionType starts with "quickaction.bb."
+          // it's already namespaced so we don't need prefix here
+          // just re-order the identifier to match other kbar action ids' format
+          // here `id` looks like "bb.quickaction.instance.create"
+          const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
           return defineAction({
-            // a QuickActionType starts with "quickaction"
-            // it's already namespaced so we don't need prefix here
-            // here `id` looks like "quickaction.bb.instance.create"
-            id: item,
+            id,
             section: "Quick Action",
-            ...QuickActionMap[item],
+            ...QuickActionMap[qa],
           });
         });
     });
