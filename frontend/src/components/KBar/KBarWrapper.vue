@@ -50,6 +50,7 @@ export default defineComponent({
     const disabled = computed(() => {
       const currentUser = store.getters["auth/currentUser"]();
       // totally disable kbar when not logged in
+      // since there is no point to show it on signin/signup pages
       return !currentUser || currentUser.id < 0;
     });
 
