@@ -1,12 +1,14 @@
 <template>
-  <router-view />
-  <template v-if="state.notificationList.length > 0">
-    <BBNotification
-      :placement="'BOTTOM_RIGHT'"
-      :notification-list="state.notificationList"
-      @close="removeNotification"
-    />
-  </template>
+  <KBarWrapper>
+    <router-view />
+    <template v-if="state.notificationList.length > 0">
+      <BBNotification
+        :placement="'BOTTOM_RIGHT'"
+        :notification-list="state.notificationList"
+        @close="removeNotification"
+      />
+    </template>
+  </KBarWrapper>
 </template>
 
 <script lang="ts">
@@ -16,6 +18,7 @@ import { useRouter } from "vue-router";
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
+import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
@@ -33,6 +36,9 @@ interface LocalState {
 
 export default {
   name: "App",
+  components: {
+    KBarWrapper,
+  },
   setup() {
     const store = useStore();
     const router = useRouter();

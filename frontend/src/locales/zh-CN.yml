@@ -1,0 +1,10 @@
+common:
+  save: 保存
+  home: 主页
+  settings: 设置
+  projects: 项目
+  help: 帮助
+  databases: 数据库
+  instances: 实例
+  environments: 环境变量
+not-found: 未找到
