@@ -17,11 +17,14 @@
 import { computed, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { UNKNOWN_ID } from "../types";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { useRouter } from "vue-router";
 
 export default {
   name: "BookmarkListSidePanel",
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -44,6 +47,23 @@ export default {
     const deleteIndex = (index: number) => {
       store.dispatch("bookmark/deleteBookmark", bookmarkList.value[index]);
     };
+
+    const kbarActions = computed((): Action[] => {
+      const actions = bookmarkList.value.map((item: any) =>
+        defineAction({
+          // here `id` looks like "bb.bookmark.12345"
+          id: `bb.bookmark.${item.id}`,
+          section: "Bookmarks",
+          name: item.name,
+          keywords: "bookmark",
+          perform: () => {
+            router.push({ path: item.link });
+          },
+        })
+      );
+      return actions;
+    });
+    useRegisterActions(kbarActions);
 
     return {
       bookmarkList,

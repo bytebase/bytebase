@@ -214,7 +214,9 @@
 </template>
 
 <script lang="ts">
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
@@ -232,6 +234,7 @@ export default {
   components: { ProfileDropdown },
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
@@ -297,6 +300,53 @@ export default {
     const switchToEnterprise = () => {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
+
+    const kbarActions = [
+      defineAction({
+        id: "bb.navigation.projects",
+        name: "Projects",
+        shortcut: ["g", "p"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.project" }),
+      }),
+      defineAction({
+        id: "bb.navigation.databases",
+        name: "Databases",
+        keywords: "db",
+        shortcut: ["g", "d"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.database" }),
+      }),
+      defineAction({
+        id: "bb.navigation.instances",
+        name: "Instances",
+        shortcut: ["g", "i"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.instance" }),
+      }),
+      defineAction({
+        id: "bb.navigation.environments",
+        name: "Environments",
+        shortcut: ["g", "e"],
+        section: "Navigation",
+        perform: () => router.push({ name: "workspace.environment" }),
+      }),
+      defineAction({
+        id: "bb.navigation.settings",
+        name: "Settings",
+        shortcut: ["g", "s"],
+        section: "Navigation",
+        perform: () => router.push({ name: "setting.workspace.general" }),
+      }),
+      defineAction({
+        id: "bb.navigation.inbox",
+        name: "Inbox",
+        shortcut: ["g", "m"],
+        section: "Navigation",
+        perform: () => router.push({ name: "setting.inbox" }),
+      }),
+    ];
+    useRegisterActions(kbarActions);
 
     const { availableLocales, locale } = useI18n();
     const storage = useLocalStorage("bytebase_options", {}) as any;
