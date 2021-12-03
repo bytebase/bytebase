@@ -15,11 +15,14 @@ import cloneDeep from "lodash-es/cloneDeep";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
 import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { useRouter } from "vue-router";
 
 export default {
   name: "DatabaseListSidePanel",
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -79,6 +82,29 @@ export default {
           };
         });
     });
+
+    const kbarActions = computed((): Action[] => {
+      const actions = databaseListByEnvironment.value.flatMap((env: any) =>
+        env.childList.map((db: any) =>
+          defineAction({
+            // `db.id` is global unique, so need not to specify `env.id`
+            // so here `id` looks like "bb.database.1234"
+            id: `bb.database.${db.id}`,
+            section: "Databases",
+            name: db.name,
+            keywords: "database db",
+            data: {
+              tags: [env.name],
+            },
+            perform: () => {
+              router.push({ path: db.link });
+            },
+          })
+        )
+      );
+      return actions;
+    });
+    useRegisterActions(kbarActions);
 
     return {
       environmentList,
