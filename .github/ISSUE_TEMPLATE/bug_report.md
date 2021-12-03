@@ -9,6 +9,8 @@ assignees: ''
 
 **Provide the MySQL version you are using (if related with instance/database operation)**
 
+**Provide the GitLab version you are using (if related with VCS integration)**
+
 **Provide the Bytebase version you are using**
 
 The version info is shown on the bottom left of the console.
@@ -20,8 +22,10 @@ A clear and concise description of what the bug is.
 **Steps or screenshots to reproduce the behavior**
 
 1. Go to '...'
-2. Click on '....'
-4. See error
+1. Click on '....'
+1. See error
+
+*If the error is not obvious, you can enable the [--debug](https://docs.bytebase.com/reference/command-line#debug) option on startup and attach the console message here*
 
 **Expected behavior**
 
