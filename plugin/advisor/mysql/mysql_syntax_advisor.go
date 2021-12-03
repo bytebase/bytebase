@@ -6,8 +6,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/parser"
-
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var (
@@ -19,6 +17,7 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
+// SyntaxAdvisor is the advisor for checking syntax.
 type SyntaxAdvisor struct {
 }
 

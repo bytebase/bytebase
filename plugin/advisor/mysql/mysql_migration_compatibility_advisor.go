@@ -9,7 +9,6 @@ import (
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var (
@@ -21,6 +20,7 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
+// CompatibilityAdvisor is the advisor checking for schema backward compatability.
 type CompatibilityAdvisor struct {
 }
 

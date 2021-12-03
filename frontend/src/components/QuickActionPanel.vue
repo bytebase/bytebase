@@ -432,7 +432,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, computed } from "vue";
+import { defineComponent, reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
@@ -443,6 +443,7 @@ import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
 import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 
 interface LocalState {
   showModal: boolean;
@@ -451,7 +452,7 @@ interface LocalState {
   quickActionType: QuickActionType;
 }
 
-export default {
+export default defineComponent({
   name: "QuickActionPanel",
   components: {
     ProjectCreate,
@@ -467,7 +468,7 @@ export default {
       type: Object as PropType<QuickActionType[]>,
     },
   },
-  setup() {
+  setup(props) {
     const router = useRouter();
     const store = useStore();
 
@@ -545,6 +546,70 @@ export default {
       store.dispatch("command/dispatchCommand", "bb.environment.reorder");
     };
 
+    const QuickActionMap: Record<string, Partial<Action>> = {
+      "quickaction.bb.instance.create": {
+        name: "Add Instance",
+        perform: () => createInstance(),
+      },
+      "quickaction.bb.user.manage": {
+        name: "Manage User",
+        perform: () => router.push({ name: "setting.workspace.member" }),
+      },
+      "quickaction.bb.database.create": {
+        name: "New DB",
+        perform: () => createDatabase(),
+      },
+      "quickaction.bb.database.request": {
+        name: "Request DB",
+        perform: () => requestDatabase(),
+      },
+      "quickaction.bb.database.schema.update": {
+        name: "Alter Schema",
+        perform: () => alterSchema(),
+      },
+      "quickaction.bb.database.troubleshoot": {
+        name: "Troubleshoot",
+        perform: () => router.push({ path: "/issue/new" }),
+      },
+      "quickaction.bb.environment.create": {
+        name: "Add Environment",
+        perform: () => createEnvironment(),
+      },
+      "quickaction.bb.environment.reorder": {
+        name: "Reorder",
+        perform: () => reorderEnvironment(),
+      },
+      "quickaction.bb.project.create": {
+        name: "New Project",
+        perform: () => createProject(),
+      },
+      "quickaction.bb.project.default": {
+        name: "Default Project",
+        perform: () => goDefaultProject(),
+      },
+      "quickaction.bb.project.database.transfer": {
+        name: "Transfer in DB",
+        perform: () => transferDatabase(),
+      },
+    };
+    const kbarActions = computed(() => {
+      return props.quickActionList
+        .filter((qa) => qa in QuickActionMap)
+        .map((qa) => {
+          // a QuickActionType starts with "quickaction.bb."
+          // it's already namespaced so we don't need prefix here
+          // just re-order the identifier to match other kbar action ids' format
+          // here `id` looks like "bb.quickaction.instance.create"
+          const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
+          return defineAction({
+            id,
+            section: "Quick Action",
+            ...QuickActionMap[qa],
+          });
+        });
+    });
+    useRegisterActions(kbarActions, true);
+
     return {
       state,
       projectId,
@@ -559,5 +624,5 @@ export default {
       reorderEnvironment,
     };
   },
-};
+});
 </script>

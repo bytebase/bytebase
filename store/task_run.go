@@ -21,7 +21,7 @@ type TaskRunService struct {
 	db *DB
 }
 
-// newTaskRunService returns a new TaskRunService.
+// NewTaskRunService returns a new TaskRunService.
 func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 	return &TaskRunService{l: logger, db: db}
 }

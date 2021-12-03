@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"go.uber.org/zap"
 )

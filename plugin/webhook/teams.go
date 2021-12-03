@@ -9,24 +9,28 @@ import (
 	"time"
 )
 
-var THEME_COLOR = "4f46e5"
+var themeColor = "4f46e5"
 
+// TeamsWebhookActionTarget is the API message for Teams webhook action target.
 type TeamsWebhookActionTarget struct {
 	OS  string `json:"os"`
 	URI string `json:"uri"`
 }
 
+// TeamsWebhookAction is the API message for Teams webhook action.
 type TeamsWebhookAction struct {
 	Type       string                     `json:"@type"`
 	Name       string                     `json:"name"`
 	TargetList []TeamsWebhookActionTarget `json:"targets"`
 }
 
+// TeamsWebhookSectionFact is the API message for Teams webhook section fact.
 type TeamsWebhookSectionFact struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
+// TeamsWebhookSection is the API message for Teams webhook section.
 type TeamsWebhookSection struct {
 	ActivityTitle    string                    `json:"activityTitle"`
 	ActivitySubtitle string                    `json:"activitySubtitle"`
@@ -34,6 +38,7 @@ type TeamsWebhookSection struct {
 	Text             string                    `json:"text"`
 }
 
+// TeamsWebhook is the API message for Teams webhook.
 type TeamsWebhook struct {
 	Type        string                `json:"@type"`
 	Context     string                `json:"@context"`
@@ -48,10 +53,11 @@ func init() {
 	register("bb.plugin.webhook.teams", &TeamsReceiver{})
 }
 
+// TeamsReceiver is the receiver for Teams.
 type TeamsReceiver struct {
 }
 
-func (receiver *TeamsReceiver) post(context WebhookContext) error {
+func (receiver *TeamsReceiver) post(context Context) error {
 	factList := []TeamsWebhookSectionFact{}
 	for _, meta := range context.MetaList {
 		factList = append(factList, TeamsWebhookSectionFact(meta))
@@ -61,7 +67,7 @@ func (receiver *TeamsReceiver) post(context WebhookContext) error {
 		Type:       "MessageCard",
 		Context:    "https://schema.org/extensions",
 		Summary:    context.Title,
-		ThemeColor: THEME_COLOR,
+		ThemeColor: themeColor,
 		Title:      context.Title,
 		SectionList: []TeamsWebhookSection{
 			{

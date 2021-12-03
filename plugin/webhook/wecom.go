@@ -10,15 +10,18 @@ import (
 	"time"
 )
 
+// WeComWebhookResponse is the API message for WeCom webhook response.
 type WeComWebhookResponse struct {
 	ErrorCode    int    `json:"errcode"`
 	ErrorMessage string `json:"errmsg"`
 }
 
+// WeComWebhookMarkdown is the API message for WeCom webhook markdown.
 type WeComWebhookMarkdown struct {
 	Content string `json:"content"`
 }
 
+// WeComWebhook is the API message for WeCom webhook.
 type WeComWebhook struct {
 	MessageType string               `json:"msgtype"`
 	Markdown    WeComWebhookMarkdown `json:"markdown"`
@@ -28,10 +31,11 @@ func init() {
 	register("bb.plugin.webhook.wecom", &WeComReceiver{})
 }
 
+// WeComReceiver is the receiver for WeCom.
 type WeComReceiver struct {
 }
 
-func (receiver *WeComReceiver) post(context WebhookContext) error {
+func (receiver *WeComReceiver) post(context Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.MetaList {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))

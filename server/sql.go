@@ -171,7 +171,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			var recreateTableSchema = func(database *api.Database, table db.DBTable) error {
+			var recreateTableSchema = func(database *api.Database, table db.Table) error {
 				// Table
 				tableCreate := &api.TableCreate{
 					CreatorID:     api.SystemBotID,
@@ -260,7 +260,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			var recreateViewSchema = func(database *api.Database, view db.DBView) error {
+			var recreateViewSchema = func(database *api.Database, view db.View) error {
 				// View
 				viewCreate := &api.ViewCreate{
 					CreatorID:  api.SystemBotID,

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center items-center border m-4">
+  <div class="hidden md:flex justify-center items-center border m-4">
     <img class="m-4 h-72" src="../assets/illustration/guide.webp" alt="" />
     <div class="m-4">
       <h2 class="text-xl text-main">
