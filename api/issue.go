@@ -2,71 +2,60 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 )
 
-// Issue status
+// IssueStatus is the status of an issue.
 type IssueStatus string
 
 const (
-	Issue_Open     IssueStatus = "OPEN"
-	Issue_Done     IssueStatus = "DONE"
-	Issue_Canceled IssueStatus = "CANCELED"
+	// IssueOpen is the issue status for OPEN.
+	IssueOpen IssueStatus = "OPEN"
+	// IssueDone is the issue status for DONE.
+	IssueDone IssueStatus = "DONE"
+	// IssueCanceled is the issue status for CANCELED.
+	IssueCanceled IssueStatus = "CANCELED"
 )
 
-func (e IssueStatus) String() string {
-	switch e {
-	case Issue_Open:
-		return "OPEN"
-	case Issue_Done:
-		return "DONE"
-	case Issue_Canceled:
-		return "CANCELED"
-	}
-	return ""
-}
-
-// Issue type
+// IssueType is the type of an issue.
 type IssueType string
 
 const (
-	IssueGeneral              IssueType = "bb.issue.general"
-	IssueDatabaseCreate       IssueType = "bb.issue.database.create"
-	IssueDatabaseGrant        IssueType = "bb.issue.database.grant"
+	// IssueGeneral is the issue type for general issues.
+	IssueGeneral IssueType = "bb.issue.general"
+	// IssueDatabaseCreate is the issue type for creating databases.
+	IssueDatabaseCreate IssueType = "bb.issue.database.create"
+	// IssueDatabaseGrant is the issue type for granting databases.
+	IssueDatabaseGrant IssueType = "bb.issue.database.grant"
+	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas.
 	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
-	IssueDataSourceRequest    IssueType = "bb.issue.data-source.request"
+	// IssueDataSourceRequest is the issue type for requesting database sources.
+	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
 )
 
-func (e IssueType) String() string {
-	switch e {
-	case IssueGeneral:
-		return "bb.issue.general"
-	case IssueDatabaseCreate:
-		return "bb.issue.database.create"
-	case IssueDatabaseGrant:
-		return "bb.issue.database.grant"
-	case IssueDatabaseSchemaUpdate:
-		return "bb.issue.database.schema.update"
-	case IssueDataSourceRequest:
-		return "bb.issue.data-source.request"
-	}
-	return "bb.unknown"
-}
-
+// IssueFieldID is the field ID for an issue.
 // It has to be string type because the id for stage field contain multiple parts.
 type IssueFieldID string
 
 const (
-	IssueFieldName           IssueFieldID = "1"
-	IssueFieldStatus         IssueFieldID = "2"
-	IssueFieldAssignee       IssueFieldID = "3"
-	IssueFieldDescription    IssueFieldID = "4"
-	IssueFieldProject        IssueFieldID = "5"
+	// IssueFieldName is the field ID for name.
+	IssueFieldName IssueFieldID = "1"
+	// IssueFieldStatus is the field ID for status.
+	IssueFieldStatus IssueFieldID = "2"
+	// IssueFieldAssignee is the field ID for assignee.
+	IssueFieldAssignee IssueFieldID = "3"
+	// IssueFieldDescription is the field ID for description.
+	IssueFieldDescription IssueFieldID = "4"
+	// IssueFieldProject is the field ID for project.
+	IssueFieldProject IssueFieldID = "5"
+	// IssueFieldSubscriberList is the field ID for subscriber list.
 	IssueFieldSubscriberList IssueFieldID = "6"
-	IssueFieldSql            IssueFieldID = "7"
-	IssueFieldRollbackSql    IssueFieldID = "8"
+	// IssueFieldSQL is the field ID for SQL.
+	IssueFieldSQL IssueFieldID = "7"
+	// IssueFieldRollbackSQL is the field ID for rollback SQL.
+	IssueFieldRollbackSQL IssueFieldID = "8"
 )
 
+// Issue is the API message for an issue.
 type Issue struct {
 	ID int `jsonapi:"primary,issue"`
 
@@ -95,6 +84,7 @@ type Issue struct {
 	Payload          string      `jsonapi:"attr,payload"`
 }
 
+// IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -106,15 +96,16 @@ type IssueCreate struct {
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
-	Name              string    `jsonapi:"attr,name"`
-	Type              IssueType `jsonapi:"attr,type"`
-	Description       string    `jsonapi:"attr,description"`
-	AssigneeID        int       `jsonapi:"attr,assigneeId"`
-	SubscriberIDList  []int     `jsonapi:"attr,subscriberIdList"`
-	RollbackIssueID   *int      `jsonapi:"attr,rollbackIssueId"`
-	Payload           string    `jsonapi:"attr,payload"`
+	Name             string    `jsonapi:"attr,name"`
+	Type             IssueType `jsonapi:"attr,type"`
+	Description      string    `jsonapi:"attr,description"`
+	AssigneeID       int       `jsonapi:"attr,assigneeId"`
+	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
+	RollbackIssueID  *int      `jsonapi:"attr,rollbackIssueId"`
+	Payload          string    `jsonapi:"attr,payload"`
 }
 
+// IssueFind is the API message for finding issues.
 type IssueFind struct {
 	ID *int
 
@@ -130,14 +121,7 @@ type IssueFind struct {
 	Limit *int
 }
 
-func (find *IssueFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
+// IssuePatch is the API message for patching an issue.
 type IssuePatch struct {
 	ID int `jsonapi:"primary,issuePatch"`
 
@@ -154,6 +138,7 @@ type IssuePatch struct {
 	Payload     *string `jsonapi:"attr,payload"`
 }
 
+// IssueStatusPatch is the API message for patching status of an issue.
 type IssueStatusPatch struct {
 	ID int `jsonapi:"primary,issueStatusPatch"`
 
@@ -166,6 +151,7 @@ type IssueStatusPatch struct {
 	Comment string      `jsonapi:"attr,comment"`
 }
 
+// IssueService is the services for issues.
 type IssueService interface {
 	CreateIssue(ctx context.Context, create *IssueCreate) (*Issue, error)
 	FindIssueList(ctx context.Context, find *IssueFind) ([]*Issue, error)

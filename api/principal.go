@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 )
 
-const SYSTEM_BOT_ID = 1
+// SystemBotID is the ID of the system robot.
+const SystemBotID = 1
 
+// PrincipalType is the type of a principal.
 type PrincipalType string
 
 const (
+	// EndUser is the principal type for END_USER.
 	EndUser PrincipalType = "END_USER"
-	BOT     PrincipalType = "BOT"
+	// BOT is the principal type for BOT.
+	BOT PrincipalType = "BOT"
 )
 
 func (e PrincipalType) String() string {
@@ -24,6 +28,7 @@ func (e PrincipalType) String() string {
 	return ""
 }
 
+// Principal is the API message for principals.
 type Principal struct {
 	ID int `jsonapi:"primary,principal"`
 
@@ -44,7 +49,7 @@ type Principal struct {
 	Role Role `jsonapi:"attr,role"`
 }
 
-// Customize the Principal Marshal method so the returned object
+// MarshalJSON customizes the Principal Marshal method so the returned object
 // can map directly to the frontend Principal object without any conversion.
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
@@ -70,6 +75,7 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// PrincipalCreate is the API message for creating a principal.
 type PrincipalCreate struct {
 	// Standard fields
 	// For signup, value is SYSTEM_BOT_ID
@@ -84,6 +90,7 @@ type PrincipalCreate struct {
 	PasswordHash string
 }
 
+// PrincipalFind is the API message for finding principals.
 type PrincipalFind struct {
 	ID *int
 
@@ -99,6 +106,7 @@ func (find *PrincipalFind) String() string {
 	return string(str)
 }
 
+// PrincipalPatch is the API message for patching a principal.
 type PrincipalPatch struct {
 	ID int
 
@@ -112,6 +120,7 @@ type PrincipalPatch struct {
 	PasswordHash *string
 }
 
+// PrincipalService is the service for principals.
 type PrincipalService interface {
 	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
 	FindPrincipalList(ctx context.Context) ([]*Principal, error)

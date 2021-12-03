@@ -87,7 +87,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		principalCreate := &api.PrincipalCreate{
-			CreatorID:    api.SYSTEM_BOT_ID,
+			CreatorID:    api.SystemBotID,
 			Type:         api.EndUser,
 			Name:         signup.Name,
 			Email:        signup.Email,
@@ -146,7 +146,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				CreatorID:   user.ID,
 				ContainerID: member.ID,
 				Type:        api.ActivityMemberCreate,
-				Level:       api.ACTIVITY_INFO,
+				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})

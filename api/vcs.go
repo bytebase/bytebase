@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+// VCS is the API message for VCS.
 type VCS struct {
 	ID int `jsonapi:"primary,vcs"`
 
@@ -22,11 +23,12 @@ type VCS struct {
 	Name          string         `jsonapi:"attr,name"`
 	Type          common.VCSType `jsonapi:"attr,type"`
 	InstanceURL   string         `jsonapi:"attr,instanceUrl"`
-	ApiURL        string         `jsonapi:"attr,apiUrl"`
+	APIURL        string         `jsonapi:"attr,apiUrl"`
 	ApplicationID string         `jsonapi:"attr,applicationId"`
 	Secret        string         `jsonapi:"attr,secret"`
 }
 
+// VCSCreate is the API message for creating a VCS.
 type VCSCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -36,12 +38,13 @@ type VCSCreate struct {
 	Name        string         `jsonapi:"attr,name"`
 	Type        common.VCSType `jsonapi:"attr,type"`
 	InstanceURL string         `jsonapi:"attr,instanceUrl"`
-	// ApiURL derives from InstanceURL
-	ApiURL        string
+	// APIURL derives from InstanceURL
+	APIURL        string
 	ApplicationID string `jsonapi:"attr,applicationId"`
 	Secret        string `jsonapi:"attr,secret"`
 }
 
+// VCSFind is the API message for finding VCSs.
 type VCSFind struct {
 	ID *int
 }
@@ -54,6 +57,7 @@ func (find *VCSFind) String() string {
 	return string(str)
 }
 
+// VCSPatch is the API message for patching a VCS.
 type VCSPatch struct {
 	ID int
 
@@ -67,6 +71,7 @@ type VCSPatch struct {
 	Secret        *string `jsonapi:"attr,secret"`
 }
 
+// VCSDelete is the API message for deleting a VCS.
 type VCSDelete struct {
 	ID int
 
@@ -75,6 +80,7 @@ type VCSDelete struct {
 	DeleterID int
 }
 
+// VCSService is the service for VCSs.
 type VCSService interface {
 	CreateVCS(ctx context.Context, create *VCSCreate) (*VCS, error)
 	FindVCSList(ctx context.Context, find *VCSFind) ([]*VCS, error)

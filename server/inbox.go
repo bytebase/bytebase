@@ -38,7 +38,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 		}
 
 		for _, inbox := range list {
-			if err := s.ComposeActivityRelationship(ctx, inbox.Activity); err != nil {
+			if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
 			}
 		}
@@ -91,7 +91,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.ComposeActivityRelationship(ctx, inbox.Activity); err != nil {
+		if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated inbox activity relationship: %v", inbox.ID)).SetInternal(err)
 		}
 

@@ -46,12 +46,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	// Create * database
 	databaseCreate := &api.DatabaseCreate{
 		CreatorID:     create.CreatorID,
-		ProjectID:     api.DEFAULT_PROJECT_ID,
+		ProjectID:     api.DefaultProjectID,
 		InstanceID:    instance.ID,
 		EnvironmentID: instance.EnvironmentID,
-		Name:          api.ALL_DATABASE_NAME,
-		CharacterSet:  api.DEFAULT_CHARACTER_SET_NAME,
-		Collation:     api.DEFAULT_COLLATION_NAME,
+		Name:          api.AllDatabaseName,
+		CharacterSet:  api.DefaultCharactorSetName,
+		Collation:     api.DefaultCollationName,
 	}
 	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		CreatorID:  create.CreatorID,
 		InstanceID: instance.ID,
 		DatabaseID: allDatabase.ID,
-		Name:       api.ADMIN_DATA_SOURCE_NAME,
+		Name:       api.AdminDataSourceName,
 		Type:       api.Admin,
 		Username:   create.Username,
 		Password:   create.Password,

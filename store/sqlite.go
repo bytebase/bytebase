@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +20,7 @@ const (
 	// We use SQLite "PRAGMA user_version" to manage the schema version. The schema version consists of
 	// major version and minor version. Backward compatible schema change increases the minor version,
 	// while backward non-compatible schema change increase the majar version.
-	// MAJOR_SCHEMA_VERSION and MAJOR_SCHEMA_VERSION defines the schema version this version of code can handle.
+	// majorSchemaVervion and majorSchemaVervion defines the schema version this version of code can handle.
 	// We reserve 4 least significant digits for minor version.
 	// e.g.
 	// 10001 -> Major verion 1, minor version 1
@@ -39,8 +38,8 @@ const (
 	// will require a separate process to upgrade the schema.
 	// If the new release requires a higher MINOR version than the schema file, then it will apply the migration upon
 	// startup.
-	MAJOR_SCHEMA_VERSION = 1
-	MINOR_SCHEMA_VERSION = 1
+	majorSchemaVervion = 1
+	minorSchemaVersion = 1
 )
 
 // If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
@@ -226,8 +225,8 @@ func (db *DB) migrate() error {
 	db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
 	// major version is 0 when the store isn't yet setup for the first time.
-	if curVer.major != 0 && curVer.major != MAJOR_SCHEMA_VERSION {
-		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, MAJOR_SCHEMA_VERSION, db.releaseVersion)
+	if curVer.major != 0 && curVer.major != majorSchemaVervion {
+		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, majorSchemaVervion, db.releaseVersion)
 	}
 
 	// Apply migrations
@@ -263,12 +262,12 @@ func (db *DB) migrate() error {
 
 	// This is a sanity check to prevent us setting the incorrect user_version in the migration script.
 	// e.g. We set PRAGMA user_version = 20001 for migration script 20002__add_foo.sql
-	if curVer.major != MAJOR_SCHEMA_VERSION {
-		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.major, MAJOR_SCHEMA_VERSION)
+	if curVer.major != majorSchemaVervion {
+		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.major, majorSchemaVervion)
 	}
 
-	if curVer.minor != MINOR_SCHEMA_VERSION {
-		return fmt.Errorf("current schema minor version %d does not match the expected schema minor version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.minor, MINOR_SCHEMA_VERSION)
+	if curVer.minor != minorSchemaVersion {
+		return fmt.Errorf("current schema minor version %d does not match the expected schema minor version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.minor, minorSchemaVersion)
 	}
 
 	db.l.Info("Completed database migration.")

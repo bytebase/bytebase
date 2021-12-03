@@ -6,8 +6,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/parser"
-
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var (
@@ -19,10 +17,11 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
+// SyntaxAdvisor is the advisor for checking syntax.
 type SyntaxAdvisor struct {
 }
 
-// A fake advisor to report 1 advice for each severity.
+// Check parses the given statement and checks for warnings and errors.
 func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
 	p := parser.New()
 
@@ -38,7 +37,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 		}, nil
 	}
 
-	advisorList := []advisor.Advice{}
+	advisorList := make([]advisor.Advice, 0, len(warns)+1)
 	for _, warn := range warns {
 		advisorList = append(advisorList, advisor.Advice{
 			Status:  advisor.Warn,

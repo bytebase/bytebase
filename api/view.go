@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// View is the API message for a view.
 type View struct {
 	ID int `jsonapi:"primary,view"`
 
@@ -26,6 +27,7 @@ type View struct {
 	Comment    string `jsonapi:"attr,comment"`
 }
 
+// ViewCreate is the API message for creating a view.
 type ViewCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -42,6 +44,7 @@ type ViewCreate struct {
 	Comment    string
 }
 
+// ViewFind is the API message for finding views.
 type ViewFind struct {
 	ID *int
 
@@ -60,11 +63,13 @@ func (find *ViewFind) String() string {
 	return string(str)
 }
 
+// ViewDelete is the API message for deleting a view.
 type ViewDelete struct {
 	// Related fields
 	DatabaseID int
 }
 
+// ViewService is the service for views.
 type ViewService interface {
 	CreateView(ctx context.Context, create *ViewCreate) (*View, error)
 	FindViewList(ctx context.Context, find *ViewFind) ([]*View, error)

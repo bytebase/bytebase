@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// Environment is the API message for an environment.
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
 
@@ -22,6 +23,7 @@ type Environment struct {
 	Order int    `jsonapi:"attr,order"`
 }
 
+// EnvironmentCreate is the API message for creating an environment.
 type EnvironmentCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -31,6 +33,7 @@ type EnvironmentCreate struct {
 	Name string `jsonapi:"attr,name"`
 }
 
+// EnvironmentFind is the API message for finding environments.
 type EnvironmentFind struct {
 	ID *int
 
@@ -46,6 +49,7 @@ func (find *EnvironmentFind) String() string {
 	return string(str)
 }
 
+// EnvironmentPatch is the API message for patching an environment.
 type EnvironmentPatch struct {
 	ID int `jsonapi:"primary,environmentPatch"`
 
@@ -59,6 +63,7 @@ type EnvironmentPatch struct {
 	Order *int    `jsonapi:"attr,order"`
 }
 
+// EnvironmentDelete is the API message for deleting an environment.
 type EnvironmentDelete struct {
 	ID int
 
@@ -67,6 +72,7 @@ type EnvironmentDelete struct {
 	DeleterID int
 }
 
+// EnvironmentService is the service for environments.
 type EnvironmentService interface {
 	CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*Environment, error)
 	FindEnvironmentList(ctx context.Context, find *EnvironmentFind) ([]*Environment, error)

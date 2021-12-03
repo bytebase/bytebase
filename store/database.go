@@ -57,6 +57,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	return database, nil
 }
 
+// CreateDatabaseTx creates a database with a transaction.
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
 	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
 	if err != nil {
@@ -71,7 +72,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	// Enable automatic backup setting based on backup plan policy.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:  api.SYSTEM_BOT_ID,
+			UpdaterID:  api.SystemBotID,
 			DatabaseID: database.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
@@ -251,7 +252,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
-		where = append(where, "name != '"+api.ALL_DATABASE_NAME+"'")
+		where = append(where, "name != '"+api.AllDatabaseName+"'")
 	}
 
 	rows, err := tx.QueryContext(ctx, `

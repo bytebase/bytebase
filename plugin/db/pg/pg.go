@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
 	"time"
 
+	// embed will embeds the migration schema.
+	_ "embed"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -189,6 +190,7 @@ func init() {
 	db.Register(db.Postgres, newDriver)
 }
 
+// Driver is the Postgres driver.
 type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
@@ -203,9 +205,10 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
+// Open opens a Postgres driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	if (config.TlsConfig.SslCert == "" && config.TlsConfig.SslKey != "") ||
-		(config.TlsConfig.SslCert != "" && config.TlsConfig.SslKey == "") {
+	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
+		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
@@ -215,9 +218,9 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		config.Host,
 		config.Port,
 		config.Database,
-		config.TlsConfig.SslCA,
-		config.TlsConfig.SslCert,
-		config.TlsConfig.SslKey,
+		config.TLSConfig.SslCA,
+		config.TLSConfig.SslCert,
+		config.TLSConfig.SslKey,
 	)
 	if err != nil {
 		return nil, err
@@ -292,14 +295,17 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	return "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
 
+// Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
 	return driver.db.Close()
 }
 
+// Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+// GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
@@ -307,6 +313,7 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 	return driver.db, nil
 }
 
+// GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
 	versionRow, err := driver.db.QueryContext(ctx, query)
@@ -323,7 +330,8 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSchema, error) {
+// SyncSchema synces the schema.
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
@@ -351,14 +359,14 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
-	schemaList := make([]*db.DBSchema, 0)
+	schemaList := make([]*db.Schema, 0)
 	for _, database := range databases {
 		dbName := database.name
 		if _, ok := excludedDatabaseList[dbName]; ok {
 			continue
 		}
 
-		var schema db.DBSchema
+		var schema db.Schema
 		schema.Name = dbName
 		schema.CharacterSet = database.encoding
 		schema.Collation = database.collate
@@ -390,7 +398,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			return nil, nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
 		}
 		for _, tbl := range tables {
-			var dbTable db.DBTable
+			var dbTable db.Table
 			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 			dbTable.Type = "BASE TABLE"
 			dbTable.Comment = tbl.comment
@@ -398,7 +406,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			dbTable.DataSize = tbl.tableSizeByte
 			dbTable.IndexSize = tbl.indexSizeByte
 			for _, col := range tbl.columns {
-				var dbColumn db.DBColumn
+				var dbColumn db.Column
 				dbColumn.Name = col.columnName
 				dbColumn.Position = col.ordinalPosition
 				dbColumn.Default = &col.columnDefault
@@ -411,7 +419,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			indices := indicesMap[dbTable.Name]
 			for _, idx := range indices {
 				for i, colExp := range idx.columnExpressions {
-					var dbIndex db.DBIndex
+					var dbIndex db.Index
 					dbIndex.Name = idx.name
 					dbIndex.Expression = colExp
 					dbIndex.Position = i + 1
@@ -430,7 +438,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 			return nil, nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
 		}
 		for _, view := range views {
-			var dbView db.DBView
+			var dbView db.View
 			dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
 			// Postgres does not store
 			dbView.CreatedTs = time.Now().Unix()
@@ -450,7 +458,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.DBUser, []*db.DBSch
 	return userList, schemaList, err
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 	// Query user info
 	query := `
 		SELECT usename AS role_name,
@@ -467,7 +475,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 		FROM pg_catalog.pg_user
 		ORDER BY role_name
 			`
-	userList := make([]*db.DBUser, 0)
+	userList := make([]*db.User, 0)
 	userRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -484,7 +492,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 			return nil, err
 		}
 
-		userList = append(userList, &db.DBUser{
+		userList = append(userList, &db.User{
 			Name:  role,
 			Grant: attr,
 		})
@@ -492,6 +500,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.DBUser, error) {
 	return userList, nil
 }
 
+// Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -510,7 +519,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return err
 }
 
-// Migration related
+// NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	exist, err := driver.hasBytebaseDatabase(ctx)
 	if err != nil {
@@ -547,6 +556,7 @@ func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
 	return exist, nil
 }
 
+// SetupMigrationIfNeeded sets up migration if needed.
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
@@ -606,6 +616,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	insertHistoryQuery := `
 	INSERT INTO migration_history (
@@ -659,6 +670,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
 }
 
+// FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
@@ -686,6 +698,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 }
 
 // Dump and restore
+
+// Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	// pg_dump -d dbName --schema-only+
 
@@ -727,6 +741,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return nil
 }
 
+// Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -1753,7 +1768,7 @@ func quoteIdentifier(s string) string {
 	}
 	if quote {
 		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(s, "\"", "\"\""))
-	} else {
-		return s
 	}
+	return s
+
 }

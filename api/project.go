@@ -6,42 +6,60 @@ import (
 	"encoding/json"
 )
 
-const DEFAULT_PROJECT_ID = 1
+// DefaultProjectID is the ID for the default project.
+const DefaultProjectID = 1
 
+// ProjectWorkflowType is the workflow type for projects.
 type ProjectWorkflowType string
 
 const (
-	UI_WORKFLOW  ProjectWorkflowType = "UI"
-	VCS_WORKFLOW ProjectWorkflowType = "VCS"
+	// UIWorkflow is the UI workflow.
+	UIWorkflow ProjectWorkflowType = "UI"
+	// VCSWorkflow is the VCS workflow.
+	VCSWorkflow ProjectWorkflowType = "VCS"
 )
 
 func (e ProjectWorkflowType) String() string {
 	switch e {
-	case UI_WORKFLOW:
+	case UIWorkflow:
 		return "UI"
-	case VCS_WORKFLOW:
+	case VCSWorkflow:
 		return "VCS"
 	}
 	return ""
 }
 
+// ProjectVisibility is the visibility of a project.
 type ProjectVisibility string
 
 const (
-	PUBLIC  ProjectVisibility = "PUBLIC"
-	PRIVATE ProjectVisibility = "PRIVATE"
+	// Public is the project visibility for PUBLIC.
+	Public ProjectVisibility = "PUBLIC"
+	// Private is the project visibility for PRIVATE.
+	Private ProjectVisibility = "PRIVATE"
 )
 
 func (e ProjectVisibility) String() string {
 	switch e {
-	case PUBLIC:
+	case Public:
 		return "PUBLIC"
-	case PRIVATE:
+	case Private:
 		return "PRIVATE"
 	}
 	return ""
 }
 
+// ProjectTenantMode is the tenant mode setting for project.
+type ProjectTenantMode string
+
+const (
+	// TenantModeDisabled is the DISABLED value for ProjectTenantMode.
+	TenantModeDisabled ProjectTenantMode = "DISABLED"
+	// TenantModeTenant is the TENANT value for ProjectTenantMode.
+	TenantModeTenant ProjectTenantMode = "TENANT"
+)
+
+// Project is the API message for a project.
 type Project struct {
 	ID int `jsonapi:"primary,project"`
 
@@ -62,8 +80,10 @@ type Project struct {
 	Key          string              `jsonapi:"attr,key"`
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
+	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 }
 
+// ProjectCreate is the API message for creating a project.
 type ProjectCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -74,6 +94,7 @@ type ProjectCreate struct {
 	Key  string `jsonapi:"attr,key"`
 }
 
+// ProjectFind is the API message for finding projects.
 type ProjectFind struct {
 	ID *int
 
@@ -93,6 +114,7 @@ func (find *ProjectFind) String() string {
 	return string(str)
 }
 
+// ProjectPatch is the API message for patching a project.
 type ProjectPatch struct {
 	ID int `jsonapi:"primary,projectPatch"`
 
@@ -105,8 +127,10 @@ type ProjectPatch struct {
 	Name         *string              `jsonapi:"attr,name"`
 	Key          *string              `jsonapi:"attr,key"`
 	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	TenantMode   *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 }
 
+// ProjectService is the service for projects.
 type ProjectService interface {
 	CreateProject(ctx context.Context, create *ProjectCreate) (*Project, error)
 	FindProjectList(ctx context.Context, find *ProjectFind) ([]*Project, error)

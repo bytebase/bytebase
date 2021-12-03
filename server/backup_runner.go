@@ -73,7 +73,7 @@ func (s *BackupRunner) Run() error {
 					databaseFind := &api.DatabaseFind{
 						ID: &backupSetting.DatabaseID,
 					}
-					database, err := s.server.ComposeDatabaseByFind(ctx, databaseFind)
+					database, err := s.server.composeDatabaseByFind(ctx, databaseFind)
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
@@ -136,7 +136,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	backupCreate := &api.BackupCreate{
-		CreatorID:               api.SYSTEM_BOT_ID,
+		CreatorID:               api.SystemBotID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
 		Status:                  api.BackupStatusPendingCreate,

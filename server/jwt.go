@@ -46,14 +46,14 @@ const (
 	principalIDContextKey = "principal-id"
 )
 
-// Create a struct that will be encoded to a JWT.
+// Claims creates a struct that will be encoded to a JWT.
 // We add jwt.StandardClaims as an embedded type, to provide fields like name.
 type Claims struct {
 	Name string `json:"name"`
 	jwt.StandardClaims
 }
 
-func GetPrincipalIDContextKey() string {
+func getPrincipalIDContextKey() string {
 	return principalIDContextKey
 }
 
@@ -286,7 +286,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			}
 
 			// Stores principalID into context.
-			c.Set(GetPrincipalIDContextKey(), principalID)
+			c.Set(getPrincipalIDContextKey(), principalID)
 			return next(c)
 		}
 

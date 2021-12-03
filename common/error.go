@@ -4,6 +4,7 @@ import (
 	"errors"
 )
 
+// Code is the error code.
 type Code int
 
 // Application error codes.

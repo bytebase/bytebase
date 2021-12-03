@@ -42,6 +42,7 @@ var (
 	}
 )
 
+// Policy is the API message for a policy.
 type Policy struct {
 	ID int `jsonapi:"primary,policy"`
 

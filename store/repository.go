@@ -129,7 +129,7 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 // createRepository creates a new repository.
 func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*api.Repository, error) {
 	// Updates the project workflow_type to "VCS"
-	workflowType := api.VCS_WORKFLOW
+	workflowType := api.VCSWorkflow
 	projectPatch := api.ProjectPatch{
 		ID:           create.ProjectID,
 		UpdaterID:    create.CreatorID,
@@ -383,7 +383,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 // deleteRepository permanently deletes a repository by ID.
 func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
-	workflowType := api.UI_WORKFLOW
+	workflowType := api.UIWorkflow
 	projectPatch := api.ProjectPatch{
 		ID:           delete.ProjectID,
 		UpdaterID:    delete.DeleterID,

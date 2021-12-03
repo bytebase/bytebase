@@ -14,21 +14,26 @@ import (
 	"go.uber.org/zap"
 )
 
+// ActivityManager is the activity manager.
 type ActivityManager struct {
 	s               *Server
 	activityService api.ActivityService
 }
 
+// ActivityMeta is the activity metadata.
 type ActivityMeta struct {
 	issue *api.Issue
 }
 
+// NewActivityManager creates an activity manager.
 func NewActivityManager(server *Server, activityService api.ActivityService) *ActivityManager {
 	return &ActivityManager{
 		s:               server,
 		activityService: activityService,
 	}
 }
+
+// CreateActivity creates an activity.
 func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.ActivityCreate, meta *ActivityMeta) (*api.Activity, error) {
 	activity, err := m.activityService.CreateActivity(ctx, create)
 	if err != nil {
@@ -43,7 +48,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.issue.Name)
 	}
 	if postInbox {
-		if err := m.s.PostInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
+		if err := m.s.postInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -105,8 +110,8 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	return activity, nil
 }
 
-func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.WebhookContext, error) {
-	var webhookCtx webhook.WebhookContext
+func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
+	var webhookCtx webhook.Context
 	level := webhook.WebhookInfo
 	title := ""
 	link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
@@ -237,7 +242,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		}
 	}
 
-	metaList := []webhook.WebhookMeta{
+	metaList := []webhook.Meta{
 		{
 			Name:  "Issue",
 			Value: meta.issue.Name,
@@ -247,7 +252,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			Value: meta.issue.Project.Name,
 		},
 	}
-	webhookCtx = webhook.WebhookContext{
+	webhookCtx = webhook.Context{
 		Level:        level,
 		Title:        title,
 		Description:  activity.Comment,
