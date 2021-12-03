@@ -57,7 +57,7 @@ export default defineComponent({
   @apply h-12 box-border px-3 py-4 text-lg bg-transparent border-l-4 border-transparent cursor-pointer flex justify-between items-center gap-2;
 }
 .item.active {
-  @apply bg-gray-100 border-current;
+  @apply bg-control-bg-hover border-current;
 }
 .content {
   @apply flex flex-col;
