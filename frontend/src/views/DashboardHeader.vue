@@ -15,28 +15,30 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md"
-            >Projects</router-link
-          >
+          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
+            {{ $t("common.projects") }}
+          </router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md"
-            >Databases</router-link
-          >
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
+            $t("common.databases")
+          }}</router-link>
 
           <router-link
             v-if="showDBAItem"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
-            >Instances</router-link
+            >{{ $t("common.instances") }}</router-link
           >
 
-          <router-link to="/environment" class="bar-link px-2 py-2 rounded-md"
-            >Environments</router-link
+          <router-link
+            to="/environment"
+            class="bar-link px-2 py-2 rounded-md"
+            >{{ $t("common.environments") }}</router-link
           >
           <router-link
             to="/setting/general"
             class="bar-link px-2 py-2 rounded-md"
-            >Settings</router-link
+            >{{ $t("common.settings") }}</router-link
           >
         </div>
       </div>
@@ -133,21 +135,16 @@
               opacity-75
             "
           ></span>
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            ></path>
-          </svg>
+          <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
+        <!-- TODO test for now, will delete -->
+        <div
+          v-if="showSwitchPlan"
+          class="cursor-pointer"
+          @click="toggleLocales"
+        >
+          <heroicons-outline:translate class="w-6 h-6" />
+        </div>
         <div class="ml-2">
           <ProfileDropdown />
         </div>
@@ -211,7 +208,7 @@
     <router-link
       to="/setting/general"
       class="bar-link rounded-md block px-3 py-2"
-      >Settings</router-link
+      >{{ $t("common.settings") }}</router-link
     >
   </div>
 </template>
@@ -219,6 +216,9 @@
 <script lang="ts">
 import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
+import { useLocalStorage } from "@vueuse/core";
+
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner, isDev } from "../utils";
@@ -298,6 +298,21 @@ export default {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
 
+    const { availableLocales, locale } = useI18n();
+    const storage = useLocalStorage("bytebase_options", {}) as any;
+
+    const toggleLocales = () => {
+      // TODO change to some real logic
+      const locales = availableLocales;
+      locale.value =
+        locales[(locales.indexOf(locale.value) + 1) % locales.length];
+      storage.value = {
+        appearance: {
+          language: locale.value,
+        },
+      };
+    };
+
     return {
       state,
       currentUser,
@@ -311,6 +326,7 @@ export default {
       switchToFree,
       switchToTeam,
       switchToEnterprise,
+      toggleLocales,
     };
   },
 };

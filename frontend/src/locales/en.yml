@@ -1,0 +1,10 @@
+common:
+  save: Save
+  home: Home
+  settings: Settings
+  projects: Projects
+  help: Help
+  databases: Databases
+  instances: Instances
+  environments: Environments
+not-found: Not Found
