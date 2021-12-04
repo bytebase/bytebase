@@ -201,9 +201,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					repositoryCreate.ProjectID,
 					resp.StatusCode,
 				)
+				// Add helper tips if the status code is 422, refer to bytebase#101 for more context.
 				if resp.StatusCode == http.StatusUnprocessableEntity {
-					reason += ".\n\nIf you are making webhook requests in a private network, " +
-						"please follow the instructions in this GitLab Doc: https://bit.ly/32M7WPp"
+					reason += ".\n\nIf GitLab and Bytebase are in the same private network, " +
+						"please follow the instructions in https://docs.gitlab.com/ee/security/webhooks.html"
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, reason)
 			}
