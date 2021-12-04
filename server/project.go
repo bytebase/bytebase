@@ -196,11 +196,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 300 {
-				return echo.NewHTTPError(http.StatusInternalServerError,
-					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d",
-						repositoryCreate.ProjectID,
-						resp.StatusCode,
-					))
+				reason := fmt.Sprintf(
+					"Failed to create webhook for project ID: %d, status code: %d",
+					repositoryCreate.ProjectID,
+					resp.StatusCode,
+				)
+				if resp.StatusCode == http.StatusUnprocessableEntity {
+					reason += ".\n\nIf you are making webhook requests in a private network, " +
+						"please follow the instructions in this GitLab Doc: https://bit.ly/32M7WPp"
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, reason)
 			}
 
 			webhookInfo := &gitlab.WebhookInfo{}
