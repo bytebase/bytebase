@@ -196,11 +196,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 300 {
-				return echo.NewHTTPError(http.StatusInternalServerError,
-					fmt.Sprintf("Failed to create webhook for project ID: %v, status code: %d",
-						repositoryCreate.ProjectID,
-						resp.StatusCode,
-					))
+				reason := fmt.Sprintf(
+					"Failed to create webhook for project ID: %d, status code: %d",
+					repositoryCreate.ProjectID,
+					resp.StatusCode,
+				)
+				// Add helper tips if the status code is 422, refer to bytebase#101 for more context.
+				if resp.StatusCode == http.StatusUnprocessableEntity {
+					reason += ".\n\nIf GitLab and Bytebase are in the same private network, " +
+						"please follow the instructions in https://docs.gitlab.com/ee/security/webhooks.html"
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, reason)
 			}
 
 			webhookInfo := &gitlab.WebhookInfo{}
