@@ -6,5 +6,5 @@ common:
   help: 帮助
   databases: 数据库
   instances: 实例
-  environments: 环境变量
+  environments: 环境
 not-found: 未找到
