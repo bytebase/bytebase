@@ -47,6 +47,16 @@ type LabelSelector struct {
 	MatchExpressions *LabelSelectorRequirement `json:"matchExpressions"`
 }
 
+// OperatorType is the type of label selector requirement operator.
+type OperatorType string
+
+const (
+	// InOperatorType is the operator type for In.
+	InOperatorType OperatorType = "In"
+	// ExistsOperatorType is the operator type for Exists.
+	ExistsOperatorType OperatorType = "Exists"
+)
+
 // LabelSelectorRequirement is the API message for label selector.
 type LabelSelectorRequirement struct {
 	// Key is the label key that the selector applies to.
@@ -54,7 +64,7 @@ type LabelSelectorRequirement struct {
 
 	// Operator represents a key's relationship to a set of values. Valid operators are In, Exists.
 	// Note: NotIn and DoesNotExist are not supported initially.
-	Operator string `json:"operator"`
+	Operator OperatorType `json:"operator"`
 
 	// Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
 	Values []string `json:"values"`
