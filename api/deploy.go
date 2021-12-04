@@ -52,8 +52,11 @@ type LabelSelector struct {
 }
 
 // OperatorType is the type of label selector requirement operator.
+<<<<<<< HEAD
 // Valid operators are In, Exists.
 // Note: NotIn and DoesNotExist are not supported initially.
+=======
+>>>>>>> afccf27f (Tenancy: use enum for operator.)
 type OperatorType string
 
 const (
