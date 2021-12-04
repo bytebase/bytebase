@@ -76,3 +76,5 @@ p, DBA, /plan, GET
 p, DBA, /plan, PATCH
 p, DBA, /setting, GET
 p, DBA, /label, GET
+p, DBA, /deployment/{projectID}, GET
+p, DBA, /deployment/{projectID}, PATCH

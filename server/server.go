@@ -31,36 +31,37 @@ type Server struct {
 
 	CacheService api.CacheService
 
-	SettingService         api.SettingService
-	PrincipalService       api.PrincipalService
-	MemberService          api.MemberService
-	PolicyService          api.PolicyService
-	ProjectService         api.ProjectService
-	ProjectMemberService   api.ProjectMemberService
-	ProjectWebhookService  api.ProjectWebhookService
-	EnvironmentService     api.EnvironmentService
-	InstanceService        api.InstanceService
-	InstanceUserService    api.InstanceUserService
-	DatabaseService        api.DatabaseService
-	TableService           api.TableService
-	ColumnService          api.ColumnService
-	ViewService            api.ViewService
-	IndexService           api.IndexService
-	DataSourceService      api.DataSourceService
-	BackupService          api.BackupService
-	IssueService           api.IssueService
-	IssueSubscriberService api.IssueSubscriberService
-	PipelineService        api.PipelineService
-	StageService           api.StageService
-	TaskService            api.TaskService
-	TaskCheckRunService    api.TaskCheckRunService
-	ActivityService        api.ActivityService
-	InboxService           api.InboxService
-	BookmarkService        api.BookmarkService
-	VCSService             api.VCSService
-	RepositoryService      api.RepositoryService
-	AnomalyService         api.AnomalyService
-	LabelService           api.LabelService
+	SettingService          api.SettingService
+	PrincipalService        api.PrincipalService
+	MemberService           api.MemberService
+	PolicyService           api.PolicyService
+	ProjectService          api.ProjectService
+	ProjectMemberService    api.ProjectMemberService
+	ProjectWebhookService   api.ProjectWebhookService
+	EnvironmentService      api.EnvironmentService
+	InstanceService         api.InstanceService
+	InstanceUserService     api.InstanceUserService
+	DatabaseService         api.DatabaseService
+	TableService            api.TableService
+	ColumnService           api.ColumnService
+	ViewService             api.ViewService
+	IndexService            api.IndexService
+	DataSourceService       api.DataSourceService
+	BackupService           api.BackupService
+	IssueService            api.IssueService
+	IssueSubscriberService  api.IssueSubscriberService
+	PipelineService         api.PipelineService
+	StageService            api.StageService
+	TaskService             api.TaskService
+	TaskCheckRunService     api.TaskCheckRunService
+	ActivityService         api.ActivityService
+	InboxService            api.InboxService
+	BookmarkService         api.BookmarkService
+	VCSService              api.VCSService
+	RepositoryService       api.RepositoryService
+	AnomalyService          api.AnomalyService
+	LabelService            api.LabelService
+	DeploymentConfigService api.DeploymentConfigService
 
 	e *echo.Echo
 
@@ -227,6 +228,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
+	s.registerDeployRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

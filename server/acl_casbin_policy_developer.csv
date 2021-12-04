@@ -67,3 +67,4 @@ p, DEVELOPER, /plan, GET
 p, DEVELOPER, /plan, PATCH
 p, DEVELOPER, /setting, GET
 p, DEVELOPER, /label, GET
+p, DEVELOPER, /deployment/{projectID}, PATCH
