@@ -84,5 +84,3 @@ p, OWNER, /plan, PATCH
 p, OWNER, /setting, GET
 p, OWNER, /setting/{name}, PATCH
 p, OWNER, /label, GET
-p, OWNER, /deployment/{projectID}, GET
-p, OWNER, /deployment/{projectID}, PATCH
