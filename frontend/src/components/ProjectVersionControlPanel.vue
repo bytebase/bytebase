@@ -18,11 +18,12 @@
         <div class="text-lg leading-6 font-medium text-main">
           Current workflow
         </div>
-        <div class="mt-4 flex flex-col space-y-4">
+        <div class="mt-6 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
               v-model="state.workflowType"
               name="UI workflow"
+              id="workflow-ui"
               tabindex="-1"
               type="radio"
               class="
@@ -33,8 +34,8 @@
               value="UI"
               :disabled="!allowEdit"
             />
-            <div class="-mt-0.5">
-              <div class="textlabel">UI workflow (no version control)</div>
+            <div class="-mt-1">
+              <label for="workflow-ui" class="textlabel">UI workflow (no version control)</label>
               <div class="mt-1 textinfolabel">
                 Classic SQL Review workflow where the developer submits a SQL
                 review ticket directly from Bytebase and waits for the assigned
@@ -47,6 +48,7 @@
             <input
               v-model="state.workflowType"
               name="Version control workflow"
+              id="workflow-version-control"
               tabindex="-1"
               type="radio"
               class="
@@ -57,8 +59,8 @@
               value="VCS"
               :disabled="!allowEdit"
             />
-            <div class="-mt-0.5">
-              <div class="textlabel">Version control workflow</div>
+            <div class="-mt-1">
+              <label for="workflow-version-control" class="textlabel">Version control workflow</label>
               <div class="mt-1 textinfolabel">
                 Database migration scripts are stored in a git repository. To
                 make schema changes, a developer would create a migration script
