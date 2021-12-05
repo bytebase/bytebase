@@ -228,7 +228,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
-	s.registerDeployRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
