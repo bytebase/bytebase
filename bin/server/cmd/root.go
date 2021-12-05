@@ -310,6 +310,7 @@ func (m *main) Run(ctx context.Context) error {
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 	s.AnomalyService = store.NewAnomalyService(m.l, db)
 	s.LabelService = store.NewLabelService(m.l, db)
+	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
 

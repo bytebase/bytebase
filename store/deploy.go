@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -32,6 +33,15 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	}
 	defer tx.Rollback()
 
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, "project_id = ?"), append(args, *v)
+	}
+
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -42,7 +52,9 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 			project_id,
 		    name,
 			config
-		FROM deployment_config`,
+		FROM deployment_config
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -74,7 +86,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 
 	switch len(ret) {
 	case 0:
-		return nil, nil
+		return &api.DeploymentConfig{}, nil
 	case 1:
 		return ret[0], nil
 	default:
@@ -101,7 +113,7 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	VALUES (?, ?, ?, ?, ?)
 	ON CONFLICT(project_id) DO UPDATE SET
 		creator_id = excluded.creator_id,
-		updater_id = excluded.updater_id
+		updater_id = excluded.updater_id,
 		name = excluded.name,
 		config = excluded.config
 	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
@@ -130,6 +142,10 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 		&cfg.Name,
 		&cfg.Payload,
 	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
