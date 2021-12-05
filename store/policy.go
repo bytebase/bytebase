@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	_ api.EnvironmentService = (*EnvironmentService)(nil)
+	_ api.PolicyService = (*PolicyService)(nil)
 )
 
 // PolicyService represents a service for managing environment based policies.
