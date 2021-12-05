@@ -14,6 +14,8 @@ p, OWNER, /project/{id}/repository, GET
 p, OWNER, /project/{id}/repository, POST
 p, OWNER, /project/{id}/repository, PATCH
 p, OWNER, /project/{id}/repository, DELETE
+p, OWNER, /project/{id}/deployment, GET
+p, OWNER, /project/{id}/deployment, PATCH
 p, OWNER, /project/{projectID}/member, POST
 p, OWNER, /project/{projectID}/member/{memberID}, PATCH
 p, OWNER, /project/{projectID}/member/{memberID}, DELETE

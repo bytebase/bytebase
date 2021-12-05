@@ -10,6 +10,8 @@ p, DEVELOPER, /project/{id}/repository, GET
 p, DEVELOPER, /project/{id}/repository, POST
 p, DEVELOPER, /project/{id}/repository, PATCH
 p, DEVELOPER, /project/{id}/repository, DELETE
+p, DEVELOPER, /project/{id}/deployment, GET
+p, DEVELOPER, /project/{id}/deployment, PATCH
 p, DEVELOPER, /project/{projectID}/member, POST
 p, DEVELOPER, /project/{projectID}/member/{memberID}, PATCH
 p, DEVELOPER, /project/{projectID}/member/{memberID}, DELETE
