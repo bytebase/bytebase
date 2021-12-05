@@ -3,7 +3,7 @@ repos:
   rev: v2.2.0
   hooks:
     - id: commitlint
-      stages: [merge-commit, commit-msg]
+      stages: [commit-msg]
       additional_dependencies: ['@commitlint/config-conventional']
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.3.0

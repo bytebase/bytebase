@@ -137,7 +137,6 @@ working on the code:
     cd bytebase
     pre-commit install
     pre-commit install --hook-type commit-msg
-    pre-commit install --hook-type pre-commit
    ```
 
 1. Start backend using air (with live reload)
