@@ -8,7 +8,8 @@
     "release-docker": "vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:summary": "SORT_BY=rule DESC=true eslint -f summary --cache --ext .js,.ts,.tsx,.vue src",
-    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
+    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
+    "prepare": "cd .. && husky install ./frontend/.husky"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "^0.1.2",
@@ -49,11 +50,19 @@
     "eslint-formatter-summary": "^1.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-vue": "^8.1.1",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.1.2",
     "prettier": "^2.4.1",
     "typescript": "^4.5.2",
     "vite": "^2.6.14",
     "vite-plugin-components": "^0.13.3",
     "vite-plugin-icons": "^0.6.5",
     "vue-tsc": "^0.29.6"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,vue}": [
+      "eslint . --fix",
+      "git add"
+    ]
   }
 }
