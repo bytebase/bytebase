@@ -56,20 +56,22 @@
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <router-link to="/setting" class="menu-item" role="menuitem"
-          >Settings</router-link
-        >
+        <router-link to="/setting" class="menu-item" role="menuitem">{{
+          $t("common.settings")
+        }}</router-link>
         <a
           v-if="showQuickstart"
           class="menu-item"
           role="menuitem"
           @click.prevent="resetQuickstart"
-          >Quickstart</a
+          >{{ $t("common.quickstart") }}</a
         >
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
-        <a class="menu-item" role="menuitem" @click.prevent="logout">Logout</a>
+        <a class="menu-item" role="menuitem" @click.prevent="logout">{{
+          $t("common.logout")
+        }}</a>
       </div>
     </BBContextMenu>
   </div>
