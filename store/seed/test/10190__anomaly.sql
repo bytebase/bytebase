@@ -36,7 +36,7 @@ VALUES
         6004,
         7014,
         'bb.anomaly.database.backup.policy-violation',
-        '{"environmentID":5004,"expectedSchedule":"DAILY","actualSchedule":"UNSET"}'
+        '{"environmentId":5004,"expectedSchedule":"DAILY","actualSchedule":"UNSET"}'
     );
 
 INSERT INTO
@@ -74,7 +74,7 @@ VALUES
         6003,
         7012,
         'bb.anomaly.database.backup.policy-violation',
-        '{"environmentID":5003,"expectedSchedule":"WEEKLY","actualSchedule":"UNSET"}'
+        '{"environmentId":5003,"expectedSchedule":"WEEKLY","actualSchedule":"UNSET"}'
     );
 
 -- Instance anomalies
