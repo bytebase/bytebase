@@ -33,68 +33,75 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, stageCreate := range issueCreate.Pipeline.StageList {
 			for _, taskCreate := range stageCreate.TaskList {
-				if taskCreate.Type == api.TaskDatabaseCreate {
-					if taskCreate.Statement != "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement should not be set.")
-					}
-					if taskCreate.DatabaseName == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
-					}
-					instanceFind := &api.InstanceFind{
-						ID: &taskCreate.InstanceID,
-					}
-					instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue.").SetInternal(err)
-					}
-					// ClickHouse does not support character set and collation at the database level.
-					if instance.Engine == db.ClickHouse {
-						if taskCreate.CharacterSet != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", taskCreate.CharacterSet),
-							)
+				switch taskCreate.Type {
+				case api.TaskDatabaseCreate:
+					{
+						if taskCreate.Statement != "" {
+							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement should not be set.")
 						}
-						if taskCreate.Collation != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", taskCreate.Collation),
-							)
+						if taskCreate.DatabaseName == "" {
+							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
 						}
-					} else if instance.Engine == db.Snowflake {
-						if taskCreate.CharacterSet != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", taskCreate.CharacterSet),
-							)
+						instanceFind := &api.InstanceFind{
+							ID: &taskCreate.InstanceID,
 						}
-						if taskCreate.Collation != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", taskCreate.Collation),
-							)
+						instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue.").SetInternal(err)
 						}
-					} else {
-						if taskCreate.CharacterSet == "" {
-							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
-						}
-						// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
-						// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
-						// install it.
-						if instance.Engine != db.Postgres && taskCreate.Collation == "" {
-							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
+						// ClickHouse does not support character set and collation at the database level.
+						if instance.Engine == db.ClickHouse {
+							if taskCreate.CharacterSet != "" {
+								return echo.NewHTTPError(
+									http.StatusBadRequest,
+									fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", taskCreate.CharacterSet),
+								)
+							}
+							if taskCreate.Collation != "" {
+								return echo.NewHTTPError(
+									http.StatusBadRequest,
+									fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", taskCreate.Collation),
+								)
+							}
+						} else if instance.Engine == db.Snowflake {
+							if taskCreate.CharacterSet != "" {
+								return echo.NewHTTPError(
+									http.StatusBadRequest,
+									fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", taskCreate.CharacterSet),
+								)
+							}
+							if taskCreate.Collation != "" {
+								return echo.NewHTTPError(
+									http.StatusBadRequest,
+									fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", taskCreate.Collation),
+								)
+							}
+						} else {
+							if taskCreate.CharacterSet == "" {
+								return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
+							}
+							// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+							// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+							// install it.
+							if instance.Engine != db.Postgres && taskCreate.Collation == "" {
+								return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
+							}
 						}
 					}
-				} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-					if taskCreate.Statement == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+				case api.TaskDatabaseSchemaUpdate:
+					{
+						if taskCreate.Statement == "" {
+							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+						}
 					}
-				} else if taskCreate.Type == api.TaskDatabaseRestore {
-					if taskCreate.DatabaseName == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
-					}
-					if taskCreate.BackupID == nil {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, backup missing")
+				case api.TaskDatabaseRestore:
+					{
+						if taskCreate.DatabaseName == "" {
+							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
+						}
+						if taskCreate.BackupID == nil {
+							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, backup missing")
+						}
 					}
 				}
 			}
@@ -423,64 +430,71 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
 			}
-			if taskCreate.Type == api.TaskDatabaseCreate {
-				// Snowflake needs to use upper case of DatabaseName.
-				if instance.Engine == db.Snowflake {
-					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
-				}
-				payload := api.TaskDatabaseCreatePayload{}
-				payload.ProjectID = issueCreate.ProjectID
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.CharacterSet = taskCreate.CharacterSet
-				payload.Collation = taskCreate.Collation
-
-				switch instance.Engine {
-				case db.MySQL, db.TiDB:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
-				case db.Postgres:
-					if taskCreate.Collation == "" {
-						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", taskCreate.DatabaseName, taskCreate.CharacterSet)
-					} else {
-						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+			switch taskCreate.Type {
+			case api.TaskDatabaseCreate:
+				{
+					// Snowflake needs to use upper case of DatabaseName.
+					if instance.Engine == db.Snowflake {
+						taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
 					}
-				case db.ClickHouse:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s`", taskCreate.DatabaseName)
-				case db.Snowflake:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE %s", taskCreate.DatabaseName)
+					payload := api.TaskDatabaseCreatePayload{}
+					payload.ProjectID = issueCreate.ProjectID
+					payload.DatabaseName = taskCreate.DatabaseName
+					payload.CharacterSet = taskCreate.CharacterSet
+					payload.Collation = taskCreate.Collation
+
+					switch instance.Engine {
+					case db.MySQL, db.TiDB:
+						payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+					case db.Postgres:
+						if taskCreate.Collation == "" {
+							payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", taskCreate.DatabaseName, taskCreate.CharacterSet)
+						} else {
+							payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
+						}
+					case db.ClickHouse:
+						payload.Statement = fmt.Sprintf("CREATE DATABASE `%s`", taskCreate.DatabaseName)
+					case db.Snowflake:
+						payload.Statement = fmt.Sprintf("CREATE DATABASE %s", taskCreate.DatabaseName)
+					}
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
 				}
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+			case api.TaskDatabaseSchemaUpdate:
+				{
+					payload := api.TaskDatabaseSchemaUpdatePayload{}
+					payload.MigrationType = taskCreate.MigrationType
+					payload.Statement = taskCreate.Statement
+					if taskCreate.RollbackStatement != "" {
+						payload.RollbackStatement = taskCreate.RollbackStatement
+					}
+					if taskCreate.VCSPushEvent != nil {
+						payload.VCSPushEvent = taskCreate.VCSPushEvent
+					}
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
 				}
-				taskCreate.Payload = string(bytes)
-			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				payload.MigrationType = taskCreate.MigrationType
-				payload.Statement = taskCreate.Statement
-				if taskCreate.RollbackStatement != "" {
-					payload.RollbackStatement = taskCreate.RollbackStatement
+			case api.TaskDatabaseRestore:
+				{
+					// Snowflake needs to use upper case of DatabaseName.
+					if instance.Engine == db.Snowflake {
+						taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+					}
+					payload := api.TaskDatabaseRestorePayload{}
+					payload.DatabaseName = taskCreate.DatabaseName
+					payload.BackupID = *taskCreate.BackupID
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
 				}
-				if taskCreate.VCSPushEvent != nil {
-					payload.VCSPushEvent = taskCreate.VCSPushEvent
-				}
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
-				}
-				taskCreate.Payload = string(bytes)
-			} else if taskCreate.Type == api.TaskDatabaseRestore {
-				// Snowflake needs to use upper case of DatabaseName.
-				if instance.Engine == db.Snowflake {
-					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
-				}
-				payload := api.TaskDatabaseRestorePayload{}
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.BackupID = *taskCreate.BackupID
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
-				}
-				taskCreate.Payload = string(bytes)
 			}
 			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
 				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
