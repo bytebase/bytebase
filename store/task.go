@@ -137,10 +137,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			not_before_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, not_before_ts"+`
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -151,6 +152,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			create.Status,
 			create.Type,
 			create.Payload,
+			create.NotBeforeTs,
 		)
 	} else {
 		row, err = tx.QueryContext(ctx, `
@@ -164,10 +166,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			not_before_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, not_before_ts"+`
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -179,6 +182,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			create.Status,
 			create.Type,
 			create.Payload,
+			create.NotBeforeTs,
 		)
 	}
 
@@ -206,6 +210,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.Status,
 		&task.Type,
 		&task.Payload,
+		&task.NotBeforeTs,
 	); err != nil {
 		return nil, FormatError(err)
 	}
