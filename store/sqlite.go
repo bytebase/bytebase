@@ -138,15 +138,13 @@ func (db *DB) Open() (err error) {
 }
 
 func (db *DB) version() (ver version, err error) {
-	var rows *sql.Rows
-	rows, err = db.Db.Query("PRAGMA user_version")
-	if err != nil {
+	row := db.Db.QueryRow("PRAGMA user_version")
+	if err = row.Err(); err != nil {
 		return
 	}
 
 	var version int
-	rows.Next()
-	if err = rows.Scan(&version); err != nil {
+	if err = row.Scan(&version); err != nil {
 		return
 	}
 
