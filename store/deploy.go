@@ -97,7 +97,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 // UpsertDeploymentConfig upserts a deployment configuration to a project.
 func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	// Validate the deployment configuration.
-	if _, err := api.GetDeploymentSchedule(upsert.Payload); err != nil {
+	if _, err := api.ValidateAndGetDeploymentSchedule(upsert.Payload); err != nil {
 		return nil, err
 	}
 

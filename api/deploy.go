@@ -107,9 +107,9 @@ type DeploymentConfigService interface {
 	UpsertDeploymentConfig(ctx context.Context, upsert *DeploymentConfigUpsert) (*DeploymentConfig, error)
 }
 
-// GetDeploymentSchedule validates and returns the deployment schedule.
+// ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
 // Note: this validation only checks whether the payloads is a valid json, however, invalid field name errors are ignored.
-func GetDeploymentSchedule(payload string) (*DeploymentSchedule, error) {
+func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, error) {
 	schedule := &DeploymentSchedule{}
 	if err := json.Unmarshal([]byte(payload), schedule); err != nil {
 		return nil, err
@@ -126,6 +126,8 @@ func GetDeploymentSchedule(payload string) (*DeploymentSchedule, error) {
 				if len(e.Values) > 0 {
 					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator shouldn't have values", e.Key, e.Operator))
 				}
+			default:
+				return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q has invalid operator %q", e.Key, e.Operator))
 			}
 		}
 	}

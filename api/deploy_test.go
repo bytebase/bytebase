@@ -15,7 +15,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 	}{
 		{
 			"complexDeployments",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"IN","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"EXISTS"}]}}}]}`,
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{
 				Deployments: []*Deployment{
 					{
@@ -24,7 +24,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
 										Key:      "location",
-										Operator: "IN",
+										Operator: "In",
 										Values:   []string{"us-central1", "europe-west1"},
 									},
 								},
@@ -37,7 +37,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
 										Key:      "location",
-										Operator: "EXISTS",
+										Operator: "Exists",
 										Values:   nil,
 									},
 								},
@@ -50,7 +50,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 		},
 		{
 			"invalidPayload",
-			`{"unmatchdeployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"IN","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"EXISTS"}]}}}]}`,
+			`{"unmatchdeployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{},
 			false,
 		},
@@ -60,10 +60,28 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			nil,
 			true,
 		},
+		{
+			"inOperatorWithNoValue",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In"}]}}}]}`,
+			nil,
+			true,
+		},
+		{
+			"existsOperatorWithValues",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
+			nil,
+			true,
+		},
+		{
+			"invalidOperator",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"invalid"}]}}}]}`,
+			nil,
+			true,
+		},
 	}
 
 	for _, test := range tests {
-		cfg, err := GetDeploymentSchedule(test.payload)
+		cfg, err := ValidateAndGetDeploymentSchedule(test.payload)
 		if err != nil != test.wantErr {
 			t.Errorf("%q: GetDeploymentSchedule(%q) got error %v, wantErr %v.", test.name, test.payload, err, test.wantErr)
 		}
