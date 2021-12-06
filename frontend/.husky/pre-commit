@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
-cd frontend
-npm run lint
+. "$(dirname "$0")/_/husky.sh"
+cd frontend && npx lint-staged
