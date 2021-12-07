@@ -9,7 +9,7 @@
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:summary": "SORT_BY=rule DESC=true eslint -f summary --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
-    "lint-staged": "lint-staged",
+    "lint:staged": "lint-staged",
     "prepare": "cd .. && husky install ./frontend/.husky"
   },
   "dependencies": {
