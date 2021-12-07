@@ -7,4 +7,9 @@ common:
   databases: 数据库
   instances: 实例
   environments: 环境
+  bookmarks: 书签
+  archive: 归档
+  quickstart: 快速入门
+  logout: 登出
 not-found: 未找到
+anomaly-center: 异常中心

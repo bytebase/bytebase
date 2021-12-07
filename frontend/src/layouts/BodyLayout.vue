@@ -76,7 +76,7 @@
                 d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
               ></path>
             </svg>
-            Archive
+            {{ $t("common.archive") }}
           </router-link>
           <div
             class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
@@ -84,15 +84,7 @@
             <a
               href="https://docs.bytebase.com"
               target="_blank"
-              class="
-                flex
-                justify-between
-                items-center
-                w-full
-                flex-shrink-0
-                text-main
-                group
-              "
+              class="flex justify-between items-center w-full flex-shrink-0 text-main group"
             >
               <div class="flex items-center">
                 <svg
@@ -146,7 +138,7 @@
               d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
             ></path>
           </svg>
-          Archive
+          {{ $t("common.archive") }}
         </router-link>
         <div
           v-if="showQuickstart"
@@ -188,7 +180,7 @@
                   d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 ></path>
               </svg>
-              <span class="text-sm">{{ $t('common.help') }}</span>
+              <span class="text-sm">{{ $t("common.help") }}</span>
             </div>
             <div class="text-sm">{{ version }}</div>
           </a>
