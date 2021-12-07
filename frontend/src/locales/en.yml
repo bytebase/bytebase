@@ -7,4 +7,9 @@ common:
   databases: Databases
   instances: Instances
   environments: Environments
+  bookmarks: Bookmarks
+  quick-action: Quick Action
 not-found: Not Found
+kbar:
+  recent-visited: Recent Visited
+  navigation: Navigation

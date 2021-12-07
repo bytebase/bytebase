@@ -30,6 +30,8 @@ import { useRouter } from "vue-router";
 import RenderResults from "./RenderResults.vue";
 import KBarHelper from "./KBarHelper.vue";
 import KBarFooter from "./KBarFooter.vue";
+import { useI18n } from "vue-i18n";
+import { useRecentVisitHistory } from "./useRecentVisit";
 
 export default defineComponent({
   name: "KBarWrapper",
@@ -44,6 +46,7 @@ export default defineComponent({
     KBarFooter,
   },
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -59,17 +62,23 @@ export default defineComponent({
         id: "bb.navigation.home",
         name: "Home",
         shortcut: ["g", "h"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.home" }),
       }),
       defineAction({
         id: "bb.navigation.anomaly-center",
         name: "Anomaly Center",
         shortcut: ["g", "a", "c"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.anomaly-center" }),
       }),
     ];
+
+    // recording page navigation history
+    // for `useRecentVisitActions`
+    useRecentVisitHistory();
 
     return {
       globalActions,

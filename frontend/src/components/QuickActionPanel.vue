@@ -1,12 +1,6 @@
 <template>
   <div
-    class="
-      pt-1
-      overflow-hidden
-      grid grid-cols-4
-      gap-x-2 gap-y-4
-      md:inline-flex md:gap-x-0
-    "
+    class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0"
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
@@ -55,13 +49,7 @@
           </svg>
         </router-link>
         <h3
-          class="
-            mt-1
-            text-center text-base
-            font-normal
-            text-main
-            tracking-tight
-          "
+          class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
           Manage User
         </h3>
@@ -88,13 +76,7 @@
           </svg>
         </button>
         <h3
-          class="
-            mt-1
-            text-center text-base
-            font-normal
-            text-main
-            tracking-tight
-          "
+          class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
           Query
         </h3>
@@ -121,13 +103,7 @@
           </svg>
         </button>
         <h3
-          class="
-            mt-1
-            text-center text-base
-            font-normal
-            text-main
-            tracking-tight
-          "
+          class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
           Edit Data
         </h3>
@@ -154,13 +130,7 @@
           </svg>
         </button>
         <h3
-          class="
-            mt-1
-            text-base text-center
-            font-normal
-            text-main
-            tracking-tight
-          "
+          class="mt-1 text-base text-center font-normal text-main tracking-tight"
         >
           New DB
         </h3>
@@ -187,13 +157,7 @@
           </svg>
         </button>
         <h3
-          class="
-            mt-1
-            text-base text-center
-            font-normal
-            text-main
-            tracking-tight
-          "
+          class="mt-1 text-base text-center font-normal text-main tracking-tight"
         >
           Request DB
         </h3>
@@ -444,6 +408,7 @@ import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
 import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showModal: boolean;
@@ -469,6 +434,7 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const router = useRouter();
     const store = useStore();
 
@@ -603,7 +569,8 @@ export default defineComponent({
           const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
           return defineAction({
             id,
-            section: "Quick Action",
+            section: t("common.quick-action"),
+            keywords: "quick action",
             ...QuickActionMap[qa],
           });
         });

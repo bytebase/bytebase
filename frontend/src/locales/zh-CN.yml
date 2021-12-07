@@ -7,4 +7,9 @@ common:
   databases: 数据库
   instances: 实例
   environments: 环境
+  bookmarks: 书签
+  quick-action: 快捷操作
 not-found: 未找到
+kbar:
+  recent-visited: 最近访问
+  navigation: 导航
