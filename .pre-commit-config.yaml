@@ -1,4 +1,10 @@
 repos:
+- repo: local
+  hooks:
+    - id: eslint
+      name: eslint
+      language: system
+      entry: sh scripts/eslint.sh
 - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
   rev: v2.2.0
   hooks:
