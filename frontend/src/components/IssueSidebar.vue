@@ -87,7 +87,13 @@
         <div
           class="col-span-2 text-sm font-medium text-main"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
-          @click.prevent="clickDatabase"
+          @click.prevent="
+            {
+              if (isDatabaseCreated) {
+                clickDatabase();
+              }
+            }
+          "
         >
           {{ databaseName }}
           <span class="text-control-light">{{
@@ -366,31 +372,27 @@ export default {
     // Will fix this in another branch.
     const clickDatabase = () => {
       // If the database has not been created yet, do nothing
-      if (!isDatabaseCreated.value) {
-        return;
+      if (props.database && props.database.value) {
+        router.push({
+          name: "workspace.database.detail",
+          params: {
+            databaseSlug: databaseSlug(props.database.value),
+          },
+        });
       } else {
-        if (props.database && props.database.value) {
-          router.push({
-            name: "workspace.database.detail",
-            params: {
-              databaseSlug: databaseSlug(props.database.value),
-            },
-          });
-        } else {
-          store
-            .dispatch("database/fetchDatabaseByInstanceIdAndName", {
-              instanceId: props.instance.id,
-              name: databaseName.value,
-            })
-            .then((database: Database) => {
-              router.push({
-                name: "workspace.database.detail",
-                params: {
-                  databaseSlug: databaseSlug(database),
-                },
-              });
+        store
+          .dispatch("database/fetchDatabaseByInstanceIdAndName", {
+            instanceId: props.instance.id,
+            name: databaseName.value,
+          })
+          .then((database: Database) => {
+            router.push({
+              name: "workspace.database.detail",
+              params: {
+                databaseSlug: databaseSlug(database),
+              },
             });
-        }
+          });
       }
     };
 
