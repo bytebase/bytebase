@@ -89,21 +89,21 @@ deployment_config:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: test
   deployments:
     spec:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: staging
   deployments:
     spec:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: prod
 ```
 Example 2: Deploy to canary company tenants, then all company tenants.
@@ -114,17 +114,17 @@ deployment_config:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: canary
         matchExpressions:
           key: company
-          operator: EXISTS
+          operator: Exists
   deployments:
     spec:
       selector:
         matchExpressions:
           key: company
-          operator: EXISTS
+          operator: Exists
 ```
 Example 3: Slow rollout to all regions over four days.
 ```
@@ -134,28 +134,28 @@ deployment_config:
       selector:
         matchExpressions:
           key: region
-          operator: IN
+          operator: In
           values: us-west1
   deployments:
     spec:
       selector:
         matchExpressions:
           key: region
-          operator: IN
+          operator: In
           values: us-west2, us-central, us-central2
   deployments:
     spec:
       selector:
         matchExpressions:
           key: region
-          operator: IN
+          operator: In
           values: europe-west1, europe-west2
   deployments:
     spec:
       selector:
         matchExpressions:
           key: region
-          operator: EXISTS
+          operator: Exists
 ```
 Example 4: This illustrates the compatibility with Octopus deployment model in the Appendix section.
 ```
@@ -165,44 +165,44 @@ deployment_config:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: development
         matchExpressions:
           key: tenant
-          operator: IN
+          operator: In
           values: internal
   deployments:
     spec:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: test
         matchExpressions:
           key: tenant
-          operator: IN
+          operator: In
           values: internal
   deployments:
     spec:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: staging
         matchExpressions:
           key: tenant
-          operator: IN
+          operator: In
           values: "Companion Care", "Pet HealthCenter"
   deployments:
     spec:
       selector:
         matchExpressions:
           key: environment
-          operator: IN
+          operator: In
           values: production
         matchExpressions:
           key: tenant
-          operator: IN
+          operator: In
           values: "Capital Animal Hospital", "Companion Care", "Pet HealthCenter"
 ```
 
@@ -217,6 +217,10 @@ Since we will still take the database name that's plugged to deployment configur
 ```
 {{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql
 ```
+
+#### Other Workflows
+- Database Schema Baseline: this creates a schema baseline when an existing database is added to Bytebase system. This follows the exact Schema Change workflow process above.
+- Database Create: this creates a new database of an instance. This workflow follows along instances than databases so there is no tenant support at the moment unless we apply tenant and label to instances.
 
 ### Permissions
 - Available label keys: workspace owners can read/write; developers can read.
