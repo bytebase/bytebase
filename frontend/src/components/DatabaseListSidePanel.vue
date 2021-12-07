@@ -1,7 +1,7 @@
 <template>
   <BBOutline
     :id="'database'"
-    :title="'Databases'"
+    :title="$t('common.databases')"
     :item-list="databaseListByEnvironment"
     :allow-collapse="false"
   />

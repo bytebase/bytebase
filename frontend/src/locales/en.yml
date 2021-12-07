@@ -7,4 +7,9 @@ common:
   databases: Databases
   instances: Instances
   environments: Environments
+  bookmarks: Bookmarks
+  archive: Archive
+  quickstart: Quickstart
+  logout: Logout
 not-found: Not Found
+anomaly-center: Anomaly Center
