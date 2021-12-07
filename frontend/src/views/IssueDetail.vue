@@ -6,49 +6,19 @@
   >
     <div
       v-if="showCancelBanner"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-gray-400
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
     >
       Canceled
     </div>
     <div
       v-else-if="showSuccessBanner"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-success
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
     >
       Done
     </div>
     <div
       v-else-if="showPendingApproval"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-accent
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
     >
       Waiting Approval
     </div>
@@ -114,12 +84,7 @@
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
           <div
-            class="
-              py-6
-              lg:pl-4 lg:w-96
-              xl:w-112
-              lg:border-l lg:border-block-border
-            "
+            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
           >
             <IssueSidebar
               :issue="issue"
