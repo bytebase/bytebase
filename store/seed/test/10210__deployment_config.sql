@@ -15,5 +15,5 @@ VALUES
         101,
         3005,
         'regional',
-        '{"deployment_config":{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"IN","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"EXISTS"}]}}}]}}'
+        '{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"IN","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"EXISTS"}]}}}]}'
     );
