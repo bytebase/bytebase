@@ -87,7 +87,13 @@
         <div
           class="col-span-2 text-sm font-medium text-main"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
-          @click.prevent="clickDatabase"
+          @click.prevent="
+            {
+              if (isDatabaseCreated) {
+                clickDatabase();
+              }
+            }
+          "
         >
           {{ databaseName }}
           <span class="text-control-light">{{
@@ -365,7 +371,8 @@ export default {
     // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
     // Will fix this in another branch.
     const clickDatabase = () => {
-      if (props.database.value) {
+      // If the database has not been created yet, do nothing
+      if (props.database && props.database.value) {
         router.push({
           name: "workspace.database.detail",
           params: {
