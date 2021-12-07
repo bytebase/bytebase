@@ -365,6 +365,11 @@ export default {
     // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
     // Will fix this in another branch.
     const clickDatabase = () => {
+      // If the database has not been created yet
+      if (!props.database) {
+        return;
+      }
+
       if (props.database.value) {
         router.push({
           name: "workspace.database.detail",
