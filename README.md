@@ -132,7 +132,12 @@ working on the code:
 1. Set up pre-commit hooks
 
    - Install [pre-commit](https://pre-commit.com/index.html#install)
-   - Run `pre-commit install` inside the `bytebase` directory
+
+   ```bash
+    cd bytebase
+    pre-commit install
+    pre-commit install --hook-type commit-msg
+   ```
 
 1. Start backend using air (with live reload)
 
