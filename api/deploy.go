@@ -2,6 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // DeploymentConfig is the API message for deployment configurations.
@@ -44,7 +48,7 @@ type DeploymentSpec struct {
 // LabelSelector is the API message for label selector.
 type LabelSelector struct {
 	// MatchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions *LabelSelectorRequirement `json:"matchExpressions"`
+	MatchExpressions []*LabelSelectorRequirement `json:"matchExpressions"`
 }
 
 // OperatorType is the type of label selector requirement operator.
@@ -101,4 +105,31 @@ type DeploymentConfigService interface {
 	FindDeploymentConfig(ctx context.Context, find *DeploymentConfigFind) (*DeploymentConfig, error)
 	// UpsertDeploymentConfig upserts a deployment configuration to a project.
 	UpsertDeploymentConfig(ctx context.Context, upsert *DeploymentConfigUpsert) (*DeploymentConfig, error)
+}
+
+// ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
+// Note: this validation only checks whether the payloads is a valid json, however, invalid field name errors are ignored.
+func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, error) {
+	schedule := &DeploymentSchedule{}
+	if err := json.Unmarshal([]byte(payload), schedule); err != nil {
+		return nil, err
+	}
+
+	for _, d := range schedule.Deployments {
+		for _, e := range d.Spec.Selector.MatchExpressions {
+			switch e.Operator {
+			case InOperatorType:
+				if len(e.Values) <= 0 {
+					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator should have at least one value", e.Key, e.Operator))
+				}
+			case ExistsOperatorType:
+				if len(e.Values) > 0 {
+					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator shouldn't have values", e.Key, e.Operator))
+				}
+			default:
+				return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q has invalid operator %q", e.Key, e.Operator))
+			}
+		}
+	}
+	return schedule, nil
 }
