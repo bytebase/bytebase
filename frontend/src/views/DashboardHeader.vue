@@ -47,15 +47,7 @@
       <div class="flex items-center space-x-3">
         <div
           v-if="showSwitchPlan"
-          class="
-            hidden
-            md:flex
-            sm:flex-row
-            items-center
-            space-x-2
-            text-sm
-            font-medium
-          "
+          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">Plan</span>
           <div
@@ -85,15 +77,7 @@
         </div>
         <div
           v-if="!isRelease"
-          class="
-            hidden
-            md:flex
-            sm:flex-row
-            items-center
-            space-x-2
-            text-sm
-            font-medium
-          "
+          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">Role</span>
           <div
@@ -124,16 +108,7 @@
         <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.hasUnread"
-            class="
-              absolute
-              rounded-full
-              ml-4
-              -mt-1
-              h-2.5
-              w-2.5
-              bg-accent
-              opacity-75
-            "
+            class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
@@ -233,6 +208,7 @@ export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
   setup() {
+    const { t, availableLocales, locale } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -301,67 +277,101 @@ export default {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
 
-    const kbarActions = [
+    const kbarActions = computed(() => [
       defineAction({
         id: "bb.navigation.projects",
         name: "Projects",
         shortcut: ["g", "p"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.project" }),
       }),
       defineAction({
         id: "bb.navigation.databases",
         name: "Databases",
-        keywords: "db",
         shortcut: ["g", "d"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation db",
         perform: () => router.push({ name: "workspace.database" }),
       }),
       defineAction({
         id: "bb.navigation.instances",
         name: "Instances",
         shortcut: ["g", "i"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.instance" }),
       }),
       defineAction({
         id: "bb.navigation.environments",
         name: "Environments",
         shortcut: ["g", "e"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.environment" }),
       }),
       defineAction({
         id: "bb.navigation.settings",
         name: "Settings",
         shortcut: ["g", "s"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "setting.workspace.general" }),
       }),
       defineAction({
         id: "bb.navigation.inbox",
         name: "Inbox",
         shortcut: ["g", "m"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "setting.inbox" }),
       }),
-    ];
+    ]);
     useRegisterActions(kbarActions);
 
-    const { availableLocales, locale } = useI18n();
     const storage = useLocalStorage("bytebase_options", {}) as any;
+
+    const setLocale = (lang: string) => {
+      locale.value = lang;
+      storage.value = {
+        appearance: {
+          language: lang,
+        },
+      };
+    };
 
     const toggleLocales = () => {
       // TODO change to some real logic
       const locales = availableLocales;
-      locale.value =
+      const nextLocale =
         locales[(locales.indexOf(locale.value) + 1) % locales.length];
-      storage.value = {
-        appearance: {
-          language: locale.value,
-        },
-      };
+      setLocale(nextLocale);
     };
+
+    const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
+    const i18nChangeAction = computed(() =>
+      defineAction({
+        // here `id` is "bb.preferences.locale"
+        id: I18N_CHANGE_ACTION_ID_NAMESPACE,
+        section: t("kbar.preferences.common"),
+        name: t("kbar.preferences.change-language"),
+        keywords: "language lang locale",
+      })
+    );
+    const i18nActions = computed(() => [
+      i18nChangeAction.value,
+      ...availableLocales.map((lang) => {
+        return defineAction({
+          // here `id` looks like "bb.preferences.locale.en"
+          id: `${I18N_CHANGE_ACTION_ID_NAMESPACE}.${lang}`,
+          name: lang,
+          parent: I18N_CHANGE_ACTION_ID_NAMESPACE,
+          keywords: `language lang locale ${lang}`,
+          perform: () => setLocale(lang),
+        });
+      }),
+    ]);
+    useRegisterActions(i18nActions);
 
     return {
       state,

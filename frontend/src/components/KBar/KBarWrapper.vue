@@ -1,16 +1,19 @@
 <template>
-  <KBarProvider :actions="globalActions" :options="{ disabled }">
+  <KBarProvider
+    :actions="globalActions"
+    :options="{ placeholder, disabled, compare }"
+  >
     <KBarPortal>
       <KBarPositioner class="mask">
         <KBarAnimator class="container">
           <KBarSearch class="searchbox" />
-          <KBarHelper />
           <RenderResults />
           <KBarFooter />
         </KBarAnimator>
       </KBarPositioner>
     </KBarPortal>
 
+    <KBarHelper />
     <slot />
   </KBarProvider>
 </template>
@@ -25,11 +28,13 @@ import {
   KBarSearch,
   defineAction,
 } from "@bytebase/vue-kbar";
+import { compareAction as compare } from "./utils";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RenderResults from "./RenderResults.vue";
 import KBarHelper from "./KBarHelper.vue";
 import KBarFooter from "./KBarFooter.vue";
+import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   name: "KBarWrapper",
@@ -44,8 +49,11 @@ export default defineComponent({
     KBarFooter,
   },
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
+
+    const placeholder = computed(() => t("kbar.options.placeholder"));
 
     const disabled = computed(() => {
       const currentUser = store.getters["auth/currentUser"]();
@@ -54,26 +62,30 @@ export default defineComponent({
       return !currentUser || currentUser.id < 0;
     });
 
-    const globalActions = [
+    const globalActions = computed(() => [
       defineAction({
         id: "bb.navigation.home",
         name: "Home",
         shortcut: ["g", "h"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.home" }),
       }),
       defineAction({
         id: "bb.navigation.anomaly-center",
         name: "Anomaly Center",
         shortcut: ["g", "a", "c"],
-        section: "Navigation",
+        section: t("kbar.navigation"),
+        keywords: "navigation",
         perform: () => router.push({ name: "workspace.anomaly-center" }),
       }),
-    ];
+    ]);
 
     return {
       globalActions,
+      placeholder,
       disabled,
+      compare,
     };
   },
 });

@@ -16,11 +16,13 @@ import { projectName, projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "ProjectListSidePanel",
   props: {},
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -60,7 +62,7 @@ export default {
         defineAction({
           // here `id` looks like "bb.project.1234"
           id: `bb.project.${proj.id}`,
-          section: "Projects",
+          section: t("common.projects"),
           name: proj.name,
           keywords: "project",
           perform: () => {

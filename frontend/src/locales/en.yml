@@ -8,8 +8,22 @@ common:
   instances: Instances
   environments: Environments
   bookmarks: Bookmarks
+  quick-action: Quick Action
   archive: Archive
   quickstart: Quickstart
   logout: Logout
 not-found: Not Found
 anomaly-center: Anomaly Center
+kbar:
+  recently-visited: Recently Visited
+  navigation: Navigation
+  help:
+    navigate: to navigate
+    perform: to perform
+    close: to close
+    back: to back
+  options:
+    placeholder: Type a command or search…
+  preferences:
+    common: Preferences
+    change-language: Change Language…
