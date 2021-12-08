@@ -13,20 +13,9 @@
       >
         <div class="text-lg leading-6 font-medium text-main">Unread</div>
         <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
-          <svg
+          <heroicons-outline:check
             class="-ml-1 mr-2 h-5 w-5 text-control-light"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 13l4 4L19 7"
-            ></path>
-          </svg>
+          />
           <span>Mark all as read</span>
         </button>
       </div>
