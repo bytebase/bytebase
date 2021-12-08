@@ -1,16 +1,19 @@
 <template>
-  <KBarProvider :actions="globalActions" :options="{ disabled }">
+  <KBarProvider
+    :actions="globalActions"
+    :options="{ placeholder, disabled, compare }"
+  >
     <KBarPortal>
       <KBarPositioner class="mask">
         <KBarAnimator class="container">
           <KBarSearch class="searchbox" />
-          <KBarHelper />
           <RenderResults />
           <KBarFooter />
         </KBarAnimator>
       </KBarPositioner>
     </KBarPortal>
 
+    <KBarHelper />
     <slot />
   </KBarProvider>
 </template>
@@ -25,13 +28,13 @@ import {
   KBarSearch,
   defineAction,
 } from "@bytebase/vue-kbar";
+import { compareAction as compare } from "./utils";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RenderResults from "./RenderResults.vue";
 import KBarHelper from "./KBarHelper.vue";
 import KBarFooter from "./KBarFooter.vue";
 import { useI18n } from "vue-i18n";
-import { useRecentVisitHistory } from "./useRecentVisit";
 
 export default defineComponent({
   name: "KBarWrapper",
@@ -50,6 +53,8 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
+    const placeholder = computed(() => t("kbar.options.placeholder"));
+
     const disabled = computed(() => {
       const currentUser = store.getters["auth/currentUser"]();
       // totally disable kbar when not logged in
@@ -57,7 +62,7 @@ export default defineComponent({
       return !currentUser || currentUser.id < 0;
     });
 
-    const globalActions = [
+    const globalActions = computed(() => [
       defineAction({
         id: "bb.navigation.home",
         name: "Home",
@@ -74,15 +79,13 @@ export default defineComponent({
         keywords: "navigation",
         perform: () => router.push({ name: "workspace.anomaly-center" }),
       }),
-    ];
-
-    // recording page navigation history
-    // for `useRecentVisitActions`
-    useRecentVisitHistory();
+    ]);
 
     return {
       globalActions,
+      placeholder,
       disabled,
+      compare,
     };
   },
 });

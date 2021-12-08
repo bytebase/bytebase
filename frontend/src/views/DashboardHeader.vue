@@ -277,7 +277,7 @@ export default {
       store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
     };
 
-    const kbarActions = [
+    const kbarActions = computed(() => [
       defineAction({
         id: "bb.navigation.projects",
         name: "Projects",
@@ -326,22 +326,49 @@ export default {
         keywords: "navigation",
         perform: () => router.push({ name: "setting.inbox" }),
       }),
-    ];
+    ]);
     useRegisterActions(kbarActions);
 
     const storage = useLocalStorage("bytebase_options", {}) as any;
 
-    const toggleLocales = () => {
-      // TODO change to some real logic
-      const locales = availableLocales;
-      locale.value =
-        locales[(locales.indexOf(locale.value) + 1) % locales.length];
+    const setLocale = (lang: string) => {
+      locale.value = lang;
       storage.value = {
         appearance: {
           language: locale.value,
         },
       };
     };
+
+    const toggleLocales = () => {
+      // TODO change to some real logic
+      const locales = availableLocales;
+      const nextLocale =
+        locales[(locales.indexOf(locale.value) + 1) % locales.length];
+      setLocale(nextLocale);
+    };
+
+    const i18nChangeAction = computed(() =>
+      defineAction({
+        id: "bb.preferences.locale",
+        section: t("kbar.preferences.common"),
+        name: t("kbar.preferences.change_language"),
+        keywords: `language lang locale`,
+      })
+    );
+    const i18nActions = computed(() => [
+      i18nChangeAction.value,
+      ...availableLocales.map((lang) => {
+        return defineAction({
+          id: `bb.preferences.locale.${lang}`,
+          name: lang,
+          parent: "bb.preferences.locale",
+          keywords: `language lang locale ${lang}`,
+          perform: () => setLocale(lang),
+        });
+      }),
+    ]);
+    useRegisterActions(i18nActions);
 
     return {
       state,
@@ -357,6 +384,7 @@ export default {
       switchToTeam,
       switchToEnterprise,
       toggleLocales,
+      i18nActions,
     };
   },
 };

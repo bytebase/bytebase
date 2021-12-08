@@ -12,8 +12,10 @@ type RecentVisit = {
 const STORAGE_KEY = "ui.kbar.recent_visit";
 const MAX_HISTORY = 3;
 
-export function useRecentVisitHistory() {
+export function useRecentVisit() {
+  const { t } = useI18n();
   const route = useRoute();
+  const router = useRouter();
   const recentVisit = useStorage(STORAGE_KEY, [] as RecentVisit[]);
   const url = computed(() => {
     if (route.matched.length === 0) {
@@ -89,12 +91,6 @@ export function useRecentVisitHistory() {
       immediate: true,
     }
   );
-}
-
-export function useRecentVisitActions() {
-  const { t } = useI18n();
-  const router = useRouter();
-  const recentVisit = useStorage(STORAGE_KEY, [] as RecentVisit[]);
 
   const actions = computed(() => {
     return recentVisit.value

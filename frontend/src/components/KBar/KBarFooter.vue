@@ -14,7 +14,7 @@
           </g>
         </svg>
       </kbd>
-      <span>to perform</span>
+      <span>{{ $t("kbar.help.perform") }}</span>
     </div>
     <div class="key">
       <kbd>
@@ -43,7 +43,7 @@
           </g>
         </svg>
       </kbd>
-      <span>to navigate</span>
+      <span>{{ $t("kbar.help.navigate") }}</span>
     </div>
     <div class="key">
       <kbd>
@@ -61,7 +61,7 @@
           </g>
         </svg>
       </kbd>
-      <span>to close</span>
+      <span>{{ $t("kbar.help.close") }}</span>
     </div>
   </footer>
 </template>

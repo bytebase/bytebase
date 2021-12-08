@@ -43,10 +43,10 @@
     "@babel/helper-validator-identifier" "^7.15.7"
     to-fast-properties "^2.0.0"
 
-"@bytebase/vue-kbar@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@bytebase/vue-kbar/-/vue-kbar-0.1.3.tgz#5bd2108b2ffc803ca9b58ae0eb3571c101339445"
-  integrity sha512-gTtXyZfT7lZ8eEYzxvs2bpvIsN18m1vxlmW9tecSb47AmyZT/52L42fd1pbI3XymGLU7yq75eL1VpHjWS1+KTg==
+"@bytebase/vue-kbar@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@bytebase/vue-kbar/-/vue-kbar-0.1.4.tgz#5ce6e36142b7d35a59e4db9dac9f49bf73ce8777"
+  integrity sha512-teYoVjbE3aSHptHl0evqCugOOhqJg6CLgQCmvC8j11Qau6Pq9kMeoMb7nrVIgo0sZbknf52VZsHdy/sTUQF2Rw==
   dependencies:
     "@vueuse/core" "^7.1.2"
     match-sorter "^6.3.1"

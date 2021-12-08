@@ -13,3 +13,12 @@ not-found: 未找到
 kbar:
   recent-visited: 最近访问
   navigation: 导航
+  help:
+    navigate: 选择
+    perform: 执行
+    close: 关闭
+  options:
+    placeholder: 输入命令或搜索…
+  preferences:
+    common: 偏好设置
+    change_language: 更改语言…
