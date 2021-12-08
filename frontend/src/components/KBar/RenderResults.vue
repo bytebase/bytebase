@@ -11,6 +11,10 @@
       <div v-else class="item" :class="{ active }" :data-index="index">
         <div class="content">
           <div class="main">
+            <span v-if="isDeepAction(item)" class="parent">
+              {{ findParent(item).name }}
+            </span>
+
             <span>{{ item.name }}</span>
 
             <span v-for="(tag, i) in item.data?.tags" :key="i" class="tag">
@@ -32,19 +36,35 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { useKBarMatches, KBarResults } from "@bytebase/vue-kbar";
+import {
+  useKBarMatches,
+  KBarResults,
+  ActionImpl,
+  useKBarState,
+} from "@bytebase/vue-kbar";
 
 export default defineComponent({
   name: "RenderResults",
   components: { KBarResults },
   setup() {
+    const state = useKBarState();
     const matches = useKBarMatches();
     const itemHeight = (params: { item: any; index: number }) => {
       if (typeof params.item === "string") return 32;
       return 48;
     };
 
-    return { matches, itemHeight };
+    const isDeepAction = (action: ActionImpl): boolean => {
+      return (
+        !!action.parent && action.parent !== state.value.currentRootActionId
+      );
+    };
+
+    const findParent = (child: ActionImpl): ActionImpl => {
+      return state.value.actions.find((action) => action.id === child.parent)!;
+    };
+
+    return { matches, itemHeight, isDeepAction, findParent };
   },
 });
 </script>
@@ -70,6 +90,13 @@ export default defineComponent({
 }
 .subtitle {
   @apply text-xs text-gray-500;
+}
+.parent {
+  @apply text-gray-500;
+}
+.parent::after {
+  content: "›";
+  @apply text-gray-500 mx-1;
 }
 .shortcut {
   @apply grid grid-flow-col gap-1 justify-self-end text-gray-500;

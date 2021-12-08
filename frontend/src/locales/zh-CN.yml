@@ -8,8 +8,22 @@ common:
   instances: 实例
   environments: 环境
   bookmarks: 书签
+  quick-action: 快捷操作
   archive: 归档
   quickstart: 快速入门
   logout: 登出
 not-found: 未找到
 anomaly-center: 异常中心
+kbar:
+  recently-visited: 最近访问
+  navigation: 导航
+  help:
+    navigate: 选择
+    perform: 执行
+    close: 关闭
+    back: 返回
+  options:
+    placeholder: 输入命令或搜索…
+  preferences:
+    common: 偏好设置
+    change-language: 更改语言…
