@@ -1301,6 +1301,41 @@ WHERE
 
 END;
 
+-- db_label stores labels asscociated with databases.
+CREATE TABLE db_label (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    key TEXT NOT NULL REFERENCES label_key (key),
+    value TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('db_label', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_db_label_modification_time`
+AFTER
+UPDATE
+    ON `db_label` FOR EACH ROW BEGIN
+UPDATE
+    `db_label`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- Deployment Configuration.
 -- deployment_config stores deployment configurations at project level.
 CREATE TABLE deployment_config (
