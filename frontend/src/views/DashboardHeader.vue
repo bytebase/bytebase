@@ -348,9 +348,11 @@ export default {
       setLocale(nextLocale);
     };
 
+    const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>
       defineAction({
-        id: "bb.preferences.locale",
+        // here `id` is "bb.preferences.locale"
+        id: I18N_CHANGE_ACTION_ID_NAMESPACE,
         section: t("kbar.preferences.common"),
         name: t("kbar.preferences.change-language"),
         keywords: "language lang locale",
@@ -360,9 +362,10 @@ export default {
       i18nChangeAction.value,
       ...availableLocales.map((lang) => {
         return defineAction({
-          id: `bb.preferences.locale.${lang}`,
+          // here `id` looks like "bb.preferences.locale.en"
+          id: `${I18N_CHANGE_ACTION_ID_NAMESPACE}.${lang}`,
           name: lang,
-          parent: "bb.preferences.locale",
+          parent: I18N_CHANGE_ACTION_ID_NAMESPACE,
           keywords: `language lang locale ${lang}`,
           perform: () => setLocale(lang),
         });
