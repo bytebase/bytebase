@@ -144,7 +144,8 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.connect"
-  | "bb.task-check.instance.migration-schema";
+  | "bb.task-check.instance.migration-schema"
+  | "bb.task-check.timing.earliest-allowed-time";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;

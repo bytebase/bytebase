@@ -5,15 +5,7 @@
       :key="index"
     >
       <button
-        class="
-          inline-flex
-          items-center
-          px-3
-          py-0.5
-          rounded-full
-          text-sm
-          border border-control-border
-        "
+        class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
         :class="buttonStyle(checkRun)"
         @click.prevent="selectTaskCheckRun(checkRun)"
       >
@@ -188,14 +180,16 @@ export default {
         // Put likely failure first.
         const taskCheckRunTypeOrder = (type: TaskCheckType) => {
           switch (type) {
-            case "bb.task-check.database.statement.compatibility":
+            case "bb.task-check.timing.earliest-allowed-time":
               return 0;
-            case "bb.task-check.database.statement.syntax":
+            case "bb.task-check.database.statement.compatibility":
               return 1;
-            case "bb.task-check.database.connect":
+            case "bb.task-check.database.statement.syntax":
               return 2;
-            case "bb.task-check.instance.migration-schema":
+            case "bb.task-check.database.connect":
               return 3;
+            case "bb.task-check.instance.migration-schema":
+              return 4;
             case "bb.task-check.database.statement.fake-advise":
               return 100;
           }
@@ -231,6 +225,8 @@ export default {
           return "Connection";
         case "bb.task-check.instance.migration-schema":
           return "Migration schema";
+        case "bb.task-check.timing.earliest-allowed-time":
+          return "Timing";
       }
     };
 
