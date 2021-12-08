@@ -7,6 +7,7 @@ type IssueTypeGeneral = "bb.issue.general";
 
 type IssueTypeDatabase =
   | "bb.issue.database.create"
+  | "bb.issue.database.restore"
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update";
 
@@ -18,6 +19,8 @@ export type IssueType =
   | IssueTypeDataSource;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
+
+export type IssueMetadata = { [key: string]: any };
 
 export type IssuePayload = { [key: string]: any };
 
@@ -55,6 +58,7 @@ export type IssueCreate = {
   description: string;
   assigneeId: PrincipalId;
   rollbackIssueId?: IssueId;
+  metadata: IssueMetadata;
   payload: IssuePayload;
 };
 

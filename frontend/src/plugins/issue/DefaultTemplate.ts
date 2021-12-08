@@ -32,6 +32,7 @@ const template: IssueTemplate = {
         ],
         name: "Create database pipeline",
       },
+      metadata: {},
       payload: {},
     };
   },
