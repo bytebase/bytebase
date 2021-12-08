@@ -23,7 +23,7 @@
           :class="`lg:grid-cols-${item.length}`"
         >
           <template v-for="(summary, index) in item" :key="index">
-            <div class="p-4 shadow rounded-lg overflow-hidden tooltip-wrapper">
+            <div class="p-4 shadow rounded-lg tooltip-wrapper">
               <span class="text-sm tooltip"
                 >{{ summary.environmentName }} has
                 {{ summary.criticalCount }} CRITICAL,
