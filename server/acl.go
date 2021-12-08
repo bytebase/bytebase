@@ -56,76 +56,10 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		// If the requests is trying to PATCH/DELETE herself, we will change the method signature to
 		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
 		if method == "PATCH" || method == "DELETE" {
-			if strings.HasPrefix(c.Path(), "/api/principal") {
-				pathPrincipalID := c.Param("principalID")
-				if pathPrincipalID != "" {
-					if pathPrincipalID == strconv.Itoa(principalID) {
-						method = method + "_SELF"
-					}
-				}
-			} else if strings.HasPrefix(c.Path(), "/api/activity") {
-				activityIDStr := c.Param("activityID")
-				if activityIDStr != "" {
-					activityID, err := strconv.Atoi(activityIDStr)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s", activityIDStr))
-					}
-					activityFind := &api.ActivityFind{
-						ID: &activityID,
-					}
-					activity, err := s.ActivityService.FindActivity(ctx, activityFind)
-					if err != nil {
-						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Activity ID not found: %d", activityID))
-						}
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-					}
-					if activity.CreatorID == principalID {
-						method = method + "_SELF"
-					}
-				}
-			} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
-				bookmarkIDStr := c.Param("bookmarkID")
-				if bookmarkIDStr != "" {
-					bookmarkID, err := strconv.Atoi(bookmarkIDStr)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s", bookmarkIDStr))
-					}
-					bookmarkFind := &api.BookmarkFind{
-						ID: &bookmarkID,
-					}
-					bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
-					if err != nil {
-						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID))
-						}
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-					}
-					if bookmark.CreatorID == principalID {
-						method = method + "_SELF"
-					}
-				}
-			} else if strings.HasPrefix(c.Path(), "/api/inbox") {
-				inboxIDStr := c.Param("inboxID")
-				if inboxIDStr != "" {
-					inboxID, err := strconv.Atoi(inboxIDStr)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr))
-					}
-					inboxFind := &api.InboxFind{
-						ID: &inboxID,
-					}
-					inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
-					if err != nil {
-						if common.ErrorCode(err) == common.NotFound {
-							return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Inbox ID not found: %d", inboxID))
-						}
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-					}
-					if inbox.ReceiverID == principalID {
-						method = method + "_SELF"
-					}
-				}
+			if isSelf, err := isUpdatingSelf(ctx, c, s, principalID); err != nil {
+				return err
+			} else if isSelf {
+				method = method + "_SELF"
 			}
 		}
 
@@ -153,4 +87,81 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		return next(c)
 	}
+}
+
+func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
+	const defaultErrMsg = "Failed to process authorize request."
+	if strings.HasPrefix(c.Path(), "/api/principal") {
+		pathPrincipalID := c.Param("principalID")
+		if pathPrincipalID != "" {
+			return pathPrincipalID == strconv.Itoa(curPrincipalID), nil
+		}
+	} else if strings.HasPrefix(c.Path(), "/api/activity") {
+		if activityIDStr := c.Param("activityID"); activityIDStr != "" {
+			activityID, err := strconv.Atoi(activityIDStr)
+			if err != nil {
+				msg := "Activity ID is not a number: " + activityIDStr
+				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
+				return false, httpErr
+			}
+			activityFind := &api.ActivityFind{
+				ID: &activityID,
+			}
+			activity, err := s.ActivityService.FindActivity(ctx, activityFind)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					msg := fmt.Sprintf("Activity ID not found: %d", activityID)
+					httpErr := echo.NewHTTPError(http.StatusUnauthorized, msg)
+					return false, httpErr
+				}
+				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+				return false, httpErr
+			}
+			return activity.CreatorID == curPrincipalID, nil
+		}
+	} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
+		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {
+			bookmarkID, err := strconv.Atoi(bookmarkIDStr)
+			if err != nil {
+				msg := "Bookmark ID is not a number: " + bookmarkIDStr
+				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
+				return false, httpErr
+			}
+			bookmarkFind := &api.BookmarkFind{
+				ID: &bookmarkID,
+			}
+			bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					msg := fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)
+					return false, echo.NewHTTPError(http.StatusUnauthorized, msg)
+				}
+				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+				return false, httpErr
+			}
+			return bookmark.CreatorID == curPrincipalID, nil
+		}
+	} else if strings.HasPrefix(c.Path(), "/api/inbox") {
+		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
+			inboxID, err := strconv.Atoi(inboxIDStr)
+			if err != nil {
+				msg := "Inbox ID is not a number: " + inboxIDStr
+				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
+				return false, httpErr
+			}
+			inboxFind := &api.InboxFind{
+				ID: &inboxID,
+			}
+			inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					msg := fmt.Sprintf("Inbox ID not found: %d", inboxID)
+					return false, echo.NewHTTPError(http.StatusUnauthorized, msg)
+				}
+				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			return inbox.ReceiverID == curPrincipalID, nil
+		}
+	}
+	return false, nil
 }

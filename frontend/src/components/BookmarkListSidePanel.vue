@@ -1,7 +1,7 @@
 <template>
   <BBOutline
     :id="'bookmark'"
-    :title="'Bookmarks'"
+    :title="$t('common.bookmarks')"
     :item-list="
       bookmarkList.map((item) => {
         return { name: item.name, link: item.link };

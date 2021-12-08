@@ -9,7 +9,11 @@ common:
   environments: 环境
   bookmarks: 书签
   quick-action: 快捷操作
+  archive: 归档
+  quickstart: 快速入门
+  logout: 登出
 not-found: 未找到
+anomaly-center: 异常中心
 kbar:
   recent-visited: 最近访问
   navigation: 导航

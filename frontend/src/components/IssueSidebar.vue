@@ -65,14 +65,7 @@
       </template>
     </div>
     <div
-      class="
-        mt-6
-        border-t border-block-border
-        pt-6
-        grid
-        gap-y-6 gap-x-6
-        grid-cols-3
-      "
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
       <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -94,7 +87,13 @@
         <div
           class="col-span-2 text-sm font-medium text-main"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
-          @click.prevent="clickDatabase"
+          @click.prevent="
+            {
+              if (isDatabaseCreated) {
+                clickDatabase();
+              }
+            }
+          "
         >
           {{ databaseName }}
           <span class="text-control-light">{{
@@ -127,14 +126,7 @@
       </router-link>
     </div>
     <div
-      class="
-        mt-6
-        border-t border-block-border
-        pt-6
-        grid
-        gap-y-6 gap-x-6
-        grid-cols-3
-      "
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         Project
@@ -379,7 +371,8 @@ export default {
     // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
     // Will fix this in another branch.
     const clickDatabase = () => {
-      if (props.database.value) {
+      // If the database has not been created yet, do nothing
+      if (props.database && props.database.value) {
         router.push({
           name: "workspace.database.detail",
           params: {
@@ -388,13 +381,10 @@ export default {
         });
       } else {
         store
-          .dispatch(
-            "database/fetchDatabaseByInstanceIdAndName",
-            {
-              instanceId: props.instance.id,
-              name: databaseName.value,
-            }
-          )
+          .dispatch("database/fetchDatabaseByInstanceIdAndName", {
+            instanceId: props.instance.id,
+            name: databaseName.value,
+          })
           .then((database: Database) => {
             router.push({
               name: "workspace.database.detail",

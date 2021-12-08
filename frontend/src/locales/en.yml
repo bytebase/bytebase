@@ -10,6 +10,11 @@ common:
   bookmarks: Bookmarks
   quick-action: Quick Action
 not-found: Not Found
+  archive: Archive
+  quickstart: Quickstart
+  logout: Logout
+not-found: Not Found
+anomaly-center: Anomaly Center
 kbar:
   recent-visited: Recent Visited
   navigation: Navigation

@@ -6,49 +6,19 @@
   >
     <div
       v-if="showCancelBanner"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-gray-400
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
     >
       Canceled
     </div>
     <div
       v-else-if="showSuccessBanner"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-success
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
     >
       Done
     </div>
     <div
       v-else-if="showPendingApproval"
-      class="
-        h-8
-        w-full
-        text-base
-        font-medium
-        bg-accent
-        text-white
-        flex
-        justify-center
-        items-center
-      "
+      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
     >
       Waiting Approval
     </div>
@@ -114,12 +84,7 @@
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
           <div
-            class="
-              py-6
-              lg:pl-4 lg:w-96
-              xl:w-112
-              lg:border-l lg:border-block-border
-            "
+            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
           >
             <IssueSidebar
               :issue="issue"
@@ -608,10 +573,10 @@ export default {
       return newIssue;
     };
 
-    const create = props.issueSlug.toLowerCase() == "new";
     const state = reactive<LocalState>({
-      create: create,
-      newIssue: create ? buildNewIssue() : undefined,
+      create: props.issueSlug.toLowerCase() == "new",
+      newIssue:
+        props.issueSlug.toLowerCase() == "new" ? buildNewIssue() : undefined,
     });
 
     // pollIssue invalidates the current timer and schedule a new timer in <<interval>> microseconds
@@ -959,7 +924,6 @@ export default {
           }
         }
       }
-
       if (state.create) {
         return issue.value.pipeline.stageList[0];
       }
@@ -1174,39 +1138,35 @@ export default {
     });
 
     const database = computed((): Database | undefined => {
-      const temp = selectedStage as unknown;
-      if (create) {
-        const stage = temp as ComputedRef<StageCreate>;
-        const databaseId = stage.value.taskList[0].databaseId;
+      if (state.create) {
+        const databaseId = selectedStage.value.taskList[0].databaseId;
         if (databaseId) {
           return store.getters["database/databaseById"](databaseId);
         }
-
         return undefined;
       }
-      const stage = temp as ComputedRef<Stage>;
-      return stage.value.taskList[0].database;
+      return selectedStage.value.taskList[0].database;
     });
 
     const instance = computed((): Instance => {
-      const temp = selectedStage as unknown;
-      if (create) {
+      if (state.create) {
         // If database is available, then we derive the instance from database because we always fetch database's instance.
-        // On the other hand, instance for stage.taskList[0].instanceId might not be loaded (e.g. when creating an update schema issue)
         if (database.value) {
           return database.value.instance;
         }
-        const stage = temp as ComputedRef<StageCreate>;
         return store.getters["instance/instanceById"](
-          stage.value.taskList[0].instanceId
+          selectedStage.value.taskList[0].instanceId
         );
       }
-      const stage = temp as ComputedRef<Stage>;
-      return stage.value.taskList[0].instance;
+      return selectedStage.value.taskList[0].instance;
     });
 
     const sqlHint = (isRollBack: boolean): string | undefined => {
-      if (!isRollBack && !create && selectedMigrateType.value == "BASELINE") {
+      if (
+        !isRollBack &&
+        !state.create &&
+        selectedMigrateType.value == "BASELINE"
+      ) {
         return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
       }
       if (!isRollBack && instance.value.engine === "SNOWFLAKE") {
