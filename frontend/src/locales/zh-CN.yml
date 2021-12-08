@@ -17,6 +17,7 @@ kbar:
     navigate: 选择
     perform: 执行
     close: 关闭
+    back: 返回
   options:
     placeholder: 输入命令或搜索…
   preferences:

@@ -45,6 +45,22 @@
       </kbd>
       <span>{{ $t("kbar.help.navigate") }}</span>
     </div>
+    <div v-if="isDeepAction" class="key">
+      <kbd>
+        <svg width="15" height="15" class="transform rotate-90">
+          <g
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.2"
+          >
+            <path d="M7.5 3.5v8M10.5 8.5l-3 3-3-3"></path>
+          </g>
+        </svg>
+      </kbd>
+      <span>{{ $t("kbar.help.back") }}</span>
+    </div>
     <div class="key">
       <kbd>
         <svg width="15" height="15">
@@ -67,10 +83,20 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { useKBarState } from "@bytebase/vue-kbar";
+import { computed, defineComponent } from "vue";
 
 export default defineComponent({
   name: "KBarFooter",
+  setup() {
+    const state = useKBarState();
+
+    const isDeepAction = computed(() => {
+      return !!state.value.currentRootActionId;
+    });
+
+    return { isDeepAction };
+  },
 });
 </script>
 

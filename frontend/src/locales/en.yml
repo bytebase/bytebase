@@ -17,6 +17,7 @@ kbar:
     navigate: to navigate
     perform: to perform
     close: to close
+    back: to back
   options:
     placeholder: Type a command or search…
   preferences:
