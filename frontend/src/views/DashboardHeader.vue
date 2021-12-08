@@ -352,7 +352,7 @@ export default {
       defineAction({
         id: "bb.preferences.locale",
         section: t("kbar.preferences.common"),
-        name: t("kbar.preferences.change_language"),
+        name: t("kbar.preferences.change-language"),
         keywords: "language lang locale",
       })
     );

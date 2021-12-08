@@ -3,7 +3,7 @@ import { Action, CompareFn } from "@bytebase/vue-kbar";
 const MAX_RANKING = Infinity;
 
 export const ACTION_RANKINGS = [
-  "bb.recent_visited.",
+  "bb.recently_visited.",
   "bb.quickaction.",
   "bb.navigation.",
   "bb.bookmark.",

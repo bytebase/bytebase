@@ -15,7 +15,7 @@ common:
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
-  recent-visited: 最近访问
+  recently-visited: 最近访问
   navigation: 导航
   help:
     navigate: 选择
@@ -26,4 +26,4 @@ kbar:
     placeholder: 输入命令或搜索…
   preferences:
     common: 偏好设置
-    change_language: 更改语言…
+    change-language: 更改语言…

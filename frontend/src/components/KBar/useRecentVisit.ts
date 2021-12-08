@@ -9,7 +9,7 @@ type RecentVisit = {
   url: string;
 };
 
-const STORAGE_KEY = "ui.kbar.recent_visit";
+const STORAGE_KEY = "ui.kbar.recently_visited";
 const MAX_HISTORY = 3;
 
 export function useRecentVisit() {
@@ -99,12 +99,12 @@ export function useRecentVisit() {
       .map(({ title, url }, index) =>
         defineAction({
           // here `id` looks like "bb.recent_visited.1"
-          id: `bb.recent_visited.${index + 1}`,
-          section: t("kbar.recent-visited"),
+          id: `bb.recently_visited.${index + 1}`,
+          section: t("kbar.recently-visited"),
           name: title,
           subtitle: url,
           shortcut: ["g", `${index + 1}`],
-          keywords: "recent visited",
+          keywords: "recently visited",
           perform: () => router.push({ path: url }),
         })
       );
