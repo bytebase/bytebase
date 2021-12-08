@@ -42,6 +42,9 @@ const (
 	CompatibilityAddCheck      Code = 10009
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
+
+	// 20001 timing error code
+	TimingNotAllowed Code = 20001
 )
 
 // Error represents an application-specific error. Application errors can be
