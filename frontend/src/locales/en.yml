@@ -9,7 +9,6 @@ common:
   environments: Environments
   bookmarks: Bookmarks
   quick-action: Quick Action
-not-found: Not Found
   archive: Archive
   quickstart: Quickstart
   logout: Logout
