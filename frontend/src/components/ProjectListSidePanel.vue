@@ -1,7 +1,7 @@
 <template>
   <BBOutline
     :id="'project'"
-    :title="'Projects'"
+    :title="$t('common.projects')"
     :item-list="outlineItemList"
     :allow-collapse="false"
   />
