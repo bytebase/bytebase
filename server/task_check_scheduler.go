@@ -179,6 +179,53 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
+	// All task should pass timing task check, but some special logic should follow:
+	// Since Time is an auto-increment value, a task would generate a timing task check every time before executing
+	// In order not to bother user too much, we adopt a somewhat method here:
+	//
+	{
+		// fetching history task check
+		var err error
+		var timingTaskCheckID *int
+		taskCheckRunFind := &api.TaskCheckRunFind{
+			TaskID: &task.ID,
+		}
+		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+		if err != nil {
+			return nil, err
+		}
+		for _, taskCheck := range task.TaskCheckRunList {
+			if taskCheck.Type == api.TaskCheckTimingEarliestAllowedTime {
+				timingTaskCheckID = &taskCheck.ID
+				break
+			}
+		}
+
+		// not timing task run has been created before
+		if timingTaskCheckID == nil {
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckTimingEarliestAllowedTime,
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+		} else {
+			// now < NotBeforeTs
+			if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+				return task, nil
+			}
+			taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+				ID:        timingTaskCheckID,
+				UpdaterID: api.SystemBotID,
+				Status:    api.TaskCheckRunRunning,
+			}
+			_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
@@ -257,5 +304,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 
 		return task, err
 	}
+
 	return task, nil
 }
