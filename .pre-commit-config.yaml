@@ -3,7 +3,7 @@ repos:
   rev: v8.3.0
   hooks:
     - id: eslint
-      files: \.([jt]sx?|vue)$
+      files: frontend/.+\.([jt]sx?|vue)$
       types: [file]
       args: [--fix]
 - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
