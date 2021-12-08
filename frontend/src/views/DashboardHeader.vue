@@ -335,7 +335,7 @@ export default {
       locale.value = lang;
       storage.value = {
         appearance: {
-          language: locale.value,
+          language: lang,
         },
       };
     };
@@ -353,7 +353,7 @@ export default {
         id: "bb.preferences.locale",
         section: t("kbar.preferences.common"),
         name: t("kbar.preferences.change_language"),
-        keywords: `language lang locale`,
+        keywords: "language lang locale",
       })
     );
     const i18nActions = computed(() => [
@@ -384,7 +384,6 @@ export default {
       switchToTeam,
       switchToEnterprise,
       toggleLocales,
-      i18nActions,
     };
   },
 };
