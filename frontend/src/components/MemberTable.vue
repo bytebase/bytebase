@@ -11,16 +11,16 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-auto table-cell"
-        :title="COLUMN_LIST[0].title"
+        :title="$t(COLUMN_LIST[0].title)"
       />
-      <BBTableHeaderCell class="w-8 table-cell" :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell class="w-8 table-cell" :title="$t(COLUMN_LIST[1].title)" />
       <BBTableHeaderCell
         class="w-72 table-cell"
-        :title="COLUMN_LIST[2].title"
+        :title="$t(COLUMN_LIST[2].title)"
       />
       <BBTableHeaderCell
         class="w-auto table-cell"
-        :title="COLUMN_LIST[3].title"
+        :title="$t(COLUMN_LIST[3].title)"
       />
     </template>
     <template #body="{ rowData: member }">
@@ -40,7 +40,7 @@
                 text-main-text
               "
             >
-              Invited
+              {{ $t("settings.members.invited") }}
             </span>
             <span class="textlabel">
               {{ member.principal.email }}
@@ -69,7 +69,7 @@
                     text-green-800
                   "
                 >
-                  You
+                  {{ $t("settings.members.yourself") }}
                 </span>
               </div>
               <span class="textlabel">
@@ -107,17 +107,17 @@
           v-if="allowDeactivateMember(member)"
           :style="'ARCHIVE'"
           :require-confirm="true"
-          :ok-text="'Deactivate'"
-          :confirm-title="`Are you sure to deactivate '${member.principal.name}'`"
-          :confirm-description="'You can still reactivate later'"
+          :ok-text="$t('settings.members.action.deactivate')"
+          :confirm-title="`${$t('settings.members.action.deactivate-confirm-title')} '${member.principal.name}'?`"
+          :confirm-description="$t('settings.members.action.deactivate-confirm-description')"
           @confirm="changeRowStatus(member.id, 'ARCHIVED')"
         />
         <BBButtonConfirm
           v-else-if="allowActivateMember(member)"
           :style="'RESTORE'"
           :require-confirm="true"
-          :ok-text="'Reactivate'"
-          :confirm-title="`Are you sure to reactivate '${member.principal.name}'`"
+          :ok-text="$t('settings.members.action.reactivate')"
+          :confirm-title="`${$t('settings.members.action.reactivate-confirm-title')} '${member.principal.name}'?`"
           :confirm-description="''"
           @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
@@ -139,7 +139,7 @@
         ></path>
       </svg>
       <router-link to="/setting/plan" class="text-lg accent-link"
-        >Upgrade to unlock Owner and DBA roles</router-link
+        >{{ $t("settings.members.upgrade") }}</router-link
       >
     </div>
     <img class="w-full" src="../assets/role_management_screenshot.png" />
@@ -149,6 +149,7 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
@@ -157,13 +158,13 @@ import { isOwner } from "../utils";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
-    title: "Account",
+    title: "settings.members.table.account",
   },
   {
-    title: "Role",
+    title: "settings.members.table.role",
   },
   {
-    title: "Updated Time",
+    title: "settings.members.table.update-time",
   },
   {
     title: "",
@@ -183,6 +184,7 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -213,17 +215,17 @@ export default {
 
       const dataSource: BBTableSectionDataSource<Member>[] = [];
       dataSource.push({
-        title: "Owner",
+        title: t("common.role.owner"),
         list: ownerList,
       });
 
       dataSource.push({
-        title: "DBA",
+        title: t("common.role.dba"),
         list: dbaList,
       });
 
       dataSource.push({
-        title: "Developer",
+        title: t("common.role.developer"),
         list: developerList,
       });
 

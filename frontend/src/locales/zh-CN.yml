@@ -59,3 +59,23 @@ settings:
     url-tip: "提示: 用 %s 作为真实数据库名称的占位符"
     tip: 如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase 就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
+  members:
+    active: 已激活
+    inactive: 未激活
+    helper: 通过邮箱添加或邀请成员
+    add-more: + 增加成员
+    add: 添加
+    invites: 发送邀请
+    invited: 已邀请
+    yourself: 你自己
+    upgrade: 升级付费方案来解锁其他角色
+    table:
+      account: 账户
+      role: 角色
+      update-time: 更新时间
+    action:
+      deactivate: 禁用
+      deactivate-confirm-title: 确定禁用
+      deactivate-confirm-description: 之后可以重新启用
+      reactivate: 启用
+      reactivate-confirm-title: 确定启用

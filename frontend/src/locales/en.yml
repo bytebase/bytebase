@@ -62,3 +62,23 @@ settings:
         provide its URL pattern here. Once provided, Bytebase will surface the
         console link on the relevant database and table UI.
     tip-link: Detailed guide
+  members:
+    active: Active members
+    inactive: Inactive members
+    helper: Add or invite by email address
+    add-more: + Add more
+    add: Add
+    invites: Send Invites
+    invited: Invited
+    yourself: You
+    upgrade: Upgrade to unlock Owner and DBA roles
+    table:
+      account: Account
+      role: Role
+      update-time: Updated Time
+    action:
+      deactivate: Deactivate
+      deactivate-confirm-title: Are you sure to deactivate
+      deactivate-confirm-description: You can still reactivate later
+      reactivate: Reactivate
+      reactivate-confirm-title: Are you sure to reactivate
