@@ -12,6 +12,7 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  dismiss: 关闭
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
@@ -27,3 +28,14 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+banner:
+  demo-intro: 这是 Bytebase 的演示版本。
+  demo-intro-readonly: 这是 Bytebase 的只读演示版本
+  action: 5 秒部署你自己的服务
+intro:
+  content: Bytebase 是为 DBA 和开发人员在数据库模式变化上进行协作而设计的。
+    人们可以构建一个单一的 pipeline，在多个环境中演进 schema 的变化，同时也可以在 VSC 中储存 schema，
+    并在提交时触发一个新的 pipeline。可以通过左下角的%s来熟悉该产品。如果遇到问题，请访问%s或在 GitHub 上报告 %s。
+  quickstart: 快速上手
+  doc: 文档
+  issue: issue
