@@ -11,16 +11,7 @@
       <BBTableCell :left-padding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
-            class="
-              relative
-              w-5
-              h-5
-              flex flex-shrink-0
-              items-center
-              justify-center
-              rounded-full
-              select-none
-            "
+            class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
             :class="statusIconClass(taskRun.status)"
           >
             <template v-if="taskRun.status == 'RUNNING'">
@@ -30,7 +21,7 @@
                   animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 "
                 aria-hidden="true"
-              ></span>
+              />
             </template>
             <template v-else-if="taskRun.status == 'DONE'">
               <svg
@@ -48,9 +39,9 @@
               </svg>
             </template>
             <template v-else-if="taskRun.status == 'FAILED'">
-              <span class="text-white font-medium text-base" aria-hidden="true"
-                >!</span
-              >
+              <span class="text-white font-medium text-base" aria-hidden="true">
+                !
+              </span>
             </template>
             <template v-else-if="taskRun.status == 'CANCELED'">
               <svg
@@ -65,8 +56,9 @@
                   fill-rule="evenodd"
                   d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
                   clip-rule="evenodd"
-                ></path></svg
-            ></template>
+                ></path>
+              </svg>
+            </template>
           </div>
         </div>
       </BBTableCell>
@@ -103,36 +95,19 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
 import { databaseSlug, instanceSlug, migrationHistorySlug } from "../utils";
+import { useI18n } from "vue-i18n";
 
 type CommentLink = {
   title: string;
   link: string;
 };
 
-const columnList: BBTableColumn[] = [
-  {
-    title: "",
-  },
-  {
-    title: "Comment",
-  },
-  {
-    title: "Invoker",
-  },
-  {
-    title: "Started",
-  },
-  {
-    title: "Ended",
-  },
-];
-
-export default {
+export default defineComponent({
   name: "TaskRunTable",
   components: { PrincipalAvatar },
   props: {
@@ -142,6 +117,26 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+
+    const columnList = computed((): BBTableColumn[] => [
+      {
+        title: "",
+      },
+      {
+        title: t("task.comment"),
+      },
+      {
+        title: t("task.invoker"),
+      },
+      {
+        title: t("task.started"),
+      },
+      {
+        title: t("task.ended"),
+      },
+    ]);
+
     const statusIconClass = (status: TaskRunStatus) => {
       switch (status) {
         case "RUNNING":
@@ -208,5 +203,5 @@ export default {
       commentLink,
     };
   },
-};
+});
 </script>

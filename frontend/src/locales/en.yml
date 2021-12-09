@@ -12,6 +12,10 @@ common:
   archive: Archive
   quickstart: Quickstart
   logout: Logout
+  close: Close
+  latest: Latest
+  error: Error
+  canceled: Canceled
 not-found: Not Found
 anomaly-center: Anomaly Center
 kbar:
@@ -27,3 +31,18 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+task:
+  checking: Checking...
+  run-task: Run checks
+  check-result:
+    title: Check result for {name}
+  check-type:
+    fake: Fake
+    syntax: Syntax
+    compatibility: Compatibility
+    connection: Connection
+    migration-schema: Migration schema
+  comment: Comment
+  invoker: Invoker
+  started: Started
+  ended: Ended
