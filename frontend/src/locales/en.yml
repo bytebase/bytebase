@@ -20,6 +20,10 @@ common:
     dba: DBA
     owner: Owner
     developer: Developer
+  role-switch:
+    dba: Switch to DBA
+    owner: Switch to Owner
+    developer: Switch to Developer
 not-found: Not Found
 anomaly-center: Anomaly Center
 kbar:
@@ -76,6 +80,7 @@ settings:
     yourself: You
     upgrade: Upgrade to unlock Owner and DBA roles
     select-role: Select role
+    not-assigned: Not assigned
     table:
       account: Account
       role: Role

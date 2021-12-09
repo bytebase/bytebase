@@ -20,6 +20,10 @@ common:
     dba: DBA
     owner: 所有者
     developer: 开发者
+  role-switch:
+    dba: 切换到 DBA
+    owner: 切换到所有者
+    developer: 切换到开发者
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
@@ -73,6 +77,7 @@ settings:
     yourself: 你自己
     upgrade: 升级付费方案来解锁其他角色
     select-role: 选择角色
+    not-assigned: 未指定
     table:
       account: 账户
       role: 角色
