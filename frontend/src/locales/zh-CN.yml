@@ -27,3 +27,8 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+activity:
+  name: 名称
+  comment: 注释
+  created: 创建于
+  invoker: 执行者
