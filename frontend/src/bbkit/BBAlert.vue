@@ -201,7 +201,7 @@
                 text-gray-900
               "
             >
-              {{ title }}
+              {{ $t(title) }}
             </h3>
           </div>
           <div
@@ -210,7 +210,7 @@
           >
             <div class="mt-2">
               <p class="text-gray-500 whitespace-pre-wrap">
-                {{ description }}
+                {{ $t(description) }}
               </p>
             </div>
           </div>
@@ -227,7 +227,7 @@
               :disabled="inProgress"
               @click.prevent="cancel"
             >
-              {{ cancelText }}
+              {{ $t(cancelText) }}
             </button>
             <button
               type="button"
@@ -255,7 +255,7 @@
               :disabled="inProgress"
               @click.prevent="$emit('ok', payload)"
             >
-              {{ okText }}
+              {{ $t(okText) }}
             </button>
           </div>
         </div>
@@ -285,11 +285,11 @@ export default {
     },
     okText: {
       type: String,
-      default: "OK",
+      default: "bbkit.alert.ok",
     },
     cancelText: {
       type: String,
-      default: "Cancel",
+      default: "bbkit.alert.cancel",
     },
     inProgress: {
       type: Boolean,

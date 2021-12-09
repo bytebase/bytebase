@@ -35,7 +35,10 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
-
+bbkit:
+  alert:
+    ok: OK
+    cancel: Cancel
 settings:
   sidebar:
     account: Account
