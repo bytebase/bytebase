@@ -29,4 +29,8 @@ bytebase-build
 # IntelliJ (Goland, IDEA) folder
 .idea
 
+# Python
+*.pyc
+__pycache__
+
 .DS_Store
