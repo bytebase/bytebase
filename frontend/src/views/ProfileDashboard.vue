@@ -48,7 +48,7 @@
                       class="btn-normal"
                       @click.prevent="cancelEdit"
                     >
-                      Cancel
+                      {{ $t("common.cancel") }}
                     </button>
                     <button
                       type="button"
@@ -67,7 +67,7 @@
                           d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"
                         ></path>
                       </svg>
-                      <span>Save</span>
+                      <span>{{ $t("common.save") }}</span>
                     </button>
                   </template>
                   <button
@@ -87,7 +87,7 @@
                         d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
                       ></path>
                     </svg>
-                    <span>Edit</span>
+                    <span>{{ $t("common.edit") }}</span>
                   </button>
                 </template>
               </div>
@@ -121,26 +121,28 @@
       >
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">Role</dt>
+            <dt class="text-sm font-medium text-control-light">
+              {{ $t("settings.profile.role") }}
+            </dt>
             <dd class="mt-1 text-sm text-main">
               <router-link
                 :to="'/setting/member'"
                 class="normal-link capitalize"
               >
                 {{
-                  principal.role == "DBA"
-                    ? principal.role
-                    : principal.role.toLowerCase()
+                  $t(`common.role.${principal.role.toLowerCase()}`)
                 }}
               </router-link>
               <router-link :to="'/setting/plan'" class="normal-link">
-                (Upgrade to Team plan to enable role management)
+                {{ $t("settings.profile.plan") }}
               </router-link>
             </dd>
           </div>
 
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">Email</dt>
+            <dt class="text-sm font-medium text-control-light">
+              {{ $t("settings.profile.email") }}
+            </dt>
             <dd class="mt-1 text-sm text-main">
               {{ principal.email }}
             </dd>
@@ -148,7 +150,9 @@
 
           <template v-if="state.editing">
             <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">Password</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("settings.profile.password") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 <input
                   id="password"
@@ -156,7 +160,7 @@
                   type="text"
                   class="textfield mt-1 w-full"
                   autocomplete="off"
-                  placeholder="sensitive - write only"
+                  :placeholder="$t('settings.profile.password-placeholder')"
                   :value="state.editingPrincipal.password"
                   @input="updatePrincipal('password', $event.target.value)"
                 />
@@ -165,8 +169,10 @@
 
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
-                Confirm
-                <span v-if="passwordMismatch" class="text-error">mismatch</span>
+                {{ $t("settings.profile.password-confirm") }}
+                <span v-if="passwordMismatch" class="text-error">
+                  {{ $t("settings.profile.password-mismatch") }}
+                </span>
               </dt>
               <dd class="mt-1 text-sm text-main">
                 <input
@@ -175,7 +181,7 @@
                   type="text"
                   class="textfield mt-1 w-full"
                   autocomplete="off"
-                  placeholder="Confirm new password"
+                  :placeholder="$t('settings.profile.password-confirm-placeholder')"
                   :value="state.passwordConfirm"
                   @input="state.passwordConfirm = $event.target.value"
                 />

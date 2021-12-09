@@ -1,5 +1,6 @@
 common:
   save: Save
+  cancel: Cancel
   home: Home
   settings: Settings
   projects: Projects
@@ -12,6 +13,12 @@ common:
   archive: Archive
   quickstart: Quickstart
   logout: Logout
+  back: Back
+  edit: Edit
+  role:
+    dba: DBA
+    owner: Owner
+    developer: Developer
 not-found: Not Found
 anomaly-center: Anomaly Center
 kbar:
@@ -27,3 +34,22 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+
+settings:
+  sidebar:
+    account: Account
+    profile: Profile
+    workspace: Workspace
+    general: General
+    members: Members
+    version-control: Version Control
+    plans: Plans
+  profile:
+    email: Email
+    role: Role
+    password: Password
+    password-placeholder: sensitive - write only
+    password-confirm: Confirm
+    password-confirm-placeholder: Confirm new password
+    password-mismatch: mismatch
+    plan: (Upgrade to Team plan to enable role management)

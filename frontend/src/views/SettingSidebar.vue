@@ -39,7 +39,7 @@
             d="M15 19l-7-7 7-7"
           ></path>
         </svg>
-        Back
+        {{ $t("common.back") }}
       </button>
 
       <div class="mt-8">
@@ -69,14 +69,14 @@
               clip-rule="evenodd"
             ></path>
           </svg>
-          Account
+          {{ $t("settings.sidebar.account") }}
         </div>
         <div class="space-y-1">
           <router-link
             to="/setting/profile"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Profile
+            {{ $t("settings.sidebar.profile") }}
           </router-link>
         </div>
       </div>
@@ -107,14 +107,14 @@
               clip-rule="evenodd"
             ></path>
           </svg>
-          Workspace
+          {{ $t("settings.sidebar.workspace") }}
         </div>
         <div class="space-y-1">
           <router-link
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            General
+            {{ $t("settings.sidebar.general") }}
           </router-link>
           <!-- <router-link
             to="/setting/agent"
@@ -126,21 +126,21 @@
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Members
+            {{ $t("settings.sidebar.members") }}
           </router-link>
           <router-link
             v-if="showOwnerItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Version Control
+            {{ $t("settings.sidebar.version-control") }}
           </router-link>
           <router-link
-            v-if="false"
+            v-if="true"
             to="/setting/plan"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Plans
+            {{ $t("settings.sidebar.plans") }}
           </router-link>
           <!-- <router-link
             to="/setting/billing"

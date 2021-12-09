@@ -1,5 +1,6 @@
 common:
   save: 保存
+  cancel: 取消
   home: 主页
   settings: 设置
   projects: 项目
@@ -12,6 +13,12 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  back: 返回
+  edit: 编辑
+  role:
+    dba: 数据库管理员
+    owner: 所有者
+    developer: 开发人员
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
@@ -27,3 +34,22 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+
+settings:
+  sidebar:
+    account: 账户
+    profile: 配置
+    workspace: 工作区
+    general: 通用
+    members: 成员
+    version-control: 版本控制
+    plans: 价格方案
+  profile:
+    email: 邮箱
+    role: 角色
+    password: 密码
+    password-placeholder: 数据敏感 - 仅写入
+    password-confirm: 确认密码
+    password-confirm-placeholder: 再次输入以确认
+    password-mismatch: 密码输入不一致
+    plan: （升级到团队方案来开启角色管理）
