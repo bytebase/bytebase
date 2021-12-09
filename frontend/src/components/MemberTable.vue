@@ -251,14 +251,14 @@ export default {
       }
 
       if (!hasAdminFeature.value) {
-        return "Upgrade to Team plan to enable role management";
+        return t("settings.members.tooltip.upgrade");
       }
 
       if (!allowEdit.value) {
-        return "Only Owner can change the role";
+        return t("settings.members.tooltip.not-allow-edit");
       }
 
-      return "Can not remove the last Owner";
+      return t("settings.members.tooltip.not-allow-remove");
     };
 
     const allowDeactivateMember = (member: Member) => {

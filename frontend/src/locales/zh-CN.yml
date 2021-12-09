@@ -79,3 +79,7 @@ settings:
       deactivate-confirm-description: 之后可以重新启用
       reactivate: 启用
       reactivate-confirm-title: 确定启用
+    tooltip:
+      upgrade: 升级到团队版来开启成员管理
+      not-allow-edit: 只有所有者才能改变角色
+      not-allow-remove: 不能移除最后一个所有者

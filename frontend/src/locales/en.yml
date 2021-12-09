@@ -82,3 +82,7 @@ settings:
       deactivate-confirm-description: You can still reactivate later
       reactivate: Reactivate
       reactivate-confirm-title: Are you sure to reactivate
+    tooltip:
+      upgrade: Upgrade to Team plan to enable role management
+      not-allow-edit: Only Owner can change the role
+      not-allow-remove: Can not remove the last Owner
