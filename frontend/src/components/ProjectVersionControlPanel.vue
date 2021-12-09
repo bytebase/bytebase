@@ -80,20 +80,7 @@
               @click.prevent="enterWizard(true)"
             >
               Configure version control
-              <svg
-                class="ml-1 w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                ></path>
-              </svg>
+              <heroicons-outline:chevron-right class="ml-1 w-5 h-5" />
             </button>
           </div>
         </template>

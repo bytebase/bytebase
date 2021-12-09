@@ -73,20 +73,7 @@
           class="focus:outline-none"
           @click.prevent="$emit('delete-index', index)"
         >
-          <svg
-            class="w-4 h-4 hover:text-control-hover"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            ></path>
-          </svg>
+          <heroicons-solid:x class="w-4 h-4 hover:text-control-hover" />
         </button>
       </router-link>
       <span v-else class="pl-1 py-1 truncate">{{ item.name }}</span>

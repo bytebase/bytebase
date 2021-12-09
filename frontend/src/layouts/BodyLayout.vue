@@ -37,21 +37,7 @@
             >
               <span class="sr-only">Close sidebar</span>
               <!-- Heroicon name: x -->
-              <svg
-                class="h-6 w-6 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <heroicons-solid:x class="h-6 w-6 text-white" />
             </button>
           </div>
           <!-- Mobile Sidebar -->
@@ -62,20 +48,7 @@
             to="/archive"
             class="outline-item group flex items-center px-4 pt-4 pb-2"
           >
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-              ></path>
-            </svg>
+            <heroicons-outline:archive class="w-5 h-5 mr-2" />
             {{ $t("common.archive") }}
           </router-link>
           <div
@@ -87,20 +60,7 @@
               class="flex justify-between items-center w-full flex-shrink-0 text-main group"
             >
               <div class="flex items-center">
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
+                <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
                 <span class="text-sm">{{ $t('common.help') }}</span>
               </div>
               <div class="text-sm">{{ version }}</div>
@@ -124,20 +84,7 @@
           to="/archive"
           class="outline-item group flex items-center px-4 pt-4 pb-2"
         >
-          <svg
-            class="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-            ></path>
-          </svg>
+          <heroicons-outline:archive class="w-5 h-5 mr-2" />
           {{ $t("common.archive") }}
         </router-link>
         <div
@@ -166,20 +113,7 @@
             "
           >
             <div class="flex items-center py-1">
-              <svg
-                class="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
+              <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
               <span class="text-sm">{{ $t("common.help") }}</span>
             </div>
             <div class="text-sm">{{ version }}</div>
@@ -221,21 +155,7 @@
             >
               <span class="sr-only">Open sidebar</span>
               <!-- Heroicon name: menu -->
-              <svg
-                class="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <heroicons-outline:menu class="h-6 w-6" />
             </button>
           </div>
           <div v-if="showBreadcrumb" class="ml-4">
