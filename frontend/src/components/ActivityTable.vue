@@ -23,36 +23,10 @@
             "
           >
             <template v-if="activity.level === `WARN`">
-              <svg
-                class="text-warning"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
+              <heroicons-outline:information-circle class="text-warning" />
             </template>
             <template v-else-if="activity.level === `ERROR`">
-              <svg
-                class="text-error"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
+              <heroicons-outline:exclamation-circle class="text-error" />
             </template>
           </span>
           <span>{{ activityName(activity.type) }}</span>
@@ -64,20 +38,7 @@
               class="normal-link flex flex-row items-center"
             >
               <span>{{ activityTypeLink(activity).title }}</span>
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                ></path>
-              </svg>
+              <heroicons-outline:external-link class="w-4 h-4" />
             </a>
             <router-link
               v-else
@@ -100,20 +61,7 @@
               class="normal-link flex flex-row items-center"
             >
               <span>{{ activityCommentLink(activity).title }}</span>
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                ></path>
-              </svg>
+              <heroicons-outline:external-link class="w-4 h-4" />
             </a>
             <router-link
               v-else
