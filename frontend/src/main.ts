@@ -70,7 +70,7 @@ axios.interceptors.response.use(
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
         const host = store.getters["actuator/info"]().host;
-        if (error.response.request.responseUrl.startsWith(host))
+        if (error.response.request.responseURL.startsWith(host))
           store.dispatch("auth/logout").then(() => {
             router.push({ name: "auth.signin" });
           });
