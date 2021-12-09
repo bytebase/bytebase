@@ -17,9 +17,9 @@ common:
   edit: 编辑
   update: 更新
   role:
-    dba: 数据库管理员
+    dba: DBA
     owner: 所有者
-    developer: 开发人员
+    developer: 开发者
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
@@ -42,8 +42,8 @@ bbkit:
 settings:
   sidebar:
     account: 账户
-    profile: 配置
-    workspace: 工作区
+    profile: 个人信息
+    workspace: 工作空间
     general: 通用
     members: 成员
     version-control: 版本控制
@@ -52,7 +52,7 @@ settings:
     email: 邮箱
     role: 角色
     password: 密码
-    password-placeholder: 数据敏感 - 仅写入
+    password-placeholder: 敏感数据 - 仅写入
     password-confirm: 确认密码
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
@@ -72,6 +72,7 @@ settings:
     invited: 已邀请
     yourself: 你自己
     upgrade: 升级付费方案来解锁其他角色
+    select-role: 选择角色
     table:
       account: 账户
       role: 角色

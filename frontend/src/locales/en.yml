@@ -75,6 +75,7 @@ settings:
     invited: Invited
     yourself: You
     upgrade: Upgrade to unlock Owner and DBA roles
+    select-role: Select role
     table:
       account: Account
       role: Role
