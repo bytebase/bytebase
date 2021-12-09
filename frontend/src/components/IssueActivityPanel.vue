@@ -76,18 +76,7 @@
                         justify-center
                       "
                     >
-                      <svg
-                        class="w-5 h-5 text-control"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                          clip-rule="evenodd"
-                        ></path>
-                      </svg>
+                      <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
                     </div>
                   </div>
                 </template>
@@ -105,16 +94,7 @@
                         justify-center
                       "
                     >
-                      <svg
-                        class="w-4 h-4 text-control"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                        ></path>
-                      </svg>
+                      <heroicons-solid:pencil class="w-4 h-4 text-control" />
                     </div>
                   </div>
                 </template>
@@ -132,26 +112,7 @@
                         justify-center
                       "
                     >
-                      <svg
-                        class="w-6 h-6 text-control"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                        ></path>
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                      </svg>
+                      <heroicons-outline:play class="w-6 h-6 text-control" />
                     </div>
                   </div>
                 </template>
@@ -169,20 +130,9 @@
                         justify-center
                       "
                     >
-                      <svg
+                      <heroicons-outline:thumb-up
                         class="w-5 h-5 text-control"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        ></path>
-                      </svg>
+                      />
                     </div>
                   </div>
                 </template>
@@ -200,20 +150,7 @@
                         justify-center
                       "
                     >
-                      <svg
-                        class="w-5 h-5 text-control"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M20 12H4"
-                        ></path>
-                      </svg>
+                      <heroicons-outline:minus class="w-5 h-5 text-control" />
                     </div>
                   </div>
                 </template>
@@ -231,20 +168,9 @@
                         justify-center
                       "
                     >
-                      <svg
+                      <heroicons-outline:exclamation-circle
                         class="w-6 h-6 text-error"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                      </svg>
+                      />
                     </div>
                   </div>
                 </template>
@@ -262,20 +188,9 @@
                         justify-center
                       "
                     >
-                      <svg
+                      <heroicons-outline:check-circle
                         class="w-6 h-6 text-success"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                      </svg>
+                      />
                     </div>
                   </div>
                 </template>
@@ -293,20 +208,7 @@
                         justify-center
                       "
                     >
-                      <svg
-                        class="w-5 h-5 text-control"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                        ></path>
-                      </svg>
+                      <heroicons-outline:code class="w-5 h-5 text-control" />
                     </div>
                   </div>
                 </template>
@@ -425,40 +327,14 @@
                             }
                           "
                         >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            ></path>
-                          </svg>
+                          <heroicons-outline:trash class="w-4 h-4" />
                         </button>
                         <!-- Edit Comment Button-->
                         <button
                           class="btn-icon"
                           @click.prevent="onUpdateComment(activity)"
                         >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            ></path>
-                          </svg>
+                          <heroicons-outline:pencil class="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -500,20 +376,7 @@
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                         >View commit
-                        <svg
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          ></path>
-                        </svg>
+                        <heroicons-outline:external-link class="w-4 h-4" />
                       </a>
                     </template>
                   </div>
@@ -540,19 +403,9 @@
                   "
                 >
                   <!-- Heroicon name: solid/chat-alt -->
-                  <svg
+                  <heroicons-solid:chat-alt
                     class="h-3.5 w-3.5 text-control-light"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
+                  />
                 </span>
               </div>
             </div>
