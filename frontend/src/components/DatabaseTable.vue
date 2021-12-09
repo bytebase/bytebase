@@ -20,20 +20,7 @@
               >Last sync status {{ database.syncStatus }} at
               {{ humanizeTs(database.lastSuccessfulSyncTs) }}</span
             >
-            <svg
-              class="w-5 h-5 text-error"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+            <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
           </div>
         </div>
       </BBTableCell>
@@ -51,20 +38,9 @@
             ></svg>
             <template v-else-if="database.project.workflowType == 'VCS'">
               <span class="tooltip">Version control enabled</span>
-              <svg
+              <heroicons-outline:collection
                 class="w-4 h-4 text-control hover:text-control-hover"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                ></path>
-              </svg>
+              />
             </template>
           </div>
         </div>
@@ -91,20 +67,7 @@
             window.open(databaseConsoleLink(database.name), '_blank')
           "
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            ></path>
-          </svg>
+          <heroicons-outline:external-link class="w-4 h-4" />
         </button>
       </BBTableCell>
     </template>

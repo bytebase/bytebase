@@ -25,20 +25,9 @@
               <div class="mt-6 flex flex-row justify-stretch space-x-4">
                 <button v-if="false" type="button" class="btn-normal">
                   <!-- Heroicon name: solid/mail -->
-                  <svg
+                  <heroicons-solid:mail
                     class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
-                    />
-                    <path
-                      d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"
-                    />
-                  </svg>
+                  />
                   <span>Message</span>
                 </button>
                 <template v-if="allowEdit">
@@ -57,16 +46,9 @@
                       @click.prevent="saveEdit"
                     >
                       <!-- Heroicon name: solid/save -->
-                      <svg
+                      <heroicons-solid:save
                         class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"
-                        ></path>
-                      </svg>
+                      />
                       <span>Save</span>
                     </button>
                   </template>
@@ -77,16 +59,9 @@
                     @click.prevent="editUser"
                   >
                     <!-- Heroicon name: solid/pencil -->
-                    <svg
+                    <heroicons-solid:pencil
                       class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                      ></path>
-                    </svg>
+                    />
                     <span>Edit</span>
                   </button>
                 </template>

@@ -24,19 +24,7 @@
               />
             </template>
             <template v-else-if="taskRun.status == 'DONE'">
-              <svg
-                class="w-5 h-5"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
+              <heroicons-outline:check class="w-5 h-5" />
             </template>
             <template v-else-if="taskRun.status == 'FAILED'">
               <span class="text-white font-medium text-base" aria-hidden="true">
@@ -44,20 +32,7 @@
               </span>
             </template>
             <template v-else-if="taskRun.status == 'CANCELED'">
-              <svg
-                class="w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                >
-                <path
-                  fill-rule="evenodd"
-                  d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                  clip-rule="evenodd"
-                ></path>
-              </svg>
+              <heroicons-outline:minus-sm class="w-5 h-5" />
             </template>
           </div>
         </div>

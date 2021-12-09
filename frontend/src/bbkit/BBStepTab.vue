@@ -44,19 +44,7 @@
                 select-none
               "
             >
-              <svg
-                class="w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                />
-              </svg>
+              <heroicons-solid:check class="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -86,20 +74,9 @@
           class="btn-normal"
           @click.prevent="changeStep(state.currentStep - 1)"
         >
-          <svg
+          <heroicons-outline:chevron-left
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            ></path>
-          </svg>
+          />
           <span>Back</span>
         </button>
         <button
