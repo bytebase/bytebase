@@ -32,20 +32,7 @@
               step.status == `PENDING_APPROVAL_ACTIVE`
             "
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              ></path>
-            </svg>
+            <heroicons-outline:user class="w-4 h-4" />
           </template>
           <template v-else-if="step.status == `RUNNING`">
             <span
@@ -57,19 +44,7 @@
             ></span>
           </template>
           <template v-else-if="step.status == `DONE`">
-            <svg
-              class="w-5 h-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
+            <heroicons-outline:check class="w-5 h-5" />
           </template>
           <template v-else-if="step.status == `FAILED`">
             <span
@@ -87,36 +62,10 @@
             >
           </template>
           <template v-else-if="step.status == `CANCELED`">
-            <svg
-              class="w-5 h-5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              >
-              <path
-                fill-rule="evenodd"
-                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
+            <heroicons-solid:minus class="w-5 h-5" />
           </template>
           <template v-else-if="step.status == `SKIPPED`">
-            <svg
-              class="w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              >
-              <path
-                fill-rule="evenodd"
-                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
+            <heroicons-solid:minus class="w-4 h-4" />
           </template>
         </div>
       </li>
