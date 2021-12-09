@@ -15,6 +15,7 @@ common:
   logout: Logout
   back: Back
   edit: Edit
+  update: Update
   role:
     dba: DBA
     owner: Owner
@@ -53,3 +54,11 @@ settings:
     password-confirm-placeholder: Confirm new password
     password-mismatch: mismatch
     plan: (Upgrade to Team plan to enable role management)
+  workspace:
+    url-section: SQL Console URL
+    url-tip: "Tip: Use %s as the placeholder for the actual
+          database name"
+    tip: If your team use a separate SQL console such as phpMyAdmin, you can
+        provide its URL pattern here. Once provided, Bytebase will surface the
+        console link on the relevant database and table UI.
+    tip-link: Detailed guide

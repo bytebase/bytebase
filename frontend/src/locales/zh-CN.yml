@@ -15,6 +15,7 @@ common:
   logout: 登出
   back: 返回
   edit: 编辑
+  update: 更新
   role:
     dba: 数据库管理员
     owner: 所有者
@@ -53,3 +54,8 @@ settings:
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
     plan: （升级到团队方案来开启角色管理）
+  workspace:
+    url-section: SQL Console URL
+    url-tip: "提示: 用 %s 作为真实数据库名称的占位符"
+    tip: 如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase 就可以将控制台链接到相关的数据库和表的界面上。
+    tip-link: 详细指引
