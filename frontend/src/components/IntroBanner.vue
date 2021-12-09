@@ -5,7 +5,7 @@
       <h2 class="text-xl text-main">
           <i18n-t keypath="intro.content" tag="p">
             <template v-slot:quickstart>
-              <span class="text-accent">{{ $t("intro.quickstart") }}</span>
+              <span class="text-accent">{{ $t("common.quickstart") }}</span>
             </template>
             <template v-slot:doc>
               <a class="normal-link" href="https://docs.bytebase.com" target="__blank">

@@ -33,9 +33,6 @@ banner:
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
   action: 5 秒部署你自己的服务
 intro:
-  content: Bytebase 是为 DBA 和开发人员在数据库模式变化上进行协作而设计的。
-    人们可以构建一个单一的 pipeline，在多个环境中演进 schema 的变化，同时也可以在 VSC 中储存 schema，
-    并在提交时触发一个新的 pipeline。可以通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告 {issue}。
-  quickstart: 快速上手
+  content: Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发 pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
-  issue: issue
+  issue: 工单
