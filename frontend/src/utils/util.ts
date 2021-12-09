@@ -140,7 +140,3 @@ export function getStringCookie(name: string): string {
 
   return "";
 }
-
-export function formatStringTemplate(template: string, ...strs: string[]): string {
-  return template.replaceAll('%s', matched => strs.shift() ?? matched)
-}
