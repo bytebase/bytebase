@@ -42,7 +42,9 @@ task:
     compatibility: 兼容性
     connection: 连接
     migration-schema: 迁移 schema
-  comment: Comment
+  comment: 注释
   invoker: 执行者
   started: 开始于
   ended: 结束于
+  view-migration: 查看迁移
+  view-migration-history: 查看迁移历史

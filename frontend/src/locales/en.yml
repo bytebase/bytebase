@@ -46,3 +46,5 @@ task:
   invoker: Invoker
   started: Started
   ended: Ended
+  view-migration: View migration
+  view-migration-history: View migration history

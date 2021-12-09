@@ -138,7 +138,7 @@ export default defineComponent({
         switch (taskRun.type) {
           case "bb.task.database.schema.update": {
             return {
-              title: "View migration",
+              title: t("task.view-migration"),
               link: `/db/${databaseSlug(
                 props.task.database!
               )}/history/${migrationHistorySlug(
@@ -160,7 +160,7 @@ export default defineComponent({
           taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING
         ) {
           return {
-            title: "View migration history",
+            title: t("task.view-migration-history"),
             link: `/db/${databaseSlug(props.task.database!)}#migration-history`,
           };
         }
