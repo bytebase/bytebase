@@ -9,7 +9,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Select environment
+      {{ $t('environment.select') }}
     </option>
     <template v-for="(environment, index) in environmentList" :key="index">
       <option
