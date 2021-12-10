@@ -79,8 +79,10 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="tooltip-wrapper">
-        <span class="tooltip">{{ changeRoleTooltip(member) }}</span>
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
+        <span v-if="changeRoleTooltip(member)" class="tooltip">
+          {{ changeRoleTooltip(member) }}
+        </span>
         <RoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
