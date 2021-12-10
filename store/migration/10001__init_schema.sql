@@ -841,7 +841,8 @@ CREATE TABLE task (
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     payload TEXT NOT NULL DEFAULT '',
-    -- not_before_ts specifies the earliest allowed time for a task to be executed -- 
+    -- not_before_ts specifies the earliest allowed time for a task to be executed --
+    -- default value 0 means this task is clear to execute when available --
     `not_before_ts` BIGINT NOT NULL DEFAULT 0
 );
 
