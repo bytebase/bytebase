@@ -896,9 +896,8 @@ export default {
           taskPatch,
         })
         .then((updatedTask: Task) => {
-          // For now, the only task/patchTask is to change statement, which will trigger async task check.
+          // task/patchTask is to change statement and notBeforeTs, which will trigger async task check.
           // Thus we use the short poll interval
-          console.log("updatedTask", updatedTask.notBeforeTs);
           pollIssue(POST_CHANGE_POLL_INTERVAL);
           if (postUpdated) {
             postUpdated(updatedTask);
