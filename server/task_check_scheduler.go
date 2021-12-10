@@ -179,9 +179,9 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
-	// All task should pass timing task check, but some special logic should follow:
-	// Since Time is an auto-increment value, a task would generate a timing task check every time before executing
-	// In order not to bother user too much, we adopt a somewhat method here:
+	// All task should pass timing task check.
+	// Since Time is an auto-increment value, a task would generate a timing task check every time before executing.
+	// However, this is an annoying behavior, and we adopt the following logic to ameliorate this problem.
 	{
 		// fetching history task check
 		var err error

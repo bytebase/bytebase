@@ -32,7 +32,6 @@ func NewTaskService(logger *zap.Logger, db *DB, taskRunService api.TaskRunServic
 
 // CreateTask creates a new task.
 func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Task, error) {
-	s.l.Info("BEFORE CREATING TASK", zap.Int64("Timestamp", create.NotBeforeTs))
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -48,7 +47,6 @@ func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*
 		return nil, FormatError(err)
 	}
 
-	s.l.Info("AFTER CREATING TASK", zap.Int64("Timestamp", task.NotBeforeTs))
 	return task, nil
 }
 
