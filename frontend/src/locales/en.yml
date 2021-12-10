@@ -1,5 +1,6 @@
 common:
   save: Save
+  cancel: Cancel
   home: Home
   settings: Settings
   projects: Projects
@@ -12,6 +13,17 @@ common:
   archive: Archive
   quickstart: Quickstart
   logout: Logout
+  back: Back
+  edit: Edit
+  update: Update
+  role:
+    dba: DBA
+    owner: Owner
+    developer: Developer
+  role-switch:
+    dba: Switch to DBA
+    owner: Switch to Owner
+    developer: Switch to Developer
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -28,6 +40,62 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+bbkit:
+  alert:
+    ok: OK
+    cancel: Cancel
+settings:
+  sidebar:
+    account: Account
+    profile: Profile
+    workspace: Workspace
+    general: General
+    members: Members
+    version-control: Version Control
+    plans: Plans
+  profile:
+    email: Email
+    role: Role
+    password: Password
+    password-placeholder: sensitive - write only
+    password-confirm: Confirm
+    password-confirm-placeholder: Confirm new password
+    password-mismatch: mismatch
+    plan: (Upgrade to Team plan to enable role management)
+  workspace:
+    url-section: SQL Console URL
+    url-tip: "Tip: Use %s as the placeholder for the actual
+          database name"
+    tip: If your team use a separate SQL console such as phpMyAdmin, you can
+        provide its URL pattern here. Once provided, Bytebase will surface the
+        console link on the relevant database and table UI.
+    tip-link: Detailed guide
+  members:
+    active: Active members
+    inactive: Inactive members
+    helper: Add or invite by email address
+    add-more: + Add more
+    add: Add
+    invites: Send Invites
+    invited: Invited
+    yourself: You
+    upgrade: Upgrade to unlock Owner and DBA roles
+    select-role: Select role
+    not-assigned: Not assigned
+    table:
+      account: Account
+      role: Role
+      update-time: Updated Time
+    action:
+      deactivate: Deactivate
+      deactivate-confirm-title: Are you sure to deactivate
+      deactivate-confirm-description: You can still reactivate later
+      reactivate: Reactivate
+      reactivate-confirm-title: Are you sure to reactivate
+    tooltip:
+      upgrade: Upgrade to Team plan to enable role management
+      not-allow-edit: Only Owner can change the role
+      not-allow-remove: Can not remove the last Owner
 activity:
   name: Name
   comment: Comment

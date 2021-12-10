@@ -1,18 +1,18 @@
 <template>
   <div class="mt-2 space-y-6 divide-y divide-block-border">
     <div>
-      <h3 class="text-lg leading-6 font-medium text-main">SQL Console URL</h3>
+      <h3 class="text-lg leading-6 font-medium text-main">
+        {{ $t("settings.workspace.url-section") }}
+      </h3>
       <p class="mt-1 textinfolabel">
-        If your team use a separate SQL console such as phpMyAdmin, you can
-        provide its URL pattern here. Once provided, Bytebase will surface the
-        console link on the relevant database and table UI
+        {{ $t("settings.workspace.tip") }}
         <a
           href="https://docs.bytebase.com/settings/external-sql-console"
           target="_blank"
           class="normal-link"
         >
-          detailed guide</a
-        >.
+          {{ $t("settings.workspace.tip-link") }}
+        </a>
       </p>
 
       <div class="mt-4">
@@ -26,8 +26,7 @@
           :disabled="!allowEdit"
         />
         <div for="databaseUrl" class="mt-2 textinfolabel">
-          Tip: Use {{ DB_NAME_PLACEHOLDER }} as the placeholder for the actual
-          database name
+          {{ $t("settings.workspace.url-tip").replace('%s', placeholder) }}
         </div>
       </div>
     </div>
@@ -39,7 +38,7 @@
         :disabled="!allowSave"
         @click.prevent="doSave"
       >
-        Update
+        {{ $t("common.update") }}
       </button>
     </div>
   </div>
@@ -59,6 +58,9 @@ interface LocalState {
 
 export default {
   name: "SettingWorkspaceGeneral",
+  data() {
+    return { placeholder: "{{ DB_NAME_PLACEHOLDER }}"}
+  },
   setup() {
     const store = useStore();
 

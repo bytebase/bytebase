@@ -3,11 +3,13 @@
     <MemberAddOrInvite />
   </div>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">Active members</p>
+    <p class="text-lg font-medium leading-7 text-main">
+      {{ $t("settings.members.active") }}
+    </p>
     <MemberTable :member-list="activeMemberList" />
     <div v-if="inactiveMemberList.length > 0" class="mt-8">
       <p class="text-lg font-medium leading-7 text-control-light">
-        Inactive members
+        {{ $t("settings.members.inactive") }}
       </p>
       <MemberTable :member-list="inactiveMemberList" />
     </div>

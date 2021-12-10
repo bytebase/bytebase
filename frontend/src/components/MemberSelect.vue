@@ -29,7 +29,7 @@
       <!-- Add my-0.5 padding to avoid flickering when switching to assignee -->
       <span class="flex my-0.5 lg:40 xl:w-44">
         <span class="truncate" :class="required ? 'text-error' : ''">{{
-          placeholder
+          $t(placeholder)
         }}</span>
       </span>
     </template>
@@ -70,7 +70,7 @@ export default {
       type: Array as PropType<RoleType[]>,
     },
     placeholder: {
-      default: "Not assigned",
+      default: "settings.members.not-assigned",
       type: String,
     },
     required: {
