@@ -32,7 +32,7 @@ The labels applied to a resource have the following requirements:
 - Labels must be re-applied when a database is created or moved to a different project.
 
 More specifically, labels will enable the following support:
-- Classify tenants by labels. One tenant can have multiple databases for different purposes so tenants are not exactly tenant databases. 
+- Classify tenants by labels. One tenant can have multiple databases for different purposes so tenants are not exactly tenant databases.
 - Find tenants by searching with labels.
 - Filter and group by tenants at project database overview page, e.g. 1) first filter by 'environment:prod' then group by 'region', 2) group by 'environment' then 'company' in two dimensions.
 - Deploy to multiple tenants at the same time. We can introduce a concept called **deployment configuration** to specify stages and ordering, e.g. 'environment:canary' should come before 'environment:prod'. Details are in a later section.
@@ -210,7 +210,7 @@ deployment_config:
 We should move issue [pipeline generation](https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/issue/DatabaseSchemaUpdateTemplate.ts#L17) from frontend to [backend](https://github.com/bytebase/bytebase/blob/main/server/issue.go#L406). We'd like the backend to take more responsibility for complexity. This also allows the backend to figure out the pipeline based on project tenant mode and deployment configuration.
 
 #### UI
-Tenant mode projects should show databases in tenant view (TBD). Schema altering should be applied to all tenants given a database name. 
+Tenant mode projects should show databases in tenant view (TBD). Schema altering should be applied to all tenants given a database name.
 
 #### VCS
 Since we will still take the database name that's plugged to deployment configuration, the [file path template](https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#file-path-template) will not change.
@@ -258,7 +258,7 @@ CREATE TABLE db_label (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
     key TEXT NOT NULL REFERENCES label_key (key),
     value TEXT NOT NULL
 );
@@ -289,7 +289,7 @@ CREATE UNIQUE INDEX idx_deployment_config_project_id_name ON deployment_config(p
 This will be a new ENUM field on the existing [project table](https://github.com/bytebase/bytebase/blob/main/store/migration/10001__init_schema.sql#L202).
 
 ### API
-- Available Label Keys: workspace level:Create(), Delete(), List(). Note: Create() and Delete() methods are not provided at first as described in the Label Design section. 
+- Available Label Keys: workspace level:Create(), Delete(), List(). Note: Create() and Delete() methods are not provided at first as described in the Label Design section.
 - Labels: labels should be a field of database object.
 - Deployment Configuration: project level Create(), Update(), Delete(), List().
 
@@ -304,5 +304,3 @@ We have some reserved/built-in keys to simplify the onboarding and be consistent
 
 ### Octopus Tenant SaaS Deployment
 https://octopus.com/docs/tenants/guides/multi-tenant-saas-application/creating-project-release
-
-
