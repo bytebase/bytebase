@@ -1311,7 +1311,7 @@ CREATE TABLE db_label (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
     key TEXT NOT NULL REFERENCES label_key (key),
     value TEXT NOT NULL
 );

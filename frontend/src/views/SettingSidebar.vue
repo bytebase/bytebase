@@ -21,7 +21,7 @@
         <heroicons-outline:chevron-left
           class="mr-1 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
         />
-        Back
+        {{ $t("common.back") }}
       </button>
 
       <div class="mt-8">
@@ -40,14 +40,14 @@
           "
         >
           <heroicons-solid:user-circle class="mr-3 w-5 h-5" />
-          Account
+          {{ $t("settings.sidebar.account") }}
         </div>
         <div class="space-y-1">
           <router-link
             to="/setting/profile"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Profile
+            {{ $t("settings.sidebar.profile") }}
           </router-link>
         </div>
       </div>
@@ -67,14 +67,14 @@
           "
         >
           <heroicons-solid:office-building class="mr-3 w-5 h-5" />
-          Workspace
+          {{ $t("settings.sidebar.workspace") }}
         </div>
         <div class="space-y-1">
           <router-link
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            General
+            {{ $t("settings.sidebar.general") }}
           </router-link>
           <!-- <router-link
             to="/setting/agent"
@@ -86,21 +86,21 @@
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Members
+            {{ $t("settings.sidebar.members") }}
           </router-link>
           <router-link
             v-if="showOwnerItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Version Control
+            {{ $t("settings.sidebar.version-control") }}
           </router-link>
           <router-link
             v-if="false"
             to="/setting/plan"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            Plans
+            {{ $t("settings.sidebar.plans") }}
           </router-link>
           <!-- <router-link
             to="/setting/billing"
