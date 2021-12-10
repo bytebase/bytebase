@@ -2,14 +2,14 @@
   <div class="mx-4 space-y-4 w-160">
     <template v-if="projectId">
       <div v-if="state.project.workflowType == 'VCS'" class="textlabel">
-{{ $t('alter-schema.vcs-enabled') }}
+        {{ $t('alter-schema.vcs-enabled') }}
       </div>
     </template>
     <template v-else>
       <div class="flex flex-row space-x-2">
         <heroicons-outline:collection class="w-8 h-8 text-control -mt-1.5" />
         <p class="textlabel">
-{{ $t('alter-schema.vcs-info') }}
+          {{ $t('alter-schema.vcs-info') }}
         </p>
       </div>
     </template>
@@ -44,7 +44,7 @@
 
     <template v-if="projectId && state.alterType == 'MULTI_DB'">
       <div class="textinfolabel">
-{{ $t('alter-schema.alter-multiple-db-info') }}
+        {{ $t('alter-schema.alter-multiple-db-info') }}
       </div>
       <div class="space-y-4">
         <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
