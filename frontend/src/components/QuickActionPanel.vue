@@ -315,14 +315,14 @@ export default defineComponent({
     };
 
     const alterSchema = () => {
-      state.modalTitle = "Alter schema";
-      state.modalSubtitle = "Choose database";
+      state.modalTitle = t('quick-action.alter-schema');
+      state.modalSubtitle = t('quick-action.choose-db');
       state.quickActionType = "quickaction.bb.database.schema.update";
       state.showModal = true;
     };
 
     const createDatabase = () => {
-      state.modalTitle = "Create database";
+      state.modalTitle = t('quick-action.create-db');;
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.database.create";
       state.showModal = true;
