@@ -48,3 +48,8 @@ task:
   ended: 结束于
   view-migration: 查看迁移
   view-migration-history: 查看迁移历史
+activity:
+  name: 名称
+  comment: 注释
+  created: 创建于
+  invoker: 执行者

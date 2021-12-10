@@ -48,3 +48,8 @@ task:
   ended: Ended
   view-migration: View migration
   view-migration-history: View migration history
+activity:
+  name: Name
+  comment: Comment
+  created: Created
+  invoker: Invoker

@@ -1,10 +1,6 @@
 {
-  "i18n-ally.localesPaths": [
-    "src/locales"
-  ],
-  "i18n-ally.enabledParsers": [
-    "yaml"
-  ],
+  "i18n-ally.localesPaths": ["src/locales"],
+  "i18n-ally.enabledParsers": ["yaml"],
   "i18n-ally.keystyle": "nested",
   "i18n-ally.sourceLanguage": "en",
   "i18n-ally.displayLanguage": "en",
