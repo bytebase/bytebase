@@ -20,6 +20,7 @@ common:
   edit: Edit
   create: Create
   update: Update
+  visit: Visit
   role:
     dba: DBA
     owner: Owner
@@ -152,3 +153,14 @@ instance:
   select: Select instance
 environment:
   select: Select environment
+quick-start:
+  bookmark-an-issue: Bookmark an issue
+  add-a-comment: Add a comment
+  visit-project: '@:common.visit @:common.projects'
+  visit-instance: '@:common.visit @:common.instances'
+  visit-database: '@:common.visit @:common.databases'
+  visit-environment: '@:common.visit @:common.environments'
+  add-a-member: Add a member
+  notice:
+    title: Quickstart guide dismissed
+    desc: You can still bring it back later from the top right menu
