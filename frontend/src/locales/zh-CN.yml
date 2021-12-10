@@ -13,6 +13,7 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  dismiss: 关闭
   back: 返回
   edit: 编辑
   update: 更新
@@ -40,6 +41,14 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+banner:
+  demo-intro: 这是 Bytebase 的演示版本。
+  demo-intro-readonly: 这是 Bytebase 的只读演示版本
+  action: 5 秒部署你自己的服务
+intro:
+  content: Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发 pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
+  doc: 文档
+  issue: 工单
 bbkit:
   alert:
     ok: 确认
