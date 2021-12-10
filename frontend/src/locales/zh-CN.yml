@@ -1,5 +1,6 @@
 common:
   save: 保存
+  cancel: 取消
   home: 主页
   settings: 设置
   projects: 项目
@@ -12,6 +13,17 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  back: 返回
+  edit: 编辑
+  update: 更新
+  role:
+    dba: DBA
+    owner: 所有者
+    developer: 开发者
+  role-switch:
+    dba: 切换到 DBA
+    owner: 切换到所有者
+    developer: 切换到开发者
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -28,6 +40,59 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+bbkit:
+  alert:
+    ok: 确认
+    cancel: 取消
+settings:
+  sidebar:
+    account: 账户
+    profile: 个人信息
+    workspace: 工作空间
+    general: 通用
+    members: 成员
+    version-control: 版本控制
+    plans: 价格方案
+  profile:
+    email: 邮箱
+    role: 角色
+    password: 密码
+    password-placeholder: 敏感数据 - 仅写入
+    password-confirm: 确认密码
+    password-confirm-placeholder: 再次输入以确认
+    password-mismatch: 密码输入不一致
+    plan: （升级到团队方案来开启角色管理）
+  workspace:
+    url-section: SQL Console URL
+    url-tip: "提示: 用 %s 作为真实数据库名称的占位符"
+    tip: 如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase 就可以将控制台链接到相关的数据库和表的界面上。
+    tip-link: 详细指引
+  members:
+    active: 已激活
+    inactive: 未激活
+    helper: 通过邮箱添加或邀请成员
+    add-more: + 增加成员
+    add: 添加
+    invites: 发送邀请
+    invited: 已邀请
+    yourself: 你自己
+    upgrade: 升级付费方案来解锁其他角色
+    select-role: 选择角色
+    not-assigned: 未指定
+    table:
+      account: 账户
+      role: 角色
+      update-time: 更新时间
+    action:
+      deactivate: 禁用
+      deactivate-confirm-title: 确定禁用
+      deactivate-confirm-description: 之后可以重新启用
+      reactivate: 启用
+      reactivate-confirm-title: 确定启用
+    tooltip:
+      upgrade: 升级到团队版来开启成员管理
+      not-allow-edit: 只有所有者才能改变角色
+      not-allow-remove: 不能移除最后一个所有者
 activity:
   name: 名称
   comment: 注释

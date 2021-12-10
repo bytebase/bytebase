@@ -28,12 +28,12 @@
       <div v-if="!isRelease" class="md:hidden py-1">
         <div v-if="currentUser.role != 'OWNER'" class="py-1">
           <a class="menu-item" role="menuitem" @click.prevent="switchToOwner">
-            Switch to Owner
+            {{ $t("common.role-switch.owner") }}
           </a>
         </div>
         <div v-if="currentUser.role != 'DBA'" class="py-1">
           <a class="menu-item" role="menuitem" @click.prevent="switchToDBA">
-            Switch to DBA
+            {{ $t("common.role-switch.dba") }}
           </a>
         </div>
         <div v-if="currentUser.email != 'DEVELOPER'" class="py-1">
@@ -42,7 +42,7 @@
             role="menuitem"
             @click.prevent="switchToDeveloper"
           >
-            Switch to Developer
+            {{ $t("common.role-switch.developer") }}
           </a>
         </div>
       </div>
