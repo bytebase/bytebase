@@ -78,7 +78,7 @@ settings:
     plan: (Upgrade to Team plan to enable role management)
   workspace:
     url-section: SQL Console URL
-    url-tip: "Tip: Use %s as the placeholder for the actual
+    url-tip: "Tip: Use {schema} as the placeholder for the actual
           database name"
     tip: If your team use a separate SQL console such as phpMyAdmin, you can
         provide its URL pattern here. Once provided, Bytebase will surface the
