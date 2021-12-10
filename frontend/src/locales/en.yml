@@ -12,7 +12,8 @@ common:
   archive: Archive
   quickstart: Quickstart
   logout: Logout
-not-found: Not Found
+error-page:
+  go-back-home: Go back home
 anomaly-center: Anomaly Center
 kbar:
   recently-visited: Recently Visited
