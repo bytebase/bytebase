@@ -27,3 +27,8 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+activity:
+  name: Name
+  comment: Comment
+  created: Created
+  invoker: Invoker
