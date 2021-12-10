@@ -34,6 +34,47 @@
         />
       </div>
 
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        When<span v-if="create" class="text-red-600">*</span>
+        <div class="tooltip-wrapper">
+          <span class="tooltip w-60">{{
+            "'When' specifies the expected execution timing for this task"
+          }}</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </h2>
+      <div class="col-span-2">
+        <n-date-picker
+          v-if="allowEditTiming"
+          v-model:value="state.notBeforeTs"
+          :is-date-disabled="disablePassedDate"
+          class="w-full"
+          type="datetime"
+          clearable
+          @update:value="
+            (newTimestampNs) => {
+              $emit('update-earliest-timing', newTimestampNs / 1000);
+            }
+          "
+        />
+        <span v-else class="textfield col-span-2">
+          {{ moment(task.notBeforeTs * 1000).format("LLL") }}</span
+        >
+      </div>
+
       <template v-for="(field, index) in inputFieldList" :key="index">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ field.name }}
@@ -187,12 +228,14 @@
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
+import { NDatePicker } from "naive-ui";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+
 import { InputField } from "../plugins";
 import {
   Database,
@@ -200,13 +243,14 @@ import {
   Project,
   Issue,
   IssueCreate,
+  Task,
+  TaskCreate,
   EMPTY_ID,
   Stage,
   StageCreate,
   Instance,
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
-  Task,
 } from "../types";
 import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
@@ -217,6 +261,7 @@ interface LocalState {}
 export default {
   name: "IssueSidebar",
   components: {
+    NDatePicker,
     PrincipalAvatar,
     MemberSelect,
     StageSelect,
@@ -228,6 +273,10 @@ export default {
     issue: {
       required: true,
       type: Object as PropType<Issue | IssueCreate>,
+    },
+    task: {
+      required: true,
+      type: Object as PropType<Task | TaskCreate>,
     },
     create: {
       required: true,
@@ -256,6 +305,7 @@ export default {
   },
   emits: [
     "update-assignee-id",
+    "update-earliest-timing",
     "add-subscriber-id",
     "remove-subscriber-id",
     "update-custom-field",
@@ -265,7 +315,12 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const state = reactive<LocalState>({});
+    const now = Date.now();
+    const state = reactive<LocalState>({
+      notBeforeTs: props.task.notBeforeTs
+        ? props.task.notBeforeTs * 1000
+        : null,
+    });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -338,6 +393,19 @@ export default {
       );
     });
 
+    const allowEditTiming = computed(() => {
+      // We allow the current assignee or DBA to re-assign the issue.
+      // Though only DBA can be assigned to the issue, the current
+      // assignee might not have DBA role in case its role is revoked after
+      // being assigned to the issue.
+      return (
+        props.create ||
+        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
+          (props.issue as Issue).status == "OPEN" &&
+          currentUser.value.id == (props.issue as Issue).assignee?.id)
+      );
+    });
+
     const allowEditCustomField = (field: InputField) => {
       return props.allowEdit && (props.create || field.allowEditAfterCreation);
     };
@@ -396,6 +464,11 @@ export default {
       }
     };
 
+    const disablePassedDate = (ts: number) => {
+      // the seconde logic is for a passed selected date, the style should show correctly
+      return ts < now && ts !== props.task.notBeforeTs * 1000;
+    };
+
     return {
       EMPTY_ID,
       state,
@@ -406,11 +479,13 @@ export default {
       showInstance,
       showStageSelect,
       allowEditAssignee,
+      allowEditTiming,
       allowEditCustomField,
       trySaveCustomField,
       isDatabaseCreated,
       showDatabaseCreationLabel,
       clickDatabase,
+      disablePassedDate,
     };
   },
 };

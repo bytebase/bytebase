@@ -88,6 +88,7 @@
           >
             <IssueSidebar
               :issue="issue"
+              :task="selectedTask"
               :database="database"
               :instance="instance"
               :create="state.create"
@@ -95,6 +96,7 @@
               :input-field-list="issueTemplate.inputFieldList"
               :allow-edit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
+              @update-earliest-timing="updateEarliestTiming"
               @add-subscriber-id="addSubscriberId"
               @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
@@ -745,6 +747,18 @@ export default {
       }
     };
 
+    const updateEarliestTiming = (newEarliestTimingTsMs: number) => {
+      if (state.create) {
+        selectedTask.value.notBeforeTs = newEarliestTimingTsMs;
+      } else {
+        const taskPatch: TaskPatch = {
+          notBeforeTs: newEarliestTimingTsMs,
+        };
+        patchTask((selectedTask.value as Task).id, taskPatch);
+        console.log("selectedTask", selectedTask.value.notBeforeTs);
+      }
+    };
+
     const addSubscriberId = (subscriberId: PrincipalId) => {
       store.dispatch("issueSubscriber/createSubscriber", {
         issueId: (issue.value as Issue).id,
@@ -881,9 +895,10 @@ export default {
           taskId,
           taskPatch,
         })
-        .then((updatedTask) => {
+        .then((updatedTask: Task) => {
           // For now, the only task/patchTask is to change statement, which will trigger async task check.
           // Thus we use the short poll interval
+          console.log("updatedTask", updatedTask.notBeforeTs);
           pollIssue(POST_CHANGE_POLL_INTERVAL);
           if (postUpdated) {
             postUpdated(updatedTask);
@@ -1188,6 +1203,7 @@ export default {
       updateRollbackStatement,
       applyRollbackStatementToOtherStages,
       updateAssigneeId,
+      updateEarliestTiming,
       addSubscriberId,
       removeSubscriberId,
       updateCustomField,

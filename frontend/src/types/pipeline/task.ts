@@ -78,6 +78,7 @@ export type Task = {
   status: TaskStatus;
   type: TaskType;
   instance: Instance;
+  notBeforeTs: number;
   // Tasks like creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
@@ -97,10 +98,12 @@ export type TaskCreate = {
   collation?: string;
   backupId?: BackupId;
   migrationType?: MigrationType;
+  notBeforeTs: number;
 };
 
 export type TaskPatch = {
   statement?: string;
+  notBeforeTs?: number;
 };
 
 export type TaskStatusPatch = {
