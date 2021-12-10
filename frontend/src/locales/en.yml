@@ -15,7 +15,10 @@ common:
   logout: Logout
   dismiss: Dismiss
   back: Back
+  next: Next
+  skip: Skip
   edit: Edit
+  create: Create
   update: Update
   role:
     dba: DBA
@@ -25,6 +28,7 @@ common:
     dba: Switch to DBA
     owner: Switch to Owner
     developer: Switch to Developer
+  assignee: Assignee
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -115,3 +119,36 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+alter-schema:
+  vcs-enabled: >-
+    This project has enabled VCS based version control and selecting database
+    below will navigate you to the corresponding Git repository to create schema
+    change.
+  vcs-info: >-
+    indicates the project has enabled VCS based version control. Selecting
+    database belonging to such project will navigate you to the corresponding
+    Git repository to create schema change.
+  alter-single-db: Alter single database
+  alter-multiple-db: Alter multiple databases
+  alter-multiple-db-info: >-
+    For each environment, you can select a database to alter its schema or just
+    skip that environment. This allows you to compose a single pipeline to
+    propagate schema changes across multiple environments.
+quick-action:
+  alter-schema: Alter schema
+  create-db: Create database
+  choose-db: Choose database
+create-db:
+  new-database-name: New database name
+  reserved-db-error: '{databaseName} is a reserved name'
+db:
+  encoding: Encoding
+  character-set: Character set
+  collation: Collation
+  select: Select database
+  select-instance-first: Select instance first
+  select-environment-first: Select environment first
+instance:
+  select: Select instance
+environment:
+  select: Select environment

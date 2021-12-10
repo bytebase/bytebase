@@ -9,7 +9,7 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      Select instance
+      {{ $t('instance.select') }}
     </option>
     <template v-for="(instance, index) in instanceList" :key="index">
       <option
