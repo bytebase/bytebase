@@ -182,7 +182,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	// All task should pass timing task check, but some special logic should follow:
 	// Since Time is an auto-increment value, a task would generate a timing task check every time before executing
 	// In order not to bother user too much, we adopt a somewhat method here:
-	//
 	{
 		// fetching history task check
 		var err error
@@ -204,6 +203,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 
 		// if not exist, create one
 		if timingTaskCheck == nil {
+			s.l.Info("TIMING CHECK", zap.Int64("timestamp", task.NotBeforeTs))
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
@@ -213,20 +213,39 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			if err != nil {
 				return nil, err
 			}
-		} else if !isPassedTimingTaskCheck {
-			// if previous task check had failed, update its status to runnig
-			if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
-				return task, nil
+		} else {
+			switch isPassedTimingTaskCheck {
+			case true: // since we allowed user to modify 'notBeforeTs' after creating a task, it is possible previous passed timing check would fail this time
+				{
+					if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+						taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+							ID:        &timingTaskCheck.ID,
+							UpdaterID: api.SystemBotID,
+							Status:    api.TaskCheckRunRunning,
+						}
+						_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+			case false: // if previous task check had failed, update its status
+				{
+					if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+						return task, nil
+					}
+					taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+						ID:        &timingTaskCheck.ID,
+						UpdaterID: api.SystemBotID,
+						Status:    api.TaskCheckRunRunning,
+					}
+					_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+					if err != nil {
+						return nil, err
+					}
+				}
 			}
-			taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
-				ID:        &timingTaskCheck.ID,
-				UpdaterID: api.SystemBotID,
-				Status:    api.TaskCheckRunRunning,
-			}
-			_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
-			if err != nil {
-				return nil, err
-			}
+
 		}
 	}
 

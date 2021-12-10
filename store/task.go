@@ -32,6 +32,7 @@ func NewTaskService(logger *zap.Logger, db *DB, taskRunService api.TaskRunServic
 
 // CreateTask creates a new task.
 func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Task, error) {
+	s.l.Info("BEFORE CREATING TASK", zap.Int64("Timestamp", create.NotBeforeTs))
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,6 +48,7 @@ func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*
 		return nil, FormatError(err)
 	}
 
+	s.l.Info("AFTER CREATING TASK", zap.Int64("Timestamp", task.NotBeforeTs))
 	return task, nil
 }
 
@@ -270,7 +272,8 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		    name,
 		    `+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			not_before_ts
 		FROM task
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -298,6 +301,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.NotBeforeTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -333,6 +337,9 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 	if v := patch.Payload; v != nil {
 		set, args = append(set, "payload = ?"), append(args, *v)
 	}
+	if v := patch.NotBeforeTs; v != nil {
+		set, args = append(set, "not_before_ts = ?"), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -340,7 +347,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, not_before_ts"+`
 	`,
 		args...,
 	)
@@ -365,6 +372,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.NotBeforeTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -455,7 +463,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, not_before_ts"+`
 	`,
 		args...,
 	)
@@ -480,6 +488,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.NotBeforeTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}

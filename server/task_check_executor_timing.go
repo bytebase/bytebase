@@ -30,6 +30,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
+	exec.l.Info("Checking TIMING", zap.Int64("timestamp", task.NotBeforeTs))
 	if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
 		return []api.TaskCheckResult{
 			{
