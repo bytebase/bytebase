@@ -15,7 +15,7 @@
           <div class="pt-2 flex items-center space-x-2">
             <MigrationHistoryStatusIcon :status="migrationHistory.status" />
             <h1 class="text-xl font-bold leading-6 text-main truncate">
-              Version {{ migrationHistory.version }}
+              {{ $t('common.version') }} {{ migrationHistory.version }}
             </h1>
           </div>
           <p class="text-control">
@@ -29,9 +29,9 @@
               md:space-y-0 md:flex-row md:flex-wrap
             "
           >
-            <dt class="sr-only">Issue</dt>
+            <dt class="sr-only">{{ $t('common.issue') }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Issue&nbsp;-&nbsp;</span>
+              <span class="textlabel">{{ $t('common.issue') }}&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/issue/${migrationHistory.issueId}`"
                 class="normal-link"
@@ -39,19 +39,19 @@
                 {{ migrationHistory.issueId }}
               </router-link>
             </dd>
-            <dt class="sr-only">Duration</dt>
+            <dt class="sr-only">{{ $t('common.duration') }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Duration&nbsp;-&nbsp;</span>
+              <span class="textlabel">{{ $t('common.duration') }}&nbsp;-&nbsp;</span>
               {{ secondsToString(migrationHistory.executionDuration) }}
             </dd>
-            <dt class="sr-only">Creator</dt>
+            <dt class="sr-only">{{ $t('common.creator') }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Creator&nbsp;-&nbsp;</span>
+              <span class="textlabel">{{ $t('common.creator') }}&nbsp;-&nbsp;</span>
               {{ migrationHistory.creator }}
             </dd>
-            <dt class="sr-only">Created</dt>
+            <dt class="sr-only">{{ $t('common.created-at') }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Created&nbsp;-&nbsp;</span>
+              <span class="textlabel">{{ $t('common.created-at') }}&nbsp;-&nbsp;</span>
               {{ humanizeTs(migrationHistory.createdTs) }} by
               {{ `version ${migrationHistory.releaseVersion}` }}
             </dd>
@@ -73,7 +73,7 @@
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
             <span>
-              commit
+              {{ $t('common.commit') }}
               <a
                 :href="pushEvent.fileCommit.url"
                 target="_blank"
@@ -82,9 +82,14 @@
                 {{ pushEvent.fileCommit.id.substring(0, 7) }}:
               </a>
               <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
-              by
-              {{ pushEvent.authorName }} at
-              {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
+              <i18n-t keypath="migration-history.commit-info" >
+                <template v-slot:author>
+                  {{ pushEvent.authorName }}
+                 </template>
+                <template v-slot:time>
+                  {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL")  }}
+                 </template>
+              </i18n-t>
             </span>
           </div>
         </div>
@@ -96,7 +101,7 @@
           href="#statement"
           class="flex items-center text-lg text-main mb-2 hover:underline"
         >
-          Statement
+          {{ $t('common.statement') }}
           <button
             tabindex="-1"
             class="btn-icon ml-1"
@@ -111,9 +116,9 @@
         <a
           id="schema"
           href="#schema"
-          class="flex items-center text-lg text-main mt-6 hover:underline"
+          class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
         >
-          Schema Snapshot
+          Schema {{ $t('common.snapshot') }}
           <button
             tabindex="-1"
             class="btn-icon ml-1"
@@ -125,7 +130,7 @@
         <div class="flex flex-row items-center space-x-2 mt-2">
           <BBSwitch
             v-if="migrationHistory.schemaPrev != migrationHistory.schema"
-            :label="'Show diff'"
+            :label="$t('migration-history.show-diff')"
             :value="state.showDiff"
             @toggle="
               (on) => {
@@ -136,15 +141,15 @@
           <div class="textinfolabel">
             {{
               state.showDiff
-                ? "Prev (left) vs This version (right)"
-                : "The schema snapshot recorded after applying this migration version"
+                ? $t('migration-history.left-vs-right')
+                : $t('migration-history.schema-snapshot-after-migration')
             }}
           </div>
           <div
             v-if="migrationHistory.schemaPrev == migrationHistory.schema"
             class="text-sm font-normal text-accent"
           >
-            (this migration has no schema change)
+            ({{ $t('migration-history.no-schema-change') }})
           </div>
         </div>
         <code-diff
