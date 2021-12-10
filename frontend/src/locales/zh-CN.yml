@@ -15,7 +15,10 @@ common:
   logout: 登出
   dismiss: 关闭
   back: 返回
+  next: 下一步
+  skip: 跳过
   edit: 编辑
+  create: 创建
   update: 更新
   role:
     dba: DBA
@@ -25,6 +28,7 @@ common:
     dba: 切换到 DBA
     owner: 切换到所有者
     developer: 切换到开发者
+  assignee: 审核人
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -107,3 +111,27 @@ activity:
   comment: 注释
   created: 创建于
   invoker: 执行者
+alter-schema:
+  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
+  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
+  alter-single-db: 变更单个数据库
+  alter-multiple-db: 变更多个数据库
+  alter-multiple-db-info: 针对每个环境，你可以选择一个数据库进行变更或者直接跳过该环境，这样你就可以在一条流水线上把 schema 变更逐步作用到多个环境。
+quick-action:
+  alter-schema: 变更 Schema
+  create-db: 创建数据库
+  choose-db: 选择数据库
+create-db:
+  new-database-name: 新数据库名称
+  reserved-db-error: '{databaseName} 是一个预留名称'
+db:
+  encoding: 字符编码
+  character-set: 字符集
+  collation: 字符排序规则
+  select: 选择数据库
+  select-instance-first: 先选择实例
+  select-environment-first: 先选择环境
+instance:
+  select: 选择实例
+environment:
+  select: 选择环境
