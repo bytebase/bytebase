@@ -15,15 +15,7 @@
           <router-link :to="intro.link" class="group">
             <span class="flex items-start">
               <span
-                class="
-                  flex-shrink-0
-                  relative
-                  h-5
-                  w-5
-                  flex
-                  items-center
-                  justify-center
-                "
+                class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center"
               >
                 <template v-if="intro.done">
                   <!-- Heroicon name: solid/check-circle -->
@@ -41,24 +33,12 @@
                 </template>
                 <template v-else>
                   <div
-                    class="
-                      h-2
-                      w-2
-                      bg-gray-300
-                      rounded-full
-                      group-hover:bg-gray-400
-                    "
+                    class="h-2 w-2 bg-gray-300 rounded-full group-hover:bg-gray-400"
                   ></div>
                 </template>
               </span>
               <span
-                class="
-                  ml-2
-                  text-sm
-                  font-medium
-                  text-control-light
-                  group-hover:text-control-light-hover
-                "
+                class="ml-2 text-sm font-medium text-control-light group-hover:text-control-light-hover"
                 :class="intro.done ? 'line-through' : ''"
                 >{{ intro.name }}</span
               >
@@ -73,6 +53,8 @@
 <script lang="ts">
 import { computed, reactive, ComputedRef } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
+
 import { isDBA, isOwner } from "../utils";
 
 type IntroItem = {
@@ -84,18 +66,17 @@ type IntroItem = {
 };
 
 export default {
-  name: "Quickstart",
-  components: {},
-  props: {},
-  emits: [""],
+  name: "QuickStart",
+
   setup() {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const introList: IntroItem[] = reactive([
       {
-        name: "Bookmark an issue",
+        name: computed(() => t("quick-start.bookmark-an-issue")),
         link: "/issue/hello-world-101",
         allowDBA: true,
         allowDeveloper: true,
@@ -104,7 +85,7 @@ export default {
         }),
       },
       {
-        name: "Add a comment",
+        name: computed(() => t("quick-start.add-a-comment")),
         link: "/issue/hello-world-101#activity101",
         allowDBA: true,
         allowDeveloper: true,
@@ -113,7 +94,7 @@ export default {
         }),
       },
       {
-        name: "Visit project",
+        name: computed(() => t("quick-start.visit-project")),
         link: "/project",
         allowDBA: true,
         allowDeveloper: true,
@@ -122,7 +103,7 @@ export default {
         }),
       },
       {
-        name: "Visit environment",
+        name: computed(() => t("quick-start.visit-environment")),
         link: "/environment",
         allowDBA: true,
         allowDeveloper: false,
@@ -131,7 +112,7 @@ export default {
         }),
       },
       {
-        name: "Visit instance",
+        name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
         allowDeveloper: !store.getters["plan/feature"]("bb.dba-workflow"),
@@ -140,7 +121,7 @@ export default {
         }),
       },
       {
-        name: "Visit database",
+        name: computed(() => t("quick-start.visit-database")),
         link: "/db",
         allowDBA: true,
         allowDeveloper: true,
@@ -149,7 +130,7 @@ export default {
         ),
       },
       {
-        name: "Add a member",
+        name: computed(() => t("quick-start.add-a-member")),
         link: "/setting/member",
         allowDBA: false,
         allowDeveloper: false,
@@ -188,9 +169,8 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "INFO",
-            title: `Quickstart guide dismissed`,
-            description:
-              "You can still bring it back later from the top right menu",
+            title: computed(() => t("quick-start.notice.title")),
+            description: computed(() => t("quick-start.notice.desc")),
             manualHide: true,
           });
         });
