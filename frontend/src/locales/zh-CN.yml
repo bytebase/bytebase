@@ -24,7 +24,8 @@ common:
     dba: 切换到 DBA
     owner: 切换到所有者
     developer: 切换到开发者
-not-found: 未找到
+error-page:
+  go-back-home: 回到主页
 anomaly-center: 异常中心
 kbar:
   recently-visited: 最近访问
@@ -92,3 +93,8 @@ settings:
       upgrade: 升级到团队版来开启成员管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
+activity:
+  name: 名称
+  comment: 注释
+  created: 创建于
+  invoker: 执行者

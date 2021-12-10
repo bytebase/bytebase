@@ -24,7 +24,8 @@ common:
     dba: Switch to DBA
     owner: Switch to Owner
     developer: Switch to Developer
-not-found: Not Found
+error-page:
+  go-back-home: Go back home
 anomaly-center: Anomaly Center
 kbar:
   recently-visited: Recently Visited
@@ -95,3 +96,8 @@ settings:
       upgrade: Upgrade to Team plan to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
+activity:
+  name: Name
+  comment: Comment
+  created: Created
+  invoker: Invoker

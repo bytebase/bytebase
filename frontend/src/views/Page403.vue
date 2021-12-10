@@ -5,15 +5,10 @@
       <main class="sm:flex">
         <div class="sm:ml-6">
           <div
-            class="
-              mt-6
-              flex
-              space-x-3
-              sm:border-l sm:border-transparent sm:pl-6
-            "
+            class="mt-6 flex space-x-3 sm:border-l sm:border-transparent sm:pl-6"
           >
             <button class="btn-primary" @click.prevent="goHome">
-              Go back home
+              {{ $t("error-page.go-back-home") }}
             </button>
           </div>
         </div>
@@ -25,8 +20,9 @@
 
 <script lang="ts">
 import { useRouter } from "vue-router";
+
 export default {
-  name: "403",
+  name: "ThePage403",
   setup() {
     const router = useRouter();
 
