@@ -73,7 +73,7 @@ settings:
     plan: （升级到团队方案来开启角色管理）
   workspace:
     url-section: SQL Console URL
-    url-tip: "提示: 用 %s 作为真实数据库名称的占位符"
+    url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: 如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase 就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
   members:
