@@ -132,7 +132,7 @@ type Task struct {
 	Status      TaskStatus `jsonapi:"attr,status"`
 	Type        TaskType   `jsonapi:"attr,type"`
 	Payload     string     `jsonapi:"attr,payload"`
-	NotBeforeTs int64      `jsonapi:"attr,payload"`
+	NotBeforeTs int64      `jsonapi:"attr,notBeforeTs"`
 }
 
 // TaskCreate is the API message for creating a task.
@@ -154,7 +154,7 @@ type TaskCreate struct {
 	Type   TaskType   `jsonapi:"attr,type"`
 	// Payload is derived from fields below it
 	Payload           string
-	NotBeforeTs       int64  `jsonapi:"attr,payload"`
+	NotBeforeTs       int64  `jsonapi:"attr,notBeforeTs"`
 	Statement         string `jsonapi:"attr,statement"`
 	RollbackStatement string `jsonapi:"attr,rollbackStatement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
@@ -196,7 +196,7 @@ type TaskPatch struct {
 	// Domain specific fields
 	Statement   *string `jsonapi:"attr,statement"`
 	Payload     *string
-	NotBeforeTs *int64 `jsonapi:"attr,payload"`
+	NotBeforeTs *int64 `jsonapi:"attr,notBeforeTs"`
 }
 
 // TaskStatusPatch is the API message for patching a task status.
