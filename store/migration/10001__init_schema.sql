@@ -840,7 +840,8 @@ CREATE TABLE task (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
-    payload TEXT NOT NULL DEFAULT ''
+    payload TEXT NOT NULL DEFAULT '',
+    `not_before_ts` BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
