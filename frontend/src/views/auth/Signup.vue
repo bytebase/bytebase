@@ -32,20 +32,7 @@
                 type="email"
                 required
                 placeholder="jim@example.com"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="onTextEmail"
               />
             </div>
@@ -65,20 +52,7 @@
                 autocomplete="off"
                 :value="state.password"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="changePassword($event.target.value)"
               />
             </div>
@@ -102,20 +76,7 @@
                 :placeholder="'Confirm password'"
                 :value="state.passwordConfirm"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="changePasswordConfirm($event.target.value)"
               />
             </div>
@@ -134,20 +95,7 @@
                 v-model="state.name"
                 type="text"
                 placeholder="Jim Gray"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="onTextName"
               />
             </div>

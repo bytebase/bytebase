@@ -43,20 +43,7 @@
                 type="password"
                 autocomplete="on"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -74,20 +61,7 @@
                 v-model="state.name"
                 type="text"
                 placeholder="Jim Gray"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>

@@ -322,6 +322,16 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+auth:
+  common:
+    sign-in: Sign in
+    sign-up: Sign up
+  sign-in:
+    title: Sign in to your account
+    email: Email
+    password: password
+    forget-your-password: Forgot your password?
+    new-to-bytebase: New to Bytebase?
 policy:
   approval:
     name: Approval Policy

@@ -7,7 +7,7 @@
         alt="Bytebase"
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        Sign in to your account
+        {{ $t("auth.sign-in.title") }}
       </h2>
     </div>
 
@@ -28,20 +28,7 @@
                 type="email"
                 required
                 placeholder="jim@example.com"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -49,25 +36,12 @@
           <div>
             <label
               for="password"
-              class="
-                flex
-                justify-between
-                text-sm
-                font-medium
-                leading-5
-                text-control
-              "
+              class="flex justify-between text-sm font-medium leading-5 text-control"
             >
               <div>Password<span class="text-red-600">*</span></div>
               <router-link
                 to="/auth/password-forgot"
-                class="
-                  text-sm
-                  font-normal
-                  text-control-light
-                  hover:underline
-                  focus:outline-none
-                "
+                class="text-sm font-normal text-control-light hover:underline focus:outline-none"
               >
                 Forgot your password?
               </router-link>
@@ -79,20 +53,7 @@
                 type="password"
                 autocomplete="on"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
