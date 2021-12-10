@@ -17,6 +17,7 @@ common:
   back: 返回
   edit: 编辑
   update: 更新
+  visit: 访问
   role:
     dba: DBA
     owner: 所有者
@@ -107,3 +108,14 @@ activity:
   comment: 注释
   created: 创建于
   invoker: 执行者
+quick-start:
+  bookmark-an-issue: 收藏工单
+  add-a-comment: 添加评论
+  visit-project: '@:common.visit@:common.projects'
+  visit-instance: '@:common.visit@:common.instances'
+  visit-database: '@:common.visit@:common.databases'
+  visit-environment: '@:common.visit@:common.environments'
+  add-a-member: 添加成员
+  notice:
+    title: 快速入门导览已关闭
+    desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
