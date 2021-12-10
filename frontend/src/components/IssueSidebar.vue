@@ -394,10 +394,7 @@ export default {
     });
 
     const allowEditTiming = computed(() => {
-      // We allow the current assignee or DBA to re-assign the issue.
-      // Though only DBA can be assigned to the issue, the current
-      // assignee might not have DBA role in case its role is revoked after
-      // being assigned to the issue.
+      // only the assignee is allowed to modified timing
       return (
         props.create ||
         ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
