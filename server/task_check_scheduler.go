@@ -186,36 +186,40 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	{
 		// fetching history task check
 		var err error
-		var timingTaskCheckID *int
-		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskID: &task.ID,
-		}
-		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+		var timingTaskCheck *api.TaskCheckRun
+		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, &api.TaskCheckRunFind{TaskID: &task.ID})
 		if err != nil {
 			return nil, err
 		}
 		for _, taskCheck := range task.TaskCheckRunList {
 			if taskCheck.Type == api.TaskCheckTimingEarliestAllowedTime {
-				timingTaskCheckID = &taskCheck.ID
+				timingTaskCheck = taskCheck
 				break
 			}
 		}
+		isPassedTimingTaskCheck, err := s.passCheck(ctx, s.server, task, api.TaskCheckTimingEarliestAllowedTime)
+		if err != nil {
+			return nil, err
+		}
 
-		// not timing task run has been created before
-		if timingTaskCheckID == nil {
+		// if not exist, create one
+		if timingTaskCheck == nil {
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckTimingEarliestAllowedTime,
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 			})
-		} else {
-			// now < NotBeforeTs
+			if err != nil {
+				return nil, err
+			}
+		} else if !isPassedTimingTaskCheck {
+			// if previous task check had failed, update its status to runnig
 			if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
 				return task, nil
 			}
 			taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
-				ID:        timingTaskCheckID,
+				ID:        &timingTaskCheck.ID,
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskCheckRunRunning,
 			}
@@ -306,4 +310,50 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	}
 
 	return task, nil
+}
+
+// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
+// But this method is used for gating the automatic run, so we are more cautious here.
+func (s *TaskCheckScheduler) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		Type:       &checkType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+
+	taskCheckRunList, err := server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+		server.l.Debug("Task is waiting for check to pass",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.String("task_type", string(task.Type)),
+			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+		)
+		return false, nil
+	}
+
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
+			server.l.Debug("Task is waiting for check to pass",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.String("task_type", string(task.Type)),
+				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

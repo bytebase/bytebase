@@ -36,7 +36,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TimingNotAllowed,
 				Title:   "TimingNotAllowed",
-				Content: fmt.Sprintf("Did not pass the earliest execution timing"),
+				Content: fmt.Sprintf("Did not pass the earliest execution timing: %s", time.Unix(task.NotBeforeTs, 0).Format("2006-01-02 15:04:05")),
 			},
 		}, nil
 	} else {
@@ -45,7 +45,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 				Status:  api.TaskCheckStatusSuccess,
 				Code:    common.Ok,
 				Title:   "OK",
-				Content: fmt.Sprintf("Passed the earliest execution timing"),
+				Content: fmt.Sprintf("Passed the earliest execution timin: %s", time.Unix(task.NotBeforeTs, 0).Format("2006-01-02 15:04:05")),
 			},
 		}, nil
 	}
