@@ -6,9 +6,7 @@
           <p class="ml-3 font-medium text-white truncate">
             <span>
               {{
-                isReadonly
-                  ? "This is a demo version of Bytebase in read-only mode."
-                  : "This is a demo version of Bytebase."
+                $t(`banner.demo-intro${isReadonly ? '-readonly' : ''}`)
               }}
             </span>
           </p>
@@ -36,7 +34,7 @@
               hover:bg-indigo-50
             "
           >
-            Deploy yours in 5 seconds
+            {{ $t("banner.action") }}
             <heroicons-outline:lightning-bolt class="ml-1 w-6 h-6" />
           </a>
         </div>
@@ -54,7 +52,7 @@
             "
             @click.prevent="show = false"
           >
-            <span class="sr-only">Dismiss</span>
+            <span class="sr-only">{{ $t("common.dismiss") }}</span>
             <!-- Heroicon name: outline/x -->
             <heroicons-outline:x class="h-6 w-6 text-white" />
           </button>
