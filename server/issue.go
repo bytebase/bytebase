@@ -398,7 +398,15 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	if issueCreate.Type == api.IssueDatabaseCreate {
+		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
+		if err != nil {
+			return nil, err
+		}
+		issueCreate.Pipeline = *pc
+	}
 	issueCreate.Pipeline.CreatorID = creatorID
+
 	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
@@ -423,37 +431,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
 			}
-			if taskCreate.Type == api.TaskDatabaseCreate {
-				// Snowflake needs to use upper case of DatabaseName.
-				if instance.Engine == db.Snowflake {
-					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
-				}
-				payload := api.TaskDatabaseCreatePayload{}
-				payload.ProjectID = issueCreate.ProjectID
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.CharacterSet = taskCreate.CharacterSet
-				payload.Collation = taskCreate.Collation
-
-				switch instance.Engine {
-				case db.MySQL, db.TiDB:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
-				case db.Postgres:
-					if taskCreate.Collation == "" {
-						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", taskCreate.DatabaseName, taskCreate.CharacterSet)
-					} else {
-						payload.Statement = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", taskCreate.DatabaseName, taskCreate.CharacterSet, taskCreate.Collation)
-					}
-				case db.ClickHouse:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE `%s`", taskCreate.DatabaseName)
-				case db.Snowflake:
-					payload.Statement = fmt.Sprintf("CREATE DATABASE %s", taskCreate.DatabaseName)
-				}
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-				}
-				taskCreate.Payload = string(bytes)
-			} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 				payload := api.TaskDatabaseSchemaUpdatePayload{}
 				payload.MigrationType = taskCreate.MigrationType
 				payload.Statement = taskCreate.Statement
@@ -560,6 +538,113 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	return issue, nil
+}
+
+func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	switch issueCreate.Type {
+	case api.IssueDatabaseCreate:
+		m := api.CreateDatabaseContext{}
+		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
+			return nil, err
+		}
+		// Find instance.
+		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		payload := api.TaskDatabaseCreatePayload{}
+		payload.ProjectID = issueCreate.ProjectID
+		payload.CharacterSet = m.CharacterSet
+		payload.Collation = m.Collation
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation)
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		}
+
+		if m.BackupID != 0 || m.BackupName != "" {
+			return &api.PipelineCreate{
+				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
+				StageList: []api.StageCreate{
+					{
+						Name:          "Create database",
+						EnvironmentID: instance.EnvironmentID,
+						TaskList: []api.TaskCreate{
+							{
+								InstanceID:   m.InstanceID,
+								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+								Status:       api.TaskPendingApproval,
+								Type:         api.TaskDatabaseCreate,
+								DatabaseName: payload.DatabaseName,
+								Payload:      string(bytes),
+							},
+						},
+					},
+					{
+						Name:          "Restore backup",
+						EnvironmentID: instance.EnvironmentID,
+						TaskList: []api.TaskCreate{
+							{
+								InstanceID:   m.InstanceID,
+								Name:         fmt.Sprintf("Restore backup %v", m.BackupName),
+								Status:       api.TaskPending,
+								Type:         api.TaskDatabaseRestore,
+								DatabaseName: payload.DatabaseName,
+								BackupID:     &m.BackupID,
+							},
+						},
+					},
+				},
+			}, nil
+		}
+		return &api.PipelineCreate{
+			Name: fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
+			StageList: []api.StageCreate{
+				{
+					Name:          "Create database",
+					EnvironmentID: instance.EnvironmentID,
+					TaskList: []api.TaskCreate{
+						{
+							InstanceID:   m.InstanceID,
+							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+							Status:       api.TaskPendingApproval,
+							Type:         api.TaskDatabaseCreate,
+							DatabaseName: payload.DatabaseName,
+							Payload:      string(bytes),
+						},
+					},
+				},
+			},
+		}, nil
+	}
+	return nil, nil
+}
+
+func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation string) (string, string) {
+	// Snowflake needs to use upper case of DatabaseName.
+	if dbType == db.Snowflake {
+		databaseName = strings.ToUpper(databaseName)
+	}
+
+	var stmt string
+	switch dbType {
+	case db.MySQL, db.TiDB:
+		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", databaseName, characterSet, collation)
+	case db.Postgres:
+		if collation == "" {
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", databaseName, characterSet)
+		} else {
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", databaseName, characterSet, collation)
+		}
+	case db.ClickHouse:
+		stmt = fmt.Sprintf("CREATE DATABASE `%s`", databaseName)
+	case db.Snowflake:
+		databaseName = strings.ToUpper(databaseName)
+		stmt = fmt.Sprintf("CREATE DATABASE %s", databaseName)
+	}
+
+	return databaseName, stmt
 }
 
 func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
