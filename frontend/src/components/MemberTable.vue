@@ -11,16 +11,16 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-auto table-cell"
-        :title="COLUMN_LIST[0].title"
+        :title="$t(COLUMN_LIST[0].title)"
       />
-      <BBTableHeaderCell class="w-8 table-cell" :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell class="w-8 table-cell" :title="$t(COLUMN_LIST[1].title)" />
       <BBTableHeaderCell
         class="w-72 table-cell"
-        :title="COLUMN_LIST[2].title"
+        :title="$t(COLUMN_LIST[2].title)"
       />
       <BBTableHeaderCell
         class="w-auto table-cell"
-        :title="COLUMN_LIST[3].title"
+        :title="$t(COLUMN_LIST[3].title)"
       />
     </template>
     <template #body="{ rowData: member }">
@@ -40,7 +40,7 @@
                 text-main-text
               "
             >
-              Invited
+              {{ $t("settings.members.invited") }}
             </span>
             <span class="textlabel">
               {{ member.principal.email }}
@@ -69,7 +69,7 @@
                     text-green-800
                   "
                 >
-                  You
+                  {{ $t("settings.members.yourself") }}
                 </span>
               </div>
               <span class="textlabel">
@@ -79,8 +79,10 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="tooltip-wrapper">
-        <span class="tooltip">{{ changeRoleTooltip(member) }}</span>
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
+        <span v-if="changeRoleTooltip(member)" class="tooltip">
+          {{ changeRoleTooltip(member) }}
+        </span>
         <RoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
@@ -107,17 +109,17 @@
           v-if="allowDeactivateMember(member)"
           :style="'ARCHIVE'"
           :require-confirm="true"
-          :ok-text="'Deactivate'"
-          :confirm-title="`Are you sure to deactivate '${member.principal.name}'`"
-          :confirm-description="'You can still reactivate later'"
+          :ok-text="$t('settings.members.action.deactivate')"
+          :confirm-title="`${$t('settings.members.action.deactivate-confirm-title')} '${member.principal.name}'?`"
+          :confirm-description="$t('settings.members.action.deactivate-confirm-description')"
           @confirm="changeRowStatus(member.id, 'ARCHIVED')"
         />
         <BBButtonConfirm
           v-else-if="allowActivateMember(member)"
           :style="'RESTORE'"
           :require-confirm="true"
-          :ok-text="'Reactivate'"
-          :confirm-title="`Are you sure to reactivate '${member.principal.name}'`"
+          :ok-text="$t('settings.members.action.reactivate')"
+          :confirm-title="`${$t('settings.members.action.reactivate-confirm-title')} '${member.principal.name}'?`"
           :confirm-description="''"
           @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
@@ -126,20 +128,9 @@
   </BBTable>
   <div v-if="showUpgradeInfo" class="mt-6 border-t pt-4 border-block-border">
     <div class="flex flex-row items-center space-x-1">
-      <svg
-        class="w-6 h-6 text-accent"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fill-rule="evenodd"
-          d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
-          clip-rule="evenodd"
-        ></path>
-      </svg>
+      <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
       <router-link to="/setting/plan" class="text-lg accent-link"
-        >Upgrade to unlock Owner and DBA roles</router-link
+        >{{ $t("settings.members.upgrade") }}</router-link
       >
     </div>
     <img class="w-full" src="../assets/role_management_screenshot.png" />
@@ -149,6 +140,7 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
@@ -157,13 +149,13 @@ import { isOwner } from "../utils";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
-    title: "Account",
+    title: "settings.members.table.account",
   },
   {
-    title: "Role",
+    title: "settings.members.table.role",
   },
   {
-    title: "Updated Time",
+    title: "settings.members.table.update-time",
   },
   {
     title: "",
@@ -183,6 +175,7 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const store = useStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -213,17 +206,17 @@ export default {
 
       const dataSource: BBTableSectionDataSource<Member>[] = [];
       dataSource.push({
-        title: "Owner",
+        title: t("common.role.owner"),
         list: ownerList,
       });
 
       dataSource.push({
-        title: "DBA",
+        title: t("common.role.dba"),
         list: dbaList,
       });
 
       dataSource.push({
-        title: "Developer",
+        title: t("common.role.developer"),
         list: developerList,
       });
 
@@ -249,14 +242,14 @@ export default {
       }
 
       if (!hasAdminFeature.value) {
-        return "Upgrade to Team plan to enable role management";
+        return t("settings.members.tooltip.upgrade");
       }
 
       if (!allowEdit.value) {
-        return "Only Owner can change the role";
+        return t("settings.members.tooltip.not-allow-edit");
       }
 
-      return "Can not remove the last Owner";
+      return t("settings.members.tooltip.not-allow-remove");
     };
 
     const allowDeactivateMember = (member: Member) => {

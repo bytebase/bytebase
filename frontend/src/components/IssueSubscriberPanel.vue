@@ -44,24 +44,16 @@
       @click.prevent="toggleSubscription"
     >
       <span class="w-full">
-        <svg
+        <heroicons-outline:ban
+          v-if="isCurrentUserSubscribed"
           class="h-5 w-5 text-control inline -mt-0.5 mr-1"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            v-if="isCurrentUserSubscribed"
-            fill-rule="evenodd"
-            d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
-            clip-rule="evenodd"
-          ></path>
-          <path
-            v-else
-            d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-          ></path></svg
-        >{{ isCurrentUserSubscribed ? "Unsubscribe" : "Subscribe" }}</span
-      >
+        />
+        <heroicons-solid:bell
+          v-else
+          class="h-5 w-5 text-control inline -mt-0.5 mr-1"
+        />
+        {{ isCurrentUserSubscribed ? "Unsubscribe" : "Subscribe" }}
+      </span>
     </button>
   </div>
 </template>

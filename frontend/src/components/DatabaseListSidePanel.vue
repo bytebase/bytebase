@@ -17,10 +17,12 @@ import { databaseSlug, environmentName } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "DatabaseListSidePanel",
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -90,9 +92,11 @@ export default {
             // `db.id` is global unique, so need not to specify `env.id`
             // so here `id` looks like "bb.database.1234"
             id: `bb.database.${db.id}`,
-            section: "Databases",
+            section: t("common.databases"),
             name: db.name,
-            keywords: "database db",
+            // env.name is also a keyword to provide better search
+            // e.g. "Blog" under "staged" now can be searched by "bl st"
+            keywords: `database db ${env.name}`,
             data: {
               tags: [env.name],
             },

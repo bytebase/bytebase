@@ -2,31 +2,14 @@
   <div class="mx-4 space-y-4 w-160">
     <template v-if="projectId">
       <div v-if="state.project.workflowType == 'VCS'" class="textlabel">
-        This project has version control enabled and selecting database below
-        will navigate you to the corresponding Git repository to create schema
-        change.
+        {{ $t('alter-schema.vcs-enabled') }}
       </div>
     </template>
     <template v-else>
       <div class="flex flex-row space-x-2">
-        <svg
-          class="w-8 h-8 text-control -mt-1.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-          ></path>
-        </svg>
+        <heroicons-outline:collection class="w-8 h-8 text-control -mt-1.5" />
         <p class="textlabel">
-          indicates the project has enabled version control. Selecting database
-          belonging to such project will navigate you to the corresponding Git
-          repository to create schema change.
+          {{ $t('alter-schema.vcs-info') }}
         </p>
       </div>
     </template>
@@ -44,7 +27,7 @@
             class="btn"
             value="SINGLE_DB"
           />
-          <label class="label"> Alter single database </label>
+          <label class="label"> {{ $t('alter-schema.alter-single-db') }} </label>
         </div>
         <div class="radio">
           <input
@@ -54,16 +37,14 @@
             class="btn"
             value="MULTI_DB"
           />
-          <label class="label"> Alter multiple databases </label>
+          <label class="label"> {{ $t('alter-schema.alter-multiple-db') }} </label>
         </div>
       </div>
     </div>
 
     <template v-if="projectId && state.alterType == 'MULTI_DB'">
       <div class="textinfolabel">
-        For each environment, your can select a database to alter its schema or
-        just skip that environment. This allows you to compose a single pipeline
-        to propagate schema changes across multiple environments.
+        {{ $t('alter-schema.alter-multiple-db-info') }}
       </div>
       <div class="space-y-4">
         <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
@@ -160,7 +141,7 @@
                   "
                   @input="clearDatabaseIdForEnvironment(environment.id)"
                 />
-                <span class="ml-3 font-medium text-main">SKIP</span>
+                <span class="ml-3 font-medium text-main uppercase">{{ $t('common.skip') }}</span>
               </div>
             </label>
           </div>
@@ -183,7 +164,7 @@
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
       >
-        Cancel
+        {{ $t('common.cancel') }}
       </button>
       <button
         v-if="state.alterType == 'MULTI_DB'"
@@ -191,7 +172,7 @@
         :disabled="!allowGenerateMultiDb"
         @click.prevent="generateMultDb"
       >
-        Next
+        {{ $t('common.next') }}
       </button>
     </div>
   </div>

@@ -3,7 +3,7 @@
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
       <div class="col-span-2 col-start-2 w-64">
         <label for="name" class="textlabel">
-          New database name <span class="text-red-600">*</span>
+          {{ $t('create-db.new-database-name') }} <span class="text-red-600">*</span>
         </label>
         <input
           id="name"
@@ -14,13 +14,18 @@
           class="textfield mt-1 w-full"
         />
         <span v-if="isReservedName" class="text-red-600"
-          >{{ state.databaseName }} is a reserved name</span
+          >
+          <i18n-t keypath="create-db.reserved-db-error" >
+            <template v-slot:databaseName>
+              {{ state.databaseName }}
+            </template>
+          </i18n-t></span
         >
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
         <label for="project" class="textlabel">
-          Project <span style="color: red">*</span>
+          {{ $t('common.projects') }}  <span style="color: red">*</span>
         </label>
         <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
@@ -35,7 +40,7 @@
 
       <div class="col-span-2 col-start-2 w-64">
         <label for="environment" class="textlabel">
-          Environment <span style="color: red">*</span>
+          {{ $t('common.environments') }} <span style="color: red">*</span>
         </label>
         <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
@@ -55,7 +60,7 @@
             :instance="selectedInstance"
           />
           <label for="instance" class="textlabel">
-            Instance <span class="text-red-600">*</span>
+            {{ $t('common.instances') }} <span class="text-red-600">*</span>
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
@@ -82,8 +87,8 @@
           <label for="charset" class="textlabel">
             {{
               selectedInstance.engine == "POSTGRES"
-                ? "Encoding"
-                : "Character set"
+                ? $t('db.encoding')
+                : $t('db.character-set')
             }}</label
           >
           <input
@@ -97,7 +102,7 @@
         </div>
 
         <div class="col-span-2 col-start-2 w-64">
-          <label for="collation" class="textlabel"> Collation </label>
+          <label for="collation" class="textlabel">  {{ $t('db.collation') }} </label>
           <input
             id="collation"
             v-model="state.collation"
@@ -113,7 +118,7 @@
 
       <div v-if="showAssigneeSelect" class="col-span-2 col-start-2 w-64">
         <label for="user" class="textlabel">
-          Assignee <span class="text-red-600">*</span>
+          {{ $t('common.assignee') }} <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
         <!-- eslint-disable vue/attribute-hyphenation -->
@@ -135,14 +140,14 @@
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
       >
-        Cancel
+        {{ $t('common.cancel') }}
       </button>
       <button
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowCreate"
         @click.prevent="create"
       >
-        Create
+        {{ $t('common.create') }}
       </button>
     </div>
   </div>
