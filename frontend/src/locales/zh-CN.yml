@@ -33,7 +33,7 @@ common:
   revert: 恢复
   apply: 应用
   reorder: 排序
-  id: 序号
+  id: ID
   name: 名称
 error-page:
   go-back-home: 回到主页
@@ -162,16 +162,16 @@ quick-start:
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
 policy:
   approval:
-    name: 审批政策
-    info: 如要更改数据库表结构，该选项控制了是否需要手动审批。
+    name: 审批策略
+    info: 要更改数据库schema，该选项控制了是否需要手动审批。
     manual: 需要人工审批
-    manual-info: 进行中的表结构改动任务只有被人工审批后才会执行。
+    manual-info: 进行中的schema改动任务只有被人工审批后才会执行。
     auto: 无需审批
     auto-info: 进行中的任务无需审核并且会被自动执行。
   backup:
-    name: 数据库备份计划政策
-    not-enforced: 无计划
-    not-enforced-info: 无备份计划。
+    name: 数据库备份策略
+    not-enforced: 无策略
+    not-enforced-info: 无备份策略。
     daily: 每日
     daily-info: 每日备份数据库。
     weekly: 每周
