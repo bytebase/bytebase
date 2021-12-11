@@ -32,6 +32,7 @@ const template: IssueTemplate = {
         ],
         name: "Create database pipeline",
       },
+      createContext: {},
       payload: {},
     };
   },

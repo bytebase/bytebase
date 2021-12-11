@@ -54,6 +54,7 @@ const template: IssueTemplate = {
             ? `[${ctx.databaseList[0].name}] Update schema pipeline`
             : "Update database schema pipeline",
       },
+      createContext: {},
       payload,
     };
   },
