@@ -52,6 +52,7 @@ const template: IssueTemplate = {
             ? `[${ctx.databaseList[0].name}] Establish baseline pipeline`
             : "Establish database baseline pipeline",
       },
+      createContext: {},
       payload,
     };
   },
