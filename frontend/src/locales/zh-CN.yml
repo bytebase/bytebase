@@ -163,9 +163,9 @@ quick-start:
 policy:
   approval:
     name: 审批策略
-    info: 要更改数据库schema，该选项控制了是否需要手动审批。
+    info: 要更改数据库 schema，该选项控制了是否需要手动审批。
     manual: 需要人工审批
-    manual-info: 进行中的schema改动任务只有被人工审批后才会执行。
+    manual-info: 进行中的 schema 改动任务只有被人工审批后才会执行。
     auto: 无需审批
     auto-info: 进行中的任务无需审核并且会被自动执行。
   backup:
