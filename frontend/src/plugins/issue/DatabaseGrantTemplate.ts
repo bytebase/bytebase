@@ -43,7 +43,7 @@ const template: IssueTemplate = {
         ],
         name: "Request database access",
       },
-      metadata: {},
+      createContext: {},
       payload,
     };
   },

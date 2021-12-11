@@ -317,7 +317,7 @@ export default {
       if (props.backup) {
         newIssue = {
           name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
-          type: "bb.issue.database.restore",
+          type: "bb.issue.database.create",
           description: `Creating database '${state.databaseName}' from backup '${props.backup.name}'`,
           assigneeId: state.assigneeId!,
           projectId: state.projectId!,
@@ -325,15 +325,14 @@ export default {
             stageList: [],
             name: "",
           },
-          metadata: {
+          createContext: {
             instanceId: state.instanceId!,
             databaseName: state.databaseName,
             characterSet: state.characterSet || defaultCharset(selectedInstance.value.engine),
             collation: state.collation || defaultCollation(selectedInstance.value.engine),
             backupId: props.backup.id,
             backupName: props.backup.name,
-            isDBAOrOwner: isDBAOrOwner(currentUser.value.role),
-          },
+         },
           payload: {},
         };
       } else {
@@ -347,12 +346,11 @@ export default {
             stageList: [],
             name: "",
           },
-          metadata: {
+          createContext: {
             instanceId: state.instanceId!,
             databaseName: state.databaseName,
             characterSet: state.characterSet || defaultCharset(selectedInstance.value.engine),
             collation: state.collation || defaultCollation(selectedInstance.value.engine),
-            isDBAOrOwner: isDBAOrOwner(currentUser.value.role),
           },
           payload: {},
         };

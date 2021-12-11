@@ -24,8 +24,6 @@ const (
 	IssueGeneral IssueType = "bb.issue.general"
 	// IssueDatabaseCreate is the issue type for creating databases.
 	IssueDatabaseCreate IssueType = "bb.issue.database.create"
-	// IssueDatabaseRestore is the issue type for restoring databases.
-	IssueDatabaseRestore IssueType = "bb.issue.database.restore"
 	// IssueDatabaseGrant is the issue type for granting databases.
 	IssueDatabaseGrant IssueType = "bb.issue.database.grant"
 	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas.
@@ -104,26 +102,13 @@ type IssueCreate struct {
 	AssigneeID       int       `jsonapi:"attr,assigneeId"`
 	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
 	RollbackIssueID  *int      `jsonapi:"attr,rollbackIssueId"`
-	Metadata         string    `jsonapi:"attr,metadata"`
-	Payload          string    `jsonapi:"attr,payload"`
+	// CreateContext is used to create the issue pipeline and not persisted.
+	CreateContext string `jsonapi:"attr,createContext"`
+	Payload       string `jsonapi:"attr,payload"`
 }
 
-// DatabaseCreateMetadata is the issue metadata for creating a database.
-type DatabaseCreateMetadata struct {
-	// InstanceID is the ID of an instance.
-	InstanceID int `json:"instanceId"`
-	// DatabaseName is the name of the database.
-	DatabaseName string `json:"databaseName"`
-	// CharacterSet is the character set of the database.
-	CharacterSet string `json:"characterSet"`
-	// Collation is the collation of the database.
-	Collation string `json:"collation"`
-	// IsDBAOrOwner indicates whether the operator is DBA/Owner or not.
-	IsDBAOrOwner bool `json:"isDBAOrOwner"`
-}
-
-// DatabaseRestoreMetadata is the issue metadata for restoring a database.
-type DatabaseRestoreMetadata struct {
+// DatabaseCreateContext is the issue create context for creating a database.
+type DatabaseCreateContext struct {
 	// InstanceID is the ID of an instance.
 	InstanceID int `json:"instanceId"`
 	// DatabaseName is the name of the database.
@@ -136,8 +121,6 @@ type DatabaseRestoreMetadata struct {
 	BackupID int `json:"backupId"`
 	// BackupName is the name of the backup.
 	BackupName string `json:"backupName"`
-	// IsDBAOrOwner indicates whether the operator is DBA/Owner or not.
-	IsDBAOrOwner bool `json:"isDBAOrOwner"`
 }
 
 // IssueFind is the API message for finding issues.

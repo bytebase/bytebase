@@ -162,7 +162,7 @@ const actions = {
           attributes: {
             ...newIssue,
             // Server expects payload as string, so we stringify first.
-            metadata: JSON.stringify(newIssue.metadata),
+            createContext: JSON.stringify(newIssue.createContext),
             payload: JSON.stringify(newIssue.payload),
           },
         },

@@ -17,7 +17,7 @@ const template: IssueTemplate = {
         stageList: [],
         name: "",
       },
-      metadata: {},
+      createContext: {},
       payload,
     };
   },

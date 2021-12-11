@@ -398,7 +398,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	if issueCreate.Type == api.IssueDatabaseCreate || issueCreate.Type == api.IssueDatabaseRestore {
+	if issueCreate.Type == api.IssueDatabaseCreate {
 		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
 		if err != nil {
 			return nil, err
@@ -543,8 +543,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
-		m := api.DatabaseCreateMetadata{}
-		if err := json.Unmarshal([]byte(issueCreate.Metadata), &m); err != nil {
+		m := api.DatabaseCreateContext{}
+		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
 		// Find instance.
@@ -563,11 +563,42 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
 		}
 
-		status := api.TaskPendingApproval
-		if m.IsDBAOrOwner {
-			status = api.TaskPending
+		if m.BackupID != 0 || m.BackupName != "" {
+			return &api.PipelineCreate{
+				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
+				StageList: []api.StageCreate{
+					{
+						Name:          "Create database",
+						EnvironmentID: instance.EnvironmentID,
+						TaskList: []api.TaskCreate{
+							{
+								InstanceID:   m.InstanceID,
+								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+								Status:       api.TaskPendingApproval,
+								Type:         api.TaskDatabaseCreate,
+								DatabaseName: payload.DatabaseName,
+								Payload:      string(bytes),
+							},
+						},
+					},
+					{
+						Name:          "Restore backup",
+						EnvironmentID: instance.EnvironmentID,
+						TaskList: []api.TaskCreate{
+							{
+								InstanceID:   m.InstanceID,
+								Name:         fmt.Sprintf("Restore backup %v", m.BackupName),
+								Status:       api.TaskPending,
+								Type:         api.TaskDatabaseRestore,
+								DatabaseName: payload.DatabaseName,
+								BackupID:     &m.BackupID,
+							},
+						},
+					},
+				},
+			}, nil
 		}
-		pipeline := &api.PipelineCreate{
+		return &api.PipelineCreate{
 			Name: fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
 			StageList: []api.StageCreate{
 				{
@@ -577,7 +608,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 						{
 							InstanceID:   m.InstanceID,
 							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       status,
+							Status:       api.TaskPendingApproval,
 							Type:         api.TaskDatabaseCreate,
 							DatabaseName: payload.DatabaseName,
 							Payload:      string(bytes),
@@ -585,67 +616,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 					},
 				},
 			},
-		}
-		return pipeline, nil
-	case api.IssueDatabaseRestore:
-		m := api.DatabaseRestoreMetadata{}
-		if err := json.Unmarshal([]byte(issueCreate.Metadata), &m); err != nil {
-			return nil, err
-		}
-		// Find instance.
-		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
-		if err != nil {
-			return nil, err
-		}
-
-		payload := api.TaskDatabaseCreatePayload{}
-		payload.ProjectID = issueCreate.ProjectID
-		payload.CharacterSet = m.CharacterSet
-		payload.Collation = m.Collation
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation)
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-		}
-
-		status := api.TaskPendingApproval
-		if m.IsDBAOrOwner {
-			status = api.TaskPending
-		}
-		pipeline := &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
-			StageList: []api.StageCreate{
-				{
-					Name:          "Create database",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   m.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       status,
-							Type:         api.TaskDatabaseCreate,
-							DatabaseName: payload.DatabaseName,
-							Payload:      string(bytes),
-						},
-					},
-				},
-				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   m.InstanceID,
-							Name:         fmt.Sprintf("Restore backup %v", m.BackupName),
-							Status:       api.TaskPending,
-							Type:         api.TaskDatabaseRestore,
-							DatabaseName: payload.DatabaseName,
-							BackupID:     &m.BackupID,
-						},
-					},
-				},
-			},
-		}
-		return pipeline, nil
+		}, nil
 	}
 	return nil, nil
 }
