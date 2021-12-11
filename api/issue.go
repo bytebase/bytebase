@@ -102,13 +102,16 @@ type IssueCreate struct {
 	AssigneeID       int       `jsonapi:"attr,assigneeId"`
 	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
 	RollbackIssueID  *int      `jsonapi:"attr,rollbackIssueId"`
+	Payload          string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
+	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
+	// This consoliates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
+	// we want the complexity resides in the backend.
 	CreateContext string `jsonapi:"attr,createContext"`
-	Payload       string `jsonapi:"attr,payload"`
 }
 
-// DatabaseCreateContext is the issue create context for creating a database.
-type DatabaseCreateContext struct {
+// CreateDatabaseContext is the issue create context for creating a database.
+type CreateDatabaseContext struct {
 	// InstanceID is the ID of an instance.
 	InstanceID int `json:"instanceId"`
 	// DatabaseName is the name of the database.

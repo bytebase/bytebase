@@ -543,7 +543,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
-		m := api.DatabaseCreateContext{}
+		m := api.CreateDatabaseContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
