@@ -30,11 +30,17 @@ common:
     owner: 切换到所有者
     developer: 切换到开发者
   assignee: 审核人
+  revert: 恢复
+  apply: 应用
+  reorder: 排序
+  id: ID
+  name: 名称
   creator: 创建人
   version: 版本
   issue: 工单
   duration: 时长
   created-at: 创建于
+  updated-at: 更新于
   commit: 提交
   statement: 语句
   snapshot: 快照
@@ -59,7 +65,10 @@ banner:
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
   action: 5 秒部署你自己的服务
 intro:
-  content: Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发 pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
+  content: >-
+    Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进
+    schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发
+    pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
   issue: 工单
 bbkit:
@@ -86,8 +95,10 @@ settings:
     plan: （升级到团队方案来开启角色管理）
   workspace:
     url-section: SQL Console URL
-    url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
-    tip: 如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase 就可以将控制台链接到相关的数据库和表的界面上。
+    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
+    tip: >-
+      如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
+      就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
   members:
     active: 已激活
@@ -144,6 +155,9 @@ instance:
   select: 选择实例
 environment:
   select: 选择环境
+  archive: 归档此环境
+  archive-info: 已归档环境不会显示。您可以从归档界面恢复。
+  create: 创建环境
 quick-start:
   bookmark-an-issue: 收藏工单
   add-a-comment: 添加评论
@@ -155,6 +169,22 @@ quick-start:
   notice:
     title: 快速入门导览已关闭
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
+policy:
+  approval:
+    name: 审批策略
+    info: 要更改数据库 schema，该选项控制了是否需要手动审批。
+    manual: 需要人工审批
+    manual-info: 进行中的 schema 改动任务只有被人工审批后才会执行。
+    auto: 无需审批
+    auto-info: 进行中的任务无需审核并且会被自动执行。
+  backup:
+    name: 数据库备份策略
+    not-enforced: 无策略
+    not-enforced-info: 无备份策略。
+    daily: 每日
+    daily-info: 每日备份数据库。
+    weekly: 每周
+    weekly-info: 每周备份数据库。
 migration-history:
   self: 迁移历史
   workflow: 工作流
@@ -173,4 +203,3 @@ migration-history:
   establish-baseline-description: >-
     Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。
     对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
-
