@@ -95,64 +95,9 @@ import { databaseSlug, migrationHistorySlug, secondsToString } from "../utils";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 type Mode = "DATABASE" | "PROJECT";
-
-const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
-  [
-    "DATABASE",
-    [
-      {
-        title: "",
-      },
-      {
-        title: "Workflow",
-      },
-      {
-        title: "Version",
-      },
-      {
-        title: "Issue",
-      },
-      {
-        title: "SQL",
-      },
-      {
-        title: "Duration",
-      },
-      {
-        title: "Created",
-      },
-      {
-        title: "Creator",
-      },
-    ],
-  ],
-  [
-    "PROJECT",
-    [
-      { title: "" },
-      {
-        title: "Version",
-      },
-      {
-        title: "Issue",
-      },
-      {
-        title: "SQL",
-      },
-      {
-        title: "Duration",
-      },
-      {
-        title: "Created",
-      },
-      {
-        title: "Creator",
-      },
-    ],
-  ],
-]);
 
 export default {
   name: "MigrationHistoryTable",
@@ -173,6 +118,64 @@ export default {
   },
   setup(props) {
     const router = useRouter();
+
+    const { t } = useI18n();
+
+    const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
+      [
+        "DATABASE",
+        [
+          {
+            title: "",
+          },
+          {
+            title: t('migration-history.workflow'),
+          },
+          {
+            title: t('common.version'),
+          },
+          {
+            title: t('common.issue'),
+          },
+          {
+            title: "SQL",
+          },
+          {
+            title: t('common.duration'),
+          },
+          {
+            title: t('common.created-at'),
+          },
+          {
+            title: t('common.creator'),
+          },
+        ],
+      ],
+      [
+        "PROJECT",
+        [
+          { title: "" },
+          {
+            title: t('common.version'),
+          },
+          {
+            title: t('common.issue'),
+          },
+          {
+            title: "SQL",
+          },
+          {
+            title: t('common.duration'),
+          },
+          {
+            title: t('common.created-at'),
+          },
+          {
+            title: t('common.creator'),
+          },
+        ],
+      ],
+    ]);
 
     const clickHistory = function (section: number, row: number) {
       const history = props.historySectionList[section].list[row];
