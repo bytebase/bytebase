@@ -49,13 +49,13 @@ export default {
         title: t('common.id'),
       },
       {
-        title: t('common.name'),
+        title: t('activity.name'),
       },
       {
-        title: "Created",
+        title: t('activity.created'),
       },
       {
-        title: "Updated",
+        title: t('activity.updated'),
       },
     ];
 

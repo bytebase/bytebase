@@ -34,7 +34,6 @@ common:
   apply: Apply
   reorder: Reorder
   id: ID
-  name: Name
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -127,6 +126,7 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+  updated: Updated
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database

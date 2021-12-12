@@ -34,7 +34,6 @@ common:
   apply: 应用
   reorder: 排序
   id: ID
-  name: 名称
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -122,6 +121,7 @@ activity:
   comment: 注释
   created: 创建于
   invoker: 执行者
+  updated: 更新于
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
