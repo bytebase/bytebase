@@ -11,7 +11,7 @@
         space-x-2
       "
     >
-      Migration History
+      {{ $t('migration-history.self') }}
       <button
         v-if="allowEdit"
         type="button"
@@ -19,10 +19,10 @@
         :disabled="state.migrationSetupStatus != 'OK'"
         @click.prevent="state.showBaselineModal = true"
       >
-        Establish new baseline
+        {{ $t('migration-history.establish-baseline') }}
       </button>
       <div>
-        <BBSpin v-if="state.loading" :title="'Refreshing history ...'" />
+        <BBSpin v-if="state.loading" :title="$t('migration-history.refreshing-history')" />
       </div>
     </div>
     <MigrationHistoryTable
@@ -34,7 +34,7 @@
       v-else
       :style="`WARN`"
       :title="attentionTitle"
-      :action-text="allowConfigInstance ? 'Config instance' : ''"
+      :action-text="allowConfigInstance ? $t('migration-history.config-instance') : ''"
       @click-action="configInstance"
     />
   </div>
@@ -42,10 +42,10 @@
   <BBAlert
     v-if="state.showBaselineModal"
     :style="'INFO'"
-    :ok-text="'Establish baseline'"
-    :cancel-text="'Cancel'"
+    :ok-text="$t('migration-history.establish-baseline')"
+    :cancel-text="$t('common.cancel')"
     :title="`Establish new baseline for \'${database.name}\'`"
-    :description="'Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.\n\nFor VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.'"
+    :description="$t('migration-history.establish-baseline-description')"
     @ok="
       () => {
         doCreateBaseline();

@@ -30,6 +30,14 @@ common:
     owner: Switch to Owner
     developer: Switch to Developer
   assignee: Assignee
+  creator: Creator
+  version: Version
+  issue: Issue
+  duration: Duration
+  created-at: Created
+  commit: Commit
+  statement: Statement
+  snapshot: Snapshot
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -164,3 +172,24 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+migration-history:
+  self: Migration History
+  workflow: Workflow
+  commit-info: by {author} at {time}
+  no-schema-change: this migration has no schema change
+  show-diff: Show diff
+  left-vs-right: Prev (left) vs This version (right)
+  schema-snapshot-after-migration: The schema snapshot recorded after applying this migration
+  list-limit: >-
+    For database having migration history, we list up to 5 most recent histories
+    below. You can click the database name to view all histories.
+  no-history-in-project: Do not find migration history from any database in this project.
+  recording-info: Migration history is recorded whenever the database schema is altered.
+  establish-baseline: Establish new baseline
+  refreshing-history: Refreshing history ...
+  config-instance: Config instance
+  establish-baseline-description: >-
+    Bytebase will use the current schema as the new baseline. You should check
+    that the current schema does reflect the desired state. For VCS workflow,
+    there must exist a baseline before any incremental migration change can be
+    applied to the database.
