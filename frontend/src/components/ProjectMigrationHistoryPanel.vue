@@ -2,8 +2,7 @@
   <div class="flex flex-col space-y-4">
     <template v-if="state.migrationHistorySectionList.length > 0">
       <div class="text-center textinfolabel">
-        For database having migration history, we list up to 5 most recent
-        histories below. You can click the database name to view all histories.
+        {{ $t('migration-history.list-limit') }}
       </div>
       <MigrationHistoryTable
         :mode="'PROJECT'"
@@ -16,10 +15,10 @@
       <div class="text-center">
         <heroicons-outline:inbox class="mx-auto w-16 h-16 text-control-light" />
         <h3 class="mt-2 text-sm font-medium text-main">
-          Do not find migration history from any database in this project.
+          {{ $t('migration-history.no-history-in-project') }}
         </h3>
         <p class="mt-1 text-sm text-control-light">
-          Migration history is recorded whenever the database schema is altered.
+          {{ $t('migration-history.recording-info') }}
         </p>
       </div>
     </template>
