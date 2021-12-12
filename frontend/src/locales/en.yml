@@ -30,11 +30,17 @@ common:
     owner: Switch to Owner
     developer: Switch to Developer
   assignee: Assignee
+  revert: Revert
+  apply: Apply
+  reorder: Reorder
+  id: ID
+  name: Name
   creator: Creator
   version: Version
   issue: Issue
   duration: Duration
   created-at: Created
+  updated-at: Updated
   commit: Commit
   statement: Statement
   snapshot: Snapshot
@@ -59,11 +65,13 @@ banner:
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
   action: Deploy yours in 5 seconds
 intro:
-  content: Bytebase is for DBAs and Developers to collaborate on database schemas
-        changes. One can construct a single pipeline to propagate the schema
-        change across multiple environments. One can also store the schemas in
-        VCS and trigger a new pipeline upon commit push. Follow the {quickstart} on the bottom left to get
-        familiar with the product. If you encounter problems, visit {doc} or report {issue} on GitHub.
+  content: >-
+    Bytebase is for DBAs and Developers to collaborate on database schemas
+    changes. One can construct a single pipeline to propagate the schema change
+    across multiple environments. One can also store the schemas in VCS and
+    trigger a new pipeline upon commit push. Follow the {quickstart} on the
+    bottom left to get familiar with the product. If you encounter problems,
+    visit {doc} or report {issue} on GitHub.
   quickstart: Quickstart
   doc: doc
   issue: issue
@@ -91,11 +99,11 @@ settings:
     plan: (Upgrade to Team plan to enable role management)
   workspace:
     url-section: SQL Console URL
-    url-tip: "Tip: Use {schema} as the placeholder for the actual
-          database name"
-    tip: If your team use a separate SQL console such as phpMyAdmin, you can
-        provide its URL pattern here. Once provided, Bytebase will surface the
-        console link on the relevant database and table UI.
+    url-tip: 'Tip: Use {schema} as the placeholder for the actual database name'
+    tip: >-
+      If your team use a separate SQL console such as phpMyAdmin, you can
+      provide its URL pattern here. Once provided, Bytebase will surface the
+      console link on the relevant database and table UI.
     tip-link: Detailed guide
   members:
     active: Active members
@@ -161,6 +169,11 @@ instance:
   select: Select instance
 environment:
   select: Select environment
+  archive: Archive this environment
+  archive-info: >-
+    Archived environment will not be shown on the normal interface. You can
+    still restore later from the Archive page.
+  create: Create Environment
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
@@ -172,6 +185,26 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+policy:
+  approval:
+    name: Approval Policy
+    info: >-
+      For updating schema on the existing database, this setting controls
+      whether the task requires manual approval.
+    manual: Require manual approval
+    manual-info: >-
+      Pending schema migration task will only be executed after it's manually
+      approved.
+    auto: Skip manual approval
+    auto-info: Pending schema migration task will be executed automatically.
+  backup:
+    name: Database backup schedule policy
+    not-enforced: Not enforced
+    not-enforced-info: No backup schedule is enforced.
+    daily: Daily backup
+    daily-info: Enforce every database to backup daily.
+    weekly: Weekly backup
+    weekly-info: Enforce every database to backup weekly.
 migration-history:
   self: Migration History
   workflow: Workflow

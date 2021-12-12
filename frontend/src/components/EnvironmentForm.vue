@@ -3,7 +3,7 @@
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
-          Environment Name <span class="text-red-600">*</span>
+          {{ $t('common.environments') }} <span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-2 w-full"
@@ -14,17 +14,9 @@
         />
       </div>
       <div class="col-span-1">
-        <label class="textlabel"> Approval Policy </label>
+        <label class="textlabel"> {{ $t('policy.approval.name') }} </label>
         <div class="mt-1 textinfolabel">
-          For updating schema on the existing database, this setting controls
-          whether the task requires manual approval
-          <a
-            href="https://docs.bytebase.com/use-bytebase/approval-policy?ref=console"
-            target="_blank"
-            class="normal-link"
-          >
-            detailed guide</a
-          >.
+          {{ $t('policy.approval.info') }}
         </div>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
@@ -42,10 +34,9 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">Require manual approval</div>
+              <div class="textlabel">{{ $t('policy.approval.manual') }}</div>
               <div class="mt-1 textinfolabel">
-                Pending schema migration task will only be executed after it's
-                manually approved.
+                {{ $t('policy.approval.manual-info') }}
               </div>
             </div>
           </div>
@@ -64,17 +55,16 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">Skip manual approval</div>
+              <div class="textlabel">{{ $t('policy.approval.auto') }}</div>
               <div class="mt-1 textinfolabel">
-                Pending schema migration task will be executed automatically.
+                {{ $t('policy.approval.auto-info') }}
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-span-1">
-        <label class="textlabel"> Database backup schedule policy </label>
-        <div class="mt-1 textinfolabel">Enforce database backup schedule</div>
+        <label class="textlabel"> {{ $t('policy.backup.name') }} </label>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
@@ -90,9 +80,9 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">Not enforced</div>
+              <div class="textlabel">{{ $t('policy.backup.not-enforced') }}</div>
               <div class="mt-1 textinfolabel">
-                No backup schedule is enforced.
+                {{ $t('policy.backup.not-enforced-info') }}
               </div>
             </div>
           </div>
@@ -110,9 +100,9 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">Daily backup</div>
+              <div class="textlabel">{{ $t('policy.backup.daily') }}</div>
               <div class="mt-1 textinfolabel">
-                Enforce every database to backup daily.
+                {{ $t('policy.backup.daily-info') }}
               </div>
             </div>
           </div>
@@ -130,9 +120,9 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">Weekly backup</div>
+              <div class="textlabel">{{ $t('policy.backup.weekly') }}</div>
               <div class="mt-1 textinfolabel">
-                Enforce every database to backup weekly.
+                {{ $t('policy.backup.weekly-info') }}
               </div>
             </div>
           </div>
@@ -146,7 +136,7 @@
         class="btn-normal py-2 px-4"
         @click.prevent="$emit('cancel')"
       >
-        Cancel
+        {{ $t('common.cancel') }}
       </button>
       <button
         type="submit"
@@ -154,7 +144,7 @@
         :disabled="!allowCreate"
         @click.prevent="createEnvironment"
       >
-        Create
+        {{ $t('common.create') }}
       </button>
     </div>
     <!-- Update button group -->
@@ -163,10 +153,10 @@
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
-          :button-text="'Archive this environment'"
-          :ok-text="'Archive'"
-          :confirm-title="`Archive environment '${state.environment.name}'?`"
-          :confirm-description="'Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :button-text="$t('environment.archive')"
+          :ok-text="$t('common.archive')"
+          :confirm-title="$t('environment.archive') + ` '${state.environment.name}'?`"
+          :confirm-description="$t('environment.archive-info')"
           :require-confirm="true"
           @confirm="archiveEnvironment"
         />
@@ -191,7 +181,7 @@
           :disabled="!valueChanged"
           @click.prevent="revertEnvironment"
         >
-          Revert
+          {{ $t('common.revert') }}
         </button>
         <button
           type="submit"
@@ -199,7 +189,7 @@
           :disabled="!valueChanged"
           @click.prevent="updateEnvironment"
         >
-          Update
+          {{ $t('common.update') }}
         </button>
       </div>
     </div>
