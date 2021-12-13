@@ -1,5 +1,6 @@
 common:
   save: 保存
+  cancel: 取消
   home: 主页
   settings: 设置
   projects: 项目
@@ -23,12 +24,39 @@ common:
   rollback: 回滚
   run: 运行
   retry: 重试
-  cancel: 取消
   skip: 跳过
   reopen: 重开
+  dismiss: 关闭
+  back: 返回
+  next: 下一步
+  edit: 编辑
+  update: 更新
+  visit: 访问
+  role:
+    dba: DBA
+    owner: 所有者
+    developer: 开发者
+  role-switch:
+    dba: 切换到 DBA
+    owner: 切换到所有者
+    developer: 切换到开发者
+  assignee: 审核人
+  revert: 恢复
+  apply: 应用
+  reorder: 排序
+  id: ID
+  name: 名称
+  creator: 创建人
+  version: 版本
   issue: 工单
-unread-mail: "没有未读邮件 | {count} 封未读邮件 | {count} 封未读邮件"
-not-found: 未找到
+  duration: 时长
+  created-at: 创建于
+  updated-at: 更新于
+  commit: 提交
+  statement: 语句
+  snapshot: 快照
+error-page:
+  go-back-home: 回到主页
 anomaly-center: 异常中心
 kbar:
   recently-visited: 最近访问
@@ -60,6 +88,72 @@ task:
   ended: 结束于
   view-migration: 查看迁移
   view-migration-history: 查看迁移历史
+banner:
+  demo-intro: 这是 Bytebase 的演示版本。
+  demo-intro-readonly: 这是 Bytebase 的只读演示版本
+  action: 5 秒部署你自己的服务
+intro:
+  content: >-
+    Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进
+    schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发
+    pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
+  doc: 文档
+  issue: 工单
+bbkit:
+  alert:
+    ok: 确认
+    cancel: 取消
+settings:
+  sidebar:
+    account: 账户
+    profile: 个人信息
+    workspace: 工作空间
+    general: 通用
+    members: 成员
+    version-control: 版本控制
+    plans: 价格方案
+  profile:
+    email: 邮箱
+    role: 角色
+    password: 密码
+    password-placeholder: 敏感数据 - 仅写入
+    password-confirm: 确认密码
+    password-confirm-placeholder: 再次输入以确认
+    password-mismatch: 密码输入不一致
+    plan: （升级到团队方案来开启角色管理）
+  workspace:
+    url-section: SQL Console URL
+    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
+    tip: >-
+      如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
+      就可以将控制台链接到相关的数据库和表的界面上。
+    tip-link: 详细指引
+  members:
+    active: 已激活
+    inactive: 未激活
+    helper: 通过邮箱添加或邀请成员
+    add-more: + 增加成员
+    add: 添加
+    invites: 发送邀请
+    invited: 已邀请
+    yourself: 你自己
+    upgrade: 升级付费方案来解锁其他角色
+    select-role: 选择角色
+    not-assigned: 未指定
+    table:
+      account: 账户
+      role: 角色
+      update-time: 更新时间
+    action:
+      deactivate: 禁用
+      deactivate-confirm-title: 确定禁用
+      deactivate-confirm-description: 之后可以重新启用
+      reactivate: 启用
+      reactivate-confirm-title: 确定启用
+    tooltip:
+      upgrade: 升级到团队版来开启成员管理
+      not-allow-edit: 只有所有者才能改变角色
+      not-allow-remove: 不能移除最后一个所有者
 activity:
   name: 名称
   comment: 评论
@@ -81,3 +175,75 @@ issue:
     form:
       note: 笔记
       placeholder: "(可选) 添加一段笔记…"
+alter-schema:
+  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
+  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
+  alter-single-db: 变更单个数据库
+  alter-multiple-db: 变更多个数据库
+  alter-multiple-db-info: 针对每个环境，你可以选择一个数据库进行变更或者直接跳过该环境，这样你就可以在一条流水线上把 schema 变更逐步作用到多个环境。
+quick-action:
+  alter-schema: 变更 Schema
+  create-db: 创建数据库
+  choose-db: 选择数据库
+create-db:
+  new-database-name: 新数据库名称
+  reserved-db-error: '{databaseName} 是一个预留名称'
+db:
+  encoding: 字符编码
+  character-set: 字符集
+  collation: 字符排序规则
+  select: 选择数据库
+  select-instance-first: 先选择实例
+  select-environment-first: 先选择环境
+instance:
+  select: 选择实例
+environment:
+  select: 选择环境
+  archive: 归档此环境
+  archive-info: 已归档环境不会显示。您可以从归档界面恢复。
+  create: 创建环境
+quick-start:
+  bookmark-an-issue: 收藏工单
+  add-a-comment: 添加评论
+  visit-project: '@:common.visit@:common.projects'
+  visit-instance: '@:common.visit@:common.instances'
+  visit-database: '@:common.visit@:common.databases'
+  visit-environment: '@:common.visit@:common.environments'
+  add-a-member: 添加成员
+  notice:
+    title: 快速入门导览已关闭
+    desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
+policy:
+  approval:
+    name: 审批策略
+    info: 要更改数据库 schema，该选项控制了是否需要手动审批。
+    manual: 需要人工审批
+    manual-info: 进行中的 schema 改动任务只有被人工审批后才会执行。
+    auto: 无需审批
+    auto-info: 进行中的任务无需审核并且会被自动执行。
+  backup:
+    name: 数据库备份策略
+    not-enforced: 无策略
+    not-enforced-info: 无备份策略。
+    daily: 每日
+    daily-info: 每日备份数据库。
+    weekly: 每周
+    weekly-info: 每周备份数据库。
+migration-history:
+  self: 迁移历史
+  workflow: 工作流
+  commit-info: '由 {author} 于 {time}'
+  no-schema-change: 本次迁移没有任何 Schema 的改动
+  show-diff: 显示差异
+  left-vs-right: 之前 (左) vs 当前版本 (右)
+  schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
+  list-limit: >-
+    对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
+  no-history-in-project: 这个项目下没有发现任何数据库有迁移历史。
+  recording-info: 每当数据库 schema 变更时，我们便会记录下迁移历史。
+  establish-baseline: 建立新的基线
+  refreshing-history: 刷新历史中 ...
+  config-instance: 配置实例
+  establish-baseline-description: >-
+    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。
+    对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。

@@ -19,6 +19,8 @@ export type IssueType =
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 
+export type IssueCreateContext = { [key: string]: any };
+
 export type IssuePayload = { [key: string]: any };
 
 export type Issue = {
@@ -55,6 +57,7 @@ export type IssueCreate = {
   description: string;
   assigneeId: PrincipalId;
   rollbackIssueId?: IssueId;
+  createContext: IssueCreateContext;
   payload: IssuePayload;
 };
 

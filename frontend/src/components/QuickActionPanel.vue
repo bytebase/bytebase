@@ -117,7 +117,7 @@
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Add Environment
+          {{ $t('environment.create') }}
         </h3>
       </div>
 
@@ -132,7 +132,7 @@
           <heroicons-outline:selector class="transform rotate-90 w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Reorder
+          {{ $t('common.reorder') }}
         </h3>
       </div>
 
@@ -315,14 +315,14 @@ export default defineComponent({
     };
 
     const alterSchema = () => {
-      state.modalTitle = "Alter schema";
-      state.modalSubtitle = "Choose database";
+      state.modalTitle = t('quick-action.alter-schema');
+      state.modalSubtitle = t('quick-action.choose-db');
       state.quickActionType = "quickaction.bb.database.schema.update";
       state.showModal = true;
     };
 
     const createDatabase = () => {
-      state.modalTitle = "Create database";
+      state.modalTitle = t('quick-action.create-db');;
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.database.create";
       state.showModal = true;

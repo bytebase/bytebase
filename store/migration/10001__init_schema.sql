@@ -840,12 +840,15 @@ CREATE TABLE task (
         )
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
-    payload TEXT NOT NULL DEFAULT ''
+    payload TEXT NOT NULL DEFAULT '',
+    `not_before_ts` BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
 
 CREATE INDEX idx_task_status ON task(`status`);
+
+CREATE INDEX idx_task_not_before_ts ON task(not_before_ts);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -1311,7 +1314,7 @@ CREATE TABLE db_label (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
     key TEXT NOT NULL REFERENCES label_key (key),
     value TEXT NOT NULL
 );

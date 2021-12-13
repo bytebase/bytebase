@@ -7,7 +7,7 @@
         class="flex justify-between py-0.5 select-none"
       >
         <p id="add_or_invite_members_helper" class="sr-only">
-          Add or invite by email address
+          {{ $t("settings.members.helper") }}
         </p>
         <div class="flex flex-row space-x-4">
           <div class="flex-grow">
@@ -54,7 +54,7 @@
                 class="btn"
                 value="OWNER"
               />
-              <label class="label"> Owner </label>
+              <label class="label"> {{ $t("common.role.owner") }} </label>
             </div>
             <div class="radio">
               <input
@@ -65,7 +65,7 @@
                 class="btn"
                 value="DBA"
               />
-              <label class="label"> DBA </label>
+              <label class="label"> {{ $t("common.role.dba") }} </label>
             </div>
             <div class="radio">
               <input
@@ -76,7 +76,7 @@
                 class="btn"
                 value="DEVELOPER"
               />
-              <label class="label"> Developer </label>
+              <label class="label"> {{ $t("common.role.developer") }} </label>
             </div>
           </div>
         </div>
@@ -86,7 +86,7 @@
     <div class="flex justify-between">
       <span class="flex items-center">
         <button type="button" class="btn-secondary" @click.prevent="addUser">
-          + Add More
+          {{ $t("settings.members.add-more") }}
         </button>
       </span>
 
@@ -98,7 +98,7 @@
       >
         <heroicons-solid:plus v-if="isAdd" class="h-5 w-5" />
         <heroicons-outline:mail v-else class="mr-2 h-5 w-5" />
-        {{ isAdd ? "Add" : "Send Invites" }}
+        {{ $t(`settings.members.${isAdd ? "add" : "invites"}`) }}
       </button>
     </div>
   </div>
