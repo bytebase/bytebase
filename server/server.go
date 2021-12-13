@@ -243,25 +243,25 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 }
 
 // Run will run the server.
-func (s *Server) Run() error {
-	if !s.readonly {
-		if err := s.TaskScheduler.Run(); err != nil {
+func (server *Server) Run() error {
+	if !server.readonly {
+		if err := server.TaskScheduler.Run(); err != nil {
 			return err
 		}
 
-		if err := s.TaskCheckScheduler.Run(); err != nil {
+		if err := server.TaskCheckScheduler.Run(); err != nil {
 			return err
 		}
 
-		if err := s.SchemaSyncer.Run(); err != nil {
+		if err := server.SchemaSyncer.Run(); err != nil {
 			return err
 		}
 
-		if err := s.BackupRunner.Run(); err != nil {
+		if err := server.BackupRunner.Run(); err != nil {
 			return err
 		}
 
-		if err := s.AnomalyScanner.Run(); err != nil {
+		if err := server.AnomalyScanner.Run(); err != nil {
 			return err
 		}
 	}
@@ -269,12 +269,12 @@ func (s *Server) Run() error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return s.e.Start(fmt.Sprintf(":%d", s.port))
+	return server.e.Start(fmt.Sprintf(":%d", server.port))
 }
 
 // Shutdown will shut down the server.
-func (s *Server) Shutdown(ctx context.Context) {
-	if err := s.e.Shutdown(ctx); err != nil {
-		s.e.Logger.Fatal(err)
+func (server *Server) Shutdown(ctx context.Context) {
+	if err := server.e.Shutdown(ctx); err != nil {
+		server.e.Logger.Fatal(err)
 	}
 }
