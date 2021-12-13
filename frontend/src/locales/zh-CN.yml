@@ -3,10 +3,14 @@ common:
   cancel: 取消
   home: 主页
   settings: 设置
+  project: 项目
   projects: 项目
   help: 帮助
+  database: 数据库
   databases: 数据库
+  instance: 实例
   instances: 实例
+  environment: 环境
   environments: 环境
   bookmarks: 书签
   quick-action: 快捷操作
@@ -55,6 +59,8 @@ common:
   commit: 提交
   statement: 语句
   snapshot: 快照
+  status: 状态
+  stage: 阶段
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -123,7 +129,7 @@ settings:
     plan: （升级到团队方案来开启角色管理）
   workspace:
     url-section: SQL Console URL
-    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
+    url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: >-
       如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
@@ -174,7 +180,10 @@ issue:
       reopen: 重开
     form:
       note: 笔记
-      placeholder: "(可选) 添加一段笔记…"
+      placeholder: (可选) 添加一段笔记…
+  subscribe: 订阅
+  unsubscribe: 取消订阅
+  subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
@@ -187,7 +196,7 @@ quick-action:
   choose-db: 选择数据库
 create-db:
   new-database-name: 新数据库名称
-  reserved-db-error: '{databaseName} 是一个预留名称'
+  reserved-db-error: "{databaseName} 是一个预留名称"
 db:
   encoding: 字符编码
   character-set: 字符集
@@ -205,10 +214,10 @@ environment:
 quick-start:
   bookmark-an-issue: 收藏工单
   add-a-comment: 添加评论
-  visit-project: '@:common.visit@:common.projects'
-  visit-instance: '@:common.visit@:common.instances'
-  visit-database: '@:common.visit@:common.databases'
-  visit-environment: '@:common.visit@:common.environments'
+  visit-project: "@:common.visit@:common.projects"
+  visit-instance: "@:common.visit@:common.instances"
+  visit-database: "@:common.visit@:common.databases"
+  visit-environment: "@:common.visit@:common.environments"
   add-a-member: 添加成员
   notice:
     title: 快速入门导览已关闭
@@ -232,18 +241,17 @@ policy:
 migration-history:
   self: 迁移历史
   workflow: 工作流
-  commit-info: '由 {author} 于 {time}'
+  commit-info: 由 {author} 于 {time}
   no-schema-change: 本次迁移没有任何 Schema 的改动
   show-diff: 显示差异
   left-vs-right: 之前 (左) vs 当前版本 (右)
   schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
-  list-limit: >-
-    对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
+  list-limit: 对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
   no-history-in-project: 这个项目下没有发现任何数据库有迁移历史。
   recording-info: 每当数据库 schema 变更时，我们便会记录下迁移历史。
   establish-baseline: 建立新的基线
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
   establish-baseline-description: >-
-    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。
-    对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
+    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。

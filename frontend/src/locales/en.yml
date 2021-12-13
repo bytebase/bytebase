@@ -3,10 +3,14 @@ common:
   cancel: Cancel
   home: Home
   settings: Settings
+  project: Project
   projects: Projects
   help: Help
+  database: Database
   databases: Databases
+  instance: Instance
   instances: Instances
+  environment: Environment
   environments: Environments
   bookmarks: Bookmarks
   quick-action: Quick Action
@@ -55,6 +59,8 @@ common:
   commit: Commit
   statement: Statement
   snapshot: Snapshot
+  status: Status
+  stage: Stage
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -127,7 +133,7 @@ settings:
     plan: (Upgrade to Team plan to enable role management)
   workspace:
     url-section: SQL Console URL
-    url-tip: 'Tip: Use {schema} as the placeholder for the actual database name'
+    url-tip: "Tip: Use {schema} as the placeholder for the actual database name"
     tip: >-
       If your team use a separate SQL console such as phpMyAdmin, you can
       provide its URL pattern here. Once provided, Bytebase will surface the
@@ -166,12 +172,12 @@ activity:
   invoker: Invoker
 issue:
   waiting-approval: Waiting Approval
-  opened-by-at: "opened by {creator} at {time}"
+  opened-by-at: opened by {creator} at {time}
   commit-by-at: commit {id} {title} by {author} at {time}
   status-transition:
     modal:
       resolve: Resolve issue?
-      cancel: "Cancel this entire issue?"
+      cancel: Cancel this entire issue?
       reopen: Reopen issue?
     dropdown:
       resolve: Resolve issue
@@ -179,7 +185,10 @@ issue:
       reopen: Reopen issue
     form:
       note: Note
-      placeholder: "(Optional) Add a note..."
+      placeholder: (Optional) Add a note...
+  subscribe: Subscribe
+  unsubscribe: Unsubscribe
+  subscriber: No subscribers | 1 subscriber | {n} subscribers
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
@@ -201,7 +210,7 @@ quick-action:
   choose-db: Choose database
 create-db:
   new-database-name: New database name
-  reserved-db-error: '{databaseName} is a reserved name'
+  reserved-db-error: "{databaseName} is a reserved name"
 db:
   encoding: Encoding
   character-set: Character set
@@ -221,10 +230,10 @@ environment:
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
-  visit-project: '@:common.visit @:common.projects'
-  visit-instance: '@:common.visit @:common.instances'
-  visit-database: '@:common.visit @:common.databases'
-  visit-environment: '@:common.visit @:common.environments'
+  visit-project: "@:common.visit @:common.projects"
+  visit-instance: "@:common.visit @:common.instances"
+  visit-database: "@:common.visit @:common.databases"
+  visit-environment: "@:common.visit @:common.environments"
   add-a-member: Add a member
   notice:
     title: Quickstart guide dismissed

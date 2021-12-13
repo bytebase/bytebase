@@ -4,7 +4,7 @@
     <div class="grid gap-y-6 gap-x-6 grid-cols-3">
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Status
+          {{ $t("common.status") }}
         </h2>
         <div class="col-span-2">
           <span class="flex items-center space-x-2">
@@ -17,7 +17,8 @@
       </template>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Assignee<span v-if="create" class="text-red-600">*</span>
+        {{ $t("common.assignee") }}
+        <span v-if="create" class="text-red-600">*</span>
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2">
@@ -69,7 +70,7 @@
     >
       <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Stage
+          {{ $t("common.stage") }}
         </h2>
         <div class="col-span-2">
           <StageSelect
@@ -82,7 +83,7 @@
 
       <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Database
+          {{ $t("common.database") }}
         </h2>
         <div
           class="col-span-2 text-sm font-medium text-main"
@@ -104,7 +105,7 @@
 
       <template v-if="showInstance">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          <span class="mr-1">Instance</span>
+          <span class="mr-1">{{ $t("common.instance") }}</span>
           <InstanceEngineIcon :instance="instance" />
         </h2>
         <router-link
@@ -116,7 +117,7 @@
       </template>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Environment
+        {{ $t("common.environment") }}
       </h2>
       <router-link
         :to="`/environment/${environmentSlug(environment)}`"
@@ -129,7 +130,7 @@
       class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        Project
+        {{ $t("common.project") }}
       </h2>
       <router-link
         :to="`/project/${projectSlug(project)}`"
@@ -140,20 +141,20 @@
 
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Updated
+          {{ $t("common.updated-at") }}
         </h2>
         <span class="textfield col-span-2">
           {{ moment(issue.updatedTs * 1000).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Created
+          {{ $t("common.created-at") }}
         </h2>
         <span class="textfield col-span-2">
           {{ moment(issue.createdTs * 1000).format("LLL") }}</span
         >
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          Creator
+          {{ $t("common.creator") }}
         </h2>
         <ul class="col-span-2">
           <li class="flex justify-start items-center space-x-2">
@@ -184,7 +185,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
@@ -214,7 +215,7 @@ import { useRouter } from "vue-router";
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "IssueSidebar",
   components: {
     PrincipalAvatar,
@@ -413,5 +414,5 @@ export default {
       clickDatabase,
     };
   },
-};
+});
 </script>
