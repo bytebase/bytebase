@@ -27,6 +27,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: bytebase/bytebase:dev-ci
+          tags: |
+            bytebase/bytebase:dev-ci
+            bytebase/bytebase:latest
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:dev-ci " ${{ steps.docker_build.outputs.digest }}
