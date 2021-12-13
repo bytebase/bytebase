@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -143,6 +144,68 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databasePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
+		}
+
+		// Patch database labels
+		// We will completely replace the old labels with the new ones
+		if databasePatch.LabelList != nil {
+			rowStatus := api.Normal
+			oldLabelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+				DatabaseID: &id,
+				RowStatus:  &rowStatus,
+			})
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+			}
+
+			// api.DatabaseLabel.Key -> *api.DatabaseLabel
+			oldLabelMap := make(map[string]*api.DatabaseLabel)
+			for _, oldLabel := range oldLabelList {
+				oldLabelMap[oldLabel.Key] = oldLabel
+			}
+
+			// labelList is like "key1:value1,key2:value2"
+			labelList := strings.Split(*databasePatch.LabelList, ",")
+
+			// Loop over all new labels
+			for _, label := range labelList {
+				// label is like "key:value"
+				kv := strings.Split(label, ":")
+				key, value := kv[0], kv[1]
+				oldLabel, ok := oldLabelMap[key]
+				if !ok {
+					// Fail to find the key in old labels, we have to create a new label.
+					s.LabelService.CreateDatabaseLabel(ctx, &api.DatabaseLabelCreate{
+						CreatorID:  databasePatch.UpdaterID,
+						DatabaseID: id,
+						Key:        key,
+						Value:      value,
+					})
+					continue
+				}
+
+				if value != oldLabel.Value {
+					// Find the key but the value is changed, we just need to update the value.
+					s.LabelService.PatchDatabaseLabel(ctx, &api.DatabaseLabelPatch{
+						ID:        oldLabel.ID,
+						UpdaterID: databasePatch.UpdaterID,
+						Value:     value,
+					})
+				}
+				// Find the label (both the key and the value matches), do nothing.
+				delete(oldLabelMap, key)
+			}
+
+			for _, oldLabel := range oldLabelMap {
+				// Delete old labels whose key doesn't appear in new labels.
+				s.LabelService.ArchiveDatabaseLabel(ctx, &api.DatabaseLabelArchive{
+					ID: oldLabel.ID,
+				})
+			}
+
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
@@ -679,6 +742,21 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 			return err
 		}
 	}
+
+	rowStatus = api.Normal
+	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+		DatabaseID: &database.ID,
+		RowStatus:  &rowStatus,
+	})
+	if err != nil {
+		return err
+	}
+	// compose labels to "key1:value1,key2:value2" for JSON
+	labels := make([]string, 0, len(labelList))
+	for _, label := range labelList {
+		labels = append(labels, label.Key+":"+label.Value)
+	}
+	database.LabelList = strings.Join(labels, ",")
 
 	return nil
 }

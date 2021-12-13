@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -67,4 +70,232 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	}
 
 	return ret, nil
+}
+
+func (s *LabelService) CreateDatabaseLabel(ctx context.Context, create *api.DatabaseLabelCreate) (*api.DatabaseLabel, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databaseLabel, err := s.createDatabaseLabel(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return databaseLabel, nil
+}
+
+func (s *LabelService) createDatabaseLabel(ctx context.Context, tx *Tx, create *api.DatabaseLabelCreate) (*api.DatabaseLabel, error) {
+	row, err := tx.QueryContext(ctx, `
+	INSERT INTO db_label (
+		creator_id,
+		updater_id,
+		database_id,
+		key,
+		value
+	)
+	VALUES (?, ?, ?, ?, ?)
+	RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
+		create.Key,
+		create.Value,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var databaseLabel api.DatabaseLabel
+	if err := row.Scan(
+		&databaseLabel.ID,
+		&databaseLabel.CreatorID,
+		&databaseLabel.CreatedTs,
+		&databaseLabel.UpdaterID,
+		&databaseLabel.UpdatedTs,
+		&databaseLabel.DatabaseID,
+		&databaseLabel.Key,
+		&databaseLabel.Value,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &databaseLabel, nil
+}
+
+func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databaseLabelList, err := s.findDatabaseLabelList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return databaseLabelList, nil
+}
+
+func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+	if v := find.DatabaseID; v != nil {
+		where, args = append(where, "database_id = ?"), append(args, *v)
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+		    key,
+			value
+		FROM db_label
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY key`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	var ret []*api.DatabaseLabel
+	for rows.Next() {
+		var databaseLabel api.DatabaseLabel
+		if err := rows.Scan(
+			&databaseLabel.ID,
+			&databaseLabel.CreatorID,
+			&databaseLabel.CreatedTs,
+			&databaseLabel.UpdaterID,
+			&databaseLabel.UpdatedTs,
+			&databaseLabel.DatabaseID,
+			&databaseLabel.Key,
+			&databaseLabel.Value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		ret = append(ret, &databaseLabel)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+}
+
+func (s *LabelService) ArchiveDatabaseLabel(ctx context.Context, archive *api.DatabaseLabelArchive) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	err = s.archiveDatabaseLabel(ctx, tx, archive)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
+func (s *LabelService) archiveDatabaseLabel(ctx context.Context, tx *Tx, archive *api.DatabaseLabelArchive) error {
+	result, err := tx.ExecContext(ctx,
+		`UPDATE db_label SET row_status = ? WHERE id = ?`,
+		api.Archived,
+		archive.ID,
+	)
+	if err != nil {
+		return FormatError(err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("database label not found. database label ID: %d", archive.ID)}
+	}
+	return nil
+}
+
+func (s *LabelService) PatchDatabaseLabel(ctx context.Context, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databaseLabel, err := s.patchDatabaseLabel(ctx, tx, patch)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return databaseLabel, nil
+}
+
+func (s *LabelService) patchDatabaseLabel(ctx context.Context, tx *Tx, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
+	set, args = append(set, "value = ?"), append(args, patch.Value)
+	args = append(args, patch.ID)
+	row, err := tx.QueryContext(ctx, `
+		UPDATE db_label
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = ?
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+	`,
+		args...,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var databaseLabel api.DatabaseLabel
+	if err := row.Scan(
+		&databaseLabel.ID,
+		&databaseLabel.CreatorID,
+		&databaseLabel.CreatedTs,
+		&databaseLabel.UpdaterID,
+		&databaseLabel.UpdatedTs,
+		&databaseLabel.DatabaseID,
+		&databaseLabel.Key,
+		&databaseLabel.Value,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &databaseLabel, nil
 }

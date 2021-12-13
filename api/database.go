@@ -66,6 +66,7 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
+	LabelList            string     `jsonapi:"attr,labels,omitempty"`
 }
 
 // DatabaseCreate is the API message for creating a database.
@@ -118,6 +119,7 @@ type DatabasePatch struct {
 	// Related fields
 	ProjectID      *int `jsonapi:"attr,projectId"`
 	SourceBackupID *int
+	LabelList      *string `jsonapi:"attr,labels"`
 
 	// Domain specific fields
 	SyncStatus           *SyncStatus
