@@ -99,7 +99,7 @@ func (s *LabelService) createDatabaseLabel(ctx context.Context, tx *Tx, create *
 		value
 	)
 	VALUES (?, ?, ?, ?, ?)
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -117,6 +117,7 @@ func (s *LabelService) createDatabaseLabel(ctx context.Context, tx *Tx, create *
 	var databaseLabel api.DatabaseLabel
 	if err := row.Scan(
 		&databaseLabel.ID,
+		&databaseLabel.RowStatus,
 		&databaseLabel.CreatorID,
 		&databaseLabel.CreatedTs,
 		&databaseLabel.UpdaterID,
@@ -165,6 +166,7 @@ func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -187,6 +189,7 @@ func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *
 		var databaseLabel api.DatabaseLabel
 		if err := rows.Scan(
 			&databaseLabel.ID,
+			&databaseLabel.RowStatus,
 			&databaseLabel.CreatorID,
 			&databaseLabel.CreatedTs,
 			&databaseLabel.UpdaterID,
@@ -240,7 +243,7 @@ func (s *LabelService) patchDatabaseLabel(ctx context.Context, tx *Tx, patch *ap
 		UPDATE db_label
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
 	`,
 		args...,
 	)
@@ -254,6 +257,7 @@ func (s *LabelService) patchDatabaseLabel(ctx context.Context, tx *Tx, patch *ap
 	var databaseLabel api.DatabaseLabel
 	if err := row.Scan(
 		&databaseLabel.ID,
+		&databaseLabel.RowStatus,
 		&databaseLabel.CreatorID,
 		&databaseLabel.CreatedTs,
 		&databaseLabel.UpdaterID,

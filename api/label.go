@@ -29,6 +29,7 @@ type DatabaseLabel struct {
 	ID int
 
 	// Standard fields
+	RowStatus RowStatus
 	CreatorID int
 	Creator   *Principal
 	CreatedTs int64

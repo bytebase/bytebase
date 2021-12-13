@@ -149,10 +149,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Patch database labels
 		// We will completely replace the old labels with the new ones
 		if databasePatch.Labels != nil {
-			rowStatus := api.Normal
 			oldLabelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 				DatabaseID: &id,
-				RowStatus:  &rowStatus,
 			})
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
@@ -161,53 +159,24 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 			}
 
-			// api.DatabaseLabel.Key -> *api.DatabaseLabel
-			oldLabelMap := make(map[string]*api.DatabaseLabel)
-			for _, oldLabel := range oldLabelList {
-				oldLabelMap[oldLabel.Key] = oldLabel
-			}
+			creates, patches := diffDatabaseLabel(oldLabelList, databasePatch.Labels)
 
-			// labelList is like "key1:value1,key2:value2"
-			labelList := strings.Split(*databasePatch.Labels, ",")
-
-			// Loop over all new labels
-			for _, label := range labelList {
-				// label is like "key:value"
-				kv := strings.Split(label, ":")
-				key, value := kv[0], kv[1]
-				oldLabel, ok := oldLabelMap[key]
-				if !ok {
-					// Fail to find the key in old labels, we have to create a new label.
-					s.LabelService.CreateDatabaseLabel(ctx, &api.DatabaseLabelCreate{
-						CreatorID:  databasePatch.UpdaterID,
-						DatabaseID: id,
-						Key:        key,
-						Value:      value,
-					})
-					continue
+			for _, create := range creates {
+				create.CreatorID = databasePatch.UpdaterID
+				create.DatabaseID = databasePatch.ID
+				_, err := s.LabelService.CreateDatabaseLabel(ctx, create)
+				if err != nil {
+					return err
 				}
+			}
 
-				if value != oldLabel.Value {
-					// Find the key but the value is changed, we just need to update the value.
-					s.LabelService.PatchDatabaseLabel(ctx, &api.DatabaseLabelPatch{
-						ID:        oldLabel.ID,
-						UpdaterID: databasePatch.UpdaterID,
-						Value:     &value,
-					})
+			for _, patch := range patches {
+				patch.UpdaterID = databasePatch.UpdaterID
+				_, err := s.LabelService.PatchDatabaseLabel(ctx, patch)
+				if err != nil {
+					return err
 				}
-				// Find the label (both the key and the value matches), do nothing.
-				delete(oldLabelMap, key)
 			}
-
-			for _, oldLabel := range oldLabelMap {
-				// Delete old labels whose key doesn't appear in new labels.
-				s.LabelService.PatchDatabaseLabel(ctx, &api.DatabaseLabelPatch{
-					ID:        oldLabel.ID,
-					UpdaterID: databasePatch.UpdaterID,
-					RowStatus: &rowStatus,
-				})
-			}
-
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
@@ -847,4 +816,74 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, instance.Username, err))
 	}
 	return driver, nil
+}
+
+// diffDatabaseLabel diffs old database labels and new database labels
+// labels is like "key1:value1,key2:value2"
+func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels *string) ([]*api.DatabaseLabelCreate, []*api.DatabaseLabelPatch) {
+	creates := make([]*api.DatabaseLabelCreate, 0)
+	patches := make([]*api.DatabaseLabelPatch, 0)
+
+	// "key" -> *api.DatabaseLabel
+	oldLabelKeyMap := make(map[string]*api.DatabaseLabel)
+	// "key:value" -> *api.DatabaseLabel
+	oldLabelKeyValueMap := make(map[string]*api.DatabaseLabel)
+
+	for _, oldLabel := range oldLabelList {
+		if oldLabel.RowStatus == api.Normal {
+			oldLabelKeyMap[oldLabel.Key] = oldLabel
+		}
+		keyValue := fmt.Sprintf("%s:%s", oldLabel.Key, oldLabel.Value)
+		oldLabelKeyValueMap[keyValue] = oldLabel
+	}
+
+	// labels is like "key1:value1,key2:value2"
+	labelList := strings.Split(*labels, ",")
+
+	// Loop over all new labels
+	for _, label := range labelList {
+		// label is like "key:value"
+		keyValue := strings.Split(label, ":")
+		key, value := keyValue[0], keyValue[1]
+		oldLabel, ok := oldLabelKeyMap[key]
+		if !ok {
+			// Fail to find the key in active (i.e. non-archived) old labels.
+			// We have to either create a new label or unarchive an old label if exists.
+			oldLabel, ok := oldLabelKeyValueMap[label]
+			if !ok {
+				creates = append(creates, &api.DatabaseLabelCreate{
+					Key:   key,
+					Value: value,
+				})
+			} else {
+				rowStatus := api.Normal
+				patches = append(patches, &api.DatabaseLabelPatch{
+					ID:        oldLabel.ID,
+					RowStatus: &rowStatus,
+				})
+			}
+			continue
+		}
+
+		if value != oldLabel.Value {
+			// Find the key but the value is changed, we just need to update the value.
+			patches = append(patches, &api.DatabaseLabelPatch{
+				ID:    oldLabel.ID,
+				Value: &value,
+			})
+		}
+		// Find the label (both the key and the value matches), do nothing.
+		delete(oldLabelKeyMap, key)
+	}
+
+	for _, oldLabel := range oldLabelKeyMap {
+		rowStatus := api.Archived
+		// Archive old labels whose key doesn't appear in new labels.
+		patches = append(patches, &api.DatabaseLabelPatch{
+			ID:        oldLabel.ID,
+			RowStatus: &rowStatus,
+		})
+	}
+
+	return creates, patches
 }
