@@ -30,6 +30,9 @@ const (
 	MigrationOutOfOrder      Code = 203
 	MigrationBaselineMissing Code = 204
 
+	// 301 task error
+	TaskTimingNotAllowed Code = 301
+
 	// 10001 advisor error code
 	CompatibilityDropDatabase  Code = 10001
 	CompatibilityRenameTable   Code = 10002

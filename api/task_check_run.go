@@ -77,6 +77,8 @@ const (
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
+	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
+	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 )
 
 // TaskCheckDatabaseStatementAdvisePayload is the task check payload for database statement advise.
