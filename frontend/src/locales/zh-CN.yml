@@ -201,5 +201,9 @@ migration-history:
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
   establish-baseline-description: >-
-    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。
-    对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
+    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
+  establish-database-baseline: 建立「{name}」基线
+  instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
+  instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
+  contact-dba: 请联系你的 DBA 进行配置。
