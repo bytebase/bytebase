@@ -28,7 +28,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.email") }} <span class="text-red-600">*</span>
+              {{ $t("common.email") }} <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -48,7 +48,7 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.password") }}
+              {{ $t("common.password") }}
               <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
@@ -98,7 +98,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.name") }}
+              {{ $t("common.username") }}
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -122,7 +122,7 @@
                 {{
                   needAdminSetup
                     ? $t("auth.sign-up.create-admin-account")
-                    : $t("auth.common.sign-up")
+                    : $t("common.sign-up")
                 }}
               </button>
             </span>
@@ -140,7 +140,7 @@
           {{ $t("auth.sign-up.old-user") }}
         </span>
         <router-link to="/auth/signin" class="accent-link px-2 bg-white">
-          {{ $t("auth.common.sign-in") }}
+          {{ $t("common.sign-in") }}
         </router-link>
       </div>
     </div>

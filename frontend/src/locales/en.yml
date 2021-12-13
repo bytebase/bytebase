@@ -1,5 +1,11 @@
 common:
   activity: Activity
+  sign-in: Sign in
+  sign-up: Sign up
+  email: Email
+  username: Username
+  password: Password
+  activate: Activate
   save: Save
   cancel: Cancel
   comment: 评论
@@ -323,13 +329,6 @@ quick-start:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
 auth:
-  common:
-    sign-in: Sign in
-    sign-up: Sign up
-    email: Email
-    name: Name
-    password: Password
-    activate: Activate
   sign-up:
     title: Register your account
     admin-title: Setup {account}

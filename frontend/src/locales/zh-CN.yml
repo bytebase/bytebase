@@ -1,4 +1,10 @@
 common:
+  sign-in: 登陆
+  sign-up: 注册
+  email: 邮箱
+  username: 用户名
+  password: 密码
+  activate: 激活
   activity: 活动
   save: 保存
   cancel: 取消
@@ -305,13 +311,6 @@ quick-start:
     title: 快速入门导览已关闭
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
 auth:
-  common:
-    sign-in: 登陆
-    sign-up: 注册
-    email: 邮箱
-    name: 用户名
-    password: 密码
-    activate: 激活
   sign-up:
     title: 注册你的账号
     admin-title: 设置 {account}

@@ -26,7 +26,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.email") }}
+              {{ $t("common.email") }}
             </label>
             <div class="mt-2 text-base font-medium leading-5 text-accent">
               {{ state.email }}
@@ -37,7 +37,7 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.password") }}
+              {{ $t("common.password") }}
               <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
@@ -57,7 +57,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.name") }}
+              {{ $t("common.username") }}
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -76,7 +76,7 @@
                 type="submit"
                 class="btn-success w-full flex justify-center py-2 px-4"
               >
-                {{ $t("auth.common.activate") }}
+                {{ $t("common.activate") }}
               </button>
             </span>
           </div>

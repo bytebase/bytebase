@@ -19,7 +19,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("auth.common.email") }}<span class="text-red-600">*</span>
+              {{ $t("common.email") }}<span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -39,7 +39,7 @@
               class="flex justify-between text-sm font-medium leading-5 text-control"
             >
               <div>
-                {{ $t("auth.common.password")
+                {{ $t("common.password")
                 }}<span class="text-red-600">*</span>
               </div>
               <router-link
@@ -68,7 +68,7 @@
                 :disabled="!allowSignin"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
-                {{ $t("auth.common.sign-in") }}
+                {{ $t("common.sign-in") }}
               </button>
             </span>
           </div>
@@ -85,7 +85,7 @@
           {{ $t("auth.sign-in.new-user") }}
         </span>
         <router-link to="/auth/signup" class="accent-link bg-white px-2">
-          {{ $t("auth.common.sign-up") }}
+          {{ $t("common.sign-up") }}
         </router-link>
       </div>
     </div>
