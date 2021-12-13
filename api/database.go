@@ -66,7 +66,8 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
-	Labels               string     `jsonapi:"attr,labels,omitempty"`
+	// Labels is like "key1:value1,key2:value2,key3:value3"
+	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
 // DatabaseCreate is the API message for creating a database.
