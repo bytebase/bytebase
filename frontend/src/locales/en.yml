@@ -16,6 +16,18 @@ common:
   latest: Latest
   error: Error
   canceled: Canceled
+  approval: Approval
+  approve: Approve
+  done: Done
+  create: Create
+  rollback: Rollback
+  run: Run
+  retry: Retry
+  cancel: Cancel
+  skip: Skip
+  reopen: Reopen
+  issue: Issue
+unread-mail: "No unread mails | One unread mail | {count} unread mails"
 not-found: Not Found
 anomaly-center: Anomaly Center
 kbar:
@@ -53,3 +65,19 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+issue:
+  waiting-approval: Waiting Approval
+  opened-by-at: "opened by {creator} at {time}"
+  commit-by-at: commit {id} {title} by {author} at {time}
+  status-transition:
+    modal:
+      resolve: Resolve issue?
+      cancel: "Cancel this entire issue?"
+      reopen: Reopen issue?
+    dropdown:
+      resolve: Resolve issue
+      cancel: Cancel issue
+      reopen: Reopen issue
+    form:
+      note: Note
+      placeholder: "(Optional) Add a note..."

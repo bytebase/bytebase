@@ -90,7 +90,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "RESOLVE",
       to: "DONE",
-      buttonName: "Resolve",
+      buttonName: "issue.status-transition.dropdown.resolve",
       buttonClass: "btn-success",
     },
   ],
@@ -99,7 +99,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "CANCEL",
       to: "CANCELED",
-      buttonName: "Cancel issue",
+      buttonName: "issue.status-transition.dropdown.cancel",
       buttonClass: "btn-normal",
     },
   ],
@@ -108,7 +108,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "REOPEN",
       to: "OPEN",
-      buttonName: "Reopen",
+      buttonName: "issue.status-transition.dropdown.reopen",
       buttonClass: "btn-normal",
     },
   ],

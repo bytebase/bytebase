@@ -16,6 +16,18 @@ common:
   latest: 最新
   error: 错误
   canceled: 已取消
+  approval: 批准
+  approve: 批准
+  done: 完成
+  create: 创建
+  rollback: 回滚
+  run: 运行
+  retry: 重试
+  cancel: 取消
+  skip: 跳过
+  reopen: 重开
+  issue: 工单
+unread-mail: "没有未读邮件 | {count} 封未读邮件 | {count} 封未读邮件"
 not-found: 未找到
 anomaly-center: 异常中心
 kbar:
@@ -42,7 +54,7 @@ task:
     compatibility: 兼容性
     connection: 连接
     migration-schema: 迁移 schema
-  comment: 注释
+  comment: 评论
   invoker: 执行者
   started: 开始于
   ended: 结束于
@@ -50,6 +62,22 @@ task:
   view-migration-history: 查看迁移历史
 activity:
   name: 名称
-  comment: 注释
+  comment: 评论
   created: 创建于
   invoker: 执行者
+issue:
+  waiting-approval: 等待批准
+  opened-by-at: "{id} 由 {creator} 开启于 {time}"
+  commit-by-at: "{id} {title} 由 {author} 提交于 {time}"
+  status-transition:
+    modal:
+      resolve: 解决工单?
+      cancel: 取消整个工单?
+      reopen: 重开工单?
+    dropdown:
+      resolve: 解决
+      cancel: 取消
+      reopen: 重开
+    form:
+      note: 笔记
+      placeholder: "(可选) 添加一段笔记…"
