@@ -3,11 +3,16 @@ common:
   cancel: 取消
   home: 主页
   settings: 设置
+  project: 项目
   projects: 项目
   help: 帮助
+  database: 数据库
   databases: 数据库
+  instance: 实例
   instances: 实例
+  environment: 环境
   environments: 环境
+  bookmark: 书签
   bookmarks: 书签
   quick-action: 快捷操作
   archive: 归档
@@ -44,6 +49,9 @@ common:
   commit: 提交
   statement: 语句
   snapshot: 快照
+  new: 新建
+  add: 添加
+  query: 查询
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -71,6 +79,7 @@ intro:
     pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
   issue: 工单
+  quickstart: 快速入门
 bbkit:
   alert:
     ok: 确认
@@ -141,6 +150,19 @@ quick-action:
   alter-schema: 变更 Schema
   create-db: 创建数据库
   choose-db: 选择数据库
+  new-db: 新建数据库
+  add-instance: '@:common.add@:common.instance'
+  create-instance: '@:common.create@:common.instance'
+  manage-user: 成员管理
+  default-project: 默认项目
+  add-environment: '@:common.add@:common.environment'
+  create-environment: '@:common.create@:common.environment'
+  new-project: '@:common.new@:common.project'
+  create-project: '@:common.create@:common.project'
+  edit-data: 编辑数据
+  troubleshoot: 故障排除
+  transfer-in-db: 数据库导入
+  request-db: 请求数据库
 create-db:
   new-database-name: 新数据库名称
   reserved-db-error: '{databaseName} 是一个预留名称'
@@ -188,18 +210,17 @@ policy:
 migration-history:
   self: 迁移历史
   workflow: 工作流
-  commit-info: '由 {author} 于 {time}'
+  commit-info: 由 {author} 于 {time}
   no-schema-change: 本次迁移没有任何 Schema 的改动
   show-diff: 显示差异
   left-vs-right: 之前 (左) vs 当前版本 (右)
   schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
-  list-limit: >-
-    对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
+  list-limit: 对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
   no-history-in-project: 这个项目下没有发现任何数据库有迁移历史。
   recording-info: 每当数据库 schema 变更时，我们便会记录下迁移历史。
   establish-baseline: 建立新的基线
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
   establish-baseline-description: >-
-    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。
-    对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
+    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。

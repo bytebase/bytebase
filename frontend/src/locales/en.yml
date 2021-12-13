@@ -3,11 +3,16 @@ common:
   cancel: Cancel
   home: Home
   settings: Settings
+  project: Project
   projects: Projects
   help: Help
+  database: Database
   databases: Databases
+  instance: Instance
   instances: Instances
+  environment: Environment
   environments: Environments
+  bookmark: Bookmark
   bookmarks: Bookmarks
   quick-action: Quick Action
   archive: Archive
@@ -44,6 +49,9 @@ common:
   commit: Commit
   statement: Statement
   snapshot: Snapshot
+  new: New
+  add: Add
+  query: Query
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -152,9 +160,22 @@ alter-schema:
     skip that environment. This allows you to compose a single pipeline to
     propagate schema changes across multiple environments.
 quick-action:
-  alter-schema: Alter schema
+  alter-schema: Alter Schema
   create-db: Create database
   choose-db: Choose database
+  new-db: New DB
+  add-instance: '@:common.add @:common.instance'
+  create-instance: '@:common.create @:common.instance'
+  manage-user: Manage User
+  default-project: Default Project
+  add-environment: '@:common.add @:common.environment'
+  create-environment: '@:common.create @:common.environment'
+  new-project: '@:common.new @:common.project'
+  create-project: '@:common.create @:common.project'
+  edit-data: Edit Data
+  troubleshoot: Troubleshoot
+  transfer-in-db: Transfer in DB
+  request-db: Request DB
 create-db:
   new-database-name: New database name
   reserved-db-error: '{databaseName} is a reserved name'
