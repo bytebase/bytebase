@@ -754,7 +754,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	// compose labels to "key1:value1,key2:value2" for JSON
 	labels := make([]string, 0, len(labelList))
 	for _, label := range labelList {
-		labels = append(labels, label.Key+":"+label.Value)
+		labels = append(labels, fmt.Sprintf("%s:%s", label.Key, label.Value))
 	}
 	database.Labels = strings.Join(labels, ",")
 
