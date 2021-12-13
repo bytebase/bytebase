@@ -1,6 +1,8 @@
 common:
+  activity: 活动
   save: 保存
   cancel: 取消
+  comment: 评论
   home: 主页
   settings: 设置
   project: 项目
@@ -8,6 +10,7 @@ common:
   help: 帮助
   database: 数据库
   databases: 数据库
+  description: 描述
   instance: 实例
   instances: 实例
   environment: 环境
@@ -191,6 +194,19 @@ issue:
   optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
   rollback-sql: "@:{'common.rollback'} SQL"
   add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
+  edit-description: 编辑描述
+  add-some-description: 添加一些描述…
+  add-a-comment: 添加评论
+  edit-comment: 编辑评论
+  leave-a-comment: 发表一条评论…
+  view-commit: 查看提交
+  activity:
+    changed: 更改于
+    canceled: 取消于
+    approved: 批准于
+    started: 开始于
+    completed: 完成于
+    failed: 失败于
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。

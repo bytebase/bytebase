@@ -1,6 +1,8 @@
 common:
+  activity: Activity
   save: Save
   cancel: Cancel
+  comment: 评论
   home: Home
   settings: Settings
   project: Project
@@ -8,6 +10,7 @@ common:
   help: Help
   database: Database
   databases: Databases
+  description: Description
   instance: Instance
   instances: Instances
   environment: Environment
@@ -196,6 +199,19 @@ issue:
   optional-add-sql-statement: "(Optional) Add SQL statement..."
   rollback-sql: "Rollback SQL"
   add-rollback-sql-statement: "Add rollback SQL statement..."
+  edit-description: "Edit description"
+  add-some-description: "Add some description..."
+  add-a-comment: "Add a comment"
+  edit-comment: Edit comment
+  leave-a-comment: "Leave a comment..."
+  view-commit: View commit
+  activity:
+    changed: changed
+    canceled: canceled
+    approved: approved
+    started: started
+    completed: completed
+    failed: failed
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
