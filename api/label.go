@@ -71,13 +71,10 @@ type DatabaseLabelPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
+	RowStatus *RowStatus
 
 	// Domain specific fields
-	Value string
-}
-
-type DatabaseLabelArchive struct {
-	ID int
+	Value *string
 }
 
 // LabelService is the service for labels.
@@ -90,6 +87,4 @@ type LabelService interface {
 	CreateDatabaseLabel(ctx context.Context, create *DatabaseLabelCreate) (*DatabaseLabel, error)
 	// PatchDatabaseLabel updates the value of the label, given ID.
 	PatchDatabaseLabel(ctx context.Context, patch *DatabaseLabelPatch) (*DatabaseLabel, error)
-	// ArchiveDatabaseLabel archives a database label by ID.
-	ArchiveDatabaseLabel(ctx context.Context, archive *DatabaseLabelArchive) error
 }

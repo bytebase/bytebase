@@ -2,11 +2,9 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -209,41 +207,6 @@ func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *
 	return ret, nil
 }
 
-func (s *LabelService) ArchiveDatabaseLabel(ctx context.Context, archive *api.DatabaseLabelArchive) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	err = s.archiveDatabaseLabel(ctx, tx, archive)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
-func (s *LabelService) archiveDatabaseLabel(ctx context.Context, tx *Tx, archive *api.DatabaseLabelArchive) error {
-	result, err := tx.ExecContext(ctx,
-		`UPDATE db_label SET row_status = ? WHERE id = ?`,
-		api.Archived,
-		archive.ID,
-	)
-	if err != nil {
-		return FormatError(err)
-	}
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("database label not found. database label ID: %d", archive.ID)}
-	}
-	return nil
-}
-
 func (s *LabelService) PatchDatabaseLabel(ctx context.Context, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -266,7 +229,12 @@ func (s *LabelService) PatchDatabaseLabel(ctx context.Context, patch *api.Databa
 func (s *LabelService) patchDatabaseLabel(ctx context.Context, tx *Tx, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "value = ?"), append(args, patch.Value)
+	if v := patch.Value; v != nil {
+		set, args = append(set, "value = ?"), append(args, *v)
+	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, "row_status = ?"), append(args, *v)
+	}
 	args = append(args, patch.ID)
 	row, err := tx.QueryContext(ctx, `
 		UPDATE db_label

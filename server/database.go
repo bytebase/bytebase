@@ -192,7 +192,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					s.LabelService.PatchDatabaseLabel(ctx, &api.DatabaseLabelPatch{
 						ID:        oldLabel.ID,
 						UpdaterID: databasePatch.UpdaterID,
-						Value:     value,
+						Value:     &value,
 					})
 				}
 				// Find the label (both the key and the value matches), do nothing.
@@ -201,8 +201,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 			for _, oldLabel := range oldLabelMap {
 				// Delete old labels whose key doesn't appear in new labels.
-				s.LabelService.ArchiveDatabaseLabel(ctx, &api.DatabaseLabelArchive{
-					ID: oldLabel.ID,
+				s.LabelService.PatchDatabaseLabel(ctx, &api.DatabaseLabelPatch{
+					ID:        oldLabel.ID,
+					UpdaterID: databasePatch.UpdaterID,
+					RowStatus: &rowStatus,
 				})
 			}
 
