@@ -58,9 +58,11 @@ common:
   updated-at: 更新于
   commit: 提交
   statement: 语句
+  sql-statement: "SQL @:{'common.statement'}"
   snapshot: 快照
   status: 状态
   stage: 阶段
+  sql: SQL
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -180,10 +182,15 @@ issue:
       reopen: 重开
     form:
       note: 笔记
-      placeholder: (可选) 添加一段笔记…
+      placeholder: （可选）添加一段笔记…
   subscribe: 订阅
   unsubscribe: 取消订阅
   subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
+  apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
+  add-sql-statement: "添加 SQL @:{'common.statement'}…"
+  optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
+  rollback-sql: "@:{'common.rollback'} SQL"
+  add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
