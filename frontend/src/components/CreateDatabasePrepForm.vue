@@ -317,80 +317,49 @@ export default {
     };
 
     const create = async () => {
-      const stageList: StageCreate[] = [
-        {
-          name: "Create database",
-          environmentId: state.environmentId!,
-          taskList: [
-            {
-              name: `Create database '${state.databaseName}'`,
-              // If current user is DBA or Owner, then the created task will start automatically,
-              // otherwise, it will require approval.
-              status: isDBAOrOwner(currentUser.value.role)
-                ? "PENDING"
-                : "PENDING_APPROVAL",
-              type: "bb.task.database.create",
-              instanceId: state.instanceId!,
-              // statement is derived by backend.
-              statement: ``,
-              rollbackStatement: "",
-              databaseName: state.databaseName,
-              characterSet:
-                state.characterSet ||
-                defaultCharset(selectedInstance.value.engine),
-              collation:
-                state.collation ||
-                defaultCollation(selectedInstance.value.engine),
-            },
-          ],
-        },
-      ];
 
-      // If backup is specified, then we add an additional stage to restore the backup to the newly created database.
+      var newIssue: IssueCreate;
       if (props.backup) {
-        stageList.push({
-          name: "Restore backup",
-          environmentId: state.environmentId!,
-          taskList: [
-            {
-              name: `Restore backup '${props.backup.name}'`,
-              // Use "PENDING" here since we consider the required approval has already been granted in the first stage.
-              status: "PENDING",
-              type: "bb.task.database.restore",
-              instanceId: state.instanceId!,
-              statement: "",
-              rollbackStatement: "",
-              databaseName: state.databaseName,
-              backupId: props.backup.id,
-            },
-          ],
-        });
+        newIssue = {
+          name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
+          type: "bb.issue.database.create",
+          description: `Creating database '${state.databaseName}' from backup '${props.backup.name}'`,
+          assigneeId: state.assigneeId!,
+          projectId: state.projectId!,
+          pipeline: {
+            stageList: [],
+            name: "",
+          },
+          createContext: {
+            instanceId: state.instanceId!,
+            databaseName: state.databaseName,
+            characterSet: state.characterSet || defaultCharset(selectedInstance.value.engine),
+            collation: state.collation || defaultCollation(selectedInstance.value.engine),
+            backupId: props.backup.id,
+            backupName: props.backup.name,
+         },
+          payload: {},
+        };
+      } else {
+        newIssue = {
+          name: `Create database '${state.databaseName}'`,
+          type: "bb.issue.database.create",
+          description: "",
+          assigneeId: state.assigneeId!,
+          projectId: state.projectId!,
+          pipeline: {
+            stageList: [],
+            name: "",
+          },
+          createContext: {
+            instanceId: state.instanceId!,
+            databaseName: state.databaseName,
+            characterSet: state.characterSet || defaultCharset(selectedInstance.value.engine),
+            collation: state.collation || defaultCollation(selectedInstance.value.engine),
+          },
+          payload: {},
+        };
       }
-      const newIssue: IssueCreate = props.backup
-        ? {
-            name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
-            type: "bb.issue.database.create",
-            description: `Creating database from backup '${props.backup.name}'`,
-            assigneeId: state.assigneeId!,
-            projectId: state.projectId!,
-            pipeline: {
-              stageList,
-              name: `Pipeline - Create database '${state.databaseName}' from backup '${props.backup.name}'`,
-            },
-            payload: {},
-          }
-        : {
-            name: `Create database '${state.databaseName}'`,
-            type: "bb.issue.database.create",
-            description: "",
-            assigneeId: state.assigneeId!,
-            projectId: state.projectId!,
-            pipeline: {
-              stageList,
-              name: `Pipeline - Create database ${state.databaseName}`,
-            },
-            payload: {},
-          };
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
       });

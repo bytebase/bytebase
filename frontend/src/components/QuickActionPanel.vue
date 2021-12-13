@@ -117,7 +117,7 @@
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Add Environment
+          {{ $t('environment.create') }}
         </h3>
       </div>
 
@@ -132,7 +132,7 @@
           <heroicons-outline:selector class="transform rotate-90 w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Reorder
+          {{ $t('common.reorder') }}
         </h3>
       </div>
 

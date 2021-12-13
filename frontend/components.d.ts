@@ -114,6 +114,7 @@ declare module 'vue' {
     'HeroiconsSolid:dotsVertical': typeof import('virtual:vite-icons/heroicons-solid/dots-vertical')['default']
     'HeroiconsSolid:home': typeof import('virtual:vite-icons/heroicons-solid/home')['default']
     'HeroiconsSolid:informationCircle': typeof import('virtual:vite-icons/heroicons-solid/information-circle')['default']
+    'HeroiconsSolid:mail': typeof import('virtual:vite-icons/heroicons-solid/mail')['default']
     'HeroiconsSolid:minus': typeof import('virtual:vite-icons/heroicons-solid/minus')['default']
     'HeroiconsSolid:officeBuilding': typeof import('virtual:vite-icons/heroicons-solid/office-building')['default']
     'HeroiconsSolid:pencil': typeof import('virtual:vite-icons/heroicons-solid/pencil')['default']
