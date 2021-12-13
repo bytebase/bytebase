@@ -179,6 +179,75 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
+	// All task should pass timing task check.
+	// Since Time is an auto-increment value, a task would generate a timing task check every time before executing.
+	// However, this is an annoying behavior, and we adopt the following logic to ameliorate this problem.
+	{
+		// fetching history task check
+		var err error
+		var timingTaskCheck *api.TaskCheckRun
+		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, &api.TaskCheckRunFind{TaskID: &task.ID})
+		if err != nil {
+			return nil, err
+		}
+		for _, taskCheck := range task.TaskCheckRunList {
+			if taskCheck.Type == api.TaskCheckGeneralEarliestAllowedTime {
+				timingTaskCheck = taskCheck
+				break
+			}
+		}
+		isPassedTimingTaskCheck, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
+		if err != nil {
+			return nil, err
+		}
+
+		// if not exist, create one
+		if timingTaskCheck == nil {
+			s.l.Info("TIMING CHECK", zap.Int64("timestamp", task.NotBeforeTs))
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			switch isPassedTimingTaskCheck {
+			case true: // since we allowed user to modify 'notBeforeTs' after creating a task, it is possible previous passed timing check would fail this time
+				{
+					if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+						taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+							ID:        &timingTaskCheck.ID,
+							UpdaterID: api.SystemBotID,
+							Status:    api.TaskCheckRunRunning,
+						}
+						_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+			case false: // if previous task check had failed, update its status
+				{
+					if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+						return task, nil
+					}
+					taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+						ID:        &timingTaskCheck.ID,
+						UpdaterID: api.SystemBotID,
+						Status:    api.TaskCheckRunRunning,
+					}
+					_, err := s.server.TaskCheckRunService.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+
+		}
+	}
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
