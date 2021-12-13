@@ -52,6 +52,7 @@ type DatabaseLabelFind struct {
 	// Related fields
 	DatabaseID *int
 }
+
 type DatabaseLabelCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

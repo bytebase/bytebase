@@ -148,7 +148,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		// Patch database labels
 		// We will completely replace the old labels with the new ones
-		if databasePatch.LabelList != nil {
+		if databasePatch.Labels != nil {
 			rowStatus := api.Normal
 			oldLabelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 				DatabaseID: &id,
@@ -168,7 +168,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 
 			// labelList is like "key1:value1,key2:value2"
-			labelList := strings.Split(*databasePatch.LabelList, ",")
+			labelList := strings.Split(*databasePatch.Labels, ",")
 
 			// Loop over all new labels
 			for _, label := range labelList {
@@ -756,7 +756,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	for _, label := range labelList {
 		labels = append(labels, label.Key+":"+label.Value)
 	}
-	database.LabelList = strings.Join(labels, ",")
+	database.Labels = strings.Join(labels, ",")
 
 	return nil
 }
