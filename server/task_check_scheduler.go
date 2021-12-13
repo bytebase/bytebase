@@ -259,3 +259,48 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	}
 	return task, nil
 }
+
+// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
+// But this method is used for gating the automatic run, so we are more cautious here.
+func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		Type:       &checkType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+
+	taskCheckRunList, err := server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+		server.l.Debug("Task is waiting for check to pass",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.String("task_type", string(task.Type)),
+			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+		)
+		return false, nil
+	}
+
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
+			server.l.Debug("Task is waiting for check to pass",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.String("task_type", string(task.Type)),
+				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			)
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
