@@ -183,7 +183,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		// All task should pass timing task check.
 		// Since Time is an auto-increment value, a task would generate a timing task check every time before executing.
 		// However, this is an annoying behavior, and we adopt the following logic to ease this problem:
-		// 		1. if no timing check has been schedule yet, schedule one
+		// 		1. if no timing check has been scheduled yet, schedule one
 		// 		2. if one has been scheduled before:
 		//			a. succeed
 		//				check again, since users are allowed to change this field
