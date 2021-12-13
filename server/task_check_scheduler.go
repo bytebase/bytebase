@@ -203,7 +203,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 
 		// if not exist, create one
 		if timingTaskCheck == nil {
-			s.l.Info("TIMING CHECK", zap.Int64("timestamp", task.NotBeforeTs))
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
