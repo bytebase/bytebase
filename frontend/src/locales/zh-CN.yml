@@ -174,10 +174,10 @@ activity:
   sentence:
     created-issue: "创建工单"
     commented: 评论
-    reassigned-issue: "将工单由 {oldName} 重新指定给 {newName}"
-    assigned-issue: "将工单指定给 {newName}"
-    unassigned-issue: "将工单由 {oldName} 解除指定"
-    invalid-assignee-update: "无效的指定操作"
+    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
+    assigned-issue: "将工单指派给 {newName}"
+    unassigned-issue: "将工单由 {oldName} 解除指派"
+    invalid-assignee-update: "无效的指派操作"
     changed-description: "修改描述"
     changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
     unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
