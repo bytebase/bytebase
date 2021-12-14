@@ -66,7 +66,7 @@ common:
   status: 状态
   stage: 阶段
   sql: SQL
-  unassigned: 未指定
+  unassigned: 未指派
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -151,7 +151,7 @@ settings:
     yourself: 你自己
     upgrade: 升级付费方案来解锁其他角色
     select-role: 选择角色
-    not-assigned: 未指定
+    not-assigned: 未指派
     table:
       account: 账户
       role: 角色
