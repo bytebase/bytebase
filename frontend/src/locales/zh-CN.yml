@@ -3,11 +3,16 @@ common:
   cancel: 取消
   home: 主页
   settings: 设置
+  project: 项目
   projects: 项目
   help: 帮助
+  database: 数据库
   databases: 数据库
+  instance: 实例
   instances: 实例
+  environment: 环境
   environments: 环境
+  bookmark: 书签
   bookmarks: 书签
   quick-action: 快捷操作
   archive: 归档
@@ -44,6 +49,10 @@ common:
   commit: 提交
   statement: 语句
   snapshot: 快照
+  new: 创建
+  add: 添加
+  query: 查询
+  transfer: 转移
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -71,6 +80,7 @@ intro:
     pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
   issue: 工单
+  quickstart: 快速入门
 bbkit:
   alert:
     ok: 确认
@@ -95,7 +105,7 @@ settings:
     plan: （升级到团队方案来开启角色管理）
   workspace:
     url-section: SQL Console URL
-    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
+    url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: >-
       如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
@@ -141,9 +151,27 @@ quick-action:
   alter-schema: 变更 Schema
   create-db: 创建数据库
   choose-db: 选择数据库
+  new-db: 创建数据库
+  add-instance: "@:common.add@:common.instance"
+  create-instance: "@:common.create@:common.instance"
+  manage-user: 成员管理
+  default-project: 默认项目
+  add-environment: "@:common.add@:common.environment"
+  create-environment: "@:common.create@:common.environment"
+  new-project: "@:common.new@:common.project"
+  create-project: "@:common.create@:common.project"
+  edit-data: 编辑数据
+  troubleshoot: 问题排查
+  transfer-in-db: 转移数据库
+  request-db: 申请数据库
+  from-default-project: 从默认项目
+  from-other-projects: 从其他项目
+  transfer-in-db-title: 从其他项目转移数据库
+  transfer-in-db-hint: Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。
+  transfer-in-db-alert: 您确定要转移 "{ dbName }" 到我们的项目中吗？
 create-db:
   new-database-name: 新数据库名称
-  reserved-db-error: '{databaseName} 是一个预留名称'
+  reserved-db-error: "{databaseName} 是一个预留名称"
 db:
   encoding: 字符编码
   character-set: 字符集
@@ -161,10 +189,10 @@ environment:
 quick-start:
   bookmark-an-issue: 收藏工单
   add-a-comment: 添加评论
-  visit-project: '@:common.visit@:common.projects'
-  visit-instance: '@:common.visit@:common.instances'
-  visit-database: '@:common.visit@:common.databases'
-  visit-environment: '@:common.visit@:common.environments'
+  visit-project: "@:common.visit@:common.projects"
+  visit-instance: "@:common.visit@:common.instances"
+  visit-database: "@:common.visit@:common.databases"
+  visit-environment: "@:common.visit@:common.environments"
   add-a-member: 添加成员
   notice:
     title: 快速入门导览已关闭
@@ -188,13 +216,12 @@ policy:
 migration-history:
   self: 迁移历史
   workflow: 工作流
-  commit-info: '由 {author} 于 {time}'
+  commit-info: 由 {author} 于 {time}
   no-schema-change: 本次迁移没有任何 Schema 的改动
   show-diff: 显示差异
   left-vs-right: 之前 (左) vs 当前版本 (右)
   schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
-  list-limit: >-
-    对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
+  list-limit: 对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
   no-history-in-project: 这个项目下没有发现任何数据库有迁移历史。
   recording-info: 每当数据库 schema 变更时，我们便会记录下迁移历史。
   establish-baseline: 建立新的基线

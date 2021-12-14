@@ -2,8 +2,7 @@
   <div class="px-4 space-y-6 w-208">
     <div v-if="projectId != DEFAULT_PROJECT_ID" class="textlabel">
       <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
-        Bytebase periodically syncs the instance schema. Newly synced databases
-        are first placed in this default project.
+        {{ $t("quick-action.transfer-in-db-hint") }}
       </div>
       <div class="radio-set-row">
         <div class="flex flex-row">
@@ -15,7 +14,9 @@
               class="btn"
               value="DEFAULT"
             />
-            <label class="label"> From Default project </label>
+            <label class="label">
+              {{ $t("quick-action.from-default-project") }}
+            </label>
           </div>
         </div>
         <div class="radio">
@@ -26,7 +27,9 @@
             class="btn"
             value="OTHER"
           />
-          <label class="label"> From other projects </label>
+          <label class="label">
+            {{ $t("quick-action.from-other-projects") }}
+          </label>
         </div>
       </div>
     </div>
@@ -46,15 +49,19 @@
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
     </div>
 
     <BBAlert
       v-if="state.showModal"
       :style="'INFO'"
-      :ok-text="'Transfer'"
-      :title="`Are you sure to transfer '${selectedDatabaseName}' into our project?`"
+      :ok-text="$t('common.transfer')"
+      :title="
+        $t('quick-action.transfer-in-db-alert', {
+          dbName: selectedDatabaseName,
+        })
+      "
       @ok="
         () => {
           state.showModal = false;
