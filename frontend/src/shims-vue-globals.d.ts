@@ -11,14 +11,14 @@ import type {
   sizeToFit,
   urlfy,
 } from "./utils";
-import type { Moment } from "moment";
+import type moment from "moment";
 import type { isEmpty } from "lodash";
 
 declare module "@vue/runtime-core" {
   export interface ComponentCustomProperties {
     window: Window & typeof globalThis;
     console: Console;
-    moment: Moment;
+    moment: typeof moment;
     humanizeTs: typeof humanizeTs;
     isDev: boolean;
     isRelease: boolean;
