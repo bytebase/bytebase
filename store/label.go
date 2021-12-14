@@ -70,14 +70,14 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	return ret, nil
 }
 
-func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+func (s *LabelService) FindDatabaseLabels(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	databaseLabelList, err := s.findDatabaseLabelList(ctx, tx, find)
+	databaseLabelList, err := s.findDatabaseLabels(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	return databaseLabelList, nil
 }
 
-func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -200,7 +200,7 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 }
 
 func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
-	oldLabels, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	oldLabels, err := s.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {

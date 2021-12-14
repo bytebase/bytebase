@@ -701,7 +701,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	rowStatus = api.Normal
-	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	labels, err := s.LabelService.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &database.ID,
 		RowStatus:  &rowStatus,
 	})
@@ -709,8 +709,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	if len(labelList) > 0 {
-		labels, err := json.Marshal(labelList)
+	if len(labels) > 0 {
+		labels, err := json.Marshal(labels)
 		if err != nil {
 			return err
 		}

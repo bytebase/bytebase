@@ -72,8 +72,8 @@ type DatabaseLabelUpsert struct {
 type LabelService interface {
 	// FindLabelKeyList finds all available keys for labels.
 	FindLabelKeyList(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
-	// FindDatabaseLabelList finds all database labels matching the conditions, ascending by key.
-	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
+	// FindDatabaseLabels finds all database labels matching the conditions, ascending by key.
+	FindDatabaseLabels(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
 	// SetDatabaseLabels sets a database's labels to new labels.
 	SetDatabaseLabels(ctx context.Context, labels []*DatabaseLabel, databaseID int, updaterID int) ([]*DatabaseLabel, error)
 }
