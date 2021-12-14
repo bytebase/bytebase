@@ -233,8 +233,8 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 
 // ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	// every task should pass timing task check
-	{
+	// timing task check
+	if task.NotBeforeTs != 0 {
 		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
 			return nil, err
