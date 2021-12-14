@@ -145,6 +145,26 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
 		}
 
+		// Patch database labels
+		// We will completely replace the old labels with the new ones
+		if databasePatch.Labels != nil {
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+			}
+
+			// databasePatch.Labels is a JSON-encoded string
+			var labels []*api.DatabaseLabel
+			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
+
+			_, err := s.LabelService.SetDatabaseLabels(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", id)).SetInternal(err)
+			}
+		}
+
 		// If we are transferring the database to a different project, then we create a project activity in both
 		// the old project and new project.
 		var existingDatabase *api.Database
@@ -678,6 +698,23 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		if err != nil {
 			return err
 		}
+	}
+
+	rowStatus = api.Normal
+	labels, err := s.LabelService.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
+		DatabaseID: &database.ID,
+		RowStatus:  &rowStatus,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(labels) > 0 {
+		labels, err := json.Marshal(labels)
+		if err != nil {
+			return err
+		}
+		database.Labels = string(labels)
 	}
 
 	return nil
