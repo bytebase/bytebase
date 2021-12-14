@@ -108,7 +108,7 @@ settings:
     plan: (Upgrade to Team plan to enable role management)
   workspace:
     url-section: SQL Console URL
-    url-tip: 'Tip: Use {schema} as the placeholder for the actual database name'
+    url-tip: "Tip: Use {schema} as the placeholder for the actual database name"
     tip: >-
       If your team use a separate SQL console such as phpMyAdmin, you can
       provide its URL pattern here. Once provided, Bytebase will surface the
@@ -165,14 +165,14 @@ quick-action:
   create-db: Create database
   choose-db: Choose database
   new-db: New DB
-  add-instance: '@:common.add @:common.instance'
-  create-instance: '@:common.create @:common.instance'
+  add-instance: "@:common.add @:common.instance"
+  create-instance: "@:common.create @:common.instance"
   manage-user: Manage User
   default-project: Default Project
-  add-environment: '@:common.add @:common.environment'
-  create-environment: '@:common.create @:common.environment'
-  new-project: '@:common.new @:common.project'
-  create-project: '@:common.create @:common.project'
+  add-environment: "@:common.add @:common.environment"
+  create-environment: "@:common.create @:common.environment"
+  new-project: "@:common.new @:common.project"
+  create-project: "@:common.create @:common.project"
   edit-data: Edit Data
   troubleshoot: Troubleshoot
   transfer-in-db: Transfer in DB
@@ -184,10 +184,10 @@ quick-action:
     Bytebase periodically syncs the instance schema. Newly synced databases are
     first placed in this default project.
   transfer-in-db-alert: >-
-    Are you sure to transfer '{ dbName }' into our project?
+    Are you sure to transfer "{ dbName }" into our project?
 create-db:
   new-database-name: New database name
-  reserved-db-error: '{databaseName} is a reserved name'
+  reserved-db-error: "{databaseName} is a reserved name"
 db:
   encoding: Encoding
   character-set: Character set
@@ -207,10 +207,10 @@ environment:
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
-  visit-project: '@:common.visit @:common.projects'
-  visit-instance: '@:common.visit @:common.instances'
-  visit-database: '@:common.visit @:common.databases'
-  visit-environment: '@:common.visit @:common.environments'
+  visit-project: "@:common.visit @:common.projects"
+  visit-instance: "@:common.visit @:common.instances"
+  visit-database: "@:common.visit @:common.databases"
+  visit-environment: "@:common.visit @:common.environments"
   add-a-member: Add a member
   notice:
     title: Quickstart guide dismissed
