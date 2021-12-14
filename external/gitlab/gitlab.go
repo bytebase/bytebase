@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -110,136 +109,100 @@ type File struct {
 
 // POST sends a POST request.
 func POST(instanceURL string, resourcePath string, token *string, body io.Reader, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
-	retries := 0
-RETRY:
-	retries++
-
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("POST",
-		url, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct POST %v (%w)", url, err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+*token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed POST %v (%w)", url, err)
-	}
-	err = getErrorDetails(resp)
-	if retriableError(err) && retries < maxRetries {
-		// Refresh and store the token.
-		log.Printf("refreshing oauth token")
-		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
-			return nil, err
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("POST",
+			url, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct POST %v (%w)", url, err)
 		}
-		goto RETRY
-	}
-	if err != nil {
-		return nil, err
-	}
 
-	return resp, nil
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed POST %v (%w)", url, err)
+		}
+		return resp, nil
+	})
 }
 
 // GET sends a GET request.
 func GET(instanceURL string, resourcePath string, token *string, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
-	retries := 0
-RETRY:
-	retries++
-
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("GET",
-		url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct GET %v (%w)", url, err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+*token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed GET %v (%w)", url, err)
-	}
-	err = getErrorDetails(resp)
-	if retriableError(err) && retries < maxRetries {
-		// Refresh and store the token.
-		log.Printf("refreshing oauth token")
-		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
-			return nil, err
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("GET",
+			url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct GET %v (%w)", url, err)
 		}
-		goto RETRY
-	}
-	if err != nil {
-		return nil, err
-	}
 
-	return resp, nil
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed GET %v (%w)", url, err)
+		}
+		return resp, nil
+	})
 }
 
 // PUT sends a PUT request.
 func PUT(instanceURL string, resourcePath string, token *string, body io.Reader, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
-	retries := 0
-RETRY:
-	retries++
-
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("PUT",
-		url, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct PUT %v (%w)", url, err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+*token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed PUT %v (%w)", url, err)
-	}
-	err = getErrorDetails(resp)
-	if retriableError(err) && retries < maxRetries {
-		// Refresh and store the token.
-		log.Printf("refreshing oauth token")
-		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
-			return nil, err
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("PUT",
+			url, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct PUT %v (%w)", url, err)
 		}
-		goto RETRY
-	}
-	if err != nil {
-		return nil, err
-	}
 
-	return resp, nil
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed PUT %v (%w)", url, err)
+		}
+		return resp, nil
+	})
 }
 
 // DELETE sends a DELETE request.
 func DELETE(instanceURL string, resourcePath string, token *string, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("DELETE",
+			url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct DELETE %v (%w)", url, err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed DELETE %v (%w)", url, err)
+		}
+		return resp, nil
+	})
+}
+
+func retry(instanceURL string, token *string, oauthContext OauthContext, refresher TokenRefresher, f func() (*http.Response, error)) (*http.Response, error) {
 	retries := 0
 RETRY:
 	retries++
 
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("DELETE",
-		url, nil)
+	resp, err := f()
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct DELETE %v (%w)", url, err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+*token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed DELETE %v (%w)", url, err)
+		return nil, err
 	}
 	err = getErrorDetails(resp)
-	if retriableError(err) && retries < maxRetries {
+	if expiredTokenError(err) && retries < maxRetries {
 		// Refresh and store the token.
-		log.Printf("refreshing oauth token")
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
 			return nil, err
 		}
@@ -258,11 +221,11 @@ type oauthError struct {
 }
 
 func (e *oauthError) Error() string {
-	return fmt.Sprintf("git oauth response error %q description %q", e.Err, e.ErrorDescription)
+	return fmt.Sprintf("gitlab oauth response error %q description %q", e.Err, e.ErrorDescription)
 }
 
 func getErrorDetails(resp *http.Response) error {
-	if resp.StatusCode == http.StatusOK {
+	if 200 <= resp.StatusCode && resp.StatusCode < 300 {
 		return nil
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -276,10 +239,10 @@ func getErrorDetails(resp *http.Response) error {
 	if oe.Err != "" || oe.ErrorDescription != "" {
 		return &oe
 	}
-	return fmt.Errorf("git response code %v error %q", resp.StatusCode, body)
+	return fmt.Errorf("gitlab response code %v error %q", resp.StatusCode, body)
 }
 
-func retriableError(e error) bool {
+func expiredTokenError(e error) bool {
 	if e == nil {
 		return false
 	}
