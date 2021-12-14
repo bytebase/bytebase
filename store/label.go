@@ -168,7 +168,7 @@ func (s *LabelService) UpsertDatabaseLabel(ctx context.Context, upsert *api.Data
 }
 
 func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
-	// Upsert row into backup_setting.
+	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db_label (
 			row_status,
