@@ -328,6 +328,15 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 	if v := patch.SchemaPathTemplate; v != nil {
 		set, args = append(set, "schema_path_template = ?"), append(args, *v)
 	}
+	if v := patch.AccessToken; v != nil {
+		set, args = append(set, "access_token = ?"), append(args, *v)
+	}
+	if v := patch.ExpiresTs; v != nil {
+		set, args = append(set, "expires_ts = ?"), append(args, *v)
+	}
+	if v := patch.RefreshToken; v != nil {
+		set, args = append(set, "refresh_token = ?"), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
