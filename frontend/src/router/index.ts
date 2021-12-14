@@ -10,6 +10,7 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
+import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { store } from "../store";
 import { Database, QuickActionType } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
@@ -733,6 +734,20 @@ const routes: Array<RouteRecordRaw> = [
       },
     ],
   },
+  {
+    path: "/sql-editor",
+    name: "sql-editor",
+    component: SqlEditorLayout,
+    children: [
+      {
+        path: "",
+        name: "sql-editor.home",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/sql-editor/index.vue"),
+        props: true,
+      },
+    ],
+  },
 ];
 
 export const router = createRouter({
@@ -863,6 +878,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
+    to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail")
   ) {
