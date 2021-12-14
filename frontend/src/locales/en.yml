@@ -175,6 +175,33 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+  sentence:
+    created-issue: "created issue"
+    commented: commented
+    reassigned-issue: "reassigned issue from {oldName} to {newName}"
+    assigned-issue: "assigned issue to {newName}"
+    unassigned-issue: "unassigned issue from {oldName}"
+    invalid-assignee-update: "invalid assignee update"
+    changed-description: "changed description"
+    changed-from-to: 'changed {name} from "{oldValue}" to "{newValue}"'
+    unset-from: 'unset {name} from "{oldValue}"'
+    set-to: 'set {name} to "{newValue}"'
+    changed-update: "changed {name} update"
+    reopened-issue: "reopened issue"
+    resolved-issue: "resolved issue"
+    canceled-issue: "canceled issue"
+    empty: ""
+    changed: changed
+    updated: updated
+    canceled: canceled
+    approved: approved
+    started: started
+    completed: completed
+    failed: failed
+    task-name: " task {name}"
+    committed-to-at: "committed {file} to{branch}{'@'}{repo}"
+  subject-prefix:
+    task: "Task"
 issue:
   waiting-approval: Waiting Approval
   opened-by-at: opened by {creator} at {time}
@@ -205,13 +232,6 @@ issue:
   edit-comment: Edit comment
   leave-a-comment: "Leave a comment..."
   view-commit: View commit
-  activity:
-    changed: changed
-    canceled: canceled
-    approved: approved
-    started: started
-    completed: completed
-    failed: failed
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database

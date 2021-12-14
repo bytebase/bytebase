@@ -339,6 +339,7 @@ import {
   reactive,
   watchEffect,
   PropType,
+  defineComponent,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -363,6 +364,7 @@ import {
   taskSlug,
 } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -387,7 +389,7 @@ type ActionIconType =
   | "complete"
   | "commit";
 
-export default {
+export default defineComponent({
   name: "IssueActivityPanel",
   components: { PrincipalAvatar },
   props: {
@@ -402,6 +404,7 @@ export default {
   },
   emits: ["add-subscriber-id"],
   setup(props, { emit }) {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -562,12 +565,8 @@ export default {
             } else if (payload.oldStatus == "PENDING_APPROVAL") {
               return "approve";
             }
+            break;
           }
-          // TODO(ji): Next line raises an eslint ERROR because of missing `break`.
-          // But I won't change it this time.
-          // Because I don't know whether this fall-through is meaningful.
-          // If it is, write a comment line "fall-through" (without quote and dash)
-          // above it to tell eslint to ignore it.
           case "RUNNING": {
             return "run";
           }
@@ -588,7 +587,7 @@ export default {
     const actionSubjectPrefix = (activity: Activity): string => {
       if (activity.creator.id == SYSTEM_BOT_ID) {
         if (activity.type == "bb.pipeline.task.status.update") {
-          return "Task ";
+          return `${t("activity.subject-prefix.task")} `;
         }
       }
       return "";
@@ -622,31 +621,32 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {
-        return issueActivityActionSentence(activity);
+        const [tid, params] = issueActivityActionSentence(activity);
+        return t(tid, params);
       }
       switch (activity.type) {
         case "bb.pipeline.task.status.update": {
           const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-          var str = `changed`;
+          let str = t("activity.sentence.changed");
           switch (payload.newStatus) {
             case "PENDING": {
               if (payload.oldStatus == "RUNNING") {
-                str = `canceled`;
+                str = t("activity.sentence.canceled");
               } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                str = `approved`;
+                str = t("activity.sentence.approved");
               }
               break;
             }
             case "RUNNING": {
-              str = `started`;
+              str = t("activity.sentence.started");
               break;
             }
             case "DONE": {
-              str = `completed`;
+              str = t("activity.sentence.completed");
               break;
             }
             case "FAILED": {
-              str = `failed`;
+              str = t("activity.sentence.failed");
               break;
             }
           }
@@ -654,13 +654,18 @@ export default {
             // If creator is not the robot (which means we do NOT use task name in the subject),
             // then we append the task name here.
             const task = findTaskById(props.issue.pipeline, payload.taskId);
-            str += ` task ${task.name}`;
+            str += t("activity.sentence.task-name", { name: task.name });
           }
           return str;
         }
         case "bb.pipeline.task.file.commit": {
           const payload = activity.payload as ActivityTaskFileCommitPayload;
-          return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
+          // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
+          return t("activity.sentence.committed-to-at", {
+            file: payload.filePath,
+            branch: payload.branch,
+            repo: payload.repositoryFullPath,
+          });
         }
       }
       return "";
@@ -687,5 +692,5 @@ export default {
       doDeleteComment,
     };
   },
-};
+});
 </script>

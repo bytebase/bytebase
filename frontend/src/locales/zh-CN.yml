@@ -170,6 +170,33 @@ activity:
   comment: 评论
   created: 创建于
   invoker: 执行者
+  sentence:
+    created-issue: "创建工单"
+    commented: 评论
+    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
+    assigned-issue: "将工单指派给 {newName}"
+    unassigned-issue: "将工单由 {oldName} 解除指派"
+    invalid-assignee-update: "无效的指派操作"
+    changed-description: "修改描述"
+    changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
+    unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
+    set-to: '将 {name} 设置为 "{newValue}"'
+    changed-update: "修改 {name}"
+    reopened-issue: "重开工单"
+    resolved-issue: "解决工单"
+    canceled-issue: "取消工单"
+    empty: ""
+    changed: 修改
+    updated: 更新
+    canceled: 取消
+    approved: 批准
+    started: 开始
+    completed: 完成
+    failed: 失败
+    task-name: "任务 {name}"
+    committed-to-at: "提交 {file} 到 {branch}{'@'}{repo}"
+  subject-prefix:
+    task: "任务"
 issue:
   waiting-approval: 等待批准
   opened-by-at: "{id} 由 {creator} 开启于 {time}"
@@ -200,13 +227,6 @@ issue:
   edit-comment: 编辑评论
   leave-a-comment: 发表一条评论…
   view-commit: 查看提交
-  activity:
-    changed: 更改于
-    canceled: 取消于
-    approved: 批准于
-    started: 开始于
-    completed: 完成于
-    failed: 失败于
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
