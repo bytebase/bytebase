@@ -157,7 +157,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				resp, err := gitlab.GET(
 					repository.VCS.InstanceURL,
 					fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalID, url.QueryEscape(added), commit.ID),
-					repository.AccessToken,
+					&repository.AccessToken,
+					gitlab.OauthContext{
+						ClientID:     repository.VCS.ApplicationID,
+						ClientSecret: repository.VCS.Secret,
+						RefreshToken: repository.RefreshToken,
+					},
+					s.refreshToken(ctx, repository.ID),
 				)
 				if err != nil {
 					createIgnoredFileActivity(fmt.Errorf("failed to read file: %w", err))

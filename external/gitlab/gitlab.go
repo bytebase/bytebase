@@ -1,9 +1,12 @@
 package gitlab
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -11,6 +14,8 @@ const (
 	APIPath = "api/v4"
 	// SecretTokenLength is the length of secret token.
 	SecretTokenLength = 16
+
+	maxRetries = 3
 )
 
 // WebhookType is the gitlab webhook type.
@@ -103,81 +108,216 @@ type File struct {
 }
 
 // POST sends a POST request.
-func POST(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("POST",
-		url, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct POST %v (%w)", url, err)
-	}
+func POST(instanceURL string, resourcePath string, token *string, body io.Reader, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("POST",
+			url, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct POST %v (%w)", url, err)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed POST %v (%w)", url, err)
-	}
-
-	return resp, nil
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed POST %v (%w)", url, err)
+		}
+		return resp, nil
+	})
 }
 
 // GET sends a GET request.
-func GET(instanceURL string, resourcePath string, token string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("GET",
-		url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct GET %v (%w)", url, err)
-	}
+func GET(instanceURL string, resourcePath string, token *string, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("GET",
+			url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct GET %v (%w)", url, err)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed GET %v (%w)", url, err)
-	}
-
-	return resp, nil
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed GET %v (%w)", url, err)
+		}
+		return resp, nil
+	})
 }
 
 // PUT sends a PUT request.
-func PUT(instanceURL string, resourcePath string, token string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("PUT",
-		url, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct PUT %v (%w)", url, err)
-	}
+func PUT(instanceURL string, resourcePath string, token *string, body io.Reader, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("PUT",
+			url, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct PUT %v (%w)", url, err)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed PUT %v (%w)", url, err)
+		}
+		return resp, nil
+	})
+}
+
+// DELETE sends a DELETE request.
+func DELETE(instanceURL string, resourcePath string, token *string, oauthContext OauthContext, refresher TokenRefresher) (*http.Response, error) {
+	return retry(instanceURL, token, oauthContext, refresher, func() (*http.Response, error) {
+		url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
+		req, err := http.NewRequest("DELETE",
+			url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct DELETE %v (%w)", url, err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed DELETE %v (%w)", url, err)
+		}
+		return resp, nil
+	})
+}
+
+func retry(instanceURL string, token *string, oauthContext OauthContext, refresher TokenRefresher, f func() (*http.Response, error)) (*http.Response, error) {
+	retries := 0
+RETRY:
+	retries++
+
+	resp, err := f()
 	if err != nil {
-		return nil, fmt.Errorf("failed PUT %v (%w)", url, err)
+		return nil, err
+	}
+	err = getErrorDetails(resp)
+	if expiredTokenError(err) && retries < maxRetries {
+		// Refresh and store the token.
+		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
+			return nil, err
+		}
+		goto RETRY
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return resp, nil
 }
 
-// DELETE sends a DELETE request.
-func DELETE(instanceURL string, resourcePath string, token string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, APIPath, resourcePath)
-	req, err := http.NewRequest("DELETE",
-		url, nil)
+type oauthError struct {
+	Err              string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+func (e *oauthError) Error() string {
+	return fmt.Sprintf("gitlab oauth response error %q description %q", e.Err, e.ErrorDescription)
+}
+
+func getErrorDetails(resp *http.Response) error {
+	if 200 <= resp.StatusCode && resp.StatusCode < 300 {
+		return nil
+	}
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct DELETE %v (%w)", url, err)
+		return err
+	}
+	var oe oauthError
+	if err = json.Unmarshal([]byte(body), &oe); err != nil {
+		return err
+	}
+	if oe.Err != "" || oe.ErrorDescription != "" {
+		return &oe
+	}
+	return fmt.Errorf("gitlab response code %v error %q", resp.StatusCode, body)
+}
+
+func expiredTokenError(e error) bool {
+	if e == nil {
+		return false
+	}
+	oe, ok := e.(*oauthError)
+	if !ok {
+		return false
+	}
+	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
+	// {"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
+	return oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired")
+}
+
+// TokenRefresher is a function refreshes the oauth token and updates the repository.
+type TokenRefresher func(token, refreshToken string, expiresTs int64) error
+
+// OauthContext is the request context for refreshing oauth token.
+type OauthContext struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	RefreshToken string `json:"refresh_token"`
+	GrantType    string `json:"grant_type"`
+}
+
+type refreshOauthResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	CreatedAt    int64  `json:"created_at"`
+	// token_type, scope are not used.
+}
+
+func refreshToken(instanceURL string, oldToken *string, oauthContext OauthContext, refresher TokenRefresher) error {
+	url := fmt.Sprintf("%s/oauth/token", instanceURL)
+	oauthContext.GrantType = "refresh_token"
+	body, err := json.Marshal(oauthContext)
+	if err != nil {
+		return err
 	}
 
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("failed to construct refresh token POST %v (%w)", url, err)
+	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+token)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed DELETE %v (%w)", url, err)
+		return fmt.Errorf("failed to send refresh token POST %v (%w)", url, err)
+	}
+	if err := getErrorDetails(resp); err != nil {
+		return err
 	}
 
-	return resp, nil
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read body from refresh token POST %v (%w)", url, err)
+	}
+
+	var r refreshOauthResponse
+	if err := json.Unmarshal([]byte(body), &r); err != nil {
+		return fmt.Errorf("failed to unmarshal body from refresh token POST %v (%w)", url, err)
+	}
+
+	// Update the old token to new value for retries.
+	*oldToken = r.AccessToken
+
+	// For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
+	// see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	var expireAt int64
+	if r.ExpiresIn != 0 {
+		expireAt = r.CreatedAt + r.ExpiresIn
+	}
+	if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
+		return err
+	}
+
+	return nil
 }
