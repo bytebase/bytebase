@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bytebase
+  namespace: {{ template "bytebase.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: bytebase
+  serviceName: "bytebase"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: bytebase
+    spec:
+      containers:
+        - name: bytebase
+          image: "bytebase/bytebase:{{ .Chart.AppVersion }}"
+          ports:
+            - containerPort: 80
+              name: web
+          volumeMounts:
+            - mountPath: /var/opt/bytebase
+              name: sqlite
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/info
+              port: web
+            initialDelaySeconds: 2
+            periodSeconds: 2
+  volumeClaimTemplates:
+    - metadata:
+        name: sqlite
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ .Values.bytebase.storage }}"
