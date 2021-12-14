@@ -26,23 +26,23 @@ type LabelKeyFind struct {
 
 // DatabaseLabel is the label associated with a database.
 type DatabaseLabel struct {
-	ID int
+	ID int `json:"-"`
 
 	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	Creator   *Principal
-	CreatedTs int64
-	UpdaterID int
-	Updater   *Principal
-	UpdatedTs int64
+	RowStatus RowStatus  `json:"-"`
+	CreatorID int        `json:"-"`
+	Creator   *Principal `json:"-"`
+	CreatedTs int64      `json:"-"`
+	UpdaterID int        `json:"-"`
+	Updater   *Principal `json:"-"`
+	UpdatedTs int64      `json:"-"`
 
 	// Related fields
-	DatabaseID int
-	Key        string
+	DatabaseID int    `json:"-"`
+	Key        string `json:"key"`
 
 	// Domain specific fields
-	Value string
+	Value string `json:"value"`
 }
 
 type DatabaseLabelFind struct {

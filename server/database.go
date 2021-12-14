@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -159,7 +158,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 			}
 
-			creates, patches := diffDatabaseLabel(oldLabelList, databasePatch.Labels)
+			// databasePatch.Labels is a JSON-encoded string
+			var labels []*api.DatabaseLabel
+			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
+
+			creates, patches := diffDatabaseLabel(oldLabelList, labels)
 
 			for _, create := range creates {
 				create.CreatorID = databasePatch.UpdaterID
@@ -722,12 +725,16 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	if err != nil {
 		return err
 	}
-	// compose labels to "key1:value1,key2:value2" for JSON
-	labels := make([]string, 0, len(labelList))
-	for _, label := range labelList {
-		labels = append(labels, fmt.Sprintf("%s:%s", label.Key, label.Value))
+
+	if len(labelList) > 0 {
+		labels, err := json.Marshal(labelList)
+		if err != nil {
+			return err
+		}
+		// escape then remove extra quotes
+		escaped := strconv.Quote(string(labels))
+		database.Labels = escaped[1 : len(escaped)-1]
 	}
-	database.Labels = strings.Join(labels, ",")
 
 	return nil
 }
@@ -820,7 +827,7 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 
 // diffDatabaseLabel diffs old database labels and new database labels
 // labels is like "key1:value1,key2:value2"
-func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels *string) ([]*api.DatabaseLabelCreate, []*api.DatabaseLabelPatch) {
+func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels []*api.DatabaseLabel) ([]*api.DatabaseLabelCreate, []*api.DatabaseLabelPatch) {
 	creates := make([]*api.DatabaseLabelCreate, 0)
 	patches := make([]*api.DatabaseLabelPatch, 0)
 
@@ -837,23 +844,36 @@ func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels *string) ([]*ap
 		oldLabelKeyValueMap[keyValue] = oldLabel
 	}
 
-	// labels is like "key1:value1,key2:value2"
-	labelList := strings.Split(*labels, ",")
-
 	// Loop over all new labels
-	for _, label := range labelList {
-		// label is like "key:value"
-		keyValue := strings.Split(label, ":")
-		key, value := keyValue[0], keyValue[1]
-		oldLabel, ok := oldLabelKeyMap[key]
+	for _, label := range labels {
+		keyValue := fmt.Sprintf("%s:%s", label.Key, label.Value)
+		// Here we use key:value as the hash key which may lead to clash
+		// For example,
+		// key=abc value=:de    we get abc::de
+		// key=abc: value=de    we get abc::de
+		// But such namings are rare since key and value are meaningful words used in database label
+
+		// Use map[string]map[string]*api.DatabaseLabel is cumbersome
+
+		// It's also feasible to define a struct and then use the struct as the key
+		// 	type keyValue struct {
+		// 		key int
+		//		value int
+		//	}
+		// map[keyValue] *api.DatabaseLabel
+		//
+		// But this approach feels redundant
+		// So just use key:value for now
+
+		oldLabel, ok := oldLabelKeyMap[label.Key]
 		if !ok {
 			// Fail to find the key in active (i.e. non-archived) old labels.
 			// We have to either create a new label or unarchive an old label if exists.
-			oldLabel, ok := oldLabelKeyValueMap[label]
+			oldLabel, ok := oldLabelKeyValueMap[keyValue]
 			if !ok {
 				creates = append(creates, &api.DatabaseLabelCreate{
-					Key:   key,
-					Value: value,
+					Key:   label.Key,
+					Value: label.Value,
 				})
 			} else {
 				rowStatus := api.Normal
@@ -865,15 +885,15 @@ func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels *string) ([]*ap
 			continue
 		}
 
-		if value != oldLabel.Value {
+		if label.Value != oldLabel.Value {
 			// Find the key but the value is changed, we just need to update the value.
 			patches = append(patches, &api.DatabaseLabelPatch{
 				ID:    oldLabel.ID,
-				Value: &value,
+				Value: &label.Value,
 			})
 		}
 		// Find the label (both the key and the value matches), do nothing.
-		delete(oldLabelKeyMap, key)
+		delete(oldLabelKeyMap, label.Key)
 	}
 
 	for _, oldLabel := range oldLabelKeyMap {

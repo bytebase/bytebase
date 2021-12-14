@@ -66,7 +66,8 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
-	// Labels is like "key1:value1,key2:value2,key3:value3"
+	// Labels is JSON-encoded
+	// Labels is like "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"}]"
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
@@ -120,7 +121,10 @@ type DatabasePatch struct {
 	// Related fields
 	ProjectID      *int `jsonapi:"attr,projectId"`
 	SourceBackupID *int
-	Labels         *string `jsonapi:"attr,labels"`
+
+	// Labels is JSON-encoded
+	// Labels is like "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"}]"
+	Labels *string `jsonapi:"attr,labels"`
 
 	// Domain specific fields
 	SyncStatus           *SyncStatus
