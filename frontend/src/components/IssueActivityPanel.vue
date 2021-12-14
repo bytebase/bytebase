@@ -3,7 +3,7 @@
     <div class="divide-y divide-block-border">
       <div class="pb-4">
         <h2 id="activity-title" class="text-lg font-medium text-main">
-          Activity
+          {{ $t("common.activity") }}
         </h2>
       </div>
       <div class="pt-6">
@@ -21,16 +21,7 @@
                   <div class="relative">
                     <div class="relative pl-0.5">
                       <div
-                        class="
-                          w-7
-                          h-7
-                          bg-control-bg
-                          rounded-full
-                          ring-4 ring-white
-                          flex
-                          items-center
-                          justify-center
-                        "
+                        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                       >
                         <img
                           class="mt-1"
@@ -44,16 +35,7 @@
                 <template v-else-if="actionIcon(activity) == 'avatar'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-white
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <PrincipalAvatar
                         :principal="activity.creator"
@@ -65,16 +47,7 @@
                 <template v-else-if="actionIcon(activity) == 'create'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
                     </div>
@@ -83,16 +56,7 @@
                 <template v-else-if="actionIcon(activity) == 'update'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-solid:pencil class="w-4 h-4 text-control" />
                     </div>
@@ -101,16 +65,7 @@
                 <template v-else-if="actionIcon(activity) == 'run'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:play class="w-6 h-6 text-control" />
                     </div>
@@ -119,16 +74,7 @@
                 <template v-else-if="actionIcon(activity) == 'approve'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:thumb-up
                         class="w-5 h-5 text-control"
@@ -139,16 +85,7 @@
                 <template v-else-if="actionIcon(activity) == 'cancel'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:minus class="w-5 h-5 text-control" />
                     </div>
@@ -157,16 +94,7 @@
                 <template v-else-if="actionIcon(activity) == 'fail'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-white
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:exclamation-circle
                         class="w-6 h-6 text-error"
@@ -177,16 +105,7 @@
                 <template v-else-if="actionIcon(activity) == 'complete'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-white
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:check-circle
                         class="w-6 h-6 text-success"
@@ -197,16 +116,7 @@
                 <template v-else-if="actionIcon(activity) == 'commit'">
                   <div class="relative pl-0.5">
                     <div
-                      class="
-                        w-7
-                        h-7
-                        bg-control-bg
-                        rounded-full
-                        ring-4 ring-white
-                        flex
-                        items-center
-                        justify-center
-                      "
+                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <heroicons-outline:code class="w-5 h-5 text-control" />
                     </div>
@@ -218,12 +128,7 @@
                       {{ actionSubjectPrefix(activity) }}
                       <router-link
                         :to="actionSubject(activity).link"
-                        class="
-                          font-medium
-                          text-main
-                          whitespace-nowrap
-                          hover:underline
-                        "
+                        class="font-medium text-main whitespace-nowrap hover:underline"
                         exact-active-class=""
                         >{{ actionSubject(activity).name }}</router-link
                       >
@@ -270,48 +175,18 @@
                       >
                         <button
                           type="button"
-                          class="
-                            rounded-sm
-                            text-control
-                            hover:bg-control-bg-hover
-                            disabled:bg-control-bg
-                            disabled:opacity-50
-                            disabled:cursor-not-allowed
-                            px-2
-                            text-xs
-                            leading-5
-                            font-normal
-                            focus:ring-control focus:outline-none
-                            focus-visible:ring-2
-                            focus:ring-offset-2
-                          "
+                          class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
                           @click.prevent="cancelEditComment"
                         >
-                          Cancel
+                          {{ $t("common.cancel") }}
                         </button>
                         <button
                           type="button"
-                          class="
-                            border border-control-border
-                            rounded-sm
-                            text-control
-                            bg-control-bg
-                            hover:bg-control-bg-hover
-                            disabled:bg-control-bg
-                            disabled:opacity-50
-                            disabled:cursor-not-allowed
-                            px-2
-                            text-xs
-                            leading-5
-                            font-normal
-                            focus:ring-control focus:outline-none
-                            focus-visible:ring-2
-                            focus:ring-offset-2
-                          "
+                          class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
                           :disabled="!allowUpdateComment"
                           @click.prevent="doUpdateComment"
                         >
-                          Save
+                          {{ $t("common.save") }}
                         </button>
                       </template>
                       <!-- mr-2 is to vertical align with the text description edit button-->
@@ -346,13 +221,15 @@
                         state.activeActivity.id == activity.id
                       "
                     >
-                      <label for="comment" class="sr-only">Edit Comment</label>
+                      <label for="comment" class="sr-only">
+                        {{ $t("issue.edit-comment") }}
+                      </label>
                       <textarea
                         ref="editCommentTextArea"
                         v-model="editComment"
                         rows="3"
                         class="textarea block w-full resize-none"
-                        placeholder="Leave a comment..."
+                        :placeholder="$t('issue.leave-a-comment')"
                         @input="
                           (e) => {
                             sizeToFit(e.target);
@@ -375,7 +252,8 @@
                         :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
-                        >View commit
+                      >
+                        {{ $t("issue.view-commit") }}
                         <heroicons-outline:external-link class="w-4 h-4" />
                       </a>
                     </template>
@@ -392,15 +270,7 @@
               <div class="relative">
                 <PrincipalAvatar :principal="currentUser" />
                 <span
-                  class="
-                    absolute
-                    -bottom-0.5
-                    -right-1
-                    bg-white
-                    rounded-tl
-                    px-0.5
-                    py-px
-                  "
+                  class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
                 >
                   <!-- Heroicon name: solid/chat-alt -->
                   <heroicons-solid:chat-alt
@@ -410,13 +280,15 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <label for="comment" class="sr-only">Create Comment</label>
+              <label for="comment" class="sr-only">
+                {{ $t("issue.add-a-comment") }}
+              </label>
               <textarea
                 ref="newCommentTextArea"
                 v-model="newComment"
                 rows="3"
                 class="textarea block w-full resize-none whitespace-pre-wrap"
-                placeholder="Leave a comment..."
+                :placeholder="$t('issue.leave-a-comment')"
                 @input="
                   (e) => {
                     sizeToFit(e.target);
@@ -430,7 +302,7 @@
                   :disabled="newComment.length == 0"
                   @click.prevent="doCreateComment"
                 >
-                  Comment
+                  {{ $t("common.comment") }}
                 </button>
               </div>
             </div>
@@ -467,6 +339,7 @@ import {
   reactive,
   watchEffect,
   PropType,
+  defineComponent,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -491,6 +364,7 @@ import {
   taskSlug,
 } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -515,7 +389,7 @@ type ActionIconType =
   | "complete"
   | "commit";
 
-export default {
+export default defineComponent({
   name: "IssueActivityPanel",
   components: { PrincipalAvatar },
   props: {
@@ -530,6 +404,7 @@ export default {
   },
   emits: ["add-subscriber-id"],
   setup(props, { emit }) {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -690,12 +565,8 @@ export default {
             } else if (payload.oldStatus == "PENDING_APPROVAL") {
               return "approve";
             }
+            break;
           }
-          // TODO(ji): Next line raises an eslint ERROR because of missing `break`.
-          // But I won't change it this time.
-          // Because I don't know whether this fall-through is meaningful.
-          // If it is, write a comment line "fall-through" (without quote and dash)
-          // above it to tell eslint to ignore it.
           case "RUNNING": {
             return "run";
           }
@@ -716,7 +587,7 @@ export default {
     const actionSubjectPrefix = (activity: Activity): string => {
       if (activity.creator.id == SYSTEM_BOT_ID) {
         if (activity.type == "bb.pipeline.task.status.update") {
-          return "Task ";
+          return `${t("activity.subject-prefix.task")} `;
         }
       }
       return "";
@@ -750,31 +621,32 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {
-        return issueActivityActionSentence(activity);
+        const [tid, params] = issueActivityActionSentence(activity);
+        return t(tid, params);
       }
       switch (activity.type) {
         case "bb.pipeline.task.status.update": {
           const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-          var str = `changed`;
+          let str = t("activity.sentence.changed");
           switch (payload.newStatus) {
             case "PENDING": {
               if (payload.oldStatus == "RUNNING") {
-                str = `canceled`;
+                str = t("activity.sentence.canceled");
               } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                str = `approved`;
+                str = t("activity.sentence.approved");
               }
               break;
             }
             case "RUNNING": {
-              str = `started`;
+              str = t("activity.sentence.started");
               break;
             }
             case "DONE": {
-              str = `completed`;
+              str = t("activity.sentence.completed");
               break;
             }
             case "FAILED": {
-              str = `failed`;
+              str = t("activity.sentence.failed");
               break;
             }
           }
@@ -782,13 +654,18 @@ export default {
             // If creator is not the robot (which means we do NOT use task name in the subject),
             // then we append the task name here.
             const task = findTaskById(props.issue.pipeline, payload.taskId);
-            str += ` task ${task.name}`;
+            str += t("activity.sentence.task-name", { name: task.name });
           }
           return str;
         }
         case "bb.pipeline.task.file.commit": {
           const payload = activity.payload as ActivityTaskFileCommitPayload;
-          return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
+          // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
+          return t("activity.sentence.committed-to-at", {
+            file: payload.filePath,
+            branch: payload.branch,
+            repo: payload.repositoryFullPath,
+          });
         }
       }
       return "";
@@ -815,5 +692,5 @@ export default {
       doDeleteComment,
     };
   },
-};
+});
 </script>
