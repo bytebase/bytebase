@@ -833,63 +833,38 @@ func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels []*api.Database
 
 	// "key" -> *api.DatabaseLabel
 	oldLabelKeyMap := make(map[string]*api.DatabaseLabel)
-	// "key:value" -> *api.DatabaseLabel
-	oldLabelKeyValueMap := make(map[string]*api.DatabaseLabel)
 
 	for _, oldLabel := range oldLabelList {
-		if oldLabel.RowStatus == api.Normal {
-			oldLabelKeyMap[oldLabel.Key] = oldLabel
-		}
-		keyValue := fmt.Sprintf("%s:%s", oldLabel.Key, oldLabel.Value)
-		oldLabelKeyValueMap[keyValue] = oldLabel
+		oldLabelKeyMap[oldLabel.Key] = oldLabel
 	}
 
 	// Loop over all new labels
 	for _, label := range labels {
-		keyValue := fmt.Sprintf("%s:%s", label.Key, label.Value)
-		// Here we use key:value as the hash key which may lead to clash
-		// For example,
-		// key=abc value=:de    we get abc::de
-		// key=abc: value=de    we get abc::de
-		// But such namings are rare since key and value are meaningful words used in database label
-
-		// Use map[string]map[string]*api.DatabaseLabel is cumbersome
-
-		// It's also feasible to define a struct and then use the struct as the key
-		// 	type keyValue struct {
-		// 		key int
-		//		value int
-		//	}
-		// map[keyValue] *api.DatabaseLabel
-		//
-		// But this approach feels redundant
-		// So just use key:value for now
-
 		oldLabel, ok := oldLabelKeyMap[label.Key]
 		if !ok {
-			// Fail to find the key in active (i.e. non-archived) old labels.
-			// We have to either create a new label or unarchive an old label if exists.
-			oldLabel, ok := oldLabelKeyValueMap[keyValue]
-			if !ok {
-				creates = append(creates, &api.DatabaseLabelCreate{
-					Key:   label.Key,
-					Value: label.Value,
-				})
-			} else {
-				rowStatus := api.Normal
-				patches = append(patches, &api.DatabaseLabelPatch{
-					ID:        oldLabel.ID,
-					RowStatus: &rowStatus,
-				})
-			}
+			// Fail to find the key in old labels. Create a new one.
+			creates = append(creates, &api.DatabaseLabelCreate{
+				Key:   label.Key,
+				Value: label.Value,
+			})
 			continue
 		}
 
 		if label.Value != oldLabel.Value {
 			// Find the key but the value is changed, we just need to update the value.
+			rowStatus := api.Normal
 			patches = append(patches, &api.DatabaseLabelPatch{
-				ID:    oldLabel.ID,
-				Value: &label.Value,
+				ID:        oldLabel.ID,
+				Value:     &label.Value,
+				RowStatus: &rowStatus,
+			})
+		}
+		if oldLabel.RowStatus == api.Archived && label.Value == oldLabel.Value {
+			// Find the label, but it's archived. We just need to unarchive it.
+			rowStatus := api.Normal
+			patches = append(patches, &api.DatabaseLabelPatch{
+				ID:        oldLabel.ID,
+				RowStatus: &rowStatus,
 			})
 		}
 		// Find the label (both the key and the value matches), do nothing.
