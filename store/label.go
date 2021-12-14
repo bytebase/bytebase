@@ -70,68 +70,6 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	return ret, nil
 }
 
-func (s *LabelService) CreateDatabaseLabel(ctx context.Context, create *api.DatabaseLabelCreate) (*api.DatabaseLabel, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	databaseLabel, err := s.createDatabaseLabel(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return databaseLabel, nil
-}
-
-func (s *LabelService) createDatabaseLabel(ctx context.Context, tx *Tx, create *api.DatabaseLabelCreate) (*api.DatabaseLabel, error) {
-	row, err := tx.QueryContext(ctx, `
-	INSERT INTO db_label (
-		creator_id,
-		updater_id,
-		database_id,
-		key,
-		value
-	)
-	VALUES (?, ?, ?, ?, ?)
-	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.DatabaseID,
-		create.Key,
-		create.Value,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var databaseLabel api.DatabaseLabel
-	if err := row.Scan(
-		&databaseLabel.ID,
-		&databaseLabel.RowStatus,
-		&databaseLabel.CreatorID,
-		&databaseLabel.CreatedTs,
-		&databaseLabel.UpdaterID,
-		&databaseLabel.UpdatedTs,
-		&databaseLabel.DatabaseID,
-		&databaseLabel.Key,
-		&databaseLabel.Value,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &databaseLabel, nil
-}
-
 func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -210,14 +148,14 @@ func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *
 	return ret, nil
 }
 
-func (s *LabelService) PatchDatabaseLabel(ctx context.Context, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
+func (s *LabelService) UpsertDatabaseLabel(ctx context.Context, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	databaseLabel, err := s.patchDatabaseLabel(ctx, tx, patch)
+	label, err := s.upsertDatabaseLabel(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -226,26 +164,34 @@ func (s *LabelService) PatchDatabaseLabel(ctx context.Context, patch *api.Databa
 		return nil, FormatError(err)
 	}
 
-	return databaseLabel, nil
+	return label, nil
 }
 
-func (s *LabelService) patchDatabaseLabel(ctx context.Context, tx *Tx, patch *api.DatabaseLabelPatch) (*api.DatabaseLabel, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Value; v != nil {
-		set, args = append(set, "value = ?"), append(args, *v)
-	}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, "row_status = ?"), append(args, *v)
-	}
-	args = append(args, patch.ID)
+func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
-		UPDATE db_label
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
+		INSERT INTO db_label (
+			row_status,
+			creator_id,
+			updater_id,
+			database_id,
+			key,
+			value
+		)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(database_id, key) DO UPDATE SET
+				row_status = excluded.row_status,
+				creator_id = excluded.creator_id,
+				updater_id = excluded.updater_id,
+				value = excluded.value
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
-	`,
-		args...,
+		`,
+		upsert.RowStatus,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.DatabaseID,
+		upsert.Key,
+		upsert.Value,
 	)
 
 	if err != nil {

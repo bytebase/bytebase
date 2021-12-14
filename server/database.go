@@ -162,20 +162,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			var labels []*api.DatabaseLabel
 			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
 
-			creates, patches := diffDatabaseLabel(oldLabelList, labels)
+			upserts := diffDatabaseLabel(oldLabelList, labels, databasePatch.UpdaterID, databasePatch.ID)
 
-			for _, create := range creates {
-				create.CreatorID = databasePatch.UpdaterID
-				create.DatabaseID = databasePatch.ID
-				_, err := s.LabelService.CreateDatabaseLabel(ctx, create)
-				if err != nil {
-					return err
-				}
-			}
-
-			for _, patch := range patches {
-				patch.UpdaterID = databasePatch.UpdaterID
-				_, err := s.LabelService.PatchDatabaseLabel(ctx, patch)
+			for _, upsert := range upserts {
+				_, err := s.LabelService.UpsertDatabaseLabel(ctx, upsert)
 				if err != nil {
 					return err
 				}
@@ -827,10 +817,8 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 
 // diffDatabaseLabel diffs old database labels and new database labels
 // labels is like "key1:value1,key2:value2"
-func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels []*api.DatabaseLabel) ([]*api.DatabaseLabelCreate, []*api.DatabaseLabelPatch) {
-	creates := make([]*api.DatabaseLabelCreate, 0)
-	patches := make([]*api.DatabaseLabelPatch, 0)
-
+func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels []*api.DatabaseLabel, updaterID int, databaseID int) []*api.DatabaseLabelUpsert {
+	var upserts []*api.DatabaseLabelUpsert
 	// "key" -> *api.DatabaseLabel
 	oldLabelKeyMap := make(map[string]*api.DatabaseLabel)
 
@@ -840,45 +828,26 @@ func diffDatabaseLabel(oldLabelList []*api.DatabaseLabel, labels []*api.Database
 
 	// Loop over all new labels
 	for _, label := range labels {
-		oldLabel, ok := oldLabelKeyMap[label.Key]
-		if !ok {
-			// Fail to find the key in old labels. Create a new one.
-			creates = append(creates, &api.DatabaseLabelCreate{
-				Key:   label.Key,
-				Value: label.Value,
-			})
-			continue
-		}
-
-		if label.Value != oldLabel.Value {
-			// Find the key but the value is changed, we just need to update the value.
-			rowStatus := api.Normal
-			patches = append(patches, &api.DatabaseLabelPatch{
-				ID:        oldLabel.ID,
-				Value:     &label.Value,
-				RowStatus: &rowStatus,
-			})
-		}
-		if oldLabel.RowStatus == api.Archived && label.Value == oldLabel.Value {
-			// Find the label, but it's archived. We just need to unarchive it.
-			rowStatus := api.Normal
-			patches = append(patches, &api.DatabaseLabelPatch{
-				ID:        oldLabel.ID,
-				RowStatus: &rowStatus,
-			})
-		}
-		// Find the label (both the key and the value matches), do nothing.
+		upserts = append(upserts, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Normal,
+			DatabaseID: databaseID,
+			Key:        label.Key,
+			Value:      label.Value,
+		})
 		delete(oldLabelKeyMap, label.Key)
 	}
 
 	for _, oldLabel := range oldLabelKeyMap {
-		rowStatus := api.Archived
 		// Archive old labels whose key doesn't appear in new labels.
-		patches = append(patches, &api.DatabaseLabelPatch{
-			ID:        oldLabel.ID,
-			RowStatus: &rowStatus,
+		upserts = append(upserts, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Archived,
+			DatabaseID: databaseID,
+			Key:        oldLabel.Key,
+			Value:      oldLabel.Value,
 		})
 	}
 
-	return creates, patches
+	return upserts
 }
