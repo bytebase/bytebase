@@ -15,6 +15,8 @@ const (
 	APIPath = "api/v4"
 	// SecretTokenLength is the length of secret token.
 	SecretTokenLength = 16
+
+	maxRetries = 3
 )
 
 // WebhookType is the gitlab webhook type.
@@ -127,7 +129,7 @@ RETRY:
 		return nil, fmt.Errorf("failed POST %v (%w)", url, err)
 	}
 	err = getErrorDetails(resp)
-	if retriableError(err) && retries < 3 {
+	if retriableError(err) && retries < maxRetries {
 		// Refresh and store the token.
 		log.Printf("refreshing oauth token")
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
@@ -163,7 +165,7 @@ RETRY:
 		return nil, fmt.Errorf("failed GET %v (%w)", url, err)
 	}
 	err = getErrorDetails(resp)
-	if retriableError(err) && retries < 3 {
+	if retriableError(err) && retries < maxRetries {
 		// Refresh and store the token.
 		log.Printf("refreshing oauth token")
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
@@ -199,7 +201,7 @@ RETRY:
 		return nil, fmt.Errorf("failed PUT %v (%w)", url, err)
 	}
 	err = getErrorDetails(resp)
-	if retriableError(err) && retries < 3 {
+	if retriableError(err) && retries < maxRetries {
 		// Refresh and store the token.
 		log.Printf("refreshing oauth token")
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
@@ -235,7 +237,7 @@ RETRY:
 		return nil, fmt.Errorf("failed DELETE %v (%w)", url, err)
 	}
 	err = getErrorDetails(resp)
-	if retriableError(err) && retries < 3 {
+	if retriableError(err) && retries < maxRetries {
 		// Refresh and store the token.
 		log.Printf("refreshing oauth token")
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
