@@ -1,7 +1,7 @@
 <template>
   <!-- Description Bar -->
   <div class="flex justify-between">
-    <div class="textlabel">Description</div>
+    <div class="textlabel">{{ $t("common.description") }}</div>
     <div v-if="!create" class="space-x-2">
       <button
         v-if="allowEdit && !state.editing"
@@ -17,74 +17,40 @@
       <button
         v-if="state.editing"
         type="button"
-        class="
-          mt-0.5
-          px-3
-          rounded-sm
-          text-control
-          hover:bg-control-bg-hover
-          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
-          text-sm
-          leading-5
-          font-normal
-          focus:ring-control focus:outline-none
-          focus-visible:ring-2
-          focus:ring-offset-2
-        "
+        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         @click.prevent="cancelEdit"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
       <button
         v-if="state.editing"
         type="button"
-        class="
-          mt-0.5
-          px-3
-          border border-control-border
-          rounded-sm
-          text-control
-          bg-control-bg
-          hover:bg-control-bg-hover
-          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
-          text-sm
-          leading-5
-          font-normal
-          focus:ring-control focus:outline-none
-          focus-visible:ring-2
-          focus:ring-offset-2
-        "
+        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         :disabled="state.editDescription == issue.description"
         @click.prevent="saveEdit"
       >
-        Save
+        {{ $t("common.save") }}
       </button>
     </div>
   </div>
   <!-- Description -->
-  <label for="description" class="sr-only">Edit Description</label>
+  <label for="description" class="sr-only">
+    {{ $t("issue.edit-description") }}
+  </label>
   <!-- Use border-white focus:border-white to have the invisible border width
       otherwise it will have 1px jiggling switching between focus/unfocus state -->
   <textarea
     ref="editDescriptionTextArea"
     v-model="state.editDescription"
     :rows="create ? 10 : 5"
-    class="
-      mt-2
-      w-full
-      resize-none
-      whitespace-pre-wrap
-      border-white
-      focus:border-white
-      outline-none
-    "
+    class="mt-2 w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
     :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
     :style="
       state.editing
         ? ''
         : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
     "
-    placeholder="Add some description..."
+    :placeholder="$t('issue.add-some-description')"
     :readonly="!state.editing"
     @input="
       (e) => {

@@ -9,7 +9,7 @@
             : 'text-control'
         "
       >
-        {{ rollback ? "Rollback SQL" : "SQL" }}
+        {{ rollback ? $t("issue.rollback-sql") : $t("common.sql") }}
         <span v-if="create && !rollback" class="text-red-600">*</span>
         <span v-if="sqlHint && !rollback" class="text-accent">{{
           `(${sqlHint})`
@@ -24,7 +24,7 @@
           $emit('apply-statement-to-other-stages', state.editStatement)
         "
       >
-        Apply to other stages
+        {{ $t("issue.apply-to-other-stages") }}
       </button>
     </div>
     <div v-if="!create" class="space-x-2">
@@ -42,69 +42,33 @@
       <button
         v-if="state.editing"
         type="button"
-        class="
-          mt-0.5
-          px-3
-          rounded-sm
-          text-control
-          hover:bg-control-bg-hover
-          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
-          text-sm
-          leading-5
-          font-normal
-          focus:ring-control focus:outline-none
-          focus-visible:ring-2
-          focus:ring-offset-2
-        "
+        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         @click.prevent="cancelEdit"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
       <button
         v-if="state.editing"
         type="button"
-        class="
-          mt-0.5
-          px-3
-          border border-control-border
-          rounded-sm
-          text-control
-          bg-control-bg
-          hover:bg-control-bg-hover
-          disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed
-          text-sm
-          leading-5
-          font-normal
-          focus:ring-control focus:outline-none
-          focus-visible:ring-2
-          focus:ring-offset-2
-        "
+        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         :disabled="state.editStatement == statement"
         @click.prevent="saveEdit"
       >
-        Save
+        {{ $t("common.save") }}
       </button>
     </div>
   </div>
-  <label class="sr-only">SQL statement</label>
+  <label class="sr-only">{{ $t("common.sql-statement") }}</label>
   <template v-if="state.editing">
     <textarea
       ref="editStatementTextArea"
       v-model="state.editStatement"
-      class="
-        whitespace-pre-wrap
-        mt-2
-        w-full
-        resize-none
-        border-white
-        focus:border-white
-        outline-none
-      "
+      class="whitespace-pre-wrap mt-2 w-full resize-none border-white focus:border-white outline-none"
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
       :placeholder="
         create && rollback
-          ? 'Add SQL statement...'
-          : '(Required) Add SQL statement...'
+          ? $t('issue.add-sql-statement')
+          : $t('issue.optional-add-sql-statement')
       "
       @input="
         (e) => {
@@ -128,14 +92,26 @@
       {{ state.editStatement }}
     </div>
     <div v-else-if="state.create" class="ml-2 text-control-light">
-      {{ rollback ? "Add rollback SQL statement..." : "Add SQL statement..." }}
+      {{
+        rollback
+          ? $t("issue.add-rollback-sql-statement")
+          : $t("issue.add-sql-statement")
+      }}
     </div>
     <div v-else class="ml-2 text-control-light">None</div>
   </div>
 </template>
 
 <script lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  reactive,
+  watch,
+  defineComponent,
+} from "vue";
 import { sizeToFit } from "../utils";
 
 interface LocalState {
@@ -143,7 +119,7 @@ interface LocalState {
   editStatement: string;
 }
 
-export default {
+export default defineComponent({
   name: "IssueTaskStatementPanel",
   components: {},
   props: {
@@ -170,6 +146,7 @@ export default {
     sqlHint: {
       required: false,
       type: String,
+      default: undefined,
     },
   },
   emits: ["update-statement", "apply-statement-to-other-stages"],
@@ -245,5 +222,5 @@ export default {
       cancelEdit,
     };
   },
-};
+});
 </script>
