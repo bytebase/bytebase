@@ -160,8 +160,8 @@ quick-action:
   create-environment: "@:common.create@:common.environment"
   new-project: "@:common.new@:common.project"
   create-project: "@:common.create@:common.project"
-  edit-data: 问题排查
-  troubleshoot: 故障排除
+  edit-data: 编辑数据
+  troubleshoot: 问题排查
   transfer-in-db: 转移数据库
   request-db: 申请数据库
   from-default-project: 从默认项目
