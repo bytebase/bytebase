@@ -209,7 +209,7 @@ issue:
       reopen: 重开工单?
     dropdown:
       resolve: 解决
-      cancel: 取消
+      cancel: 取消工单
       reopen: 重开
     form:
       note: 笔记
@@ -240,6 +240,8 @@ issue:
     progress: 进度
     updated: 更新于
     assignee: 审核人
+  stage-select:
+    active: "{name}（活动中）"
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。

@@ -245,6 +245,8 @@ issue:
     progress: Progress
     updated: Updated
     assignee: Assignee
+  stage-select:
+    active: "{name} (active)"
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
