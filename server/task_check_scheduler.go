@@ -199,8 +199,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 		if isTimingTaskCheckPassed {
-			// Since we allowed user to modify 'notBeforeTs' after creating a task, it is possible previous passed timing check would fail this time.
-			// So, we should create one if necessary
+			// Since we allow user to modify 'notBeforeTs' after creating a task,
+			// and if the user did change the time to a later time,
+			// then we need to schedule another check to block the run.
 			if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
 				_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               creatorID,
