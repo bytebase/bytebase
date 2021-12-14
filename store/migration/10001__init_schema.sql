@@ -1316,7 +1316,8 @@ CREATE TABLE db_label (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     key TEXT NOT NULL REFERENCES label_key (key),
-    value TEXT NOT NULL
+    value TEXT NOT NULL,
+    UNIQUE(database_id, key)
 );
 
 CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);

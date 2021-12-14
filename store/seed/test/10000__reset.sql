@@ -66,6 +66,9 @@ DELETE FROM
     backup_setting;
 
 DELETE FROM
+    db_label;
+
+DELETE FROM
     db;
 
 DELETE FROM
@@ -89,8 +92,7 @@ DELETE FROM
 DELETE FROM
     label_key;
 
-DELETE FROM
-    db_label;
+
 
 DELETE FROM
     deployment_config;
