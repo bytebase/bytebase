@@ -72,6 +72,12 @@ common:
   add: Add
   query: Query
   transfer: Transfer
+  repository: Repository
+  change: Change
+  branch: Branch
+  config-guide: config guide
+  required-placeholder: required placeholder
+  optional-placeholder: optional placeholder
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -367,3 +373,28 @@ migration-history:
   instance-missing-migration-schema: Missing migration history schema on instance "{name}".
   instance-bad-connection: Unable to connect instance "{name}" to retrieve migration history.
   contact-dba: Please contact your DBA to config it
+repository:
+  branch-observe-file-change: The branch where Bytebase observes the file change.
+  branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
+  base-directory: Base directory
+  base-directory-description: >-
+    The root directory where Bytebase observes the file change. If empty, then
+    it observes the entire repository.
+  file-path-template: File path template
+  file-path-template-description: >-
+    Bytebase only observes the file path name matching the template pattern
+    relative to the base directory.
+  file-path-example-normal-migration: File path example for normal migration type
+  file-path-example-baseline-migration: File path example for baseline migration type
+  schema-path-template: Schema path template
+  schema-writeback-description: >-
+    When specified, after each migration, Bytebase will write the latest schema
+    to the schema path relative to the base directory in the same branch as the
+    original commit triggering the migration. Leave empty if you don't want
+    Bytebase to do this
+  schema-writeback-protected-branch: >-
+    Make sure the changed branch is not protected or allow repository maintainer
+    to push to that protected branch.
+  if-specified: If specified
+  schema-path-example: Schema path example
+  git-provider: Git provider
