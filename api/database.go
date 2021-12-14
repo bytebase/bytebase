@@ -66,8 +66,8 @@ type Database struct {
 	Collation            string     `jsonapi:"attr,collation"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
-	// Labels is JSON-encoded
-	// Labels is like "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"}]"
+	// Labels is a json-encoded string from a list of DatabaseLabel,
+	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
@@ -122,8 +122,8 @@ type DatabasePatch struct {
 	ProjectID      *int `jsonapi:"attr,projectId"`
 	SourceBackupID *int
 
-	// Labels is JSON-encoded
-	// Labels is like "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"}]"
+	// Labels is a json-encoded string from a list of DatabaseLabel,
+	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
 	Labels *string `jsonapi:"attr,labels"`
 
 	// Domain specific fields
