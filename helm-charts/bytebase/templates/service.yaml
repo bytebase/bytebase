@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bytebase
+  namespace: {{ template "bytebase.namespace" . }}
+  labels:
+    app: bytebase
+spec:
+  ports:
+    - port: 80
+      name: web
+  clusterIP: None
+  selector:
+    app: bytebase
