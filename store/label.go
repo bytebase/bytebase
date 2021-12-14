@@ -148,25 +148,6 @@ func (s *LabelService) findDatabaseLabelList(ctx context.Context, tx *Tx, find *
 	return ret, nil
 }
 
-func (s *LabelService) UpsertDatabaseLabel(ctx context.Context, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	label, err := s.upsertDatabaseLabel(ctx, tx, upsert)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return label, nil
-}
-
 func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
@@ -226,8 +207,6 @@ func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.Data
 		return nil, FormatError(err)
 	}
 
-	upserts := diffDatabaseLabel(oldLabels, labels, databaseID, updaterID)
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -235,16 +214,35 @@ func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.Data
 	defer tx.Rollback()
 
 	var ret []*api.DatabaseLabel
-	for _, upsert := range upserts {
-		label, err := s.upsertDatabaseLabel(ctx, tx, upsert)
+
+	for _, oldLabel := range oldLabels {
+		// Archive all old labels
+		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Archived,
+			DatabaseID: databaseID,
+			Key:        oldLabel.Key,
+			Value:      oldLabel.Value,
+		})
 		if err != nil {
 			return nil, err
 		}
 		ret = append(ret, label)
 	}
 
-	if err != nil {
-		return nil, err
+	for _, label := range labels {
+		// Upsert all new labels
+		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Normal,
+			DatabaseID: databaseID,
+			Key:        label.Key,
+			Value:      label.Value,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, label)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -253,40 +251,4 @@ func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.Data
 
 	return ret, nil
 
-}
-
-// diffDatabaseLabel diffs old database labels and new database labels
-func diffDatabaseLabel(oldLabels []*api.DatabaseLabel, labels []*api.DatabaseLabel, databaseID int, updaterID int) []*api.DatabaseLabelUpsert {
-	var upserts []*api.DatabaseLabelUpsert
-	// "key" -> *api.DatabaseLabel
-	oldLabelKeyMap := make(map[string]*api.DatabaseLabel)
-
-	for _, oldLabel := range oldLabels {
-		oldLabelKeyMap[oldLabel.Key] = oldLabel
-	}
-
-	// Loop over all new labels
-	for _, label := range labels {
-		upserts = append(upserts, &api.DatabaseLabelUpsert{
-			UpdaterID:  updaterID,
-			RowStatus:  api.Normal,
-			DatabaseID: databaseID,
-			Key:        label.Key,
-			Value:      label.Value,
-		})
-		delete(oldLabelKeyMap, label.Key)
-	}
-
-	for _, oldLabel := range oldLabelKeyMap {
-		// Archive old labels whose key doesn't appear in new labels.
-		upserts = append(upserts, &api.DatabaseLabelUpsert{
-			UpdaterID:  updaterID,
-			RowStatus:  api.Archived,
-			DatabaseID: databaseID,
-			Key:        oldLabel.Key,
-			Value:      oldLabel.Value,
-		})
-	}
-
-	return upserts
 }

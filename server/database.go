@@ -159,7 +159,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			var labels []*api.DatabaseLabel
 			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
 
-			s.LabelService.SetDatabaseLabels(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
+			_, err := s.LabelService.SetDatabaseLabels(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", id)).SetInternal(err)
+			}
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
@@ -711,9 +714,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		if err != nil {
 			return err
 		}
-		// escape then remove extra quotes
-		escaped := strconv.Quote(string(labels))
-		database.Labels = escaped[1 : len(escaped)-1]
+		database.Labels = string(labels)
 	}
 
 	return nil
