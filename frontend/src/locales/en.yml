@@ -66,6 +66,7 @@ common:
   status: Status
   stage: Stage
   sql: SQL
+  unassigned: Unassigned
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -232,6 +233,18 @@ issue:
   edit-comment: Edit comment
   leave-a-comment: "Leave a comment..."
   view-commit: View commit
+  search-issue-name: Search issue name
+  table:
+    open: Open
+    closed: Closed
+    status: Status
+    project: Project
+    name: Name
+    environment: Environment
+    db: DB
+    progress: Progress
+    updated: Updated
+    assignee: Assignee
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database

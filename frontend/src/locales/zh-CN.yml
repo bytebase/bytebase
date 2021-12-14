@@ -66,6 +66,7 @@ common:
   status: 状态
   stage: 阶段
   sql: SQL
+  unassigned: 未指定
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -173,10 +174,10 @@ activity:
   sentence:
     created-issue: "创建工单"
     commented: 评论
-    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
-    assigned-issue: "将工单指派给 {newName}"
-    unassigned-issue: "将工单由 {oldName} 解除指派"
-    invalid-assignee-update: "无效的指派操作"
+    reassigned-issue: "将工单由 {oldName} 重新指定给 {newName}"
+    assigned-issue: "将工单指定给 {newName}"
+    unassigned-issue: "将工单由 {oldName} 解除指定"
+    invalid-assignee-update: "无效的指定操作"
     changed-description: "修改描述"
     changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
     unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
@@ -227,6 +228,18 @@ issue:
   edit-comment: 编辑评论
   leave-a-comment: 发表一条评论…
   view-commit: 查看提交
+  search-issue-name: 搜索工单名称
+  table:
+    open: 开启中
+    closed: 已关闭
+    status: 状态
+    project: 项目
+    name: 名称
+    environment: 环境
+    db: 数据库
+    progress: 进度
+    updated: 更新于
+    assignee: 审核人
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
