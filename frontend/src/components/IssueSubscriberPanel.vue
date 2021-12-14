@@ -1,27 +1,11 @@
 <template>
   <div
-    class="
-      mt-6
-      border-t border-block-border
-      pt-6
-      grid
-      gap-y-4 gap-x-6
-      grid-cols-3
-    "
+    class="mt-6 border-t border-block-border pt-6 grid gap-y-4 gap-x-6 grid-cols-3"
   >
     <h2
-      class="
-        textlabel
-        flex
-        items-center
-        col-span-1 col-start-1
-        whitespace-nowrap
-      "
+      class="textlabel flex items-center col-span-1 col-start-1 whitespace-nowrap"
     >
-      {{
-        subscriberList.length +
-        (subscriberList.length > 1 ? " subscribers" : " subscriber")
-      }}
+      {{ $t("issue.subscriber", subscriberList.length) }}
     </h2>
     <div v-if="subscriberList.length > 0" class="col-span-3 col-start-1">
       <div class="flex space-x-1">
@@ -52,14 +36,24 @@
           v-else
           class="h-5 w-5 text-control inline -mt-0.5 mr-1"
         />
-        {{ isCurrentUserSubscribed ? "Unsubscribe" : "Subscribe" }}
+        {{
+          isCurrentUserSubscribed
+            ? $t("issue.unsubscribe")
+            : $t("issue.subscribe")
+        }}
       </span>
     </button>
   </div>
 </template>
 
 <script lang="ts">
-import { reactive, PropType, computed, watchEffect } from "vue";
+import {
+  reactive,
+  PropType,
+  computed,
+  watchEffect,
+  defineComponent,
+} from "vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { Issue, IssueSubscriber } from "../types";
 import { useStore } from "vuex";
@@ -67,7 +61,7 @@ import { useStore } from "vuex";
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "IssueSubscriberPanel",
   components: { PrincipalAvatar },
   props: {
@@ -122,5 +116,5 @@ export default {
       toggleSubscription,
     };
   },
-};
+});
 </script>

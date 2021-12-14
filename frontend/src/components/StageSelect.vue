@@ -9,14 +9,18 @@
   >
     <template v-for="(stage, index) in pipeline.stageList" :key="index">
       <option :value="stage.id" :selected="stage.id == state.selectedId">
-        {{ isActiveStage(stage.id) ? stage.name + " (active)" : stage.name }}
+        {{
+          isActiveStage(stage.id)
+            ? $t("issue.stage-select.active", { name: stage.name })
+            : stage.name
+        }}
       </option>
     </template>
   </select>
 </template>
 
 <script lang="ts">
-import { PropType, reactive, watch } from "vue";
+import { defineComponent, PropType, reactive, watch } from "vue";
 import { UNKNOWN_ID, Pipeline, StageId } from "../types";
 import { activeStage } from "../utils";
 
@@ -24,7 +28,7 @@ interface LocalState {
   selectedId: number;
 }
 
-export default {
+export default defineComponent({
   name: "StageSelect",
   props: {
     pipeline: {
@@ -59,5 +63,5 @@ export default {
       isActiveStage,
     };
   },
-};
+});
 </script>

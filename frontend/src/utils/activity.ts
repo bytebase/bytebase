@@ -12,12 +12,14 @@ export function registerStoreWithActivityUtil(theStore: Store<any>) {
   store = theStore;
 }
 
-export function issueActivityActionSentence(activity: Activity): string {
+export function issueActivityActionSentence(
+  activity: Activity
+): [string, Record<string, any>] {
   switch (activity.type) {
     case "bb.issue.create":
-      return "created issue";
+      return ["activity.sentence.created-issue", {}];
     case "bb.issue.comment.create":
-      return "commented";
+      return ["activity.sentence.commented", {}];
     case "bb.issue.field.update": {
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
@@ -35,22 +37,35 @@ export function issueActivityActionSentence(activity: Activity): string {
             const newName = store.getters["principal/principalById"](
               update.newValue
             ).name;
-
-            return `reassigned issue from ${oldName} to ${newName}`;
+            return [
+              "activity.sentence.reassigned-issue",
+              {
+                oldName,
+                newName,
+              },
+            ];
           } else if (!update.oldValue && update.newValue) {
             const newName = store.getters["principal/principalById"](
               update.newValue
             ).name;
-
-            return `assigned issue to ${newName}`;
+            return [
+              "activity.sentence.assigned-issue",
+              {
+                newName,
+              },
+            ];
           } else if (update.oldValue && !update.newValue) {
             const oldName = store.getters["principal/principalById"](
               update.oldValue
             ).name;
-
-            return `unassigned issue from ${oldName}`;
+            return [
+              "activity.sentence.unassigned-issue",
+              {
+                oldName,
+              },
+            ];
           } else {
-            return `invalid assignee update`;
+            return ["activity.sentence.invalid-assignee-update", {}];
           }
         }
         // We don't display subscriber change for now
@@ -58,7 +73,7 @@ export function issueActivityActionSentence(activity: Activity): string {
           break;
         case IssueBuiltinFieldId.DESCRIPTION:
           // Description could be very long, so we don't display it.
-          return "changed description";
+          return ["activity.sentence.changed-description", {}];
         case IssueBuiltinFieldId.NAME:
         case IssueBuiltinFieldId.PROJECT:
         case IssueBuiltinFieldId.SQL:
@@ -74,30 +89,54 @@ export function issueActivityActionSentence(activity: Activity): string {
           oldValue = update.oldValue;
           newValue = update.newValue;
           if (oldValue && newValue) {
-            return `changed ${name} from "${oldValue}" to "${newValue}"`;
+            return [
+              "activity.sentence.changed-from-to",
+              {
+                name,
+                oldValue,
+                newValue,
+              },
+            ];
           } else if (oldValue) {
-            return `unset "${name} from "${oldValue}"`;
+            return [
+              "activity.sentence.unset-from",
+              {
+                name,
+                oldValue,
+              },
+            ];
           } else if (newValue) {
-            return `set ${name} to "${newValue}"`;
+            return [
+              "activity.sentence.set-to",
+              {
+                name,
+                newValue,
+              },
+            ];
           } else {
-            return `changed ${name} update`;
+            return [
+              "activity.sentence.changed-update",
+              {
+                name,
+              },
+            ];
           }
         }
       }
 
-      return "updated";
+      return ["activity.sentence.updated", {}];
     }
     case "bb.issue.status.update": {
       const update = activity.payload as ActivityIssueStatusUpdatePayload;
       switch (update.newStatus) {
         case "OPEN":
-          return "reopened issue";
+          return ["activity.sentence.reopened-issue", {}];
         case "DONE":
-          return "resolved issue";
+          return ["activity.sentence.resolved-issue", {}];
         case "CANCELED":
-          return "canceled issue";
+          return ["activity.sentence.canceled-issue", {}];
       }
     }
   }
-  return "";
+  return ["activity.sentence.empty", {}];
 }

@@ -1,6 +1,8 @@
 common:
+  activity: Activity
   save: Save
   cancel: Cancel
+  comment: 评论
   home: Home
   settings: Settings
   project: Project
@@ -8,6 +10,7 @@ common:
   help: Help
   database: Database
   databases: Databases
+  description: Description
   instance: Instance
   instances: Instances
   environment: Environment
@@ -18,12 +21,23 @@ common:
   archive: Archive
   quickstart: Quickstart
   logout: Logout
+  close: Close
+  latest: Latest
+  error: Error
+  canceled: Canceled
+  approval: Approval
+  approve: Approve
+  done: Done
+  create: Create
+  rollback: Rollback
+  run: Run
+  retry: Retry
+  skip: Skip
+  reopen: Reopen
   dismiss: Dismiss
   back: Back
   next: Next
-  skip: Skip
   edit: Edit
-  create: Create
   update: Update
   visit: Visit
   role:
@@ -48,7 +62,12 @@ common:
   updated-at: Updated
   commit: Commit
   statement: Statement
+  sql-statement: "SQL statement"
   snapshot: Snapshot
+  status: Status
+  stage: Stage
+  sql: SQL
+  unassigned: Unassigned
   new: New
   add: Add
   query: Query
@@ -69,6 +88,23 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+task:
+  checking: Checking...
+  run-task: Run checks
+  check-result:
+    title: Check result for {name}
+  check-type:
+    fake: Fake
+    syntax: Syntax
+    compatibility: Compatibility
+    connection: Connection
+    migration-schema: Migration schema
+  comment: Comment
+  invoker: Invoker
+  started: Started
+  ended: Ended
+  view-migration: View migration
+  view-migration-history: View migration history
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
@@ -145,6 +181,77 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+  sentence:
+    created-issue: "created issue"
+    commented: commented
+    reassigned-issue: "reassigned issue from {oldName} to {newName}"
+    assigned-issue: "assigned issue to {newName}"
+    unassigned-issue: "unassigned issue from {oldName}"
+    invalid-assignee-update: "invalid assignee update"
+    changed-description: "changed description"
+    changed-from-to: 'changed {name} from "{oldValue}" to "{newValue}"'
+    unset-from: 'unset {name} from "{oldValue}"'
+    set-to: 'set {name} to "{newValue}"'
+    changed-update: "changed {name} update"
+    reopened-issue: "reopened issue"
+    resolved-issue: "resolved issue"
+    canceled-issue: "canceled issue"
+    empty: ""
+    changed: changed
+    updated: updated
+    canceled: canceled
+    approved: approved
+    started: started
+    completed: completed
+    failed: failed
+    task-name: " task {name}"
+    committed-to-at: "committed {file} to{branch}{'@'}{repo}"
+  subject-prefix:
+    task: "Task"
+issue:
+  waiting-approval: Waiting Approval
+  opened-by-at: opened by {creator} at {time}
+  commit-by-at: commit {id} {title} by {author} at {time}
+  status-transition:
+    modal:
+      resolve: Resolve issue?
+      cancel: Cancel this entire issue?
+      reopen: Reopen issue?
+    dropdown:
+      resolve: Resolve issue
+      cancel: Cancel issue
+      reopen: Reopen issue
+    form:
+      note: Note
+      placeholder: (Optional) Add a note...
+  subscribe: Subscribe
+  unsubscribe: Unsubscribe
+  subscriber: No subscribers | 1 subscriber | {n} subscribers
+  apply-to-other-stages: "Apply to other stages"
+  add-sql-statement: "Add SQL statement..."
+  optional-add-sql-statement: "(Optional) Add SQL statement..."
+  rollback-sql: "Rollback SQL"
+  add-rollback-sql-statement: "Add rollback SQL statement..."
+  edit-description: "Edit description"
+  add-some-description: "Add some description..."
+  add-a-comment: "Add a comment"
+  edit-comment: Edit comment
+  leave-a-comment: "Leave a comment..."
+  view-commit: View commit
+  search-issue-name: Search issue name
+  table:
+    open: Open
+    closed: Closed
+    status: Status
+    project: Project
+    name: Name
+    environment: Environment
+    db: DB
+    progress: Progress
+    updated: Updated
+    assignee: Assignee
+  stage-select:
+    active: "{name} (active)"
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database

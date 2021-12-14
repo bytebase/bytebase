@@ -7,7 +7,7 @@
       :disabled="hasRunningTaskCheck"
       @click.prevent="runChecks"
     >
-      {{ hasRunningTaskCheck ? "Checking..." : "Run checks" }}
+      {{ hasRunningTaskCheck ? $t("task.checking") : $t("task.run-task") }}
     </button>
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
@@ -19,7 +19,7 @@
     />
     <BBModal
       v-if="state.showModal"
-      :title="`Check result for '${task.name}'`"
+      :title="$t('task.check-result.title', { name: task.name })"
       @close="dismissDialog"
     >
       <div class="space-y-4 w-208">
@@ -47,14 +47,14 @@
             }
           "
         />
-        <TaskCheckRunPanel :task-check-run="state.selectedTaskCheckRun" />
+        <TaskCheckRunPanel :task-check-run="state.selectedTaskCheckRun!" />
         <div class="pt-4 flex justify-end">
           <button
             type="button"
             class="btn-primary py-2 px-4"
             @click.prevent="dismissDialog"
           >
-            Close
+            {{ $t("common.close") }}
           </button>
         </div>
       </div>
@@ -63,13 +63,14 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { Task, TaskCheckRun, TaskCheckStatus } from "../types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { cloneDeep } from "lodash";
 import { humanizeTs } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showModal: boolean;
@@ -77,7 +78,7 @@ interface LocalState {
   selectedTabIndex: number;
 }
 
-export default {
+export default defineComponent({
   name: "TaskCheckBar",
   components: { TaskCheckBadgeBar, TaskCheckRunPanel },
   props: {
@@ -88,6 +89,8 @@ export default {
   },
   emits: ["run-checks"],
   setup(props, { emit }) {
+    const { t } = useI18n();
+
     const state = reactive<LocalState>({
       showModal: false,
       selectedTabIndex: 0,
@@ -114,7 +117,7 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       return tabTaskCheckRunList.value.map((item, index) => {
         return {
-          title: index == 0 ? "Latest" : humanizeTs(item.createdTs),
+          title: index == 0 ? t("common.latest") : humanizeTs(item.createdTs),
           alert: false,
         };
       });
@@ -179,5 +182,5 @@ export default {
       runChecks,
     };
   },
-};
+});
 </script>

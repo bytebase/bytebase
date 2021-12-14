@@ -8,19 +8,19 @@
       v-if="showCancelBanner"
       class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
     >
-      Canceled
+      {{ $t("common.canceled") }}
     </div>
     <div
       v-else-if="showSuccessBanner"
       class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
     >
-      Done
+      {{ $t("common.done") }}
     </div>
     <div
       v-else-if="showPendingApproval"
       class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
     >
-      Waiting Approval
+      {{ $t("issue.waiting-approval") }}
     </div>
     <!-- Highlight Panel -->
     <div class="bg-white px-4 pb-4">
@@ -214,7 +214,7 @@ import {
   watchEffect,
   reactive,
   ref,
-  ComputedRef,
+  defineComponent,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -290,7 +290,7 @@ interface LocalState {
   pollIssueTimer?: ReturnType<typeof setTimeout>;
 }
 
-export default {
+export default defineComponent({
   name: "IssueDetail",
   components: {
     IssueHighlightPanel,
@@ -1222,5 +1222,5 @@ export default {
       showIssueTaskStatementApply,
     };
   },
-};
+});
 </script>
