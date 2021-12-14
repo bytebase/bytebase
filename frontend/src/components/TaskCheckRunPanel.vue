@@ -14,16 +14,7 @@
         <BBTableCell :left-padding="4" class="table-cell w-4">
           <div class="flex flex-row space-x-2">
             <div
-              class="
-                relative
-                w-5
-                h-5
-                flex flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                select-none
-              "
+              class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="statusIconClass(checkResult.status)"
             >
               <template v-if="checkResult.status == 'SUCCESS'">
@@ -61,7 +52,8 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "../bbkit/types";
 import {
   TaskCheckStatus,
@@ -83,7 +75,7 @@ const columnList: BBTableColumn[] = [
   },
 ];
 
-export default {
+export default defineComponent({
   name: "TaskCheckRunPanel",
   components: {},
   props: {
@@ -93,6 +85,8 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+
     const statusIconClass = (status: TaskCheckStatus) => {
       switch (status) {
         case "SUCCESS":
@@ -111,7 +105,7 @@ export default {
         return [
           {
             status: "ERROR",
-            title: "Error",
+            title: t("common.error"),
             code: props.taskCheckRun.code,
             content: props.taskCheckRun.result.detail,
           },
@@ -120,7 +114,7 @@ export default {
         return [
           {
             status: "WARN",
-            title: "Canceled",
+            title: t("common.canceled"),
             code: props.taskCheckRun.code,
             content: "",
           },
@@ -142,5 +136,5 @@ export default {
       errorCodeLink,
     };
   },
-};
+});
 </script>

@@ -16,14 +16,7 @@
         <div class="flex-1 space-y-1">
           <div class="flex w-full justify-between space-x-2">
             <h3
-              class="
-                text-sm
-                font-base
-                text-control-light
-                flex flex-row
-                items-center
-                whitespace-nowrap
-              "
+              class="text-sm font-base text-control-light flex flex-row items-center whitespace-nowrap"
             >
               <template v-if="showCreator(inbox.activity)">
                 <router-link
@@ -59,7 +52,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ActivityIssueCommentCreatePayload,
@@ -74,8 +67,9 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash";
 import { issueActivityActionSentence } from "../utils";
+import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "InboxList",
   components: { PrincipalAvatar },
   props: {
@@ -85,6 +79,7 @@ export default {
     },
   },
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -107,7 +102,8 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {
-        const actionStr = issueActivityActionSentence(activity);
+        const [tid, params] = issueActivityActionSentence(activity);
+        const actionStr = t(tid, params);
         switch (activity.type) {
           case "bb.issue.create": {
             const payload = activity.payload as ActivityIssueCreatePayload;
@@ -131,32 +127,32 @@ export default {
         return actionStr;
       } else if (activity.type == "bb.pipeline.task.status.update") {
         const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        var actionStr = `changed`;
+        let actionStr = t(`activity.sentence.changed`);
         switch (payload.newStatus) {
           case "PENDING": {
             if (payload.oldStatus == "RUNNING") {
-              actionStr = `canceled`;
+              actionStr = t(`activity.sentence.canceled`);
             } else if (payload.oldStatus == "PENDING_APPROVAL") {
-              actionStr = `approved`;
+              actionStr = t(`activity.sentence.approved`);
             }
             break;
           }
           case "RUNNING": {
-            actionStr = `started`;
+            actionStr = t(`activity.sentence.started`);
             break;
           }
           case "DONE": {
-            actionStr = `completed`;
+            actionStr = t(`activity.sentence.completed`);
             break;
           }
           case "FAILED": {
-            actionStr = `failed`;
+            actionStr = t(`activity.sentence.failed`);
             break;
           }
         }
-        return `Task '${payload.taskName}' ${actionStr} - '${
-          payload?.issueName || ""
-        }'`;
+        return `${t("activity.subject-prefix.task")} '${
+          payload.taskName
+        }' ${actionStr} - '${payload?.issueName || ""}'`;
       }
 
       return "";
@@ -186,5 +182,5 @@ export default {
 
     return { actionLink, showCreator, actionSentence, clickInbox };
   },
-};
+});
 </script>

@@ -1,6 +1,8 @@
 common:
+  activity: 活动
   save: 保存
   cancel: 取消
+  comment: 评论
   home: 主页
   settings: 设置
   project: 项目
@@ -8,6 +10,7 @@ common:
   help: 帮助
   database: 数据库
   databases: 数据库
+  description: 描述
   instance: 实例
   instances: 实例
   environment: 环境
@@ -18,12 +21,23 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  close: 关闭
+  latest: 最新
+  error: 错误
+  canceled: 已取消
+  approval: 批准
+  approve: 批准
+  done: 完成
+  create: 创建
+  rollback: 回滚
+  run: 运行
+  retry: 重试
+  skip: 跳过
+  reopen: 重开
   dismiss: 关闭
   back: 返回
   next: 下一步
-  skip: 跳过
   edit: 编辑
-  create: 创建
   update: 更新
   visit: 访问
   role:
@@ -48,7 +62,12 @@ common:
   updated-at: 更新于
   commit: 提交
   statement: 语句
+  sql-statement: "SQL @:{'common.statement'}"
   snapshot: 快照
+  status: 状态
+  stage: 阶段
+  sql: SQL
+  unassigned: 未指派
   new: 创建
   add: 添加
   query: 查询
@@ -69,6 +88,23 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+task:
+  checking: 检查中…
+  run-task: 运行检查
+  check-result:
+    title: "{name} 的检查结果"
+  check-type:
+    fake: Fake
+    syntax: 语法
+    compatibility: 兼容性
+    connection: 连接
+    migration-schema: 迁移 schema
+  comment: 评论
+  invoker: 执行者
+  started: 开始于
+  ended: 结束于
+  view-migration: 查看迁移
+  view-migration-history: 查看迁移历史
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
@@ -121,7 +157,7 @@ settings:
     yourself: 你自己
     upgrade: 升级付费方案来解锁其他角色
     select-role: 选择角色
-    not-assigned: 未指定
+    not-assigned: 未指派
     table:
       account: 账户
       role: 角色
@@ -138,9 +174,80 @@ settings:
       not-allow-remove: 不能移除最后一个所有者
 activity:
   name: 名称
-  comment: 注释
+  comment: 评论
   created: 创建于
   invoker: 执行者
+  sentence:
+    created-issue: "创建工单"
+    commented: 评论
+    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
+    assigned-issue: "将工单指派给 {newName}"
+    unassigned-issue: "将工单由 {oldName} 解除指派"
+    invalid-assignee-update: "无效的指派操作"
+    changed-description: "修改描述"
+    changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
+    unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
+    set-to: '将 {name} 设置为 "{newValue}"'
+    changed-update: "修改 {name}"
+    reopened-issue: "重开工单"
+    resolved-issue: "解决工单"
+    canceled-issue: "取消工单"
+    empty: ""
+    changed: 修改
+    updated: 更新
+    canceled: 取消
+    approved: 批准
+    started: 开始
+    completed: 完成
+    failed: 失败
+    task-name: "任务 {name}"
+    committed-to-at: "提交 {file} 到 {branch}{'@'}{repo}"
+  subject-prefix:
+    task: "任务"
+issue:
+  waiting-approval: 等待批准
+  opened-by-at: "{id} 由 {creator} 开启于 {time}"
+  commit-by-at: "{id} {title} 由 {author} 提交于 {time}"
+  status-transition:
+    modal:
+      resolve: 解决工单?
+      cancel: 取消整个工单?
+      reopen: 重开工单?
+    dropdown:
+      resolve: 解决
+      cancel: 取消工单
+      reopen: 重开
+    form:
+      note: 笔记
+      placeholder: （可选）添加一段笔记…
+  subscribe: 订阅
+  unsubscribe: 取消订阅
+  subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
+  apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
+  add-sql-statement: "添加 SQL @:{'common.statement'}…"
+  optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
+  rollback-sql: "@:{'common.rollback'} SQL"
+  add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
+  edit-description: 编辑描述
+  add-some-description: 添加一些描述…
+  add-a-comment: 添加评论
+  edit-comment: 编辑评论
+  leave-a-comment: 发表一条评论…
+  view-commit: 查看提交
+  search-issue-name: 搜索工单名称
+  table:
+    open: 开启中
+    closed: 已关闭
+    status: 状态
+    project: 项目
+    name: 名称
+    environment: 环境
+    db: 数据库
+    progress: 进度
+    updated: 更新于
+    assignee: 审核人
+  stage-select:
+    active: "{name}（活动中）"
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。

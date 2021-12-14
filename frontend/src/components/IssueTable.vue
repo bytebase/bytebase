@@ -13,62 +13,62 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-4 table-cell"
-        :title="columnList[0].title"
+        :title="$t(columnList[0].title)"
       />
       <template v-if="mode == 'ALL'">
         <BBTableHeaderCell
           class="w-12 table-cell"
-          :title="columnList[1].title"
+          :title="$t(columnList[1].title)"
         />
         <BBTableHeaderCell
           class="w-48 table-cell"
-          :title="columnList[2].title"
+          :title="$t(columnList[2].title)"
         />
         <BBTableHeaderCell
           class="w-12 table-cell"
-          :title="columnList[3].title"
+          :title="$t(columnList[3].title)"
         />
         <BBTableHeaderCell
           class="w-12 table-cell"
-          :title="columnList[4].title"
+          :title="$t(columnList[4].title)"
         />
         <BBTableHeaderCell
           class="w-24 hidden sm:table-cell"
-          :title="columnList[5].title"
+          :title="$t(columnList[5].title)"
         />
         <BBTableHeaderCell
           class="w-24 hidden md:table-cell"
-          :title="columnList[6].title"
+          :title="$t(columnList[6].title)"
         />
         <BBTableHeaderCell
           class="w-36 hidden sm:table-cell"
-          :title="columnList[7].title"
+          :title="$t(columnList[7].title)"
         />
       </template>
       <template v-else-if="mode == 'PROJECT'">
         <BBTableHeaderCell
           class="w-48 table-cell"
-          :title="columnList[1].title"
+          :title="$t(columnList[1].title)"
         />
         <BBTableHeaderCell
           class="w-12 table-cell"
-          :title="columnList[2].title"
+          :title="$t(columnList[2].title)"
         />
         <BBTableHeaderCell
           class="w-12 table-cell"
-          :title="columnList[3].title"
+          :title="$t(columnList[3].title)"
         />
         <BBTableHeaderCell
           class="w-24 hidden sm:table-cell"
-          :title="columnList[4].title"
+          :title="$t(columnList[4].title)"
         />
         <BBTableHeaderCell
           class="w-24 hidden md:table-cell"
-          :title="columnList[5].title"
+          :title="$t(columnList[5].title)"
         />
         <BBTableHeaderCell
           class="w-36 hidden sm:table-cell"
-          :title="columnList[6].title"
+          :title="$t(columnList[6].title)"
         />
       </template>
     </template>
@@ -108,11 +108,13 @@
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'SMALL'"
-            :username="issue.assignee ? issue.assignee.name : 'Unassigned'"
+            :username="
+              issue.assignee ? issue.assignee.name : $t('common.unassigned')
+            "
           />
-          <span class="ml-2">{{
-            issue.assignee ? issue.assignee.name : "Unassigned"
-          }}</span>
+          <span class="ml-2">
+            {{ issue.assignee ? issue.assignee.name : $t("common.unassigned") }}
+          </span>
         </div>
       </BBTableCell>
     </template>
@@ -120,7 +122,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import {
   BBTableColumn,
@@ -146,28 +148,28 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
     "ALL",
     [
       {
-        title: "Status",
+        title: "issue.table.status",
       },
       {
-        title: "Project",
+        title: "issue.table.project",
       },
       {
-        title: "Name",
+        title: "issue.table.name",
       },
       {
-        title: "Environment",
+        title: "issue.table.environment",
       },
       {
-        title: "DB",
+        title: "issue.table.db",
       },
       {
-        title: "Progress",
+        title: "issue.table.progress",
       },
       {
-        title: "Updated",
+        title: "issue.table.updated",
       },
       {
-        title: "Assignee",
+        title: "issue.table.assignee",
       },
     ],
   ],
@@ -175,25 +177,25 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
     "PROJECT",
     [
       {
-        title: "Status",
+        title: "issue.table.status",
       },
       {
-        title: "Name",
+        title: "issue.table.name",
       },
       {
-        title: "Environment",
+        title: "issue.table.environment",
       },
       {
-        title: "DB",
+        title: "issue.table.db",
       },
       {
-        title: "Progress",
+        title: "issue.table.progress",
       },
       {
-        title: "Updated",
+        title: "issue.table.updated",
       },
       {
-        title: "Assignee",
+        title: "issue.table.assignee",
       },
     ],
   ],
@@ -203,7 +205,7 @@ interface LocalState {
   dataSource: any[];
 }
 
-export default {
+export default defineComponent({
   name: "IssueTable",
   components: { IssueStatusIcon },
   props: {
@@ -288,7 +290,7 @@ export default {
 
     return {
       state,
-      columnList: columnListMap.get(props.mode),
+      columnList: columnListMap.get(props.mode)!,
       activeEnvironmentName,
       activeDatabaseName,
       taskStepList,
@@ -297,5 +299,5 @@ export default {
       clickIssueStep,
     };
   },
-};
+});
 </script>
