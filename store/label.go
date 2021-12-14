@@ -217,3 +217,76 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 
 	return &databaseLabel, nil
 }
+
+func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
+	oldLabels, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	upserts := diffDatabaseLabel(oldLabels, labels, databaseID, updaterID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var ret []*api.DatabaseLabel
+	for _, upsert := range upserts {
+		label, err := s.upsertDatabaseLabel(ctx, tx, upsert)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, label)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+
+}
+
+// diffDatabaseLabel diffs old database labels and new database labels
+func diffDatabaseLabel(oldLabels []*api.DatabaseLabel, labels []*api.DatabaseLabel, databaseID int, updaterID int) []*api.DatabaseLabelUpsert {
+	var upserts []*api.DatabaseLabelUpsert
+	// "key" -> *api.DatabaseLabel
+	oldLabelKeyMap := make(map[string]*api.DatabaseLabel)
+
+	for _, oldLabel := range oldLabels {
+		oldLabelKeyMap[oldLabel.Key] = oldLabel
+	}
+
+	// Loop over all new labels
+	for _, label := range labels {
+		upserts = append(upserts, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Normal,
+			DatabaseID: databaseID,
+			Key:        label.Key,
+			Value:      label.Value,
+		})
+		delete(oldLabelKeyMap, label.Key)
+	}
+
+	for _, oldLabel := range oldLabelKeyMap {
+		// Archive old labels whose key doesn't appear in new labels.
+		upserts = append(upserts, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Archived,
+			DatabaseID: databaseID,
+			Key:        oldLabel.Key,
+			Value:      oldLabel.Value,
+		})
+	}
+
+	return upserts
+}

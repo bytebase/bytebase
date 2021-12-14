@@ -54,30 +54,6 @@ type DatabaseLabelFind struct {
 	DatabaseID *int
 }
 
-type DatabaseLabelCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	DatabaseID int
-	Key        string
-
-	// Domain specific fields
-	Value string
-}
-
-type DatabaseLabelPatch struct {
-	ID int
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-	RowStatus *RowStatus
-
-	// Domain specific fields
-	Value *string
-}
-
 type DatabaseLabelUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -98,5 +74,8 @@ type LabelService interface {
 	FindLabelKeyList(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
 	// FindDatabaseLabelList finds all database labels matching the conditions, ascending by key.
 	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
+	// UpsertDatabaseLabel upserts a database label.
 	UpsertDatabaseLabel(ctx context.Context, upsert *DatabaseLabelUpsert) (*DatabaseLabel, error)
+	// SetDatabaseLabels sets a database's labels to new labels.
+	SetDatabaseLabels(ctx context.Context, labels []*DatabaseLabel, databaseID int, updaterID int) ([]*DatabaseLabel, error)
 }
