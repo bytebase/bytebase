@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -190,7 +191,10 @@ func start() {
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	// Trigger graceful shutdown on SIGINT or SIGTERM.
+	// The default signal sent by the `kill` command is SIGTERM,
+	// which is taken as the graceful shutdown signal for many systems, eg., Kubernetes, Gunicorn.
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		m.l.Info("SIGINT received.")
