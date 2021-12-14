@@ -301,7 +301,7 @@ export default defineComponent({
     };
 
     const transferDatabase = () => {
-      state.modalTitle = "Transfer in database from other projects";
+      state.modalTitle = t("quick-action.transfer-in-db-title");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.project.database.transfer";
       state.showModal = true;
@@ -357,7 +357,7 @@ export default defineComponent({
         perform: () => createDatabase(),
       },
       "quickaction.bb.database.request": {
-        name: "Request DB",
+        name: t("quick-action.request-db"),
         perform: () => requestDatabase(),
       },
       "quickaction.bb.database.schema.update": {
@@ -365,7 +365,7 @@ export default defineComponent({
         perform: () => alterSchema(),
       },
       "quickaction.bb.database.troubleshoot": {
-        name: "Troubleshoot",
+        name: t("quick-action.troubleshoot"),
         perform: () => router.push({ path: "/issue/new" }),
       },
       "quickaction.bb.environment.create": {
@@ -385,7 +385,7 @@ export default defineComponent({
         perform: () => goDefaultProject(),
       },
       "quickaction.bb.project.database.transfer": {
-        name: "Transfer in DB",
+        name: t("quick-action.transfer-in-db"),
         perform: () => transferDatabase(),
       },
     };
