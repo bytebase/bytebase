@@ -7,11 +7,14 @@
         alt="Bytebase"
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        Activate your
-        <span class="text-accent font-semnibold">{{
-          state.role.charAt(0).toUpperCase() + state.role.slice(1).toLowerCase()
-        }}</span>
-        account
+        <i18n-t keypath="auth.activate.title" tag="p">
+          <template #type>
+            <span class="text-accent font-semnibold">{{
+              state.role.charAt(0).toUpperCase() +
+              state.role.slice(1).toLowerCase()
+            }}</span>
+          </template>
+        </i18n-t>
       </h2>
     </div>
 
@@ -23,7 +26,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Email
+              {{ $t("common.email") }}
             </label>
             <div class="mt-2 text-base font-medium leading-5 text-accent">
               {{ state.email }}
@@ -34,7 +37,8 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Password<span class="text-red-600">*</span>
+              {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -43,20 +47,7 @@
                 type="password"
                 autocomplete="on"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -66,7 +57,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Name
+              {{ $t("common.username") }}
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -74,20 +65,7 @@
                 v-model="state.name"
                 type="text"
                 placeholder="Jim Gray"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -98,7 +76,7 @@
                 type="submit"
                 class="btn-success w-full flex justify-center py-2 px-4"
               >
-                Activate
+                {{ $t("common.activate") }}
               </button>
             </span>
           </div>
