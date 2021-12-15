@@ -30,7 +30,42 @@ VALUES
         'bb.tenant'
     );
 
+-- Label values.
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20010,
+        1,
+        1,
+        "bb.location",
+        "earth"
+    );
 
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20011,
+        1,
+        1,
+        "bb.tenant",
+        "bytebase"
+    );
+
+-- Database labels.
 INSERT INTO
     db_label (
         id,
@@ -42,7 +77,7 @@ INSERT INTO
     )
 VALUES
     (
-        20001,
+        20021,
         1,
         1,
         7002,
@@ -61,7 +96,7 @@ INSERT INTO
     )
 VALUES
     (
-        20002,
+        20022,
         1,
         1,
         7002,

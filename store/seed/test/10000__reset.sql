@@ -92,7 +92,8 @@ DELETE FROM
 DELETE FROM
     label_key;
 
-
+DELETE FROM
+    label_value;
 
 DELETE FROM
     deployment_config;
