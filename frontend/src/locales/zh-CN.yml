@@ -323,7 +323,7 @@ auth:
   sign-in:
     title: 登陆你的账号
     forget-password: 忘记密码?
-    new-user: 第一次使用Bytebase?
+    new-user: 第一次使用 Bytebase?
   password-forget:
     title: 忘记了你的密码？
     content: 请联系的你的Bytebase管理员重置密码
