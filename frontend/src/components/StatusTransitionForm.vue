@@ -71,10 +71,7 @@
             :title="`Check found ${checkSummary.warnCount} warning(s)`"
           />
         </template>
-        <TaskCheckBadgeBar
-          :task-check-run-list="task.taskCheckRunList"
-          :allow-selection="false"
-        />
+        <TaskCheckBar :task="task!" :allow-run-task="false" />
       </div>
 
       <div class="sm:col-span-4 w-112 min-w-full">
@@ -129,7 +126,7 @@
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
-import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
+import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
 import { OutputField } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
@@ -147,7 +144,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "StatusTransitionForm",
-  components: { DatabaseSelect, TaskCheckBadgeBar },
+  components: { DatabaseSelect, TaskCheckBar },
   props: {
     mode: {
       required: true,

@@ -4,9 +4,9 @@
     :options="{ placeholder, disabled, compare }"
   >
     <KBarPortal>
-      <KBarPositioner class="mask">
-        <KBarAnimator class="container">
-          <KBarSearch class="searchbox" />
+      <KBarPositioner class="bb-kbar-mask">
+        <KBarAnimator class="bb-kbar-container">
+          <KBarSearch class="bb-kbar-searchbox" />
           <RenderResults />
           <KBarFooter />
         </KBarAnimator>
@@ -35,6 +35,7 @@ import RenderResults from "./RenderResults.vue";
 import KBarHelper from "./KBarHelper.vue";
 import KBarFooter from "./KBarFooter.vue";
 import { useI18n } from "vue-i18n";
+import { useModalStackStatus } from "../../bbkit/BBModalStack.vue";
 
 export default defineComponent({
   name: "KBarWrapper",
@@ -52,10 +53,19 @@ export default defineComponent({
     const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
+    const modalStack = useModalStackStatus();
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 
     const disabled = computed(() => {
+      if (modalStack.value.length > 0) {
+        // Disable kbar when any modal dialog is shown
+        // We don't want to show modal dialogs and kbar at the same time
+        // This also avoids navigating through kbar, which may
+        // cause unexpected results
+        return true;
+      }
+
       const currentUser = store.getters["auth/currentUser"]();
       // totally disable kbar when not logged in
       // since there is no point to show it on signin/signup pages
@@ -92,13 +102,13 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.mask {
+.bb-kbar-mask {
   @apply bg-gray-300 bg-opacity-80;
 }
-.container {
+.bb-kbar-container {
   @apply bg-white shadow-lg rounded-lg w-128 overflow-hidden divide-y;
 }
-.searchbox {
+.bb-kbar-searchbox {
   @apply px-4 py-4 text-lg w-full box-border outline-none border-none;
 }
 </style>
