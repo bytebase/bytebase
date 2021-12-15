@@ -1,4 +1,5 @@
 PRAGMA user_version = 10001;
+PRAGMA foreign_keys = ON;
 
 -- principal
 CREATE TABLE principal (
@@ -1281,9 +1282,10 @@ CREATE TABLE label_key (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    key TEXT NOT NULL UNIQUE
+    key TEXT NOT NULL
 );
 
+-- key's are unique within the label_key table.
 CREATE UNIQUE INDEX idx_label_key_key ON label_key(key);
 
 INSERT INTO
@@ -1304,6 +1306,42 @@ WHERE
 
 END;
 
+-- label_value stores available label key values at workspace level.
+CREATE TABLE label_value (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    FOREIGN KEY(key) REFERENCES label_key(key)
+);
+
+-- key/value's are unique within the label_value table.
+CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('label_value', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_label_value_modification_time`
+AFTER
+UPDATE
+    ON `label_value` FOR EACH ROW BEGIN
+UPDATE
+    `label_value`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
 -- db_label stores labels asscociated with databases.
 CREATE TABLE db_label (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1315,11 +1353,12 @@ CREATE TABLE db_label (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
-    key TEXT NOT NULL REFERENCES label_key (key),
+    key TEXT NOT NULL,
     value TEXT NOT NULL,
-    UNIQUE(database_id, key)
+    FOREIGN KEY(key, value) REFERENCES label_value(key, value)
 );
 
+-- database_id/key's are unique within the db_label table.
 CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
 
 INSERT INTO
