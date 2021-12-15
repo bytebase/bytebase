@@ -11,7 +11,7 @@
         space-x-2
       "
     >
-      Migration History
+      {{ $t('migration-history.self') }}
       <button
         v-if="allowEdit"
         type="button"
@@ -19,10 +19,10 @@
         :disabled="state.migrationSetupStatus != 'OK'"
         @click.prevent="state.showBaselineModal = true"
       >
-        Establish new baseline
+        {{ $t('migration-history.establish-baseline') }}
       </button>
       <div>
-        <BBSpin v-if="state.loading" :title="'Refreshing history ...'" />
+        <BBSpin v-if="state.loading" :title="$t('migration-history.refreshing-history')" />
       </div>
     </div>
     <MigrationHistoryTable
@@ -34,7 +34,7 @@
       v-else
       :style="`WARN`"
       :title="attentionTitle"
-      :action-text="allowConfigInstance ? 'Config instance' : ''"
+      :action-text="allowConfigInstance ? $t('migration-history.config-instance') : ''"
       @click-action="configInstance"
     />
   </div>
@@ -42,10 +42,10 @@
   <BBAlert
     v-if="state.showBaselineModal"
     :style="'INFO'"
-    :ok-text="'Establish baseline'"
-    :cancel-text="'Cancel'"
-    :title="`Establish new baseline for \'${database.name}\'`"
-    :description="'Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.\n\nFor VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.'"
+    :ok-text="$t('migration-history.establish-baseline')"
+    :cancel-text="$t('common.cancel')"
+    :title="$t('migration-history.establish-database-baseline', { name: database.name })"
+    :description="$t('migration-history.establish-baseline-description')"
     @ok="
       () => {
         doCreateBaseline();
@@ -69,6 +69,7 @@ import {
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { instanceSlug, isDBAOrOwner } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -90,6 +91,8 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+
     const store = useStore();
     const router = useRouter();
 
@@ -139,17 +142,17 @@ export default {
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
         return (
-          `Missing migration history schema on instance "${props.database.instance.name}".` +
+          t('migration-history.instance-missing-migration-schema', { name: props.database.instance.name }) +
           (isDBAOrOwner(currentUser.value.role)
             ? ""
-            : " Please contact your DBA to config it.")
+            : " " + t('migration-history.contact-dba'))
         );
       } else if (state.migrationSetupStatus == "UNKNOWN") {
         return (
-          `Unable to connect instance "${props.database.instance.name}" to retrieve migration history.` +
+          t('migration-history.instance-bad-connection', { name: props.database.instance.name })  +
           (isDBAOrOwner(currentUser.value.role)
             ? ""
-            : " Please contact your DBA to config it.")
+            : " " + t('migration-history.contact-dba'))
         );
       }
       return "";
@@ -181,7 +184,7 @@ export default {
         },
         query: {
           template: "bb.issue.database.schema.baseline",
-          name: `Establish ${props.database.name} baseline`,
+          name: t('migration-history.establish-database-baseline', { name: props.database.name }),
           project: props.database.project.id,
           databaseList: `${props.database.id}`,
         },

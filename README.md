@@ -96,6 +96,8 @@ https://github.com/bytebase/bytebase/tree/main/docs/design
 1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve content there.
+  
+**Note**: We are quite disciplined on <a href="#installation">tech stack</a>. If you consider bringing a new programming language, framework and any non-trivial external dependency, please open a discussion first.
 
 ## 🏗 Development
 
@@ -171,7 +173,7 @@ Bytebase should now be running at https://localhost:3000 and change either front
 
 ## Notice
 
-> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema around the middle of August. In the mean time, if you are eager to try Bytebase for your business and encounter
+> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema by the end of Jan 2022. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
 
 ## We are hiring

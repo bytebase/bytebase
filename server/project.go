@@ -189,7 +189,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 			resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryCreate.ExternalID)
-			resp, err := gitlab.POST(vcs.InstanceURL, resourcePath, repositoryCreate.AccessToken, bytes.NewBuffer(body))
+			// We use s.refreshTokenNoop() because the repository isn't created yet.
+			resp, err := gitlab.POST(vcs.InstanceURL, resourcePath, &repositoryCreate.AccessToken, bytes.NewBuffer(body), gitlab.OauthContext{}, s.refreshTokenNoop())
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
@@ -351,7 +352,18 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
 				resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalID, repository.ExternalWebhookID)
-				resp, err := gitlab.PUT(vcs.InstanceURL, resourcePath, repository.AccessToken, bytes.NewBuffer(json))
+				resp, err := gitlab.PUT(
+					vcs.InstanceURL,
+					resourcePath,
+					&repository.AccessToken,
+					bytes.NewBuffer(json),
+					gitlab.OauthContext{
+						ClientID:     repository.VCS.ApplicationID,
+						ClientSecret: repository.VCS.Secret,
+						RefreshToken: repository.RefreshToken,
+					},
+					s.refreshToken(ctx, repository.ID),
+				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
@@ -427,7 +439,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
-			resp, err := gitlab.DELETE(vcs.InstanceURL, fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalID, repository.ExternalWebhookID), repository.AccessToken)
+			resp, err := gitlab.DELETE(
+				vcs.InstanceURL,
+				fmt.Sprintf("projects/%s/hooks/%s",
+					repository.ExternalID,
+					repository.ExternalWebhookID),
+				&repository.AccessToken,
+				gitlab.OauthContext{
+					ClientID:     repository.VCS.ApplicationID,
+					ClientSecret: repository.VCS.Secret,
+					RefreshToken: repository.RefreshToken,
+				},
+				s.refreshToken(ctx, repository.ID),
+			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 			}
@@ -570,4 +594,27 @@ func validateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 		return fmt.Errorf("missing {{DB_NAME}} in schema path template")
 	}
 	return nil
+}
+
+// refreshToken is a token refresher that stores the latest access token configuration to repository.
+func (s *Server) refreshToken(ctx context.Context, repositoryID int) gitlab.TokenRefresher {
+	return func(token, refreshToken string, expiresTs int64) error {
+		if _, err := s.RepositoryService.PatchRepository(ctx, &api.RepositoryPatch{
+			ID:           repositoryID,
+			UpdaterID:    api.SystemBotID,
+			AccessToken:  &token,
+			ExpiresTs:    &expiresTs,
+			RefreshToken: &refreshToken,
+		}); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
+func (s *Server) refreshTokenNoop() gitlab.TokenRefresher {
+	return func(newToken, newRefreshToken string, expiresTs int64) error {
+		return nil
+	}
 }

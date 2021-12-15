@@ -1,24 +1,49 @@
 common:
+  activity: Activity
+  sign-in: Sign in
+  sign-up: Sign up
+  email: Email
+  username: Username
+  password: Password
+  activate: Activate
   save: Save
   cancel: Cancel
+  comment: 评论
   home: Home
   settings: Settings
+  project: Project
   projects: Projects
   help: Help
+  database: Database
   databases: Databases
+  description: Description
+  instance: Instance
   instances: Instances
+  environment: Environment
   environments: Environments
+  bookmark: Bookmark
   bookmarks: Bookmarks
   quick-action: Quick Action
   archive: Archive
   quickstart: Quickstart
   logout: Logout
+  close: Close
+  latest: Latest
+  error: Error
+  canceled: Canceled
+  approval: Approval
+  approve: Approve
+  done: Done
+  create: Create
+  rollback: Rollback
+  run: Run
+  retry: Retry
+  skip: Skip
+  reopen: Reopen
   dismiss: Dismiss
   back: Back
   next: Next
-  skip: Skip
   edit: Edit
-  create: Create
   update: Update
   visit: Visit
   role:
@@ -30,6 +55,29 @@ common:
     owner: Switch to Owner
     developer: Switch to Developer
   assignee: Assignee
+  revert: Revert
+  apply: Apply
+  reorder: Reorder
+  id: ID
+  name: Name
+  creator: Creator
+  version: Version
+  issue: Issue
+  duration: Duration
+  created-at: Created
+  updated-at: Updated
+  commit: Commit
+  statement: Statement
+  sql-statement: "SQL statement"
+  snapshot: Snapshot
+  status: Status
+  stage: Stage
+  sql: SQL
+  unassigned: Unassigned
+  new: New
+  add: Add
+  query: Query
+  transfer: Transfer
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -46,16 +94,35 @@ kbar:
   preferences:
     common: Preferences
     change-language: Change Language…
+task:
+  checking: Checking...
+  run-task: Run checks
+  check-result:
+    title: Check result for {name}
+  check-type:
+    fake: Fake
+    syntax: Syntax
+    compatibility: Compatibility
+    connection: Connection
+    migration-schema: Migration schema
+  comment: Comment
+  invoker: Invoker
+  started: Started
+  ended: Ended
+  view-migration: View migration
+  view-migration-history: View migration history
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
   action: Deploy yours in 5 seconds
 intro:
-  content: Bytebase is for DBAs and Developers to collaborate on database schemas
-        changes. One can construct a single pipeline to propagate the schema
-        change across multiple environments. One can also store the schemas in
-        VCS and trigger a new pipeline upon commit push. Follow the {quickstart} on the bottom left to get
-        familiar with the product. If you encounter problems, visit {doc} or report {issue} on GitHub.
+  content: >-
+    Bytebase is for DBAs and Developers to collaborate on database schemas
+    changes. One can construct a single pipeline to propagate the schema change
+    across multiple environments. One can also store the schemas in VCS and
+    trigger a new pipeline upon commit push. Follow the {quickstart} on the
+    bottom left to get familiar with the product. If you encounter problems,
+    visit {doc} or report {issue} on GitHub.
   quickstart: Quickstart
   doc: doc
   issue: issue
@@ -83,11 +150,11 @@ settings:
     plan: (Upgrade to Team plan to enable role management)
   workspace:
     url-section: SQL Console URL
-    url-tip: "Tip: Use {schema} as the placeholder for the actual
-          database name"
-    tip: If your team use a separate SQL console such as phpMyAdmin, you can
-        provide its URL pattern here. Once provided, Bytebase will surface the
-        console link on the relevant database and table UI.
+    url-tip: "Tip: Use {schema} as the placeholder for the actual database name"
+    tip: >-
+      If your team use a separate SQL console such as phpMyAdmin, you can
+      provide its URL pattern here. Once provided, Bytebase will surface the
+      console link on the relevant database and table UI.
     tip-link: Detailed guide
   members:
     active: Active members
@@ -120,6 +187,77 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+  sentence:
+    created-issue: "created issue"
+    commented: commented
+    reassigned-issue: "reassigned issue from {oldName} to {newName}"
+    assigned-issue: "assigned issue to {newName}"
+    unassigned-issue: "unassigned issue from {oldName}"
+    invalid-assignee-update: "invalid assignee update"
+    changed-description: "changed description"
+    changed-from-to: 'changed {name} from "{oldValue}" to "{newValue}"'
+    unset-from: 'unset {name} from "{oldValue}"'
+    set-to: 'set {name} to "{newValue}"'
+    changed-update: "changed {name} update"
+    reopened-issue: "reopened issue"
+    resolved-issue: "resolved issue"
+    canceled-issue: "canceled issue"
+    empty: ""
+    changed: changed
+    updated: updated
+    canceled: canceled
+    approved: approved
+    started: started
+    completed: completed
+    failed: failed
+    task-name: " task {name}"
+    committed-to-at: "committed {file} to{branch}{'@'}{repo}"
+  subject-prefix:
+    task: "Task"
+issue:
+  waiting-approval: Waiting Approval
+  opened-by-at: opened by {creator} at {time}
+  commit-by-at: commit {id} {title} by {author} at {time}
+  status-transition:
+    modal:
+      resolve: Resolve issue?
+      cancel: Cancel this entire issue?
+      reopen: Reopen issue?
+    dropdown:
+      resolve: Resolve issue
+      cancel: Cancel issue
+      reopen: Reopen issue
+    form:
+      note: Note
+      placeholder: (Optional) Add a note...
+  subscribe: Subscribe
+  unsubscribe: Unsubscribe
+  subscriber: No subscribers | 1 subscriber | {n} subscribers
+  apply-to-other-stages: "Apply to other stages"
+  add-sql-statement: "Add SQL statement..."
+  optional-add-sql-statement: "(Optional) Add SQL statement..."
+  rollback-sql: "Rollback SQL"
+  add-rollback-sql-statement: "Add rollback SQL statement..."
+  edit-description: "Edit description"
+  add-some-description: "Add some description..."
+  add-a-comment: "Add a comment"
+  edit-comment: Edit comment
+  leave-a-comment: "Leave a comment..."
+  view-commit: View commit
+  search-issue-name: Search issue name
+  table:
+    open: Open
+    closed: Closed
+    status: Status
+    project: Project
+    name: Name
+    environment: Environment
+    db: DB
+    progress: Progress
+    updated: Updated
+    assignee: Assignee
+  stage-select:
+    active: "{name} (active)"
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
@@ -136,12 +274,33 @@ alter-schema:
     skip that environment. This allows you to compose a single pipeline to
     propagate schema changes across multiple environments.
 quick-action:
-  alter-schema: Alter schema
+  alter-schema: Alter Schema
   create-db: Create database
   choose-db: Choose database
+  new-db: New DB
+  add-instance: "@:common.add @:common.instance"
+  create-instance: "@:common.create @:common.instance"
+  manage-user: Manage User
+  default-project: Default Project
+  add-environment: "@:common.add @:common.environment"
+  create-environment: "@:common.create @:common.environment"
+  new-project: "@:common.new @:common.project"
+  create-project: "@:common.create @:common.project"
+  edit-data: Edit Data
+  troubleshoot: Troubleshoot
+  transfer-in-db: Transfer in DB
+  request-db: Request DB
+  from-default-project: From Default project
+  from-other-projects: From other projects
+  transfer-in-db-title: Transfer in database from other projects
+  transfer-in-db-hint: >-
+    Bytebase periodically syncs the instance schema. Newly synced databases are
+    first placed in this default project.
+  transfer-in-db-alert: >-
+    Are you sure to transfer "{ dbName }" into our project?
 create-db:
   new-database-name: New database name
-  reserved-db-error: '{databaseName} is a reserved name'
+  reserved-db-error: "{databaseName} is a reserved name"
 db:
   encoding: Encoding
   character-set: Character set
@@ -153,14 +312,91 @@ instance:
   select: Select instance
 environment:
   select: Select environment
+  archive: Archive this environment
+  archive-info: >-
+    Archived environment will not be shown on the normal interface. You can
+    still restore later from the Archive page.
+  create: Create Environment
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
-  visit-project: '@:common.visit @:common.projects'
-  visit-instance: '@:common.visit @:common.instances'
-  visit-database: '@:common.visit @:common.databases'
-  visit-environment: '@:common.visit @:common.environments'
+  visit-project: "@:common.visit @:common.projects"
+  visit-instance: "@:common.visit @:common.instances"
+  visit-database: "@:common.visit @:common.databases"
+  visit-environment: "@:common.visit @:common.environments"
   add-a-member: Add a member
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+auth:
+  sign-up:
+    title: Register your account
+    admin-title: Setup {account}
+    admin-account: admin account
+    create-admin-account: Create admin account
+    confirm-password: Confirm Password
+    confirm-password-placeholder: Confirm password
+    password-mismatch: mismatch
+    existing-user: Already have an account?
+  sign-in:
+    title: Sign in to your account
+    admin-title: Setup {'account'}
+    admin-account: admin account
+    forget-password: Forgot your password?
+    new-user: New to Bytebase?
+  password-forget:
+    title: Forgot your password?
+    content: Please contact your Bytebase Admin to reset your password.
+    return-to-sign-in: Return to Sign in
+  password-reset:
+    title: Reset your password
+    content: Enter your email address and we will send you a password reset link
+    send-reset-link: Send reset link
+    return-to-sign-in: Return to Sign in
+  activate:
+    title: Activate your {type} account
+policy:
+  approval:
+    name: Approval Policy
+    info: >-
+      For updating schema on the existing database, this setting controls
+      whether the task requires manual approval.
+    manual: Require manual approval
+    manual-info: >-
+      Pending schema migration task will only be executed after it's manually
+      approved.
+    auto: Skip manual approval
+    auto-info: Pending schema migration task will be executed automatically.
+  backup:
+    name: Database backup schedule policy
+    not-enforced: Not enforced
+    not-enforced-info: No backup schedule is enforced.
+    daily: Daily backup
+    daily-info: Enforce every database to backup daily.
+    weekly: Weekly backup
+    weekly-info: Enforce every database to backup weekly.
+migration-history:
+  self: Migration History
+  workflow: Workflow
+  commit-info: by {author} at {time}
+  no-schema-change: this migration has no schema change
+  show-diff: Show diff
+  left-vs-right: Prev (left) vs This version (right)
+  schema-snapshot-after-migration: The schema snapshot recorded after applying this migration
+  list-limit: >-
+    For database having migration history, we list up to 5 most recent histories
+    below. You can click the database name to view all histories.
+  no-history-in-project: Do not find migration history from any database in this project.
+  recording-info: Migration history is recorded whenever the database schema is altered.
+  establish-baseline: Establish new baseline
+  refreshing-history: Refreshing history ...
+  config-instance: Config instance
+  establish-baseline-description: >-
+    Bytebase will use the current schema as the new baseline. You should check
+    that the current schema does reflect the desired state. For VCS workflow,
+    there must exist a baseline before any incremental migration change can be
+    applied to the database.
+  establish-database-baseline: Establish "{name}" baseline
+  instance-missing-migration-schema: Missing migration history schema on instance "{name}".
+  instance-bad-connection: Unable to connect instance "{name}" to retrieve migration history.
+  contact-dba: Please contact your DBA to config it
