@@ -337,7 +337,7 @@ auth:
     confirm-password: Confirm Password
     confirm-password-placeholder: Confirm password
     password-mismatch: mismatch
-    old-user: Already have an account?
+    existing-user: Already have an account?
   sign-in:
     title: Sign in to your account
     admin-title: Setup {'account'}

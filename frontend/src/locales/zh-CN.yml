@@ -319,7 +319,7 @@ auth:
     confirm-password: 确认密码
     confirm-password-placeholder: 确认你的密码
     password-mismatch: 不匹配
-    old-user: 已有账号?
+    existing-user: 已有账号?
   sign-in:
     title: 登陆你的账号
     forget-password: 忘记密码?

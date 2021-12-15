@@ -137,7 +137,7 @@
       </div>
       <div class="relative flex justify-center text-sm">
         <span class="pl-2 bg-white text-control">
-          {{ $t("auth.sign-up.old-user") }}
+          {{ $t("auth.sign-up.existing-user") }}
         </span>
         <router-link to="/auth/signin" class="accent-link px-2 bg-white">
           {{ $t("common.sign-in") }}
