@@ -1,5 +1,11 @@
 common:
   activity: Activity
+  sign-in: Sign in
+  sign-up: Sign up
+  email: Email
+  username: Username
+  password: Password
+  activate: Activate
   save: Save
   cancel: Cancel
   comment: 评论
@@ -322,6 +328,33 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+auth:
+  sign-up:
+    title: Register your account
+    admin-title: Setup {account}
+    admin-account: admin account
+    create-admin-account: Create admin account
+    confirm-password: Confirm Password
+    confirm-password-placeholder: Confirm password
+    password-mismatch: mismatch
+    existing-user: Already have an account?
+  sign-in:
+    title: Sign in to your account
+    admin-title: Setup {'account'}
+    admin-account: admin account
+    forget-password: Forgot your password?
+    new-user: New to Bytebase?
+  password-forget:
+    title: Forgot your password?
+    content: Please contact your Bytebase Admin to reset your password.
+    return-to-sign-in: Return to Sign in
+  password-reset:
+    title: Reset your password
+    content: Enter your email address and we will send you a password reset link
+    send-reset-link: Send reset link
+    return-to-sign-in: Return to Sign in
+  activate:
+    title: Activate your {type} account
 policy:
   approval:
     name: Approval Policy

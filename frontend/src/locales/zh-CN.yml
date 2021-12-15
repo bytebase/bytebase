@@ -1,4 +1,10 @@
 common:
+  sign-in: 登陆
+  sign-up: 注册
+  email: 邮箱
+  username: 用户名
+  password: 密码
+  activate: 激活
   activity: 活动
   save: 保存
   cancel: 取消
@@ -108,7 +114,7 @@ task:
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
-  action: 5 秒部署你自己的服务
+  action: 5 秒部署您自己的服务
 intro:
   content: >-
     Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进
@@ -143,7 +149,7 @@ settings:
     url-section: SQL Console URL
     url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: >-
-      如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
+      如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
   members:
@@ -154,7 +160,7 @@ settings:
     add: 添加
     invites: 发送邀请
     invited: 已邀请
-    yourself: 你自己
+    yourself: 您自己
     upgrade: 升级付费方案来解锁其他角色
     select-role: 选择角色
     not-assigned: 未指派
@@ -249,11 +255,11 @@ issue:
   stage-select:
     active: "{name}（活动中）"
 alter-schema:
-  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
-  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
+  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以创建 schema 变更。
+  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以创建 schema 变更。
   alter-single-db: 变更单个数据库
   alter-multiple-db: 变更多个数据库
-  alter-multiple-db-info: 针对每个环境，你可以选择一个数据库进行变更或者直接跳过该环境，这样你就可以在一条流水线上把 schema 变更逐步作用到多个环境。
+  alter-multiple-db-info: 针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把 schema 变更逐步作用到多个环境。
 quick-action:
   alter-schema: 变更 Schema
   create-db: 创建数据库
@@ -304,6 +310,31 @@ quick-start:
   notice:
     title: 快速入门导览已关闭
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
+auth:
+  sign-up:
+    title: 注册您的账号
+    admin-title: 设置 {account}
+    admin-account: 管理员账号
+    create-admin-account: 注册管理员
+    confirm-password: 确认密码
+    confirm-password-placeholder: 确认您的密码
+    password-mismatch: 不匹配
+    existing-user: 已有账号?
+  sign-in:
+    title: 登陆您的账号
+    forget-password: 忘记密码?
+    new-user: 第一次使用 Bytebase?
+  password-forget:
+    title: 忘记了您的密码？
+    content: 请联系的您的 Bytebase 管理员重置密码
+    return-to-sign-in: 返回登陆
+  password-reset:
+    title: 重置您的密码
+    content: 我们会将重置密码链接发送到您的邮箱
+    send-reset-link: 发送重置链接
+    return-to-sign-in: 返回登陆
+  activate:
+    title: 激活您的 {type} 账号
 policy:
   approval:
     name: 审批策略
@@ -335,9 +366,9 @@ migration-history:
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
   establish-baseline-description: >-
-    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS
     工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
   establish-database-baseline: 建立「{name}」基线
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
-  contact-dba: 请联系你的 DBA 进行配置。
+  contact-dba: 请联系您的 DBA 进行配置。

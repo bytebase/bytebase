@@ -7,14 +7,14 @@
         alt="Bytebase"
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        Forgot your password?
+        {{ $t("auth.password-forget.title") }}
       </h2>
     </div>
 
     <div class="mt-8">
       <div class="mt-6">
         <label class="block text-base font-medium leading-5 text-control">
-          Please contact your Bytebase Admin to reset your password.
+          {{ $t("auth.password-forget.content") }}
         </label>
       </div>
     </div>
@@ -25,7 +25,7 @@
       </div>
       <div class="relative flex justify-center text-sm">
         <router-link to="/auth/signin" class="accent-link bg-white px-2">
-          Return to Sign in
+          {{ $t("auth.password-forget.return-to-sign-in") }}
         </router-link>
       </div>
     </div>
