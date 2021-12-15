@@ -22,25 +22,26 @@
           />
         </div>
         <div v-if="!create">
-          <p class="text-sm text-control-light">
-            #{{ issue.id }} opened by
-            <router-link
-              :to="`/u/${issue.creator.id}`"
-              class="font-medium text-control hover:underline"
-              >{{ issue.creator.name }}</router-link
-            >
-            at
-            {{ moment(issue.updatedTs * 1000).format("LLL") }}
-          </p>
+          <i18n-t
+            keypath="issue.opened-by-at"
+            tag="p"
+            class="text-sm text-control-light"
+          >
+            <template #creator>
+              <router-link
+                :to="`/u/${issue.creator.id}`"
+                class="font-medium text-control hover:underline"
+              >
+                {{ issue.creator.name }}
+              </router-link>
+            </template>
+            <template #time>
+              {{ moment(issue.updatedTs * 1000).format("LLL") }}
+            </template>
+          </i18n-t>
           <p
             v-if="pushEvent"
-            class="
-              mt-1
-              text-sm text-control-light
-              flex flex-row
-              items-center
-              space-x-1
-            "
+            class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
@@ -48,20 +49,27 @@
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
-            <span>
-              commit
-              <a
-                :href="pushEvent.fileCommit.url"
-                target="_blank"
-                class="normal-link"
-              >
-                {{ pushEvent.fileCommit.id.substring(0, 7) }}:
-              </a>
-              <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
-              by
-              {{ pushEvent.authorName }} at
-              {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
-            </span>
+
+            <i18n-t keypath="issue.commit-by-at" tag="span">
+              <template #id>
+                <a
+                  :href="pushEvent.fileCommit.url"
+                  target="_blank"
+                  class="normal-link"
+                >
+                  {{ pushEvent.fileCommit.id.substring(0, 7) }}:
+                </a>
+              </template>
+              <template #title>
+                <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+              </template>
+              <template #author>{{ pushEvent.authorName }}</template>
+              <template #time>
+                {{
+                  moment(pushEvent.fileCommit.createdTs * 1000).format("LLL")
+                }}
+              </template>
+            </i18n-t>
           </p>
         </div>
       </div>
@@ -73,7 +81,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watch, PropType, computed } from "vue";
+import { reactive, watch, PropType, computed, defineComponent } from "vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import { activeTask } from "../utils";
 import { TaskDatabaseSchemaUpdatePayload, Issue, VCSPushEvent } from "../types";
@@ -83,7 +91,7 @@ interface LocalState {
   name: string;
 }
 
-export default {
+export default defineComponent({
   name: "IssueHighlightPanel",
   components: { IssueStatusIcon },
   props: {
@@ -168,5 +176,5 @@ export default {
       trySaveName,
     };
   },
-};
+});
 </script>

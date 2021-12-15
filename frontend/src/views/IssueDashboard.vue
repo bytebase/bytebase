@@ -10,15 +10,7 @@
       <div class="flex flex-row space-x-4">
         <button
           v-if="project"
-          class="
-            px-4
-            cursor-pointer
-            rounded-md
-            text-control text-sm
-            bg-link-hover
-            focus:outline-none
-            hover:underline
-          "
+          class="px-4 cursor-pointer rounded-md text-control text-sm bg-link-hover focus:outline-none hover:underline"
           @click.prevent="goProject"
         >
           {{ project.key }}
@@ -31,7 +23,7 @@
         />
         <BBTableSearch
           ref="searchField"
-          :placeholder="'Search issue name'"
+          :placeholder="$t('issue.search-issue-name')"
           @change-text="(text) => changeSearchText(text)"
         />
       </div>
@@ -56,6 +48,7 @@ import { Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { reactive, ref, computed, onMounted, watchEffect } from "vue";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showOpen: boolean;
@@ -72,6 +65,7 @@ export default {
   name: "IssueDashboard",
   components: { EnvironmentTabFilter, IssueTable, MemberSelect },
   setup() {
+    const { t } = useI18n();
     const searchField = ref();
 
     const store = useStore();
@@ -172,7 +166,7 @@ export default {
       const list = [];
       if (state.showOpen) {
         list.push({
-          title: "Open",
+          title: t("issue.table.open"),
           list: filteredList(state.openList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),
@@ -180,7 +174,7 @@ export default {
       }
       if (state.showClosed) {
         list.push({
-          title: "Closed",
+          title: t("issue.table.closed"),
           list: filteredList(state.closedList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),

@@ -8,10 +8,15 @@
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         <template v-if="needAdminSetup" class="text-accent font-semnibold">
-          Setup
-          <span class="text-accent font-semnibold">admin account</span>
+          <i18n-t keypath="auth.sign-up.admin-title" tag="p">
+            <template #account>
+              <span class="text-accent font-semnibold">{{
+                $t("auth.sign-up.admin-account")
+              }}</span>
+            </template>
+          </i18n-t>
         </template>
-        <template v-else> Register your account </template>
+        <template v-else> {{ $t("auth.sign-up.title") }}</template>
       </h2>
     </div>
 
@@ -23,7 +28,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Email <span class="text-red-600">*</span>
+              {{ $t("common.email") }} <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -32,20 +37,7 @@
                 type="email"
                 required
                 placeholder="jim@example.com"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="onTextEmail"
               />
             </div>
@@ -56,7 +48,8 @@
               for="password"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Password <span class="text-red-600">*</span>
+              {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -65,20 +58,7 @@
                 autocomplete="off"
                 :value="state.password"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="changePassword($event.target.value)"
               />
             </div>
@@ -89,9 +69,14 @@
               for="password-confirm"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Confirm Password
+              {{ $t("auth.sign-up.confirm-password") }}
               <span class="text-red-600"
-                >* {{ state.showPasswordMismatchError ? "mismatch" : "" }}</span
+                >*
+                {{
+                  state.showPasswordMismatchError
+                    ? $t("auth.sign-up.password-mismatch")
+                    : ""
+                }}</span
               >
             </label>
             <div class="mt-1 rounded-md shadow-sm">
@@ -99,23 +84,10 @@
                 id="password-confirm"
                 type="password"
                 autocomplete="off"
-                :placeholder="'Confirm password'"
+                :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
                 :value="state.passwordConfirm"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="changePasswordConfirm($event.target.value)"
               />
             </div>
@@ -126,7 +98,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Name
+              {{ $t("common.username") }}
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -134,20 +106,7 @@
                 v-model="state.name"
                 type="text"
                 placeholder="Jim Gray"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="onTextName"
               />
             </div>
@@ -160,7 +119,11 @@
                 :disabled="!allowSignup"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
-                {{ needAdminSetup ? "Create admin account" : "Register" }}
+                {{
+                  needAdminSetup
+                    ? $t("auth.sign-up.create-admin-account")
+                    : $t("common.sign-up")
+                }}
               </button>
             </span>
           </div>
@@ -174,10 +137,10 @@
       </div>
       <div class="relative flex justify-center text-sm">
         <span class="pl-2 bg-white text-control">
-          Already have an account?
+          {{ $t("auth.sign-up.existing-user") }}
         </span>
         <router-link to="/auth/signin" class="accent-link px-2 bg-white">
-          Sign in
+          {{ $t("common.sign-in") }}
         </router-link>
       </div>
     </div>

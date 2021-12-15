@@ -11,7 +11,7 @@
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-base font-normal text-main tracking-tight">
-          Add Instance
+          {{ $t("quick-action.add-instance") }}
         </h3>
       </div>
 
@@ -25,7 +25,7 @@
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
-          Manage User
+          {{ $t("quick-action.manage-user") }}
         </h3>
       </div>
 
@@ -39,7 +39,7 @@
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
-          Query
+          {{ $t("common.query") }}
         </h3>
       </div>
 
@@ -53,7 +53,7 @@
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
         >
-          Edit Data
+          {{ $t("quick-action.edit-data") }}
         </h3>
       </div>
 
@@ -67,7 +67,7 @@
         <h3
           class="mt-1 text-base text-center font-normal text-main tracking-tight"
         >
-          New DB
+          {{ $t("quick-action.new-db") }}
         </h3>
       </div>
 
@@ -81,7 +81,7 @@
         <h3
           class="mt-1 text-base text-center font-normal text-main tracking-tight"
         >
-          Request DB
+          {{ $t("quick-action.request-db") }}
         </h3>
       </div>
 
@@ -93,7 +93,7 @@
           <heroicons-outline:pencil-alt class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Alter Schema
+          {{ $t("quick-action.alter-schema") }}
         </h3>
       </div>
 
@@ -105,7 +105,7 @@
           <heroicons-outline:hand class="w-6 h-6" />
         </router-link>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Troubleshoot
+          {{ $t("quick-action.troubleshoot") }}
         </h3>
       </div>
 
@@ -117,7 +117,7 @@
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t('environment.create') }}
+          {{ $t("environment.create") }}
         </h3>
       </div>
 
@@ -132,7 +132,7 @@
           <heroicons-outline:selector class="transform rotate-90 w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t('common.reorder') }}
+          {{ $t("common.reorder") }}
         </h3>
       </div>
 
@@ -144,7 +144,7 @@
           <heroicons-outline:template class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          New Project
+          {{ $t("quick-action.new-project") }}
         </h3>
       </div>
 
@@ -156,7 +156,7 @@
           <heroicons-outline:cube class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Default Project
+          {{ $t("quick-action.default-project") }}
         </h3>
       </div>
 
@@ -168,7 +168,7 @@
           <heroicons-outline:chevron-double-down class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
-          Transfer in DB
+          {{ $t("quick-action.transfer-in-db") }}
         </h3>
       </div>
     </template>
@@ -285,7 +285,7 @@ export default defineComponent({
     });
 
     const createProject = () => {
-      state.modalTitle = "Create project";
+      state.modalTitle = t("quick-action.create-project");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.project.create";
       state.showModal = true;
@@ -301,28 +301,28 @@ export default defineComponent({
     };
 
     const transferDatabase = () => {
-      state.modalTitle = "Transfer in database from other projects";
+      state.modalTitle = t("quick-action.transfer-in-db-title");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.project.database.transfer";
       state.showModal = true;
     };
 
     const createInstance = () => {
-      state.modalTitle = "Create instance";
+      state.modalTitle = t("quick-action.create-instance");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.instance.create";
       state.showModal = true;
     };
 
     const alterSchema = () => {
-      state.modalTitle = t('quick-action.alter-schema');
-      state.modalSubtitle = t('quick-action.choose-db');
+      state.modalTitle = t("quick-action.alter-schema");
+      state.modalSubtitle = t("quick-action.choose-db");
       state.quickActionType = "quickaction.bb.database.schema.update";
       state.showModal = true;
     };
 
     const createDatabase = () => {
-      state.modalTitle = t('quick-action.create-db');;
+      state.modalTitle = t("quick-action.create-db");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.database.create";
       state.showModal = true;
@@ -345,47 +345,47 @@ export default defineComponent({
 
     const QuickActionMap: Record<string, Partial<Action>> = {
       "quickaction.bb.instance.create": {
-        name: "Add Instance",
+        name: t("quick-action.add-instance"),
         perform: () => createInstance(),
       },
       "quickaction.bb.user.manage": {
-        name: "Manage User",
+        name: t("quick-action.manage-user"),
         perform: () => router.push({ name: "setting.workspace.member" }),
       },
       "quickaction.bb.database.create": {
-        name: "New DB",
+        name: t("quick-action.new-db"),
         perform: () => createDatabase(),
       },
       "quickaction.bb.database.request": {
-        name: "Request DB",
+        name: t("quick-action.request-db"),
         perform: () => requestDatabase(),
       },
       "quickaction.bb.database.schema.update": {
-        name: "Alter Schema",
+        name: t("quick-action.alter-schema"),
         perform: () => alterSchema(),
       },
       "quickaction.bb.database.troubleshoot": {
-        name: "Troubleshoot",
+        name: t("quick-action.troubleshoot"),
         perform: () => router.push({ path: "/issue/new" }),
       },
       "quickaction.bb.environment.create": {
-        name: "Add Environment",
+        name: t("quick-action.add-environment"),
         perform: () => createEnvironment(),
       },
       "quickaction.bb.environment.reorder": {
-        name: "Reorder",
+        name: t("common.reorder"),
         perform: () => reorderEnvironment(),
       },
       "quickaction.bb.project.create": {
-        name: "New Project",
+        name: t("quick-action.new-project"),
         perform: () => createProject(),
       },
       "quickaction.bb.project.default": {
-        name: "Default Project",
+        name: t("quick-action.default-project"),
         perform: () => goDefaultProject(),
       },
       "quickaction.bb.project.database.transfer": {
-        name: "Transfer in DB",
+        name: t("quick-action.transfer-in-db"),
         perform: () => transferDatabase(),
       },
     };
