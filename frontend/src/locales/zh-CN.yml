@@ -326,7 +326,7 @@ auth:
     new-user: 第一次使用 Bytebase?
   password-forget:
     title: 忘记了您的密码？
-    content: 请联系的您的Bytebase管理员重置密码
+    content: 请联系的您的 Bytebase 管理员重置密码
     return-to-sign-in: 返回登陆
   password-reset:
     title: 重置您的密码
