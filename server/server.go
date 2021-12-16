@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
+
 	// embed will embeds the acl policy.
 	_ "embed"
 
@@ -174,7 +176,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	if mode == "dev" || debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
-				return !strings.HasPrefix(c.Path(), "/api") && !strings.HasPrefix(c.Path(), "/hook")
+				return !common.HasPrefixes(c.Path(), "/api", "/hook")
 			},
 			Format: `{"time":"${time_rfc3339}",` +
 				`"method":"${method}","uri":"${uri}",` +
