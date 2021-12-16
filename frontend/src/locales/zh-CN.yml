@@ -411,9 +411,9 @@ repository:
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
   version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
   version-control-description-description-schema-path: 当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。
-  restore-to-ui-workflow: 重置到 UI 流程
-  restore-ui-workflow-description: "当使用 UI 流程时，开发者会通过 Bytebase \b控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。"
-  restore-ui-workflow-success: 成功重置到 UI 流程
+  restore-to-ui-workflow: 重置到 UI 工作流
+  restore-ui-workflow-description: "当使用 UI 工作流时，开发者会通过 Bytebase \b控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。"
+  restore-ui-workflow-success: 成功重置到 UI 工作流
   update-version-control-config-success: 成功更新@:common.version-control配置
   setup-wizard-guide: 如果您在过程中遇到问题, 请参考{guide}
   choose-git-provider: 选择 Git 提供方
@@ -430,3 +430,16 @@ repository:
     Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
     用来监听代码推送事件。
   select-repository-search: 搜索仓库
+workflow:
+  current-workflow: 当前工作流
+  ui-workflow: UI 工作流
+  ui-workflow-description: >-
+    经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA
+    或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。
+  gitops-workflow: GitOps 工作流
+  gitops-workflow-description: >-
+    数据库迁移脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个迁移脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。
+    当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。
+  configure-gitops: 配置 Git
+  configure-gitops-success: 开启「{project}」GitOps 工作流成功
+  change-gitops-success: 变更「{project}」仓库成功
