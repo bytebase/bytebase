@@ -25,8 +25,8 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeys retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+// FindLabelKeysList retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -104,8 +104,8 @@ func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind
 	return ret, nil
 }
 
-// FindDatabaseLabels finds the labels associated with the database.
-func (s *LabelService) FindDatabaseLabels(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+// FindDatabaseLabelList finds the labels associated with the database.
+func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -234,9 +234,9 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 	return &databaseLabel, nil
 }
 
-// SetDatabaseLabels sets the labels for a database.
-func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
-	oldLabels, err := s.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
+// SetDatabaseLabelList sets the labels for a database.
+func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
+	oldLabels, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
