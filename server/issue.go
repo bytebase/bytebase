@@ -33,68 +33,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		for _, stageCreate := range issueCreate.Pipeline.StageList {
 			for _, taskCreate := range stageCreate.TaskList {
-				if taskCreate.Type == api.TaskDatabaseCreate {
-					if taskCreate.Statement != "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement should not be set.")
-					}
-					if taskCreate.DatabaseName == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
-					}
-					instanceFind := &api.InstanceFind{
-						ID: &taskCreate.InstanceID,
-					}
-					instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue.").SetInternal(err)
-					}
-					// ClickHouse does not support character set and collation at the database level.
-					if instance.Engine == db.ClickHouse {
-						if taskCreate.CharacterSet != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", taskCreate.CharacterSet),
-							)
-						}
-						if taskCreate.Collation != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", taskCreate.Collation),
-							)
-						}
-					} else if instance.Engine == db.Snowflake {
-						if taskCreate.CharacterSet != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", taskCreate.CharacterSet),
-							)
-						}
-						if taskCreate.Collation != "" {
-							return echo.NewHTTPError(
-								http.StatusBadRequest,
-								fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", taskCreate.Collation),
-							)
-						}
-					} else {
-						if taskCreate.CharacterSet == "" {
-							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
-						}
-						// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
-						// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
-						// install it.
-						if instance.Engine != db.Postgres && taskCreate.Collation == "" {
-							return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
-						}
-					}
-				} else if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 					if taskCreate.Statement == "" {
 						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-					}
-				} else if taskCreate.Type == api.TaskDatabaseRestore {
-					if taskCreate.DatabaseName == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
-					}
-					if taskCreate.BackupID == nil {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, backup missing")
 					}
 				}
 			}
@@ -547,10 +488,54 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
+		if m.DatabaseName == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
+		}
+
 		// Find instance.
 		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
 		if err != nil {
 			return nil, err
+		}
+
+		switch instance.Engine {
+		case db.ClickHouse:
+			// ClickHouse does not support character set and collation at the database level.
+			if m.CharacterSet != "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", m.CharacterSet),
+				)
+			}
+			if m.Collation != "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", m.Collation),
+				)
+			}
+		case db.Snowflake:
+			if m.CharacterSet != "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", m.CharacterSet),
+				)
+			}
+			if m.Collation != "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", m.Collation),
+				)
+			}
+		default:
+			if m.CharacterSet == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
+			}
+			// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+			// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+			// install it.
+			if instance.Engine != db.Postgres && m.Collation == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
+			}
 		}
 
 		payload := api.TaskDatabaseCreatePayload{}
