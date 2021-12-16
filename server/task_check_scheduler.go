@@ -196,6 +196,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatorID,
 			TaskID:                  task.ID,
+			TaskVersion:             task.UpdatedTs,
 			Type:                    api.TaskCheckDatabaseConnect,
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
@@ -206,6 +207,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatorID,
 			TaskID:                  task.ID,
+			TaskVersion:             task.UpdatedTs,
 			Type:                    api.TaskCheckInstanceMigrationSchema,
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
@@ -227,6 +229,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
+				TaskVersion:             task.UpdatedTs,
 				Type:                    api.TaskCheckDatabaseStatementSyntax,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
@@ -238,6 +241,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
+				TaskVersion:             task.UpdatedTs,
 				Type:                    api.TaskCheckDatabaseStatementCompatibility,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,

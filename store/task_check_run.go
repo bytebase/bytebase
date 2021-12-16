@@ -96,17 +96,19 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 			creator_id,
 			updater_id,
 			task_id,
+			task_version,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			comment,
 			payload
 		)
 		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, task_version, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.TaskID,
+		create.TaskVersion,
 		create.Type,
 		create.Comment,
 		create.Payload,
@@ -126,6 +128,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 		&taskCheckRun.UpdaterID,
 		&taskCheckRun.UpdatedTs,
 		&taskCheckRun.TaskID,
+		&taskCheckRun.TaskVersion,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Code,
@@ -218,7 +221,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		UPDATE task_check_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, task_version, `+"`status`, `type`, code, comment, result, payload"+`
 	`,
 		args...,
 	)
@@ -237,6 +240,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		&taskCheckRun.UpdaterID,
 		&taskCheckRun.UpdatedTs,
 		&taskCheckRun.TaskID,
+		&taskCheckRun.TaskVersion,
 		&taskCheckRun.Status,
 		&taskCheckRun.Type,
 		&taskCheckRun.Code,
@@ -284,6 +288,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			updater_id,
 		    updated_ts,
 			task_id,
+			task_version,
 			`+"`status`,"+`
 			`+"`type`,"+`
 			code,
@@ -310,6 +315,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			&taskCheckRun.UpdaterID,
 			&taskCheckRun.UpdatedTs,
 			&taskCheckRun.TaskID,
+			&taskCheckRun.TaskVersion,
 			&taskCheckRun.Status,
 			&taskCheckRun.Type,
 			&taskCheckRun.Code,

@@ -101,6 +101,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               api.SystemBotID,
 					TaskID:                  task.ID,
+					TaskVersion:             task.UpdatedTs,
 					Type:                    api.TaskCheckDatabaseStatementSyntax,
 					Payload:                 string(payload),
 					SkipIfAlreadyTerminated: false,
@@ -117,6 +118,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               api.SystemBotID,
 					TaskID:                  task.ID,
+					TaskVersion:             task.UpdatedTs,
 					Type:                    api.TaskCheckDatabaseStatementCompatibility,
 					Payload:                 string(payload),
 					SkipIfAlreadyTerminated: false,

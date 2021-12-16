@@ -922,6 +922,7 @@ CREATE TABLE task_check_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
+    task_version BIGINT NOT NULL REFERENCES task (updated_ts),
     `status` TEXT NOT NULL CHECK (
         `status` IN (
             'RUNNING',
