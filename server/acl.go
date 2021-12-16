@@ -27,7 +27,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 	return func(c echo.Context) error {
 		ctx := context.Background()
 		// Skips auth, actuator, plan
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") || strings.HasPrefix(c.Path(), "/api/plan") {
+		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
 			return next(c)
 		}
 
