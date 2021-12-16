@@ -110,7 +110,7 @@ interface LocalState {
 }
 
 export default {
-  name: "DashboardHeader",
+  name: "EditorHeader",
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
