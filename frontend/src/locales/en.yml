@@ -86,8 +86,10 @@ common:
   optional-placeholder: optional placeholder
   enabled: enabled
   default: default
-  version-control: 版本控制
+  version-control: version control
   restore: Restore
+  detailed-guide: detailed guide
+  workspace: workspace
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -454,3 +456,17 @@ repository:
     developer to review. Bytebase applies the SQL change after review approved.
   restore-ui-workflow-success: Successfully restored to UI workflow
   update-version-control-config-success: Successfully updated @:common.version-control config
+  setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
+  choose-git-provider: Choose Git provider
+  select-repository: Select repository
+  configure-deploy: Configure deploy
+  choose-git-provider-description: >-
+    Choose the Git provider where your database schema scripts (.sql) are
+    hosted. When you push the changed script to the Git repository, Bytebase
+    will automatically create a pipeline to apply the schema change to the
+    database.
+  choose-git-provider-visit-workspace: Visit {workspace} setting to add more Git providers.
+  choose-git-provider-contact-workspace-owner: >-
+    Contact your Bytebase owner if you want other Git providers to appear here.
+    Bytebase currently supports self-host GitLab EE/CE, and plan to add
+    GitLab.com, GitHub Enterprise and GitHub.com later.
