@@ -25,14 +25,27 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeysList retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+// FindLabelKeyList retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
+	ret, err := s.findLabelKeyList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+}
+
+func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -102,6 +115,102 @@ func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKey
 	}
 
 	return ret, nil
+}
+
+type labelValueUpsert struct {
+	rowStatus api.RowStatus
+	updaterID int
+	key       string
+	value     string
+}
+
+// PatchLabelKey patches a label key.
+func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
+	if err != nil {
+		return nil, err
+	}
+	var labelKey *api.LabelKey
+	for _, k := range ret {
+		if k.ID == patch.ID {
+			labelKey = k
+		}
+	}
+	if labelKey == nil {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key ID not found: %v", patch.ID))
+	}
+
+	// Generate label value upserts.
+	var upserts []labelValueUpsert
+	// Add all new values.
+	for _, v := range patch.ValueList {
+		upserts = append(upserts, labelValueUpsert{
+			rowStatus: api.Normal,
+			value:     v,
+		})
+	}
+	// Archive old values that are not in new values.
+	newValues := make(map[string]bool)
+	for _, v := range patch.ValueList {
+		newValues[v] = true
+	}
+	for _, v := range labelKey.ValueList {
+		if _, ok := newValues[v]; !ok {
+			upserts = append(upserts, labelValueUpsert{
+				rowStatus: api.Archived,
+				value:     v,
+			})
+		}
+	}
+
+	for _, upsert := range upserts {
+		if err := s.upsertLabelValue(ctx, tx, upsert); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	labelKey.ValueList = patch.ValueList
+	return labelKey, nil
+}
+
+func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labelValueUpsert) error {
+	// Upsert row into label_value
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO label_value (
+			row_status,
+			creator_id,
+			updater_id,
+			key,
+			value
+		)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(key, value) DO UPDATE SET
+				row_status = excluded.row_status,
+				creator_id = excluded.creator_id,
+				updater_id = excluded.updater_id
+		`,
+		upsert.rowStatus,
+		upsert.updaterID,
+		upsert.updaterID,
+		upsert.key,
+		upsert.value,
+	)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer row.Close()
+
+	return nil
 }
 
 // FindDatabaseLabelList finds the labels associated with the database.

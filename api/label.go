@@ -25,6 +25,21 @@ type LabelKey struct {
 type LabelKeyFind struct {
 }
 
+// LabelKeyPatch is the message to patch a label key.
+type LabelKeyPatch struct {
+	ID int `jsonapi:"primary,labelKeyPatch"`
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	// CreatorID is the ID of the creator.
+	UpdaterID int
+
+	// Related fields
+
+	// Domain specific fields
+	ValueList []string `jsonapi:"attr,valueList"`
+}
+
 // DatabaseLabel is the label associated with a database.
 type DatabaseLabel struct {
 	ID int `json:"-"`
@@ -73,8 +88,10 @@ type DatabaseLabelUpsert struct {
 
 // LabelService is the service for labels.
 type LabelService interface {
-	// FindLabelKeysList finds all available keys for labels.
-	FindLabelKeysList(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
+	// FindLabelKeyList finds all available keys for labels.
+	FindLabelKeyList(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
+	// PatchLabelKey patches a label key.
+	PatchLabelKey(ctx context.Context, patch *LabelKeyPatch) (*LabelKey, error)
 	// FindDatabaseLabelList finds all database labels matching the conditions, ascending by key.
 	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
 	// SetDatabaseLabelList sets a database's labels to new labels.
