@@ -19,6 +19,7 @@ declare module 'vue' {
     BBCheckbox: typeof import('./src/bbkit/BBCheckbox.vue')['default']
     BBContextMenu: typeof import('./src/bbkit/BBContextMenu.vue')['default']
     BBModal: typeof import('./src/bbkit/BBModal.vue')['default']
+    BBModalStack: typeof import('./src/bbkit/BBModalStack.vue')['default']
     BBNotification: typeof import('./src/bbkit/BBNotification.vue')['default']
     BBOutline: typeof import('./src/bbkit/BBOutline.vue')['default']
     BBSelect: typeof import('./src/bbkit/BBSelect.vue')['default']

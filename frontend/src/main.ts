@@ -4,6 +4,7 @@ import moment from "moment";
 import { createApp } from "vue";
 import App from "./App.vue";
 import i18n from "./plugins/i18n";
+import splitpanes from "./plugins/splitpanes";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -139,5 +140,6 @@ Promise.all([
     .use(store)
     .use(router)
     .use(i18n)
+    .use(splitpanes)
     .mount("#app");
 });
