@@ -17,8 +17,8 @@ type LabelKey struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Key    string   `jsonapi:"attr,key"`
-	Values []string `jsonapi:"attr,values"`
+	Key       string   `jsonapi:"attr,key"`
+	ValueList []string `jsonapi:"attr,valueList"`
 }
 
 // LabelKeyFind is the find request for label keys.

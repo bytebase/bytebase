@@ -95,7 +95,7 @@ func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKey
 		if !ok {
 			return nil, common.Errorf(common.Internal, fmt.Errorf("label value doesn't have a label key, key %q, value %q", key, value))
 		}
-		labelKey.Values = append(labelKey.Values, value)
+		labelKey.ValueList = append(labelKey.ValueList, value)
 	}
 	if err := valueRows.Err(); err != nil {
 		return nil, FormatError(err)
