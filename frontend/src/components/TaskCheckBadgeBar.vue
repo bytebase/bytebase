@@ -5,15 +5,7 @@
       :key="index"
     >
       <button
-        class="
-          inline-flex
-          items-center
-          px-3
-          py-0.5
-          rounded-full
-          text-sm
-          border border-control-border
-        "
+        class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
         :class="buttonStyle(checkRun)"
         @click.prevent="selectTaskCheckRun(checkRun)"
       >
@@ -73,14 +65,15 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../types";
 
 interface LocalState {
   selectedTaskCheckRun?: TaskCheckRun;
 }
 
-export default {
+export default defineComponent({
   name: "TaskCheckBadgeBar",
   props: {
     taskCheckRunList: {
@@ -97,10 +90,13 @@ export default {
     },
     selectedTaskCheckRun: {
       type: Object as PropType<TaskCheckRun>,
+      default: undefined,
     },
   },
   emits: ["select-task-check-run"],
   setup(props, { emit }) {
+    const { t } = useI18n();
+
     const state = reactive<LocalState>({
       selectedTaskCheckRun: props.selectedTaskCheckRun,
     });
@@ -222,15 +218,15 @@ export default {
     const name = (taskCheckRun: TaskCheckRun): string => {
       switch (taskCheckRun.type) {
         case "bb.task-check.database.statement.fake-advise":
-          return "Fake";
+          return t("task.check-type.fake");
         case "bb.task-check.database.statement.syntax":
-          return "Syntax";
+          return t("task.check-type.syntax");
         case "bb.task-check.database.statement.compatibility":
-          return "Compatibility";
+          return t("task.check-type.compatibility");
         case "bb.task-check.database.connect":
-          return "Connection";
+          return t("task.check-type.connection");
         case "bb.task-check.instance.migration-schema":
-          return "Migration schema";
+          return t("task.check-type.migration-schema");
       }
     };
 
@@ -247,5 +243,5 @@ export default {
       selectTaskCheckRun,
     };
   },
-};
+});
 </script>

@@ -6,7 +6,7 @@
       :disabled="!allowCreate"
       @click.prevent="doCreate"
     >
-      Create
+      {{ $t("common.create") }}
     </button>
   </template>
   <template v-else>
@@ -23,7 +23,7 @@
           :class="transition.buttonClass"
           @click.prevent="tryStartTaskStatusTransition(transition)"
         >
-          {{ transition.buttonName }}
+          {{ $t(transition.buttonName) }}
         </button>
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
@@ -48,7 +48,7 @@
               role="menuitem"
               @click.prevent="tryStartIssueStatusTransition(transition)"
             >
-              {{ transition.buttonName }}
+              {{ $t(transition.buttonName) }}
             </div>
           </template>
         </BBContextMenu>
@@ -69,12 +69,12 @@
             :disabled="!allowIssueStatusTransition(transition)"
             @click.prevent="tryStartIssueStatusTransition(transition)"
           >
-            {{ transition.buttonName }}
+            {{ $t(transition.buttonName) }}
           </button>
         </template>
         <template v-if="allowRollback">
           <button type="button" class="btn-primary" @click.prevent="doRollback">
-            Rollback
+            {{ $t("common.rollback") }}
           </button>
         </template>
       </div>
@@ -116,7 +116,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, computed, reactive } from "vue";
+import { PropType, computed, reactive, defineComponent } from "vue";
 import { Store, useStore } from "vuex";
 import StatusTransitionForm from "../components/StatusTransitionForm.vue";
 import {
@@ -142,6 +142,7 @@ import {
 } from "../types";
 import { IssueTemplate } from "../plugins";
 import isEmpty from "lodash-es/isEmpty";
+import { useI18n } from "vue-i18n";
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
@@ -160,7 +161,7 @@ export type IssueContext = {
   issue: Issue | IssueCreate;
 };
 
-export default {
+export default defineComponent({
   name: "IssueStatusTransitionButtonGroup",
   components: {
     StatusTransitionForm,
@@ -186,6 +187,7 @@ export default {
   emits: ["create", "rollback", "change-issue-status", "change-task-status"],
 
   setup(props, { emit }) {
+    const { t } = useI18n();
     const store = useStore();
 
     const updateStatusModalState = reactive<UpdateStatusModalState>({
@@ -237,28 +239,32 @@ export default {
 
     const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
       updateStatusModalState.mode = "TASK";
-      updateStatusModalState.okText = transition.buttonName;
+      updateStatusModalState.okText = t(transition.buttonName);
       const task = currentTask.value;
       switch (transition.type) {
         case "RUN":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Run '${task.name}'?`;
+          updateStatusModalState.title = `${t("common.run")} '${task.name}'?`;
           break;
         case "APPROVE":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Approve '${task.name}'?`;
+          updateStatusModalState.title = `${t("common.approve")} '${
+            task.name
+          }'?`;
           break;
         case "RETRY":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Retry '${task.name}'?`;
+          updateStatusModalState.title = `${t("common.retry")} '${task.name}'?`;
           break;
         case "CANCEL":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Cancel '${task.name}'?`;
+          updateStatusModalState.title = `${t("common.cancel")} '${
+            task.name
+          }'?`;
           break;
         case "SKIP":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `Skip '${task.name}'?`;
+          updateStatusModalState.title = `${t("common.skip")} '${task.name}'?`;
           break;
       }
       updateStatusModalState.transition = transition;
@@ -355,19 +361,25 @@ export default {
       transition: IssueStatusTransition
     ) => {
       updateStatusModalState.mode = "ISSUE";
-      updateStatusModalState.okText = transition.buttonName;
+      updateStatusModalState.okText = t(transition.buttonName);
       switch (transition.type) {
         case "RESOLVE":
           updateStatusModalState.style = "SUCCESS";
-          updateStatusModalState.title = "Resolve issue?";
+          updateStatusModalState.title = t(
+            "issue.status-transition.modal.resolve"
+          );
           break;
         case "CANCEL":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Cancel this entire issue?";
+          updateStatusModalState.title = t(
+            "issue.status-transition.modal.cancel"
+          );
           break;
         case "REOPEN":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = "Reopen issue?";
+          updateStatusModalState.title = t(
+            "issue.status-transition.modal.reopen"
+          );
           break;
       }
       updateStatusModalState.transition = transition;
@@ -443,5 +455,5 @@ export default {
       doRollback,
     };
   },
-};
+});
 </script>

@@ -176,7 +176,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     {
       type: "RUN",
       to: "RUNNING",
-      buttonName: "Run",
+      buttonName: "common.run",
       buttonClass: "btn-primary",
     },
   ],
@@ -185,7 +185,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     {
       type: "APPROVE",
       to: "PENDING",
-      buttonName: "Approve",
+      buttonName: "common.approve",
       buttonClass: "btn-primary",
     },
   ],
@@ -194,7 +194,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     {
       type: "RETRY",
       to: "RUNNING",
-      buttonName: "Retry",
+      buttonName: "common.retry",
       buttonClass: "btn-primary",
     },
   ],
@@ -203,7 +203,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     {
       type: "CANCEL",
       to: "PENDING",
-      buttonName: "Cancel",
+      buttonName: "common.cancel",
       buttonClass: "btn-primary",
     },
   ],

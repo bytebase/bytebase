@@ -1,6 +1,14 @@
 common:
+  sign-in: 登陆
+  sign-up: 注册
+  email: 邮箱
+  username: 用户名
+  password: 密码
+  activate: 激活
+  activity: 活动
   save: 保存
   cancel: 取消
+  comment: 评论
   home: 主页
   settings: 设置
   project: 项目
@@ -8,6 +16,7 @@ common:
   help: 帮助
   database: 数据库
   databases: 数据库
+  description: 描述
   instance: 实例
   instances: 实例
   environment: 环境
@@ -18,12 +27,23 @@ common:
   archive: 归档
   quickstart: 快速入门
   logout: 登出
+  close: 关闭
+  latest: 最新
+  error: 错误
+  canceled: 已取消
+  approval: 批准
+  approve: 批准
+  done: 完成
+  create: 创建
+  rollback: 回滚
+  run: 运行
+  retry: 重试
+  skip: 跳过
+  reopen: 重开
   dismiss: 关闭
   back: 返回
   next: 下一步
-  skip: 跳过
   edit: 编辑
-  create: 创建
   update: 更新
   visit: 访问
   role:
@@ -48,7 +68,12 @@ common:
   updated-at: 更新于
   commit: 提交
   statement: 语句
+  sql-statement: "SQL @:{'common.statement'}"
   snapshot: 快照
+  status: 状态
+  stage: 阶段
+  sql: SQL
+  unassigned: 未指派
   new: 创建
   add: 添加
   query: 查询
@@ -69,10 +94,27 @@ kbar:
   preferences:
     common: 偏好设置
     change-language: 更改语言…
+task:
+  checking: 检查中…
+  run-task: 运行检查
+  check-result:
+    title: "{name} 的检查结果"
+  check-type:
+    fake: Fake
+    syntax: 语法
+    compatibility: 兼容性
+    connection: 连接
+    migration-schema: 迁移 schema
+  comment: 评论
+  invoker: 执行者
+  started: 开始于
+  ended: 结束于
+  view-migration: 查看迁移
+  view-migration-history: 查看迁移历史
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
-  action: 5 秒部署你自己的服务
+  action: 5 秒部署您自己的服务
 intro:
   content: >-
     Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进
@@ -107,7 +149,7 @@ settings:
     url-section: SQL Console URL
     url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: >-
-      如果你的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
+      如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
   members:
@@ -118,10 +160,10 @@ settings:
     add: 添加
     invites: 发送邀请
     invited: 已邀请
-    yourself: 你自己
+    yourself: 您自己
     upgrade: 升级付费方案来解锁其他角色
     select-role: 选择角色
-    not-assigned: 未指定
+    not-assigned: 未指派
     table:
       account: 账户
       role: 角色
@@ -138,15 +180,86 @@ settings:
       not-allow-remove: 不能移除最后一个所有者
 activity:
   name: 名称
-  comment: 注释
+  comment: 评论
   created: 创建于
   invoker: 执行者
+  sentence:
+    created-issue: "创建工单"
+    commented: 评论
+    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
+    assigned-issue: "将工单指派给 {newName}"
+    unassigned-issue: "将工单由 {oldName} 解除指派"
+    invalid-assignee-update: "无效的指派操作"
+    changed-description: "修改描述"
+    changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
+    unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
+    set-to: '将 {name} 设置为 "{newValue}"'
+    changed-update: "修改 {name}"
+    reopened-issue: "重开工单"
+    resolved-issue: "解决工单"
+    canceled-issue: "取消工单"
+    empty: ""
+    changed: 修改
+    updated: 更新
+    canceled: 取消
+    approved: 批准
+    started: 开始
+    completed: 完成
+    failed: 失败
+    task-name: "任务 {name}"
+    committed-to-at: "提交 {file} 到 {branch}{'@'}{repo}"
+  subject-prefix:
+    task: "任务"
+issue:
+  waiting-approval: 等待批准
+  opened-by-at: "{id} 由 {creator} 开启于 {time}"
+  commit-by-at: "{id} {title} 由 {author} 提交于 {time}"
+  status-transition:
+    modal:
+      resolve: 解决工单?
+      cancel: 取消整个工单?
+      reopen: 重开工单?
+    dropdown:
+      resolve: 解决
+      cancel: 取消工单
+      reopen: 重开
+    form:
+      note: 笔记
+      placeholder: （可选）添加一段笔记…
+  subscribe: 订阅
+  unsubscribe: 取消订阅
+  subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
+  apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
+  add-sql-statement: "添加 SQL @:{'common.statement'}…"
+  optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
+  rollback-sql: "@:{'common.rollback'} SQL"
+  add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
+  edit-description: 编辑描述
+  add-some-description: 添加一些描述…
+  add-a-comment: 添加评论
+  edit-comment: 编辑评论
+  leave-a-comment: 发表一条评论…
+  view-commit: 查看提交
+  search-issue-name: 搜索工单名称
+  table:
+    open: 开启中
+    closed: 已关闭
+    status: 状态
+    project: 项目
+    name: 名称
+    environment: 环境
+    db: 数据库
+    progress: 进度
+    updated: 更新于
+    assignee: 审核人
+  stage-select:
+    active: "{name}（活动中）"
 alter-schema:
-  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将你导航到相应的 Git 仓库以创建 schema 变更。
-  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将你导航到对应的 Git 仓库以创建 schema 变更。
+  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以创建 schema 变更。
+  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以创建 schema 变更。
   alter-single-db: 变更单个数据库
   alter-multiple-db: 变更多个数据库
-  alter-multiple-db-info: 针对每个环境，你可以选择一个数据库进行变更或者直接跳过该环境，这样你就可以在一条流水线上把 schema 变更逐步作用到多个环境。
+  alter-multiple-db-info: 针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把 schema 变更逐步作用到多个环境。
 quick-action:
   alter-schema: 变更 Schema
   create-db: 创建数据库
@@ -197,6 +310,31 @@ quick-start:
   notice:
     title: 快速入门导览已关闭
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
+auth:
+  sign-up:
+    title: 注册您的账号
+    admin-title: 设置 {account}
+    admin-account: 管理员账号
+    create-admin-account: 注册管理员
+    confirm-password: 确认密码
+    confirm-password-placeholder: 确认您的密码
+    password-mismatch: 不匹配
+    existing-user: 已有账号?
+  sign-in:
+    title: 登陆您的账号
+    forget-password: 忘记密码?
+    new-user: 第一次使用 Bytebase?
+  password-forget:
+    title: 忘记了您的密码？
+    content: 请联系的您的 Bytebase 管理员重置密码
+    return-to-sign-in: 返回登陆
+  password-reset:
+    title: 重置您的密码
+    content: 我们会将重置密码链接发送到您的邮箱
+    send-reset-link: 发送重置链接
+    return-to-sign-in: 返回登陆
+  activate:
+    title: 激活您的 {type} 账号
 policy:
   approval:
     name: 审批策略
@@ -228,9 +366,9 @@ migration-history:
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
   establish-baseline-description: >-
-    Bytebase 将用当前的 schema 作为新的基线。你应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS
     工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
   establish-database-baseline: 建立「{name}」基线
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
-  contact-dba: 请联系你的 DBA 进行配置。
+  contact-dba: 请联系您的 DBA 进行配置。

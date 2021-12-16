@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
+
 	// embed will embeds the migration schema.
 	_ "embed"
 
@@ -1225,10 +1227,7 @@ func getPgSchemas(txn *sql.Tx) ([]*pgSchema, error) {
 
 // pgSystemSchema returns whether the schema is a system or user defined schema.
 func pgSystemSchema(s string) bool {
-	if strings.HasPrefix(s, "pg_toast") {
-		return true
-	}
-	if strings.HasPrefix(s, "pg_temp") {
+	if common.HasPrefixes(s, "pg_toast", "pg_temp") {
 		return true
 	}
 	switch s {
