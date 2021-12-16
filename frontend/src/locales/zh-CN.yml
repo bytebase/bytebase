@@ -385,8 +385,8 @@ anomaly:
   types:
     connection-failure: 连接失败
     missing-migration-schema: 缺少迁移 Schema
-    schema-drift: null
-    backup-enforcement-viloation: null
+    schema-drift: Schema 偏差
+    backup-enforcement-viloation: 违反备份策略约束
     missing-backup: 缺少备份
   action:
     check-instance: 检查实例
