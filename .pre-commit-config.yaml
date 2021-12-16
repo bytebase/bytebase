@@ -1,4 +1,11 @@
 repos:
+- repo: https://github.com/pre-commit/mirrors-eslint
+  rev: v8.3.0
+  hooks:
+    - id: eslint
+      files: frontend/.+\.([jt]sx?|vue)$
+      types: [file]
+      args: [--fix]
 - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
   rev: v2.2.0
   hooks:
