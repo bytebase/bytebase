@@ -74,7 +74,7 @@ func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind
 	// Find key values.
 	valueRows, err := tx.QueryContext(ctx, `
 		SELECT
-		    key,
+			key,
 			value
 		FROM label_value`,
 	)
@@ -93,7 +93,7 @@ func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind
 		}
 		labelKey, ok := keymap[key]
 		if !ok {
-			return nil, common.Errorf(common.Internal, fmt.Errorf("Label value doesn't have a label key, key %q, value %q", key, value))
+			return nil, common.Errorf(common.Internal, fmt.Errorf("label value doesn't have a label key, key %q, value %q", key, value))
 		}
 		labelKey.Values = append(labelKey.Values, value)
 	}
