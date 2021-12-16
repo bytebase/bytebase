@@ -46,6 +46,11 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 }
 
 func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -54,7 +59,9 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 			updater_id,
 			updated_ts,
 		    key
-		FROM label_key`,
+		FROM label_key
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -89,7 +96,9 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 		SELECT
 			key,
 			value
-		FROM label_value`,
+		FROM label_value
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -152,6 +161,8 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	for _, v := range patch.ValueList {
 		upserts = append(upserts, labelValueUpsert{
 			rowStatus: api.Normal,
+			updaterID: patch.UpdaterID,
+			key:       labelKey.Key,
 			value:     v,
 		})
 	}
@@ -164,6 +175,8 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 		if _, ok := newValues[v]; !ok {
 			upserts = append(upserts, labelValueUpsert{
 				rowStatus: api.Archived,
+				updaterID: patch.UpdaterID,
+				key:       labelKey.Key,
 				value:     v,
 			})
 		}
@@ -185,7 +198,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 
 func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
-	row, err := tx.QueryContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO label_value (
 			row_status,
 			creator_id,
@@ -204,12 +217,9 @@ func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labe
 		upsert.updaterID,
 		upsert.key,
 		upsert.value,
-	)
-	if err != nil {
+	); err != nil {
 		return FormatError(err)
 	}
-	defer row.Close()
-
 	return nil
 }
 
