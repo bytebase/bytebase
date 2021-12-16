@@ -34,6 +34,7 @@ import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 const OVERVIEW_TAB = 0;
 const WEBHOOK_TAB = 4;
@@ -42,15 +43,6 @@ type ProjectTabItem = {
   name: string;
   hash: string;
 };
-
-const projectTabItemList: ProjectTabItem[] = [
-  { name: "Overview", hash: "overview" },
-  { name: "Migration History", hash: "migration-history" },
-  { name: "Activities", hash: "activity" },
-  { name: "Version Control", hash: "version-control" },
-  { name: "Webhooks", hash: "webhook" },
-  { name: "Settings", hash: "setting" },
-];
 
 interface LocalState {
   selectedIndex: number;
@@ -73,8 +65,18 @@ export default {
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const projectTabItemList: ProjectTabItem[] = [
+      { name: "Overview", hash: "overview" },
+      { name: "Migration History", hash: "migration-history" },
+      { name: t("common.activities"), hash: "activity" },
+      { name: t("common.version-control"), hash: "version-control" },
+      { name: t("common.webhook"), hash: "webhook" },
+      { name: t("common.settings"), hash: "setting" },
+    ];
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,

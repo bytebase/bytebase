@@ -1,5 +1,10 @@
 common:
+  version-control: Version Control
+  webhooks: Webhooks
+  key: Key
+  workflow: Workflow
   activity: Activity
+  activities: Activities
   sign-in: Sign in
   sign-up: Sign up
   email: Email
@@ -8,7 +13,7 @@ common:
   activate: Activate
   save: Save
   cancel: Cancel
-  comment: 评论
+  comment: Comment
   home: Home
   settings: Settings
   project: Project
@@ -158,7 +163,7 @@ settings:
     workspace: Workspace
     general: General
     members: Members
-    version-control: Version Control
+    version-control: "@:common.version-control"
     plans: Plans
   profile:
     email: Email
@@ -523,3 +528,66 @@ anomaly:
     view-diff: View diff
   last-seen: Last seen
   first-seen: First seen
+project:
+  tab-item:
+    migration-history: Migration History
+
+  dashboard:
+    modal:
+      title: How to setup \'Project\' ?
+      content: >-
+        Bytebase project is similar to the project concept in other common dev tools.
+
+
+        A project has its own members, and every issue and database always belongs to a single project.
+
+
+        A project can also be configured to link to a repository to enable version control workflow.
+      cancel: Dismiss
+      confirm: Do not show again
+    search-bar-placeholder: Search project name
+  table:
+    key: "@:common.key"
+    name: "@:common.name"
+    created-at: Created At
+  create-modal:
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
+    key-hint:  (Uppercase letters identifying your project)
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+  version-control:
+    title: Current @.lower:{'common.workflow'}
+    ui-workflow:
+      title: UI workflow (no version control)
+      content: >-
+        Classic SQL Review workflow where the developer submits a SQL
+        review ticket directly from Bytebase and waits for the assigned
+        DBA or peer developer to review. Bytebase applies the SQL change
+        after review approved.
+    version-control-workflow:
+      title: Version control workflow
+      content: >-
+        Database migration scripts are stored in a git repository. To
+        make schema changes, a developer would create a migration script
+        and submit for review in the corresponding VCS such as GitLab.
+        After the script is approved and merged into the configured
+        branch, Bytebase will automatically kicks off the task to apply
+        the new schema change.
+    configure-version-control: Configure version control
+    wizard:
+      enabled-version-control: Successfully enabled version control workflow for {projectName}
+      changed-repo: Successfully changed repository for {projectName}
+  overview:
+    view-all: View all
+    view-all-closed: View all closed
+    recent-activity: "Recent @.lower:{'common.activities'}"
+    in-progress: In progress
+    recently-closed: Recently Closed
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema.
+      Newly synced databases are first placed in this default project.
+      User should transfer them to the proper application project.
+    no-db-prompt: >-
+      No database belongs to this project.
+      You can add database by clicking {newDb} or {transferInDb} from the top action bar.
