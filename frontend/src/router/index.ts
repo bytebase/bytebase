@@ -743,7 +743,7 @@ const routes: Array<RouteRecordRaw> = [
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/index.vue"),
+        component: () => import("../views/SqlEditor/index.vue"),
         props: true,
       },
     ],

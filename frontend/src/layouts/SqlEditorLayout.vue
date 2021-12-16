@@ -41,7 +41,7 @@
 <script lang="ts" setup>
 import { useStore } from "vuex";
 import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
-import EditorHeader from "../views/sql-editor/EditorHeader.vue";
+import EditorHeader from "../views/SqlEditor/EditorHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import { ServerInfo } from "../types";
 import { computed } from "vue";
