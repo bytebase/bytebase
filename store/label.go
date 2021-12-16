@@ -25,15 +25,15 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeysList retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+// FindLabelKeyList retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	ret, err := s.findLabelKeysList(ctx, tx, find)
+	ret, err := s.findLabelKeyList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (s *LabelService) FindLabelKeysList(ctx context.Context, find *api.LabelKey
 	return ret, nil
 }
 
-func (s *LabelService) findLabelKeysList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -132,7 +132,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	}
 	defer tx.Rollback()
 
-	ret, err := s.findLabelKeysList(ctx, tx, &api.LabelKeyFind{})
+	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
 	if err != nil {
 		return nil, err
 	}
