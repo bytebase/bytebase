@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -23,8 +25,8 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 	return &LabelService{l: logger, db: db}
 }
 
-// FindLabelKeyList retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+// FindLabelKeys retrieves a list of label keys for labels based on find.
+func (s *LabelService) FindLabelKeys(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -48,6 +50,7 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 
 	// Iterate over result set and deserialize rows into list.
 	var ret []*api.LabelKey
+	keymap := make(map[string]*api.LabelKey)
 	for rows.Next() {
 		var labelKey api.LabelKey
 		if err := rows.Scan(
@@ -62,14 +65,46 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 		}
 
 		ret = append(ret, &labelKey)
+		keymap[labelKey.Key] = &labelKey
 	}
 	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	// Find key values.
+	valueRows, err := tx.QueryContext(ctx, `
+		SELECT
+		    key,
+			value
+		FROM label_value`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer valueRows.Close()
+
+	for valueRows.Next() {
+		var key, value string
+		if err := valueRows.Scan(
+			&key,
+			&value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		labelKey, ok := keymap[key]
+		if !ok {
+			return nil, common.Errorf(common.Internal, fmt.Errorf("Label value doesn't have a label key, key %q, value %q", key, value))
+		}
+		labelKey.Values = append(labelKey.Values, value)
+	}
+	if err := valueRows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return ret, nil
 }
 
+// FindDatabaseLabels finds the labels associated with the database.
 func (s *LabelService) FindDatabaseLabels(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -199,6 +234,7 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 	return &databaseLabel, nil
 }
 
+// SetDatabaseLabels sets the labels for a database.
 func (s *LabelService) SetDatabaseLabels(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
 	oldLabels, err := s.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &databaseID,
