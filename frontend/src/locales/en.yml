@@ -139,9 +139,15 @@ intro:
   doc: doc
   issue: issue
 bbkit:
-  alert:
+  common:
     ok: OK
     cancel: Cancel
+    back: Back
+    next: Next
+    finish: Finish
+    step: Step
+  attention:
+    default: Attention needed
 settings:
   sidebar:
     account: Account
@@ -470,3 +476,8 @@ repository:
     Contact your Bytebase owner if you want other Git providers to appear here.
     Bytebase currently supports self-host GitLab EE/CE, and plan to add
     GitLab.com, GitHub Enterprise and GitHub.com later.
+  select-repository-attention-gitlab: >-
+    Bytebase only lists GitLab projects granting you at least the 'Maintainer'
+    role, which allows to configure the project webhook to observe the code push
+    event.
+  select-repository-search: Search repository
