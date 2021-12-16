@@ -78,3 +78,4 @@ p, DBA, /plan, GET
 p, DBA, /plan, PATCH
 p, DBA, /setting, GET
 p, DBA, /label, GET
+p, DBA, /label/{id}, PATCH
