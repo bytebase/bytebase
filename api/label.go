@@ -23,11 +23,13 @@ type LabelKey struct {
 
 // LabelKeyFind is the find request for label keys.
 type LabelKeyFind struct {
+	// RowStatus is the row status filter.
+	RowStatus *RowStatus
 }
 
 // LabelKeyPatch is the message to patch a label key.
 type LabelKeyPatch struct {
-	ID int `jsonapi:"primary,labelKeyPatch"`
+	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
