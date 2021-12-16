@@ -82,6 +82,10 @@ export default defineComponent({
   name: "TaskCheckBar",
   components: { TaskCheckBadgeBar, TaskCheckRunPanel },
   props: {
+    allowRunTask: {
+      type: Boolean,
+      default: true,
+    },
     task: {
       required: true,
       type: Object as PropType<Task>,
@@ -124,6 +128,7 @@ export default defineComponent({
     });
 
     const showRunCheckButton = computed((): boolean => {
+      if (!props.allowRunTask) return false;
       return (
         props.task.type == "bb.task.database.schema.update" &&
         (props.task.status == "PENDING" ||

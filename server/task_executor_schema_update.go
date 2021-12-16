@@ -177,7 +177,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, server, repository, payload.VCSPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -243,14 +243,20 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalID, url.QueryEscape(latestSchemaFile))
 	getFilePath := filePath + "?ref=" + url.QueryEscape(branch)
 
 	getResp, err := gitlab.GET(
 		repository.VCS.InstanceURL,
 		getFilePath,
-		repository.AccessToken,
+		&repository.AccessToken,
+		gitlab.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			RefreshToken: repository.RefreshToken,
+		},
+		server.refreshToken(ctx, repository.ID),
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch latest schema file from %s, err: %w", repository.VCS.InstanceURL, err)
@@ -291,7 +297,18 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 			return "", fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
-		resp, err := gitlab.POST(repository.VCS.InstanceURL, filePath, repository.AccessToken, bytes.NewBuffer(body))
+		resp, err := gitlab.POST(
+			repository.VCS.InstanceURL,
+			filePath,
+			&repository.AccessToken,
+			bytes.NewBuffer(body),
+			gitlab.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				RefreshToken: repository.RefreshToken,
+			},
+			server.refreshToken(ctx, repository.ID),
+		)
 		if err != nil {
 			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, err: %w", filePath, mi.Version, mi.Database, err)
 		}
@@ -317,7 +334,18 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 			return "", fmt.Errorf("failed to marshal file request %s after applying migration %s to %q", filePath, mi.Version, mi.Database)
 		}
 
-		resp, err := gitlab.PUT(repository.VCS.InstanceURL, filePath, repository.AccessToken, bytes.NewBuffer(body))
+		resp, err := gitlab.PUT(
+			repository.VCS.InstanceURL,
+			filePath,
+			&repository.AccessToken,
+			bytes.NewBuffer(body),
+			gitlab.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				RefreshToken: repository.RefreshToken,
+			},
+			server.refreshToken(ctx, repository.ID),
+		)
 		if err != nil {
 			return "", fmt.Errorf("failed to create file %s after applying migration %s to %q, error: %w", filePath, mi.Version, mi.Database, err)
 		}
@@ -337,7 +365,13 @@ func writeBackLatestSchema(server *Server, repository *api.Repository, pushEvent
 	getResp, err = gitlab.GET(
 		repository.VCS.InstanceURL,
 		getFilePath,
-		repository.AccessToken,
+		&repository.AccessToken,
+		gitlab.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			RefreshToken: repository.RefreshToken,
+		},
+		server.refreshToken(ctx, repository.ID),
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch latest schema file after update, VCS instance: %s, err: %w", repository.VCS.InstanceURL, err)

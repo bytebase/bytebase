@@ -160,9 +160,8 @@ type main struct {
 }
 
 func preStart() error {
-	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
-		error := fmt.Errorf("--host %s must start with http:// or https://", host)
-		return error
+	if !common.HasPrefixes(host, "http://", "https://") {
+		return fmt.Errorf("--host %s must start with http:// or https://", host)
 	}
 
 	// Convert to absolute path if relative path is supplied.

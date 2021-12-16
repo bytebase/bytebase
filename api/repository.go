@@ -109,6 +109,9 @@ type RepositoryPatch struct {
 	BaseDirectory      *string `jsonapi:"attr,baseDirectory"`
 	FilePathTemplate   *string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
+	AccessToken        *string
+	ExpiresTs          *int64
+	RefreshToken       *string
 }
 
 // RepositoryDelete is the API message for deleting a repository.
