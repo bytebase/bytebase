@@ -1,25 +1,11 @@
-<!--
-  rgba(209, 213, 219, 0.8) is bg-gray-300
--->
 <template>
-  <div
-    class="fixed inset-0 w-full h-screen flex items-center justify-center z-40"
-    style="background-color: rgba(209, 213, 219, 0.8)"
-  >
+  <teleport to="#bb-modal-stack">
     <div
-      class="
-        relative
-        max-h-screen
-        w-full
-        max-w-max
-        bg-white
-        shadow-lg
-        rounded-lg
-        p-8
-        flex
-        space-y-6
-        divide-y divide-block-border
-      "
+      class="bb-modal"
+      :style="style"
+      :data-bb-modal-id="id"
+      :data-bb-modal-index="index"
+      :data-bb-modal-active="active"
     >
       <div>
         <div class="absolute left-0 top-0 my-4 mx-8 text-xl text-main">
@@ -46,13 +32,14 @@
         <slot />
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { computed, defineComponent, onMounted, onUnmounted } from "vue";
+import { useModalStack } from "./BBModalStack.vue";
 
-export default {
+export default defineComponent({
   name: "BBModal",
   props: {
     title: {
@@ -70,11 +57,21 @@ export default {
   },
   emits: ["close"],
   setup(props, { emit }) {
+    const { stack, id, index, active } = useModalStack();
+
+    const style = computed(() => ({
+      "z-index": 40 + index.value, // "40 + " because the container in BBModalStack is z-40
+    }));
+
     const close = () => {
       emit("close");
     };
 
     const escHandler = (e: KeyboardEvent) => {
+      if (!active.value) {
+        // only to close the topmost modal when pressing ESC
+        return;
+      }
       if (e.code == "Escape") {
         close();
       }
@@ -89,8 +86,19 @@ export default {
     });
 
     return {
+      style,
       close,
+      stack,
+      id,
+      index,
+      active,
     };
   },
-};
+});
 </script>
+
+<style scoped>
+.bb-modal {
+  @apply absolute max-h-screen w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border pointer-events-auto;
+}
+</style>
