@@ -29,7 +29,7 @@ export type ModalStackContext = {
   autoIncrement: number;
 };
 
-const CONTEXT_KEY = "$bbModalStack";
+const CONTEXT_KEY = "bb.modal-stack";
 
 export function useModalStack() {
   const context = inject<ModalStackContext>(CONTEXT_KEY)!;
