@@ -46,7 +46,7 @@
     <div>
       <div class="flex items-center space-x-3">
         <div
-          v-if="showSwitchPlan"
+          v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">Plan</span>
@@ -112,12 +112,7 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <!-- TODO test for now, will delete -->
-        <div
-          v-if="showSwitchPlan"
-          class="cursor-pointer"
-          @click="toggleLocales"
-        >
+        <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
@@ -181,11 +176,11 @@ import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useLocalStorage } from "@vueuse/core";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner, isDev } from "../utils";
+import { useLanguage } from "../composables/useLanguage";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -195,9 +190,10 @@ export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
   setup() {
-    const { t, availableLocales, locale } = useI18n();
+    const { t, availableLocales } = useI18n();
     const store = useStore();
     const router = useRouter();
+    const { setLocale, toggleLocales } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
@@ -214,7 +210,7 @@ export default {
       );
     });
 
-    const showSwitchPlan = computed((): boolean => {
+    const isDevFeatures = computed((): boolean => {
       return isDev();
     });
 
@@ -316,25 +312,6 @@ export default {
     ]);
     useRegisterActions(kbarActions);
 
-    const storage = useLocalStorage("bytebase_options", {}) as any;
-
-    const setLocale = (lang: string) => {
-      locale.value = lang;
-      storage.value = {
-        appearance: {
-          language: lang,
-        },
-      };
-    };
-
-    const toggleLocales = () => {
-      // TODO change to some real logic
-      const locales = availableLocales;
-      const nextLocale =
-        locales[(locales.indexOf(locale.value) + 1) % locales.length];
-      setLocale(nextLocale);
-    };
-
     const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>
       defineAction({
@@ -365,7 +342,7 @@ export default {
       currentUser,
       currentPlan,
       showDBAItem,
-      showSwitchPlan,
+      isDevFeatures,
       inboxSummary,
       switchToOwner,
       switchToDBA,
