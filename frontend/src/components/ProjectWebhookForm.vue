@@ -125,7 +125,7 @@
         >
           {{
             $t("project.webhook.creation.desc", {
-              destination: $t("common.ding-talk"),
+              destination: $t("common.dingtalk"),
             }) +
             ". " +
             $t("project.webhook.creation.how-to-protect")
@@ -136,7 +136,7 @@
             class="normal-link"
             >{{
               $t("project.webhook.creation.view-doc", {
-                destination: $t("common.ding-talk"),
+                destination: $t("common.dingtalk"),
               })
             }}</a
           >.
@@ -144,7 +144,7 @@
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.feishu'">
           {{
             $t("project.webhook.creation.desc", {
-              destination: $t("common.fei-shu"),
+              destination: $t("common.feishu"),
             }) +
             ". " +
             $t("project.webhook.creation.how-to-protect")
@@ -156,7 +156,7 @@
             class="normal-link"
             >{{
               $t("project.webhook.creation.view-doc", {
-                destination: $t("common.fei-shu"),
+                destination: $t("common.feishu"),
               })
             }}</a
           >.
@@ -309,11 +309,11 @@ export default {
       } else if (state.webhook.type == "bb.plugin.webhook.teams") {
         return `${t("common.teams")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.dingtalk") {
-        return `${t("common.ding-talk")} Webhook`;
+        return `${t("common.dingtalk")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.feishu") {
-        return `${t("common.fei-shu")} Webhook`;
+        return `${t("common.feishu")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
-        return `${t("common.we-com")} Webhook`;
+        return `${t("common.wecom")} Webhook`;
       }
 
       return "My Webhook";

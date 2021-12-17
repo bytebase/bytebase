@@ -5,9 +5,9 @@ common:
   slack: Slack
   discord: Discord
   teams: Teams
-  ding-talk: dingtalk
-  fei-shu: feishu
-  we-com: wecom
+  dingtalk: 钉钉
+  feishu: 飞书
+  wecom: 企业微信
   overview: 概览
   migration-history: 迁移历史
   webhooks: Webhook
