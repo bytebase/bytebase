@@ -5,9 +5,9 @@ common:
   slack: Slack
   discord: Discord
   teams: Teams
-  ding-talk: 钉钉
-  fei-shu: 飞书
-  we-com: 微信企业版
+  ding-talk: dingtalk
+  fei-shu: feishu
+  we-com: wecom
   overview: 概览
   migration-history: 迁移历史
   webhooks: Webhook
@@ -494,13 +494,13 @@ project:
         在 Bytebase 中，项目的概念与其他常见的的开发工具类似
 
 
-        一个项目会有属于它的协作成员，并且每一个数据库和工单总是归属于某一个项目
+        一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目
 
 
-        同时，一个项目可以通过配置链接到某一个仓库，并以此来进行版本控制
+        同时，一个项目可以关联一个代码仓库，并以此来进行版本控制
       cancel: 关闭
       confirm: 不再出现
-    search-bar-placeholder: 搜索的项目名称
+    search-bar-placeholder: 搜索项目名称
   table:
     key: "@:common.key"
     name: "@:common.name"
@@ -508,7 +508,7 @@ project:
   create-modal:
     project-name: "@:common.project @:common.name"
     key: "@:common.key"
-    key-hint:  (请使用大写字母来命名您的项目)
+    key-hint:  ( 请使用大写字母来命名您的项目 )
     cancel: "@:common.cancel"
     confirm: "@:common.create"
   overview:
@@ -534,13 +534,13 @@ project:
     no-webhook:
       title: 当前项目暂未配置 webhook
       content: >-
-        配置 webhook 来让 Bytedase 在多种任务完成后向您的外部系统推送通知
+        配置 webhook 来让 Bytebase 在完成任务后向您的外部系统推送通知
     creation:
       title: 创建 webhook
       desc:  >-
         为 {destination} 创建一个 webhook
       how-to-protect: >-
-        您可以通过添加 'Bytebase' 到您的 webhook 白名单中来保护您的 webhook
+        您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
       view-doc: '{destination} 的官方文档'
     deletion:
       btn-text: Delete this webhook
@@ -567,6 +567,6 @@ project:
     owner: "@.upper:commo project.setting.add-membern.role.owner"
     developer: "@.upper:common.role.developer"
     archive:
-      btn-text: 收藏这个项目
+      btn-text: 收藏这个@:common.project
     restore:
-      btn-text: 取消收藏这个项目
+      btn-text: 取消收藏这个@:common.project

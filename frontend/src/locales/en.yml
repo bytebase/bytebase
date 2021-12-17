@@ -173,7 +173,7 @@ settings:
     workspace: Workspace
     general: General
     members: Members
-    version-control: "@:common.version-control"
+    version-control: Version Control
     plans: Plans
   profile:
     email: Email
@@ -566,28 +566,6 @@ project:
     key-hint:  (Uppercase letters identifying your project)
     cancel: "@:common.cancel"
     confirm: "@:common.create"
-  version-control:
-    title: Current @.lower:{'common.workflow'}
-    ui-workflow:
-      title: UI workflow (no version control)
-      content: >-
-        Classic SQL Review workflow where the developer submits a SQL
-        review ticket directly from Bytebase and waits for the assigned
-        DBA or peer developer to review. Bytebase applies the SQL change
-        after review approved.
-    version-control-workflow:
-      title: Version control workflow
-      content: >-
-        Database migration scripts are stored in a git repository. To
-        make schema changes, a developer would create a migration script
-        and submit for review in the corresponding VCS such as GitLab.
-        After the script is approved and merged into the configured
-        branch, Bytebase will automatically kicks off the task to apply
-        the new schema change.
-    configure-version-control: Configure version control
-    wizard:
-      enabled-version-control: Successfully enabled version control workflow for {projectName}
-      changed-repo: Successfully changed repository for {projectName}
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -646,6 +624,6 @@ project:
     owner: "@.upper:common.role.owner"
     developer: "@.upper:common.role.developer"
     archive:
-      btn-text: Archive this project
+      btn-text: Archive this @.lower:{'common.project'}
     restore:
-      btn-text: Restore this project
+      btn-text: Restore this @.lower:{'common.project'}
