@@ -307,6 +307,12 @@ instance:
   successfully-created-migration-schema-for-instance-value-name: 成功为'{0}'创建迁移Schema。
   failed-to-sync-schema-for-instance-instance-value-name: 为实例'{0}'同步schema失败。
   successfully-synced-schema-for-instance-instance-value-name: 成功为实例'{0}'同步schema。
+  archive-instance-instance-name: 归档实例'{0}'?
+  archive-this-instance: 归档该实例
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: 已归档实例不会在界面上显示。你之后仍可以在归档页中恢复它。
+  restore-this-instance: 恢复该实例
+  restore: 恢复
+  restore-instance-instance-name-to-normal-state: 恢复实例'{0}'到正常状态?
 environment:
   select: 选择环境
   archive: 归档此环境

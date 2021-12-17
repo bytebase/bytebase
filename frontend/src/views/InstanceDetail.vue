@@ -67,21 +67,31 @@
         <template v-if="instance.rowStatus == 'NORMAL'">
           <BBButtonConfirm
             :style="'ARCHIVE'"
-            :button-text="'Archive this instance'"
-            :ok-text="'Archive'"
+            :button-text="$t('instance.archive-this-instance')"
+            :ok-text="$t('common.archive')"
             :require-confirm="true"
-            :confirm-title="`Archive instance '${instance.name}'?`"
-            :confirm-description="'Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            :confirm-title="
+              $t('instance.archive-instance-instance-name', [instance.name])
+            "
+            :confirm-description="
+              $t(
+                'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
+              )
+            "
             @confirm="doArchive"
           />
         </template>
         <template v-else-if="instance.rowStatus == 'ARCHIVED'">
           <BBButtonConfirm
             :style="'RESTORE'"
-            :button-text="'Restore this instance'"
-            :ok-text="'Restore'"
+            :button-text="$t('instance.restore-this-instance')"
+            :ok-text="$t('instance.restore')"
             :require-confirm="true"
-            :confirm-title="`Restore instance '${instance.name}' to normal state?`"
+            :confirm-title="
+              $t('instance.restore-instance-instance-name-to-normal-state', [
+                instance.name,
+              ])
+            "
             :confirm-description="''"
             @confirm="doRestore"
           />
@@ -95,7 +105,11 @@
     :style="'INFO'"
     :ok-text="'Create'"
     :title="$t('instance.create-migration-schema') + '?'"
-    :description="'Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.'"
+    :description="
+      $t(
+        'instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance'
+      )
+    "
     :in-progress="state.creatingMigrationSchema"
     @ok="
       () => {

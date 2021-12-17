@@ -323,6 +323,14 @@ instance:
   successfully-created-migration-schema-for-instance-value-name: Successfully created migration schema for '{0}'.
   failed-to-sync-schema-for-instance-instance-value-name: Failed to sync schema for instance '{0}'.
   successfully-synced-schema-for-instance-instance-value-name: Successfully synced schema for instance '{0}'.
+  archive-this-instance: Archive this instance
+  archive-instance-instance-name: Archive instance '{0}'?
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: >-
+    Archived instances will not be shown on the normal interface. You can still
+    restore later from the Archive page.
+  restore-this-instance: Restore this instance
+  restore: Restore
+  restore-instance-instance-name-to-normal-state: Restore instance '{0}' to normal state?
 environment:
   select: Select environment
   archive: Archive this environment
