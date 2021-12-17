@@ -7,7 +7,7 @@
         alt="Bytebase"
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        Sign in to your account
+        {{ $t("auth.sign-in.title") }}
       </h2>
     </div>
 
@@ -19,7 +19,7 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              Email<span class="text-red-600">*</span>
+              {{ $t("common.email") }}<span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -28,20 +28,7 @@
                 type="email"
                 required
                 placeholder="jim@example.com"
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -49,27 +36,17 @@
           <div>
             <label
               for="password"
-              class="
-                flex
-                justify-between
-                text-sm
-                font-medium
-                leading-5
-                text-control
-              "
+              class="flex justify-between text-sm font-medium leading-5 text-control"
             >
-              <div>Password<span class="text-red-600">*</span></div>
+              <div>
+                {{ $t("common.password")
+                }}<span class="text-red-600">*</span>
+              </div>
               <router-link
                 to="/auth/password-forgot"
-                class="
-                  text-sm
-                  font-normal
-                  text-control-light
-                  hover:underline
-                  focus:outline-none
-                "
+                class="text-sm font-normal text-control-light hover:underline focus:outline-none"
               >
-                Forgot your password?
+                {{ $t("auth.sign-in.forget-password") }}
               </router-link>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
@@ -79,20 +56,7 @@
                 type="password"
                 autocomplete="on"
                 required
-                class="
-                  appearance-none
-                  block
-                  w-full
-                  px-3
-                  py-2
-                  border border-control-border
-                  rounded-md
-                  placeholder-control-placeholder
-                  focus:outline-none
-                  focus:shadow-outline-blue
-                  focus:border-control-border
-                  sm:text-sm sm:leading-5
-                "
+                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -104,7 +68,7 @@
                 :disabled="!allowSignin"
                 class="btn-primary w-full flex justify-center py-2 px-4"
               >
-                Sign in
+                {{ $t("common.sign-in") }}
               </button>
             </span>
           </div>
@@ -117,9 +81,11 @@
         <div class="w-full border-t border-control-border"></div>
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="pl-2 bg-white text-control"> New to Bytebase? </span>
+        <span class="pl-2 bg-white text-control">
+          {{ $t("auth.sign-in.new-user") }}
+        </span>
         <router-link to="/auth/signup" class="accent-link bg-white px-2">
-          Sign up
+          {{ $t("common.sign-up") }}
         </router-link>
       </div>
     </div>

@@ -31,10 +31,10 @@ CREATE TABLE bytebase.migration_history (
     -- Record the migration statement
     statement TEXT NOT NULL,
     -- Record the schema after migration
-    `schema` TEXT NOT NULL,
+    `schema` MEDIUMTEXT NOT NULL,
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
     -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
-    schema_prev TEXT NOT NULL,
+    schema_prev MEDIUMTEXT NOT NULL,
     execution_duration INTEGER NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL

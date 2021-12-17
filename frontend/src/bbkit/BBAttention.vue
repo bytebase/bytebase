@@ -21,7 +21,7 @@
       </div>
       <div class="ml-3">
         <h3 class="text-sm font-medium" :class="`text-${color}-800`">
-          {{ title }}
+          {{ $t(title) }}
         </h3>
         <div
           v-if="description"
@@ -29,7 +29,7 @@
           :class="`text-${color}-700`"
         >
           <p>
-            {{ description }}
+            {{ $t(description) }}
           </p>
         </div>
       </div>
@@ -40,7 +40,7 @@
         class="btn-primary"
         @click.prevent="$emit('click-action')"
       >
-        {{ actionText }}
+        {{ $t(actionText) }}
       </button>
     </div>
   </div>
@@ -49,6 +49,7 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { BBAttentionStyle } from "./types";
+
 export default {
   name: "BBAttention",
   props: {
@@ -57,7 +58,7 @@ export default {
       default: "INFO",
     },
     title: {
-      default: "Attention needed",
+      default: "bbkit.attention.default",
       type: String,
     },
     description: {

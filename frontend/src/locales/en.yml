@@ -1,8 +1,32 @@
 common:
+  view: view
+  you: you
+  general: General
+  slack: Slack
+  discord: Discord
+  teams: Teams
+  dingtalk: DingTalk
+  feishu: Feishu
+  wecom: WeCom
+  overview: Overview
+  migration-history: Migration History
+  webhooks: Webhooks
+  key: Key
+  workflow: Workflow
+  unread: Unread
+  read: Read
+  inbox: Inbox
   activity: Activity
+  activities: Activities
+  sign-in: Sign in
+  sign-up: Sign up
+  email: Email
+  username: Username
+  password: Password
+  activate: Activate
   save: Save
   cancel: Cancel
-  comment: 评论
+  comment: Comment
   home: Home
   settings: Settings
   project: Project
@@ -76,8 +100,22 @@ common:
   schema: Schema
   anomalies: Anomalies
   do-not-show-again: Do not show again
-  overview: Overview
   backups: Backups
+  detail: Detail
+  type: Type
+  language: Language
+  repository: Repository
+  change: Change
+  branch: Branch
+  config-guide: config guide
+  required-placeholder: required placeholder
+  optional-placeholder: optional placeholder
+  enabled: enabled
+  default: default
+  version-control: version control
+  restore: Restore
+  detailed-guide: detailed guide
+  workspace: workspace
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -127,9 +165,15 @@ intro:
   doc: doc
   issue: issue
 bbkit:
-  alert:
+  common:
     ok: OK
     cancel: Cancel
+    back: Back
+    next: Next
+    finish: Finish
+    step: Step
+  attention:
+    default: Attention needed
 settings:
   sidebar:
     account: Account
@@ -172,6 +216,7 @@ settings:
       account: Account
       role: Role
       update-time: Updated Time
+      granted-time: Granted Time
     action:
       deactivate: Deactivate
       deactivate-confirm-title: Are you sure to deactivate
@@ -202,7 +247,7 @@ activity:
     reopened-issue: reopened issue
     resolved-issue: resolved issue
     canceled-issue: canceled issue
-    empty: ''
+    empty: ""
     changed: changed
     updated: updated
     canceled: canceled
@@ -210,7 +255,7 @@ activity:
     started: started
     completed: completed
     failed: failed
-    task-name: ' task {name}'
+    task-name: " task {name}"
     committed-to-at: committed {file} to{branch}{'@'}{repo}
   subject-prefix:
     task: Task
@@ -310,6 +355,8 @@ db:
   tables: Tables
   views: Views
   parent: Parent
+  last-successful-sync: Last successful sync
+  sync-status: Sync status
 instance:
   select: Select instance
   new-database: New Database
@@ -356,6 +403,33 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+auth:
+  sign-up:
+    title: Register your account
+    admin-title: Setup {account}
+    admin-account: admin account
+    create-admin-account: Create admin account
+    confirm-password: Confirm Password
+    confirm-password-placeholder: Confirm password
+    password-mismatch: mismatch
+    existing-user: Already have an account?
+  sign-in:
+    title: Sign in to your account
+    admin-title: Setup {'account'}
+    admin-account: admin account
+    forget-password: Forgot your password?
+    new-user: New to Bytebase?
+  password-forget:
+    title: Forgot your password?
+    content: Please contact your Bytebase Admin to reset your password.
+    return-to-sign-in: Return to Sign in
+  password-reset:
+    title: Reset your password
+    content: Enter your email address and we will send you a password reset link
+    send-reset-link: Send reset link
+    return-to-sign-in: Return to Sign in
+  activate:
+    title: Activate your {type} account
 policy:
   approval:
     name: Approval Policy
@@ -452,3 +526,195 @@ database:
   version-control-enabled: Version control enabled
 t:
   database: {}
+repository:
+  branch-observe-file-change: The branch where Bytebase observes the file change.
+  branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
+  base-directory: Base directory
+  base-directory-description: >-
+    The root directory where Bytebase observes the file change. If empty, then
+    it observes the entire repository.
+  file-path-template: File path template
+  file-path-template-description: >-
+    Bytebase only observes the file path name matching the template pattern
+    relative to the base directory.
+  file-path-example-normal-migration: File path example for normal migration type
+  file-path-example-baseline-migration: File path example for baseline migration type
+  schema-path-template: Schema path template
+  schema-writeback-description: >-
+    When specified, after each migration, Bytebase will write the latest schema
+    to the schema path relative to the base directory in the same branch as the
+    original commit triggering the migration. Leave empty if you don't want
+    Bytebase to do this
+  schema-writeback-protected-branch: >-
+    Make sure the changed branch is not protected or allow repository maintainer
+    to push to that protected branch.
+  if-specified: If specified
+  schema-path-example: Schema path example
+  git-provider: Git provider
+  version-control-status: '@.capitalize:common.version-control is {status}'
+  version-control-description-file-path: >-
+    Database migration scripts are stored in {fullPath}. To make schema changes,
+    a developer would create a migration script matching file path pattern
+    {fullPathTemplate}.
+  version-control-description-branch: >-
+    After the script is review approved and merged into the {branch} branch,
+    Bytebase will automatically kicks off the pipeline to apply the new schema
+    change.
+  version-control-description-description-schema-path: >-
+    After applying the schema change, Bytebase will also write the latest schema
+    to the specified schema path location {schemaPathTemplate}.
+  restore-to-ui-workflow: Restore to UI workflow
+  restore-ui-workflow-description: >-
+    When using the UI workflow, the developer submits a SQL review ticket
+    directly from Bytebase console and waits for the assigned DBA or peer
+    developer to review. Bytebase applies the SQL change after review approved.
+  restore-ui-workflow-success: Successfully restored to UI workflow
+  update-version-control-config-success: Successfully updated @:common.version-control config
+  setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
+  choose-git-provider: Choose Git provider
+  select-repository: Select repository
+  configure-deploy: Configure deploy
+  choose-git-provider-description: >-
+    Choose the Git provider where your database schema scripts (.sql) are
+    hosted. When you push the changed script to the Git repository, Bytebase
+    will automatically create a pipeline to apply the schema change to the
+    database.
+  choose-git-provider-visit-workspace: Visit {workspace} setting to add more Git providers.
+  choose-git-provider-contact-workspace-owner: >-
+    Contact your Bytebase owner if you want other Git providers to appear here.
+    Bytebase currently supports self-host GitLab EE/CE, and plan to add
+    GitLab.com, GitHub Enterprise and GitHub.com later.
+  select-repository-attention-gitlab: >-
+    Bytebase only lists GitLab projects granting you at least the 'Maintainer'
+    role, which allows to configure the project webhook to observe the code push
+    event.
+  select-repository-search: Search repository
+workflow:
+  current-workflow: Current workflow
+  ui-workflow: UI workflow
+  ui-workflow-description: >-
+    Classic SQL Review workflow where the developer submits a SQL review ticket
+    directly from Bytebase and waits for the assigned DBA or peer developer to
+    review. Bytebase applies the SQL schema change after review approved.
+  gitops-workflow: GitOps workflow
+  gitops-workflow-description: >-
+    Database migration scripts are stored in a git repository. To make schema
+    changes, a developer would create a migration script and submit for review
+    in the corresponding VCS such as GitLab. After the script is approved and
+    merged into the configured branch, Bytebase will automatically kicks off the
+    task to apply the new schema change.
+  configure-gitops: Configure version control
+  configure-gitops-success: Successfully enabled GitOps workflow for {project}
+  change-gitops-success: Successfully changed repository for {project}
+anomaly:
+  attention-title: Anomaly detection
+  attention-desc: >-
+    Bytebase periodically scans the managed resources and list the detected
+    anomalies here. The list is refreshed roughly every 10 minutes.
+  table-search-placeholder: Search {type} or environment
+  table-placeholder: Hooray, no {type} anomaly detected!
+  tooltip: >-
+    {env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount}
+    MEDIUM anomalies
+  types:
+    connection-failure: Connection failure
+    missing-migration-schema: Missing migration schema
+    backup-enforcement-viloation: Backup enforcement violation
+    missing-backup: Missing backup
+    schema-drift: Schema drift
+  action:
+    check-instance: Check instance
+    view-backup: View backup
+    configure-backup: Configure backup
+    view-diff: View diff
+  last-seen: Last seen
+  first-seen: First seen
+project:
+  dashboard:
+    modal:
+      title: How to setup \'@:{'common.project'}\' ?
+      content: >-
+        Bytebase project is similar to the project concept in other common dev tools.
+
+
+        A project has its own members, and every issue and database always belongs to a single project.
+
+
+        A project can also be configured to link to a repository to enable version control workflow.
+      cancel: Dismiss
+      confirm: Do not show again
+    search-bar-placeholder: Search project name
+  table:
+    key: "@:common.key"
+    name: "@:common.name"
+    created-at: Created At
+  create-modal:
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
+    key-hint:  (Uppercase letters identifying your project)
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+  overview:
+    view-all: View all
+    view-all-closed: View all closed
+    recent-activity: "Recent @.lower:{'common.activities'}"
+    in-progress: In progress
+    recently-closed: Recently Closed
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema.
+      Newly synced databases are first placed in this default project.
+      User should transfer them to the proper application project.
+    no-db-prompt: >-
+      No database belongs to this project.
+      You can add database by clicking {newDb} or {transferInDb} from the top action bar.
+  webhook:
+    create-webhook: Add a webhook
+    last-updated-by: Last updated bu
+    destination: Destination
+    webhook-url: Webhook url
+    triggering-activity: Triggering activities
+    test-webhook: Test Webhook
+    no-webhook:
+      title: No webhook configured for this project.
+      content: >-
+        Configure webhooks to let Bytebase post notification to the external
+        systems on various events.
+    creation:
+      title: Create webhook
+      desc:  >-
+        Create the corresponding webhook for the {destination} channel receiving the message.
+      how-to-protect: >-
+        If you want to use keyword list to protect the webhook, you can add
+        "Bytebase" to that list.
+      view-doc: View {destination}'s doc
+    deletion:
+      btn-text: Delete this webhook
+    activity-item:
+      issue-creation:
+        title: Issue creation
+        label: When new issue has been created
+      issue-status-change:
+        title: Issue status change
+        label: When issue status has changed
+      issue-task-status-change:
+        title: Issue task status change
+        label: When issue's enclosing task status has changed
+      issue-info-change:
+        title: Issue info change
+        label: When issue info (e.g. assignee, title, description) has changed
+      issue-comment-creation:
+        title: Issue comment creation
+        label: When new issue comment has been created
+  settings:
+    member-placeholder: Select user
+    manage-member: Manage members
+    add-member: Add member
+    owner: "@.upper:common.role.owner"
+    developer: "@.upper:common.role.developer"
+    archive:
+      btn-text: Archive this @.lower:{'common.project'}
+    restore:
+      btn-text: Restore this @.lower:{'common.project'}
+inbox:
+  mark-all-as-read: Mark all as read
+  view-older: View older

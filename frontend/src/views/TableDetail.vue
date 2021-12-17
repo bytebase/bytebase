@@ -3,12 +3,7 @@
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="
-          px-4
-          pb-4
-          border-b border-block-border
-          md:flex md:items-center md:justify-between
-        "
+        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
       >
         <div class="flex-1 min-w-0">
           <!-- Summary -->
@@ -16,15 +11,7 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="
-                    pt-2
-                    pb-2.5
-                    text-xl
-                    font-bold
-                    leading-6
-                    text-main
-                    truncate
-                  "
+                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
                 >
                   {{ table.name }}
                 </h1>
@@ -32,11 +19,7 @@
             </div>
           </div>
           <dl
-            class="
-              flex flex-col
-              space-y-1
-              md:space-y-0 md:flex-row md:flex-wrap
-            "
+            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
             <dt class="sr-only">Environment</dt>
             <dd class="flex items-center text-sm md:mr-4">

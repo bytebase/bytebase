@@ -1,8 +1,6 @@
 <template>
   <div class="textlabel">
-    Choose the Git provider where your database schema scripts (.sql) are
-    hosted. When you push the changed script to the Git repository, Bytebase
-    will automatically applies the script change to the database.
+    {{ $t("repository.choose-git-provider-description") }}
   </div>
   <div class="mt-4 flex flex-wrap">
     <template v-for="(vcs, index) in vcsList" :key="index">
@@ -20,16 +18,17 @@
   </div>
   <div class="mt-2 textinfolabel">
     <template v-if="isCurrentUserOwner">
-      Visit
-      <router-link class="normal-link" to="/setting/version-control"
-        >Workspace Version Control</router-link
-      >
-      setting to add more Git providers.
+      <i18n-t keypath="repository.choose-git-provider-visit-workspace">
+        <template #workspace>
+          <router-link class="normal-link" to="/setting/version-control"
+            >{{ $t("common.workspace") }} -
+            {{ $t("common.version-control") }}</router-link
+          >
+        </template>
+      </i18n-t>
     </template>
     <template v-else>
-      Contact your Bytebase owner if you want other Git providers to appear
-      here. Bytebase currently supports self-host GitLab EE/CE, and plan to add
-      GitLab.com, GitHub Enterprise and GitHub.com later.
+      {{ $t("repository.choose-git-provider-contact-workspace-owner") }}
     </template>
   </div>
 </template>

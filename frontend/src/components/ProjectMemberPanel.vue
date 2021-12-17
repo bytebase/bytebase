@@ -1,6 +1,8 @@
 <template>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">Manage members</p>
+    <p class="text-lg font-medium leading-7 text-main">
+      {{ $t("project.settings.manage-member") }}
+    </p>
     <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
@@ -14,7 +16,7 @@
                 id="user"
                 name="user"
                 :required="false"
-                :placeholder="'Select user'"
+                :placeholder="$t('project.settings.member-placeholder')"
                 :selectedId="state.principalId"
                 @select-principal-id="
                   (principalId) => {
@@ -35,7 +37,7 @@
                   class="btn"
                   value="OWNER"
                 />
-                <label class="label"> Owner </label>
+                <label class="label"> {{ $t("common.role.owner") }} </label>
               </div>
               <div class="radio">
                 <input
@@ -46,7 +48,7 @@
                   class="btn"
                   value="DEVELOPER"
                 />
-                <label class="label"> Developer </label>
+                <label class="label"> {{ $t("common.role.developer") }} </label>
               </div>
             </div>
             <button
@@ -56,7 +58,7 @@
               @click.prevent="addMember"
             >
               <heroicons-outline:user-add class="mr-2 w-5 h-5" />
-              Add member
+              {{ $t("project.settings.add-member") }}
             </button>
           </div>
         </div>

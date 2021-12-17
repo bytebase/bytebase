@@ -79,7 +79,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { consoleLink, databaseSlug } from "../utils";
@@ -122,99 +122,101 @@ export default {
     const router = useRouter();
     const { t } = useI18n();
 
-    const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
-      [
-        "ALL",
+    const columnListMap = computed(() => {
+      return new Map([
         [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("common.project"),
-          },
-          {
-            title: t("common.environment"),
-          },
-          {
-            title: t("common.instance"),
-          },
-          {
-            title: t("database.sync-status"),
-          },
-          {
-            title: t("database.last-successful-sync"),
-          },
+          "ALL",
+          [
+            {
+              title: t("common.name"),
+            },
+            {
+              title: t("common.project"),
+            },
+            {
+              title: t("common.environment"),
+            },
+            {
+              title: t("common.instance"),
+            },
+            {
+              title: t("db.sync-status"),
+            },
+            {
+              title: t("db.last-successful-sync"),
+            },
+          ],
         ],
-      ],
-      [
-        "ALL_SHORT",
         [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("common.project"),
-          },
-          {
-            title: t("common.environment"),
-          },
-          {
-            title: t("common.instance"),
-          },
+          "ALL_SHORT",
+          [
+            {
+              title: t("common.name"),
+            },
+            {
+              title: t("common.project"),
+            },
+            {
+              title: t("common.environment"),
+            },
+            {
+              title: t("common.instance"),
+            },
+          ],
         ],
-      ],
-      [
-        "INSTANCE",
         [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("common.project"),
-          },
-          {
-            title: t("database.sync-status"),
-          },
-          {
-            title: t("database.last-successful-sync"),
-          },
+          "INSTANCE",
+          [
+            {
+              title: t("common.name"),
+            },
+            {
+              title: t("common.project"),
+            },
+            {
+              title: t("db.sync-status"),
+            },
+            {
+              title: t("db.last-successful-sync"),
+            },
+          ],
         ],
-      ],
-      [
-        "PROJECT",
         [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("common.environment"),
-          },
-          {
-            title: t("common.instance"),
-          },
-          {
-            title: t("database.sync-status"),
-          },
-          {
-            title: t("database.last-successful-sync"),
-          },
+          "PROJECT",
+          [
+            {
+              title: t("common.name"),
+            },
+            {
+              title: t("common.environment"),
+            },
+            {
+              title: t("common.instance"),
+            },
+            {
+              title: t("db.sync-status"),
+            },
+            {
+              title: t("db.last-successful-sync"),
+            },
+          ],
         ],
-      ],
-      [
-        "PROJECT_SHORT",
         [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("common.environment"),
-          },
-          {
-            title: t("common.instance"),
-          },
+          "PROJECT_SHORT",
+          [
+            {
+              title: t("common.name"),
+            },
+            {
+              title: t("common.environment"),
+            },
+            {
+              title: t("common.instance"),
+            },
+          ],
         ],
-      ],
-    ]);
+      ]);
+    });
 
     // const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -235,7 +237,7 @@ export default {
     });
 
     const columnList = computed(() => {
-      var list: BBTableColumn[] = columnListMap.get(props.mode)!;
+      var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
       if (showConsoleLink.value) {
         // Use cloneDeep, otherwise it will alter the one in columnListMap
         list = cloneDeep(list);

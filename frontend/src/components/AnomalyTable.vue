@@ -65,7 +65,7 @@
       />
       <div class="flex justify-end px-4">
         <button type="button" class="btn-primary" @click.prevent="dismissModal">
-          Close
+          {{ $t("common.close") }}
         </button>
       </div>
     </div>
@@ -74,7 +74,11 @@
 
 <script lang="ts">
 import { PropType, reactive } from "vue";
+import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
+import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
+
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import {
   Anomaly,
@@ -85,27 +89,7 @@ import {
   AnomalyInstanceConnectionPayload,
   AnomalyType,
 } from "../types";
-import { useStore } from "vuex";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
-import { useRouter } from "vue-router";
-
-const COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "",
-  },
-  {
-    title: "Type",
-  },
-  {
-    title: "Detail",
-  },
-  {
-    title: "Last seen",
-  },
-  {
-    title: "First seen",
-  },
-];
 
 type Action = {
   onClick: () => void;
@@ -133,25 +117,44 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       showModal: false,
     });
 
+    const COLUMN_LIST: BBTableColumn[] = reactive([
+      {
+        title: "",
+      },
+      {
+        title: t("common.type"),
+      },
+      {
+        title: t("common.detail"),
+      },
+      {
+        title: t("anomaly.last-seen"),
+      },
+      {
+        title: t("anomaly.first-seen"),
+      },
+    ]);
+
     const typeName = (type: AnomalyType): string => {
       switch (type) {
         case "bb.anomaly.instance.connection":
-          return "Connection failure";
+          return t("anomaly.types.connection-failure");
         case "bb.anomaly.instance.migration-schema":
-          return "Missing migration schema";
+          return t("anomaly.types.missing-migration-schema");
         case "bb.anomaly.database.backup.policy-violation":
-          return "Backup enforcement violation";
+          return t("anomaly.types.backup-enforcement-viloation");
         case "bb.anomaly.database.backup.missing":
-          return "Missing backup";
+          return t("anomaly.types.missing-backup");
         case "bb.anomaly.database.connection":
-          return "Connection failure";
+          return t("anomaly.types.connection-failure");
         case "bb.anomaly.database.schema.drift":
-          return "Schema drift";
+          return "t('anomaly.types.schema-drift')";
       }
     };
 
@@ -207,7 +210,7 @@ export default {
                 },
               });
             },
-            title: "Check instance",
+            title: t("anomaly.action.check-instance"),
           };
         case "bb.anomaly.instance.migration-schema":
           return {
@@ -219,7 +222,7 @@ export default {
                 },
               });
             },
-            title: "Check instance",
+            title: t("anomaly.action.check-instance"),
           };
         case "bb.anomaly.database.backup.policy-violation": {
           return {
@@ -232,7 +235,7 @@ export default {
                 hash: "#backup",
               });
             },
-            title: "Configure backup",
+            title: t("anomaly.action.configure-backup"),
           };
         }
         case "bb.anomaly.database.backup.missing":
@@ -246,7 +249,7 @@ export default {
                 hash: "#backup",
               });
             },
-            title: "View backup",
+            title: t("anomaly.action.view-backup"),
           };
         case "bb.anomaly.database.connection":
           return {
@@ -258,7 +261,7 @@ export default {
                 },
               });
             },
-            title: "Check instance",
+            title: t("anomaly.action.check-instance"),
           };
         case "bb.anomaly.database.schema.drift":
           return {
@@ -266,7 +269,7 @@ export default {
               state.selectedAnomaly = anomaly;
               state.showModal = true;
             },
-            title: "View diff",
+            title: t("anomaly.action.view-diff"),
           };
       }
     };

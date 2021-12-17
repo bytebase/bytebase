@@ -1,37 +1,51 @@
 <template>
   <div class="text-lg leading-6 font-medium text-main">
-    Version control is <span class="text-success">enabled</span>
+    <i18n-t keypath="repository.version-control-status">
+      <template #status>
+        <span class="text-success"> {{ $t("common.enabled") }} </span>
+      </template>
+    </i18n-t>
   </div>
   <div class="mt-2 textinfolabel">
-    Database migration scripts are stored in
-    <a class="normal-link" :href="repository.webUrl" target="_blank">{{
-      repository.fullPath
-    }}</a
-    >. To make schema changes, a developer would create a migration script
-    matching file path pattern
-    <span class="font-medium text-main">{{
-      state.repositoryConfig.baseDirectory
-    }}</span>
-    <span class="font-medium text-main"
-      >/{{ state.repositoryConfig.filePathTemplate }}</span
-    >. After the script is review approved and merged into the
-    <template v-if="state.repositoryConfig.branchFilter"
-      >branch matching pattern
-      <span class="font-medium text-main">{{
-        state.repositoryConfig.branchFilter
-      }}</span></template
-    >
-    <span v-else class="font-medium text-main">default branch</span>, Bytebase
-    will automatically kicks off the task to apply the new schema change.
-    <template v-if="state.repositoryConfig.schemaPathTemplate"
-      >After applying the schema change, if schema path template is specified,
-      Bytebase will also write the latest schema to the specified schema path
-      location
-      <span class="font-medium text-main">{{
-        state.repositoryConfig.schemaPathTemplate
-      }}</span
-      >.</template
-    >
+    <i18n-t keypath="repository.version-control-description-file-path">
+      <template #fullPath>
+        <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+          repository.fullPath
+        }}</a>
+      </template>
+      <template #fullPathTemplate>
+        <span class="font-medium text-main"
+          >{{ state.repositoryConfig.baseDirectory }}/{{
+            state.repositoryConfig.filePathTemplate
+          }}</span
+        >
+      </template>
+    </i18n-t>
+    <span>&nbsp;</span>
+    <i18n-t keypath="repository.version-control-description-branch">
+      <template #branch>
+        <span class="font-medium text-main">
+          <template v-if="state.repositoryConfig.branchFilter">
+            {{ state.repositoryConfig.branchFilter }}
+          </template>
+          <template v-else>
+            {{ $t("common.default") }}
+          </template>
+        </span>
+      </template>
+    </i18n-t>
+    <template v-if="state.repositoryConfig.schemaPathTemplate">
+      <span>&nbsp;</span>
+      <i18n-t
+        keypath="repository.version-control-description-description-schema-path"
+      >
+        <template #schemaPathTemplate>
+          <span class="font-medium text-main">{{
+            state.repositoryConfig.schemaPathTemplate
+          }}</span>
+        </template>
+      </i18n-t>
+    </template>
   </div>
   <RepositoryForm
     class="mt-4"
@@ -45,11 +59,11 @@
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
       :style="'RESTORE'"
-      :button-text="'Restore to UI workflow'"
+      :button-text="$t('repository.restore-to-ui-workflow')"
       :require-confirm="true"
-      :ok-text="'Restore'"
-      :confirm-title="'Restore to UI workflow?'"
-      :confirm-description="'When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.'"
+      :ok-text="$t('common.restore')"
+      :confirm-title="$t('repository.restore-to-ui-workflow') + '?'"
+      :confirm-description="$t('repository.restore-ui-workflow-description')"
       @confirm="restoreToUIWorkflowType"
     />
     <div>
@@ -59,7 +73,7 @@
         :disabled="!allowUpdate"
         @click.prevent="doUpdate"
       >
-        Update
+        {{ $t("common.update") }}
       </button>
     </div>
   </div>
@@ -77,6 +91,7 @@ import {
   Project,
 } from "../types";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -101,6 +116,7 @@ export default {
   },
   emits: ["change-repository"],
   setup(props) {
+    const { t } = useI18n();
     const store = useStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
@@ -153,7 +169,7 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully restored to UI workflow`,
+            title: t("repository.restore-ui-workflow-success"),
           });
         });
     };
@@ -193,7 +209,7 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated version control config`,
+            title: t("repository.update-version-control-config-success"),
           });
         });
     };
