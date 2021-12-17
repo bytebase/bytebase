@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	// embed will embeds the migration schema.
@@ -30,6 +31,8 @@ var (
 		"performance_schema": true,
 		"sys":                true,
 	}
+	baseTableType        = "BASE TABLE"
+	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -357,7 +360,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			return nil, nil, err
 		}
 
-		if table.Type == "BASE TABLE" {
+		if table.Type == baseTableType {
 			if tableCollation.Valid {
 				table.Collation = tableCollation.String
 			}
@@ -819,10 +822,13 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
 		}
 		for _, tbl := range tables {
+			if schemaOnly && tbl.tableType == baseTableType {
+				tbl.statement = excludeSchemaAutoIncrementValue(tbl.statement)
+			}
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.statement)); err != nil {
 				return err
 			}
-			if !schemaOnly && tbl.tableType == "BASE TABLE" {
+			if !schemaOnly && tbl.tableType == baseTableType {
 				// Include db prefix if dumping multiple databases.
 				includeDbPrefix := len(dumpableDbNames) > 1
 				if err := exportTableData(txn, dbName, tbl.name, includeDbPrefix, out); err != nil {
@@ -866,6 +872,12 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	}
 
 	return nil
+}
+
+// excludeSchemaAutoIncrementValue excludes the starting value of AUTO_INCREMENT if it's a schema only dump.
+// https://github.com/bytebase/bytebase/issues/123
+func excludeSchemaAutoIncrementValue(s string) string {
+	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
 // getDatabases gets all databases of an instance.
@@ -962,7 +974,7 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 // getTableStmt gets the create statement of a table.
 func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
-	case "BASE TABLE":
+	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE %s.%s;", dbName, tblName)
 		rows, err := txn.Query(query)
 		if err != nil {
