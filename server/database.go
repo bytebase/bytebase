@@ -159,7 +159,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			var labels []*api.DatabaseLabel
 			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
 
-			_, err := s.LabelService.SetDatabaseLabels(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
+			_, err := s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", id)).SetInternal(err)
 			}
@@ -701,7 +701,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	rowStatus = api.Normal
-	labels, err := s.LabelService.FindDatabaseLabels(ctx, &api.DatabaseLabelFind{
+	labels, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &database.ID,
 		RowStatus:  &rowStatus,
 	})
