@@ -339,7 +339,8 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	if len(issueCreate.Pipeline.StageList) <= 0 {
+	// If frontend does not pass the stageList, we will generate it from backend.
+	if len(issueCreate.Pipeline.StageList) == 0 {
 		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
 		if err != nil {
 			return nil, err
