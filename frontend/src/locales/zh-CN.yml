@@ -68,7 +68,7 @@ common:
   updated-at: 更新于
   commit: 提交
   statement: 语句
-  sql-statement: "SQL @:{'common.statement'}"
+  sql-statement: SQL @:{'common.statement'}
   snapshot: 快照
   status: 状态
   stage: 阶段
@@ -78,6 +78,8 @@ common:
   add: 添加
   query: 查询
   transfer: 转移
+  detail: 详情
+  type: 类型
   language: 语言
   repository: 仓库
   change: 变更
@@ -203,20 +205,20 @@ activity:
   created: 创建于
   invoker: 执行者
   sentence:
-    created-issue: "创建工单"
+    created-issue: 创建工单
     commented: 评论
-    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
-    assigned-issue: "将工单指派给 {newName}"
-    unassigned-issue: "将工单由 {oldName} 解除指派"
-    invalid-assignee-update: "无效的指派操作"
-    changed-description: "修改描述"
-    changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
-    unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
-    set-to: '将 {name} 设置为 "{newValue}"'
-    changed-update: "修改 {name}"
-    reopened-issue: "重开工单"
-    resolved-issue: "解决工单"
-    canceled-issue: "取消工单"
+    reassigned-issue: 将工单由 {oldName} 重新指派给 {newName}
+    assigned-issue: 将工单指派给 {newName}
+    unassigned-issue: 将工单由 {oldName} 解除指派
+    invalid-assignee-update: 无效的指派操作
+    changed-description: 修改描述
+    changed-from-to: 将 {name} 从 "{oldValue}" 修改为 "{newValue}"
+    unset-from: 撤销 {name} 的值 (从 "{oldValue}")
+    set-to: 将 {name} 设置为 "{newValue}"
+    changed-update: 修改 {name}
+    reopened-issue: 重开工单
+    resolved-issue: 解决工单
+    canceled-issue: 取消工单
     empty: ""
     changed: 修改
     updated: 更新
@@ -225,10 +227,10 @@ activity:
     started: 开始
     completed: 完成
     failed: 失败
-    task-name: "任务 {name}"
-    committed-to-at: "提交 {file} 到 {branch}{'@'}{repo}"
+    task-name: 任务 {name}
+    committed-to-at: 提交 {file} 到 {branch}{'@'}{repo}
   subject-prefix:
-    task: "任务"
+    task: 任务
 issue:
   waiting-approval: 等待批准
   opened-by-at: "{id} 由 {creator} 开启于 {time}"
@@ -249,10 +251,10 @@ issue:
   unsubscribe: 取消订阅
   subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
   apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
-  add-sql-statement: "添加 SQL @:{'common.statement'}…"
-  optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
+  add-sql-statement: 添加 SQL @:{'common.statement'}…
+  optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
   rollback-sql: "@:{'common.rollback'} SQL"
-  add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
+  add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
   add-a-comment: 添加评论
@@ -444,3 +446,24 @@ workflow:
   configure-gitops: 配置 Git
   configure-gitops-success: 开启「{project}」GitOps 工作流成功
   change-gitops-success: 变更「{project}」仓库成功
+anomaly:
+  attention-title: 异常检测
+  attention-desc: |-
+    Bytebase 会定期扫描托管资源并在这里列出检测到的异常。
+    该列表大约每 10 分钟刷新一次。
+  table-search-placeholder: 搜索{type}或者环境
+  table-placeholder: 很棒，没有检测到{type}异常！
+  tooltip: "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常"
+  types:
+    connection-failure: 连接失败
+    missing-migration-schema: 缺少迁移 Schema
+    schema-drift: Schema 偏差
+    backup-enforcement-viloation: 违反备份策略约束
+    missing-backup: 缺少备份
+  action:
+    check-instance: 检查实例
+    view-backup: 查看备份
+    configure-backup: 配置备份
+    view-diff: 查看差异
+  last-seen: 上次出现
+  first-seen: 首次出现
