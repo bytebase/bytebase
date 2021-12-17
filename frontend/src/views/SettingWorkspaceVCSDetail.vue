@@ -6,19 +6,14 @@
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
-          Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+          {{ $t('version-control.setting.add-git-provider.gitlab-self-host-ce-ee') }}
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
     </div>
 
     <div>
-      <label for="instanceurl" class="textlabel"> Instance URL </label>
-      <p class="mt-1 textinfolabel">
-        <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          Your GitLab instance location.
-        </template>
-      </p>
+      <label for="instanceurl" class="textlabel"> {{ $t('common.instance') }} URL </label>
       <input
         id="instanceurl"
         name="instanceurl"
@@ -30,10 +25,9 @@
     </div>
 
     <div>
-      <label for="name" class="textlabel"> Display name </label>
+      <label for="name" class="textlabel"> {{ $t('version-control.setting.add-git-provider.basic-info.display-name') }} </label>
       <p class="mt-1 textinfolabel">
-        An optional display name to help identifying among different configs
-        using the same Git provider.
+        {{ $t('version-control.setting.add-git-provider.basic-info.display-name-label') }}
       </p>
       <input
         id="name"
@@ -45,13 +39,12 @@
     </div>
 
     <div>
-      <label for="applicationid" class="textlabel"> Application ID </label>
+      <label for="applicationid" class="textlabel"> {{ $t('common.application') }} ID </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          Application ID for the registered GitLab instance-wide OAuth
-          application.
+          {{ $t('version-control.setting.git-provider.application-id-label') }}
           <a :href="adminApplicationUrl" target="_blank" class="normal-link"
-            >View in GitLab</a
+            >{{ $t('version-control.setting.git-provider.view-in-gitlab') }}</a
           >
         </template>
       </p>
@@ -68,7 +61,7 @@
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          Secret for the registered GitLab instance-wide OAuth application.
+          {{ $t('version-control.setting.git-provider.secret-label-gitlab') }}
         </template>
       </p>
       <input
@@ -77,7 +70,7 @@
         name="secret"
         type="text"
         class="textfield mt-1 w-full"
-        placeholder="sensitive - write only"
+        :placeholder="$t('common.sensitive-placeholder')"
       />
     </div>
 
@@ -94,7 +87,7 @@
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-          To delete this provider, unlink all repositories first.
+         {{ $t('version-control.setting.git-provider.delete') }}
         </div>
       </template>
       <div>
@@ -103,7 +96,7 @@
           class="btn-normal py-2 px-4"
           @click.prevent="cancel"
         >
-          Cancel
+          {{ $t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -111,7 +104,7 @@
           :disabled="!allowUpdate"
           @click.prevent="doUpdate"
         >
-          Update
+          {{ $t('common.update') }}
         </button>
       </div>
     </div>
@@ -119,7 +112,7 @@
 
   <div class="py-6">
     <div class="text-lg leading-6 font-medium text-main">
-      {{ `Linked repositories (${repositoryList.length})` }}
+      {{ $t('repository.linked') + ` (${repositoryList.length})` }}
     </div>
     <div class="mt-4">
       <RepositoryTable :repository-list="repositoryList" />
