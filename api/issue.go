@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // IssueStatus is the status of an issue.
@@ -124,6 +126,23 @@ type CreateDatabaseContext struct {
 	BackupID int `json:"backupId"`
 	// BackupName is the name of the backup.
 	BackupName string `json:"backupName"`
+}
+
+// UpdateSchemaDetail is the detail of updating database schema.
+type UpdateSchemaDetail struct {
+	// DatabaseId is the ID of a database.
+	DatabaseID int `json:"databaseId"`
+	// Statement is the statement to update database schema.
+	Statement string `json:"statement"`
+	// Statement is the rollback statement of the statement.
+	RollbackStatement string `json:"rollbackStatement"`
+}
+
+// UpdateSchemaContext is the issue create context for updating database schema.
+type UpdateSchemaContext struct {
+	// MigrationType is the type of a migration.
+	MigrationType          db.MigrationType      `json:"migrationType"`
+	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 }
 
 // IssueFind is the API message for finding issues.

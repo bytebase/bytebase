@@ -339,7 +339,8 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	if issueCreate.Type == api.IssueDatabaseCreate {
+	// If frontend does not pass the stageList, we will generate it from backend.
+	if len(issueCreate.Pipeline.StageList) == 0 {
 		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
 		if err != nil {
 			return nil, err
@@ -602,8 +603,60 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 				},
 			},
 		}, nil
+	case api.IssueDatabaseSchemaUpdate:
+		m := api.UpdateSchemaContext{}
+		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
+			return nil, err
+		}
+		pc := &api.PipelineCreate{}
+		switch m.MigrationType {
+		case db.Baseline:
+			pc.Name = "Establish database baseline pipeline"
+		case db.Migrate:
+			pc.Name = "Update database schema pipeline"
+		default:
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", m.MigrationType))
+		}
+
+		for _, d := range m.UpdateSchemaDetailList {
+			if m.MigrationType == db.Migrate && d.Statement == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+			}
+			databaseFind := &api.DatabaseFind{
+				ID: &d.DatabaseID,
+			}
+			database, err := s.composeDatabaseByFind(ctx, databaseFind)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+				}
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+			}
+
+			taskName := fmt.Sprintf("Establish %q baseline", database.Name)
+			if m.MigrationType == db.Migrate {
+				taskName = fmt.Sprintf("Update %q schema", database.Name)
+			}
+			pc.StageList = append(pc.StageList, api.StageCreate{
+				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+				EnvironmentID: database.Instance.Environment.ID,
+				TaskList: []api.TaskCreate{
+					{
+						Name:              taskName,
+						InstanceID:        database.Instance.ID,
+						DatabaseID:        &database.ID,
+						Status:            api.TaskPendingApproval,
+						Type:              api.TaskDatabaseSchemaUpdate,
+						Statement:         d.Statement,
+						RollbackStatement: d.RollbackStatement,
+						MigrationType:     m.MigrationType,
+					},
+				},
+			})
+		}
+		return pc, nil
 	}
-	return nil, nil
+	return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid issue type %q", issueCreate.Type))
 }
 
 func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation string) (string, string) {
