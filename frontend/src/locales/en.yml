@@ -96,6 +96,11 @@ common:
   add: Add
   query: Query
   transfer: Transfer
+  migration: Migration
+  schema: Schema
+  anomalies: Anomalies
+  do-not-show-again: Do not show again
+  backups: Backups
   detail: Detail
   type: Type
   language: Language
@@ -115,6 +120,7 @@ common:
   application: Application
   confirm: Confirm
   coming-later: Coming later
+  learn-more: Learn more
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -350,10 +356,41 @@ db:
   select: Select database
   select-instance-first: Select instance first
   select-environment-first: Select environment first
+  tables: Tables
+  views: Views
+  parent: Parent
   last-successful-sync: Last successful sync
   sync-status: Sync status
 instance:
   select: Select instance
+  new-database: New Database
+  syncing: Syncing ...
+  sync-now: Sync Now
+  create-migration-schema: Create migration schema
+  missing-migration-schema: Missing migration schema
+  unable-to-connect-instance-to-check-migration-schema: Unable to connect instance to check migration schema
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
+    >-
+    Bytebase relies on migration schema to manage version control based schema
+    migration for databases belonged to this instance.
+  please-contact-your-dba-to-configure-it: Please contact your DBA to configure it.
+  please-check-the-instance-connection-info-is-correct: Please check the instance connection info is correct.
+  users: Users
+  successfully-archived-instance-updatedinstance-name: Successfully archived instance '{0}'.
+  successfully-restored-instance-updatedinstance-name: Successfully restored instance '{0}'.
+  failed-to-create-migration-schema-for-instance-instance-value-name: Failed to create migration schema for instance '{0}'.
+  successfully-created-migration-schema-for-instance-value-name: Successfully created migration schema for '{0}'.
+  failed-to-sync-schema-for-instance-instance-value-name: Failed to sync schema for instance '{0}'.
+  successfully-synced-schema-for-instance-instance-value-name: Successfully synced schema for instance '{0}'.
+  archive-this-instance: Archive this instance
+  archive-instance-instance-name: Archive instance '{0}'?
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page:
+    >-
+    Archived instances will not be shown on the normal interface. You can still
+    restore later from the Archive page.
+  restore-this-instance: Restore this instance
+  restore: Restore
+  restore-instance-instance-name-to-normal-state: Restore instance '{0}' to normal state?
 environment:
   select: Select environment
   archive: Archive this environment
@@ -444,9 +481,59 @@ migration-history:
   instance-missing-migration-schema: Missing migration history schema on instance "{name}".
   instance-bad-connection: Unable to connect instance "{name}" to retrieve migration history.
   contact-dba: Please contact your DBA to config it
+database:
+  the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes: The list might be out of date and is refreshed roughly every 10 minutes
+  no-anomalies-detected: No anomalies detected
+  sync-status: Sync status
+  last-successful-sync: Last successful sync
+  search-database-name: Search database name
+  how-to-setup-database: How to setup \'Database\' ?
+  show-guide-description: >-
+    Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'.
+    In Bytebase, a database always belongs to a single project.\n\nBytebase will
+    periodically sync the database info for every recorded instance. You can
+    also create a new database from the dashboard.
+  restored-from: "Restored from "
+  database-name-is-restored-from-another-database-backup: "{0} is restored from another database backup"
+  database-backup: database backup
+  sql-console: SQL Console
+  transfer-project: Transfer Project
+  alter-schema-in-vcs: Alter Schema in VCS
+  successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
+  backup-name: Backup name
+  create-backup: Create backup
+  automatic-weekly-backup: Automatic weekly backup
+  disable-automatic-backup: Disable automatic backup
+  backuppolicy-backup-enforced-and-cant-be-disabled: "{0} backup enforced and can't be disabled"
+  backup-policy:
+    DAILY: DAILY
+    WEEKLY: WEEKLY
+  an-http-post-request-will-be-sent-to-it-after-a-successful-backup: An HTTP POST request will be sent to it after a successful backup.
+  backup-info:
+    template: Backup will be taken on every {dayOrWeek} at {time}
+  week:
+    Sunday: Sunday
+    Monday: Monday
+    Tuesday: Tuesday
+    Wednesday: Wednesday
+    Thursday: Thursday
+    Friday: Friday
+    Saturday: Saturday
+    day: day
+  enable-backup: Enable backup
+  backup-now: Backup now
+  create-a-manual-backup: Create a manual backup
+  disabled: Disabled
+  enabled: Enabled
+  action-automatic-backup-for-database-props-database-name: "{0} automatic backup for database '{1}'."
+  updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
+  last-sync-status: Last sync status {0} at {1}
+  version-control-enabled: Version control enabled
+t:
+  database: {}
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
-  branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
+  branch-specify-tip: "Tip: You can also use wildcard like 'feature/*"
   base-directory: Base directory
   base-directory-description: >-
     The root directory where Bytebase observes the file change. If empty, then
@@ -469,7 +556,7 @@ repository:
   if-specified: If specified
   schema-path-example: Schema path example
   git-provider: Git provider
-  version-control-status: '@.capitalize:common.version-control is {status}'
+  version-control-status: "@.capitalize:common.version-control is {status}"
   version-control-description-file-path: >-
     Database migration scripts are stored in {fullPath}. To make schema changes,
     a developer would create a migration script matching file path pattern
@@ -553,13 +640,16 @@ project:
     modal:
       title: How to setup \'@:{'common.project'}\' ?
       content: >-
-        Bytebase project is similar to the project concept in other common dev tools.
+        Bytebase project is similar to the project concept in other common dev
+        tools.
 
 
-        A project has its own members, and every issue and database always belongs to a single project.
+        A project has its own members, and every issue and database always
+        belongs to a single project.
 
 
-        A project can also be configured to link to a repository to enable version control workflow.
+        A project can also be configured to link to a repository to enable
+        version control workflow.
       cancel: Dismiss
       confirm: Do not show again
     search-bar-placeholder: Search project name
@@ -570,22 +660,22 @@ project:
   create-modal:
     project-name: "@:common.project @:common.name"
     key: "@:common.key"
-    key-hint:  (Uppercase letters identifying your project)
+    key-hint: (Uppercase letters identifying your project)
     cancel: "@:common.cancel"
     confirm: "@:common.create"
   overview:
     view-all: View all
     view-all-closed: View all closed
-    recent-activity: "Recent @.lower:{'common.activities'}"
+    recent-activity: Recent @.lower:{'common.activities'}
     in-progress: In progress
     recently-closed: Recently Closed
     info-slot-content: >-
-      Bytebase periodically syncs the instance schema.
-      Newly synced databases are first placed in this default project.
-      User should transfer them to the proper application project.
+      Bytebase periodically syncs the instance schema. Newly synced databases
+      are first placed in this default project. User should transfer them to the
+      proper application project.
     no-db-prompt: >-
-      No database belongs to this project.
-      You can add database by clicking {newDb} or {transferInDb} from the top action bar.
+      No database belongs to this project. You can add database by clicking
+      {newDb} or {transferInDb} from the top action bar.
   webhook:
     create-webhook: Add a webhook
     last-updated-by: Last updated bu
@@ -600,8 +690,9 @@ project:
         systems on various events.
     creation:
       title: Create webhook
-      desc:  >-
-        Create the corresponding webhook for the {destination} channel receiving the message.
+      desc: >-
+        Create the corresponding webhook for the {destination} channel receiving
+        the message.
       how-to-protect: >-
         If you want to use keyword list to protect the webhook, you can add
         "Bytebase" to that list.

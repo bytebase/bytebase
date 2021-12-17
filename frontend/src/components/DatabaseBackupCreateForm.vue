@@ -7,7 +7,7 @@
       <div class="grid grid-cols-3 gap-y-6 gap-x-4">
         <div class="col-span-3">
           <label for="name" class="textlabel">
-            Backup name <span class="text-red-600">*</span>
+            {{ $t("database.backup-name") }} <span class="text-red-600">*</span>
           </label>
           <input
             id="name"
@@ -27,14 +27,14 @@
         class="btn-normal py-2 px-4"
         @click.prevent="$emit('cancel')"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
       <button
         type="submit"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowCreate"
       >
-        Create backup
+        {{ $t("database.create-backup") }}
       </button>
     </div>
   </form>

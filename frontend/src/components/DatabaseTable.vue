@@ -16,10 +16,12 @@
             {{ database.name }}
           </span>
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span class="tooltip"
-              >Last sync status {{ database.syncStatus }} at
-              {{ humanizeTs(database.lastSuccessfulSyncTs) }}</span
-            >
+            <span class="tooltip">{{
+              $t("database.last-sync-status", [
+                database.syncStatus,
+                humanizeTs(database.lastSuccessfulSyncTs),
+              ])
+            }}</span>
             <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
           </div>
         </div>
@@ -37,7 +39,9 @@
               xmlns="http://www.w3.org/2000/svg"
             ></svg>
             <template v-else-if="database.project.workflowType == 'VCS'">
-              <span class="tooltip">Version control enabled</span>
+              <span class="tooltip">{{
+                $t("database.version-control-enabled")
+              }}</span>
               <heroicons-outline:collection
                 class="w-4 h-4 text-control hover:text-control-hover"
               />
@@ -237,7 +241,7 @@ export default {
       if (showConsoleLink.value) {
         // Use cloneDeep, otherwise it will alter the one in columnListMap
         list = cloneDeep(list);
-        list.push({ title: "SQL console" });
+        list.push({ title: t("database.sql-console") });
       }
       return list;
     });
