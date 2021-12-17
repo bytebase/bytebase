@@ -75,14 +75,20 @@
               :class="{ 'bg-gray-100': locale === 'en' }"
               @click.prevent="toggleLocale('en')"
             >
-              English
+              <div class="radio text-sm">
+                <input type="radio" class="btn" :checked="locale === 'en'" />
+                <label class="ml-2">English</label>
+              </div>
             </div>
             <div
               class="menu-item px-3 py-1 hover:bg-gray-100"
               :class="{ 'bg-gray-100': locale === 'zh-CN' }"
               @click.prevent="toggleLocale('zh-CN')"
             >
-              中文
+              <div class="radio text-sm">
+                <input type="radio" class="btn" :checked="locale === 'zh-CN'" />
+                <label class="ml-2">中文</label>
+              </div>
             </div>
           </BBContextMenu>
         </div>
