@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -26,20 +27,18 @@ const dataFormat = "2006-01-02 15:04:05"
 
 // Run will run the task check timing executor once.
 func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	taskFind := &api.TaskFind{
-		ID: &taskCheckRun.TaskID,
+	payload := &api.TaskCheckEarliestAllowedTimePayload{}
+	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
+		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check timing payload: %w", err))
 	}
-	task, err := server.TaskService.FindTask(ctx, taskFind)
-	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
-	}
-	if time.Now().Before(time.Unix(task.NotBeforeTs, 0)) {
+
+	if time.Now().Before(time.Unix(payload.NotBeforeTs, 0)) {
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TaskTimingNotAllowed,
 				Title:   "Not ready to run",
-				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
+				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
 			},
 		}, nil
 	}
@@ -49,7 +48,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: fmt.Sprintf("Passed the configured earliest running timing: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
+			Content: fmt.Sprintf("Passed the configured earliest running timing: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
 		},
 	}, nil
 }
