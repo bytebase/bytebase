@@ -3,41 +3,30 @@
   <div class="space-y-4">
     <div class="mx-6 space-y-2">
       <div
-        class="
-          flex
-          items-center
-          justify-between
-          pb-2
-          border-b border-block-border
-        "
+        class="flex items-center justify-between pb-2 border-b border-block-border"
       >
-        <div class="text-lg leading-6 font-medium text-main">Unread</div>
+        <div class="text-lg leading-6 font-medium text-main">
+          {{ $t("common.unread") }}
+        </div>
         <button type="button" class="btn-normal" @click.prevent="markAllAsRead">
           <heroicons-outline:check
             class="-ml-1 mr-2 h-5 w-5 text-control-light"
           />
-          <span>Mark all as read</span>
+          <span>{{ $t("inbox.mark-all-as-read") }}</span>
         </button>
       </div>
       <InboxList :inbox-list="state.unreadList" />
     </div>
     <div class="mt-6 mx-6 space-y-2">
       <div
-        class="
-          text-lg
-          leading-6
-          font-medium
-          text-main
-          pb-2
-          border-b border-block-border
-        "
+        class="text-lg leading-6 font-medium text-main pb-2 border-b border-block-border"
       >
-        Read
+        {{ $t("common.read") }}
       </div>
       <InboxList class="opacity-70" :inbox-list="state.readList" />
       <div class="mt-2 flex justify-end">
         <button type="button" class="normal-link" @click.prevent="viewOlder">
-          View older
+          {{ $t("inbox.view-older") }}
         </button>
       </div>
     </div>

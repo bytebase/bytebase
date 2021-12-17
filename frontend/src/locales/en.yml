@@ -13,6 +13,9 @@ common:
   webhooks: Webhooks
   key: Key
   workflow: Workflow
+  unread: Unread
+  read: Read
+  inbox: Inbox
   activity: Activity
   activities: Activities
   sign-in: Sign in
@@ -627,3 +630,6 @@ project:
       btn-text: Archive this @.lower:{'common.project'}
     restore:
       btn-text: Restore this @.lower:{'common.project'}
+inbox:
+  mark-all-as-read: Mark all as read
+  view-older: View older
