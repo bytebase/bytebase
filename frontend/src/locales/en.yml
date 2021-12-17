@@ -1,5 +1,15 @@
 common:
-  version-control: Version Control
+  view: view
+  you: you
+  general: General
+  slack: Slack
+  discord: Discord
+  teams: Teams
+  ding-talk: DingTalk
+  fei-shu: Feishu
+  we-com: WeCom
+  overview: Overview
+  migration-history: Migration History
   webhooks: Webhooks
   key: Key
   workflow: Workflow
@@ -198,6 +208,7 @@ settings:
       account: Account
       role: Role
       update-time: Updated Time
+      granted-time: Granted Time
     action:
       deactivate: Deactivate
       deactivate-confirm-title: Are you sure to deactivate
@@ -333,6 +344,8 @@ db:
   select: Select database
   select-instance-first: Select instance first
   select-environment-first: Select environment first
+  last-successful-sync: Last successful sync
+  sync-status: Sync status
 instance:
   select: Select instance
 environment:
@@ -529,12 +542,9 @@ anomaly:
   last-seen: Last seen
   first-seen: First seen
 project:
-  tab-item:
-    migration-history: Migration History
-
   dashboard:
     modal:
-      title: How to setup \'Project\' ?
+      title: How to setup \'@:{'common.project'}\' ?
       content: >-
         Bytebase project is similar to the project concept in other common dev tools.
 
@@ -591,3 +601,51 @@ project:
     no-db-prompt: >-
       No database belongs to this project.
       You can add database by clicking {newDb} or {transferInDb} from the top action bar.
+  webhook:
+    create-webhook: Add a webhook
+    last-updated-by: Last updated bu
+    destination: Destination
+    webhook-url: Webhook url
+    triggering-activity: Triggering activities
+    test-webhook: Test Webhook
+    no-webhook:
+      title: No webhook configured for this project.
+      content: >-
+        Configure webhooks to let Bytebase post notification to the external
+        systems on various events.
+    creation:
+      title: Create webhook
+      desc:  >-
+        Create the corresponding webhook for the {destination} channel receiving the message.
+      how-to-protect: >-
+        If you want to use keyword list to protect the webhook, you can add
+        "Bytebase" to that list.
+      view-doc: View {destination}'s doc
+    deletion:
+      btn-text: Delete this webhook
+    activity-item:
+      issue-creation:
+        title: Issue creation
+        label: When new issue has been created
+      issue-status-change:
+        title: Issue status change
+        label: When issue status has changed
+      issue-task-status-change:
+        title: Issue task status change
+        label: When issue's enclosing task status has changed
+      issue-info-change:
+        title: Issue info change
+        label: When issue info (e.g. assignee, title, description) has changed
+      issue-comment-creation:
+        title: Issue comment creation
+        label: When new issue comment has been created
+  settings:
+    member-placeholder: Select user
+    manage-member: Manage members
+    add-member: Add member
+    owner: "@.upper:common.role.owner"
+    developer: "@.upper:common.role.developer"
+    archive:
+      btn-text: Archive this project
+    restore:
+      btn-text: Restore this project

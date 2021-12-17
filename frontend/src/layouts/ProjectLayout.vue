@@ -69,14 +69,16 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const projectTabItemList: ProjectTabItem[] = [
-      { name: "Overview", hash: "overview" },
-      { name: "Migration History", hash: "migration-history" },
-      { name: t("common.activities"), hash: "activity" },
-      { name: t("common.version-control"), hash: "version-control" },
-      { name: t("common.webhook"), hash: "webhook" },
-      { name: t("common.settings"), hash: "setting" },
-    ];
+    const projectTabItemList = computed((): ProjectTabItem[] => {
+      return [
+        { name: t("common.overview"), hash: "overview" },
+        { name: t("common.migration-history"), hash: "migration-history" },
+        { name: t("common.activities"), hash: "activity" },
+        { name: t("common.version-control"), hash: "version-control" },
+        { name: t("common.webhooks"), hash: "webhook" },
+        { name: t("common.settings"), hash: "setting" },
+      ];
+    });
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
@@ -108,7 +110,7 @@ export default {
     });
 
     const tabItemList = computed((): BBTabFilterItem[] => {
-      return projectTabItemList.map((item) => {
+      return projectTabItemList.value.map((item) => {
         return {
           title: item.name,
           alert: false,
@@ -119,9 +121,9 @@ export default {
     const selectProjectTabOnHash = () => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         if (router.currentRoute.value.hash) {
-          for (let i = 0; i < projectTabItemList.length; i++) {
+          for (let i = 0; i < projectTabItemList.value.length; i++) {
             if (
-              projectTabItemList[i].hash ==
+              projectTabItemList.value[i].hash ==
               router.currentRoute.value.hash.slice(1)
             ) {
               selectTab(i);
@@ -154,7 +156,7 @@ export default {
       state.selectedIndex = index;
       router.replace({
         name: "workspace.project.detail",
-        hash: "#" + projectTabItemList[index].hash,
+        hash: "#" + projectTabItemList.value[index].hash,
       });
     };
 
