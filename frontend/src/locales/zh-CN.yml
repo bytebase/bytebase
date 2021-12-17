@@ -76,6 +76,8 @@ common:
   schema: Schema
   anomalies: 异常
   do-not-show-again: 不再显示
+  overview: 概观
+  backups: 备份
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -292,6 +294,7 @@ db:
   select-environment-first: 先选择环境
   tables: 表
   views: 视图
+  parent: 母
 instance:
   select: 选择实例
   new-database: '@:common.new@:common.database'
@@ -381,3 +384,10 @@ database:
     每个 Bytebase 数据库都映射到由 \'CREATE DATABASE xxx\' 创建的一个数据库。
     在 Bytebase 中，一个数据库始终属于单个项目。\n\nBytebase 将定期同步每个实例的数据库信息。
     您还可以从仪表板创建新数据库。
+  restored-from: 恢复于
+  database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
+  sql-console: SQL控制台
+  transfer-project: 转移项目
+  alter-schema-in-vcs: 变更Schema(VCS)
+  successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: 成功将'{0}'转移到项目'{1}'。
+  database-backup: 数据库备份
