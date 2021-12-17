@@ -72,20 +72,20 @@ export default {
     const router = useRouter();
 
     const stepList: BBStepTabItem[] = [
-      { title: t('version-control.setting.add-git-provider.basic-info.self') },
-      { title: t('version-control.setting.add-git-provider.oauth-info.self') },
-      { title: t('common.confirm') },
+      { title: t("version-control.setting.add-git-provider.basic-info.self") },
+      { title: t("version-control.setting.add-git-provider.oauth-info.self") },
+      { title: t("common.confirm") },
     ];
 
     const state = reactive<LocalState>({
       config: {
         type: "GITLAB_SELF_HOST",
-        name: t('version-control.setting.add-git-provider.gitlab-self-host'),
+        name: t("version-control.setting.add-git-provider.gitlab-self-host"),
         instanceUrl: "",
         applicationId: "",
         secret: "",
       },
-      currentStep: 1,
+      currentStep: 0,
     });
 
     const eventListener = (event: Event) => {
@@ -131,7 +131,9 @@ export default {
 
     const attentionText = computed((): string => {
       if (state.config.type == "GITLAB_SELF_HOST") {
-        return t('version-control.setting.add-git-provider.gitlab-self-host-admin-requirement');
+        return t(
+          "version-control.setting.add-git-provider.gitlab-self-host-admin-requirement"
+        );
       }
       return "";
     });
@@ -162,7 +164,9 @@ export default {
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
                 style: "SUCCESS",
-                title: t('version-control.setting.add-git-provider.ouath-info-correct'),
+                title: t(
+                  "version-control.setting.add-git-provider.ouath-info-correct"
+                ),
               });
             } else {
               var description = "";
@@ -170,8 +174,9 @@ export default {
                 // If application id mismatches, the OAuth workflow will stop early.
                 // So the only possibility to reach here is we have a matching application id, while
                 // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
-                description =
-                  t('version-control.setting.add-git-provider.check-oauth-info-match');
+                description = t(
+                  "version-control.setting.add-git-provider.check-oauth-info-match"
+                );
               }
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
@@ -201,7 +206,9 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
-          title: t('version-control.setting.add-git-provider.add-success', [vcs.name]),
+          title: t("version-control.setting.add-git-provider.add-success", [
+            vcs.name,
+          ]),
         });
       });
     };

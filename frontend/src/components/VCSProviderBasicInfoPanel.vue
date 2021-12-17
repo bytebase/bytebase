@@ -1,6 +1,7 @@
 <template>
   <div class="textlabel">
-    {{ $t('version-control.setting.add-git-provider.choose') }} <span class="text-red-600">*</span>
+    {{ $t("version-control.setting.add-git-provider.choose") }}
+    <span class="text-red-600">*</span>
   </div>
   <div class="pt-4 radio-set-row">
     <div class="radio space-x-2">
@@ -14,14 +15,16 @@
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
-        >{{ $t('version-control.setting.add-git-provider.gitlab-self-host-ce-ee') }}
+        >{{
+          $t("version-control.setting.add-git-provider.gitlab-self-host-ce-ee")
+        }}
       </label>
     </div>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
       <span class="pr-2 bg-white text-xs text-control-light">
-        {{ $t('common.coming-later') }}
+        {{ $t("common.coming-later") }}
       </span>
     </div>
   </div>
@@ -49,7 +52,11 @@
     {{ instanceUrlLabel }} <span class="text-red-600">*</span>
   </div>
   <p class="mt-1 textinfolabel">
-{{ $t('version-control.setting.add-git-provider.basic-info.gitlab-instance-url-label') }}
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.gitlab-instance-url-label"
+      )
+    }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -58,11 +65,21 @@
     @input="changeUrl($event.target.value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
-    {{ $t('version-control.setting.add-git-provider.basic-info.instance-url-error') }}
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.instance-url-error"
+      )
+    }}
   </p>
-  <div class="mt-4 textlabel">{{ $t('version-control.setting.add-git-provider.basic-info.display-name') }}</div>
+  <div class="mt-4 textlabel">
+    {{ $t("version-control.setting.add-git-provider.basic-info.display-name") }}
+  </div>
   <p class="mt-1 textinfolabel">
-    {{ $t('version-control.setting.add-git-provider.basic-info.display-name-label') }}
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.display-name-label"
+      )
+    }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -107,14 +124,16 @@ export default {
 
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return t('version-control.setting.add-git-provider.gitlab-self-host');
+        return t("version-control.setting.add-git-provider.gitlab-self-host");
       }
       return "";
     });
 
     const instanceUrlLabel = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return t('version-control.setting.add-git-provider.basic-info.gitlab-instance-url');
+        return t(
+          "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
+        );
       }
       return "";
     });
