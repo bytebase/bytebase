@@ -8,7 +8,7 @@
       />
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search database name'"
+        :placeholder="$t('database.search-database-name')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -18,10 +18,10 @@
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :ok-text="'Do not show again'"
-    :cancel-text="'Dismiss'"
-    :title="'How to setup \'Database\' ?'"
-    :description="'Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.'"
+    :ok-text="$t('common.do-not-show-again')"
+    :cancel-text="$t('common.dismiss')"
+    :title="$t('database.how-to-setup-database')"
+    :description="$t('database.show-guide-description')"
     @ok="
       () => {
         doDismissGuide();
