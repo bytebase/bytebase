@@ -74,6 +74,7 @@ common:
   transfer: 转移
   migration: 迁移
   schema: Schema
+  anomalies: 异常
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -288,6 +289,8 @@ db:
   select: 选择数据库
   select-instance-first: 先选择实例
   select-environment-first: 先选择环境
+  tables: 表
+  views: 视图
 instance:
   select: 选择实例
   new-database: '@:common.new@:common.database'
@@ -366,3 +369,8 @@ migration-history:
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
   contact-dba: 请联系你的 DBA 进行配置。
+database:
+  the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes: 该表每隔约10分钟刷新一次，可能过期。
+  last-successful-sync: 最后一次成功的同步
+  no-anomalies-detected: 没有检测到异常
+  sync-status: 同步状态

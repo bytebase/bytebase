@@ -74,6 +74,7 @@ common:
   transfer: Transfer
   migration: Migration
   schema: Schema
+  anomalies: Anomalies
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -303,6 +304,8 @@ db:
   select: Select database
   select-instance-first: Select instance first
   select-environment-first: Select environment first
+  tables: Tables
+  views: Views
 instance:
   select: Select instance
   new-database: New Database
@@ -394,3 +397,8 @@ migration-history:
   instance-missing-migration-schema: Missing migration history schema on instance "{name}".
   instance-bad-connection: Unable to connect instance "{name}" to retrieve migration history.
   contact-dba: Please contact your DBA to config it
+database:
+  the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes: The list might be out of date and is refreshed roughly every 10 minutes
+  no-anomalies-detected: No anomalies detected
+  sync-status: Sync status
+  last-successful-sync: Last successful sync
