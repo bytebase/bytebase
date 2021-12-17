@@ -51,7 +51,7 @@
               href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
               class="normal-link inline-flex flex-row items-center"
             >
-              {{ $t("database.learn-more") }}
+              {{ $t("common.learn-more") }}
               <heroicons-outline:external-link class="w-4 h-4" />
             </a>
           </div>

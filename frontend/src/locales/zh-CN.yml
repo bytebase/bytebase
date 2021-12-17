@@ -116,6 +116,7 @@ common:
   restore: 重置
   detailed-guide: 详细指南
   workspace: 工作空间
+  learn-more: 了解更多。
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -193,7 +194,7 @@ settings:
     url-section: SQL Console URL
     url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
     tip: >-
-      如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供它的 URL 模板，Bytebase
+      如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供他的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
     tip-link: 详细指引
   members:
@@ -243,7 +244,7 @@ activity:
     reopened-issue: 重开工单
     resolved-issue: 解决工单
     canceled-issue: 取消工单
-    empty: ""
+    empty: ''
     changed: 修改
     updated: 更新
     canceled: 取消
@@ -274,10 +275,10 @@ issue:
   subscribe: 订阅
   unsubscribe: 取消订阅
   subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
-  apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
+  apply-to-other-stages: '@:{''common.apply''}到其他@:{''common.stage''}'
   add-sql-statement: 添加 SQL @:{'common.statement'}…
   optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
-  rollback-sql: "@:{'common.rollback'} SQL"
+  rollback-sql: '@:{''common.rollback''} SQL'
   add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
@@ -347,23 +348,25 @@ instance:
   new-database: '@:common.new@:common.database'
   syncing: 同步中 ...
   sync-now: 现在同步
-  create-migration-schema: '@:common.create@:common.migration@:{''common.schema''}'
-  missing-migration-schema: 缺少@:common.migration@:common.schema
-  unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:common.migration@:common.schema
+  create-migration-schema: '@:common.create@:common.migration @:{''common.schema''}'
+  missing-migration-schema: 缺少@:common.migration @:common.schema
+  unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}
   bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: >-
-    Bytebase需要@:{'common.migration'}@:{'common.schema'}来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的schema@:common.migration
-  please-contact-your-dba-to-configure-it: 请联系DBA配置。
+    Bytebase需要@:{'common.migration'} @:{'common.schema'}
+    来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema
+    @:common.migration
+  please-contact-your-dba-to-configure-it: 请联系 DBA 配置。
   please-check-the-instance-connection-info-is-correct: 请检查实例连接信息是否正确。
   users: 用户
   successfully-archived-instance-updatedinstance-name: 成功归档实例'{0}'。
   successfully-restored-instance-updatedinstance-name: 成功恢复实例'{0}'。
   failed-to-create-migration-schema-for-instance-instance-value-name: 为实例'{0}'创建迁移schema失败。
   successfully-created-migration-schema-for-instance-value-name: 成功为'{0}'创建迁移Schema。
-  failed-to-sync-schema-for-instance-instance-value-name: 为实例'{0}'同步schema失败。
-  successfully-synced-schema-for-instance-instance-value-name: 成功为实例'{0}'同步schema。
+  failed-to-sync-schema-for-instance-instance-value-name: 为实例'{0}'同步 schema 失败。
+  successfully-synced-schema-for-instance-instance-value-name: 成功为实例'{0}'同步 schema 。
   archive-instance-instance-name: 归档实例'{0}'?
   archive-this-instance: 归档该实例
-  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: 已归档实例不会在界面上显示。你之后仍可以在归档页中恢复它。
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: 已归档实例不会在界面上显示。您之后仍可以在归档页中恢复他。
   restore-this-instance: 恢复该实例
   restore: 恢复
   restore-instance-instance-name-to-normal-state: 恢复实例'{0}'到正常状态?
@@ -444,9 +447,9 @@ migration-history:
   establish-database-baseline: 建立「{name}」基线
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
-  contact-dba: 请联系你的 DBA 进行配置。
+  contact-dba: 请联系您的 DBA 进行配置。
 database:
-  the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes: 该表每隔约10分钟刷新一次，可能过期。
+  the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes: 该表每隔约10分钟刷新一次，所以信息可能已过期。
   last-successful-sync: 最后一次成功的同步
   no-anomalies-detected: 没有检测到异常
   sync-status: 同步状态
@@ -460,7 +463,7 @@ database:
   database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
   sql-console: SQL控制台
   transfer-project: 转移项目
-  alter-schema-in-vcs: 变更Schema(VCS)
+  alter-schema-in-vcs: 变更 Schema(VCS)
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: 成功将'{0}'转移到项目'{1}'。
   database-backup: 数据库备份
   backup-name: 备份名称
@@ -471,8 +474,7 @@ database:
   backup-policy:
     DAILY: 每日
     WEEKLY: 每周
-  an-http-post-request-will-be-sent-to-it-after-a-successful-backup: 备份成功后向其发送HTTP POST请求。
-  learn-more: 了解更多。
+  an-http-post-request-will-be-sent-to-it-after-a-successful-backup: 备份成功后向其发送 HTTP POST 请求。
   backup-info:
     template: 每{dayOrWeek}{time} 备份
   week:
@@ -553,7 +555,7 @@ anomaly:
     该列表大约每 10 分钟刷新一次。
   table-search-placeholder: 搜索{type}或者环境
   table-placeholder: 很棒，没有检测到{type}异常！
-  tooltip: "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常"
+  tooltip: '{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常'
   types:
     connection-failure: 连接失败
     missing-migration-schema: 缺少迁移 Schema
@@ -572,40 +574,36 @@ project:
   dashboard:
     modal:
       title: 如何创建您的'@:{'common.project'}' ?
-      content: >-
+      content: |-
         在 Bytebase 中，项目的概念与其他常见的的开发工具类似
 
-
         一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目
-
 
         同时，一个项目可以关联一个代码仓库，并以此来进行版本控制
       cancel: 关闭
       confirm: 不再出现
     search-bar-placeholder: 搜索项目名称
   table:
-    key: "@:common.key"
-    name: "@:common.name"
+    key: '@:common.key'
+    name: '@:common.name'
     created-at: 创建于
   create-modal:
-    project-name: "@:common.project @:common.name"
-    key: "@:common.key"
-    key-hint:  ( 请使用大写字母来命名您的项目 )
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    project-name: '@:common.project @:common.name'
+    key: '@:common.key'
+    key-hint: ( 请使用大写字母来命名您的项目 )
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
-    recent-activity: "近期@.lower:{'common.activities'}"
+    recent-activity: 近期@.lower:{'common.activities'}
     in-progress: 进行中
     recently-closed: 近期结束
     info-slot-content: >-
-      Bytebase periodically syncs the instance schema.
-      Newly synced databases are first placed in this default project.
-      User should transfer them to the proper application project.
-    no-db-prompt: >-
-      没有数据库属于当前项目
-      您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
+      Bytebase periodically syncs the instance schema. Newly synced databases
+      are first placed in this default project. User should transfer them to the
+      proper application project.
+    no-db-prompt: 没有数据库属于当前项目 您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
   webhook:
     create-webhook: 添加 webhook
     last-updated-by: 最后修改人
@@ -615,14 +613,11 @@ project:
     test-webhook: 测试 Webhook
     no-webhook:
       title: 当前项目暂未配置 webhook
-      content: >-
-        配置 webhook 来让 Bytebase 在完成任务后向您的外部系统推送通知
+      content: 配置 webhook 来让 Bytebase 在完成任务后向您的外部系统推送通知
     creation:
       title: 创建 webhook
-      desc:  >-
-        为 {destination} 创建一个 webhook
-      how-to-protect: >-
-        您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
+      desc: 为 {destination} 创建一个 webhook
+      how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
       view-doc: '{destination} 的官方文档'
     deletion:
       btn-text: Delete this webhook
@@ -646,8 +641,8 @@ project:
     member-placeholder: 选择用户
     manage-member: 管理成员
     add-member: 添加成员
-    owner: "@.upper:commo project.setting.add-membern.role.owner"
-    developer: "@.upper:common.role.developer"
+    owner: '@.upper:commo project.setting.add-membern.role.owner'
+    developer: '@.upper:common.role.developer'
     archive:
       btn-text: 收藏这个@:common.project
     restore:
