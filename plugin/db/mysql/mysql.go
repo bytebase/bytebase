@@ -875,6 +875,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 }
 
 // excludeSchemaAutoIncrementValue excludes the starting value of AUTO_INCREMENT if it's a schema only dump.
+// https://github.com/bytebase/bytebase/issues/123
 func excludeSchemaAutoIncrementValue(s string) string {
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
