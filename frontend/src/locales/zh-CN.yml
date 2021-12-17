@@ -78,6 +78,7 @@ common:
   add: 添加
   query: 查询
   transfer: 转移
+  language: 语言
   repository: 仓库
   change: 变更
   branch: 分支

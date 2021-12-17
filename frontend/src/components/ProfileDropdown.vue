@@ -59,6 +59,39 @@
         <router-link to="/setting" class="menu-item" role="menuitem">{{
           $t("common.settings")
         }}</router-link>
+        <div
+          class="menu-item relative"
+          @mouseenter="$refs.languageMenu.toggle($event)"
+          @mouseleave="$refs.languageMenu.toggle($event)"
+          @click.capture.prevent="$refs.languageMenu.toggle($event)"
+        >
+          <span>{{ $t("common.language") }}</span>
+          <BBContextMenu
+            ref="languageMenu"
+            class="origin-left absolute left-0 top-0 -translate-x-48 transform"
+          >
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': locale === 'en' }"
+              @click.prevent="toggleLocale('en')"
+            >
+              <div class="radio text-sm">
+                <input type="radio" class="btn" :checked="locale === 'en'" />
+                <label class="ml-2">English</label>
+              </div>
+            </div>
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': locale === 'zh-CN' }"
+              @click.prevent="toggleLocale('zh-CN')"
+            >
+              <div class="radio text-sm">
+                <input type="radio" class="btn" :checked="locale === 'zh-CN'" />
+                <label class="ml-2">中文</label>
+              </div>
+            </div>
+          </BBContextMenu>
+        </div>
         <a
           v-if="showQuickstart"
           class="menu-item"
@@ -78,11 +111,12 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
+import { useLanguage } from "../composables/useLanguage";
 
 export default {
   name: "ProfileDropdown",
@@ -91,6 +125,8 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { setLocale, locale } = useLanguage();
+    const languageMenu = ref();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -191,6 +227,11 @@ export default {
       });
     };
 
+    const toggleLocale = (lang: string) => {
+      setLocale(lang);
+      languageMenu.value.toggle();
+    };
+
     return {
       currentUser,
       showQuickstart,
@@ -200,6 +241,9 @@ export default {
       switchToDBA,
       switchToDeveloper,
       ping,
+      toggleLocale,
+      languageMenu,
+      locale,
     };
   },
 };

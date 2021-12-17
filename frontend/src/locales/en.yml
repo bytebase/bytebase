@@ -78,6 +78,7 @@ common:
   add: Add
   query: Query
   transfer: Transfer
+  language: Language
   repository: Repository
   change: Change
   branch: Branch
