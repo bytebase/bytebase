@@ -6,7 +6,7 @@
           <div
             class="flex items-center text-lg leading-6 font-medium text-main"
           >
-            Automatic weekly backup
+            {{ $t("database.automatic-weekly-backup") }}
             <span class="ml-1 text-success">enabled</span>
           </div>
           <button
@@ -15,52 +15,69 @@
             class="ml-4 btn-normal"
             @click.prevent="toggleAutoBackup(false)"
           >
-            Disable automatic backup
+            {{ $t("database.disable-automatic-backup") }}
           </button>
           <router-link
             v-else
             class="normal-link text-sm"
             :to="`/environment/${database.instance.environment.id}`"
           >
-            {{ `${backupPolicy} backup enforced and can't be disabled` }}
+            {{
+              $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
+                $t(`database.backup-policy.${backupPolicy}`),
+              ])
+            }}
           </router-link>
         </div>
         <div class="mt-2 text-control">
-          Backup will be taken on every
-          <span class="text-accent">{{ autoBackupWeekdayText }}</span> at
-          <span class="text-accent"> {{ autoBackupHourText }}</span>
+          <i18n-t keypath="database.backup-info.template">
+            <template #dayOrWeek>
+              <span class="text-accent">{{ autoBackupWeekdayText }}</span>
+            </template>
+            <template #time>
+              <span class="text-accent"> {{ autoBackupHourText }}</span>
+            </template>
+          </i18n-t>
         </div>
         <div class="mt-2">
-          <label for="hookUrl" class="textlabel">
-            Webhook URL
-          </label>
+          <label for="hookUrl" class="textlabel"> Webhook URL </label>
           <div class="mt-1 textinfolabel">
-            An HTTP POST request will be sent to it after a successful backup.
+            {{
+              $t(
+                "database.an-http-post-request-will-be-sent-to-it-after-a-successful-backup"
+              )
+            }}
             <a
-             href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
-             class="normal-link inline-flex flex-row items-center"
+              href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
+              class="normal-link inline-flex flex-row items-center"
             >
-            Learn more.
+              {{ $t("common.learn-more") }}
               <heroicons-outline:external-link class="w-4 h-4" />
             </a>
           </div>
           <input
             id="hookUrl"
+            v-model="state.autoBackupUpdatedHookUrl"
             name="hookUrl"
             type="text"
             class="textfield mt-1 w-full"
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
             :disabled="!allowEdit"
-            v-model="state.autoBackupUpdatedHookUrl"
           />
-          <button class="btn-primary mt-2" :disabled="!allowEdit || !UrlChanged" @click.prevent="updateBackupHookUrl()">Update</button>
+          <button
+            class="btn-primary mt-2"
+            :disabled="!allowEdit || !UrlChanged"
+            @click.prevent="updateBackupHookUrl()"
+          >
+            {{ $t("common.update") }}
+          </button>
         </div>
       </div>
       <div
         v-else
         class="flex items-center text-lg leading-6 font-medium text-main"
       >
-        Automatic weekly backup
+        {{ $t("database.automatic-weekly-backup") }}
         <span class="ml-1 text-control-light">disabled</span>
         <button
           v-if="allowAdmin && !state.autoBackupEnabled"
@@ -68,20 +85,22 @@
           class="ml-4 btn-primary"
           @click.prevent="toggleAutoBackup(true)"
         >
-          Enable backup
+          {{ $t("database.enable-backup") }}
         </button>
       </div>
     </div>
     <div class="pt-6 space-y-4">
       <div class="flex justify-between items-center">
-        <div class="text-lg leading-6 font-medium text-main">Backups</div>
+        <div class="text-lg leading-6 font-medium text-main">
+          {{ $t("common.backups") }}
+        </div>
         <button
           v-if="allowEdit"
           type="button"
           class="btn-normal whitespace-nowrap items-center"
           @click.prevent="state.showCreateBackupModal = true"
         >
-          Backup now
+          {{ $t("database.backup-now") }}
         </button>
       </div>
       <BackupTable
@@ -92,7 +111,7 @@
     </div>
     <BBModal
       v-if="state.showCreateBackupModal"
-      :title="'Create a manual backup'"
+      :title="$t('database.create-a-manual-backup')"
       @close="state.showCreateBackupModal = false"
     >
       <DatabaseBackupCreateForm
@@ -127,6 +146,7 @@ import {
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEmpty, isEqual } from "lodash";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -160,14 +180,15 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       showCreateBackupModal: false,
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
-      autoBackupHookUrl: '',
-      autoBackupUpdatedHookUrl: '',
+      autoBackupHookUrl: "",
+      autoBackupUpdatedHookUrl: "",
     });
 
     onUnmounted(() => {
@@ -224,28 +245,28 @@ export default {
         state.autoBackupDayOfWeek
       );
       if (dayOfWeek == -1) {
-        return "day";
+        return t("database.week.day");
       }
       if (dayOfWeek == 0) {
-        return "Sunday";
+        return t("database.week.Sunday");
       }
       if (dayOfWeek == 1) {
-        return "Monday";
+        return t("database.week.Monday");
       }
       if (dayOfWeek == 2) {
-        return "Tuesday";
+        return t("database.week.Tuesday");
       }
       if (dayOfWeek == 3) {
-        return "Wednesday";
+        return t("database.week.Wednesday");
       }
       if (dayOfWeek == 4) {
-        return "Thursday";
+        return t("database.week.Thursday");
       }
       if (dayOfWeek == 5) {
-        return "Friday";
+        return t("database.week.Friday");
       }
       if (dayOfWeek == 6) {
-        return "Saturday";
+        return t("database.week.Saturday");
       }
       return `Invalid day of week: ${dayOfWeek}`;
     });
@@ -275,7 +296,7 @@ export default {
 
     const UrlChanged = computed(() => {
       return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
-    })
+    });
 
     const createBackup = (backupName: string) => {
       // Create backup
@@ -356,11 +377,14 @@ export default {
         })
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
-          const action = on ? "Enabled" : "Disabled";
+          const action = on ? t("database.enabled") : t("database.disabled");
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `${action} automatic backup for database '${props.database.name}'.`,
+            title: t(
+              "database.action-automatic-backup-for-database-props-database-name",
+              [action, props.database.name]
+            ),
           });
         });
     };
@@ -382,10 +406,13 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Updated backup hook URL for database '${props.database.name}'.`,
+            title: t(
+              "database.updated-backup-webhook-url-for-database-props-database-name",
+              [props.database.name]
+            ),
           });
         });
-    }
+    };
 
     function localToUTC(hour: number, dayOfWeek: number) {
       return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);

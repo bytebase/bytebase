@@ -30,7 +30,10 @@
           />
           <div class="flex items-center space-x-4">
             <div>
-              <BBSpin v-if="state.syncingSchema" :title="'Syncing ...'" />
+              <BBSpin
+                v-if="state.syncingSchema"
+                :title="$t('instance.syncing')"
+              />
             </div>
             <button
               v-if="allowEdit"
@@ -38,7 +41,7 @@
               class="btn-normal"
               @click.prevent="syncSchema"
             >
-              Sync Now
+              {{ $t("instance.sync-now") }}
             </button>
             <button
               v-if="instance.rowStatus == 'NORMAL'"
@@ -46,7 +49,7 @@
               class="btn-primary"
               @click.prevent="createDatabase"
             >
-              New Database
+              {{ $t("instance.new-database") }}
             </button>
           </div>
         </div>
@@ -64,21 +67,31 @@
         <template v-if="instance.rowStatus == 'NORMAL'">
           <BBButtonConfirm
             :style="'ARCHIVE'"
-            :button-text="'Archive this instance'"
-            :ok-text="'Archive'"
+            :button-text="$t('instance.archive-this-instance')"
+            :ok-text="$t('common.archive')"
             :require-confirm="true"
-            :confirm-title="`Archive instance '${instance.name}'?`"
-            :confirm-description="'Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.'"
+            :confirm-title="
+              $t('instance.archive-instance-instance-name', [instance.name])
+            "
+            :confirm-description="
+              $t(
+                'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
+              )
+            "
             @confirm="doArchive"
           />
         </template>
         <template v-else-if="instance.rowStatus == 'ARCHIVED'">
           <BBButtonConfirm
             :style="'RESTORE'"
-            :button-text="'Restore this instance'"
-            :ok-text="'Restore'"
+            :button-text="$t('instance.restore-this-instance')"
+            :ok-text="$t('instance.restore')"
             :require-confirm="true"
-            :confirm-title="`Restore instance '${instance.name}' to normal state?`"
+            :confirm-title="
+              $t('instance.restore-instance-instance-name-to-normal-state', [
+                instance.name,
+              ])
+            "
             :confirm-description="''"
             @confirm="doRestore"
           />
@@ -91,8 +104,12 @@
     v-if="state.showCreateMigrationSchemaModal"
     :style="'INFO'"
     :ok-text="'Create'"
-    :title="'Create migration schema?'"
-    :description="'Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.'"
+    :title="$t('instance.create-migration-schema') + '?'"
+    :description="
+      $t(
+        'instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance'
+      )
+    "
     :in-progress="state.creatingMigrationSchema"
     @ok="
       () => {
@@ -105,7 +122,7 @@
 
   <BBModal
     v-if="state.showCreateDatabaseModal"
-    :title="'Create database'"
+    :title="$t('quick-action.create-db')"
     @close="state.showCreateDatabaseModal = false"
   >
     <!-- eslint-disable vue/attribute-hyphenation -->
@@ -135,6 +152,7 @@ import {
   SqlResultSet,
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -166,6 +184,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -199,9 +218,11 @@ export default {
 
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
-        return "Missing migration schema";
+        return t("instance.missing-migration-schema");
       } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return "Unable to connect instance to check migration schema";
+        return t(
+          "instance.unable-to-connect-instance-to-check-migration-schema"
+        );
       }
       return "";
     });
@@ -209,17 +230,22 @@ export default {
     const attentionText = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
         return (
-          "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance." +
+          t(
+            "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+          ) +
           (isDBAOrOwner(currentUser.value.role)
             ? ""
-            : " Please contact your DBA to configure it.")
+            : " " + t("instance.please-contact-your-dba-to-configure-it"))
         );
       } else if (state.migrationSetupStatus == "UNKNOWN") {
         return (
-          "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance." +
+          t(
+            "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+          ) +
           (isDBAOrOwner(currentUser.value.role)
-            ? " Please check the instance connection info is correct."
-            : " Please contact your DBA to configure it.")
+            ? " " +
+              t("instance.please-check-the-instance-connection-info-is-correct")
+            : " " + t("instance.please-contact-your-dba-to-configure-it"))
         );
       }
       return "";
@@ -228,7 +254,7 @@ export default {
     const attentionActionText = computed((): string => {
       if (isDBAOrOwner(currentUser.value.role)) {
         if (state.migrationSetupStatus == "NOT_EXIST") {
-          return "Create migration schema";
+          return t("instance.create-migration-schema");
         } else if (state.migrationSetupStatus == "UNKNOWN") {
           return "";
         }
@@ -277,11 +303,11 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       return [
         {
-          title: "Databases",
+          title: t("common.databases"),
           alert: false,
         },
         {
-          title: "Users",
+          title: t("instance.users"),
           alert: false,
         },
       ];
@@ -299,7 +325,10 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully archived instance '${updatedInstance.name}'.`,
+            title: t(
+              "instance.successfully-archived-instance-updatedinstance-name",
+              [updatedInstance.name]
+            ),
           });
         });
     };
@@ -316,7 +345,10 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully restored instance '${updatedInstance.name}'.`,
+            title: t(
+              "instance.successfully-restored-instance-updatedinstance-name",
+              [updatedInstance.name]
+            ),
           });
         });
     };
@@ -331,7 +363,10 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "CRITICAL",
-              title: `Failed to create migration schema for instance '${instance.value.name}'.`,
+              title: t(
+                "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
+                [instance.value.name]
+              ),
               description: resultSet.error,
             });
           } else {
@@ -339,7 +374,10 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "SUCCESS",
-              title: `Successfully created migration schema for '${instance.value.name}'.`,
+              title: t(
+                "instance.successfully-created-migration-schema-for-instance-value-name",
+                [instance.value.name]
+              ),
             });
           }
           state.showCreateMigrationSchemaModal = false;
@@ -356,14 +394,20 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "CRITICAL",
-              title: `Failed to sync schema for instance '${instance.value.name}'.`,
+              title: t(
+                "instance.failed-to-sync-schema-for-instance-instance-value-name",
+                [instance.value.name]
+              ),
               description: resultSet.error,
             });
           } else {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "SUCCESS",
-              title: `Successfully synced schema for instance '${instance.value.name}'.`,
+              title: t(
+                "instance.successfully-synced-schema-for-instance-instance-value-name",
+                [instance.value.name]
+              ),
               description: resultSet.error,
             });
           }
