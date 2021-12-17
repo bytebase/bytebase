@@ -420,3 +420,5 @@ database:
   transfer-project: Transfer Project
   alter-schema-in-vcs: Alter Schema in VCS
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
+  backup-name: Backup name
+  create-backup: Create backup

@@ -391,3 +391,5 @@ database:
   alter-schema-in-vcs: 变更Schema(VCS)
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: 成功将'{0}'转移到项目'{1}'。
   database-backup: 数据库备份
+  backup-name: 备份名称
+  create-backup: 创建备份
