@@ -75,6 +75,7 @@ common:
   migration: Migration
   schema: Schema
   anomalies: Anomalies
+  do-not-show-again: Do not show again
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -402,3 +403,10 @@ database:
   no-anomalies-detected: No anomalies detected
   sync-status: Sync status
   last-successful-sync: Last successful sync
+  search-database-name: Search database name
+  how-to-setup-database: How to setup \'Database\' ?
+  show-guide-description: >-
+    Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'.
+    In Bytebase, a database always belongs to a single project.\n\nBytebase will
+    periodically sync the database info for every recorded instance. You can
+    also create a new database from the dashboard.

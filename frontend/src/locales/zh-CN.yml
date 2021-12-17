@@ -75,6 +75,7 @@ common:
   migration: 迁移
   schema: Schema
   anomalies: 异常
+  do-not-show-again: 不再显示
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -374,3 +375,9 @@ database:
   last-successful-sync: 最后一次成功的同步
   no-anomalies-detected: 没有检测到异常
   sync-status: 同步状态
+  search-database-name: 搜索数据库名称
+  how-to-setup-database: 如何设置\'数据库\'？
+  show-guide-description: |-
+    每个 Bytebase 数据库都映射到由 \'CREATE DATABASE xxx\' 创建的一个数据库。
+    在 Bytebase 中，一个数据库始终属于单个项目。\n\nBytebase 将定期同步每个实例的数据库信息。
+    您还可以从仪表板创建新数据库。
