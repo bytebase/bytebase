@@ -2,11 +2,12 @@
   <div class="space-y-6 divide-y divide-block-border">
     <div v-if="anomalySectionList.length > 0">
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
-        Anomalies
-        <span class="ml-2 textinfolabel items-center flex"
-          >The list might be out of date and is refreshed roughly every 10
-          minutes</span
-        >
+        {{ $t("common.anomalies") }}
+        <span class="ml-2 textinfolabel items-center flex">{{
+          $t(
+            "database.the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes"
+          )
+        }}</span>
       </div>
       <AnomalyTable :anomaly-section-list="anomalySectionList" />
     </div>
@@ -14,7 +15,7 @@
       v-else
       class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
     >
-      No anomalies detected
+      {{ $t("database.no-anomalies-detected") }}
       <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
     </div>
 
@@ -30,8 +31,8 @@
           <dt class="text-sm font-medium text-control-light">
             {{
               database.instance.engine == "POSTGRES"
-                ? "Encoding"
-                : "Character set"
+                ? $t("db.encoding")
+                : $t("db.character-set")
             }}
           </dt>
           <dd class="mt-1 text-sm text-main">
@@ -40,7 +41,9 @@
         </div>
 
         <div class="col-span-1">
-          <dt class="text-sm font-medium text-control-light">Collation</dt>
+          <dt class="text-sm font-medium text-control-light">
+            {{ $t("db.collation") }}
+          </dt>
           <dd class="mt-1 text-sm text-main">
             {{ database.collation }}
           </dd>
@@ -48,7 +51,9 @@
       </template>
 
       <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">Sync status</dt>
+        <dt class="text-sm font-medium text-control-light">
+          {{ $t("database.sync-status") }}
+        </dt>
         <dd class="mt-1 text-sm text-main">
           <span>{{ database.syncStatus }}</span>
         </dd>
@@ -56,7 +61,7 @@
 
       <div class="col-span-1">
         <dt class="text-sm font-medium text-control-light">
-          Last successful sync
+          {{ $t("database.last-successful-sync") }}
         </dt>
         <dd class="mt-1 text-sm text-main">
           {{ humanizeTs(database.lastSuccessfulSyncTs) }}
@@ -64,14 +69,18 @@
       </div>
 
       <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">Created</dt>
+        <dt class="text-sm font-medium text-control-light">
+          {{ $t("common.created-at") }}
+        </dt>
         <dd class="mt-1 text-sm text-main">
           {{ humanizeTs(database.createdTs) }}
         </dd>
       </div>
 
       <div class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">Updated</dt>
+        <dt class="text-sm font-medium text-control-light">
+          {{ $t("common.updated-at") }}
+        </dt>
         <dd class="mt-1 text-sm text-main">
           {{ humanizeTs(database.updatedTs) }}
         </dd>
@@ -79,10 +88,14 @@
     </dl>
 
     <div class="pt-6">
-      <div class="text-lg leading-6 font-medium text-main mb-4">Tables</div>
+      <div class="text-lg leading-6 font-medium text-main mb-4">
+        {{ $t("db.tables") }}
+      </div>
       <TableTable :table-list="tableList" />
 
-      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">Views</div>
+      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+        {{ $t("db.views") }}
+      </div>
       <ViewTable :view-list="viewList" />
     </div>
 
@@ -134,7 +147,7 @@
                     class="btn-normal"
                     @click.prevent="cancelEditDataSource"
                   >
-                    Cancel
+                    {{ $t("common.cancel") }}
                   </button>
                   <button
                     type="button"
@@ -146,7 +159,7 @@
                     <heroicons-solid:save
                       class="-ml-1 mr-2 h-5 w-5 text-control-light"
                     />
-                    <span>Save</span>
+                    <span>{{ $t("common.save") }}</span>
                   </button>
                 </template>
                 <template v-else>
@@ -159,7 +172,7 @@
                     <heroicons-solid:pencil
                       class="-ml-1 mr-2 h-5 w-5 text-control-light"
                     />
-                    <span>Edit</span>
+                    <span>{{ $t("common.edit") }}</span>
                   </button>
                 </template>
               </div>
