@@ -78,6 +78,7 @@ common:
   add: 添加
   query: 查询
   transfer: 转移
+  language: 语言
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心

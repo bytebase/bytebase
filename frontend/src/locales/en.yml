@@ -78,6 +78,7 @@ common:
   add: Add
   query: Query
   transfer: Transfer
+  language: Language
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
