@@ -1,11 +1,29 @@
 common:
+  view: 查看
+  you: 您
+  general: 通用
+  slack: Slack
+  discord: Discord
+  teams: Teams
+  dingtalk: 钉钉
+  feishu: 飞书
+  wecom: 企业微信
+  overview: 概览
+  migration-history: 迁移历史
+  webhooks: Webhook
+  key: 键值
+  workflow: 工作流
+  activity: 活动
+  activities: 活动
+  unread: 未读
+  read: 已读
+  inbox: 通知
   sign-in: 登陆
   sign-up: 注册
   email: 邮箱
   username: 用户名
   password: 密码
   activate: 激活
-  activity: 活动
   save: 保存
   cancel: 取消
   comment: 评论
@@ -68,7 +86,7 @@ common:
   updated-at: 更新于
   commit: 提交
   statement: 语句
-  sql-statement: "SQL @:{'common.statement'}"
+  sql-statement: SQL @:{'common.statement'}
   snapshot: 快照
   status: 状态
   stage: 阶段
@@ -78,6 +96,8 @@ common:
   add: 添加
   query: 查询
   transfer: 转移
+  detail: 详情
+  type: 类型
   language: 语言
   repository: 仓库
   change: 变更
@@ -187,6 +207,7 @@ settings:
       account: 账户
       role: 角色
       update-time: 更新时间
+      granted-time: 批准时间
     action:
       deactivate: 禁用
       deactivate-confirm-title: 确定禁用
@@ -203,20 +224,20 @@ activity:
   created: 创建于
   invoker: 执行者
   sentence:
-    created-issue: "创建工单"
+    created-issue: 创建工单
     commented: 评论
-    reassigned-issue: "将工单由 {oldName} 重新指派给 {newName}"
-    assigned-issue: "将工单指派给 {newName}"
-    unassigned-issue: "将工单由 {oldName} 解除指派"
-    invalid-assignee-update: "无效的指派操作"
-    changed-description: "修改描述"
-    changed-from-to: '将 {name} 从 "{oldValue}" 修改为 "{newValue}"'
-    unset-from: '撤销 {name} 的值 (从 "{oldValue}")'
-    set-to: '将 {name} 设置为 "{newValue}"'
-    changed-update: "修改 {name}"
-    reopened-issue: "重开工单"
-    resolved-issue: "解决工单"
-    canceled-issue: "取消工单"
+    reassigned-issue: 将工单由 {oldName} 重新指派给 {newName}
+    assigned-issue: 将工单指派给 {newName}
+    unassigned-issue: 将工单由 {oldName} 解除指派
+    invalid-assignee-update: 无效的指派操作
+    changed-description: 修改描述
+    changed-from-to: 将 {name} 从 "{oldValue}" 修改为 "{newValue}"
+    unset-from: 撤销 {name} 的值 (从 "{oldValue}")
+    set-to: 将 {name} 设置为 "{newValue}"
+    changed-update: 修改 {name}
+    reopened-issue: 重开工单
+    resolved-issue: 解决工单
+    canceled-issue: 取消工单
     empty: ""
     changed: 修改
     updated: 更新
@@ -225,10 +246,10 @@ activity:
     started: 开始
     completed: 完成
     failed: 失败
-    task-name: "任务 {name}"
-    committed-to-at: "提交 {file} 到 {branch}{'@'}{repo}"
+    task-name: 任务 {name}
+    committed-to-at: 提交 {file} 到 {branch}{'@'}{repo}
   subject-prefix:
-    task: "任务"
+    task: 任务
 issue:
   waiting-approval: 等待批准
   opened-by-at: "{id} 由 {creator} 开启于 {time}"
@@ -249,10 +270,10 @@ issue:
   unsubscribe: 取消订阅
   subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
   apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
-  add-sql-statement: "添加 SQL @:{'common.statement'}…"
-  optional-add-sql-statement: "（可选）添加 SQL @:{'common.statement'}…"
+  add-sql-statement: 添加 SQL @:{'common.statement'}…
+  optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
   rollback-sql: "@:{'common.rollback'} SQL"
-  add-rollback-sql-statement: "添加 @:{'common.rollback'} SQL @:{'common.statement'}…"
+  add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
   add-a-comment: 添加评论
@@ -311,6 +332,8 @@ db:
   select: 选择数据库
   select-instance-first: 先选择实例
   select-environment-first: 先选择环境
+  last-successful-sync: 上次成功同步于
+  sync-status: 同步状态
 instance:
   select: 选择实例
 environment:
@@ -444,3 +467,112 @@ workflow:
   configure-gitops: 配置 Git
   configure-gitops-success: 开启「{project}」GitOps 工作流成功
   change-gitops-success: 变更「{project}」仓库成功
+anomaly:
+  attention-title: 异常检测
+  attention-desc: |-
+    Bytebase 会定期扫描托管资源并在这里列出检测到的异常。
+    该列表大约每 10 分钟刷新一次。
+  table-search-placeholder: 搜索{type}或者环境
+  table-placeholder: 很棒，没有检测到{type}异常！
+  tooltip: "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常"
+  types:
+    connection-failure: 连接失败
+    missing-migration-schema: 缺少迁移 Schema
+    schema-drift: Schema 偏差
+    backup-enforcement-viloation: 违反备份策略约束
+    missing-backup: 缺少备份
+  action:
+    check-instance: 检查实例
+    view-backup: 查看备份
+    configure-backup: 配置备份
+    view-diff: 查看差异
+  last-seen: 上次出现
+  first-seen: 首次出现
+  contact-dba: 请联系您的 DBA 进行配置。
+project:
+  dashboard:
+    modal:
+      title: 如何创建您的'@:{'common.project'}' ?
+      content: >-
+        在 Bytebase 中，项目的概念与其他常见的的开发工具类似
+
+
+        一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目
+
+
+        同时，一个项目可以关联一个代码仓库，并以此来进行版本控制
+      cancel: 关闭
+      confirm: 不再出现
+    search-bar-placeholder: 搜索项目名称
+  table:
+    key: "@:common.key"
+    name: "@:common.name"
+    created-at: 创建于
+  create-modal:
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
+    key-hint:  ( 请使用大写字母来命名您的项目 )
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+  overview:
+    view-all: 查看所有
+    view-all-closed: 查看所有结束的工单
+    recent-activity: "近期@.lower:{'common.activities'}"
+    in-progress: 进行中
+    recently-closed: 近期结束
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema.
+      Newly synced databases are first placed in this default project.
+      User should transfer them to the proper application project.
+    no-db-prompt: >-
+      没有数据库属于当前项目
+      您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
+  webhook:
+    create-webhook: 添加 webhook
+    last-updated-by: 最后修改人
+    destination: 外部应用
+    webhook-url: Webhook url
+    triggering-activity: 触发事件
+    test-webhook: 测试 Webhook
+    no-webhook:
+      title: 当前项目暂未配置 webhook
+      content: >-
+        配置 webhook 来让 Bytebase 在完成任务后向您的外部系统推送通知
+    creation:
+      title: 创建 webhook
+      desc:  >-
+        为 {destination} 创建一个 webhook
+      how-to-protect: >-
+        您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
+      view-doc: '{destination} 的官方文档'
+    deletion:
+      btn-text: Delete this webhook
+    activity-item:
+      issue-creation:
+        title: Issue creation
+        label: When new issue has been created
+      issue-status-change:
+        title: Issue status change
+        label: When issue status has changed
+      issue-task-status-change:
+        title: Issue task status change
+        label: When issue's enclosing task status has changed
+      issue-info-change:
+        title: Issue info change
+        label: When issue info (e.g. assignee, title, description) has changed
+      issue-comment-creation:
+        title: Issue comment creation
+        label: When new issue comment has been created
+  settings:
+    member-placeholder: 选择用户
+    manage-member: 管理成员
+    add-member: 添加成员
+    owner: "@.upper:commo project.setting.add-membern.role.owner"
+    developer: "@.upper:common.role.developer"
+    archive:
+      btn-text: 收藏这个@:common.project
+    restore:
+      btn-text: 取消收藏这个@:common.project
+inbox:
+  mark-all-as-read: 全部标记为已读
+  view-older: 查看更早

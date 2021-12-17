@@ -43,19 +43,9 @@
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
-              class="
-                inline-flex
-                items-center
-                px-2
-                py-0.5
-                rounded-lg
-                text-xs
-                font-semibold
-                bg-main
-                text-main-text
-              "
+              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
             >
-              Invited
+              {{ $t("settings.members.invited") }}
             </span>
             <span class="textlabel">
               {{ member.principal.email }}
@@ -72,19 +62,9 @@
                 </router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
-                  class="
-                    inline-flex
-                    items-center
-                    px-2
-                    py-0.5
-                    rounded-lg
-                    text-xs
-                    font-semibold
-                    bg-green-100
-                    text-green-800
-                  "
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                 >
-                  You
+                  {{ $t("common.you") }}
                 </span>
               </div>
               <span class="textlabel">
@@ -143,6 +123,7 @@ import {
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
+import { useI18n } from "vue-i18n";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -158,6 +139,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -184,19 +166,19 @@ export default {
         const dataSource: BBTableSectionDataSource<ProjectMember>[] = [];
         if (hasAdminFeature.value) {
           dataSource.push({
-            title: "Owner",
+            title: t("common.role.owner"),
             list: ownerList,
           });
 
           dataSource.push({
-            title: "Developer",
+            title: t("common.role.developer"),
             list: developerList,
           });
         } else {
           ownerList.push(...developerList);
 
           dataSource.push({
-            title: "Member",
+            title: t("common.role.member"),
             list: ownerList,
           });
         }
@@ -208,13 +190,13 @@ export default {
       return hasAdminFeature.value
         ? [
             {
-              title: "Account",
+              title: t("settings.members.table.account"),
             },
             {
-              title: "Role",
+              title: t("settings.members.table.role"),
             },
             {
-              title: "Granted Time",
+              title: t("settings.members.table.granted-time"),
             },
             {
               title: "",
@@ -222,10 +204,10 @@ export default {
           ]
         : [
             {
-              title: "Account",
+              title: t("settings.members.table.account"),
             },
             {
-              title: "Granted Time",
+              title: t("settings.members.table.granted-time"),
             },
             {
               title: "",

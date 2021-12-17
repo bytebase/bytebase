@@ -37,7 +37,7 @@
         class="btn-normal py-2 px-4"
         @click.prevent="viewProjectWebhook"
       >
-        View
+        {{ $t("common.view") }}
       </button>
     </div>
     <div class="border-t border-block-border">
@@ -50,7 +50,7 @@
         </div>
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">
-            Triggering activities
+            {{ $t("project.webhook.triggering-activity") }}
           </dt>
           <dd class="py-0.5 flex text-sm text-main col-span-4">
             {{ activityListStr }}
@@ -58,7 +58,7 @@
         </div>
         <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">
-            Last updated by
+            {{ $t("project.webhook.last-updated-by") }}
           </dt>
           <dd class="py-0.5 flex items-center text-sm text-main col-span-4">
             <div class="flex flex-row items-center space-x-2 mr-1">
