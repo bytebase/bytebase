@@ -1,4 +1,7 @@
 common:
+  unread: 未读
+  read: 已读
+  inbox: 通知
   sign-in: 登陆
   sign-up: 注册
   email: 邮箱
@@ -467,3 +470,6 @@ anomaly:
     view-diff: 查看差异
   last-seen: 上次出现
   first-seen: 首次出现
+inbox:
+  mark-all-as-read: 全部标记为已读
+  view-older: 查看更早
