@@ -34,21 +34,7 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
 import { projectSlug } from "../utils";
 import { Repository } from "../types";
-
-const columnList: BBTableColumn[] = [
-  {
-    title: "Project",
-  },
-  {
-    title: "Repository",
-  },
-  {
-    title: "Creator",
-  },
-  {
-    title: "Created",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "RepositoryTable",
@@ -60,7 +46,24 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+
     const router = useRouter();
+
+    const columnList: BBTableColumn[] = [
+      {
+        title: t("common.project"),
+      },
+      {
+        title: t("common.repository"),
+      },
+      {
+        title: t("common.creator"),
+      },
+      {
+        title: t("common.created-at"),
+      },
+    ];
 
     const clickRepository = function (section: number, row: number) {
       const repository = props.repositoryList[row];

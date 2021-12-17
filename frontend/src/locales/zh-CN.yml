@@ -79,6 +79,18 @@ common:
   query: 查询
   transfer: 转移
   language: 语言
+  repository: 仓库
+  change: 变更
+  branch: 分支
+  config-guide: 配置指南
+  required-placeholder: 必需的占位符
+  optional-placeholder: 可选的占位符
+  enabled: 开启
+  default: 默认
+  version-control: 版本控制
+  restore: 重置
+  detailed-guide: 详细指南
+  workspace: 工作空间
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -125,9 +137,15 @@ intro:
   issue: 工单
   quickstart: 快速入门
 bbkit:
-  alert:
+  common:
     ok: 确认
     cancel: 取消
+    back: 退回
+    next: 下一步
+    finish: 完成
+    step: 步骤
+  attention:
+    default: 特别注意
 settings:
   sidebar:
     account: 账户
@@ -372,4 +390,57 @@ migration-history:
   establish-database-baseline: 建立「{name}」基线
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
-  contact-dba: 请联系您的 DBA 进行配置。
+  contact-dba: 请联系你的 DBA 进行配置。
+repository:
+  branch-observe-file-change: Bytebase 跟踪文件变更的分支。
+  branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
+  base-directory: 根目录
+  base-directory-description: Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。
+  file-path-template: 文件路径模版
+  file-path-template-description: Bytebase 仅会跟踪那些文件路径匹配模版 (相对于指定根目录）的文件。
+  file-path-example-normal-migration: 针对普通迁移类型的文件路径样例
+  file-path-example-baseline-migration: 针对基线迁移类型的文件路径样例
+  schema-path-template: Schema 路径模版
+  schema-writeback-description: >-
+    如果指定，在每一次迁移之后，Bytebase 将把最新的 Schema
+    回写到本来触发迁移的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。
+  schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
+  if-specified: 如果指定
+  schema-path-example: Schema 路径样例
+  git-provider: Git 实例
+  version-control-status: '@.capitalize:common.version-control 已{status}'
+  version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
+  version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
+  version-control-description-description-schema-path: 当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。
+  restore-to-ui-workflow: 重置到 UI 工作流
+  restore-ui-workflow-description: "当使用 UI 工作流时，开发者会通过 Bytebase \b控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。"
+  restore-ui-workflow-success: 成功重置到 UI 工作流
+  update-version-control-config-success: 成功更新@:common.version-control配置
+  setup-wizard-guide: 如果您在过程中遇到问题, 请参考{guide}
+  choose-git-provider: 选择 Git 提供方
+  select-repository: 选择仓库
+  configure-deploy: 配置部署
+  choose-git-provider-description: >-
+    选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema
+    变更应用到数据库上。
+  choose-git-provider-visit-workspace: 访问 {workspace} 设置以添加更多 Git 提供方.
+  choose-git-provider-contact-workspace-owner: >-
+    如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab
+    EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
+  select-repository-attention-gitlab: >-
+    Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
+    用来监听代码推送事件。
+  select-repository-search: 搜索仓库
+workflow:
+  current-workflow: 当前工作流
+  ui-workflow: UI 工作流
+  ui-workflow-description: >-
+    经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA
+    或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。
+  gitops-workflow: GitOps 工作流
+  gitops-workflow-description: >-
+    数据库迁移脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个迁移脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。
+    当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。
+  configure-gitops: 配置 Git
+  configure-gitops-success: 开启「{project}」GitOps 工作流成功
+  change-gitops-success: 变更「{project}」仓库成功
