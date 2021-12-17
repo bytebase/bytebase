@@ -68,7 +68,7 @@ common:
   updated-at: Updated
   commit: Commit
   statement: Statement
-  sql-statement: "SQL statement"
+  sql-statement: SQL statement
   snapshot: Snapshot
   status: Status
   stage: Stage
@@ -78,6 +78,8 @@ common:
   add: Add
   query: Query
   transfer: Transfer
+  detail: Detail
+  type: Type
   language: Language
   repository: Repository
   change: Change
@@ -207,20 +209,20 @@ activity:
   created: Created
   invoker: Invoker
   sentence:
-    created-issue: "created issue"
+    created-issue: created issue
     commented: commented
-    reassigned-issue: "reassigned issue from {oldName} to {newName}"
-    assigned-issue: "assigned issue to {newName}"
-    unassigned-issue: "unassigned issue from {oldName}"
-    invalid-assignee-update: "invalid assignee update"
-    changed-description: "changed description"
-    changed-from-to: 'changed {name} from "{oldValue}" to "{newValue}"'
-    unset-from: 'unset {name} from "{oldValue}"'
-    set-to: 'set {name} to "{newValue}"'
-    changed-update: "changed {name} update"
-    reopened-issue: "reopened issue"
-    resolved-issue: "resolved issue"
-    canceled-issue: "canceled issue"
+    reassigned-issue: reassigned issue from {oldName} to {newName}
+    assigned-issue: assigned issue to {newName}
+    unassigned-issue: unassigned issue from {oldName}
+    invalid-assignee-update: invalid assignee update
+    changed-description: changed description
+    changed-from-to: changed {name} from "{oldValue}" to "{newValue}"
+    unset-from: unset {name} from "{oldValue}"
+    set-to: set {name} to "{newValue}"
+    changed-update: changed {name} update
+    reopened-issue: reopened issue
+    resolved-issue: resolved issue
+    canceled-issue: canceled issue
     empty: ""
     changed: changed
     updated: updated
@@ -230,9 +232,9 @@ activity:
     completed: completed
     failed: failed
     task-name: " task {name}"
-    committed-to-at: "committed {file} to{branch}{'@'}{repo}"
+    committed-to-at: committed {file} to{branch}{'@'}{repo}
   subject-prefix:
-    task: "Task"
+    task: Task
 issue:
   waiting-approval: Waiting Approval
   opened-by-at: opened by {creator} at {time}
@@ -252,16 +254,16 @@ issue:
   subscribe: Subscribe
   unsubscribe: Unsubscribe
   subscriber: No subscribers | 1 subscriber | {n} subscribers
-  apply-to-other-stages: "Apply to other stages"
-  add-sql-statement: "Add SQL statement..."
-  optional-add-sql-statement: "(Optional) Add SQL statement..."
-  rollback-sql: "Rollback SQL"
-  add-rollback-sql-statement: "Add rollback SQL statement..."
-  edit-description: "Edit description"
-  add-some-description: "Add some description..."
-  add-a-comment: "Add a comment"
+  apply-to-other-stages: Apply to other stages
+  add-sql-statement: Add SQL statement...
+  optional-add-sql-statement: (Optional) Add SQL statement...
+  rollback-sql: Rollback SQL
+  add-rollback-sql-statement: Add rollback SQL statement...
+  edit-description: Edit description
+  add-some-description: Add some description...
+  add-a-comment: Add a comment
   edit-comment: Edit comment
-  leave-a-comment: "Leave a comment..."
+  leave-a-comment: Leave a comment...
   view-commit: View commit
   search-issue-name: Search issue name
   table:
@@ -315,8 +317,7 @@ quick-action:
   transfer-in-db-hint: >-
     Bytebase periodically syncs the instance schema. Newly synced databases are
     first placed in this default project.
-  transfer-in-db-alert: >-
-    Are you sure to transfer "{ dbName }" into our project?
+  transfer-in-db-alert: Are you sure to transfer "{ dbName }" into our project?
 create-db:
   new-database-name: New database name
   reserved-db-error: "{databaseName} is a reserved name"
@@ -499,3 +500,26 @@ workflow:
   configure-gitops: Configure version control
   configure-gitops-success: Successfully enabled GitOps workflow for {project}
   change-gitops-success: Successfully changed repository for {project}
+anomaly:
+  attention-title: Anomaly detection
+  attention-desc: >-
+    Bytebase periodically scans the managed resources and list the detected
+    anomalies here. The list is refreshed roughly every 10 minutes.
+  table-search-placeholder: Search {type} or environment
+  table-placeholder: Hooray, no {type} anomaly detected!
+  tooltip: >-
+    {env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount}
+    MEDIUM anomalies
+  types:
+    connection-failure: Connection failure
+    missing-migration-schema: Missing migration schema
+    backup-enforcement-viloation: Backup enforcement violation
+    missing-backup: Missing backup
+    schema-drift: Schema drift
+  action:
+    check-instance: Check instance
+    view-backup: View backup
+    configure-backup: Configure backup
+    view-diff: View diff
+  last-seen: Last seen
+  first-seen: First seen
