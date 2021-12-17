@@ -1,13 +1,17 @@
 <template>
   <div>
     <div class="textinfolabel">
-      If you encounter errors during the process, please refer to our<a
-        href="https://docs.bytebase.com/use-bytebase/vcs-integration/link-repository?ref=console"
-        target="_blank"
-        class="normal-link"
-      >
-        detailed guide</a
-      >.
+      <i18n-t keypath="repository.setup-wizard-guide">
+        <template #guide>
+          <a
+            href="https://docs.bytebase.com/use-bytebase/vcs-integration/link-repository?ref=console"
+            target="_blank"
+            class="normal-link"
+          >
+            {{ $t("common.detailed-guide") }}</a
+          >
+        </template>
+      </i18n-t>
     </div>
     <BBStepTab
       class="pt-4"
@@ -47,6 +51,7 @@ import {
   VCS,
 } from "../types";
 import { projectSlug } from "../utils";
+import { useI18n } from "vue-i18n";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -62,12 +67,6 @@ interface LocalState {
   config: ProjectRepositoryConfig;
   currentStep: number;
 }
-
-const stepList: BBStepTabItem[] = [
-  { title: "Choose Git provider", hideNext: true },
-  { title: "Select repository", hideNext: true },
-  { title: "Configure deploy" },
-];
 
 export default {
   name: "RepositorySetupWizard",
@@ -89,8 +88,17 @@ export default {
   },
   emits: ["cancel", "finish"],
   setup(props, { emit }) {
+    const { t } = useI18n();
+
     const router = useRouter();
     const store = useStore();
+
+    const stepList: BBStepTabItem[] = [
+      { title: t("repository.choose-git-provider"), hideNext: true },
+      { title: t("repository.select-repository"), hideNext: true },
+      { title: t("repository.configure-deploy") },
+    ];
+
     const state = reactive<LocalState>({
       config: {
         vcs: unknown("VCS") as VCS,

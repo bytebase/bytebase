@@ -26,23 +26,13 @@
                     ? 'text-accent group-hover:text-accent-hover'
                     : 'text-control-light'
                 "
-                >Step {{ index + 1 }}</span
+                >{{ $t("bbkit.common.step") }} {{ index + 1 }}</span
               >
               <span class="text-sm font-medium">{{ step.title }}</span>
             </div>
             <div
               v-if="state.currentStep > index || state.done"
-              class="
-                flex
-                items-center
-                justify-center
-                w-6
-                h-6
-                bg-accent
-                text-white
-                rounded-full
-                select-none
-              "
+              class="flex items-center justify-center w-6 h-6 bg-accent text-white rounded-full select-none"
             >
               <heroicons-solid:check class="w-4 h-4" />
             </div>
@@ -65,7 +55,7 @@
     </div>
     <div class="pt-4 border-t border-block-border flex justify-between">
       <button type="button" class="btn-normal" @click.prevent="cancel">
-        Cancel
+        {{ $t("bbkit.common.cancel") }}
       </button>
       <div class="flex flex-row space-x-2">
         <button
@@ -77,7 +67,7 @@
           <heroicons-outline:chevron-left
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
           />
-          <span>Back</span>
+          <span> {{ $t("bbkit.common.back") }}</span>
         </button>
         <button
           v-if="state.currentStep == stepItemList.length - 1"
@@ -86,7 +76,7 @@
           class="btn-primary"
           @click.prevent="finish"
         >
-          {{ finishTitle }}
+          {{ $t(finishTitle) }}
         </button>
         <button
           v-else-if="!stepItemList[state.currentStep].hideNext"
@@ -95,7 +85,7 @@
           class="btn-primary"
           @click.prevent="changeStep(state.currentStep + 1)"
         >
-          Next
+          {{ $t("bbkit.common.next") }}
         </button>
       </div>
     </div>
@@ -123,7 +113,7 @@ export default {
       type: Boolean,
     },
     finishTitle: {
-      default: "Finish",
+      default: "bbkit.common.finish",
       type: String,
     },
   },
