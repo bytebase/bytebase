@@ -177,12 +177,17 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task) bool {
+// shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
+// would return true when:
+// 1. user specified the notBeforeTs field, hence a timing gate is added
+// 2. there is no running timing task check
+// 3. the notBeforeTs has altered since last check (either creation or patch)
+func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task) (bool, error) {
 	if task.NotBeforeTs == 0 {
-		return false
+		return false, nil
 	}
 
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -192,43 +197,55 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 	}
 	taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	if len(taskCheckRunList) == 0 {
-		return true
+		return true, nil
+	}
+
+	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
+		return false, nil
 	}
 
 	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRunList[0].Payload), taskCheckPayload); err != nil {
-		return false
+		return false, err
 	}
 
 	if taskCheckPayload.NotBeforeTs != task.NotBeforeTs {
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
-	if s.shouldScheduleTimingTaskCheck(ctx, task) {
-		taskCheckPayload, err := json.Marshal(task.NotBeforeTs)
+	// the following block is for timing task check
+	{
+		flag, err := s.shouldScheduleTimingTaskCheck(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			Payload:                 string(taskCheckPayload),
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-			SkipIfAlreadyTerminated: false,
-		})
-		if err != nil {
-			return nil, err
+
+		if flag {
+			taskCheckPayload, err := json.Marshal(task.NotBeforeTs)
+			if err != nil {
+				return nil, err
+			}
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				Payload:                 string(taskCheckPayload),
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				SkipIfAlreadyTerminated: false,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return task, nil
 		}
-		return task, nil
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdate {
