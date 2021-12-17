@@ -1,8 +1,23 @@
 common:
+  view: view
+  you: you
+  general: General
+  slack: Slack
+  discord: Discord
+  teams: Teams
+  dingtalk: DingTalk
+  feishu: Feishu
+  wecom: WeCom
+  overview: Overview
+  migration-history: Migration History
+  webhooks: Webhooks
+  key: Key
+  workflow: Workflow
   unread: Unread
   read: Read
   inbox: Inbox
   activity: Activity
+  activities: Activities
   sign-in: Sign in
   sign-up: Sign up
   email: Email
@@ -11,7 +26,7 @@ common:
   activate: Activate
   save: Save
   cancel: Cancel
-  comment: 评论
+  comment: Comment
   home: Home
   settings: Settings
   project: Project
@@ -196,6 +211,7 @@ settings:
       account: Account
       role: Role
       update-time: Updated Time
+      granted-time: Granted Time
     action:
       deactivate: Deactivate
       deactivate-confirm-title: Are you sure to deactivate
@@ -331,6 +347,8 @@ db:
   select: Select database
   select-instance-first: Select instance first
   select-environment-first: Select environment first
+  last-successful-sync: Last successful sync
+  sync-status: Sync status
 instance:
   select: Select instance
 environment:
@@ -526,6 +544,92 @@ anomaly:
     view-diff: View diff
   last-seen: Last seen
   first-seen: First seen
+project:
+  dashboard:
+    modal:
+      title: How to setup \'@:{'common.project'}\' ?
+      content: >-
+        Bytebase project is similar to the project concept in other common dev tools.
+
+
+        A project has its own members, and every issue and database always belongs to a single project.
+
+
+        A project can also be configured to link to a repository to enable version control workflow.
+      cancel: Dismiss
+      confirm: Do not show again
+    search-bar-placeholder: Search project name
+  table:
+    key: "@:common.key"
+    name: "@:common.name"
+    created-at: Created At
+  create-modal:
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
+    key-hint:  (Uppercase letters identifying your project)
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+  overview:
+    view-all: View all
+    view-all-closed: View all closed
+    recent-activity: "Recent @.lower:{'common.activities'}"
+    in-progress: In progress
+    recently-closed: Recently Closed
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema.
+      Newly synced databases are first placed in this default project.
+      User should transfer them to the proper application project.
+    no-db-prompt: >-
+      No database belongs to this project.
+      You can add database by clicking {newDb} or {transferInDb} from the top action bar.
+  webhook:
+    create-webhook: Add a webhook
+    last-updated-by: Last updated bu
+    destination: Destination
+    webhook-url: Webhook url
+    triggering-activity: Triggering activities
+    test-webhook: Test Webhook
+    no-webhook:
+      title: No webhook configured for this project.
+      content: >-
+        Configure webhooks to let Bytebase post notification to the external
+        systems on various events.
+    creation:
+      title: Create webhook
+      desc:  >-
+        Create the corresponding webhook for the {destination} channel receiving the message.
+      how-to-protect: >-
+        If you want to use keyword list to protect the webhook, you can add
+        "Bytebase" to that list.
+      view-doc: View {destination}'s doc
+    deletion:
+      btn-text: Delete this webhook
+    activity-item:
+      issue-creation:
+        title: Issue creation
+        label: When new issue has been created
+      issue-status-change:
+        title: Issue status change
+        label: When issue status has changed
+      issue-task-status-change:
+        title: Issue task status change
+        label: When issue's enclosing task status has changed
+      issue-info-change:
+        title: Issue info change
+        label: When issue info (e.g. assignee, title, description) has changed
+      issue-comment-creation:
+        title: Issue comment creation
+        label: When new issue comment has been created
+  settings:
+    member-placeholder: Select user
+    manage-member: Manage members
+    add-member: Add member
+    owner: "@.upper:common.role.owner"
+    developer: "@.upper:common.role.developer"
+    archive:
+      btn-text: Archive this @.lower:{'common.project'}
+    restore:
+      btn-text: Restore this @.lower:{'common.project'}
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older

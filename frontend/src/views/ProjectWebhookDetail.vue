@@ -35,7 +35,7 @@
         class="btn-normal whitespace-nowrap items-center"
         @click.prevent="testWebhook"
       >
-        Test Webhook
+        {{ $t("project.webhook.test-webhook") }}
       </button>
     </div>
     <ProjectWebhookForm

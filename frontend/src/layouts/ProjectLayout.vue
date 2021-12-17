@@ -34,6 +34,7 @@ import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 const OVERVIEW_TAB = 0;
 const WEBHOOK_TAB = 4;
@@ -42,15 +43,6 @@ type ProjectTabItem = {
   name: string;
   hash: string;
 };
-
-const projectTabItemList: ProjectTabItem[] = [
-  { name: "Overview", hash: "overview" },
-  { name: "Migration History", hash: "migration-history" },
-  { name: "Activities", hash: "activity" },
-  { name: "Version Control", hash: "version-control" },
-  { name: "Webhooks", hash: "webhook" },
-  { name: "Settings", hash: "setting" },
-];
 
 interface LocalState {
   selectedIndex: number;
@@ -73,8 +65,20 @@ export default {
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const projectTabItemList = computed((): ProjectTabItem[] => {
+      return [
+        { name: t("common.overview"), hash: "overview" },
+        { name: t("common.migration-history"), hash: "migration-history" },
+        { name: t("common.activities"), hash: "activity" },
+        { name: t("common.version-control"), hash: "version-control" },
+        { name: t("common.webhooks"), hash: "webhook" },
+        { name: t("common.settings"), hash: "setting" },
+      ];
+    });
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
@@ -106,7 +110,7 @@ export default {
     });
 
     const tabItemList = computed((): BBTabFilterItem[] => {
-      return projectTabItemList.map((item) => {
+      return projectTabItemList.value.map((item) => {
         return {
           title: item.name,
           alert: false,
@@ -117,9 +121,9 @@ export default {
     const selectProjectTabOnHash = () => {
       if (router.currentRoute.value.name == "workspace.project.detail") {
         if (router.currentRoute.value.hash) {
-          for (let i = 0; i < projectTabItemList.length; i++) {
+          for (let i = 0; i < projectTabItemList.value.length; i++) {
             if (
-              projectTabItemList[i].hash ==
+              projectTabItemList.value[i].hash ==
               router.currentRoute.value.hash.slice(1)
             ) {
               selectTab(i);
@@ -152,7 +156,7 @@ export default {
       state.selectedIndex = index;
       router.replace({
         name: "workspace.project.detail",
-        hash: "#" + projectTabItemList[index].hash,
+        hash: "#" + projectTabItemList.value[index].hash,
       });
     };
 
