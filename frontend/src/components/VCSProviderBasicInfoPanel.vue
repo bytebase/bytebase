@@ -1,6 +1,7 @@
 <template>
   <div class="textlabel">
-    Choose Git provider <span class="text-red-600">*</span>
+    {{ $t("version-control.setting.add-git-provider.choose") }}
+    <span class="text-red-600">*</span>
   </div>
   <div class="pt-4 radio-set-row">
     <div class="radio space-x-2">
@@ -14,14 +15,16 @@
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
-        >Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+        >{{
+          $t("version-control.setting.add-git-provider.gitlab-self-host-ce-ee")
+        }}
       </label>
     </div>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
       <span class="pr-2 bg-white text-xs text-control-light">
-        Coming later
+        {{ $t("common.coming-later") }}
       </span>
     </div>
   </div>
@@ -49,8 +52,11 @@
     {{ instanceUrlLabel }} <span class="text-red-600">*</span>
   </div>
   <p class="mt-1 textinfolabel">
-    The VCS instance URL. Make sure this instance and Bytebase are network
-    reachable from each other.
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.gitlab-instance-url-label"
+      )
+    }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -59,12 +65,21 @@
     @input="changeUrl($event.target.value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
-    Instance URL must begin with https:// or http://
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.instance-url-error"
+      )
+    }}
   </p>
-  <div class="mt-4 textlabel">Display name</div>
+  <div class="mt-4 textlabel">
+    {{ $t("version-control.setting.add-git-provider.basic-info.display-name") }}
+  </div>
   <p class="mt-1 textinfolabel">
-    An optional display name to help identifying among different configs using
-    the same Git provider.
+    {{
+      $t(
+        "version-control.setting.add-git-provider.basic-info.display-name-label"
+      )
+    }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -79,6 +94,7 @@ import { computed, onUnmounted, PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
 import { isUrl } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   urlValidationTimer?: ReturnType<typeof setTimeout>;
@@ -94,6 +110,7 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const state = reactive<LocalState>({
       showUrlError:
         !isEmpty(props.config.instanceUrl) && !isUrl(props.config.instanceUrl),
@@ -107,14 +124,16 @@ export default {
 
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return "GitLab self-host";
+        return t("version-control.setting.add-git-provider.gitlab-self-host");
       }
       return "";
     });
 
     const instanceUrlLabel = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
-        return "GitLab Instance URL";
+        return t(
+          "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
+        );
       }
       return "";
     });

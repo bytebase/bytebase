@@ -133,7 +133,7 @@
                   type="text"
                   class="textfield mt-1 w-full"
                   autocomplete="off"
-                  :placeholder="$t('settings.profile.password-placeholder')"
+                  :placeholder="$t('common.sensitive-placeholder')"
                   :value="state.editingPrincipal.password"
                   @input="updatePrincipal('password', $event.target.value)"
                 />
