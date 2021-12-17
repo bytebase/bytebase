@@ -38,18 +38,18 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			{
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TaskTimingNotAllowed,
-				Title:   "TimingNotAllowed",
-				Content: fmt.Sprintf("Did not pass the earliest execution timing: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
-			},
-		}, nil
-	} else {
-		return []api.TaskCheckResult{
-			{
-				Status:  api.TaskCheckStatusSuccess,
-				Code:    common.Ok,
-				Title:   "OK",
-				Content: fmt.Sprintf("Passed the earliest execution timing: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
+				Title:   "Not ready to run",
+				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
 			},
 		}, nil
 	}
+
+	return []api.TaskCheckResult{
+		{
+			Status:  api.TaskCheckStatusSuccess,
+			Code:    common.Ok,
+			Title:   "OK",
+			Content: fmt.Sprintf("Passed the configured earliest running timing: %s", time.Unix(task.NotBeforeTs, 0).Format(dataFormat)),
+		},
+	}, nil
 }
