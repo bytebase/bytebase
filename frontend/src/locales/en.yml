@@ -1,4 +1,7 @@
 common:
+  unread: Unread
+  read: Read
+  inbox: Inbox
   activity: Activity
   sign-in: Sign in
   sign-up: Sign up
@@ -523,3 +526,6 @@ anomaly:
     view-diff: View diff
   last-seen: Last seen
   first-seen: First seen
+inbox:
+  mark-all-as-read: Mark all as read
+  view-older: View older
