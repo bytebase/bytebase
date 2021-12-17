@@ -3,7 +3,8 @@
     <div class="grid gap-y-6 gap-x-4 grid-cols-1">
       <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
-          Project Name <span class="text-red-600">*</span>
+          {{ $t("project.create-modal.project-name")
+          }}<span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-4 w-full"
@@ -15,15 +16,15 @@
       </div>
       <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
-          Key <span class="text-red-600">*</span>
+          {{ $t("project.create-modal.key") }}
+          <span class="text-red-600">*</span>
           <span class="text-sm font-normal">
-            (Uppercase letters identifying your project)</span
+            {{ $t("project.create-modal.key-hint") }}</span
           >
         </label>
         <BBTextField
           class="mt-4 w-full uppercase"
           :required="true"
-          :placeholder="'JFK'"
           :value="state.project.key"
           @input="state.project.key = $event.target.value"
         />

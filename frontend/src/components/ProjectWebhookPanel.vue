@@ -6,7 +6,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addProjectWebhook"
       >
-        Add a webhook
+        {{ $t("project.webhook.create-webhook") }}
       </button>
     </div>
     <div class="pt-4">
@@ -24,11 +24,10 @@
             class="mx-auto w-16 h-16 text-control-light"
           />
           <h3 class="mt-2 text-sm font-medium text-main">
-            No webhook configured for this project.
+            {{ $t("project.webhook.no-webhook.title") }}
           </h3>
           <p class="mt-1 text-sm text-control-light">
-            Configure webhooks to let Bytebase post notification to the external
-            systems on various events.
+            {{ $t("project.webhook.no-webhook.content") }}
           </p>
         </div>
       </template>

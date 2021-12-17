@@ -3,7 +3,7 @@
     <div class="px-2 py-2 flex justify-end items-center">
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search project name'"
+        :placeholder="$t('project.dashboard.search-bar-placeholder')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -13,10 +13,10 @@
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :ok-text="'Do not show again'"
-    :cancel-text="'Dismiss'"
-    :title="'How to setup \'Project\' ?'"
-    :description="'Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable version control workflow.'"
+    :ok-text="$t('project.dashboard.modal.confirm')"
+    :cancel-text="$t('project.dashboard.modal.cancel')"
+    :title="$t('project.dashboard.modal.title')"
+    :description="$t('project.dashboard.modal.content')"
     @ok="
       () => {
         doDismissGuide();

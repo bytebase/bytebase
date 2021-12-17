@@ -1,22 +1,16 @@
 <template>
   <div class="space-y-4">
     <div v-if="create">
-      <label class="textlabel"> Destination </label>
+      <label class="textlabel">
+        {{ $t("project.webhook.destination") }}
+      </label>
       <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template
           v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST"
           :key="index"
         >
           <div
-            class="
-              flex
-              justify-center
-              px-2
-              py-4
-              border border-control-border
-              hover:bg-control-bg-hover
-              cursor-pointer
-            "
+            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
             @click.capture="state.webhook.type = item.type"
           >
             <div class="flex flex-col items-center">
@@ -57,7 +51,7 @@
     </div>
     <div>
       <label for="name" class="textlabel">
-        Name <span class="text-red-600">*</span>
+        {{ $t("common.name") }} <span class="text-red-600">*</span>
       </label>
       <input
         id="name"
@@ -71,67 +65,109 @@
     </div>
     <div>
       <label for="url" class="textlabel">
-        Webhook URL <span class="text-red-600">*</span>
+        {{ $t("project.webhook.webhook-url") }}
+        <span class="text-red-600">*</span>
       </label>
       <div class="mt-1 textinfolabel">
         <template v-if="state.webhook.type == 'bb.plugin.webhook.slack'">
-          Create the corresponding webhook for the Slack channel receiving the
-          message.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.slack"),
+            })
+          }}
           <a
             href="https://api.slack.com/messaging/webhooks"
             target="__blank"
             class="normal-link"
-            >View Slack's doc</a
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.slack"),
+              })
+            }}</a
           >.
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.discord'">
-          Create the corresponding webhook for the Discord channel receiving the
-          message.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.discord"),
+            })
+          }}
           <a
             href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
             target="__blank"
             class="normal-link"
-            >View Discord's doc</a
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.discord"),
+              })
+            }}</a
           >.
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.teams'">
-          Create the corresponding webhook for the Teams channel receiving the
-          message.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.teams"),
+            })
+          }}
           <a
             href="https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook"
             target="__blank"
             class="normal-link"
-            >View Teams's doc</a
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.teams"),
+              })
+            }}</a
           >.
         </template>
         <template
           v-else-if="state.webhook.type == 'bb.plugin.webhook.dingtalk'"
         >
-          Create the corresponding webhook for the DingTalk group receiving the
-          message. If you want to use keyword list to protect the webhook, you
-          can add "Bytebase" to that list.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.dingtalk"),
+            }) +
+            ". " +
+            $t("project.webhook.creation.how-to-protect")
+          }}
           <a
             href="https://developers.dingtalk.com/document/robots/custom-robot-access"
             target="__blank"
             class="normal-link"
-            >View DingTalk's doc</a
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.dingtalk"),
+              })
+            }}</a
           >.
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.feishu'">
-          Create the corresponding webhook for the Feishu group receiving the
-          message. If you want to use keyword list to protect the webhook, you
-          can add "Bytebase" to that list.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.feishu"),
+            }) +
+            ". " +
+            $t("project.webhook.creation.how-to-protect")
+          }}
+
           <a
             href="https://www.feishu.cn/hc/zh-CN/articles/360024984973"
             target="__blank"
             class="normal-link"
-            >View Feishu's doc</a
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.feishu"),
+              })
+            }}</a
           >.
         </template>
         <!-- WeCom doesn't seem to provide official webhook setup guide for the enduser -->
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.wecom'">
-          Create the corresponding webhook for the WeCom group receiving the
-          message.
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.wecom"),
+            })
+          }}
         </template>
       </div>
       <input
@@ -146,7 +182,7 @@
     </div>
     <div>
       <div class="text-md leading-6 font-medium text-main">
-        Triggering activities
+        {{ $t("project.webhook.triggering-activity") }}
       </div>
       <div
         v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST"
@@ -172,7 +208,7 @@
       <BBButtonConfirm
         v-if="!create && allowEdit"
         :style="'DELETE'"
-        :button-text="'Delete this webhook'"
+        :button-text="$t('project.webhook.deletion.btn-text')"
         :ok-text="'Delete'"
         :confirm-title="`Delete webhook '${webhook.name}' and all its execution history?`"
         :require-confirm="true"
@@ -180,7 +216,7 @@
       />
       <div>
         <button type="button" class="btn-normal" @click.prevent="cancel">
-          {{ allowEdit ? "Cancel" : "Back" }}
+          {{ allowEdit ? $t("common.cancel") : $t("common.back") }}
         </button>
         <template v-if="allowEdit">
           <button
@@ -190,7 +226,7 @@
             :disabled="!allowCreate"
             @click.prevent="createWebhook"
           >
-            Create
+            {{ $t("common.create") }}
           </button>
           <button
             v-else
@@ -199,7 +235,7 @@
             :disabled="!valueChanged"
             @click.prevent="updateWebhook"
           >
-            Update
+            {{ $t("common.update") }}
           </button>
         </template>
       </div>
@@ -222,6 +258,7 @@ import { cloneDeep, isEmpty, isEqual } from "lodash";
 import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   webhook: ProjectWebhook | ProjectWebhookCreate;
@@ -251,6 +288,7 @@ export default {
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       webhook: cloneDeep(props.webhook),
@@ -265,17 +303,17 @@ export default {
 
     const namePlaceholder = computed(() => {
       if (state.webhook.type == "bb.plugin.webhook.slack") {
-        return "Slack Webhook";
+        return `${t("common.slack")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.discord") {
-        return "Discord Webhook";
+        return `${t("common.discord")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.teams") {
-        return "Teams Webhook";
+        return `${t("common.teams")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.dingtalk") {
-        return "DingTalk Webhook";
+        return `${t("common.dingtalk")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.feishu") {
-        return "Feishu Webhook";
+        return `${t("common.feishu")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
-        return "WeCom Webhook";
+        return `${t("common.wecom")} Webhook`;
       }
 
       return "My Webhook";
