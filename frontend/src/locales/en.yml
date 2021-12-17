@@ -422,3 +422,31 @@ database:
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
   backup-name: Backup name
   create-backup: Create backup
+  automatic-weekly-backup: Automatic weekly backup
+  disable-automatic-backup: Disable automatic backup
+  backuppolicy-backup-enforced-and-cant-be-disabled: '{0} backup enforced and can''t be disabled'
+  backup-policy:
+    DAILY: DAILY
+    WEEKLY: WEEKLY
+  an-http-post-request-will-be-sent-to-it-after-a-successful-backup: An HTTP POST request will be sent to it after a successful backup.
+  learn-more: Learn more.
+  backup-info:
+    template: Backup will be taken on every {dayOrWeek} at {time}
+  week:
+    Sunday: Sunday
+    Monday: Monday
+    Tuesday: Tuesday
+    Wednesday: Wednesday
+    Thursday: Thursday
+    Friday: Friday
+    Saturday: Saturday
+    day: day
+  enable-backup: Enable backup
+  backup-now: Backup now
+  create-a-manual-backup: Create a manual backup
+  disabled: Disabled
+  enabled: Enabled
+  action-automatic-backup-for-database-props-database-name: '{0} automatic backup for database ''{1}''.'
+  updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
+t:
+  database: {}

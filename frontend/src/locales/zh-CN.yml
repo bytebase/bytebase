@@ -393,3 +393,29 @@ database:
   database-backup: 数据库备份
   backup-name: 备份名称
   create-backup: 创建备份
+  automatic-weekly-backup: 每周自动备份
+  disable-automatic-backup: 禁用自动备份
+  backuppolicy-backup-enforced-and-cant-be-disabled: 强制{0}备份，不能禁用
+  backup-policy:
+    DAILY: 每日
+    WEEKLY: 每周
+  an-http-post-request-will-be-sent-to-it-after-a-successful-backup: 备份成功后向其发送HTTP POST请求。
+  learn-more: 了解更多。
+  backup-info:
+    template: 每{dayOrWeek}{time} 备份
+  week:
+    Friday: 周五
+    Monday: 周一
+    Saturday: 周六
+    Sunday: 周日
+    Thursday: 周四
+    Wednesday: 周三
+    Tuesday: 周二
+    day: 日
+  enable-backup: 启用备份
+  backup-now: 现在备份
+  create-a-manual-backup: 创建手动备份
+  action-automatic-backup-for-database-props-database-name: 数据库'{1}'{0}自动备份
+  enabled: 启用
+  disabled: 禁用
+  updated-backup-webhook-url-for-database-props-database-name: 更新了数据库'{0}'的 webhook URL。
