@@ -16,25 +16,25 @@
         class="btn-normal py-2 px-4"
         @click.prevent="editVCS"
       >
-        Edit
+        {{ $t('common.edit') }}
       </button>
     </div>
     <div class="border-t border-block-border">
       <dl class="divide-y divide-block-border">
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">Instance URL</dt>
+          <dt class="text-sm font-medium text-control-light">{{ $t('common.instance') }} URL</dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
             {{ vcs.instanceUrl }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">Application ID</dt>
+          <dt class="text-sm font-medium text-control-light">{{ $t('common.application') }} ID</dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
             {{ vcs.applicationId }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">Created</dt>
+          <dt class="text-sm font-medium text-control-light">{{ $t('common.created-at') }}</dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
             {{ humanizeTs(vcs.createdTs) }}
           </dd>

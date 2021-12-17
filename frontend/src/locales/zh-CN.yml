@@ -110,13 +110,17 @@ common:
   config-guide: 配置指南
   required-placeholder: 必需的占位符
   optional-placeholder: 可选的占位符
+  sensitive-placeholder: 敏感数据 - 仅写入
   enabled: 开启
   default: 默认
   version-control: 版本控制
   restore: 重置
   detailed-guide: 详细指南
   workspace: 工作空间
-  learn-more: 了解更多。
+  application: 应用
+  confirm: 确认
+  coming-later: 敬请期待
+  learn-more: 了解更多
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -137,7 +141,7 @@ task:
   checking: 检查中…
   run-task: 运行检查
   check-result:
-    title: '{name} 的检查结果'
+    title: "{name} 的检查结果"
   check-type:
     fake: Fake
     syntax: 语法
@@ -185,14 +189,13 @@ settings:
     email: 邮箱
     role: 角色
     password: 密码
-    password-placeholder: 敏感数据 - 仅写入
     password-confirm: 确认密码
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
     plan: （升级到团队方案来开启角色管理）
   workspace:
     url-section: SQL Console URL
-    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
+    url-tip: "提示: 用 {schema} 作为真实数据库名称的占位符"
     tip: >-
       如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供他的 URL 模板，Bytebase
       就可以将控制台链接到相关的数据库和表的界面上。
@@ -244,7 +247,7 @@ activity:
     reopened-issue: 重开工单
     resolved-issue: 解决工单
     canceled-issue: 取消工单
-    empty: ''
+    empty: ""
     changed: 修改
     updated: 更新
     canceled: 取消
@@ -258,8 +261,8 @@ activity:
     task: 任务
 issue:
   waiting-approval: 等待批准
-  opened-by-at: '{id} 由 {creator} 开启于 {time}'
-  commit-by-at: '{id} {title} 由 {author} 提交于 {time}'
+  opened-by-at: "{id} 由 {creator} 开启于 {time}"
+  commit-by-at: "{id} {title} 由 {author} 提交于 {time}"
   status-transition:
     modal:
       resolve: 解决工单?
@@ -275,10 +278,10 @@ issue:
   subscribe: 订阅
   unsubscribe: 取消订阅
   subscriber: 没有订阅者 | 1 个订阅者 | {n} 个订阅者
-  apply-to-other-stages: '@:{''common.apply''}到其他@:{''common.stage''}'
+  apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
   add-sql-statement: 添加 SQL @:{'common.statement'}…
   optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
-  rollback-sql: '@:{''common.rollback''} SQL'
+  rollback-sql: "@:{'common.rollback'} SQL"
   add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
@@ -299,7 +302,7 @@ issue:
     updated: 更新于
     assignee: 审核人
   stage-select:
-    active: '{name}（活动中）'
+    active: "{name}（活动中）"
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以创建 schema 变更。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以创建 schema 变更。
@@ -311,14 +314,14 @@ quick-action:
   create-db: 创建数据库
   choose-db: 选择数据库
   new-db: 创建数据库
-  add-instance: '@:common.add@:common.instance'
-  create-instance: '@:common.create@:common.instance'
+  add-instance: "@:common.add@:common.instance"
+  create-instance: "@:common.create@:common.instance"
   manage-user: 成员管理
   default-project: 默认项目
-  add-environment: '@:common.add@:common.environment'
-  create-environment: '@:common.create@:common.environment'
-  new-project: '@:common.new@:common.project'
-  create-project: '@:common.create@:common.project'
+  add-environment: "@:common.add@:common.environment"
+  create-environment: "@:common.create@:common.environment"
+  new-project: "@:common.new@:common.project"
+  create-project: "@:common.create@:common.project"
   edit-data: 编辑数据
   troubleshoot: 问题排查
   transfer-in-db: 转移数据库
@@ -330,7 +333,7 @@ quick-action:
   transfer-in-db-alert: 您确定要转移 "{ dbName }" 到我们的项目中吗？
 create-db:
   new-database-name: 新数据库名称
-  reserved-db-error: '{databaseName} 是一个预留名称'
+  reserved-db-error: "{databaseName} 是一个预留名称"
 db:
   encoding: 字符编码
   character-set: 字符集
@@ -345,13 +348,14 @@ db:
   sync-status: 同步状态
 instance:
   select: 选择实例
-  new-database: '@:common.new@:common.database'
+  new-database: "@:common.new@:common.database"
   syncing: 同步中 ...
   sync-now: 现在同步
-  create-migration-schema: '@:common.create@:common.migration @:{''common.schema''}'
+  create-migration-schema: "@:common.create@:common.migration @:{'common.schema'}"
   missing-migration-schema: 缺少@:common.migration @:common.schema
   unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: >-
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
+    >-
     Bytebase需要@:{'common.migration'} @:{'common.schema'}
     来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema
     @:common.migration
@@ -378,10 +382,10 @@ environment:
 quick-start:
   bookmark-an-issue: 收藏工单
   add-a-comment: 添加评论
-  visit-project: '@:common.visit@:common.projects'
-  visit-instance: '@:common.visit@:common.instances'
-  visit-database: '@:common.visit@:common.databases'
-  visit-environment: '@:common.visit@:common.environments'
+  visit-project: "@:common.visit@:common.projects"
+  visit-instance: "@:common.visit@:common.instances"
+  visit-database: "@:common.visit@:common.databases"
+  visit-environment: "@:common.visit@:common.environments"
   add-a-member: 添加成员
   notice:
     title: 快速入门导览已关闭
@@ -460,7 +464,7 @@ database:
     在 Bytebase 中，一个数据库始终属于单个项目。\n\nBytebase 将定期同步每个实例的数据库信息。
     您还可以从仪表板创建新数据库。
   restored-from: 恢复于
-  database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
+  database-name-is-restored-from-another-database-backup: "{0}恢复于另一个数据库备份"
   sql-console: SQL控制台
   transfer-project: 转移项目
   alter-schema-in-vcs: 变更 Schema(VCS)
@@ -511,8 +515,8 @@ repository:
   schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
-  git-provider: Git 实例
-  version-control-status: '@.capitalize:common.version-control 已{status}'
+  git-provider: Git 提供方
+  version-control-status: "@.capitalize:common.version-control 已{status}"
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
   version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
   version-control-description-description-schema-path: 当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。
@@ -535,6 +539,7 @@ repository:
     Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
     用来监听代码推送事件。
   select-repository-search: 搜索仓库
+  linked: 关联的仓库
 workflow:
   current-workflow: 当前工作流
   ui-workflow: UI 工作流
@@ -555,7 +560,7 @@ anomaly:
     该列表大约每 10 分钟刷新一次。
   table-search-placeholder: 搜索{type}或者环境
   table-placeholder: 很棒，没有检测到{type}异常！
-  tooltip: '{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常'
+  tooltip: "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常"
   types:
     connection-failure: 连接失败
     missing-migration-schema: 缺少迁移 Schema
@@ -584,15 +589,15 @@ project:
       confirm: 不再出现
     search-bar-placeholder: 搜索项目名称
   table:
-    key: '@:common.key'
-    name: '@:common.name'
+    key: "@:common.key"
+    name: "@:common.name"
     created-at: 创建于
   create-modal:
-    project-name: '@:common.project @:common.name'
-    key: '@:common.key'
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: '@:common.cancel'
-    confirm: '@:common.create'
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
@@ -618,7 +623,7 @@ project:
       title: 创建 webhook
       desc: 为 {destination} 创建一个 webhook
       how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
-      view-doc: '{destination} 的官方文档'
+      view-doc: "{destination} 的官方文档"
     deletion:
       btn-text: Delete this webhook
     activity-item:
@@ -641,8 +646,8 @@ project:
     member-placeholder: 选择用户
     manage-member: 管理成员
     add-member: 添加成员
-    owner: '@.upper:commo project.setting.add-membern.role.owner'
-    developer: '@.upper:common.role.developer'
+    owner: "@.upper:commo project.setting.add-membern.role.owner"
+    developer: "@.upper:common.role.developer"
     archive:
       btn-text: 收藏这个@:common.project
     restore:
@@ -650,3 +655,48 @@ project:
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早
+version-control:
+  setting:
+    description: >-
+      Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
+      (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
+      中选取他们的 Git 仓库。
+    add-git-provider:
+      self: 添加 Git 提供方
+      description: >-
+        在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS
+        进行集成。以下是配置该集成的步骤，你也可以按照我们的{guide}。
+      gitlab-self-host: 自托管 GitLab
+      gitlab-self-host-admin-requirement: >-
+        您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab
+        整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
+      ouath-info-correct: OAuth 信息验证成功
+      check-oauth-info-match: 请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。
+      add-success: 成功添加了 Git 提供方「{vcs}」
+      choose: 选择 Git 提供方
+      gitlab-self-host-ce-ee: 自托管 GitLab 企业版 (EE) 或者 社区版 (CE)
+      basic-info:
+        self: 基本信息
+        gitlab-instance-url: GitLab 实例 URL
+        gitlab-instance-url-label: VCS 实例 URL。请确认这个实例和 Bytebase 之间网络是互通的。
+        instance-url-error: 实例 URL 必须以 https:// or http:// 开头
+        display-name: 展示名称
+        display-name-label: 一个可选的展示名称用以区分不同的 Git 供应方。
+      oauth-info:
+        self: OAuth 应用信息
+        register-oauth-application: 注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。
+        login-as-admin: 以管理员身份登陆 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
+        visit-admin-page: 通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。
+        direct-link: 直达链接
+        create-oauth-app: 使用如下信息来创建您的 Bytebase OAuth 应用。
+        paste-oauth-info: 从刚创建好的应用上粘贴他的应用 ID 和 Secret 到下面的字段。
+        application-id-error: 应用 ID 必须是 64 个字母长度
+        secret-error: Secret 必须是 64 个字母长度
+      confirm:
+        confirm-info: 确认信息
+        confirm-description: 创建完成后，这个 Git 供应方将出现在项目面板「版本控制」Tab 下，可以被项目所有者选中。
+    git-provider:
+      application-id-label: 注册为 GitLab 实例级 OAuth 应用的应用 ID。
+      view-in-gitlab: 查看 GitLab
+      secret-label-gitlab: 注册为 GitLab 实例级 OAuth 应用的 Secret。
+      delete: 删除这个提供方前，需要先解除所有仓库的关联。
