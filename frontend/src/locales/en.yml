@@ -448,5 +448,7 @@ database:
   enabled: Enabled
   action-automatic-backup-for-database-props-database-name: '{0} automatic backup for database ''{1}''.'
   updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
+  last-sync-status: Last sync status {0} at {1}
+  version-control-enabled: Version control enabled
 t:
   database: {}

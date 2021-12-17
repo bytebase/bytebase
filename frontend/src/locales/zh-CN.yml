@@ -419,3 +419,5 @@ database:
   enabled: 启用
   disabled: 禁用
   updated-backup-webhook-url-for-database-props-database-name: 更新了数据库'{0}'的 webhook URL。
+  last-sync-status: 最后一次同步在{1}，状态为{0}
+  version-control-enabled: 已启用版本控制
