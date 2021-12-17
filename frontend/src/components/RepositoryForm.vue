@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div>
       <div class="flex flex-row space-x-2 items-center">
-        <label for="gitprovider" class="textlabel"> Git provider </label>
+        <label for="gitprovider" class="textlabel"> {{ $t('repository.git-provider') }} </label>
         <template v-if="vcsType.startsWith('GITLAB')">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
@@ -18,13 +18,13 @@
     </div>
     <div>
       <div class="flex flex-row space-x-2 items-center">
-        <label for="repository" class="textlabel"> Repository </label>
+        <label for="repository" class="textlabel"> {{ $t('common.repository') }} </label>
         <div
           v-if="!create && allowEdit"
           class="ml-1 normal-link text-sm"
           @click.prevent="$emit('change-repository')"
         >
-          Change
+          {{ $t('common.change') }}
         </div>
       </div>
       <input
@@ -37,9 +37,9 @@
       />
     </div>
     <div>
-      <div class="textlabel">Branch <span class="text-red-600">*</span></div>
+      <div class="textlabel">{{ $t('common.branch') }} <span class="text-red-600">*</span></div>
       <div class="mt-1 textinfolabel">
-        The branch where Bytebase observes the file change.
+        {{ $t('repository.branch-observe-file-change') }}
       </div>
       <input
         id="branch"
@@ -51,14 +51,13 @@
         :disabled="!allowEdit"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
-        Tip: You can also use wildcard like 'feature/*'
+        {{ $t('repository.branch-specify-tip') }}
       </div>
     </div>
     <div>
-      <div class="textlabel">Base directory</div>
+      <div class="textlabel">{{ $t('repository.base-directory') }}</div>
       <div class="mt-1 textinfolabel">
-        The root directory where Bytebase observes the file change. If empty,
-        then it observes the entire repository.
+        {{ $t('repository.base-directory-description') }}
       </div>
       <input
         id="basedirectory"
@@ -71,18 +70,17 @@
     </div>
     <div>
       <div class="textlabel">
-        File path template <span class="text-red-600">*</span>
+        {{ $t('repository.file-path-template') }} <span class="text-red-600">*</span>
         <a
           href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#file-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
-          config guide</a
+          {{ $t('common.config-guide') }}</a
         >
       </div>
       <div class="mt-1 textinfolabel">
-        Bytebase only observes the file path name matching the template pattern
-        relative to the base directory.
+        {{ $t('repository.file-path-template-description') }}
       </div>
       <input
         id="filepathtemplate"
@@ -92,13 +90,13 @@
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span> Required placeholders:
-        {{ FILE_REQUIRED_PLACEHOLDER }}; optional placeholders:
+      <div class="mt-2 textinfolabel capitalize">
+        <span class="text-red-600">*</span> {{ $t('common.required-placeholder') }}:
+        {{ FILE_REQUIRED_PLACEHOLDER }}; {{ $t('common.optional-placeholder') }}:
         {{ FILE_OPTIONAL_PLACEHOLDER }}
       </div>
       <div class="mt-2 textinfolabel">
-        • File path example for normal migration type:
+        • {{ $t('repository.file-path-example-normal-migration') }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -108,7 +106,7 @@
         }}
       </div>
       <div class="mt-2 textinfolabel">
-        • File path example for baseline migration type:
+        • {{ $t('repository.file-path-example-baseline-migration') }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -120,24 +118,20 @@
     </div>
     <div>
       <div class="textlabel">
-        Schema path template
+        {{ $t('repository.schema-path-template') }}
         <a
           href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#schema-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
-          config guide</a
+          {{ $t('common.config-guide') }}</a
         >
       </div>
       <div class="mt-1 textinfolabel">
-        When specified, after each migration, Bytebase will write the latest
-        schema to the schema path relative to the base directory in the same
-        branch as the original commit triggering the migration. Leave empty if
-        you don't want Bytebase to do this.
+        {{ $t('repository.schema-writeback-description') }}
         <span class="font-medium text-main"
-          >Make sure the changed branch is not protected or allow repository
-          maintainer to push to that protected branch</span
-        >.
+          >{{ $t('repository.schema-writeback-protected-branch') }}</span
+        >
       </div>
       <input
         id="schemapathtemplate"
@@ -148,15 +142,15 @@
         :disabled="!allowEdit"
       />
       <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span> If specified, required placeholder:
-        {{ SCHEMA_REQUIRED_PLACEHOLDER }}; optional placeholder:
+        <span class="text-red-600">*</span> {{ $t('repository.if-specified') }}, {{ $t('common.required-placeholder') }}:
+        {{ SCHEMA_REQUIRED_PLACEHOLDER }}; {{ $t('common.optional-placeholder') }}:
         {{ SCHEMA_OPTIONAL_PLACEHOLDER }}
       </div>
       <div
         v-if="repositoryConfig.schemaPathTemplate"
         class="mt-2 textinfolabel"
       >
-        • Schema path example:
+        • {{ $t('repository.schema-path-example') }}:
         {{
           sampleSchemaPath(
             repositoryConfig.baseDirectory,

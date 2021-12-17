@@ -16,58 +16,46 @@
       <!-- Use the persistent workflowType here -->
       <template v-if="project.workflowType == 'UI'">
         <div class="text-lg leading-6 font-medium text-main">
-          Current workflow
+          {{ $t("workflow.current-workflow") }}
         </div>
         <div class="mt-6 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
+              id="workflow-ui"
               v-model="state.workflowType"
               name="UI workflow"
-              id="workflow-ui"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="UI"
               :disabled="!allowEdit"
             />
             <div class="-mt-1">
-              <label for="workflow-ui" class="textlabel">UI workflow (no version control)</label>
+              <label for="workflow-ui" class="textlabel">{{
+                $t("workflow.ui-workflow")
+              }}</label>
               <div class="mt-1 textinfolabel">
-                Classic SQL Review workflow where the developer submits a SQL
-                review ticket directly from Bytebase and waits for the assigned
-                DBA or peer developer to review. Bytebase applies the SQL change
-                after review approved.
+                {{ $t("workflow.ui-workflow-description") }}
               </div>
             </div>
           </div>
           <div class="flex space-x-4">
             <input
+              id="workflow-version-control"
               v-model="state.workflowType"
               name="Version control workflow"
-              id="workflow-version-control"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="VCS"
               :disabled="!allowEdit"
             />
             <div class="-mt-1">
-              <label for="workflow-version-control" class="textlabel">Version control workflow</label>
+              <label for="workflow-version-control" class="textlabel">{{
+                $t("workflow.gitops-workflow")
+              }}</label>
               <div class="mt-1 textinfolabel">
-                Database migration scripts are stored in a git repository. To
-                make schema changes, a developer would create a migration script
-                and submit for review in the corresponding VCS such as GitLab.
-                After the script is approved and merged into the configured
-                branch, Bytebase will automatically kicks off the task to apply
-                the new schema change.
+                {{ $t("workflow.gitops-workflow-description") }}
               </div>
             </div>
           </div>
@@ -79,7 +67,7 @@
               class="btn-primary inline-flex justify-center py-2 px-2"
               @click.prevent="enterWizard(true)"
             >
-              Configure version control
+              {{ $t("workflow.configure-gitops") }}
               <heroicons-outline:chevron-right class="ml-1 w-5 h-5" />
             </button>
           </div>
@@ -104,6 +92,7 @@ import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -128,6 +117,8 @@ export default {
     },
   },
   async setup(props) {
+    const { t } = useI18n();
+
     const store = useStore();
 
     const state = reactive<LocalState>({
@@ -174,8 +165,12 @@ export default {
         module: "bytebase",
         style: "SUCCESS",
         title: state.showWizardForCreate
-          ? `Successfully enabled version control workflow for '${props.project.name}'`
-          : `Successfully changed repository for '${props.project.name}'`,
+          ? t("workflow.configure-gitops-success", {
+              project: props.project.name,
+            })
+          : t("workflow.change-gitops-success", {
+              project: props.project.name,
+            }),
       });
       state.showWizardForCreate = false;
       state.showWizardForChange = false;
