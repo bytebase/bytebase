@@ -1,4 +1,20 @@
 common:
+  view: 查看
+  you: 您
+  general: 通用
+  slack: Slack
+  discord: Discord
+  teams: Teams
+  dingtalk: 钉钉
+  feishu: 飞书
+  wecom: 企业微信
+  overview: 概览
+  migration-history: 迁移历史
+  webhooks: Webhook
+  key: 键值
+  workflow: 工作流
+  activity: 活动
+  activities: 活动
   unread: 未读
   read: 已读
   inbox: 通知
@@ -8,7 +24,6 @@ common:
   username: 用户名
   password: 密码
   activate: 激活
-  activity: 活动
   save: 保存
   cancel: 取消
   comment: 评论
@@ -192,6 +207,7 @@ settings:
       account: 账户
       role: 角色
       update-time: 更新时间
+      granted-time: 批准时间
     action:
       deactivate: 禁用
       deactivate-confirm-title: 确定禁用
@@ -316,6 +332,8 @@ db:
   select: 选择数据库
   select-instance-first: 先选择实例
   select-environment-first: 先选择环境
+  last-successful-sync: 上次成功同步于
+  sync-status: 同步状态
 instance:
   select: 选择实例
 environment:
@@ -470,6 +488,91 @@ anomaly:
     view-diff: 查看差异
   last-seen: 上次出现
   first-seen: 首次出现
+  contact-dba: 请联系您的 DBA 进行配置。
+project:
+  dashboard:
+    modal:
+      title: 如何创建您的'@:{'common.project'}' ?
+      content: >-
+        在 Bytebase 中，项目的概念与其他常见的的开发工具类似
+
+
+        一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目
+
+
+        同时，一个项目可以关联一个代码仓库，并以此来进行版本控制
+      cancel: 关闭
+      confirm: 不再出现
+    search-bar-placeholder: 搜索项目名称
+  table:
+    key: "@:common.key"
+    name: "@:common.name"
+    created-at: 创建于
+  create-modal:
+    project-name: "@:common.project @:common.name"
+    key: "@:common.key"
+    key-hint:  ( 请使用大写字母来命名您的项目 )
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+  overview:
+    view-all: 查看所有
+    view-all-closed: 查看所有结束的工单
+    recent-activity: "近期@.lower:{'common.activities'}"
+    in-progress: 进行中
+    recently-closed: 近期结束
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema.
+      Newly synced databases are first placed in this default project.
+      User should transfer them to the proper application project.
+    no-db-prompt: >-
+      没有数据库属于当前项目
+      您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
+  webhook:
+    create-webhook: 添加 webhook
+    last-updated-by: 最后修改人
+    destination: 外部应用
+    webhook-url: Webhook url
+    triggering-activity: 触发事件
+    test-webhook: 测试 Webhook
+    no-webhook:
+      title: 当前项目暂未配置 webhook
+      content: >-
+        配置 webhook 来让 Bytebase 在完成任务后向您的外部系统推送通知
+    creation:
+      title: 创建 webhook
+      desc:  >-
+        为 {destination} 创建一个 webhook
+      how-to-protect: >-
+        您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
+      view-doc: '{destination} 的官方文档'
+    deletion:
+      btn-text: Delete this webhook
+    activity-item:
+      issue-creation:
+        title: Issue creation
+        label: When new issue has been created
+      issue-status-change:
+        title: Issue status change
+        label: When issue status has changed
+      issue-task-status-change:
+        title: Issue task status change
+        label: When issue's enclosing task status has changed
+      issue-info-change:
+        title: Issue info change
+        label: When issue info (e.g. assignee, title, description) has changed
+      issue-comment-creation:
+        title: Issue comment creation
+        label: When new issue comment has been created
+  settings:
+    member-placeholder: 选择用户
+    manage-member: 管理成员
+    add-member: 添加成员
+    owner: "@.upper:commo project.setting.add-membern.role.owner"
+    developer: "@.upper:common.role.developer"
+    archive:
+      btn-text: 收藏这个@:common.project
+    restore:
+      btn-text: 取消收藏这个@:common.project
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早

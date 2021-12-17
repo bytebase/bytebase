@@ -8,7 +8,7 @@
       <template v-if="project.rowStatus == 'NORMAL'">
         <BBButtonConfirm
           :style="'ARCHIVE'"
-          :button-text="'Archive this project'"
+          :button-text="$t('project.settings.archive.btn-text')"
           :ok-text="'Archive'"
           :confirm-title="`Archive project '${project.name}'?`"
           :confirm-description="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
@@ -19,7 +19,7 @@
       <template v-else-if="project.rowStatus == 'ARCHIVED'">
         <BBButtonConfirm
           :style="'RESTORE'"
-          :button-text="'Restore this project'"
+          :button-text="$t('project.settings.restore.btn-text')"
           :ok-text="'Restore'"
           :confirm-title="`Restore project '${project.name}' to normal state?`"
           :confirm-description="''"

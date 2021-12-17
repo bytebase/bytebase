@@ -1,7 +1,9 @@
 <template>
   <div>
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">Activities</p>
+      <p class="text-lg font-medium leading-7 text-main">
+        {{ $t("common.activity") }}
+      </p>
       <ActivityTable :activity-list="state.activityList" />
     </div>
   </div>

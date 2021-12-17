@@ -1,23 +1,27 @@
 <template>
   <div class="space-y-6">
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">Recent activities</p>
+      <p class="text-lg font-medium leading-7 text-main">
+        {{ $t("project.overview.recent-activity") }}
+      </p>
       <ActivityTable :activity-list="state.activityList" />
       <router-link
         :to="`#activity`"
         class="mt-2 flex justify-end normal-link"
         exact-active-class=""
       >
-        View all
+        {{ $t("project.overview.view-all") }}
       </router-link>
     </div>
 
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">Databases</p>
+      <p class="text-lg font-medium leading-7 text-main">
+        {{ $t("common.database") }}
+      </p>
       <BBAttention
         v-if="project.id == DEFAULT_PROJECT_ID"
         :style="`INFO`"
-        :title="'Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.'"
+        :title="$t('project.overview.info-slot-content')"
       />
       <DatabaseTable
         v-if="databaseList.length > 0"
@@ -25,23 +29,34 @@
         :database-list="databaseList"
       />
       <div v-else class="text-center textinfolabel">
-        No database belongs to this project. You can add database by clicking
-        <span class="text-main">New DB</span> or
-        <span class="text-main">Transfer in DB</span> from the top action bar.
+        <i18n-t keypath="project.overview.no-db-prompt" tag="p">
+          <template #newDb>
+            <span class="text-main">{{
+              $t("quick-action.new-db")
+            }}</span></template
+          >
+          <template #transferInDb>
+            <span class="text-main">{{
+              $t("quick-action.transfer-in-db")
+            }}</span></template
+          >
+        </i18n-t>
       </div>
     </div>
 
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">Issues</p>
+      <p class="text-lg font-medium leading-7 text-main">
+        {{ $t("common.issue") }}
+      </p>
       <IssueTable
         :mode="'PROJECT'"
         :issue-section-list="[
           {
-            title: 'In progress',
+            title: $t('project.overview.in-progress'),
             list: state.progressIssueList,
           },
           {
-            title: 'Recently Closed',
+            title: $t('project.overview.recently-closed'),
             list: state.closedIssueList,
           },
         ]"
@@ -50,7 +65,7 @@
         :to="`/issue?status=closed&project=${project.id}`"
         class="mt-2 flex justify-end normal-link"
       >
-        View all closed
+        {{ $t("project.overview.view-all-closed") }}
       </router-link>
     </div>
   </div>
