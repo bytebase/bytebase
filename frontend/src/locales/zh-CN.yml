@@ -700,3 +700,8 @@ version-control:
       view-in-gitlab: 查看 GitLab
       secret-label-gitlab: 注册为 GitLab 实例级 OAuth 应用的 Secret。
       delete: 删除这个提供方前，需要先解除所有仓库的关联。
+archive:
+  archived: 已归档
+  project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
+  instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
+  environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称

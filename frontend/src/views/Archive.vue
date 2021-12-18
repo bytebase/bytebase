@@ -15,10 +15,10 @@
         class="w-56"
         :placeholder="
           state.selectedIndex == PROJECT_TAB
-            ? 'Search project name'
+            ? $t('archive.project-search-bar-placeholder')
             : state.selectedIndex == INSTANCE_TAB
-            ? 'Search instance name'
-            : 'Search environment name'
+            ? $t('archive.instance-search-bar-placeholder')
+            : $t('archive.environment-search-bar-placeholder')
         "
         @change-text="(text) => changeSearchText(text)"
       />
@@ -53,6 +53,7 @@ import {
 } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -67,6 +68,8 @@ export default {
   name: "Archive",
   components: { EnvironmentTable, InstanceTable, ProjectTable },
   setup() {
+    const { t } = useI18n();
+
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
       searchText: "",
@@ -113,11 +116,11 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       return isDBAOrOwner(currentUser.value.role)
         ? [
-            { title: "Project", alert: false },
-            { title: "Instance", alert: false },
-            { title: "Environment", alert: false },
+            { title: t("common.project"), alert: false },
+            { title: t("common.instance"), alert: false },
+            { title: t("common.environment"), alert: false },
           ]
-        : [{ title: "Project", alert: false }];
+        : [{ title: t("common.instance"), alert: false }];
     });
 
     const filteredProjectList = (list: Project[]) => {
