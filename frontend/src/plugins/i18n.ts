@@ -5,7 +5,7 @@ import { useLocalStorage } from "@vueuse/core";
 const localPathPrefix = "../locales/";
 
 const storage = useLocalStorage("bytebase_options", {}) as any;
-const locale = storage.value?.appearance?.language;
+const locale = storage.value?.appearance?.language || navigator.language;
 
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
@@ -19,7 +19,6 @@ const messages = Object.fromEntries(
 );
 
 const install = (app: App) => {
-  console.log(locale);
   const i18n = createI18n({
     legacy: false,
     locale,
