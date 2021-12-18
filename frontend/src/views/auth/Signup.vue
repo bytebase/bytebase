@@ -145,6 +145,8 @@
       </div>
     </div>
   </div>
+
+  <AuthFooter />
 </template>
 
 <script lang="ts">
@@ -153,6 +155,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { SignupInfo, TEXT_VALIDATION_DELAY } from "../../types";
 import { isValidEmail } from "../../utils";
+import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
@@ -165,7 +168,8 @@ interface LocalState {
 }
 
 export default {
-  name: "Signup",
+  name: "SignupPage",
+  components: { AuthFooter },
   setup() {
     const store = useStore();
     const router = useRouter();

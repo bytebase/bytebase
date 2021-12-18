@@ -39,8 +39,7 @@
               class="flex justify-between text-sm font-medium leading-5 text-control"
             >
               <div>
-                {{ $t("common.password")
-                }}<span class="text-red-600">*</span>
+                {{ $t("common.password") }}<span class="text-red-600">*</span>
               </div>
               <router-link
                 to="/auth/password-forgot"
@@ -90,14 +89,17 @@
       </div>
     </div>
   </div>
+
+  <AuthFooter />
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { LoginInfo } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
+import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
@@ -105,7 +107,8 @@ interface LocalState {
 }
 
 export default {
-  name: "Signin",
+  name: "SigninPage",
+  components: { AuthFooter },
   setup() {
     const store = useStore();
     const router = useRouter();
