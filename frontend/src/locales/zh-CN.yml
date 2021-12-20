@@ -136,6 +136,7 @@ common:
   added-time: 添加时间
   data-source: 数据源
   grant: 授予
+  read-only: 只读
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -762,3 +763,4 @@ datasource:
   member-principal-name-already-exists: '{0} 已经存在'
   successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
   we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
+  new-data-source: 新数据源
