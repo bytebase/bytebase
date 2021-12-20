@@ -134,6 +134,8 @@ common:
   readonly: readonly
   user: User
   added-time: Added time
+  data-source: Data Source
+  grant: Grant
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -855,3 +857,7 @@ datasource:
   grant-data-source: Grant data source
   requested-issue: Requested issue
   successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
+  your-issue-id-e-g-1234: Your issue id (e.g. 1234)
+  member-principal-name-already-exists: '{0} already exists'
+  successfully-granted-datasource-name-to-addedmember-principal-name: Successfully granted '{0}' to '{1}'.
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: We also linked the granted database to the requested issue '{0}'.

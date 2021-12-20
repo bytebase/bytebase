@@ -134,6 +134,8 @@ common:
   readonly: 只读
   user: 用户
   added-time: 添加时间
+  data-source: 数据源
+  grant: 授予
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -756,3 +758,7 @@ datasource:
   grant-data-source: 授予数据源
   requested-issue: 申请工单
   successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。
+  your-issue-id-e-g-1234: 您的工单 id (例如 1234)
+  member-principal-name-already-exists: '{0} 已经存在'
+  successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
