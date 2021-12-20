@@ -131,6 +131,7 @@ common:
   subscribed: Subscribed
   created: Created
   roletype: Role Type
+  readonly: readonly
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -844,3 +845,5 @@ datasource:
   search-name: Search name
   search-name-database: Search name, database
   successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
+  select-database-first: Select database first
+  select-data-source: Select data source

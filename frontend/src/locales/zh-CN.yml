@@ -131,6 +131,7 @@ common:
   subscribed: 已订阅
   created: 已创建
   roletype: 角色类型
+  readonly: 只读
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -745,3 +746,5 @@ datasource:
   search-name: 搜索名称
   search-name-database: 搜索名称，数据库
   successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。
+  select-database-first: 先选择数据库
+  select-data-source: 选择数据源
