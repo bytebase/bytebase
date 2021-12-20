@@ -31,7 +31,7 @@
             >
               <template v-if="item.taskStatus === 'PENDING'">
                 <span
-                  v-if="activeTask(pipeline).id === item.taskId"
+                  v-if="activeTask(issue.pipeline).id === item.taskId"
                   class="h-2 w-2 bg-info rounded-full"
                   aria-hidden="true"
                 ></span>
@@ -147,16 +147,20 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
+import { useStore } from "vuex";
 import {
+  Database,
+  Issue,
+  IssueCreate,
   Pipeline,
   TaskStatus,
   TaskId,
   Stage,
   StageId,
   StageCreate,
-  PipelineCreate,
   Task,
   TaskCreate,
+  UpdateSchemaContext,
 } from "../types";
 import { activeTask, activeTaskInStage } from "../utils";
 import isEmpty from "lodash-es/isEmpty";
@@ -177,9 +181,9 @@ export default {
       required: true,
       type: Boolean,
     },
-    pipeline: {
+    issue: {
       required: true,
-      type: Object as PropType<Pipeline | PipelineCreate>,
+      type: Object as PropType<Issue | IssueCreate>,
     },
     selectedStage: {
       required: true,
@@ -188,33 +192,36 @@ export default {
   },
   emits: ["select-stage-id"],
   setup(props, { emit }) {
+    const store = useStore();
     const itemList = computed<FlowItem[]>(() => {
-      return props.pipeline.stageList.map((stage, index) => {
+      if (props.create) {
+        if (props.issue.type == "bb.issue.database.schema.update") {
+          const createContext = ((props.issue as IssueCreate).createContext) as UpdateSchemaContext;
+          return createContext.updateSchemaDetailList.map((stage, index) => {
+            const database = store.getters["database/databaseById"](stage.databaseId) as Database;
+            return {
+              stageId: index,
+              stageName: database.instance.environment.name,
+              taskId: index,
+              taskName: database.name,
+              taskStatus: "PENDING_APPROVAL",
+              valid: true,
+            };
+          });
+        }
+      }
+      return props.issue.pipeline.stageList.map((stage, index) => {
         let activeTask = stage.taskList[0];
         let taskName = activeTask.name;
         let valid = true;
-        if (props.create) {
-          for (const task of stage.taskList) {
-            if (
-              task.type == "bb.task.database.create" ||
-              task.type == "bb.task.database.schema.update"
-            ) {
-              if (isEmpty((task as TaskCreate).statement)) {
-                valid = false;
-                break;
-              }
-            }
-          }
-        } else {
-          activeTask = activeTaskInStage(stage as Stage);
-          if (stage.taskList.length > 1) {
-            for (let i = 0; i < stage.taskList.length; i++) {
-              if ((stage.taskList[i] as Task).id == (activeTask as Task).id) {
-                taskName = `${activeTask.name} (${i + 1}/${
-                  stage.taskList.length
-                })`;
-                break;
-              }
+        activeTask = activeTaskInStage(stage as Stage);
+        if (stage.taskList.length > 1) {
+          for (let i = 0; i < stage.taskList.length; i++) {
+            if ((stage.taskList[i] as Task).id == (activeTask as Task).id) {
+              taskName = `${activeTask.name} (${i + 1}/${
+                stage.taskList.length
+              })`;
+              break;
             }
           }
         }
@@ -235,7 +242,7 @@ export default {
         case "PENDING":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskId
+            activeTask(props.issue.pipeline as Pipeline).id === item.taskId
           ) {
             return "bg-white border-2 border-info text-info ";
           }
@@ -243,7 +250,7 @@ export default {
         case "PENDING_APPROVAL":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskId
+            activeTask(props.issue.pipeline as Pipeline).id === item.taskId
           ) {
             return "bg-white border-2 border-info text-info";
           }
@@ -260,7 +267,7 @@ export default {
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
         !props.create &&
-        activeTask(props.pipeline as Pipeline).id === item.taskId
+        activeTask(props.issue.pipeline as Pipeline).id === item.taskId
           ? "font-bold "
           : "font-normal ";
       // For create, since we don't have stage id yet, we just compare name instead.
@@ -279,7 +286,7 @@ export default {
         case "PENDING_APPROVAL":
           if (
             !props.create &&
-            activeTask(props.pipeline as Pipeline).id === item.taskId
+            activeTask(props.issue.pipeline as Pipeline).id === item.taskId
           ) {
             return textClass + "text-info";
           }

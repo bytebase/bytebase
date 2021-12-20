@@ -47,7 +47,7 @@
     <template v-if="showPipelineFlowBar">
       <PipelineSimpleFlow
         :create="state.create"
-        :pipeline="issue.pipeline"
+        :issue="issue"
         :selected-stage="selectedStage"
         @select-stage-id="selectStageId"
       />
@@ -259,8 +259,8 @@ import {
   IssueStatusPatch,
   Task,
   TaskDatabaseSchemaUpdatePayload,
-  StageCreate,
-  TaskCreate,
+  UpdateSchemaDetail,
+  UpdateSchemaContext,
   TaskDatabaseCreatePayload,
   TaskGeneralPayload,
   NORMAL_POLL_INTERVAL,
@@ -676,9 +676,12 @@ export default defineComponent({
       newStatement: string,
       postUpdated?: (updatedTask: Task) => void
     ) => {
+      if (issue.value.type != "bb.issue.database.schema.update") {
+          return;
+      }
       if (state.create) {
-        const stage = selectedStage.value as StageCreate;
-        stage.taskList[0].statement = newStatement;
+        const stage = selectedStage.value as UpdateSchemaDetail;
+        stage.statement = newStatement;
       } else {
         patchTask(
           (selectedTask.value as Task).id,
@@ -691,30 +694,27 @@ export default defineComponent({
     };
 
     const applyStatementToOtherStages = (newStatement: string) => {
-      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
-        for (const task of stage.taskList) {
-          if (
-            task.type == "bb.task.general" ||
-            task.type == "bb.task.database.create" ||
-            task.type == "bb.task.database.schema.update"
-          ) {
-            task.statement = newStatement;
-          }
+      if (issue.value.type == "bb.issue.database.schema.update") {
+        const createContext = ((issue.value as IssueCreate).createContext) as UpdateSchemaContext;
+        for (const detail of createContext.updateSchemaDetailList) {
+          detail.statement = newStatement;
         }
       }
     };
 
     const updateRollbackStatement = (newStatement: string) => {
-      const stage = selectedStage.value as StageCreate;
-      stage.taskList[0].rollbackStatement = newStatement;
+      if (issue.value.type != "bb.issue.database.schema.update") {
+        return;
+      }
+      const stage = selectedStage.value as UpdateSchemaDetail;
+      stage.rollbackStatement = newStatement;
     };
 
     const applyRollbackStatementToOtherStages = (newStatement: string) => {
-      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
-        for (const task of stage.taskList) {
-          if (task.type == "bb.task.database.schema.update") {
-            task.rollbackStatement = newStatement;
-          }
+      if (issue.value.type == "bb.issue.database.schema.update") {
+        const createContext = ((issue.value as IssueCreate).createContext) as UpdateSchemaContext;
+        for (const detail of createContext.updateSchemaDetailList) {
+          detail.rollbackStatement = newStatement;
         }
       }
     };
@@ -892,19 +892,41 @@ export default defineComponent({
     };
 
     const currentPipelineType = computed((): PipelineType => {
+      if (state.create) {
+        if (issue.value.type == "bb.issue.database.create") {
+          return "NO_PIPELINE";
+        } else if (issue.value.type == "bb.issue.database.schema.update") {
+          const createContext = ((issue.value as IssueCreate).createContext) as UpdateSchemaContext;
+          if (createContext.updateSchemaDetailList.length > 1) {
+            return "MULTI_STAGE";
+          }
+          return "NO_PIPELINE";
+        }
+      }
       return pipelineType(issue.value.pipeline);
     });
 
-    const selectedStage = computed((): Stage | StageCreate => {
+    const selectedStage = computed((): Stage | UpdateSchemaDetail => {
       const stageSlug = router.currentRoute.value.query.stage as string;
       const taskSlug = router.currentRoute.value.query.task as string;
+      if (state.create) {
+        let index = 0;
+        if (stageSlug) {
+          index = indexFromSlug(stageSlug);
+        }
+        if (issue.value.type == "bb.issue.database.schema.update") {
+          const newIssue = issue.value as IssueCreate;
+          const context = newIssue.createContext as UpdateSchemaContext;
+          return context.updateSchemaDetailList[index];
+        }
+      }
       // For stage slug, we support both index based and id based.
       // Index based is used when creating the new task and is the one used when clicking the UI.
       // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
       if (stageSlug) {
         const index = indexFromSlug(stageSlug);
         if (index < issue.value.pipeline.stageList.length) {
-          return issue.value.pipeline.stageList[index];
+          return (issue.value as Issue).pipeline.stageList[index];
         }
         const stageId = idFromSlug(stageSlug);
         const stageList = (issue.value as Issue).pipeline.stageList;
@@ -924,18 +946,24 @@ export default defineComponent({
           }
         }
       }
-      if (state.create) {
-        return issue.value.pipeline.stageList[0];
-      }
       return activeStage((issue.value as Issue).pipeline);
     });
 
     const selectStageId = (stageId: StageId) => {
+      if (state.create) {
+        router.replace({
+          name: "workspace.issue.detail",
+          query: {
+            ...router.currentRoute.value.query,
+            task: undefined,
+            stage: stageSlug("", stageId),
+          },
+        });
+        return;
+      }
+
       const stageList = issue.value.pipeline.stageList;
       const index = stageList.findIndex((item, index) => {
-        if (state.create) {
-          return index == stageId;
-        }
         return (item as Stage).id == stageId;
       });
       router.replace({
@@ -948,8 +976,13 @@ export default defineComponent({
       });
     };
 
-    const selectedTask = computed((): Task | TaskCreate => {
-      return selectedStage.value.taskList[0];
+    const selectedTask = computed((): Task | undefined => {
+      if (state.create) {
+        return undefined;
+      } else {
+        const stage = selectedStage.value as Stage;
+        return stage.taskList[0];
+      }
     });
 
     const statement = (stage: Stage): string => {
@@ -981,18 +1014,28 @@ export default defineComponent({
     };
 
     const selectedStatement = computed((): string => {
-      const task = (selectedStage.value as StageCreate).taskList[0];
-      return task.statement;
+      if (!state.create || issue.value.type != "bb.issue.database.schema.update") {
+          return "";
+      }
+      return (selectedStage.value as UpdateSchemaDetail).statement;
     });
 
     const selectedRollbackStatement = computed((): string => {
-      const task = (selectedStage.value as StageCreate).taskList[0];
-      return task.rollbackStatement;
+      if (!state.create || issue.value.type != "bb.issue.database.schema.update") {
+          return "";
+      }
+      return (selectedStage.value as UpdateSchemaDetail).rollbackStatement;
     });
 
     const selectedMigrateType = computed((): MigrationType => {
+      if (state.create) {
+        if (issue.value.type == "bb.issue.database.schema.update") {
+          return ((issue.value as IssueCreate).createContext as UpdateSchemaContext).migrationType;
+        }
+      }
       if (
         !state.create &&
+        selectedTask.value != undefined &&
         selectedTask.value.type == "bb.task.database.schema.update"
       ) {
         return (
@@ -1041,6 +1084,7 @@ export default defineComponent({
           (issue.value as Issue).creator.id == currentUser.value.id &&
           // Only allow if it's UI workflow
           (issue.value as Issue).project.workflowType == "UI" &&
+          selectedTask.value != undefined &&
           (selectedTask.value.status == "PENDING" ||
             selectedTask.value.status == "PENDING_APPROVAL" ||
             selectedTask.value.status == "FAILED"))
@@ -1095,7 +1139,7 @@ export default defineComponent({
     });
 
     const showPipelineFlowBar = computed(() => {
-      return currentPipelineType.value != "NO_PIPELINE";
+      return true;
     });
 
     const showIssueOutputPanel = computed(() => {
@@ -1104,6 +1148,9 @@ export default defineComponent({
 
     const showIssueTaskStatementPanel = computed(() => {
       const task = selectedTask.value;
+      if (state.create || task == undefined) {
+        return true;
+      }
       return (
         task.type == "bb.task.general" ||
         task.type == "bb.task.database.create" ||
@@ -1122,46 +1169,46 @@ export default defineComponent({
       if (!state.create) {
         return false;
       }
-      let count = 0;
-      for (const stage of (issue.value as IssueCreate).pipeline.stageList) {
-        for (const task of stage.taskList) {
-          if (
-            task.type == "bb.task.general" ||
-            task.type == "bb.task.database.create" ||
-            task.type == "bb.task.database.schema.update"
-          ) {
-            count++;
-          }
-        }
+      if (issue.value.type == "bb.issue.database.schema.update") {
+        const createContext = (issue.value as IssueCreate).createContext as UpdateSchemaContext;
+        return createContext.updateSchemaDetailList.length > 1;
       }
-      return count > 1;
+      return false;
     });
 
     const database = computed((): Database | undefined => {
       if (state.create) {
-        const databaseId = selectedStage.value.taskList[0].databaseId;
+        if (issue.value.type != "bb.issue.database.schema.update") {
+            return undefined;
+        }
+        const databaseId = (selectedStage.value as UpdateSchemaDetail).databaseId;
         if (databaseId) {
           return store.getters["database/databaseById"](databaseId);
         }
         return undefined;
       }
-      return selectedStage.value.taskList[0].database;
+      return (selectedStage.value as Stage).taskList[0].database;
     });
 
-    const instance = computed((): Instance => {
+    const instance = computed((): Instance | undefined => {
       if (state.create) {
         // If database is available, then we derive the instance from database because we always fetch database's instance.
         if (database.value) {
           return database.value.instance;
         }
-        return store.getters["instance/instanceById"](
-          selectedStage.value.taskList[0].instanceId
-        );
+        if (issue.value.type != "bb.issue.database.schema.update") {
+            return undefined;
+        }
+        const databaseId = (selectedStage.value as UpdateSchemaDetail).databaseId;
+        return (store.getters["database/databaseById"](databaseId) as Database).instance;
       }
-      return selectedStage.value.taskList[0].instance;
+      return (selectedStage.value as Stage).taskList[0].instance;
     });
 
     const sqlHint = (isRollBack: boolean): string | undefined => {
+      if (instance.value == undefined) {
+        return undefined;
+      }
       if (
         !isRollBack &&
         !state.create &&
