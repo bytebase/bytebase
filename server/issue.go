@@ -31,16 +31,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 		}
 
-		for _, stageCreate := range issueCreate.Pipeline.StageList {
-			for _, taskCreate := range stageCreate.TaskList {
-				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-					if taskCreate.Statement == "" {
-						return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-					}
-				}
-			}
-		}
-
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
@@ -366,41 +356,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.CreatorID = creatorID
 			taskCreate.PipelineID = createdPipeline.ID
 			taskCreate.StageID = createdStage.ID
-			instanceFind := &api.InstanceFind{
-				ID: &taskCreate.InstanceID,
-			}
-			instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
-			}
-			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				payload.MigrationType = taskCreate.MigrationType
-				payload.Statement = taskCreate.Statement
-				if taskCreate.RollbackStatement != "" {
-					payload.RollbackStatement = taskCreate.RollbackStatement
-				}
-				if taskCreate.VCSPushEvent != nil {
-					payload.VCSPushEvent = taskCreate.VCSPushEvent
-				}
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
-				}
-				taskCreate.Payload = string(bytes)
-			} else if taskCreate.Type == api.TaskDatabaseRestore {
-				// Snowflake needs to use upper case of DatabaseName.
-				if instance.Engine == db.Snowflake {
-					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
-				}
-				payload := api.TaskDatabaseRestorePayload{}
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.BackupID = *taskCreate.BackupID
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
-				}
-				taskCreate.Payload = string(bytes)
 			}
 			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
 				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
@@ -527,6 +484,9 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 					fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", m.Collation),
 				)
 			}
+
+			// Snowflake needs to use upper case of DatabaseName.
+			m.DatabaseName = strings.ToUpper(m.DatabaseName)
 		default:
 			if m.CharacterSet == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
@@ -550,6 +510,14 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		}
 
 		if m.BackupID != 0 || m.BackupName != "" {
+			restorePayload := api.TaskDatabaseRestorePayload{}
+			restorePayload.DatabaseName = m.DatabaseName
+			restorePayload.BackupID = m.BackupID
+			restoreBytes, err := json.Marshal(restorePayload)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+			}
+
 			return &api.PipelineCreate{
 				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
 				StageList: []api.StageCreate{
@@ -578,6 +546,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 								Type:         api.TaskDatabaseRestore,
 								DatabaseName: payload.DatabaseName,
 								BackupID:     &m.BackupID,
+								Payload:      string(restoreBytes),
 							},
 						},
 					},
@@ -637,6 +606,20 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			if m.MigrationType == db.Migrate {
 				taskName = fmt.Sprintf("Update %q schema", database.Name)
 			}
+			payload := api.TaskDatabaseSchemaUpdatePayload{}
+			payload.MigrationType = m.MigrationType
+			payload.Statement = d.Statement
+			if d.RollbackStatement != "" {
+				payload.RollbackStatement = d.RollbackStatement
+			}
+			if m.VCSPushEvent != nil {
+				payload.VCSPushEvent = m.VCSPushEvent
+			}
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database schema update payload: %v", err))
+			}
+
 			pc.StageList = append(pc.StageList, api.StageCreate{
 				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
 				EnvironmentID: database.Instance.Environment.ID,
@@ -650,6 +633,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 						Statement:         d.Statement,
 						RollbackStatement: d.RollbackStatement,
 						MigrationType:     m.MigrationType,
+						Payload:           string(bytes),
 					},
 				},
 			})
