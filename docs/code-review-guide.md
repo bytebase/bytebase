@@ -6,7 +6,7 @@ There are 2 approaches to inform this transition, the sync way and the async way
 
 ## The sync way
 
-Right after one finishes her part, she tells the other side immediately, usually via IM or face-to-face. We do NOT recommend this approach because:
+Right after one finishes her part, she tells the other side immediately, usually via IM or face-to-face. We do NOT recommend this approach except for emergency because:
 
 1. It's interruptive to your peers.
 2. We are a distributed team, also working on open source means we have contributors in different timezones.
