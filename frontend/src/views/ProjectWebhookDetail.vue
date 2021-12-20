@@ -54,6 +54,7 @@ import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "ProjectWebhookDetail",
@@ -74,6 +75,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const project = computed(() => {
       return store.getters["project/projectById"](
@@ -99,7 +101,7 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "CRITICAL",
-              title: `Test webhook event failed.`,
+              title: t("project.webhook.fail-tested-title"),
               description: testResult.error,
               manualHide: true,
             });
@@ -107,7 +109,7 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "SUCCESS",
-              title: `Test webhook event OK.`,
+              title: t("project.webhook.success-tested-prompt"),
             });
           }
         });

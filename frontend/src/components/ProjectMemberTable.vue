@@ -259,7 +259,9 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: `Successfully revoked ${member.principal.name} access from the project.`,
+          title: t("project.settings.success-menber-deleted-prompt", {
+            name: member.principal.name,
+          }),
         });
       });
     };

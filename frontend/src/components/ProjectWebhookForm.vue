@@ -6,7 +6,7 @@
       </label>
       <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template
-          v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST"
+          v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST()"
           :key="index"
         >
           <div
@@ -185,7 +185,7 @@
         {{ $t("project.webhook.triggering-activity") }}
       </div>
       <div
-        v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST"
+        v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST()"
         :key="index"
         class="mt-4 space-y-4"
       >
@@ -398,7 +398,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully created webhook "${webhook.name}".`,
+            title: t("project.webhook.success-created-prompt", {
+              name: webhook.name,
+            }),
           });
           router.push({
             name: "workspace.project.hook.detail",
@@ -430,7 +432,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated webhook "${webhook.name}".`,
+            title: t("project.webhook.success-updated-prompt", {
+              name: webhook.name,
+            }),
           });
         });
     };
@@ -446,7 +450,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully deleted webhook "${name}".`,
+            title: t("project.webhook.success-deleted-prompt", {
+              name: name,
+            }),
           });
           cancel();
         });

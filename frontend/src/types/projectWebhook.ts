@@ -1,6 +1,7 @@
 import { ActivityType } from "./activity";
 import { MemberId, ProjectId } from "./id";
 import { Principal } from "./principal";
+import { t } from "../plugins/i18n";
 
 type ProjectWebhookTypeItem = {
   type: string;
@@ -8,38 +9,39 @@ type ProjectWebhookTypeItem = {
   urlPrefix: string;
 };
 
-export const PROJECT_HOOK_TYPE_ITEM_LIST: ProjectWebhookTypeItem[] = [
-  {
-    type: "bb.plugin.webhook.slack",
-    name: "Slack",
-    urlPrefix: "https://hooks.slack.com/",
-  },
-  {
-    type: "bb.plugin.webhook.discord",
-    name: "Discord",
-    urlPrefix: "https://discord.com/api/webhooks",
-  },
-  {
-    type: "bb.plugin.webhook.teams",
-    name: "Teams",
-    urlPrefix: "",
-  },
-  {
-    type: "bb.plugin.webhook.dingtalk",
-    name: "DingTalk",
-    urlPrefix: "https://oapi.dingtalk.com",
-  },
-  {
-    type: "bb.plugin.webhook.feishu",
-    name: "Feishu",
-    urlPrefix: "https://open.feishu.cn",
-  },
-  {
-    type: "bb.plugin.webhook.wecom",
-    name: "WeCom",
-    urlPrefix: "https://qyapi.weixin.qq.com",
-  },
-];
+export const PROJECT_HOOK_TYPE_ITEM_LIST: () => ProjectWebhookTypeItem[] =
+  () => [
+    {
+      type: "bb.plugin.webhook.slack",
+      name: t("common.slack"),
+      urlPrefix: "https://hooks.slack.com/",
+    },
+    {
+      type: "bb.plugin.webhook.discord",
+      name: t("common.discord"),
+      urlPrefix: "https://discord.com/api/webhooks",
+    },
+    {
+      type: "bb.plugin.webhook.teams",
+      name: t("common.teams"),
+      urlPrefix: "",
+    },
+    {
+      type: "bb.plugin.webhook.dingtalk",
+      name: t("common.dingtalk"),
+      urlPrefix: "https://oapi.dingtalk.com",
+    },
+    {
+      type: "bb.plugin.webhook.feishu",
+      name: t("common.feishu"),
+      urlPrefix: "https://open.feishu.cn",
+    },
+    {
+      type: "bb.plugin.webhook.wecom",
+      name: t("common.wecom"),
+      urlPrefix: "https://qyapi.weixin.qq.com",
+    },
+  ];
 
 type ProjectWebhookActivityItem = {
   title: string;
@@ -47,33 +49,34 @@ type ProjectWebhookActivityItem = {
   activity: ActivityType;
 };
 
-export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: ProjectWebhookActivityItem[] = [
-  {
-    title: "Issue creation",
-    label: "When new issue has been created",
-    activity: "bb.issue.create",
-  },
-  {
-    title: "Issue status change",
-    label: "When issue status has changed",
-    activity: "bb.issue.status.update",
-  },
-  {
-    title: "Issue task status change",
-    label: "When issue's enclosing task status has changed",
-    activity: "bb.pipeline.task.status.update",
-  },
-  {
-    title: "Issue info change",
-    label: "When issue info (e.g. assignee, title, description) has changed",
-    activity: "bb.issue.field.update",
-  },
-  {
-    title: "Issue comment creation",
-    label: "When new issue comment has been created",
-    activity: "bb.issue.comment.create",
-  },
-];
+export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: () => ProjectWebhookActivityItem[] =
+  () => [
+    {
+      title: t("project.webhook.activity-item.issue-creation.title"),
+      label: t("project.webhook.activity-item.issue-creation.label"),
+      activity: "bb.issue.create",
+    },
+    {
+      title: t("project.webhook.activity-item.issue-status-change.title"),
+      label: t("project.webhook.activity-item.issue-status-change.label"),
+      activity: "bb.issue.status.update",
+    },
+    {
+      title: t("project.webhook.activity-item.issue-task-status-change.title"),
+      label: t("project.webhook.activity-item.issue-task-status-change.label"),
+      activity: "bb.pipeline.task.status.update",
+    },
+    {
+      title: t("project.webhook.activity-item.issue-info-change.title"),
+      label: t("project.webhook.activity-item.issue-info-change.label"),
+      activity: "bb.issue.field.update",
+    },
+    {
+      title: t("project.webhook.activity-item.issue-comment-creation.title"),
+      label: t("project.webhook.activity-item.issue-comment-creation.label"),
+      activity: "bb.issue.comment.create",
+    },
+  ];
 
 // Project Member
 export type ProjectWebhook = {

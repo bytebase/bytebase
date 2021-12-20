@@ -682,8 +682,9 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: '@:common.cancel'
-    confirm: '@:common.create'
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+    success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -698,6 +699,11 @@ project:
       No database belongs to this project. You can add database by clicking
       {newDb} or {transferInDb} from the top action bar.
   webhook:
+    success-created-prompt: Successfully created webhook {name}.
+    success-updated-prompt: Successfully updated webhook {name}.
+    success-deleted-prompt: Successfully deleted webhook {name}.
+    success-tested-prompt: Test webhook event OK.
+    fail-tested-title: Test webhook event failed.
     create-webhook: Add a webhook
     last-updated-by: Last updated bu
     destination: Destination
@@ -737,6 +743,9 @@ project:
         title: Issue comment creation
         label: When new issue comment has been created
   settings:
+    success-updated-prompt: Successfully updated {subject}.
+    success-member-added-prompt: Successfully added {name} to the project.
+    success-member-deleted-prompt: Successfully revoked {name} access from the project.
     member-placeholder: Select user
     manage-member: Manage members
     add-member: Add member
