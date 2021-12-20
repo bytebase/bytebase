@@ -8,7 +8,7 @@
       />
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search instance name'"
+        :placeholder="$t('instance.search-instance-name')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -18,10 +18,10 @@
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :ok-text="'Do not show again'"
-    :cancel-text="'Dismiss'"
-    :title="'How to setup \'Instance\' ?'"
-    :description="'Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.'"
+    :ok-text="$t('common.do-not-show-again')"
+    :cancel-text="$t('common.dismiss')"
+    :title="$t('instance.how-to-setup-instance')"
+    :description="$t('instance.how-to-setup-instance-description')"
     @ok="
       () => {
         doDismissGuide();

@@ -127,6 +127,11 @@ common:
   automatic: 自动
   Default: 默认
   definition: 定义
+  empty: 空
+  creating: 创建中...
+  updating: 更新中...
+  Address: 地址
+  User: 用户
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
@@ -382,6 +387,66 @@ instance:
   restore-this-instance: 恢复该实例
   restore: 恢复
   restore-instance-instance-name-to-normal-state: 恢复实例'{0}'到正常状态?
+  account-name: '@:instance.account@:instance.name'
+  account: 账户
+  name: 名称
+  host-or-socket: Host 或 Socket
+  your-snowflake-account-name: 您的 Snowflake @:{'instance.account'}@:{'instance.name'}
+  port: 端口
+  instance-name: '@:common.instance@:instance.name'
+  snowflake-web-console: Snowflake @:{'instance.web-console'}
+  external-link: 外部链接
+  web-console: Web 控制台
+  connection-info: 连接信息
+  show-how-to-create: 如何创建
+  below-is-an-example-to-create-user-bytebase-with-password: 创建用户 'bytebase{'@'}%' 及其密码的例子如下
+  sentence:
+    host:
+      snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
+    proxy:
+      snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
+    console:
+      snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
+    create-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-user-example:
+      snowflake:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户 bytebase，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。
+      mysql:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户 {user}，密码 {password}，并授予必要权限的例子如下。
+      clickhouse:
+        sql-driven-workflow: SQL 工作流
+        template: 创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。
+      postgres:
+        warn: >-
+          如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER
+          是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。
+        template: >-
+          创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant
+          SUPERUSER。
+  your_db_pwd: YOUR_DB_PWD
+  no-password: 无密码
+  password-write-only: YOUR_DB_PWD - 仅写入
+  test-connection: 测试连接
+  ignore-and-create: 忽略并创建
+  connection-info-seems-to-be-incorrect: 连接信息似乎错误
+  new-instance: 新实例
+  unable-to-connect: >-
+    Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:
+    {0}
+  successfully-created-instance-createdinstance-name: 成功创建实例'{0}'。
+  successfully-updated-instance-instance-name: 成功更新实例'{0}'。
+  copy-grant-statement: CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。
+  successfully-connected-instance: 成功连接到实例。
+  failed-to-connect-instance: 连接到实例失败。
+  how-to-setup-instance: 如何设置'实例'?
+  how-to-setup-instance-description: >-
+    每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的 RDS 实例，也可能您私有化部署的 MySQL 实例。\n\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
+  search-instance-name: 搜索实例名称
+  grants: 权限
 environment:
   select: 选择环境
   archive: 归档此环境
@@ -561,7 +626,7 @@ repository:
     如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab
     EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
   select-repository-attention-gitlab: >-
-    Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
+    Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
     用来监听代码推送事件。
   select-repository-search: 搜索仓库
   linked: 关联的仓库
@@ -621,8 +686,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
   overview:
     view-all: 查看所有
@@ -666,7 +731,7 @@ project:
         label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
         title: 工单信息变更
-        label: "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
+        label: '当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更'
       issue-comment-creation:
         title: 工单被评论
         label: 当新的工单评论被创建
@@ -696,7 +761,7 @@ version-control:
       self: 添加 Git 提供方
       description: >-
         在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS
-        进行集成。以下是配置该集成的步骤，你也可以按照我们的{guide}。
+        进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。
       gitlab-self-host: 自托管 GitLab
       gitlab-self-host-admin-requirement: >-
         您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab

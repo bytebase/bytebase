@@ -127,6 +127,11 @@ common:
   automatic: Automatic
   Default: Default
   definition: Definition
+  empty: Empty
+  creating: Creating...
+  updating: Updating...
+  Address: Address
+  User: User
   assigned: Assigned
   subscribed: Subscribed
   created: Created
@@ -398,6 +403,92 @@ instance:
   restore-this-instance: Restore this instance
   restore: Restore
   restore-instance-instance-name-to-normal-state: Restore instance '{0}' to normal state?
+  account-name: Account name
+  account: Account
+  name: Name
+  host-or-socket: Host or Socket
+  your-snowflake-account-name: your Snowflake account name
+  port: Port
+  instance-name: Instance Name
+  snowflake-web-console: Snowflake Web Console
+  external-link: External Link
+  web-console: Web Console
+  connection-info: Connection info
+  show-how-to-create: Show how to create
+  below-is-an-example-to-create-user-bytebase-with-password: Below is an example to create user 'bytebase{'@'}%' with password
+  below-is-an-example-to-create-user-bytebase-with-password-clickhouse: Below is an example to create user 'bytebase' with password
+  your_db_pwd: YOUR_DB_PWD
+  sentence:
+    host:
+      snowflake: e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
+    proxy:
+      snowflake: >-
+        For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the
+        port
+    console:
+      snowflake: >-
+        The external console URL managing this instance (e.g. AWS RDS console,
+        your in-house DB instance console)
+    create-user: >-
+      This is the connection user used by Bytebase to perform DDL and DML
+      operations.
+    create-user-example:
+      snowflake:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          for {warehouse} and grant the user with the needed privileges.
+      mysql:
+        password: YOUR_DB_PWD
+        user: bytebase{'@'}%
+        template: >-
+          Below is an example to create user {user} with password {password} and
+          grant the user with the needed privileges.
+      clickhouse:
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. First you need to
+          enable ClickHouse SQL-driven workflow {link} and then run the
+          following query to create the user.
+        sql-driven-workflow: SQL-driven workflow
+      postgres:
+        warn: >-
+          If the connecting instance is managed by the cloud provider, then
+          SUPERUSER is not available and you should create the user via that
+          provider\'s admin console. The created user will have provider
+          specific semi-SUPERUSER privileges.
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. If the connecting
+          instance is self-hosted, then you can grant SUPERUSER.
+  no-password: No password
+  password-write-only: YOUR_DB_PWD - write only
+  test-connection: Test Connection
+  ignore-and-create: Ignore and create
+  connection-info-seems-to-be-incorrect: Connection info seems to be incorrect
+  new-instance: New Instance
+  unable-to-connect: >-
+    Bytebase is unable to connect the instance. We recommend you to review the
+    connection info again. But it's OK to ignore this warning for now. You can
+    still fix the connection info from the instance detail page after
+    creation.\n\nError detail: {0}
+  successfully-created-instance-createdinstance-name: Successfully created instance '{0}'.
+  successfully-updated-instance-instance-name: Successfully updated instance '{0}'.
+  copy-grant-statement: >-
+    CREATE USER and GRANT statements copied to clipboard. Paste to your mysql
+    client to apply.
+  successfully-connected-instance: Successfully connected instance.
+  failed-to-connect-instance: Failed to connect instance.
+  how-to-setup-instance: How to setup \'Instance\' ?
+  how-to-setup-instance-description: >-
+    Each Bytebase instance belongs to an environment. An instance usually maps
+    to one of your database instance represented by an host:port address. This
+    could be your on-premises MySQL instance, a RDS instance.\n\nBytebase
+    requires read/write (NOT the super privilege) access to the instance in
+    order to perform database operations on behalf of the user.
+  search-instance-name: Search instance name
+  grants: Grants
 environment:
   select: Select environment
   archive: Archive this environment
