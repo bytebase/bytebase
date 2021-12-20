@@ -372,7 +372,7 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.D
 
 	for _, oldLabel := range oldLabels {
 		// Archive all old labels
-		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+		_, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Archived,
 			DatabaseID: databaseID,
