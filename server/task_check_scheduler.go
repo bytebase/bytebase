@@ -178,10 +178,12 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 }
 
 // shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
-// would return true when:
+// the logic goes like the following:
 // 1. user specified the notBeforeTs field, hence a timing gate is added
 // 2. there is no running timing task check
-// 3. the notBeforeTs has altered since last check (either creation or patch)
+// 3(a). the notBeforeTs has altered since last check (either creation or patch)
+// 3(b). the notBeforeTs has NOT altered since last check && last check had failed && notBeforeTs has passed now
+// ONLY when {1 && 2 && (3.a || 3.b)} listed above would this function return true
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task) (bool, error) {
 	if task.NotBeforeTs == 0 {
 		return false, nil
