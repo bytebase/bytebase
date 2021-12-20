@@ -217,6 +217,17 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return true, nil
 	}
 
+	if time.Now().After(time.Unix(task.NotBeforeTs, 0)) {
+		checkResult := &api.TaskCheckRunResultPayload{}
+		if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+			return false, err
+		}
+		if checkResult.ResultList[0].Status == api.TaskCheckStatusSuccess {
+			return false, nil
+		}
+		return true, nil
+	}
+
 	return false, nil
 }
 
@@ -230,7 +241,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		if flag {
-			taskCheckPayload, err := json.Marshal(task.NotBeforeTs)
+			taskCheckPayload, err := json.Marshal(task)
 			if err != nil {
 				return nil, err
 			}
