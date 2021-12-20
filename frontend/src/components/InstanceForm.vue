@@ -13,15 +13,7 @@
           :key="index"
         >
           <div
-            class="
-              flex
-              justify-center
-              px-2
-              py-4
-              border border-control-border
-              hover:bg-control-bg-hover
-              cursor-pointer
-            "
+            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
             @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
@@ -75,7 +67,8 @@
       >
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
-            Instance Name&nbsp;<span style="color: red">*</span>
+            {{ $t("instance.instance-name") }}
+            &nbsp;<span style="color: red">*</span>
             <template v-if="!create">
               <InstanceEngineIcon class="ml-1" :instance="state.instance" />
               <span class="ml-1">{{ state.instance.engineVersion }}</span>
@@ -95,7 +88,8 @@
 
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="environment" class="textlabel">
-            Environment <span v-if="create" style="color: red">*</span>
+            {{ $t("common.environment") }}
+            <span v-if="create" style="color: red">*</span>
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
           <!-- eslint-disable vue/attribute-hyphenation -->
@@ -124,10 +118,12 @@
         <div class="sm:col-span-3 sm:col-start-1">
           <label for="host" class="textlabel block">
             <template v-if="state.instance.engine == 'SNOWFLAKE'">
-              Account name <span style="color: red">*</span>
+              {{ $t("instance.account-name") }}
+              <span style="color: red">*</span>
             </template>
             <template v-else>
-              Host or Socket <span style="color: red">*</span>
+              {{ $t("instance.host-or-socket") }}
+              <span style="color: red">*</span>
             </template>
           </label>
           <input
@@ -137,8 +133,8 @@
             name="host"
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
-                ? 'your Snowflake account name'
-                : 'e.g. host.docker.internal | <<ip>> | <<local socket>>'
+                ? $t('instance.your-snowflake-account-name')
+                : $t('instance.sentence.host.snowflake')
             "
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
@@ -149,13 +145,14 @@
             v-if="state.instance.engine == 'SNOWFLAKE'"
             class="mt-2 textinfolabel"
           >
-            For proxy server, append @PROXY_HOST and specify PROXY_PORT in the
-            port
+            {{ $t("instance.sentence.proxy.snowflake") }}
           </div>
         </div>
 
         <div class="sm:col-span-1">
-          <label for="port" class="textlabel block"> Port </label>
+          <label for="port" class="textlabel block">
+            {{ $t("instance.port") }}
+          </label>
           <input
             id="port"
             type="number"
@@ -174,10 +171,10 @@
             <span class="">
               {{
                 state.instance.engine == "SNOWFLAKE"
-                  ? "Snowflake Web Console"
-                  : "External Link"
-              }}</span
-            >
+                  ? $t("instance.snowflake-web-console")
+                  : $t("instance.external-link")
+              }}
+            </span>
             <button
               class="ml-1 btn-icon"
               :disabled="instanceLink(state.instance)?.trim().length == 0"
@@ -201,8 +198,7 @@
           </template>
           <template v-else>
             <div class="mt-1 textinfolabel">
-              The external console URL managing this instance (e.g. AWS RDS
-              console, your in-house DB instance console)
+              {{ $t("instance.sentence.console.snowflake") }}
             </div>
             <input
               id="externallink"
@@ -223,20 +219,20 @@
         <div class="flex justify-between">
           <div>
             <h3 class="text-lg leading-6 font-medium text-gray-900">
-              Connection info
+              {{ $t("instance.connection-info") }}
             </h3>
             <p
               class="mt-1 text-sm text-gray-500"
               :class="create ? 'max-w-xl' : ''"
             >
-              This is the connection user used by Bytebase to perform DDL and
-              DML operations.
+              {{ $t("instance.sentence.create-user") }}
               <span
                 v-if="!create"
                 class="normal-link"
                 @click="toggleCreateUserExample"
-                >Show how to create</span
               >
+                {{ $t("instance.show-how-to-create") }}
+              </span>
             </p>
             <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
             <div
@@ -249,77 +245,86 @@
                   state.instance.engine == 'TIDB'
                 "
               >
-                Below is an example to create user 'bytebase@%' with password
-                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
-                with the needed privileges.
+                <i18n-t
+                  tag="p"
+                  keypath="instance.sentence.create-user-example.mysql.template"
+                >
+                  <template #user>
+                    {{ $t("instance.sentence.create-user-example.mysql.user") }}
+                  </template>
+                  <template #password>
+                    <span class="text-red-600">
+                      {{
+                        $t(
+                          "instance.sentence.create-user-example.mysql.password"
+                        )
+                      }}
+                    </span>
+                  </template>
+                </i18n-t>
               </template>
               <template v-else-if="state.instance.engine == 'CLICKHOUSE'">
-                Below is an example to create user 'bytebase' with password
-                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
-                with the needed privileges. First you need to enable
-                <a
-                  class="normal-link"
-                  href="https://clickhouse.com/docs/en/operations/access-rights/#access-control-usage"
-                  target="__blank"
+                <i18n-t
+                  tag="p"
+                  keypath="instance.sentence.create-user-example.clickhouse.template"
                 >
-                  ClickHouse SQL-driven workflow</a
-                >
-                and then run the following query to create the user.
+                  <template #password>
+                    <span class="text-red-600"> YOUR_DB_PWD </span>
+                  </template>
+                  <template #link>
+                    <a
+                      class="normal-link"
+                      href="https://clickhouse.com/docs/en/operations/access-rights/#access-control-usage"
+                      target="__blank"
+                    >
+                      {{
+                        $t(
+                          "instance.sentence.create-user-example.clickhouse.sql-driven-workflow"
+                        )
+                      }}
+                    </a>
+                  </template>
+                </i18n-t>
               </template>
               <template v-else-if="state.instance.engine == 'POSTGRES'">
                 <BBAttention
                   class="mb-1"
                   :style="'WARN'"
-                  :title="'If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider\'s admin console. The created user will have provider specific semi-SUPERUSER privileges.'"
+                  :title="
+                    $t('instance.sentence.create-user-example.postgres.warn')
+                  "
                 />
-                Below is an example to create user 'bytebase' with password
-                <span class="text-red-600">YOUR_DB_PWD</span> and grant the user
-                with the needed privileges. If the connecting instance is
-                self-hosted, then you can grant SUPERUSER.
+                <i18n-t
+                  tag="p"
+                  keypath="instance.sentence.create-user-example.postgres.template"
+                >
+                  <template #password>
+                    <span class="text-red-600"> YOUR_DB_PWD </span>
+                  </template>
+                </i18n-t>
               </template>
               <template v-else-if="state.instance.engine == 'SNOWFLAKE'">
-                Below is an example to create user 'bytebase' with password
-                <span class="text-red-600">YOUR_DB_PWD</span> for
-                <span class="text-red-600">YOUR_COMPUTE_WAREHOUSE</span> and
-                grant the user with the needed privileges.
+                <i18n-t
+                  tag="p"
+                  keypath="instance.sentence.create-user-example.snowflake.template"
+                >
+                  <template #password>
+                    <span class="text-red-600"> YOUR_DB_PWD </span>
+                  </template>
+                  <template #warehouse>
+                    <span class="text-red-600"> YOUR_COMPUTE_WAREHOUSE </span>
+                  </template>
+                </i18n-t>
               </template>
               <div class="mt-2 flex flex-row">
                 <span
-                  class="
-                    flex-1
-                    min-w-0
-                    w-full
-                    inline-flex
-                    items-center
-                    px-3
-                    py-2
-                    border border-r border-control-border
-                    bg-gray-50
-                    sm:text-sm
-                    whitespace-pre
-                  "
+                  class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
                 >
                   {{ grantStatement(state.instance.engine) }}
                 </span>
                 <button
                   tabindex="-1"
-                  class="
-                    -ml-px
-                    px-2
-                    py-2
-                    border border-gray-300
-                    text-sm
-                    font-medium
-                    text-control-light
-                    disabled:text-gray-300
-                    bg-gray-50
-                    hover:bg-gray-100
-                    disabled:bg-gray-50
-                    focus:ring-control focus:outline-none
-                    focus-visible:ring-2
-                    focus:ring-offset-1
-                    disabled:cursor-not-allowed
-                  "
+                  class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
                   @click.prevent="copyGrantStatement"
                 >
                   <heroicons-outline:clipboard class="w-6 h-6" />
@@ -330,7 +335,9 @@
         </div>
         <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
           <div class="sm:col-span-1 sm:col-start-1">
-            <label for="username" class="textlabel block"> Username </label>
+            <label for="username" class="textlabel block">
+              {{ $t("common.username") }}
+            </label>
             <!-- For mysql, username can be empty indicating anonymous user.
             But it's a very bad practice to use anonymous user for admin operation,
             thus we make it REQUIRED here. -->
@@ -341,7 +348,9 @@
               class="textfield mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="
-                state.instance.engine == 'CLICKHOUSE' ? 'default' : ''
+                state.instance.engine == 'CLICKHOUSE'
+                  ? $t('common.default')
+                  : ''
               "
               :value="state.instance.username"
               @input="state.instance.username = $event.target.value"
@@ -350,12 +359,14 @@
 
           <div class="sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
-              <label for="password" class="textlabel block">Password</label>
+              <label for="password" class="textlabel block">{{
+                $t("common.password")
+              }}</label>
               <!-- In create mode, user can leave the password field empty and create the instance,
               so there is no need to show the checkbox. -->
               <BBCheckbox
                 v-if="!create"
-                :title="'Empty'"
+                :title="$t('common.empty')"
                 :value="state.useEmptyPassword"
                 @toggle="
                   (on) => {
@@ -372,8 +383,8 @@
               autocomplete="off"
               :placeholder="
                 state.useEmptyPassword
-                  ? 'No password'
-                  : 'YOUR_DB_PWD - write only'
+                  ? $t('instance.no-password')
+                  : $t('instance.password-write-only')
               "
               :disabled="!allowEdit || state.useEmptyPassword"
               :value="
@@ -401,7 +412,7 @@
               :disabled="!state.instance.host"
               @click.prevent="testConnection"
             >
-              Test Connection
+              {{ $t("instance.test-connection") }}
             </button>
           </div>
         </div>
@@ -412,7 +423,10 @@
       <!-- Create button group -->
       <div v-if="create" class="flex justify-end items-center">
         <div>
-          <BBSpin v-if="state.creatingOrUpdating" :title="'Creating...'" />
+          <BBSpin
+            v-if="state.creatingOrUpdating"
+            :title="$t('common.creating')"
+          />
         </div>
         <div class="ml-2">
           <button
@@ -421,7 +435,7 @@
             :disabled="state.creatingOrUpdating"
             @click.prevent="cancel"
           >
-            Cancel
+            {{ $t("common.cancel") }}
           </button>
           <button
             type="button"
@@ -429,14 +443,17 @@
             :disabled="!allowCreate || state.creatingOrUpdating"
             @click.prevent="tryCreate"
           >
-            Create
+            {{ $t("common.create") }}
           </button>
         </div>
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-end items-center">
         <div>
-          <BBSpin v-if="state.creatingOrUpdating" :title="'Updating...'" />
+          <BBSpin
+            v-if="state.creatingOrUpdating"
+            :title="$t('common.updating')"
+          />
         </div>
         <button
           v-if="allowEdit"
@@ -445,7 +462,7 @@
           :disabled="!valueChanged || state.creatingOrUpdating"
           @click.prevent="doUpdate"
         >
-          Update
+          {{ $t("common.update") }}
         </button>
       </div>
     </div>
@@ -453,8 +470,8 @@
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
-    :ok-text="'Ignore and create'"
-    :title="'Connection info seems to be incorrect'"
+    :ok-text="$t('instance.ignore-and-create')"
+    :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
     @ok="
       () => {
@@ -488,6 +505,7 @@ import {
   EngineType,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   originalInstance?: Instance;
@@ -506,7 +524,7 @@ export default {
   components: { EnvironmentSelect, InstanceEngineIcon },
   props: {
     create: {
-      default: "false", // TODO(ji): The string value raises an eslint ERROR. But I won't change it this time.
+      default: false,
       type: Boolean,
     },
     instance: {
@@ -519,6 +537,7 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const currentUser: ComputedRef<Principal> = computed(() =>
       store.getters["auth/currentUser"]()
@@ -531,7 +550,7 @@ export default {
         ? cloneDeep(props.instance)
         : {
             environmentId: UNKNOWN_ID,
-            name: "New Instance",
+            name: t("instance.new-instance"),
             engine: "MYSQL",
             // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
             // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
@@ -672,7 +691,9 @@ export default {
           if (isEmpty(resultSet.error)) {
             doCreate();
           } else {
-            state.createInstanceWarning = `Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: ${resultSet.error}`;
+            state.createInstanceWarning = t("instance.unable-to-connect", [
+              resultSet.error,
+            ]);
             state.showCreateInstanceWarningModal = true;
           }
         });
@@ -699,7 +720,10 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully created instance '${createdInstance.name}'.`,
+            title: t(
+              "instance.successfully-created-instance-createdinstance-name",
+              [createdInstance.name]
+            ),
           });
 
           // After creating the instance, we will check if migration schema exists on the instance.
@@ -753,7 +777,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated instance '${instance.name}'.`,
+            title: t("instance.successfully-updated-instance-instance-name", [
+              instance.name,
+            ]),
           });
 
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
@@ -771,7 +797,7 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: `CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.`,
+          title: t("instance.copy-grant-statement"),
         });
       });
     };
@@ -799,13 +825,13 @@ export default {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "SUCCESS",
-              title: `Successfully connected instance.`,
+              title: t("instance.successfully-connected-instance"),
             });
           } else {
             store.dispatch("notification/pushNotification", {
               module: "bytebase",
               style: "CRITICAL",
-              title: `Failed to connect instance.`,
+              title: t("instance.failed-to-connect-instance"),
               description: resultSet.error,
               // Manual hide, because user may need time to inspect the error
               manualHide: true,

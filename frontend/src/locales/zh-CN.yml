@@ -127,6 +127,9 @@ common:
   automatic: 自动
   Default: 默认
   definition: 定义
+  empty: 空
+  creating: 创建中...
+  updating: 更新中...
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -379,6 +382,60 @@ instance:
   restore-this-instance: 恢复该实例
   restore: 恢复
   restore-instance-instance-name-to-normal-state: 恢复实例'{0}'到正常状态?
+  account-name: '@:instance.account@:instance.name'
+  account: 账户
+  name: 名称
+  host-or-socket: Host或Socket
+  your-snowflake-account-name: 你的Snowflake@:instance.account@:instance.name
+  port: 端口
+  instance-name: '@:common.instance@:instance.name'
+  snowflake-web-console: Snowflake@:instance.web-console
+  external-link: 外部链接
+  web-console: 网络控制台
+  connection-info: 连接信息
+  show-how-to-create: 如何创建
+  below-is-an-example-to-create-user-bytebase-with-password: 创建用户'bytebase{'@'}%'及其密码的例子如下
+  sentence:
+    host:
+      snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
+    proxy:
+      snowflake: 对于代理服务器，加上{'@'}PROXY_HOST，并在端口里指定PROXY_PORT
+    console:
+      snowflake: "\b管理该@:common.instance的外部控制台URL（如AWS RDS 控制台，你的@:{'common.database'}控制台）"
+    create-user: 这是Bytebase用于连接数据库，执行DDL和DML操作的用户。
+    create-user-example:
+      snowflake:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户bytebase，密码{password}，warehouse为{warehouse}，并授予必要权限的例子如下。
+      mysql:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户{user}，密码{password}，并授予必要权限的例子如下。
+      clickhouse:
+        sql-driven-workflow: SQL工作流
+        template: 创建用户bytebase，密码{password}，并授予必要权限的例子如下。你需要首先启用{link}，才能执行以下创建用户的命令。
+      postgres:
+        warn: >-
+          如果你将要连接到的实例是由云服务供应商管理的话，那么SUPERUSER是不可用的，你需要通过供应商的控制台来创建用户。你所创建的用户会拥有，由供应商决定的，半SUPERUSER的权限。
+        template: >-
+          创建用户bytebase，密码{password}，并授予必要权限的例子如下。如果你将要连接到的实例是自己托管的，那么你可以grant
+          SUPERUSER。
+  your_db_pwd: YOUR_DB_PWD
+  no-password: 无密码
+  password-write-only: YOUR_DB_PWD - 仅写入
+  test-connection: 测试连接
+  ignore-and-create: 忽略并创建
+  connection-info-seems-to-be-incorrect: 连接信息似乎错误
+  new-instance: '@:common.new@:common.instance'
+  unable-to-connect: >-
+    Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:
+    {0}
+  successfully-created-instance-createdinstance-name: 成功创建实例'{0}'。
+  successfully-updated-instance-instance-name: 成功更新实例'{0}'。
+  copy-grant-statement: CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。
+  successfully-connected-instance: 成功连接到实例。
+  failed-to-connect-instance: 连接到实例失败。
 environment:
   select: 选择环境
   archive: 归档此环境
@@ -558,7 +615,7 @@ repository:
     如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab
     EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
   select-repository-attention-gitlab: >-
-    Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
+    Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
     用来监听代码推送事件。
   select-repository-search: 搜索仓库
   linked: 关联的仓库
