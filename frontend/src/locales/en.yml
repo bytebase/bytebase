@@ -121,6 +121,10 @@ common:
   confirm: Confirm
   coming-later: Coming later
   learn-more: Learn more
+  schema-version: Schema version
+  time: Time
+  manual: Manual
+  automatic: Automatic
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -369,8 +373,7 @@ instance:
   create-migration-schema: Create migration schema
   missing-migration-schema: Missing migration schema
   unable-to-connect-instance-to-check-migration-schema: Unable to connect instance to check migration schema
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
-    >-
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: >-
     Bytebase relies on migration schema to manage version control based schema
     migration for databases belonged to this instance.
   please-contact-your-dba-to-configure-it: Please contact your DBA to configure it.
@@ -384,8 +387,7 @@ instance:
   successfully-synced-schema-for-instance-instance-value-name: Successfully synced schema for instance '{0}'.
   archive-this-instance: Archive this instance
   archive-instance-instance-name: Archive instance '{0}'?
-  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page:
-    >-
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: >-
     Archived instances will not be shown on the normal interface. You can still
     restore later from the Archive page.
   restore-this-instance: Restore this instance
@@ -493,8 +495,8 @@ database:
     In Bytebase, a database always belongs to a single project.\n\nBytebase will
     periodically sync the database info for every recorded instance. You can
     also create a new database from the dashboard.
-  restored-from: "Restored from "
-  database-name-is-restored-from-another-database-backup: "{0} is restored from another database backup"
+  restored-from: 'Restored from '
+  database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
   sql-console: SQL Console
   transfer-project: Transfer Project
@@ -504,7 +506,7 @@ database:
   create-backup: Create backup
   automatic-weekly-backup: Automatic weekly backup
   disable-automatic-backup: Disable automatic backup
-  backuppolicy-backup-enforced-and-cant-be-disabled: "{0} backup enforced and can't be disabled"
+  backuppolicy-backup-enforced-and-cant-be-disabled: '{0} backup enforced and can''t be disabled'
   backup-policy:
     DAILY: DAILY
     WEEKLY: WEEKLY
@@ -525,15 +527,16 @@ database:
   create-a-manual-backup: Create a manual backup
   disabled: Disabled
   enabled: Enabled
-  action-automatic-backup-for-database-props-database-name: "{0} automatic backup for database '{1}'."
+  action-automatic-backup-for-database-props-database-name: '{0} automatic backup for database ''{1}''.'
   updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
   last-sync-status: Last sync status {0} at {1}
   version-control-enabled: Version control enabled
+  restore-backup: Restore backup '{0}' to a new database
 t:
   database: {}
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
-  branch-specify-tip: "Tip: You can also use wildcard like 'feature/*"
+  branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
   base-directory: Base directory
   base-directory-description: >-
     The root directory where Bytebase observes the file change. If empty, then
@@ -556,7 +559,7 @@ repository:
   if-specified: If specified
   schema-path-example: Schema path example
   git-provider: Git provider
-  version-control-status: "@.capitalize:common.version-control is {status}"
+  version-control-status: '@.capitalize:common.version-control is {status}'
   version-control-description-file-path: >-
     Database migration scripts are stored in {fullPath}. To make schema changes,
     a developer would create a migration script matching file path pattern
@@ -658,11 +661,11 @@ project:
     name: '@:common.name'
     created-at: Created At
   create-modal:
-    project-name: "@:common.project @:common.name"
-    key: "@:common.key"
+    project-name: '@:common.project @:common.name'
+    key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
   overview:
     view-all: View all
     view-all-closed: View all closed

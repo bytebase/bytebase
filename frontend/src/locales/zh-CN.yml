@@ -121,6 +121,10 @@ common:
   confirm: 确认
   coming-later: 敬请期待
   learn-more: 了解更多
+  schema-version: Schema 版本
+  time: 时间
+  manual: 手动
+  automatic: 自动
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -348,14 +352,13 @@ db:
   sync-status: 同步状态
 instance:
   select: 选择实例
-  new-database: "@:common.new@:common.database"
+  new-database: '@:common.new@:common.database'
   syncing: 同步中 ...
   sync-now: 现在同步
-  create-migration-schema: "@:common.create@:common.migration @:{'common.schema'}"
+  create-migration-schema: '@:common.create@:common.migration @:{''common.schema''}'
   missing-migration-schema: 缺少@:common.migration @:common.schema
   unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
-    >-
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: >-
     Bytebase需要@:{'common.migration'} @:{'common.schema'}
     来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema
     @:common.migration
@@ -464,7 +467,7 @@ database:
     在 Bytebase 中，一个数据库始终属于单个项目。\n\nBytebase 将定期同步每个实例的数据库信息。
     您还可以从仪表板创建新数据库。
   restored-from: 恢复于
-  database-name-is-restored-from-another-database-backup: "{0}恢复于另一个数据库备份"
+  database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
   sql-console: SQL控制台
   transfer-project: 转移项目
   alter-schema-in-vcs: 变更 Schema(VCS)
@@ -499,6 +502,7 @@ database:
   updated-backup-webhook-url-for-database-props-database-name: 更新了数据库'{0}'的 webhook URL。
   last-sync-status: 最后一次同步在{1}，状态为{0}
   version-control-enabled: 已启用版本控制
+  restore-backup: 恢复备份'{0}'到一个新的数据库中
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
@@ -516,7 +520,7 @@ repository:
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
   git-provider: Git 提供方
-  version-control-status: "@.capitalize:common.version-control 已{status}"
+  version-control-status: '@.capitalize:common.version-control 已{status}'
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
   version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
   version-control-description-description-schema-path: 当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。
@@ -593,11 +597,11 @@ project:
     name: '@:common.name'
     created-at: 创建于
   create-modal:
-    project-name: "@:common.project @:common.name"
-    key: "@:common.key"
+    project-name: '@:common.project @:common.name'
+    key: '@:common.key'
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
@@ -623,7 +627,7 @@ project:
       title: 创建 webhook
       desc: 为 {destination} 创建一个 webhook
       how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
-      view-doc: "{destination} 的官方文档"
+      view-doc: '{destination} 的官方文档'
     deletion:
       btn-text: Delete this webhook
     activity-item:
