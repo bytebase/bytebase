@@ -18,14 +18,16 @@ const messages = Object.fromEntries(
   )
 );
 
-const install = (app: App) => {
-  const i18n = createI18n({
-    legacy: false,
-    locale,
-    globalInjection: true,
-    messages,
-  });
+const i18n = createI18n({
+  legacy: false,
+  locale,
+  globalInjection: true,
+  messages,
+});
 
+export const t = i18n.global.t;
+
+const install = (app: App) => {
   app.use(i18n);
 };
 

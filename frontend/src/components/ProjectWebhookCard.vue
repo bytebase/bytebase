@@ -121,7 +121,7 @@ export default {
 
     const activityListStr = computed(() => {
       const list = props.projectWebhook.activityList.map((activity) => {
-        for (const item of PROJECT_HOOK_ACTIVITY_ITEM_LIST) {
+        for (const item of PROJECT_HOOK_ACTIVITY_ITEM_LIST()) {
           if (item.activity == activity) {
             return item.title;
           }

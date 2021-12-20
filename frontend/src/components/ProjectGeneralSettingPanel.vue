@@ -57,6 +57,7 @@ import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   name: string;
@@ -77,6 +78,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       name: props.project.name,
@@ -111,10 +113,12 @@ export default {
           projectPatch,
         })
         .then((updatedProject: Project) => {
-          store.dispatch("notification/pushNotification", {
+          store.dispatch("notification/", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated ${subject}.`,
+            title: t("project.settings.success-updated-prompt", {
+              subject: subject,
+            }),
           });
           state.name = updatedProject.name;
           state.key = updatedProject.key;
