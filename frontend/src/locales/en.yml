@@ -126,6 +126,7 @@ common:
   manual: Manual
   automatic: Automatic
   Default: Default
+  definition: Definition
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center

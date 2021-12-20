@@ -126,6 +126,7 @@ common:
   manual: 手动
   automatic: 自动
   Default: 默认
+  definition: 定义
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
