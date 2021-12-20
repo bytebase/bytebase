@@ -125,6 +125,7 @@ common:
   time: 时间
   manual: 手动
   automatic: 自动
+  Default: 默认
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -503,6 +504,7 @@ database:
   last-sync-status: 最后一次同步在{1}，状态为{0}
   version-control-enabled: 已启用版本控制
   restore-backup: 恢复备份'{0}'到一个新的数据库中
+  nullable: 可为空
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'

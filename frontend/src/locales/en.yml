@@ -125,6 +125,7 @@ common:
   time: Time
   manual: Manual
   automatic: Automatic
+  Default: Default
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -532,6 +533,7 @@ database:
   last-sync-status: Last sync status {0} at {1}
   version-control-enabled: Version control enabled
   restore-backup: Restore backup '{0}' to a new database
+  nullable: Nullable
 t:
   database: {}
 repository:
