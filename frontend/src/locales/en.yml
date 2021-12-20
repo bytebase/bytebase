@@ -543,6 +543,12 @@ database:
   unique: Unique
   visible: Visible
   comment: Comment
+  engine: Engine
+  row-count-estimate: Row count estimate
+  data-size: Data size
+  index-size: Index size
+  columns: Columns
+  indexes: Indexes
 t:
   database: {}
 repository:

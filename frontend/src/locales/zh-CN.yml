@@ -514,6 +514,12 @@ database:
   unique: Unique
   visible: Visible
   comment: 注释
+  engine: 引擎
+  row-count-estimate: 估计行数
+  data-size: 数据大小
+  index-size: 索引大小
+  columns: 列
+  indexes: 索引
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
