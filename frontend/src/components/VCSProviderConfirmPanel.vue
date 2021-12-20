@@ -10,15 +10,14 @@
     >
       <div class="px-4 py-5 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-main">
-          Confirm the info
+          {{ $t('version-control.setting.add-git-provider.confirm.confirm-info') }}
         </h3>
         <p class="mt-1 textinfolabel">
-          After creation, this Git provider can be chosen under the project
-          dashboard "Version Control" tab by the project owner.
+          {{ $t('version-control.setting.add-git-provider.confirm.confirm-description') }}
         </p>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
-        <dt class="text-sm font-medium text-control-light text-right">Type</dt>
+        <dt class="text-sm font-medium text-control-light text-right">{{ $t('common.type') }}</dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           <div
             v-if="config.type == 'GITLAB_SELF_HOST'"
@@ -26,20 +25,20 @@
           >
             <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
             <div class="whitespace-nowrap">
-              Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+              {{ $t('version-control.setting.add-git-provider.gitlab-self-host-ce-ee') }}
             </div>
           </div>
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
-        <dt class="text-sm font-medium text-control-light text-right">Name</dt>
+        <dt class="text-sm font-medium text-control-light text-right">{{ $t('common.name') }}</dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           {{ config.name }}
         </dd>
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
         <dt class="text-sm font-medium text-control-light text-right">
-          Instance URL
+          {{ $t('common.instance') }} URL
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           {{ config.instanceUrl }}
@@ -47,7 +46,7 @@
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
         <dt class="text-sm font-medium text-control-light text-right">
-          Application ID
+          $t('common.application') ID
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           {{ config.applicationId }}

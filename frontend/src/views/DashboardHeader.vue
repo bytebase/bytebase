@@ -118,7 +118,6 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <!-- TODO test for now, will delete -->
         <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
@@ -183,11 +182,11 @@ import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useLocalStorage } from "@vueuse/core";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner, isDev } from "../utils";
+import { useLanguage } from "../composables/useLanguage";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -197,9 +196,10 @@ export default {
   name: "DashboardHeader",
   components: { ProfileDropdown },
   setup() {
-    const { t, availableLocales, locale } = useI18n();
+    const { t, availableLocales } = useI18n();
     const store = useStore();
     const router = useRouter();
+    const { setLocale, toggleLocales } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
@@ -317,25 +317,6 @@ export default {
       }),
     ]);
     useRegisterActions(kbarActions);
-
-    const storage = useLocalStorage("bytebase_options", {}) as any;
-
-    const setLocale = (lang: string) => {
-      locale.value = lang;
-      storage.value = {
-        appearance: {
-          language: lang,
-        },
-      };
-    };
-
-    const toggleLocales = () => {
-      // TODO change to some real logic
-      const locales = availableLocales;
-      const nextLocale =
-        locales[(locales.indexOf(locale.value) + 1) % locales.length];
-      setLocale(nextLocale);
-    };
 
     const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>

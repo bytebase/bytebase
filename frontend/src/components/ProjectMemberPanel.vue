@@ -1,6 +1,8 @@
 <template>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">Manage members</p>
+    <p class="text-lg font-medium leading-7 text-main">
+      {{ $t("project.settings.manage-member") }}
+    </p>
     <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
@@ -14,7 +16,7 @@
                 id="user"
                 name="user"
                 :required="false"
-                :placeholder="'Select user'"
+                :placeholder="$t('project.settings.member-placeholder')"
                 :selectedId="state.principalId"
                 @select-principal-id="
                   (principalId) => {
@@ -35,7 +37,7 @@
                   class="btn"
                   value="OWNER"
                 />
-                <label class="label"> Owner </label>
+                <label class="label"> {{ $t("common.role.owner") }} </label>
               </div>
               <div class="radio">
                 <input
@@ -46,7 +48,7 @@
                   class="btn"
                   value="DEVELOPER"
                 />
-                <label class="label"> Developer </label>
+                <label class="label"> {{ $t("common.role.developer") }} </label>
               </div>
             </div>
             <button
@@ -56,7 +58,7 @@
               @click.prevent="addMember"
             >
               <heroicons-outline:user-add class="mr-2 w-5 h-5" />
-              Add member
+              {{ $t("project.settings.add-member") }}
             </button>
           </div>
         </div>
@@ -87,6 +89,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -105,6 +108,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -187,7 +191,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully added ${member.principal.name} to the project.`,
+            title: t("project.settings.success-member-added-prompt", {
+              name: member.principal.name,
+            }),
           });
         });
 

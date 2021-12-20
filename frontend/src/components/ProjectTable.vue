@@ -36,22 +36,11 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { projectSlug } from "../utils";
 import { Project } from "../types";
-
-const COLUMN_LIST = [
-  {
-    title: "Key",
-  },
-  {
-    title: "Name",
-  },
-  {
-    title: "Created",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "ProjectTable",
@@ -62,8 +51,21 @@ export default {
       type: Object as PropType<Project[]>,
     },
   },
+
   setup(props) {
     const router = useRouter();
+    const { t } = useI18n();
+    const COLUMN_LIST = computed(() => [
+      {
+        title: t("project.table.key"),
+      },
+      {
+        title: t("project.table.name"),
+      },
+      {
+        title: t("project.table.created-at"),
+      },
+    ]);
 
     const clickProject = function (section: number, row: number) {
       const project = props.projectList[row];
