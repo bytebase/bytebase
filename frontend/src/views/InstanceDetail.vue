@@ -103,7 +103,7 @@
   <BBAlert
     v-if="state.showCreateMigrationSchemaModal"
     :style="'INFO'"
-    :ok-text="'Create'"
+    :ok-text="$t('common.create')"
     :title="$t('instance.create-migration-schema') + '?'"
     :description="
       $t(
