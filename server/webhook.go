@@ -262,40 +262,28 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Compose the new issue
-				stageList := []api.StageCreate{}
-				for _, database := range filteredDatabaseList {
-					databaseID := database.ID
-					taskStatus := api.TaskPendingApproval
-					if pipelineApprovalByEnv[database.Instance.Environment.ID] == api.PipelineApprovalValueManualNever {
-						taskStatus = api.TaskPending
-					}
-					task := &api.TaskCreate{
-						InstanceID:    database.InstanceID,
-						DatabaseID:    &databaseID,
-						Name:          mi.Description,
-						Status:        taskStatus,
-						Type:          api.TaskDatabaseSchemaUpdate,
-						Statement:     string(b),
-						VCSPushEvent:  &vcsPushEvent,
-						MigrationType: mi.Type,
-					}
-					stageList = append(stageList, api.StageCreate{
-						EnvironmentID: database.Instance.EnvironmentID,
-						TaskList:      []api.TaskCreate{*task},
-						Name:          database.Instance.Environment.Name,
-					})
+				m := &api.UpdateSchemaContext{
+					MigrationType: mi.Type,
+					VCSPushEvent:  &vcsPushEvent,
 				}
-				pipeline := &api.PipelineCreate{
-					StageList: stageList,
-					Name:      fmt.Sprintf("Pipeline - %s", commit.Title),
+				for _, database := range filteredDatabaseList {
+					m.UpdateSchemaDetailList = append(m.UpdateSchemaDetailList,
+						&api.UpdateSchemaDetail{
+							DatabaseID: database.ID,
+							Statement:  string(b),
+						})
+				}
+				createContext, err := json.Marshal(m)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct issue create context payload").SetInternal(err)
 				}
 				issueCreate := &api.IssueCreate{
-					ProjectID:   repository.ProjectID,
-					Pipeline:    *pipeline,
-					Name:        commit.Title,
-					Type:        api.IssueDatabaseSchemaUpdate,
-					Description: commit.Message,
-					AssigneeID:  api.SystemBotID,
+					ProjectID:     repository.ProjectID,
+					Name:          commit.Title,
+					Type:          api.IssueDatabaseSchemaUpdate,
+					Description:   commit.Message,
+					AssigneeID:    api.SystemBotID,
+					CreateContext: string(createContext),
 				}
 
 				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
