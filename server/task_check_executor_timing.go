@@ -48,7 +48,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: fmt.Sprintf("Passed the configured earliest running timing: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
+			Content: fmt.Sprintf("Passed the configured earliest running time: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
 		},
 	}, nil
 }
