@@ -48,7 +48,7 @@ export function activityName(type: ActivityType): string {
     case "bb.pipeline.task.file.commit":
       return "Commit file";
     case "bb.pipeline.task.statement.update":
-      return "Statement update";
+      return "SQL update";
     case "bb.member.create":
       return "Create member";
     case "bb.member.role.update":

@@ -139,5 +139,5 @@ export function issueActivityActionSentence(
     }
   }
 
-  return ["activity.sentence.reopened-issue", {}];
+  return ["activity.sentence.empty", {}];
 }
