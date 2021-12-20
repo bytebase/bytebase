@@ -15,15 +15,7 @@
       />
     </div>
     <div
-      class="
-        flex-1 flex flex-col
-        justify-center
-        py-12
-        px-4
-        sm:px-6
-        lg:flex-none lg:px-20 lg:w-1/2
-        xl:px-24
-      "
+      class="relative flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 lg:w-1/2 xl:px-24"
     >
       <router-view />
     </div>
