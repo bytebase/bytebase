@@ -130,6 +130,7 @@ common:
   empty: Empty
   creating: Creating...
   updating: Updating...
+  Address: Address
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
