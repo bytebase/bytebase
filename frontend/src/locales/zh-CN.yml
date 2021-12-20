@@ -430,7 +430,7 @@ instance:
   test-connection: 测试连接
   ignore-and-create: 忽略并创建
   connection-info-seems-to-be-incorrect: 连接信息似乎错误
-  new-instance: '@:common.new@:common.instance'
+  new-instance: 新实例
   unable-to-connect: >-
     Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:
     {0}
@@ -684,8 +684,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
   overview:
     view-all: 查看所有
@@ -729,7 +729,7 @@ project:
         label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
         title: 工单信息变更
-        label: "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
+        label: '当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更'
       issue-comment-creation:
         title: 工单被评论
         label: 当新的工单评论被创建
