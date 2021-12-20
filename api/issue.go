@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -143,6 +144,7 @@ type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType          db.MigrationType      `json:"migrationType"`
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	VCSPushEvent           *common.VCSPushEvent
 }
 
 // IssueFind is the API message for finding issues.
