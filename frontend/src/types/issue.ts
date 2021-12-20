@@ -1,7 +1,8 @@
-import { IssueId, PrincipalId, ProjectId } from "./id";
+import { BackupId, DatabaseId, InstanceId, IssueId, PrincipalId, ProjectId } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
+import { MigrationType } from "./instance";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -19,7 +20,33 @@ export type IssueType =
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 
-export type IssueCreateContext = { [key: string]: any };
+export type CreateDatabaseContext = {
+  instanceId: InstanceId;
+  databaseName: string;
+  characterSet: string;
+  collation: string;
+  backupId: BackupId;
+  backupName: string;
+};
+
+export type UpdateSchemaDetail = {
+  databaseId: DatabaseId;
+  statement: string;
+  rollbackStatement: string;
+};
+
+export type UpdateSchemaContext = {
+  migrationType: MigrationType;
+  updateSchemaDetailList: UpdateSchemaDetail[];
+};
+
+export type EmptyContext = {
+};
+
+export type IssueCreateContext = 
+  | CreateDatabaseContext
+  | UpdateSchemaContext
+  | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };
 

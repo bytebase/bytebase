@@ -87,7 +87,7 @@
             >
               <div class="radio text-sm">
                 <input type="radio" class="btn" :checked="locale === 'zh-CN'" />
-                <label class="ml-2">中文</label>
+                <label class="ml-2">简体中文</label>
               </div>
             </div>
           </BBContextMenu>
