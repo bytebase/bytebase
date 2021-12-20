@@ -127,6 +127,9 @@ common:
   automatic: Automatic
   Default: Default
   definition: Definition
+  assigned: Assigned
+  subscribed: Subscribed
+  created: Created
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center

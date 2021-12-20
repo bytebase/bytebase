@@ -127,6 +127,9 @@ common:
   automatic: 自动
   Default: 默认
   definition: 定义
+  assigned: 已指派
+  subscribed: 已订阅
+  created: 已创建
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
