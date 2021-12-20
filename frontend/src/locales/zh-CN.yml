@@ -132,6 +132,8 @@ common:
   created: 已创建
   roletype: 角色类型
   readonly: 只读
+  user: 用户
+  added-time: 添加时间
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -748,3 +750,9 @@ datasource:
   successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。
   select-database-first: 先选择数据库
   select-data-source: 选择数据源
+  search-user: 搜索用户
+  user-list: 用户列表
+  revoke-access: 您确定要取消 '{0}' 对 '{1}' 的访问权限？
+  grant-data-source: 授予数据源
+  requested-issue: 申请工单
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。

@@ -132,6 +132,8 @@ common:
   created: Created
   roletype: Role Type
   readonly: readonly
+  user: User
+  added-time: Added time
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -847,3 +849,9 @@ datasource:
   successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
   select-database-first: Select database first
   select-data-source: Select data source
+  search-user: Search user
+  user-list: User list
+  revoke-access: Are you sure to revoke '{0}' access from '{1}'?
+  grant-data-source: Grant data source
+  requested-issue: Requested issue
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
