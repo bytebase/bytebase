@@ -44,15 +44,7 @@
           </template>
           <template v-else-if="backup.status == 'FAILED'">
             <span
-              class="
-                h-2
-                w-2
-                rounded-full
-                text-center
-                pb-6
-                font-normal
-                text-base
-              "
+              class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
               aria-hidden="true"
               >!</span
             >
@@ -99,14 +91,14 @@
             }
           "
         >
-          Restore
+          {{ $t("database.restore") }}
         </button>
       </BBTableCell>
     </template>
   </BBTable>
   <BBModal
     v-if="state.showRestoreBackupModal"
-    :title="`Restore backup '${state.restoredBackup.name}' to a new database`"
+    :title="$t('database.restore-backup', [state.restoredBackup.name])"
     @close="
       () => {
         state.showRestoreBackupModal = false;
@@ -138,51 +130,7 @@ import { bytesToString, databaseSlug, migrationHistorySlug } from "../utils";
 import { useStore } from "vuex";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import { useRouter } from "vue-router";
-
-const EDIT_COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Status",
-  },
-  {
-    title: "Name",
-  },
-  {
-    title: "Comment",
-  },
-  {
-    title: "Schema version",
-  },
-  {
-    title: "Time",
-  },
-  {
-    title: "Creator",
-  },
-  {
-    title: "",
-  },
-];
-
-const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Status",
-  },
-  {
-    title: "Name",
-  },
-  {
-    title: "Comment",
-  },
-  {
-    title: "Schema version",
-  },
-  {
-    title: "Time",
-  },
-  {
-    title: "Creator",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showRestoreBackupModal: boolean;
@@ -210,22 +158,68 @@ export default {
   setup(props) {
     const router = useRouter();
     const store = useStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       showRestoreBackupModal: false,
       loadingMigrationHistory: false,
     });
 
+    const EDIT_COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.status"),
+      },
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.comment"),
+      },
+      {
+        title: t("common.schema-version"),
+      },
+      {
+        title: t("common.time"),
+      },
+      {
+        title: t("common.creator"),
+      },
+      {
+        title: "",
+      },
+    ];
+
+    const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.status"),
+      },
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.comment"),
+      },
+      {
+        title: t("common.schema-version"),
+      },
+      {
+        title: t("common.time"),
+      },
+      {
+        title: t("common.creator"),
+      },
+    ];
+
     const backupSectionList = computed(() => {
       const manualList: Backup[] = [];
       const automaticList: Backup[] = [];
       const sectionList: BBTableSectionDataSource<Backup>[] = [
         {
-          title: "Manual",
+          title: t("common.manual"),
           list: manualList,
         },
         {
-          title: "Automatic",
+          title: t("common.automatic"),
           list: automaticList,
         },
       ];

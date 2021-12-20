@@ -7,7 +7,9 @@
             class="flex items-center text-lg leading-6 font-medium text-main"
           >
             {{ $t("database.automatic-weekly-backup") }}
-            <span class="ml-1 text-success">enabled</span>
+            <span class="ml-1 text-success">
+              {{ $t("database.backup.enabled") }}
+            </span>
           </div>
           <button
             v-if="allowDisableAutoBackup"
@@ -78,7 +80,9 @@
         class="flex items-center text-lg leading-6 font-medium text-main"
       >
         {{ $t("database.automatic-weekly-backup") }}
-        <span class="ml-1 text-control-light">disabled</span>
+        <span class="ml-1 text-control-light">{{
+          $t("database.backup.disabled")
+        }}</span>
         <button
           v-if="allowAdmin && !state.autoBackupEnabled"
           type="button"
