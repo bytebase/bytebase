@@ -605,7 +605,7 @@ project:
     recent-activity: 近期@.lower:{'common.activities'}
     in-progress: 进行中
     recently-closed: 近期结束
-    info-slot-content: Bytebase 会周期性地同步实例的 schema. 新同步的数据库会首先被置于当前的默认项目中, 您可以将他们转移到适当的项目中.
+    info-slot-content: Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。
     no-db-prompt: 没有数据库属于当前项目 您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
   webhook:
     success-created-prompt: 成功创建 {name} webhook.
