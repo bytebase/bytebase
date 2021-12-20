@@ -132,6 +132,9 @@ common:
   updating: Updating...
   Address: Address
   User: User
+  assigned: Assigned
+  subscribed: Subscribed
+  created: Created
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center

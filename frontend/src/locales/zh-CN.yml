@@ -132,6 +132,9 @@ common:
   updating: 更新中...
   Address: 地址
   User: 用户
+  assigned: 已指派
+  subscribed: 已订阅
+  created: 已创建
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
