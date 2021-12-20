@@ -622,8 +622,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
   overview:
     view-all: 查看所有
@@ -667,7 +667,7 @@ project:
         label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
         title: 工单信息变更
-        label: "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
+        label: '当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更'
       issue-comment-creation:
         title: 工单被评论
         label: 当新的工单评论被创建
@@ -739,3 +739,9 @@ archive:
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
 datasource:
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
+  create-data-source: 创建数据源
+  data-source-list: 数据源列表
+  all-data-source: 所有数据源
+  search-name: 搜索名称
+  search-name-database: 搜索名称，数据库
+  successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。

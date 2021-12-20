@@ -838,3 +838,9 @@ archive:
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
 datasource:
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
+  create-data-source: Create data source
+  data-source-list: Data source list
+  all-data-source: All data source
+  search-name: Search name
+  search-name-database: Search name, database
+  successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
