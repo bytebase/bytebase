@@ -137,6 +137,7 @@ common:
   data-source: 数据源
   grant: 授予
   read-only: 只读
+  connection-string: 连接字符串
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -764,3 +765,5 @@ datasource:
   successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
   we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
   new-data-source: 新数据源
+  connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC无法连接到 socket {0} '
