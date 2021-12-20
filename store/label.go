@@ -382,7 +382,6 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.D
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, label)
 	}
 
 	for _, label := range labels {
