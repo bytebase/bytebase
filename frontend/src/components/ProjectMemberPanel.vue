@@ -89,6 +89,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -107,6 +108,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -189,7 +191,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully added ${member.principal.name} to the project.`,
+            title: t("project.settings.success-member-added-prompt", {
+              name: member.principal.name,
+            }),
           });
         });
 

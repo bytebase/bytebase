@@ -618,20 +618,23 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: ( 请使用大写字母来命名您的项目 )
-    cancel: '@:common.cancel'
-    confirm: '@:common.create'
+    cancel: "@:common.cancel"
+    confirm: "@:common.create"
+    success-prompt: 成功创建 {name}.
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
     recent-activity: 近期@.lower:{'common.activities'}
     in-progress: 进行中
     recently-closed: 近期结束
-    info-slot-content: >-
-      Bytebase periodically syncs the instance schema. Newly synced databases
-      are first placed in this default project. User should transfer them to the
-      proper application project.
+    info-slot-content: Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。
     no-db-prompt: 没有数据库属于当前项目 您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
   webhook:
+    success-created-prompt: 成功创建 {name} webhook.
+    success-updated-prompt: 成功更新 {name} webhook.
+    success-deleted-prompt: 成功删除 {name} webhook.
+    success-tested-prompt: 测试 webhook 事件成功.
+    fail-tested-title: 测试 webhook 事件失败.
     create-webhook: 添加 webhook
     last-updated-by: 最后修改人
     destination: 外部应用
@@ -647,24 +650,27 @@ project:
       how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
       view-doc: '{destination} 的官方文档'
     deletion:
-      btn-text: Delete this webhook
+      btn-text: 删除这个 webhook
     activity-item:
       issue-creation:
-        title: Issue creation
-        label: When new issue has been created
+        title: 创建@:common.issue
+        label: 当一个新的工单被创建
       issue-status-change:
-        title: Issue status change
-        label: When issue status has changed
+        title: 工单状态变更
+        label: 当一个工单的状态发生变更
       issue-task-status-change:
-        title: Issue task status change
-        label: When issue's enclosing task status has changed
+        title: 工单任务状态变更
+        label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
-        title: Issue info change
-        label: When issue info (e.g. assignee, title, description) has changed
+        title: 工单信息变更
+        label: "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
       issue-comment-creation:
-        title: Issue comment creation
-        label: When new issue comment has been created
+        title: 工单被评论
+        label: 当新的工单评论被创建
   settings:
+    success-updated-prompt: 成功更新 {subject}.
+    success-member-added-prompt: 成功将 {name} 添加到当前项目中.
+    success-member-deleted-prompt: 成功将 {name} 从当前项目移除.
     member-placeholder: 选择用户
     manage-member: 管理成员
     add-member: 添加成员
