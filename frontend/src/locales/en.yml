@@ -534,6 +534,15 @@ database:
   version-control-enabled: Version control enabled
   restore-backup: Restore backup '{0}' to a new database
   nullable: Nullable
+  restore: Restore
+  backup:
+    enabled: enabled
+    disabled: disabled
+  expression: Expression
+  position: Position
+  unique: Unique
+  visible: Visible
+  comment: Comment
 t:
   database: {}
 repository:

@@ -83,7 +83,7 @@ export default {
         title: t("db.collation"),
       },
       {
-        title: t("common.comment"),
+        title: t("database.comment"),
       },
     ];
     const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
@@ -103,7 +103,7 @@ export default {
         title: t("db.collation"),
       },
       {
-        title: t("common.comment"),
+        title: t("database.comment"),
       },
     ];
 
@@ -121,7 +121,7 @@ export default {
         title: t("database.nullable"),
       },
       {
-        title: t("common.comment"),
+        title: t("database.comment"),
       },
     ];
     const columnNameList = computed(() => {

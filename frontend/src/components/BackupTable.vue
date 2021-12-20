@@ -91,7 +91,7 @@
             }
           "
         >
-          $t('common.restore')
+          {{ $t("database.restore") }}
         </button>
       </BBTableCell>
     </template>

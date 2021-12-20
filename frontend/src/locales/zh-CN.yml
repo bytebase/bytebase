@@ -505,6 +505,15 @@ database:
   version-control-enabled: 已启用版本控制
   restore-backup: 恢复备份'{0}'到一个新的数据库中
   nullable: 可为空
+  restore: 恢复
+  backup:
+    enabled: 已启用
+    disabled: 已禁用
+  expression: 表达式
+  position: 位置
+  unique: Unique
+  visible: Visible
+  comment: 注释
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
