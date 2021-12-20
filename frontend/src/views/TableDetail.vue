@@ -147,8 +147,8 @@
                 <dt class="text-sm font-medium text-control-light">
                   {{
                     database.instance.engine == "POSTGRES"
-                      ? "Encoding"
-                      : "Character set"
+                      ? $t("db.encoding")
+                      : $t("db.character-set")
                   }}
                 </dt>
                 <dd class="mt-1 text-sm text-main">
