@@ -377,7 +377,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			}
 		}
 		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
-		if err = driver.Execute(ctx, statement); err != nil {
+		if err = driver.Execute(ctx, statement, !m.CreateDatabase); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
