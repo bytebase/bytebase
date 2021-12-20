@@ -131,6 +131,7 @@ common:
   creating: 创建中...
   updating: 更新中...
   Address: 地址
+  User: 用户
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -443,6 +444,7 @@ instance:
     每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您的私有化部署的 MySQL
     实例，RDS 实例。\n\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
+  grants: 权限
 environment:
   select: 选择环境
   archive: 归档此环境

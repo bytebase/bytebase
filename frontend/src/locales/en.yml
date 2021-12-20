@@ -131,6 +131,7 @@ common:
   creating: Creating...
   updating: Updating...
   Address: Address
+  User: User
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -484,6 +485,7 @@ instance:
     requires read/write (NOT the super privilege) access to the instance in
     order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
+  grants: Grants
 environment:
   select: Select environment
   archive: Archive this environment
