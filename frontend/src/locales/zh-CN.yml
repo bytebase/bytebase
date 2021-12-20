@@ -130,6 +130,7 @@ common:
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
+  roletype: 角色类型
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -736,3 +737,5 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+datasource:
+  successfully-deleted-data-source-name: 成功删除数据源'{0}'。

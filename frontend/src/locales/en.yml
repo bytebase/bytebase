@@ -130,6 +130,7 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  roletype: Role Type
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -685,8 +686,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
@@ -835,3 +836,5 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+datasource:
+  successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
