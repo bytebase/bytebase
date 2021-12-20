@@ -8,7 +8,7 @@
       />
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search issue name'"
+        :placeholder="$t('issue.search-issue-name')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -19,19 +19,19 @@
       :bottom-bordered="true"
       :issue-section-list="[
         {
-          title: 'Assigned',
+          title: $t('common.assigned'),
           list: filteredList(state.assignedList).sort(openIssueSorter),
         },
         {
-          title: 'Created',
+          title: $t('common.created'),
           list: filteredList(state.createdList).sort(openIssueSorter),
         },
         {
-          title: 'Subscribed',
+          title: $t('common.subscribed'),
           list: filteredList(state.subscribeList).sort(openIssueSorter),
         },
         {
-          title: 'Recently Closed',
+          title: $t('project.overview.recently-closed'),
           list: filteredList(state.closedList).sort((a, b) => {
             return b.updatedTs - a.updatedTs;
           }),
@@ -43,7 +43,7 @@
     to="/issue?status=closed"
     class="mt-2 px-4 flex justify-end normal-link"
   >
-    View all closed
+    {{ $t("project.overview.view-all-closed") }}
   </router-link>
 </template>
 
@@ -69,7 +69,7 @@ interface LocalState {
 }
 
 export default {
-  name: "Home",
+  name: "HomePage",
   components: {
     EnvironmentTabFilter,
     IssueTable,
