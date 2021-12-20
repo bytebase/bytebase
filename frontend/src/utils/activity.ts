@@ -138,5 +138,6 @@ export function issueActivityActionSentence(
       }
     }
   }
-  return ["activity.sentence.empty", {}];
+
+  return ["activity.sentence.reopened-issue", {}];
 }
