@@ -28,21 +28,7 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { View } from "../types";
-
-const COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Definition",
-  },
-  {
-    title: "Comment",
-  },
-  {
-    title: "Created",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "ViewTable",
@@ -54,6 +40,21 @@ export default {
     },
   },
   setup() {
+    const { t } = useI18n();
+    const COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.definition"),
+      },
+      {
+        title: t("database.comment"),
+      },
+      {
+        title: t("common.created-at"),
+      },
+    ];
     return {
       COLUMN_LIST,
     };
