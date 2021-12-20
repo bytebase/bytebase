@@ -385,11 +385,11 @@ instance:
   account-name: '@:instance.account@:instance.name'
   account: 账户
   name: 名称
-  host-or-socket: Host或Socket
-  your-snowflake-account-name: 你的Snowflake@:instance.account@:instance.name
+  host-or-socket: Host 或 Socket
+  your-snowflake-account-name: 你的 Snowflake @:{'instance.account'}@:{'instance.name'}
   port: 端口
   instance-name: '@:common.instance@:instance.name'
-  snowflake-web-console: Snowflake@:instance.web-console
+  snowflake-web-console: Snowflake @:{'instance.web-console'}
   external-link: 外部链接
   web-console: 网络控制台
   connection-info: 连接信息
@@ -399,10 +399,10 @@ instance:
     host:
       snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
     proxy:
-      snowflake: 对于代理服务器，加上{'@'}PROXY_HOST，并在端口里指定PROXY_PORT
+      snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
     console:
-      snowflake: "\b管理该@:common.instance的外部控制台URL（如AWS RDS 控制台，你的@:{'common.database'}控制台）"
-    create-user: 这是Bytebase用于连接数据库，执行DDL和DML操作的用户。
+      snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
+    create-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -413,11 +413,12 @@ instance:
         password: YOUR_DB_PWD
         template: 创建用户{user}，密码{password}，并授予必要权限的例子如下。
       clickhouse:
-        sql-driven-workflow: SQL工作流
+        sql-driven-workflow: SQL 工作流
         template: 创建用户bytebase，密码{password}，并授予必要权限的例子如下。你需要首先启用{link}，才能执行以下创建用户的命令。
       postgres:
         warn: >-
-          如果你将要连接到的实例是由云服务供应商管理的话，那么SUPERUSER是不可用的，你需要通过供应商的控制台来创建用户。你所创建的用户会拥有，由供应商决定的，半SUPERUSER的权限。
+          如果你将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER
+          是不可用的，你需要通过供应商的管理员控制台来创建用户。你所创建的用户会拥有由供应商决定的半 SUPERUSER 的权限。
         template: >-
           创建用户bytebase，密码{password}，并授予必要权限的例子如下。如果你将要连接到的实例是自己托管的，那么你可以grant
           SUPERUSER。
@@ -436,6 +437,11 @@ instance:
   copy-grant-statement: CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。
   successfully-connected-instance: 成功连接到实例。
   failed-to-connect-instance: 连接到实例失败。
+  how-to-setup-instance: 如何设置'实例'?
+  how-to-setup-instance-description: >-
+    每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您的私有化部署的 MySQL
+    实例，RDS 实例。\n\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
+  search-instance-name: 搜索实例名称
 environment:
   select: 选择环境
   archive: 归档此环境
