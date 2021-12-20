@@ -21,9 +21,11 @@
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
-            <dt class="sr-only">Environment</dt>
+            <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Environment&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
+              >
               <router-link
                 :to="`/environment/${environmentSlug(
                   database.instance.environment
@@ -33,10 +35,12 @@
                 {{ environmentName(database.instance.environment) }}
               </router-link>
             </dd>
-            <dt class="sr-only">Instance</dt>
+            <dt class="sr-only">{{ $t("common.instance") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <InstanceEngineIcon :instance="database.instance" />
-              <span class="ml-1 textlabel">Instance&nbsp;-&nbsp;</span>
+              <span class="ml-1 textlabel"
+                >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
+              >
               <router-link
                 :to="`/instance/${instanceSlug(database.instance)}`"
                 class="normal-link"
@@ -44,9 +48,11 @@
                 {{ instanceName(database.instance) }}
               </router-link>
             </dd>
-            <dt class="sr-only">Project</dt>
+            <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Project&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.project") }}&nbsp;-&nbsp;</span
+              >
               <router-link
                 :to="`/project/${projectSlug(database.project)}`"
                 class="normal-link"
@@ -54,14 +60,18 @@
                 {{ projectName(database.project) }}
               </router-link>
             </dd>
-            <dt class="sr-only">Database</dt>
+            <dt class="sr-only">{{ $t("common.database") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">Database&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.database") }}&nbsp;-&nbsp;</span
+              >
               <router-link :to="`/db/${databaseSlug}`" class="normal-link">
                 {{ database.name }}
               </router-link>
 
-              <span class="ml-2 textlabel">SQL Console</span>
+              <span class="ml-2 textlabel">{{
+                $t("database.sql-console")
+              }}</span>
               <button
                 class="ml-1 btn-icon"
                 @click.prevent="
@@ -82,7 +92,9 @@
           <!-- Description list -->
           <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
             <div class="col-span-1 col-start-1">
-              <dt class="text-sm font-medium text-control-light">Engine</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("database.engine") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 {{
                   database.instance.engine == "POSTGRES" ||
@@ -95,7 +107,7 @@
 
             <div class="col-span-1">
               <dt class="text-sm font-medium text-control-light">
-                Row count estimate
+                {{ $t("database.row-count-estimate") }}
               </dt>
               <dd class="mt-1 text-sm text-main">
                 {{ table.rowCount }}
@@ -103,14 +115,18 @@
             </div>
 
             <div class="col-span-1 col-start-1">
-              <dt class="text-sm font-medium text-control-light">Data size</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("database.data-size") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 {{ bytesToString(table.dataSize) }}
               </dd>
             </div>
 
             <div class="col-span-1">
-              <dt class="text-sm font-medium text-control-light">Index size</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("database.index-size") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 {{
                   database.instance.engine == "CLICKHOUSE" ||
@@ -131,8 +147,8 @@
                 <dt class="text-sm font-medium text-control-light">
                   {{
                     database.instance.engine == "POSTGRES"
-                      ? "Encoding"
-                      : "Character set"
+                      ? $t("db.encoding")
+                      : $t("db.character-set")
                   }}
                 </dt>
                 <dd class="mt-1 text-sm text-main">
@@ -142,7 +158,7 @@
 
               <div class="col-span-1">
                 <dt class="text-sm font-medium text-control-light">
-                  Collation
+                  {{ $t("db.collation") }}
                 </dt>
                 <dd class="mt-1 text-sm text-main">
                   {{
@@ -155,14 +171,18 @@
             </template>
 
             <div class="col-span-1 col-start-1">
-              <dt class="text-sm font-medium text-control-light">Updated</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("common.updated-at") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 {{ humanizeTs(table.updatedTs) }}
               </dd>
             </div>
 
             <div class="col-span-1">
-              <dt class="text-sm font-medium text-control-light">Created</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("common.created-at") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 {{ humanizeTs(table.createdTs) }}
               </dd>
@@ -172,7 +192,9 @@
       </div>
 
       <div class="mt-6 px-6">
-        <div class="text-lg leading-6 font-medium text-main mb-4">Columns</div>
+        <div class="text-lg leading-6 font-medium text-main mb-4">
+          {{ $t("database.columns") }}
+        </div>
         <ColumnTable
           :column-list="table.columnList"
           :engine="database.instance.engine"
@@ -180,7 +202,9 @@
       </div>
 
       <div v-if="database.instance.engine != 'SNOWFLAKE'" class="mt-6 px-6">
-        <div class="text-lg leading-6 font-medium text-main mb-4">Indexes</div>
+        <div class="text-lg leading-6 font-medium text-main mb-4">
+          {{ $t("database.indexes") }}
+        </div>
         <IndexTable :index-list="table.indexList" />
       </div>
     </main>

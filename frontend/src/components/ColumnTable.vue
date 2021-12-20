@@ -46,69 +46,7 @@
 import { computed, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Column, EngineType } from "../types";
-
-const NORMAL_COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Type",
-  },
-  {
-    title: "Default",
-  },
-  {
-    title: "Nullable",
-  },
-  {
-    title: "Character set",
-  },
-  {
-    title: "Collation",
-  },
-  {
-    title: "Comment",
-  },
-];
-
-const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Type",
-  },
-  {
-    title: "Default",
-  },
-  {
-    title: "Nullable",
-  },
-  {
-    title: "Collation",
-  },
-  {
-    title: "Comment",
-  },
-];
-
-const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Type",
-  },
-  {
-    title: "Default",
-  },
-  {
-    title: "Nullable",
-  },
-  {
-    title: "Comment",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "ColumnTable",
@@ -124,6 +62,68 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+    const NORMAL_COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.type"),
+      },
+      {
+        title: t("common.Default"),
+      },
+      {
+        title: t("database.nullable"),
+      },
+      {
+        title: t("db.character-set"),
+      },
+      {
+        title: t("db.collation"),
+      },
+      {
+        title: t("database.comment"),
+      },
+    ];
+    const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.type"),
+      },
+      {
+        title: t("common.Default"),
+      },
+      {
+        title: t("database.nullable"),
+      },
+      {
+        title: t("db.collation"),
+      },
+      {
+        title: t("database.comment"),
+      },
+    ];
+
+    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.type"),
+      },
+      {
+        title: t("common.Default"),
+      },
+      {
+        title: t("database.nullable"),
+      },
+      {
+        title: t("database.comment"),
+      },
+    ];
     const columnNameList = computed(() => {
       switch (props.engine) {
         case "POSTGRES":
