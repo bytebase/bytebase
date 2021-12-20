@@ -628,23 +628,23 @@ project:
       how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
       view-doc: "{destination} 的官方文档"
     deletion:
-      btn-text: Delete this webhook
+      btn-text: 删除这个 webhook
     activity-item:
       issue-creation:
-        title: Issue creation
-        label: When new issue has been created
+        title: 创建@:common.issue
+        label: 当一个新的工单被创建
       issue-status-change:
-        title: Issue status change
-        label: When issue status has changed
+        title: 工单状态变更
+        label: 当一个工单的状态发生变更
       issue-task-status-change:
-        title: Issue task status change
-        label: When issue's enclosing task status has changed
+        title: 工单任务状态变更
+        label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
-        title: Issue info change
-        label: When issue info (e.g. assignee, title, description) has changed
+        title: 工单信息变更
+        label: "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
       issue-comment-creation:
-        title: Issue comment creation
-        label: When new issue comment has been created
+        title: 工单被评论
+        label: 当新的工单评论被创建
   settings:
     success-updated-prompt: 成功更新 {subject}.
     success-member-added-prompt: 成功将 {name} 添加到当前项目中.

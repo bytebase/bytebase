@@ -6,7 +6,7 @@
       </label>
       <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template
-          v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST"
+          v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST()"
           :key="index"
         >
           <div
@@ -185,7 +185,7 @@
         {{ $t("project.webhook.triggering-activity") }}
       </div>
       <div
-        v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST"
+        v-for="(item, index) in PROJECT_HOOK_ACTIVITY_ITEM_LIST()"
         :key="index"
         class="mt-4 space-y-4"
       >
