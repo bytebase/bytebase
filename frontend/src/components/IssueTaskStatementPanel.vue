@@ -67,8 +67,8 @@
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
       :placeholder="
         create && rollback
-          ? $t('issue.add-sql-statement')
-          : $t('issue.optional-add-sql-statement')
+          ? $t('issue.optional-add-sql-statement')
+          : $t('issue.add-sql-statement')
       "
       @input="
         (e) => {
