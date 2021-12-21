@@ -110,13 +110,39 @@ common:
   config-guide: 配置指南
   required-placeholder: 必需的占位符
   optional-placeholder: 可选的占位符
+  sensitive-placeholder: 敏感数据 - 仅写入
   enabled: 开启
   default: 默认
   version-control: 版本控制
   restore: 重置
   detailed-guide: 详细指南
   workspace: 工作空间
-  learn-more: 了解更多。
+  application: 应用
+  confirm: 确认
+  coming-later: 敬请期待
+  learn-more: 了解更多
+  schema-version: Schema 版本
+  time: 时间
+  manual: 手动
+  automatic: 自动
+  Default: 默认
+  definition: 定义
+  empty: 空
+  creating: 创建中...
+  updating: 更新中...
+  Address: 地址
+  User: 用户
+  assigned: 已指派
+  subscribed: 已订阅
+  created: 已创建
+  roletype: 角色类型
+  readonly: 只读
+  user: 用户
+  added-time: 添加时间
+  data-source: 数据源
+  grant: 授予
+  read-only: 只读
+  connection-string: 连接字符串
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -185,7 +211,6 @@ settings:
     email: 邮箱
     role: 角色
     password: 密码
-    password-placeholder: 敏感数据 - 仅写入
     password-confirm: 确认密码
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
@@ -370,6 +395,66 @@ instance:
   restore-this-instance: 恢复该实例
   restore: 恢复
   restore-instance-instance-name-to-normal-state: 恢复实例'{0}'到正常状态?
+  account-name: '@:instance.account@:instance.name'
+  account: 账户
+  name: 名称
+  host-or-socket: Host 或 Socket
+  your-snowflake-account-name: 您的 Snowflake @:{'instance.account'}@:{'instance.name'}
+  port: 端口
+  instance-name: '@:common.instance@:instance.name'
+  snowflake-web-console: Snowflake @:{'instance.web-console'}
+  external-link: 外部链接
+  web-console: Web 控制台
+  connection-info: 连接信息
+  show-how-to-create: 如何创建
+  below-is-an-example-to-create-user-bytebase-with-password: 创建用户 'bytebase{'@'}%' 及其密码的例子如下
+  sentence:
+    host:
+      snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
+    proxy:
+      snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
+    console:
+      snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
+    create-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-user-example:
+      snowflake:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户 bytebase，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。
+      mysql:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: 创建用户 {user}，密码 {password}，并授予必要权限的例子如下。
+      clickhouse:
+        sql-driven-workflow: SQL 工作流
+        template: 创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。
+      postgres:
+        warn: >-
+          如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER
+          是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。
+        template: >-
+          创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant
+          SUPERUSER。
+  your_db_pwd: YOUR_DB_PWD
+  no-password: 无密码
+  password-write-only: YOUR_DB_PWD - 仅写入
+  test-connection: 测试连接
+  ignore-and-create: 忽略并创建
+  connection-info-seems-to-be-incorrect: 连接信息似乎错误
+  new-instance: 新实例
+  unable-to-connect: >-
+    Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:
+    {0}
+  successfully-created-instance-createdinstance-name: 成功创建实例'{0}'。
+  successfully-updated-instance-instance-name: 成功更新实例'{0}'。
+  copy-grant-statement: CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。
+  successfully-connected-instance: 成功连接到实例。
+  failed-to-connect-instance: 连接到实例失败。
+  how-to-setup-instance: 如何设置'实例'?
+  how-to-setup-instance-description: >-
+    每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的 RDS 实例，也可能您私有化部署的 MySQL 实例。\n\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
+  search-instance-name: 搜索实例名称
+  grants: 权限
 environment:
   select: 选择环境
   archive: 归档此环境
@@ -495,6 +580,23 @@ database:
   updated-backup-webhook-url-for-database-props-database-name: 更新了数据库'{0}'的 webhook URL。
   last-sync-status: 最后一次同步在{1}，状态为{0}
   version-control-enabled: 已启用版本控制
+  restore-backup: 恢复备份'{0}'到一个新的数据库中
+  nullable: 可为空
+  restore: 恢复
+  backup:
+    enabled: 已启用
+    disabled: 已禁用
+  expression: 表达式
+  position: 位置
+  unique: Unique
+  visible: Visible
+  comment: 注释
+  engine: 引擎
+  row-count-estimate: 估计行数
+  data-size: 数据大小
+  index-size: 索引大小
+  columns: 列
+  indexes: 索引
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
@@ -511,7 +613,7 @@ repository:
   schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
-  git-provider: Git 实例
+  git-provider: Git 提供方
   version-control-status: '@.capitalize:common.version-control 已{status}'
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
   version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
@@ -532,9 +634,10 @@ repository:
     如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab
     EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
   select-repository-attention-gitlab: >-
-    Bytebase 仅列出您至少拥有 ’Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
+    Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
     用来监听代码推送事件。
   select-repository-search: 搜索仓库
+  linked: 关联的仓库
 workflow:
   current-workflow: 当前工作流
   ui-workflow: UI 工作流
@@ -593,18 +696,21 @@ project:
     key-hint: ( 请使用大写字母来命名您的项目 )
     cancel: '@:common.cancel'
     confirm: '@:common.create'
+    success-prompt: 成功创建 {name}.
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
     recent-activity: 近期@.lower:{'common.activities'}
     in-progress: 进行中
     recently-closed: 近期结束
-    info-slot-content: >-
-      Bytebase periodically syncs the instance schema. Newly synced databases
-      are first placed in this default project. User should transfer them to the
-      proper application project.
+    info-slot-content: Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。
     no-db-prompt: 没有数据库属于当前项目 您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
   webhook:
+    success-created-prompt: 成功创建 {name} webhook.
+    success-updated-prompt: 成功更新 {name} webhook.
+    success-deleted-prompt: 成功删除 {name} webhook.
+    success-tested-prompt: 测试 webhook 事件成功.
+    fail-tested-title: 测试 webhook 事件失败.
     create-webhook: 添加 webhook
     last-updated-by: 最后修改人
     destination: 外部应用
@@ -620,24 +726,27 @@ project:
       how-to-protect: 您可以通过添加 'Bytebase' 到您的 webhook 关键字白名单中来保护您的 webhook
       view-doc: '{destination} 的官方文档'
     deletion:
-      btn-text: Delete this webhook
+      btn-text: 删除这个 webhook
     activity-item:
       issue-creation:
-        title: Issue creation
-        label: When new issue has been created
+        title: 创建@:common.issue
+        label: 当一个新的工单被创建
       issue-status-change:
-        title: Issue status change
-        label: When issue status has changed
+        title: 工单状态变更
+        label: 当一个工单的状态发生变更
       issue-task-status-change:
-        title: Issue task status change
-        label: When issue's enclosing task status has changed
+        title: 工单任务状态变更
+        label: 当一个工单包含的任务状态发生了变更
       issue-info-change:
-        title: Issue info change
-        label: When issue info (e.g. assignee, title, description) has changed
+        title: 工单信息变更
+        label: '当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更'
       issue-comment-creation:
-        title: Issue comment creation
-        label: When new issue comment has been created
+        title: 工单被评论
+        label: 当新的工单评论被创建
   settings:
+    success-updated-prompt: 成功更新 {subject}.
+    success-member-added-prompt: 成功将 {name} 添加到当前项目中.
+    success-member-deleted-prompt: 成功将 {name} 从当前项目移除.
     member-placeholder: 选择用户
     manage-member: 管理成员
     add-member: 添加成员
@@ -650,3 +759,76 @@ project:
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早
+version-control:
+  setting:
+    description: >-
+      Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
+      (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
+      中选取他们的 Git 仓库。
+    add-git-provider:
+      self: 添加 Git 提供方
+      description: >-
+        在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS
+        进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。
+      gitlab-self-host: 自托管 GitLab
+      gitlab-self-host-admin-requirement: >-
+        您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab
+        整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
+      ouath-info-correct: OAuth 信息验证成功
+      check-oauth-info-match: 请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。
+      add-success: 成功添加了 Git 提供方「{vcs}」
+      choose: 选择 Git 提供方
+      gitlab-self-host-ce-ee: 自托管 GitLab 企业版 (EE) 或者 社区版 (CE)
+      basic-info:
+        self: 基本信息
+        gitlab-instance-url: GitLab 实例 URL
+        gitlab-instance-url-label: VCS 实例 URL。请确认这个实例和 Bytebase 之间网络是互通的。
+        instance-url-error: 实例 URL 必须以 https:// or http:// 开头
+        display-name: 展示名称
+        display-name-label: 一个可选的展示名称用以区分不同的 Git 供应方。
+      oauth-info:
+        self: OAuth 应用信息
+        register-oauth-application: 注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。
+        login-as-admin: 以管理员身份登陆 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
+        visit-admin-page: 通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。
+        direct-link: 直达链接
+        create-oauth-app: 使用如下信息来创建您的 Bytebase OAuth 应用。
+        paste-oauth-info: 从刚创建好的应用上粘贴他的应用 ID 和 Secret 到下面的字段。
+        application-id-error: 应用 ID 必须是 64 个字母长度
+        secret-error: Secret 必须是 64 个字母长度
+      confirm:
+        confirm-info: 确认信息
+        confirm-description: 创建完成后，这个 Git 供应方将出现在项目面板「版本控制」Tab 下，可以被项目所有者选中。
+    git-provider:
+      application-id-label: 注册为 GitLab 实例级 OAuth 应用的应用 ID。
+      view-in-gitlab: 查看 GitLab
+      secret-label-gitlab: 注册为 GitLab 实例级 OAuth 应用的 Secret。
+      delete: 删除这个提供方前，需要先解除所有仓库的关联。
+archive:
+  archived: 已归档
+  project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
+  instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
+  environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+datasource:
+  successfully-deleted-data-source-name: 成功删除数据源'{0}'。
+  create-data-source: 创建数据源
+  data-source-list: 数据源列表
+  all-data-source: 所有数据源
+  search-name: 搜索名称
+  search-name-database: 搜索名称，数据库
+  successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。
+  select-database-first: 先选择数据库
+  select-data-source: 选择数据源
+  search-user: 搜索用户
+  user-list: 用户列表
+  revoke-access: 您确定要取消 '{0}' 对 '{1}' 的访问权限？
+  grant-data-source: 授予数据源
+  requested-issue: 申请工单
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。
+  your-issue-id-e-g-1234: 您的工单 id (例如 1234)
+  member-principal-name-already-exists: '{0} 已经存在'
+  successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
+  new-data-source: 新数据源
+  connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC 无法连接到 socket {0} '

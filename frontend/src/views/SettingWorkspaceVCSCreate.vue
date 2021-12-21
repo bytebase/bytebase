@@ -1,16 +1,17 @@
 <template>
   <div class="mt-4 space-y-4 divide-y divide-block-border">
     <div class="textinfolabel">
-      Before any project can enable version control workflow, Bytebase first
-      needs to integrate with the corresponding version control system (VCS) by
-      registering as an OAuth application in that VCS. Below are the steps to
-      configure this. You can also follow our<a
-        href="https://docs.bytebase.com/use-bytebase/vcs-integration?ref=console"
-        target="_blank"
-        class="normal-link"
-      >
-        detailed guide</a
-      >.
+      <i18n-t keypath="version-control.setting.add-git-provider.description">
+        <template #guide>
+          <a
+            href="https://docs.bytebase.com/use-bytebase/vcs-integration?ref=console"
+            target="_blank"
+            class="normal-link"
+          >
+            {{ $t('common.detailed-guide') }}</a
+          >
+      </template>
+      </i18n-t>
     </div>
     <div class="pt-4">
       <VCSSetupWizard />

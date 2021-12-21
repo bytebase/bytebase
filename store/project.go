@@ -167,13 +167,14 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 			visibility,
 			tenant_mode
 		)
-		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', 'DISABLED')
+		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', ?)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode"+`
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		strings.ToUpper(create.Key),
+		create.TenantMode,
 	)
 
 	if err != nil {

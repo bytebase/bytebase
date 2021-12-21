@@ -4,7 +4,7 @@
     <dl class="sm:col-span-2">
       <dt class="flex items-center space-x-1">
         <div class="text-sm font-medium text-control-light">
-          Connection string
+          {{ $t("common.connection-string") }}
         </div>
         <button
           class="btn-icon"
@@ -25,51 +25,17 @@
             class="flex"
           >
             <span
-              class="
-                whitespace-nowrap
-                inline-flex
-                items-center
-                px-3
-                rounded-l-md
-                border border-l border-r-0 border-control-border
-                bg-gray-50
-                text-control-light
-                sm:text-sm
-              "
+              class="whitespace-nowrap inline-flex items-center px-3 rounded-l-md border border-l border-r-0 border-control-border bg-gray-50 text-control-light sm:text-sm"
             >
               {{ connection.name }}
             </span>
             <span
-              class="
-                flex-1
-                min-w-0
-                w-full
-                inline-flex
-                items-center
-                px-3
-                py-2
-                border border-r border-control-border
-                bg-gray-50
-                sm:text-sm
-              "
+              class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm"
             >
               {{ connection.value }}
             </span>
             <button
-              class="
-                -ml-px
-                px-2
-                py-2
-                border border-gray-300
-                text-sm
-                font-medium
-                text-control-light
-                bg-gray-50
-                hover:bg-gray-100
-                focus:ring-control focus:outline-none
-                focus-visible:ring-2
-                focus:ring-offset-1
-              "
+              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
               @click.prevent="copyText(connection)"
             >
               <heroicons-outline:clipboard class="w-6 h-6" />
@@ -80,7 +46,9 @@
     </dl>
 
     <dl class="sm:col-span-1">
-      <dt class="text-sm font-medium text-control-light">Username</dt>
+      <dt class="text-sm font-medium text-control-light">
+        {{ $t("common.username") }}
+      </dt>
       <dd class="mt-1 text-sm text-main">
         <input
           v-if="editing"
@@ -97,7 +65,9 @@
     </dl>
 
     <dl class="sm:col-span-1">
-      <dt class="text-sm font-medium text-control-light">Password</dt>
+      <dt class="text-sm font-medium text-control-light">
+        {{ $t("common.password") }}
+      </dt>
       <dd class="mt-1 text-sm text-main">
         <input
           v-if="editing"
@@ -118,14 +88,18 @@
     </dl>
 
     <dl class="sm:col-span-1">
-      <dt class="text-sm font-medium text-control-light">Updated</dt>
+      <dt class="text-sm font-medium text-control-light">
+        {{ $t("common.updated-at") }}
+      </dt>
       <dd class="mt-1 text-sm text-main">
         {{ humanizeTs(dataSource.updatedTs) }}
       </dd>
     </dl>
 
     <dl class="sm:col-span-1">
-      <dt class="text-sm font-medium text-control-light">Created</dt>
+      <dt class="text-sm font-medium text-control-light">
+        {{ $t("common.created-at") }}
+      </dt>
       <dd class="mt-1 text-sm text-main">
         {{ humanizeTs(dataSource.createdTs) }}
       </dd>
@@ -138,6 +112,7 @@ import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
+import { useI18n } from "vue-i18n";
 
 type Connection = {
   name: string;
@@ -167,6 +142,8 @@ export default {
     const state = reactive<LocalState>({
       showPassword: false,
     });
+
+    const { t } = useI18n();
 
     const database = computed(() => {
       return store.getters["database/databaseById"](
@@ -198,7 +175,10 @@ export default {
         }
       }
 
-      let jdbcString = `JDBC can't connect to socket ${database.value.instance.host} `;
+      let jdbcString = t(
+        "datasource.jdbc-cant-connect-to-socket-database-value-instance-host",
+        [database.value.instance.host]
+      );
       if (!isSocket) {
         jdbcString = `jdbc:mysql://${database.value.instance.host}`;
         if (database.value.instance.port) {
@@ -234,7 +214,9 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: `${connection.name} string copied to clipboard.`,
+          title: t("datasource.connection-name-string-copied-to-clipboard", [
+            connection.name,
+          ]),
         });
       });
     };

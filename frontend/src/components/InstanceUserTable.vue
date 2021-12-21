@@ -22,15 +22,7 @@
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { InstanceUser } from "../types/InstanceUser";
-
-const COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "User",
-  },
-  {
-    title: "Grants",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "InstanceUserTable",
@@ -42,6 +34,15 @@ export default {
     },
   },
   setup() {
+    const { t } = useI18n();
+    const COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.User"),
+      },
+      {
+        title: t("instance.grants"),
+      },
+    ];
     return {
       COLUMN_LIST,
     };

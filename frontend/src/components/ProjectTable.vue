@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { projectSlug } from "../utils";
 import { Project } from "../types";
@@ -55,7 +55,7 @@ export default {
   setup(props) {
     const router = useRouter();
     const { t } = useI18n();
-    const COLUMN_LIST = [
+    const COLUMN_LIST = computed(() => [
       {
         title: t("project.table.key"),
       },
@@ -65,7 +65,7 @@ export default {
       {
         title: t("project.table.created-at"),
       },
-    ];
+    ]);
 
     const clickProject = function (section: number, row: number) {
       const project = props.projectList[row];

@@ -2,12 +2,14 @@
   <div>
     <div class="flex justify-between items-center">
       <div class="inline-flex items-center space-x-2">
-        <h2 class="text-lg leading-7 font-medium text-main">User list</h2>
+        <h2 class="text-lg leading-7 font-medium text-main">
+          {{ $t("datasource.user-list") }}
+        </h2>
         <BBButtonAdd v-if="allowEdit" @add="state.showCreateModal = true" />
       </div>
       <BBTableSearch
         ref="searchField"
-        :placeholder="'Search user'"
+        :placeholder="$t('datasource.search-user')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -51,19 +53,9 @@
                 </router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
-                  class="
-                    inline-flex
-                    items-center
-                    px-2
-                    py-0.5
-                    rounded-lg
-                    text-xs
-                    font-semibold
-                    bg-green-100
-                    text-green-800
-                  "
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                 >
-                  You
+                  {{ $t("settings.members.yourself") }}
                 </span>
               </div>
               <span class="textlabel">
@@ -88,7 +80,12 @@
             v-if="allowEdit"
             :require-confirm="true"
             :ok-text="'Revoke'"
-            :confirm-title="`Are you sure to revoke '${member.principal.name}' access from '${dataSource.name}'?`"
+            :confirm-title="
+              $t('datasource.revoke-access', [
+                member.principal.name,
+                dataSource.name,
+              ])
+            "
             @confirm="deleteMember(member)"
           />
         </BBTableCell>
@@ -96,7 +93,7 @@
     </BBTable>
     <BBModal
       v-if="state.showCreateModal"
-      :title="'Grant data source'"
+      :title="$t('datasource.grant-data-source')"
       @close="state.showCreateModal = false"
     >
       <DataSourceMemberForm
@@ -114,19 +111,7 @@ import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
-
-const columnList = [
-  {
-    title: "User",
-  },
-  {
-    title: "Requested issue",
-  },
-  {
-    title: "Added time",
-  },
-  {},
-];
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;
@@ -154,7 +139,22 @@ export default {
       showCreateModal: false,
     });
 
+    const { t } = useI18n();
+
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const columnList = [
+      {
+        title: t("common.user"),
+      },
+      {
+        title: t("datasource.requested-issue"),
+      },
+      {
+        title: t("common.added-time"),
+      },
+      {},
+    ];
 
     const deleteMember = (member: DataSourceMember) => {
       store
@@ -167,7 +167,10 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "INFO",
-            title: `Successfully revoked '${member.principal.name}' access from '${props.dataSource.name}'.`,
+            title: t(
+              "datasource.successfully-revoked-member-principal-name-access-from-props-datasource-name",
+              [member.principal.name, props.dataSource.name]
+            ),
           });
         });
     };

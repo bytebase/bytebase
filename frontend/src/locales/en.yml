@@ -110,13 +110,39 @@ common:
   config-guide: config guide
   required-placeholder: required placeholder
   optional-placeholder: optional placeholder
+  sensitive-placeholder: sensitive - write only
   enabled: enabled
   default: default
   version-control: version control
   restore: Restore
   detailed-guide: detailed guide
   workspace: workspace
-  learn-more: Learn more.
+  application: Application
+  confirm: Confirm
+  coming-later: Coming later
+  learn-more: Learn more
+  schema-version: Schema version
+  time: Time
+  manual: Manual
+  automatic: Automatic
+  Default: Default
+  definition: Definition
+  empty: Empty
+  creating: Creating...
+  updating: Updating...
+  Address: Address
+  User: User
+  assigned: Assigned
+  subscribed: Subscribed
+  created: Created
+  roletype: Role Type
+  readonly: readonly
+  user: User
+  added-time: Added time
+  data-source: Data Source
+  grant: Grant
+  read-only: Read-only
+  connection-string: Connection string
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -188,7 +214,6 @@ settings:
     email: Email
     role: Role
     password: Password
-    password-placeholder: sensitive - write only
     password-confirm: Confirm
     password-confirm-placeholder: Confirm new password
     password-mismatch: mismatch
@@ -386,6 +411,92 @@ instance:
   restore-this-instance: Restore this instance
   restore: Restore
   restore-instance-instance-name-to-normal-state: Restore instance '{0}' to normal state?
+  account-name: Account name
+  account: Account
+  name: Name
+  host-or-socket: Host or Socket
+  your-snowflake-account-name: your Snowflake account name
+  port: Port
+  instance-name: Instance Name
+  snowflake-web-console: Snowflake Web Console
+  external-link: External Link
+  web-console: Web Console
+  connection-info: Connection info
+  show-how-to-create: Show how to create
+  below-is-an-example-to-create-user-bytebase-with-password: Below is an example to create user 'bytebase{'@'}%' with password
+  below-is-an-example-to-create-user-bytebase-with-password-clickhouse: Below is an example to create user 'bytebase' with password
+  your_db_pwd: YOUR_DB_PWD
+  sentence:
+    host:
+      snowflake: e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
+    proxy:
+      snowflake: >-
+        For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the
+        port
+    console:
+      snowflake: >-
+        The external console URL managing this instance (e.g. AWS RDS console,
+        your in-house DB instance console)
+    create-user: >-
+      This is the connection user used by Bytebase to perform DDL and DML
+      operations.
+    create-user-example:
+      snowflake:
+        user: bytebase{'@'}%
+        password: YOUR_DB_PWD
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          for {warehouse} and grant the user with the needed privileges.
+      mysql:
+        password: YOUR_DB_PWD
+        user: bytebase{'@'}%
+        template: >-
+          Below is an example to create user {user} with password {password} and
+          grant the user with the needed privileges.
+      clickhouse:
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. First you need to
+          enable ClickHouse SQL-driven workflow {link} and then run the
+          following query to create the user.
+        sql-driven-workflow: SQL-driven workflow
+      postgres:
+        warn: >-
+          If the connecting instance is managed by the cloud provider, then
+          SUPERUSER is not available and you should create the user via that
+          provider\'s admin console. The created user will have provider
+          specific semi-SUPERUSER privileges.
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. If the connecting
+          instance is self-hosted, then you can grant SUPERUSER.
+  no-password: No password
+  password-write-only: YOUR_DB_PWD - write only
+  test-connection: Test Connection
+  ignore-and-create: Ignore and create
+  connection-info-seems-to-be-incorrect: Connection info seems to be incorrect
+  new-instance: New Instance
+  unable-to-connect: >-
+    Bytebase is unable to connect the instance. We recommend you to review the
+    connection info again. But it's OK to ignore this warning for now. You can
+    still fix the connection info from the instance detail page after
+    creation.\n\nError detail: {0}
+  successfully-created-instance-createdinstance-name: Successfully created instance '{0}'.
+  successfully-updated-instance-instance-name: Successfully updated instance '{0}'.
+  copy-grant-statement: >-
+    CREATE USER and GRANT statements copied to clipboard. Paste to your mysql
+    client to apply.
+  successfully-connected-instance: Successfully connected instance.
+  failed-to-connect-instance: Failed to connect instance.
+  how-to-setup-instance: How to setup \'Instance\' ?
+  how-to-setup-instance-description: >-
+    Each Bytebase instance belongs to an environment. An instance usually maps
+    to one of your database instance represented by an host:port address. This
+    could be your on-premises MySQL instance, a RDS instance.\n\nBytebase
+    requires read/write (NOT the super privilege) access to the instance in
+    order to perform database operations on behalf of the user.
+  search-instance-name: Search instance name
+  grants: Grants
 environment:
   select: Select environment
   archive: Archive this environment
@@ -524,6 +635,23 @@ database:
   updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
   last-sync-status: Last sync status {0} at {1}
   version-control-enabled: Version control enabled
+  restore-backup: Restore backup '{0}' to a new database
+  nullable: Nullable
+  restore: Restore
+  backup:
+    enabled: enabled
+    disabled: disabled
+  expression: Expression
+  position: Position
+  unique: Unique
+  visible: Visible
+  comment: Comment
+  engine: Engine
+  row-count-estimate: Row count estimate
+  data-size: Data size
+  index-size: Index size
+  columns: Columns
+  indexes: Indexes
 t:
   database: {}
 repository:
@@ -589,6 +717,7 @@ repository:
     role, which allows to configure the project webhook to observe the code push
     event.
   select-repository-search: Search repository
+  linked: Linked repositories
 workflow:
   current-workflow: Current workflow
   ui-workflow: UI workflow
@@ -657,6 +786,7 @@ project:
     key-hint: (Uppercase letters identifying your project)
     cancel: '@:common.cancel'
     confirm: '@:common.create'
+    success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -671,6 +801,11 @@ project:
       No database belongs to this project. You can add database by clicking
       {newDb} or {transferInDb} from the top action bar.
   webhook:
+    success-created-prompt: Successfully created webhook {name}.
+    success-updated-prompt: Successfully updated webhook {name}.
+    success-deleted-prompt: Successfully deleted webhook {name}.
+    success-tested-prompt: Test webhook event OK.
+    fail-tested-title: Test webhook event failed.
     create-webhook: Add a webhook
     last-updated-by: Last updated bu
     destination: Destination
@@ -710,6 +845,9 @@ project:
         title: Issue comment creation
         label: When new issue comment has been created
   settings:
+    success-updated-prompt: Successfully updated {subject}.
+    success-member-added-prompt: Successfully added {name} to the project.
+    success-member-deleted-prompt: Successfully revoked {name} access from the project.
     member-placeholder: Select user
     manage-member: Manage members
     add-member: Add member
@@ -722,3 +860,100 @@ project:
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older
+version-control:
+  setting:
+    description: >-
+      Bytebase supports GitOps workflow where database migration scripts are
+      stored in the version control system (VCS), and newly created migration
+      scripts will automatically trigger the corresponding database change.
+      Bytebase owners manage all the applicable VCSs here, so that project
+      owners can link the projects with their Git repositories from these VCSs.
+    add-git-provider:
+      self: Add a Git provider
+      description: >-
+        Before any project can enable GitOps workflow, Bytebase first needs to
+        integrate with the corresponding version control system (VCS) by
+        registering as an OAuth application in that VCS. Below are the steps to
+        configure this, you can also follow our {guide}.
+      gitlab-self-host: GitLab self-host
+      gitlab-self-host-admin-requirement: >-
+        You need to be an Admin of your chosen GitLab instance to configure
+        this. Otherwise, you need to ask your GitLab instance Admin to register
+        Bytebase as a GitLab instance-wide OAuth application, then provide you
+        that Application ID and Secret to fill at the 'OAuth application info'
+        step.
+      ouath-info-correct: Verified OAuth info is correct
+      check-oauth-info-match: >-
+        Please make sure Secret matches the one from your GitLab instance
+        Application.
+      add-success: Successfully added Git provider {vcs}
+      choose: Choose Git provider
+      gitlab-self-host-ce-ee: Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+      basic-info:
+        self: Basic info
+        gitlab-instance-url: GitLab instance URL
+        gitlab-instance-url-label: >-
+          The VCS instance URL. Make sure this instance and Bytebase are network
+          reachable from each other.
+        instance-url-error: Instance URL must begin with https:// or http://
+        display-name: Display name
+        display-name-label: >-
+          An optional display name to help identifying among different configs
+          using the same Git provider.
+      oauth-info:
+        self: OAuth application info
+        register-oauth-application: Register Bytebase as a GitLab instance-wide OAuth application.
+        login-as-admin: >-
+          Login as an Admin user to the GitLab instance. The account must be an
+          Admin of the entire GitLab instance (it has a wrench icon on the top
+          bar).
+        visit-admin-page: >-
+          Go to the Admin page by clicking the wrench icon, then navigate to
+          "Applications" section and click "New application" button.
+        direct-link: Direct link
+        create-oauth-app: Create your Bytebase OAuth application with the following info.
+        paste-oauth-info: >-
+          Paste the Application ID and Secret from that just created application
+          into fields below.
+        application-id-error: Application ID must be a 64-character alphanumeric string
+        secret-error: Secret must be a 64-character alphanumeric string
+      confirm:
+        confirm-info: Confirm the info
+        confirm-description: >-
+          After creation, this Git provider can be chosen under the project
+          dashboard "Version Control" tab by the project owner.
+    git-provider:
+      application-id-label: >-
+        Application ID for the registered GitLab instance-wide OAuth
+        application.
+      view-in-gitlab: View in GitLab
+      secret-label-gitlab: Secret for the registered GitLab instance-wide OAuth application.
+      delete: To delete this provider, unlink all repositories first.
+archive:
+  archived: Archived
+  project-search-bar-placeholder: Search @.lower:{'common.project'} name
+  instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
+  environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+datasource:
+  successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
+  create-data-source: Create data source
+  data-source-list: Data source list
+  all-data-source: All data source
+  search-name: Search name
+  search-name-database: Search name, database
+  successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
+  select-database-first: Select database first
+  select-data-source: Select data source
+  search-user: Search user
+  user-list: User list
+  revoke-access: Are you sure to revoke '{0}' access from '{1}'?
+  grant-data-source: Grant data source
+  requested-issue: Requested issue
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
+  your-issue-id-e-g-1234: Your issue id (e.g. 1234)
+  member-principal-name-already-exists: '{0} already exists'
+  successfully-granted-datasource-name-to-addedmember-principal-name: Successfully granted '{0}' to '{1}'.
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: We also linked the granted database to the requested issue '{0}'.
+  new-data-source: New data source
+  connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '

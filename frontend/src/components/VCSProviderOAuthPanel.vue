@@ -2,29 +2,26 @@
   <div class="space-y-4">
     <div class="textlabel">
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
-        Register Bytebase as a GitLab instance-wide OAuth application.
+        {{ $t('version-control.setting.add-git-provider.oauth-info.register-oauth-application') }}
       </template>
     </div>
     <ol class="textinfolabel space-y-2">
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
         <li>
-          1. Login as an Admin user to the GitLab instance. The account must be
-          an Admin of the entire GitLab instance (it has a wrench icon on the
-          top bar).
+          1. {{ $t('version-control.setting.add-git-provider.oauth-info.login-as-admin') }}
           <img class="w-auto" src="../assets/gitlab_admin_area.png" />
         </li>
         <li>
-          2. Go to the Admin page by clicking the wrench icon, then navigate to
-          "Applications" section and click "New application" button.
+          2. {{ $t('version-control.setting.add-git-provider.oauth-info.visit-admin-page') }}
           <a
             :href="createAdminApplicationUrl"
             target="_blank"
             class="normal-link"
-            >Direct link</a
+            >{{ $t('version-control.setting.add-git-provider.oauth-info.direct-link') }}</a
           >
         </li>
         <li>
-          3. Create your Bytebase OAuth application with the following info.
+          3. {{ $t('version-control.setting.add-git-provider.oauth-info.create-oauth-app') }}
           <div class="m-4 flex justify-center">
             <dl
               class="
@@ -83,14 +80,13 @@
           </div>
         </li>
         <li>
-          4. Paste the Application ID and Secret from that just created
-          application into fields below.
+          4. {{ $t('version-control.setting.add-git-provider.oauth-info.paste-oauth-info') }}
         </li>
       </template>
     </ol>
     <div>
       <div class="textlabel">
-        Application ID <span class="text-red-600">*</span>
+        {{ $t('common.application') }} ID <span class="text-red-600">*</span>
       </div>
       <BBTextField
         class="mt-2 w-full"
@@ -99,7 +95,7 @@
         @input="changeApplicationId($event.target.value)"
       />
       <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
-        Application ID must be a 64-character alphanumeric string
+        {{ $t('version-control.setting.add-git-provider.oauth-info.application-id-error') }}
       </p>
       <div class="mt-4 textlabel">
         Secret <span class="text-red-600">*</span>
@@ -111,7 +107,7 @@
         @input="changeSecret($event.target.value)"
       />
       <p v-if="state.showSecretError" class="mt-2 text-sm text-error">
-        Secret must be a 64-character alphanumeric string
+        {{ $t('version-control.setting.add-git-provider.oauth-info.secret-error') }}
       </p>
     </div>
   </div>

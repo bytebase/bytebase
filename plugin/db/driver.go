@@ -351,7 +351,7 @@ type Driver interface {
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
-	Execute(ctx context.Context, statement string) error
+	Execute(ctx context.Context, statement string, useTransaction bool) error
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)

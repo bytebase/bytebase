@@ -3,12 +3,7 @@
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="
-          px-4
-          pb-4
-          border-b border-block-border
-          md:flex md:items-center md:justify-between
-        "
+        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
       >
         <div class="flex-1 min-w-0">
           <!-- Summary -->
@@ -28,29 +23,19 @@
                 <!-- Padding value is to prevent flickering when switching between edit/non-edit mode -->
                 <h1
                   v-else
-                  class="
-                    pt-2
-                    pb-2.5
-                    text-xl
-                    font-bold
-                    leading-6
-                    text-main
-                    truncate
-                  "
+                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
                 >
                   {{ dataSource.name }}
                 </h1>
               </div>
               <dl
-                class="
-                  flex flex-col
-                  space-y-1
-                  sm:space-y-0 sm:flex-row sm:flex-wrap
-                "
+                class="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:flex-wrap"
               >
-                <dt class="sr-only">Environment</dt>
+                <dt class="sr-only">{{ $t("common.environment") }}</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
-                  <span class="textlabel">Environment&nbsp;-&nbsp;</span>
+                  <span class="textlabel"
+                    >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
+                  >
                   <router-link
                     :to="`/environment/${environmentSlug(
                       dataSource.instance.environment
@@ -61,9 +46,11 @@
                   </router-link>
                 </dd>
                 <template v-if="isCurrentUserDBAOrOwner">
-                  <dt class="sr-only">Instance</dt>
+                  <dt class="sr-only">{{ $t("common.instance") }}</dt>
                   <dd class="flex items-center text-sm sm:mr-4">
-                    <span class="textlabel">Instance&nbsp;-&nbsp;</span>
+                    <span class="textlabel"
+                      >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
+                    >
                     <router-link
                       :to="`/instance/${instanceSlug(dataSource.instance)}`"
                       class="normal-link"
@@ -72,23 +59,19 @@
                     </router-link>
                   </dd>
                 </template>
-                <dt class="sr-only">Database</dt>
+                <dt class="sr-only">{{ $t("common.database") }}</dt>
                 <dd class="flex items-center text-sm sm:mr-4">
-                  <span class="textlabel">Database&nbsp;-&nbsp;</span>
+                  <span class="textlabel"
+                    >{{ $t("common.database") }}&nbsp;-&nbsp;</span
+                  >
                   <router-link :to="`/db/${databaseSlug}`" class="normal-link">
                     {{ dataSource.database.name }}
                   </router-link>
                 </dd>
-                <dt class="sr-only">RoleType</dt>
+                <dt class="sr-only">{{ $t("common.roletype") }}</dt>
                 <dd
                   v-data-source-type
-                  class="
-                    flex
-                    items-center
-                    text-sm text-control
-                    font-medium
-                    sm:mr-4
-                  "
+                  class="flex items-center text-sm text-control font-medium sm:mr-4"
                 >
                   {{ dataSource.type }}
                 </dd>
@@ -103,7 +86,7 @@
               class="btn-normal"
               @click.prevent="cancelEdit"
             >
-              Cancel
+              {{ $t("common.cancel") }}
             </button>
             <button
               type="button"
@@ -115,7 +98,7 @@
               <heroicons-solid:save
                 class="-ml-1 mr-2 h-5 w-5 text-control-light"
               />
-              <span>Save</span>
+              <span>{{ $t("common.save") }}</span>
             </button>
           </template>
           <template v-else>
@@ -128,7 +111,7 @@
               <heroicons-solid:pencil
                 class="-ml-1 mr-2 h-5 w-5 text-control-light"
               />
-              <span>Edit</span>
+              <span>{{ $t("common.edit") }}</span>
             </button>
           </template>
         </div>
@@ -179,6 +162,7 @@ import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.v
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, DataSourcePatch, Principal } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   editing: boolean;
@@ -204,6 +188,8 @@ export default {
 
     const store = useStore();
     const router = useRouter();
+
+    const { t } = useI18n();
 
     const dataSourceId = idFromSlug(props.dataSourceSlug);
 
@@ -276,7 +262,9 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully deleted data source '${name}'.`,
+            title: t("datasource.successfully-deleted-data-source-name", [
+              name,
+            ]),
           });
           router.push(`/db/${props.dataSourceSlug}`);
         });

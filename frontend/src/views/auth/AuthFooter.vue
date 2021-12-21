@@ -1,0 +1,45 @@
+<template>
+  <div class="absolute left-0 bottom-0 mb-8 text-center w-full">
+    <p class="block text-sm text-gray-400 space-x-2">
+      <a
+        v-for="item in languageList"
+        :key="item.label"
+        href="#"
+        class="hover:text-gray-600"
+        :class="{ 'text-gray-800': item.label === selectedLanguage }"
+        @click.prevent="changeLanuage(item)"
+      >
+        {{ item.label }}
+      </a>
+    </p>
+    <p class="text-sm text-gray-400 mt-1">
+      &copy; {{ year }} Bytebase. All rights reserved.
+    </p>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { ref } from "vue";
+import { useLanguage } from "../../composables/useLanguage";
+
+const { locale, setLocale } = useLanguage();
+
+const languageList = [
+  {
+    label: "English",
+    value: "en",
+  },
+  {
+    label: "简体中文",
+    value: "zh-CN",
+  },
+];
+const localeLabel = locale.value === "en" ? "English" : "简体中文";
+const selectedLanguage = ref(localeLabel);
+const year = new Date().getFullYear();
+
+const changeLanuage = (item: any) => {
+  setLocale(item.value);
+  selectedLanguage.value = item.label;
+};
+</script>
