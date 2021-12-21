@@ -12,7 +12,8 @@ export type IssueActivityType =
   | "bb.issue.field.update"
   | "bb.issue.status.update"
   | "bb.pipeline.task.status.update"
-  | "bb.pipeline.task.file.commit";
+  | "bb.pipeline.task.file.commit"
+  | "bb.pipeline.task.statement.update";
 
 export type MemberActivityType =
   | "bb.member.create"
@@ -46,6 +47,8 @@ export function activityName(type: ActivityType): string {
       return "Update issue task status";
     case "bb.pipeline.task.file.commit":
       return "Commit file";
+    case "bb.pipeline.task.statement.update":
+      return "SQL update";
     case "bb.member.create":
       return "Create member";
     case "bb.member.role.update":
@@ -106,6 +109,14 @@ export type ActivityTaskFileCommitPayload = {
   branch: string;
   filePath: string;
   commitId: string;
+};
+
+export type ActivityTaskStatementUpdatePayload = {
+  taskId: TaskId;
+  oldStatement: string;
+  newStatement: string;
+  issueName: string;
+  taskName: string;
 };
 
 export type ActivityMemberCreatePayload = {
