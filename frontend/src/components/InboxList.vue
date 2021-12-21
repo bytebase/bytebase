@@ -98,7 +98,10 @@ export default defineComponent({
     };
 
     const showCreator = (activity: Activity): boolean => {
-      return activity.type.startsWith("bb.issue.");
+      return (
+        activity.type.startsWith("bb.issue.") ||
+        activity.type == "bb.pipeline.task.statement.update"
+      );
     };
 
     const actionSentence = (activity: Activity): string => {
