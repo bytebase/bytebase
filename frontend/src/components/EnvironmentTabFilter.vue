@@ -20,6 +20,7 @@ import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   selectedIndex: number;
@@ -35,6 +36,7 @@ export default {
   },
   emits: ["select-environment"],
   setup(props) {
+    const { t } = useI18n();
     const store = useStore();
 
     const environmentList = computed(() => {
@@ -67,7 +69,7 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       const list: BBTabFilterItem[] = [
         {
-          title: "All",
+          title: t('common.all'),
           alert: false,
         },
       ];
