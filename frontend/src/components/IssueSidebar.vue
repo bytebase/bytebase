@@ -59,9 +59,8 @@
       </h2>
       <div class="col-span-2">
         <n-date-picker
-          v-if="allowEditWhen"
+          v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
-          :is-date-disabled="disablePassedDate"
           class="w-full"
           type="datetime"
           clearable
@@ -394,8 +393,8 @@ export default defineComponent({
       );
     });
 
-    const allowEditWhen = computed(() => {
-      // only the assignee is allowed to modified timing
+    const allowEditEarliestAllowedTime = computed(() => {
+      // only the assignee is allowed to modify EarliestAllowedTime
       return (
         props.create ||
         ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
@@ -462,10 +461,7 @@ export default defineComponent({
       }
     };
 
-    const disablePassedDate = (ts: number) => {
-      // the seconde logic is for a passed selected date, the style should show correctly
-      return ts < now && ts !== props.task.earliestAllowedTs * 1000;
-    };
+    const isDatePassed = (ts: number) => ts < now;
 
     return {
       EMPTY_ID,
@@ -477,13 +473,13 @@ export default defineComponent({
       showInstance,
       showStageSelect,
       allowEditAssignee,
-      allowEditWhen,
+      allowEditEarliestAllowedTime,
       allowEditCustomField,
       trySaveCustomField,
       isDatabaseCreated,
       showDatabaseCreationLabel,
       clickDatabase,
-      disablePassedDate,
+      isDatePassed,
     };
   },
 });
