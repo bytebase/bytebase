@@ -1,4 +1,5 @@
 common:
+  when: 于何时
   view: 查看
   you: 您
   general: 通用
@@ -170,6 +171,8 @@ task:
     compatibility: 兼容性
     connection: 连接
     migration-schema: 迁移 schema
+    earliest-allowed-time: 最早执行时间
+  earliest-allowed-time-hint: "'@:{'common.when'}' 指定了该任务最早允许执行的时间"
   comment: 评论
   invoker: 执行者
   started: 开始于

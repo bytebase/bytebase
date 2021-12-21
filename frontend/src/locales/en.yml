@@ -1,4 +1,5 @@
 common:
+  when: When
   view: view
   you: you
   general: General
@@ -170,6 +171,8 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    earliest-allowed-time: Earliest allowed time
+  earliest-allowed-time-hint: "'@:{'common.when'}' specifies the expected execution timing for this task"
   comment: Comment
   invoker: Invoker
   started: Started
