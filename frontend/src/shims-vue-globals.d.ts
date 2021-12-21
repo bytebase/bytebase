@@ -12,7 +12,7 @@ import type {
   urlfy,
 } from "./utils";
 import type moment from "moment";
-import type { isEmpty } from "lodash";
+import type { isEmpty } from "lodash-es";
 
 declare module "@vue/runtime-core" {
   export interface ComponentCustomProperties {

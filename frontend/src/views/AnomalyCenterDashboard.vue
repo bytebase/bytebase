@@ -133,7 +133,7 @@ import {
   sortInstanceList,
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
