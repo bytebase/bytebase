@@ -20,7 +20,7 @@ const useLanguage = () => {
     };
     if (currentRoute.value.meta.title) {
       const title = currentRoute.value.meta.title(currentRoute.value);
-      document.title = title || "Bytebases";
+      document.title = title || "Bytebase";
     }
   };
 
