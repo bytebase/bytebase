@@ -1,4 +1,5 @@
 common:
+  when: When
   view: view
   you: you
   general: General
@@ -10,6 +11,7 @@ common:
   wecom: WeCom
   overview: Overview
   migration-history: Migration History
+  webhook: Webhook
   webhooks: Webhooks
   key: Key
   workflow: Workflow
@@ -28,6 +30,7 @@ common:
   cancel: Cancel
   comment: Comment
   home: Home
+  setting: Setting
   settings: Settings
   project: Project
   projects: Projects
@@ -113,7 +116,7 @@ common:
   sensitive-placeholder: sensitive - write only
   enabled: enabled
   default: default
-  version-control: version control
+  version-control: Version Control
   restore: Restore
   detailed-guide: detailed guide
   workspace: workspace
@@ -135,6 +138,16 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  roletype: Role Type
+  readonly: readonly
+  user: User
+  added-time: Added time
+  data-source: Data Source
+  grant: Grant
+  read-only: Read-only
+  connection-string: Connection string
+  agents: Agents
+  billings: Billings
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -162,6 +175,8 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    earliest-allowed-time: Earliest allowed time
+  earliest-allowed-time-hint: "'@:{'common.when'}' specifies the expected execution timing for this task"
   comment: Comment
   invoker: Invoker
   started: Started
@@ -527,6 +542,7 @@ auth:
     title: Forgot your password?
     content: Please contact your Bytebase Admin to reset your password.
     return-to-sign-in: Return to Sign in
+  password-forgot: Forgot Password
   password-reset:
     title: Reset your password
     content: Enter your email address and we will send you a password reset link
@@ -691,6 +707,7 @@ repository:
   restore-ui-workflow-success: Successfully restored to UI workflow
   update-version-control-config-success: Successfully updated @:common.version-control config
   setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
+  add-git-provider: Add Git provider
   choose-git-provider: Choose Git provider
   select-repository: Select repository
   configure-deploy: Configure deploy
@@ -776,8 +793,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
@@ -798,7 +815,8 @@ project:
     success-deleted-prompt: Successfully deleted webhook {name}.
     success-tested-prompt: Test webhook event OK.
     fail-tested-title: Test webhook event failed.
-    create-webhook: Add a webhook
+    add-a-webhook: Add a webhook
+    create-webhook: Create webhook
     last-updated-by: Last updated bu
     destination: Destination
     webhook-url: Webhook url
@@ -926,3 +944,27 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+datasource:
+  successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
+  create-data-source: Create data source
+  data-source-list: Data source list
+  all-data-source: All data source
+  search-name: Search name
+  search-name-database: Search name, database
+  successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
+  select-database-first: Select database first
+  select-data-source: Select data source
+  search-user: Search user
+  user-list: User list
+  revoke-access: Are you sure to revoke '{0}' access from '{1}'?
+  grant-data-source: Grant data source
+  grant-database: Grant database
+  requested-issue: Requested issue
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
+  your-issue-id-e-g-1234: Your issue id (e.g. 1234)
+  member-principal-name-already-exists: '{0} already exists'
+  successfully-granted-datasource-name-to-addedmember-principal-name: Successfully granted '{0}' to '{1}'.
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: We also linked the granted database to the requested issue '{0}'.
+  new-data-source: New data source
+  connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '

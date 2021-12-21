@@ -90,8 +90,9 @@ type ProjectCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
-	Key  string `jsonapi:"attr,key"`
+	Name       string            `jsonapi:"attr,name"`
+	Key        string            `jsonapi:"attr,key"`
+	TenantMode ProjectTenantMode `jsonapi:"attr,tenantMode"`
 }
 
 // ProjectFind is the API message for finding projects.

@@ -78,6 +78,7 @@ export type Task = {
   status: TaskStatus;
   type: TaskType;
   instance: Instance;
+  earliestAllowedTs: number;
   // Tasks like creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
@@ -97,10 +98,12 @@ export type TaskCreate = {
   collation?: string;
   backupId?: BackupId;
   migrationType?: MigrationType;
+  earliestAllowedTs: number;
 };
 
 export type TaskPatch = {
   statement?: string;
+  earliestAllowedTs?: number;
 };
 
 export type TaskStatusPatch = {
@@ -144,7 +147,8 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.connect"
-  | "bb.task-check.instance.migration-schema";
+  | "bb.task-check.instance.migration-schema"
+  | "bb.task-check.general.earliest-allowed-time";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;

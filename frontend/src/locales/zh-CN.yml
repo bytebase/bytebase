@@ -1,4 +1,5 @@
 common:
+  when: 于何时
   view: 查看
   you: 您
   general: 通用
@@ -10,6 +11,7 @@ common:
   wecom: 企业微信
   overview: 概览
   migration-history: 迁移历史
+  webhook: Webhook
   webhooks: Webhook
   key: 键值
   workflow: 工作流
@@ -18,7 +20,7 @@ common:
   unread: 未读
   read: 已读
   inbox: 通知
-  sign-in: 登陆
+  sign-in: 登录
   sign-up: 注册
   email: 邮箱
   username: 用户名
@@ -28,6 +30,7 @@ common:
   cancel: 取消
   comment: 评论
   home: 主页
+  setting: 设置
   settings: 设置
   project: 项目
   projects: 项目
@@ -135,6 +138,16 @@ common:
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
+  roletype: 角色类型
+  readonly: 只读
+  user: 用户
+  added-time: 添加时间
+  data-source: 数据源
+  grant: 授予
+  read-only: 只读
+  connection-string: 连接字符串
+  agents: Agents
+  billings: 计费
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -162,6 +175,8 @@ task:
     compatibility: 兼容性
     connection: 连接
     migration-schema: 迁移 schema
+    earliest-allowed-time: 最早执行时间
+  earliest-allowed-time-hint: "'@:{'common.when'}' 指定了该任务最早允许执行的时间"
   comment: 评论
   invoker: 执行者
   started: 开始于
@@ -474,18 +489,19 @@ auth:
     password-mismatch: 不匹配
     existing-user: 已有账号?
   sign-in:
-    title: 登陆您的账号
+    title: 登录您的账号
     forget-password: 忘记密码?
     new-user: 第一次使用 Bytebase?
   password-forget:
     title: 忘记了您的密码？
     content: 请联系的您的 Bytebase 管理员重置密码
-    return-to-sign-in: 返回登陆
+    return-to-sign-in: 返回登录
+  password-forgot: 忘记密码
   password-reset:
     title: 重置您的密码
     content: 我们会将重置密码链接发送到您的邮箱
     send-reset-link: 发送重置链接
-    return-to-sign-in: 返回登陆
+    return-to-sign-in: 返回登录
   activate:
     title: 激活您的 {type} 账号
 policy:
@@ -615,6 +631,7 @@ repository:
   restore-ui-workflow-success: 成功重置到 UI 工作流
   update-version-control-config-success: 成功更新@:common.version-control配置
   setup-wizard-guide: 如果您在过程中遇到问题, 请参考{guide}
+  add-git-provider: 添加 Git 提供方
   choose-git-provider: 选择 Git 提供方
   select-repository: 选择仓库
   configure-deploy: 配置部署
@@ -703,7 +720,8 @@ project:
     success-deleted-prompt: 成功删除 {name} webhook.
     success-tested-prompt: 测试 webhook 事件成功.
     fail-tested-title: 测试 webhook 事件失败.
-    create-webhook: 添加 webhook
+    add-a-webhook: 添加 webhook
+    create-webhook: 创建 webhook
     last-updated-by: 最后修改人
     destination: 外部应用
     webhook-url: Webhook url
@@ -781,7 +799,7 @@ version-control:
       oauth-info:
         self: OAuth 应用信息
         register-oauth-application: 注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。
-        login-as-admin: 以管理员身份登陆 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
+        login-as-admin: 以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
         visit-admin-page: 通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。
         direct-link: 直达链接
         create-oauth-app: 使用如下信息来创建您的 Bytebase OAuth 应用。
@@ -801,3 +819,27 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+datasource:
+  successfully-deleted-data-source-name: 成功删除数据源'{0}'。
+  create-data-source: 创建数据源
+  data-source-list: 数据源列表
+  all-data-source: 所有数据源
+  search-name: 搜索名称
+  search-name-database: 搜索名称，数据库
+  successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。
+  select-database-first: 先选择数据库
+  select-data-source: 选择数据源
+  search-user: 搜索用户
+  user-list: 用户列表
+  revoke-access: 您确定要取消 '{0}' 对 '{1}' 的访问权限？
+  grant-data-source: 授予数据源
+  grant-database: 授权数据库
+  requested-issue: 申请工单
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。
+  your-issue-id-e-g-1234: 您的工单 id (例如 1234)
+  member-principal-name-already-exists: '{0} 已经存在'
+  successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
+  new-data-source: 新数据源
+  connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC 无法连接到 socket {0} '
