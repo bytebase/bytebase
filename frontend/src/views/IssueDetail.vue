@@ -88,6 +88,7 @@
           >
             <IssueSidebar
               :issue="issue"
+              :task="selectedTask"
               :database="database"
               :instance="instance"
               :create="state.create"
@@ -95,6 +96,7 @@
               :input-field-list="issueTemplate.inputFieldList"
               :allow-edit="allowEditSidebar"
               @update-assignee-id="updateAssigneeId"
+              @update-earliest-allowed-time="updateEarliestAllowedTime"
               @add-subscriber-id="addSubscriberId"
               @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
@@ -745,6 +747,18 @@ export default defineComponent({
       }
     };
 
+    const updateEarliestAllowedTime = (newEarliestAllowedTsMs: number) => {
+      if (state.create) {
+        selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
+      } else {
+        const taskPatch: TaskPatch = {
+          earliestAllowedTs: newEarliestAllowedTsMs,
+        };
+        patchTask((selectedTask.value as Task).id, taskPatch);
+        console.log("selectedTask", selectedTask.value.earliestAllowedTs);
+      }
+    };
+
     const addSubscriberId = (subscriberId: PrincipalId) => {
       store.dispatch("issueSubscriber/createSubscriber", {
         issueId: (issue.value as Issue).id,
@@ -1184,6 +1198,7 @@ export default defineComponent({
       updateName,
       updateDescription,
       updateStatement,
+      updateEarliestAllowedTime,
       applyStatementToOtherStages,
       updateRollbackStatement,
       applyRollbackStatementToOtherStages,
