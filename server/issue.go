@@ -356,8 +356,41 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.CreatorID = creatorID
 			taskCreate.PipelineID = createdPipeline.ID
 			taskCreate.StageID = createdStage.ID
+			instanceFind := &api.InstanceFind{
+				ID: &taskCreate.InstanceID,
+			}
+			instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
+			}
+			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+				payload := api.TaskDatabaseSchemaUpdatePayload{}
+				payload.MigrationType = taskCreate.MigrationType
+				payload.Statement = taskCreate.Statement
+				if taskCreate.RollbackStatement != "" {
+					payload.RollbackStatement = taskCreate.RollbackStatement
+				}
+				if taskCreate.VCSPushEvent != nil {
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
+				}
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+				}
+				taskCreate.Payload = string(bytes)
+			} else if taskCreate.Type == api.TaskDatabaseRestore {
+				// Snowflake needs to use upper case of DatabaseName.
+				if instance.Engine == db.Snowflake {
+					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+				}
+				payload := api.TaskDatabaseRestorePayload{}
+				payload.DatabaseName = taskCreate.DatabaseName
+				payload.BackupID = *taskCreate.BackupID
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+				}
+				taskCreate.Payload = string(bytes)
 			}
 			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
 				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
