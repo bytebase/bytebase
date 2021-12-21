@@ -1,5 +1,6 @@
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
+import { useRouter } from "vue-router";
 
 /**
  * Language hook for i18n
@@ -7,6 +8,7 @@ import { useLocalStorage } from "@vueuse/core";
  */
 const useLanguage = () => {
   const { availableLocales, locale } = useI18n();
+  const currentRoute = useRouter().currentRoute;
   const storage = useLocalStorage("bytebase_options", {}) as any;
 
   const setLocale = (lang: string) => {
@@ -16,6 +18,10 @@ const useLanguage = () => {
         language: lang,
       },
     };
+    if (currentRoute.value.meta.title) {
+      const title = currentRoute.value.meta.title(currentRoute.value);
+      document.title = title || "Bytebase";
+    }
   };
 
   const toggleLocales = () => {

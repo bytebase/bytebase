@@ -11,6 +11,7 @@ common:
   wecom: WeCom
   overview: Overview
   migration-history: Migration History
+  webhook: Webhook
   webhooks: Webhooks
   key: Key
   workflow: Workflow
@@ -29,6 +30,7 @@ common:
   cancel: Cancel
   comment: Comment
   home: Home
+  setting: Setting
   settings: Settings
   project: Project
   projects: Projects
@@ -114,7 +116,7 @@ common:
   sensitive-placeholder: sensitive - write only
   enabled: enabled
   default: default
-  version-control: version control
+  version-control: Version Control
   restore: Restore
   detailed-guide: detailed guide
   workspace: workspace
@@ -144,6 +146,8 @@ common:
   grant: Grant
   read-only: Read-only
   connection-string: Connection string
+  agents: Agents
+  billings: Billings
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -538,6 +542,7 @@ auth:
     title: Forgot your password?
     content: Please contact your Bytebase Admin to reset your password.
     return-to-sign-in: Return to Sign in
+  password-forgot: Forgot Password
   password-reset:
     title: Reset your password
     content: Enter your email address and we will send you a password reset link
@@ -702,6 +707,7 @@ repository:
   restore-ui-workflow-success: Successfully restored to UI workflow
   update-version-control-config-success: Successfully updated @:common.version-control config
   setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
+  add-git-provider: Add Git provider
   choose-git-provider: Choose Git provider
   select-repository: Select repository
   configure-deploy: Configure deploy
@@ -809,7 +815,8 @@ project:
     success-deleted-prompt: Successfully deleted webhook {name}.
     success-tested-prompt: Test webhook event OK.
     fail-tested-title: Test webhook event failed.
-    create-webhook: Add a webhook
+    add-a-webhook: Add a webhook
+    create-webhook: Create webhook
     last-updated-by: Last updated bu
     destination: Destination
     webhook-url: Webhook url
@@ -951,6 +958,7 @@ datasource:
   user-list: User list
   revoke-access: Are you sure to revoke '{0}' access from '{1}'?
   grant-data-source: Grant data source
+  grant-database: Grant database
   requested-issue: Requested issue
   successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
   your-issue-id-e-g-1234: Your issue id (e.g. 1234)
