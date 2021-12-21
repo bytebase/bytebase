@@ -138,6 +138,5 @@ export function issueActivityActionSentence(
       }
     }
   }
-
   return ["activity.sentence.empty", {}];
 }
