@@ -115,7 +115,7 @@ common:
   sensitive-placeholder: sensitive - write only
   enabled: enabled
   default: default
-  version-control: version control
+  version-control: Version Control
   restore: Restore
   detailed-guide: detailed guide
   workspace: workspace

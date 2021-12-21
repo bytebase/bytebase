@@ -51,6 +51,7 @@
 import { computed, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   RouterSlug,
   Bookmark,
@@ -71,6 +72,7 @@ export default {
   setup() {
     const store = useStore();
     const currentRoute = useRouter().currentRoute;
+    const { t } = useI18n();
 
     const currentUser: ComputedRef<Principal> = computed(() =>
       store.getters["auth/currentUser"]()
@@ -106,12 +108,12 @@ export default {
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
         list.push({
-          name: "Environment",
+          name: t("common.environment"),
           path: "/environment",
         });
       } else if (projectSlug) {
         list.push({
-          name: "Project",
+          name: t("common.project"),
           path: "/project",
         });
 
@@ -126,12 +128,12 @@ export default {
         }
       } else if (instanceSlug) {
         list.push({
-          name: "Instance",
+          name: t("common.instance"),
           path: "/instance",
         });
       } else if (databaseSlug) {
         list.push({
-          name: "Database",
+          name: t("common.database"),
           path: "/db",
         });
 
@@ -145,14 +147,14 @@ export default {
           });
           if (migrationHistory) {
             list.push({
-              name: "Migration",
+              name: t("common.migration"),
               path: `/db/${databaseSlug}#migration-history`,
             });
           }
         }
       } else if (versionControlSlug) {
         list.push({
-          name: "Version Control",
+          name: t("common.version-control"),
           path: "/setting/version-control",
         });
       }
