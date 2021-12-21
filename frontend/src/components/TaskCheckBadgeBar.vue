@@ -96,7 +96,6 @@ export default defineComponent({
   emits: ["select-task-check-run"],
   setup(props, { emit }) {
     const { t } = useI18n();
-
     const state = reactive<LocalState>({
       selectedTaskCheckRun: props.selectedTaskCheckRun,
     });
@@ -184,14 +183,16 @@ export default defineComponent({
         // Put likely failure first.
         const taskCheckRunTypeOrder = (type: TaskCheckType) => {
           switch (type) {
-            case "bb.task-check.database.statement.compatibility":
+            case "bb.task-check.general.earliest-allowed-time":
               return 0;
-            case "bb.task-check.database.statement.syntax":
+            case "bb.task-check.database.statement.compatibility":
               return 1;
-            case "bb.task-check.database.connect":
+            case "bb.task-check.database.statement.syntax":
               return 2;
-            case "bb.task-check.instance.migration-schema":
+            case "bb.task-check.database.connect":
               return 3;
+            case "bb.task-check.instance.migration-schema":
+              return 4;
             case "bb.task-check.database.statement.fake-advise":
               return 100;
           }
@@ -227,6 +228,8 @@ export default defineComponent({
           return t("task.check-type.connection");
         case "bb.task-check.instance.migration-schema":
           return t("task.check-type.migration-schema");
+        case "bb.task-check.general.earliest-allowed-time":
+          return t("task.check-type.earliest-allowed-time");
       }
     };
 
