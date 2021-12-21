@@ -148,6 +148,7 @@ common:
   connection-string: 连接字符串
   agents: Agents
   billings: 计费
+  all: 全部
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -449,17 +450,21 @@ instance:
   ignore-and-create: 忽略并创建
   connection-info-seems-to-be-incorrect: 连接信息似乎错误
   new-instance: 新实例
-  unable-to-connect: >-
-    Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:
-    {0}
+  unable-to-connect: |-
+    Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。
+    
+    错误详情:{0}
   successfully-created-instance-createdinstance-name: 成功创建实例'{0}'。
   successfully-updated-instance-instance-name: 成功更新实例'{0}'。
   copy-grant-statement: CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。
   successfully-connected-instance: 成功连接到实例。
   failed-to-connect-instance: 连接到实例失败。
-  how-to-setup-instance: 如何设置'实例'?
-  how-to-setup-instance-description: >-
-    每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的 RDS 实例，也可能您私有化部署的 MySQL 实例。\n\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
+  how-to-setup-instance: 如何设置「实例」?
+  how-to-setup-instance-description: |-
+    每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的
+    RDS 实例，也可能您私有化部署的 MySQL 实例。
+    
+    Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
   grants: 权限
 environment:
@@ -467,6 +472,13 @@ environment:
   archive: 归档此环境
   archive-info: 已归档环境不会显示。您可以从归档界面恢复。
   create: 创建环境
+  how-to-setup-environment: 如何创建「环境」?
+  how-to-setup-environment-description: |-
+    每个环境与您的诸如测试，预发，生产环境一一对应。
+    
+    环境是一个全局配置，1 套 Bytebase 的部署也只包含一套环境配置的集合。
+    
+    数据库实例是创建在某个特定环境下面的。
 quick-start:
   bookmark-an-issue: 收藏工单
   add-a-comment: 添加评论
@@ -547,10 +559,10 @@ database:
   no-anomalies-detected: 没有检测到异常
   sync-status: 同步状态
   search-database-name: 搜索数据库名称
-  how-to-setup-database: 如何设置\'数据库\'？
+  how-to-setup-database: 如何设置「数据库」？
   show-guide-description: |-
-    每个 Bytebase 数据库都映射到由 \'CREATE DATABASE xxx\' 创建的一个数据库。
-    在 Bytebase 中，一个数据库始终属于单个项目。\n\nBytebase 将定期同步每个实例的数据库信息。
+    每个 Bytebase 数据库都映射到由「CREATE DATABASE xxx」创建的一个数据库。
+    在 Bytebase 中，一个数据库始终属于单个项目。Bytebase 将定期同步每个实例的数据库信息。
     您还可以从仪表板创建新数据库。
   restored-from: 恢复于
   database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
@@ -627,7 +639,10 @@ repository:
   version-control-description-branch: 当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。
   version-control-description-description-schema-path: 当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。
   restore-to-ui-workflow: 重置到 UI 工作流
-  restore-ui-workflow-description: "当使用 UI 工作流时，开发者会通过 Bytebase \b控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。"
+  restore-ui-workflow-description: |-
+    当使用 UI 工作流时，开发者会通过 Bytebase
+    
+    控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。
   restore-ui-workflow-success: 成功重置到 UI 工作流
   update-version-control-config-success: 成功更新@:common.version-control配置
   setup-wizard-guide: 如果您在过程中遇到问题, 请参考{guide}
