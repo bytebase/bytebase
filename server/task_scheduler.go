@@ -233,9 +233,18 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 
 // ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	// For now, only schema update task has required task check
+	// timing task check
+	pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
+	if err != nil {
+		return nil, err
+	}
+	if !pass {
+		return task, nil
+	}
+
+	// only schema update task has required task check
 	if task.Type == api.TaskDatabaseSchemaUpdate {
-		pass, err := passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +252,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return task, nil
 		}
 
-		pass, err = passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +269,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		}
 		// For now we only supported MySQL dialect syntax and compatibility check
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
-			pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
 			}
@@ -268,7 +277,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 				return task, nil
 			}
 
-			pass, err = passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
+			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
 			if err != nil {
 				return nil, err
 			}
@@ -283,49 +292,4 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	}
 
 	return updatedTask, nil
-}
-
-// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
-// But this method is used for gating the automatic run, so we are more cautious here.
-func passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		Type:       &checkType,
-		StatusList: &statusList,
-		Latest:     true,
-	}
-
-	taskCheckRunList, err := server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
-		server.l.Debug("Task is waiting for check to pass",
-			zap.Int("task_id", task.ID),
-			zap.String("task_name", task.Name),
-			zap.String("task_type", string(task.Type)),
-			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
-		)
-		return false, nil
-	}
-
-	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
-		return false, err
-	}
-	for _, result := range checkResult.ResultList {
-		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
-			server.l.Debug("Task is waiting for check to pass",
-				zap.Int("task_id", task.ID),
-				zap.String("task_name", task.Name),
-				zap.String("task_type", string(task.Type)),
-				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
-			)
-			return false, nil
-		}
-	}
-
-	return true, nil
 }
