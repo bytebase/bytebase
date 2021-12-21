@@ -135,6 +135,14 @@ common:
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
+  roletype: 角色类型
+  readonly: 只读
+  user: 用户
+  added-time: 添加时间
+  data-source: 数据源
+  grant: 授予
+  read-only: 只读
+  connection-string: 连接字符串
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -801,3 +809,26 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+datasource:
+  successfully-deleted-data-source-name: 成功删除数据源'{0}'。
+  create-data-source: 创建数据源
+  data-source-list: 数据源列表
+  all-data-source: 所有数据源
+  search-name: 搜索名称
+  search-name-database: 搜索名称，数据库
+  successfully-created-data-source-datasource-name: 成功创建数据源 '{0}'。
+  select-database-first: 先选择数据库
+  select-data-source: 选择数据源
+  search-user: 搜索用户
+  user-list: 用户列表
+  revoke-access: 您确定要取消 '{0}' 对 '{1}' 的访问权限？
+  grant-data-source: 授予数据源
+  requested-issue: 申请工单
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。
+  your-issue-id-e-g-1234: 您的工单 id (例如 1234)
+  member-principal-name-already-exists: '{0} 已经存在'
+  successfully-granted-datasource-name-to-addedmember-principal-name: 成功授予 '{1}' '{0}'
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: 我们也把被授予的数据库链接到了申请工单 '{0}'。
+  new-data-source: 新数据源
+  connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC 无法连接到 socket {0} '

@@ -5,7 +5,7 @@
       <div class="grid gap-y-6 gap-x-4 grid-cols-4">
         <div class="col-span-2 col-start-2 w-64">
           <label for="environment" class="textlabel">
-            Environment <span style="color: red">*</span>
+            {{ $t("common.environment") }} <span style="color: red">*</span>
           </label>
           <!-- eslint-disable vue/attribute-hyphenation -->
           <EnvironmentSelect
@@ -24,7 +24,7 @@
 
         <div class="col-span-2 col-start-2 w-64">
           <label for="instance" class="textlabel">
-            Instance <span class="text-red-600">*</span>
+            {{ $t("common.instance") }} <span class="text-red-600">*</span>
           </label>
           <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
@@ -43,7 +43,7 @@
 
         <div class="col-span-2 col-start-2 w-64">
           <label for="database" class="textlabel">
-            Database <span class="text-red-600">*</span>
+            {{ $t("common.database") }} <span class="text-red-600">*</span>
           </label>
           <!-- eslint-disable vue/attribute-hyphenation -->
           <DatabaseSelect
@@ -64,7 +64,7 @@
 
         <div class="col-span-2 col-start-2 w-64">
           <label for="datasource" class="textlabel">
-            Data Source <span class="text-red-600">*</span>
+            {{ $t("common.data-source") }} <span class="text-red-600">*</span>
           </label>
           <!-- eslint-disable vue/attribute-hyphenation -->
           <DataSourceSelect
@@ -84,7 +84,7 @@
 
         <div class="col-span-2 col-start-2 w-64">
           <label for="user" class="textlabel">
-            User <span class="text-red-600">*</span>
+            {{ $t("common.user") }} <span class="text-red-600">*</span>
             <span class="ml-2 text-error text-xs">
               {{ state.granteeError }}
             </span>
@@ -107,20 +107,16 @@
         </div>
 
         <div class="col-span-2 col-start-2 w-64">
-          <label for="issue" class="textlabel"> Issue </label>
+          <label for="issue" class="textlabel">
+            {{ $t("common.issue") }}
+          </label>
           <div class="mt-1 relative rounded-md shadow-sm">
             <div
-              class="
-                absolute
-                inset-y-0
-                left-0
-                pl-3
-                flex
-                items-center
-                pointer-events-none
-              "
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
             >
-              <span class="text-accent font-semibold sm:text-sm">issue/</span>
+              <span class="text-accent font-semibold sm:text-sm"
+                >{{ $t("intro.issue") }}/</span
+              >
             </div>
             <div class="flex flex-row space-x-2 items-center">
               <input
@@ -128,7 +124,7 @@
                 class="textfield w-full pl-12"
                 name="issue"
                 type="number"
-                placeholder="Your issue id (e.g. 1234)"
+                placeholder="$t('datasource.your-issue-id-e-g-1234')"
                 :disabled="!allowUpdateIssueId"
                 :value="state.issueId"
                 @input="updateState('issueId', $event.target.value)"
@@ -139,7 +135,7 @@
                   target="_blank"
                   class="ml-2 normal-link text-sm"
                 >
-                  View
+                  {{ $t("common.view") }}
                 </router-link>
               </template>
             </div>
@@ -154,7 +150,7 @@
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
       <button
         type="button"
@@ -162,7 +158,7 @@
         :disabled="!allowCreate"
         @click.prevent="doGrant"
       >
-        Grant
+        {{ $t("common.grant") }}
       </button>
     </div>
   </form>
@@ -189,6 +185,7 @@ import {
   IssueId,
 } from "../types";
 import { issueSlug } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -235,6 +232,8 @@ export default {
       granteeError: "",
       issueId: props.issueId,
     });
+
+    const { t } = useI18n();
 
     const database = computed(() => {
       return state.databaseId
@@ -295,7 +294,10 @@ export default {
           (item: DataSourceMember) => item.principal.id == state.granteeId
         );
         if (member) {
-          state.granteeError = `${member.principal.name} already exists`;
+          state.granteeError = t(
+            "datasource.member-principal-name-already-exists",
+            [member.principal.name]
+          );
         } else {
           state.granteeError = "";
         }
@@ -359,11 +361,15 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully granted '${dataSource.name}' to '${
-              addedMember!.principal.name
-            }'.`,
+            title: t(
+              "datasource.successfully-granted-datasource-name-to-addedmember-principal-name",
+              [dataSource.name, addedMember!.principal.name]
+            ),
             description: linkedIssue
-              ? `We also linked the granted database to the requested issue '${linkedIssue.name}'.`
+              ? t(
+                  "datasource.we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name",
+                  [linkedIssue.name]
+                )
               : "",
             link: linkedIssue
               ? `/issue/${issueSlug(linkedIssue.name, linkedIssue.id)}`

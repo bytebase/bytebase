@@ -3,7 +3,11 @@
     <div class="flex justify-between items-center">
       <div class="inline-flex items-center space-x-2">
         <h3 class="text-lg leading-6 font-medium text-gray-900">
-          {{ database ? "Data source list" : "All data source" }}
+          {{
+            database
+              ? $t("datasource.data-source-list")
+              : $t("datasource.all-data-source")
+          }}
         </h3>
         <!-- Hide add button for now, as we don't allow adding new data source after creating the database. -->
         <BBButtonAdd v-if="false" @add="state.showCreateModal = true" />
@@ -22,7 +26,11 @@
         <BBTableSearch
           ref="searchField"
           class="w-56"
-          :placeholder="database ? 'Search name' : 'Search name, database'"
+          :placeholder="
+            database
+              ? $t('datasource.search-name')
+              : $t('datasource.search-name-database')
+          "
           @change-text="(text) => changeSearchText(text)"
         />
       </div>
@@ -70,7 +78,7 @@
   </div>
   <BBModal
     v-if="state.showCreateModal"
-    :title="'Create data source'"
+    :title="$t('datasource.create-data-source')"
     @close="state.showCreateModal = false"
   >
     <DataSourceCreateForm
@@ -91,27 +99,7 @@ import { BBTableColumn } from "../bbkit/types";
 
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
-
-const columnList: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Type",
-  },
-  {
-    title: "Username",
-  },
-  {
-    title: "Password",
-  },
-  {
-    title: "Updated",
-  },
-  {
-    title: "Created",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;
@@ -135,6 +123,28 @@ export default {
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
+
+    const columnList: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("common.type"),
+      },
+      {
+        title: t("common.username"),
+      },
+      {
+        title: t("common.password"),
+      },
+      {
+        title: t("common.updated-at"),
+      },
+      {
+        title: t("common.created-at"),
+      },
+    ];
 
     const state = reactive<LocalState>({
       searchText: "",
@@ -202,7 +212,10 @@ export default {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully created data source '${dataSource.name}'.`,
+            title: t(
+              "datasource.successfully-created-data-source-datasource-name",
+              [dataSource.name]
+            ),
           });
           router.push(
             `/db/${databaseSlug(
