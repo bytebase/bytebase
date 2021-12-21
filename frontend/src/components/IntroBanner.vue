@@ -3,7 +3,7 @@
     <img class="m-4 h-72" src="../assets/illustration/guide.webp" alt="" />
     <div class="m-4">
       <h2 class="text-xl text-main">
-          <i18n-t keypath="intro.content" tag="p">
+          <i18n-t keypath="intro.content">
             <template v-slot:quickstart>
               <span class="text-accent">{{ $t("common.quickstart") }}</span>
             </template>

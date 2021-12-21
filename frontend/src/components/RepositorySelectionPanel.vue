@@ -6,7 +6,7 @@
         <heroicons-outline:refresh class="w-6 h-6" />
       </button>
       <BBTableSearch
-        :placeholder="'Search repository'"
+        :placeholder="$t('repository.select-repository-search')"
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
@@ -89,7 +89,7 @@ export default {
 
     const attentionText = computed((): string => {
       if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-        return "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.";
+        return "repository.select-repository-attention-gitlab";
       }
       return "";
     });

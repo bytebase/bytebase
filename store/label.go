@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +33,24 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	}
 	defer tx.Rollback()
 
+	ret, err := s.findLabelKeyList(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+}
+
+func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -38,7 +59,9 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 			updater_id,
 			updated_ts,
 		    key
-		FROM label_key`,
+		FROM label_key
+		WHERE `+strings.Join(where, " AND "),
+		args...,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,6 +70,7 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 
 	// Iterate over result set and deserialize rows into list.
 	var ret []*api.LabelKey
+	keymap := make(map[string]*api.LabelKey)
 	for rows.Next() {
 		var labelKey api.LabelKey
 		if err := rows.Scan(
@@ -61,10 +85,324 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 		}
 
 		ret = append(ret, &labelKey)
+		keymap[labelKey.Key] = &labelKey
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	// Find key values.
+	valueRows, err := tx.QueryContext(ctx, `
+		SELECT
+			key,
+			value
+		FROM label_value
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer valueRows.Close()
+
+	for valueRows.Next() {
+		var key, value string
+		if err := valueRows.Scan(
+			&key,
+			&value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		labelKey, ok := keymap[key]
+		if !ok {
+			return nil, common.Errorf(common.Internal, fmt.Errorf("label value doesn't have a label key, key %q, value %q", key, value))
+		}
+		labelKey.ValueList = append(labelKey.ValueList, value)
+	}
+	if err := valueRows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+}
+
+type labelValueUpsert struct {
+	rowStatus api.RowStatus
+	updaterID int
+	key       string
+	value     string
+}
+
+// PatchLabelKey patches a label key.
+func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
+	if err != nil {
+		return nil, err
+	}
+	var labelKey *api.LabelKey
+	for _, k := range ret {
+		if k.ID == patch.ID {
+			labelKey = k
+		}
+	}
+	if labelKey == nil {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key ID not found: %v", patch.ID))
+	}
+
+	// Generate label value upserts.
+	var upserts []labelValueUpsert
+	// Add all new values.
+	for _, v := range patch.ValueList {
+		upserts = append(upserts, labelValueUpsert{
+			rowStatus: api.Normal,
+			updaterID: patch.UpdaterID,
+			key:       labelKey.Key,
+			value:     v,
+		})
+	}
+	// Archive old values that are not in new values.
+	newValues := make(map[string]bool)
+	for _, v := range patch.ValueList {
+		newValues[v] = true
+	}
+	for _, v := range labelKey.ValueList {
+		if _, ok := newValues[v]; !ok {
+			upserts = append(upserts, labelValueUpsert{
+				rowStatus: api.Archived,
+				updaterID: patch.UpdaterID,
+				key:       labelKey.Key,
+				value:     v,
+			})
+		}
+	}
+
+	for _, upsert := range upserts {
+		if err := s.upsertLabelValue(ctx, tx, upsert); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	labelKey.ValueList = patch.ValueList
+	return labelKey, nil
+}
+
+func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labelValueUpsert) error {
+	// Upsert row into label_value
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO label_value (
+			row_status,
+			creator_id,
+			updater_id,
+			key,
+			value
+		)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(key, value) DO UPDATE SET
+				row_status = excluded.row_status,
+				creator_id = excluded.creator_id,
+				updater_id = excluded.updater_id
+		`,
+		upsert.rowStatus,
+		upsert.updaterID,
+		upsert.updaterID,
+		upsert.key,
+		upsert.value,
+	); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+// FindDatabaseLabelList finds the labels associated with the database.
+func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databaseLabelList, err := s.findDatabaseLabels(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return databaseLabelList, nil
+}
+
+func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+	if v := find.DatabaseID; v != nil {
+		where, args = append(where, "database_id = ?"), append(args, *v)
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			row_status,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+		    key,
+			value
+		FROM db_label
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY key`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	var ret []*api.DatabaseLabel
+	for rows.Next() {
+		var databaseLabel api.DatabaseLabel
+		if err := rows.Scan(
+			&databaseLabel.ID,
+			&databaseLabel.RowStatus,
+			&databaseLabel.CreatorID,
+			&databaseLabel.CreatedTs,
+			&databaseLabel.UpdaterID,
+			&databaseLabel.UpdatedTs,
+			&databaseLabel.DatabaseID,
+			&databaseLabel.Key,
+			&databaseLabel.Value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		ret = append(ret, &databaseLabel)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return ret, nil
+}
+
+func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+	// Upsert row into db_label
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO db_label (
+			row_status,
+			creator_id,
+			updater_id,
+			database_id,
+			key,
+			value
+		)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(database_id, key) DO UPDATE SET
+				row_status = excluded.row_status,
+				creator_id = excluded.creator_id,
+				updater_id = excluded.updater_id,
+				value = excluded.value
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+		`,
+		upsert.RowStatus,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.DatabaseID,
+		upsert.Key,
+		upsert.Value,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var databaseLabel api.DatabaseLabel
+	if err := row.Scan(
+		&databaseLabel.ID,
+		&databaseLabel.RowStatus,
+		&databaseLabel.CreatorID,
+		&databaseLabel.CreatedTs,
+		&databaseLabel.UpdaterID,
+		&databaseLabel.UpdatedTs,
+		&databaseLabel.DatabaseID,
+		&databaseLabel.Key,
+		&databaseLabel.Value,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &databaseLabel, nil
+}
+
+// SetDatabaseLabelList sets the labels for a database.
+func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
+	oldLabels, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var ret []*api.DatabaseLabel
+
+	for _, oldLabel := range oldLabels {
+		// Archive all old labels
+		_, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Archived,
+			DatabaseID: databaseID,
+			Key:        oldLabel.Key,
+			Value:      oldLabel.Value,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, label := range labels {
+		// Upsert all new labels
+		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+			UpdaterID:  updaterID,
+			RowStatus:  api.Normal,
+			DatabaseID: databaseID,
+			Key:        label.Key,
+			Value:      label.Value,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, label)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return ret, nil
+
 }

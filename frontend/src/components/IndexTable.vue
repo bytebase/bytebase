@@ -40,24 +40,7 @@
 import { computed, PropType } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { TableIndex } from "../types";
-
-const COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Expression",
-  },
-  {
-    title: "Position",
-  },
-  {
-    title: "Unique",
-  },
-  {
-    title: "Visible",
-  },
-  {
-    title: "Comment",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "IndexTable",
@@ -69,6 +52,24 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
+    const COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("database.expression"),
+      },
+      {
+        title: t("database.position"),
+      },
+      {
+        title: t("database.unique"),
+      },
+      {
+        title: t("database.visible"),
+      },
+      {
+        title: t("database.comment"),
+      },
+    ];
     const sectionList = computed(() => {
       const sectionList: BBTableSectionDataSource<TableIndex>[] = [];
 

@@ -6,8 +6,8 @@
           <div class="flex flex-row items-center text-sm">
             <div class="sm:col-span-1">
               <label class="textlabel">
-                {{ field.name
-                }}<span v-if="field.required" class="text-red-600">*</span>
+                {{ field.name }}
+                <span v-if="field.required" class="text-red-600">*</span>
               </label>
             </div>
           </div>
@@ -71,30 +71,20 @@
             :title="`Check found ${checkSummary.warnCount} warning(s)`"
           />
         </template>
-        <TaskCheckBadgeBar
-          :task-check-run-list="task.taskCheckRunList"
-          :allow-selection="false"
-        />
+        <TaskCheckBar :task="task!" :allow-run-task="false" />
       </div>
 
       <div class="sm:col-span-4 w-112 min-w-full">
-        <label for="about" class="textlabel"> Note </label>
+        <label for="about" class="textlabel">
+          {{ $t("issue.status-transition.form.note") }}
+        </label>
         <div class="mt-1">
           <textarea
             ref="commentTextArea"
             v-model="state.comment"
             rows="3"
-            class="
-              textarea
-              block
-              w-full
-              resize-none
-              mt-1
-              text-sm text-control
-              rounded-md
-              whitespace-pre-wrap
-            "
-            placeholder="(Optional) Add a note..."
+            class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            :placeholder="$t('issue.status-transition.form.placeholder')"
             @input="
               (e) => {
                 sizeToFit(e.target);
@@ -117,7 +107,7 @@
         class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
         @click.prevent="$emit('cancel')"
       >
-        No
+        {{ $t("common.cancel") }}
       </button>
       <button
         type="button"
@@ -133,10 +123,10 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, ref, PropType } from "vue";
+import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
 import DatabaseSelect from "./DatabaseSelect.vue";
-import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
+import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
 import { OutputField } from "../plugins";
 import { activeEnvironment, TaskStatusTransition } from "../utils";
@@ -152,9 +142,9 @@ interface LocalState {
   outputValueList: string[];
 }
 
-export default {
+export default defineComponent({
   name: "StatusTransitionForm",
-  components: { DatabaseSelect, TaskCheckBadgeBar },
+  components: { DatabaseSelect, TaskCheckBar },
   props: {
     mode: {
       required: true,
@@ -171,6 +161,7 @@ export default {
     // Applicable when mode = 'TASK'
     task: {
       type: Object as PropType<Task>,
+      default: undefined,
     },
     transition: {
       required: true,
@@ -209,6 +200,7 @@ export default {
             case "REOPEN":
               return "btn-primary";
           }
+          break; // only to make eslint happy
         }
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).type) {
@@ -225,6 +217,7 @@ export default {
           }
         }
       }
+      return ""; // only to make eslint happy
     });
 
     // Code block below will raise an eslint ERROR.
@@ -247,6 +240,7 @@ export default {
           }
         }
       }
+      return false; // only to make eslint happy
     });
 
     const runningCheckCount = computed((): number => {
@@ -305,5 +299,5 @@ export default {
       checkSummary,
     };
   },
-};
+});
 </script>

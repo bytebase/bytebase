@@ -46,6 +46,7 @@ import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { urlfy, instanceSlug, environmentName } from "../utils";
 import { EnvironmentId, Instance } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   columnList: BBTableColumn[];
@@ -63,6 +64,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       columnList: [
@@ -70,19 +72,19 @@ export default {
           title: "",
         },
         {
-          title: "Name",
+          title: t("common.name"),
         },
         {
-          title: "Environment",
+          title: t("common.environment"),
         },
         {
-          title: "Address",
+          title: t("common.Address"),
         },
         {
-          title: "External link",
+          title: t("instance.external-link"),
         },
         {
-          title: "Created",
+          title: t("common.created-at"),
         },
       ],
       dataSource: [],

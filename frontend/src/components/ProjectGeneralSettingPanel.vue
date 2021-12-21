@@ -1,10 +1,12 @@
 <template>
   <form class="max-w-md space-y-4">
-    <p class="text-lg font-medium leading-7 text-main">General</p>
+    <p class="text-lg font-medium leading-7 text-main">
+      {{ $t("common.general") }}
+    </p>
     <div class="flex justify-between">
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          Name <span class="text-red-600">*</span>
+          {{ $t("common.name") }} <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
@@ -21,7 +23,7 @@
 
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          Key <span class="text-red-600">*</span>
+          {{ $t("common.key") }} <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
@@ -44,7 +46,7 @@
         :disabled="!allowSave"
         @click.prevent="save"
       >
-        Save
+        {{ $t("common.save") }}
       </button>
     </div>
   </form>
@@ -55,6 +57,7 @@ import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   name: string;
@@ -75,6 +78,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       name: props.project.name,
@@ -109,10 +113,12 @@ export default {
           projectPatch,
         })
         .then((updatedProject: Project) => {
-          store.dispatch("notification/pushNotification", {
+          store.dispatch("notification/", {
             module: "bytebase",
             style: "SUCCESS",
-            title: `Successfully updated ${subject}.`,
+            title: t("project.settings.success-updated-prompt", {
+              subject: subject,
+            }),
           });
           state.name = updatedProject.name;
           state.key = updatedProject.key;

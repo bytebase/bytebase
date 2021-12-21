@@ -2,8 +2,8 @@
   <div class="flex flex-col px-4 pb-4">
     <BBAttention
       :style="'INFO'"
-      :title="'Anomaly detection'"
-      :description="'Bytebase periodically scans the managed resources and list the detected anomalies here. The list is refreshed roughly every 10 minutes.'"
+      :title="$t('anomaly.attention-title')"
+      :description="$t('anomaly.attention-desc')"
     />
     <!-- This example requires Tailwind CSS v2.0+ -->
     <div class="mt-4 space-y-4">
@@ -16,7 +16,7 @@
         class="space-y-2"
       >
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ i == 0 ? "Database" : "Instance" }}
+          {{ i == 0 ? $t("common.database") : $t("common.instance") }}
         </h3>
         <dl
           class="grid grid-cols-1 gap-5 sm:grid-cols-2"
@@ -24,12 +24,16 @@
         >
           <template v-for="(summary, index) in item" :key="index">
             <div class="p-4 shadow rounded-lg tooltip-wrapper">
-              <span class="text-sm tooltip"
-                >{{ summary.environmentName }} has
-                {{ summary.criticalCount }} CRITICAL,
-                {{ summary.highCount }} HIGH and
-                {{ summary.mediumCount }} MEDIUM anomalies</span
-              >
+              <span class="text-sm tooltip">
+                {{
+                  $t("anomaly.tooltip", {
+                    env: summary.environmentName,
+                    criticalCount: summary.criticalCount,
+                    highCount: summary.highCount,
+                    mediumCount: summary.mediumCount,
+                  })
+                }}
+              </span>
               <dt class="textlabel">
                 {{ summary.environmentName }}
               </dt>
@@ -73,9 +77,12 @@
         ref="searchField"
         class="w-72"
         :placeholder="
-          state.selectedIndex == DATABASE_TAB
-            ? 'Search database or environment'
-            : 'Search instance or environment'
+          $t('anomaly.table-search-placeholder', {
+            type:
+              state.selectedIndex == DATABASE_TAB
+                ? $t('common.database')
+                : $t('common.instance'),
+          })
         "
         @change-text="(text) => changeSearchText(text)"
       />
@@ -87,7 +94,11 @@
         :compact-section="false"
       />
       <div v-else class="text-center text-control-light">
-        Hooray, no database anomaly detected!
+        {{
+          $t("anomaly.table-placeholder", {
+            type: $t("common.database"),
+          })
+        }}
       </div>
     </template>
     <template v-else>
@@ -97,15 +108,21 @@
         :compact-section="false"
       />
       <div v-else class="text-center text-control-light">
-        Hooray, no instance anomaly detected!
+        {{
+          $t("anomaly.table-placeholder", {
+            type: $t("common.instance"),
+          })
+        }}
       </div>
     </template>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue-demi";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
+
 import AnomalyTable from "../components/AnomalyTable.vue";
 import { Anomaly, Database, EnvironmentId } from "../types";
 import {
@@ -138,6 +155,7 @@ export default {
   components: { AnomalyTable },
   setup() {
     const store = useStore();
+    const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -338,11 +356,11 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       return [
         {
-          title: "Database",
+          title: t("common.database"),
           alert: databaseAnomalySectionList.value.length > 0,
         },
         {
-          title: "Instance",
+          title: t("common.instance"),
           alert: instanceAnomalySectionList.value.length > 0,
         },
       ];

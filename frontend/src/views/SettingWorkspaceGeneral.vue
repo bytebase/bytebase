@@ -26,7 +26,11 @@
           :disabled="!allowEdit"
         />
         <div for="databaseUrl" class="mt-2 textinfolabel">
-          {{ $t("settings.workspace.url-tip").replace('%s', placeholder) }}
+          <i18n-t keypath="settings.workspace.url-tip">
+            <template v-slot:schema>
+              {{ placeholder }}
+            </template>
+          </i18n-t>
         </div>
       </div>
     </div>

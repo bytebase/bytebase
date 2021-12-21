@@ -1,12 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="textinfolabel">
-      Bytebase supports version control workflow where database migration
-      scripts are stored in the version control system (VCS), and changes made
-      to those scripts will automatically trigger the corresponding database
-      change. Bytebase owners manage all the applicable VCSs here, so that
-      project owners can link the projects with their Git repositories from
-      these VCSs.
+      {{ $t('version-control.setting.description') }}
     </div>
     <div class="flex items-center justify-end">
       <button
@@ -14,7 +9,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addVCSProvider"
       >
-        Add a Git provider
+        {{ $t('version-control.setting.add-git-provider.self') }}
       </button>
     </div>
     <div class="pt-4 border-t">

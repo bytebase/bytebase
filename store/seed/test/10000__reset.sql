@@ -65,6 +65,16 @@ DELETE FROM
 DELETE FROM
     backup_setting;
 
+-- Delete in this order following foreign constraints.
+DELETE FROM
+    db_label;
+
+DELETE FROM
+    label_value;
+
+DELETE FROM
+    label_key;
+
 DELETE FROM
     db;
 
@@ -85,12 +95,6 @@ DELETE FROM
 
 DELETE FROM
     project_member;
-
-DELETE FROM
-    label_key;
-
-DELETE FROM
-    db_label;
 
 DELETE FROM
     deployment_config;

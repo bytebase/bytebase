@@ -1,7 +1,8 @@
-import { IssueId, PrincipalId, ProjectId } from "./id";
+import { BackupId, DatabaseId, InstanceId, IssueId, PrincipalId, ProjectId } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
+import { MigrationType } from "./instance";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -18,6 +19,34 @@ export type IssueType =
   | IssueTypeDataSource;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
+
+export type CreateDatabaseContext = {
+  instanceId: InstanceId;
+  databaseName: string;
+  characterSet: string;
+  collation: string;
+  backupId: BackupId;
+  backupName: string;
+};
+
+export type UpdateSchemaDetail = {
+  databaseId: DatabaseId;
+  statement: string;
+  rollbackStatement: string;
+};
+
+export type UpdateSchemaContext = {
+  migrationType: MigrationType;
+  updateSchemaDetailList: UpdateSchemaDetail[];
+};
+
+export type EmptyContext = {
+};
+
+export type IssueCreateContext = 
+  | CreateDatabaseContext
+  | UpdateSchemaContext
+  | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };
 
@@ -55,6 +84,7 @@ export type IssueCreate = {
   description: string;
   assigneeId: PrincipalId;
   rollbackIssueId?: IssueId;
+  createContext: IssueCreateContext;
   payload: IssuePayload;
 };
 
@@ -90,7 +120,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "RESOLVE",
       to: "DONE",
-      buttonName: "Resolve",
+      buttonName: "issue.status-transition.dropdown.resolve",
       buttonClass: "btn-success",
     },
   ],
@@ -99,7 +129,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "CANCEL",
       to: "CANCELED",
-      buttonName: "Cancel issue",
+      buttonName: "issue.status-transition.dropdown.cancel",
       buttonClass: "btn-normal",
     },
   ],
@@ -108,7 +138,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
     {
       type: "REOPEN",
       to: "OPEN",
-      buttonName: "Reopen",
+      buttonName: "issue.status-transition.dropdown.reopen",
       buttonClass: "btn-normal",
     },
   ],

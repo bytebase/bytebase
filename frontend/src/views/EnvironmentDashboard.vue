@@ -18,7 +18,7 @@
             class="btn-normal py-2 px-4"
             @click.prevent="discardReorder"
           >
-            Cancel
+            {{ $t('common.cancel') }}
           </button>
           <button
             type="submit"
@@ -26,7 +26,7 @@
             :disabled="!orderChanged"
             @click.prevent="doReorder"
           >
-            Apply Change
+            {{ $t('common.apply') }}
           </button>
         </div>
         <EnvironmentDetail
@@ -39,7 +39,7 @@
   </div>
   <BBModal
     v-if="state.showCreateModal"
-    :title="'Create Environment'"
+    :title="$t('environment.create')"
     @close="state.showCreateModal = false"
   >
     <EnvironmentForm

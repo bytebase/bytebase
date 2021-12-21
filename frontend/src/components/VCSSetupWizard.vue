@@ -47,16 +47,11 @@ import {
   OAuthToken,
 } from "../types";
 import { isUrl } from "../utils";
+import { useI18n } from "vue-i18n";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
 const CONFIRM_STEP = 2;
-
-const stepList: BBStepTabItem[] = [
-  { title: "Basic info" },
-  { title: "OAuth application info" },
-  { title: "Confirm" },
-];
 
 interface LocalState {
   config: VCSConfig;
@@ -72,13 +67,20 @@ export default {
     VCSProviderConfirmPanel,
   },
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
+
+    const stepList: BBStepTabItem[] = [
+      { title: t("version-control.setting.add-git-provider.basic-info.self") },
+      { title: t("version-control.setting.add-git-provider.oauth-info.self") },
+      { title: t("common.confirm") },
+    ];
 
     const state = reactive<LocalState>({
       config: {
         type: "GITLAB_SELF_HOST",
-        name: "GitLab self-host",
+        name: t("version-control.setting.add-git-provider.gitlab-self-host"),
         instanceUrl: "",
         applicationId: "",
         secret: "",
@@ -129,7 +131,9 @@ export default {
 
     const attentionText = computed((): string => {
       if (state.config.type == "GITLAB_SELF_HOST") {
-        return "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.";
+        return t(
+          "version-control.setting.add-git-provider.gitlab-self-host-admin-requirement"
+        );
       }
       return "";
     });
@@ -160,7 +164,9 @@ export default {
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
                 style: "SUCCESS",
-                title: "Verified OAuth info is correct",
+                title: t(
+                  "version-control.setting.add-git-provider.ouath-info-correct"
+                ),
               });
             } else {
               var description = "";
@@ -168,8 +174,9 @@ export default {
                 // If application id mismatches, the OAuth workflow will stop early.
                 // So the only possibility to reach here is we have a matching application id, while
                 // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
-                description =
-                  "Please make sure Secret matches the one from your GitLab instance Application.";
+                description = t(
+                  "version-control.setting.add-git-provider.check-oauth-info-match"
+                );
               }
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",
@@ -199,7 +206,9 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
-          title: `Successfully added Git provider '${vcs.name}'`,
+          title: t("version-control.setting.add-git-provider.add-success", [
+            vcs.name,
+          ]),
         });
       });
     };

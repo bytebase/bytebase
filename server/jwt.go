@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -168,7 +167,7 @@ func removeUserCookie(c echo.Context) {
 func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth, actuator, plan
-		if strings.HasPrefix(c.Path(), "/api/auth") || strings.HasPrefix(c.Path(), "/api/actuator") || strings.HasPrefix(c.Path(), "/api/plan") {
+		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
 			return next(c)
 		}
 

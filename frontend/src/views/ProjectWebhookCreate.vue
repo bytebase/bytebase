@@ -1,6 +1,8 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
-    <div class="text-xl leading-6 font-medium text-main">Create webhook</div>
+    <div class="text-xl leading-6 font-medium text-main">
+      {{ $t("project.webhook.creation.title") }}
+    </div>
     <ProjectWebhookForm
       class="pt-4"
       :create="true"

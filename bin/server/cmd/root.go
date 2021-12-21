@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -159,9 +160,8 @@ type main struct {
 }
 
 func preStart() error {
-	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
-		error := fmt.Errorf("--host %s must start with http:// or https://", host)
-		return error
+	if !common.HasPrefixes(host, "http://", "https://") {
+		return fmt.Errorf("--host %s must start with http:// or https://", host)
 	}
 
 	// Convert to absolute path if relative path is supplied.
@@ -190,7 +190,10 @@ func start() {
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	// Trigger graceful shutdown on SIGINT or SIGTERM.
+	// The default signal sent by the `kill` command is SIGTERM,
+	// which is taken as the graceful shutdown signal for many systems, eg., Kubernetes, Gunicorn.
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		m.l.Info("SIGINT received.")

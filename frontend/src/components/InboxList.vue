@@ -16,14 +16,7 @@
         <div class="flex-1 space-y-1">
           <div class="flex w-full justify-between space-x-2">
             <h3
-              class="
-                text-sm
-                font-base
-                text-control-light
-                flex flex-row
-                items-center
-                whitespace-nowrap
-              "
+              class="text-sm font-base text-control-light flex flex-row items-center whitespace-nowrap"
             >
               <template v-if="showCreator(inbox.activity)">
                 <router-link
@@ -59,7 +52,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ActivityIssueCommentCreatePayload,
@@ -67,6 +60,7 @@ import {
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityTaskStatementUpdatePayload,
   Activity,
   Inbox,
 } from "../types";
@@ -74,8 +68,9 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash";
 import { issueActivityActionSentence } from "../utils";
+import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "InboxList",
   components: { PrincipalAvatar },
   props: {
@@ -85,6 +80,7 @@ export default {
     },
   },
   setup() {
+    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
@@ -107,7 +103,8 @@ export default {
 
     const actionSentence = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {
-        const actionStr = issueActivityActionSentence(activity);
+        const [tid, params] = issueActivityActionSentence(activity);
+        const actionStr = t(tid, params);
         switch (activity.type) {
           case "bb.issue.create": {
             const payload = activity.payload as ActivityIssueCreatePayload;
@@ -129,34 +126,46 @@ export default {
           }
         }
         return actionStr;
-      } else if (activity.type == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        var actionStr = `changed`;
-        switch (payload.newStatus) {
-          case "PENDING": {
-            if (payload.oldStatus == "RUNNING") {
-              actionStr = `canceled`;
-            } else if (payload.oldStatus == "PENDING_APPROVAL") {
-              actionStr = `approved`;
+      }
+      switch (activity.type) {
+        case "bb.pipeline.task.status.update": {
+          const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+          let actionStr = t(`activity.sentence.changed`);
+          switch (payload.newStatus) {
+            case "PENDING": {
+              if (payload.oldStatus == "RUNNING") {
+                actionStr = t(`activity.sentence.canceled`);
+              } else if (payload.oldStatus == "PENDING_APPROVAL") {
+                actionStr = t(`activity.sentence.approved`);
+              }
+              break;
             }
-            break;
+            case "RUNNING": {
+              actionStr = t(`activity.sentence.started`);
+              break;
+            }
+            case "DONE": {
+              actionStr = t(`activity.sentence.completed`);
+              break;
+            }
+            case "FAILED": {
+              actionStr = t(`activity.sentence.failed`);
+              break;
+            }
           }
-          case "RUNNING": {
-            actionStr = `started`;
-            break;
-          }
-          case "DONE": {
-            actionStr = `completed`;
-            break;
-          }
-          case "FAILED": {
-            actionStr = `failed`;
-            break;
-          }
+          return `${t("activity.subject-prefix.task")} '${
+            payload.taskName
+          }' ${actionStr} - '${payload?.issueName || ""}'`;
         }
-        return `Task '${payload.taskName}' ${actionStr} - '${
-          payload?.issueName || ""
-        }'`;
+        case "bb.pipeline.task.statement.update": {
+          const payload =
+            activity.payload as ActivityTaskStatementUpdatePayload;
+          return t("activity.sentence.changed-from-to", {
+            name: "SQL",
+            oldValue: payload.oldStatement,
+            newValue: payload.newStatement,
+          });
+        }
       }
 
       return "";
@@ -186,5 +195,5 @@ export default {
 
     return { actionLink, showCreator, actionSentence, clickInbox };
   },
-};
+});
 </script>
