@@ -180,8 +180,8 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 // shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
 // the logic goes like the following:
 // 1. there is no running timing task check
-// 2(a). the notBeforeTs state has been altered since last check (either via new creation or patch).
-// 2(b). the notBeforeTs has NOT been altered since last check, however the last check had failed && notBeforeTs has passed now.
+// 2(a). the earliestAllowedTs state has been altered since last check (either via new creation or patch).
+// 2(b). the earliestAllowedTs has NOT been altered since last check, however the last check had failed && earliestAllowedTs has passed now.
 // ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	if forceSchedule {
@@ -214,11 +214,11 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
-	if taskCheckPayload.NotBeforeTs != task.NotBeforeTs {
+	if taskCheckPayload.EarliestAllowedTs != task.EarliestAllowedTs {
 		return true, nil
 	}
 
-	if time.Now().After(time.Unix(task.NotBeforeTs, 0)) {
+	if time.Now().After(time.Unix(task.EarliestAllowedTs, 0)) {
 		checkResult := &api.TaskCheckRunResultPayload{}
 		if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
 			return false, err

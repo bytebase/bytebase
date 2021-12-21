@@ -32,13 +32,13 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check timing payload: %w", err))
 	}
 
-	if time.Now().Before(time.Unix(payload.NotBeforeTs, 0)) {
+	if time.Now().Before(time.Unix(payload.EarliestAllowedTs, 0)) {
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TaskTimingNotAllowed,
 				Title:   "Not ready to run",
-				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
+				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
 			},
 		}, nil
 	}
@@ -48,7 +48,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: fmt.Sprintf("Passed the configured earliest running time: %s", time.Unix(payload.NotBeforeTs, 0).Format(dataFormat)),
+			Content: fmt.Sprintf("Passed the configured earliest running time: %s", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
 		},
 	}, nil
 }

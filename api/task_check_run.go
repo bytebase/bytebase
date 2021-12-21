@@ -83,7 +83,7 @@ const (
 
 // TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time
 type TaskCheckEarliestAllowedTimePayload struct {
-	NotBeforeTs int64 `json:"notBeforeTs"`
+	EarliestAllowedTs int64 `json:"earliestAllowedTs"`
 }
 
 // TaskCheckDatabaseStatementAdvisePayload is the task check payload for database statement advise.
