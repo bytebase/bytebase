@@ -41,24 +41,12 @@
           <span class="tooltip w-60">{{
             $t("task.earliest-allowed-time-hint")
           }}</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <!-- Heroicons name: outline/question-mark-circle -->
+          <heroicons-outline:question-mark-circle class="h-4 w-4" />
         </div>
       </h2>
       <div class="col-span-2">
-        <!-- TODO: should added i18n support for naive-i18n & should fitted in with the current theme -->
+        <!-- TODO: should added i18n support for naive-i18n & should fit in with the current theme -->
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
