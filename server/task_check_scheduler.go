@@ -179,11 +179,10 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 
 // shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
 // the logic goes like the following:
-// 1. user specified the notBeforeTs field, hence a timing gate is added
-// 2. there is no running timing task check
-// 3(a). the notBeforeTs state has been altered since last check (either via new creation or patch).
-// 3(b). the notBeforeTs has NOT been altered since last check, however the last check had failed && notBeforeTs has passed now.
-// ONLY when {1 && 2 && (3.a || 3.b)} listed above would this function return true
+// 1. there is no running timing task check
+// 2(a). the notBeforeTs state has been altered since last check (either via new creation or patch).
+// 2(b). the notBeforeTs has NOT been altered since last check, however the last check had failed && notBeforeTs has passed now.
+// ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	if forceSchedule {
 		return true, nil
@@ -238,7 +237,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	// the following block is for timing task check
 	{
 		// we only set skipIfAlreadyTerminated to false when user explicitly want to reschedule a taskCheck
-		flag, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated)
+		flag, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated /* forceSchedule */)
 		if err != nil {
 			return nil, err
 		}
