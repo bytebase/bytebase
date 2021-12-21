@@ -25,6 +25,8 @@ const (
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
 	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
+	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
+	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 
 	// Member related
 
@@ -65,6 +67,8 @@ func (e ActivityType) String() string {
 		return "bb.pipeline.task.status.update"
 	case ActivityPipelineTaskFileCommit:
 		return "bb.pipeline.task.file.commit"
+	case ActivityPipelineTaskStatementUpdate:
+		return "bb.pipeline.task.statement.update"
 	case ActivityMemberCreate:
 		return "bb.member.create"
 	case ActivityMemberRoleUpdate:
@@ -164,6 +168,16 @@ type ActivityPipelineTaskFileCommitPayload struct {
 	Branch             string `json:"branch,omitempty"`
 	FilePath           string `json:"filePath,omitempty"`
 	CommitID           string `json:"commitId,omitempty"`
+}
+
+// ActivityPipelineTaskStatementUpdatePayload
+type ActivityPipelineTaskStatementUpdatePayload struct {
+	TaskID       int    `json:"taskId"`
+	OldStatement string `json:"oldStatement,omitempty"`
+	NewStatement string `json:"newStatement,omitempty"`
+	// Used by inbox to display info without paying the join cost
+	IssueName string `json:"issueName"`
+	TaskName  string `json:"taskName"`
 }
 
 // ActivityMemberCreatePayload is the API message payloads for creating members.
