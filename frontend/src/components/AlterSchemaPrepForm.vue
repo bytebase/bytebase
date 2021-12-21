@@ -193,7 +193,7 @@ import {
   Repository,
 } from "../types";
 import { sortDatabaseList } from "../utils";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 type AlterType = "SINGLE_DB" | "MULTI_DB";
 

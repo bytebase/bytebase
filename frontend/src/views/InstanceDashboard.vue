@@ -39,7 +39,7 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 
 interface LocalState {

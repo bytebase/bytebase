@@ -66,7 +66,7 @@ import {
 } from "../types";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { isEmpty } from "lodash";
+import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
 

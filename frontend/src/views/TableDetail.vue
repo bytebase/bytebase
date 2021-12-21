@@ -218,7 +218,7 @@ import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { bytesToString, consoleLink, idFromSlug } from "../utils";
-import { isEmpty } from "lodash";
+import { isEmpty } from "lodash-es";
 
 export default {
   name: "TableDetail",

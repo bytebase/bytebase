@@ -201,7 +201,7 @@ import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
-import { cloneDeep, isEqual } from "lodash";
+import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
 
 interface LocalState {
