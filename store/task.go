@@ -137,10 +137,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			earliest_allowed_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -151,6 +152,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			create.Status,
 			create.Type,
 			create.Payload,
+			create.EarliestAllowedTs,
 		)
 	} else {
 		row, err = tx.QueryContext(ctx, `
@@ -164,10 +166,11 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			name,
 			`+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			earliest_allowed_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -179,6 +182,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			create.Status,
 			create.Type,
 			create.Payload,
+			create.EarliestAllowedTs,
 		)
 	}
 
@@ -206,6 +210,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 		&task.Status,
 		&task.Type,
 		&task.Payload,
+		&task.EarliestAllowedTs,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -265,7 +270,8 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		    name,
 		    `+"`status`,"+`
 			`+"`type`,"+`
-			payload
+			payload,
+			earliest_allowed_ts
 		FROM task
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -293,6 +299,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.EarliestAllowedTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -328,6 +335,9 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 	if v := patch.Payload; v != nil {
 		set, args = append(set, "payload = ?"), append(args, *v)
 	}
+	if v := patch.EarliestAllowedTs; v != nil {
+		set, args = append(set, "earliest_allowed_ts = ?"), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -335,7 +345,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
 	`,
 		args...,
 	)
@@ -360,6 +370,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.EarliestAllowedTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -450,7 +461,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
 	`,
 		args...,
 	)
@@ -475,6 +486,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 			&task.Status,
 			&task.Type,
 			&task.Payload,
+			&task.EarliestAllowedTs,
 		); err != nil {
 			return nil, FormatError(err)
 		}

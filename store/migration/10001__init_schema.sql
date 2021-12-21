@@ -842,14 +842,14 @@ CREATE TABLE task (
     ),
     `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
     payload TEXT NOT NULL DEFAULT '',
-    `not_before_ts` BIGINT NOT NULL DEFAULT 0
+    `earliest_allowed_ts` BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
 
 CREATE INDEX idx_task_status ON task(`status`);
 
-CREATE INDEX idx_task_not_before_ts ON task(not_before_ts);
+CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
 INSERT INTO
     sqlite_sequence (name, seq)
