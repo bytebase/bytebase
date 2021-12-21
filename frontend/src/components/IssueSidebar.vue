@@ -58,9 +58,11 @@
         </div>
       </h2>
       <div class="col-span-2">
+        <!-- TODO: should added i18n support for naive-i18n & should fitted in with the current theme -->
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
+          :is-date-disabled="isDatePassed"
           class="w-full"
           type="datetime"
           clearable
