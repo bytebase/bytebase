@@ -83,14 +83,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// we only create an activity for statement update for now
 		if updatedTask.Type == api.TaskDatabaseSchemaUpdate {
-			issueFind := &api.IssueFind{
-				PipelineID: &task.PipelineID,
-			}
-			issue, err := s.IssueService.FindIssue(ctx, issueFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", task.PipelineID)).SetInternal(err)
-			}
-
 			oldPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			newPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(updatedTask.Payload), oldPayload); err != nil {
@@ -100,6 +92,14 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
 			}
 			if oldPayload.Statement != newPayload.Statement {
+				issueFind := &api.IssueFind{
+					PipelineID: &task.PipelineID,
+				}
+				issue, err := s.IssueService.FindIssue(ctx, issueFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task statement: %v", task.PipelineID)).SetInternal(err)
+				}
+
 				payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 					TaskID:       updatedTask.ID,
 					OldStatement: oldPayload.Statement,
