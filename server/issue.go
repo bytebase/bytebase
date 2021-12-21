@@ -356,8 +356,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			taskCreate.CreatorID = creatorID
 			taskCreate.PipelineID = createdPipeline.ID
 			taskCreate.StageID = createdStage.ID
-			issueCreate.CreatorID = creatorID
-			issueCreate.PipelineID = createdPipeline.ID
 			instanceFind := &api.InstanceFind{
 				ID: &taskCreate.InstanceID,
 			}
