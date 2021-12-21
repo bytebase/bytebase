@@ -55,10 +55,10 @@
   <BBAlert
     v-if="state.showGuide"
     :style="'INFO'"
-    :ok-text="'Do not show again'"
-    :cancel-text="'Dismiss'"
-    :title="'How to setup \'Environment\' ?'"
-    :description="'Each environment maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment.'"
+    :ok-text="$t('common.do-not-show-again')"
+    :cancel-text="$t('common.dismiss')"
+    :title="$t('environment.how-to-setup-environment')"
+    :description="$t('environment.how-to-setup-environment-description')"
     @ok="
       () => {
         doDismissGuide();
