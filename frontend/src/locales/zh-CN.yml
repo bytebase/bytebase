@@ -11,6 +11,7 @@ common:
   wecom: 企业微信
   overview: 概览
   migration-history: 迁移历史
+  webhook: Webhook
   webhooks: Webhook
   key: 键值
   workflow: 工作流
@@ -29,6 +30,7 @@ common:
   cancel: 取消
   comment: 评论
   home: 主页
+  setting: 设置
   settings: 设置
   project: 项目
   projects: 项目
@@ -144,6 +146,8 @@ common:
   grant: 授予
   read-only: 只读
   connection-string: 连接字符串
+  agents: Agents
+  billings: 计费
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -492,6 +496,7 @@ auth:
     title: 忘记了您的密码？
     content: 请联系的您的 Bytebase 管理员重置密码
     return-to-sign-in: 返回登录
+  password-forgot: 忘记密码
   password-reset:
     title: 重置您的密码
     content: 我们会将重置密码链接发送到您的邮箱
@@ -626,6 +631,7 @@ repository:
   restore-ui-workflow-success: 成功重置到 UI 工作流
   update-version-control-config-success: 成功更新@:common.version-control配置
   setup-wizard-guide: 如果您在过程中遇到问题, 请参考{guide}
+  add-git-provider: 添加 Git 提供方
   choose-git-provider: 选择 Git 提供方
   select-repository: 选择仓库
   configure-deploy: 配置部署
@@ -714,7 +720,8 @@ project:
     success-deleted-prompt: 成功删除 {name} webhook.
     success-tested-prompt: 测试 webhook 事件成功.
     fail-tested-title: 测试 webhook 事件失败.
-    create-webhook: 添加 webhook
+    add-a-webhook: 添加 webhook
+    create-webhook: 创建 webhook
     last-updated-by: 最后修改人
     destination: 外部应用
     webhook-url: Webhook url
@@ -826,6 +833,7 @@ datasource:
   user-list: 用户列表
   revoke-access: 您确定要取消 '{0}' 对 '{1}' 的访问权限？
   grant-data-source: 授予数据源
+  grant-database: 授权数据库
   requested-issue: 申请工单
   successfully-revoked-member-principal-name-access-from-props-datasource-name: 成功取消 '{0}' 对 '{1}' 的访问权限。
   your-issue-id-e-g-1234: 您的工单 id (例如 1234)
