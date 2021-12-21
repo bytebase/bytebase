@@ -43,7 +43,7 @@
 <script lang="ts">
 import { computed, PropType, reactive } from "vue";
 import { Database } from "../types";
-import { isEmpty } from "lodash";
+import { isEmpty } from "lodash-es";
 import moment from "moment";
 import slug from "slug";
 

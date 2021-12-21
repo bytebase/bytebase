@@ -278,7 +278,7 @@ import {
   OutputField,
   IssueTemplate,
 } from "../plugins";
-import { isEmpty } from "lodash";
+import { isEmpty } from "lodash-es";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
