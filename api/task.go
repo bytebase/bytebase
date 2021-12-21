@@ -128,10 +128,11 @@ type Task struct {
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
 
 	// Domain specific fields
-	Name    string     `jsonapi:"attr,name"`
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Type    TaskType   `jsonapi:"attr,type"`
-	Payload string     `jsonapi:"attr,payload"`
+	Name        string     `jsonapi:"attr,name"`
+	Status      TaskStatus `jsonapi:"attr,status"`
+	Type        TaskType   `jsonapi:"attr,type"`
+	Payload     string     `jsonapi:"attr,payload"`
+	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
 }
 
 // TaskCreate is the API message for creating a task.
@@ -151,8 +152,9 @@ type TaskCreate struct {
 	Name   string     `jsonapi:"attr,name"`
 	Status TaskStatus `jsonapi:"attr,status"`
 	Type   TaskType   `jsonapi:"attr,type"`
-	// Payload is dirived from fields below it
+	// Payload is derived from fields below it
 	Payload           string
+	EarliestAllowedTs       int64  `jsonapi:"attr,earliestAllowedTs"`
 	Statement         string `jsonapi:"attr,statement"`
 	RollbackStatement string `jsonapi:"attr,rollbackStatement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
@@ -192,8 +194,9 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Statement *string `jsonapi:"attr,statement"`
-	Payload   *string
+	Statement   *string `jsonapi:"attr,statement"`
+	Payload     *string
+	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
 // TaskStatusPatch is the API message for patching a task status.

@@ -60,6 +60,7 @@ import {
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityTaskStatementUpdatePayload,
   Activity,
   Inbox,
 } from "../types";
@@ -125,34 +126,46 @@ export default defineComponent({
           }
         }
         return actionStr;
-      } else if (activity.type == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        let actionStr = t(`activity.sentence.changed`);
-        switch (payload.newStatus) {
-          case "PENDING": {
-            if (payload.oldStatus == "RUNNING") {
-              actionStr = t(`activity.sentence.canceled`);
-            } else if (payload.oldStatus == "PENDING_APPROVAL") {
-              actionStr = t(`activity.sentence.approved`);
+      }
+      switch (activity.type) {
+        case "bb.pipeline.task.status.update": {
+          const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+          let actionStr = t(`activity.sentence.changed`);
+          switch (payload.newStatus) {
+            case "PENDING": {
+              if (payload.oldStatus == "RUNNING") {
+                actionStr = t(`activity.sentence.canceled`);
+              } else if (payload.oldStatus == "PENDING_APPROVAL") {
+                actionStr = t(`activity.sentence.approved`);
+              }
+              break;
             }
-            break;
+            case "RUNNING": {
+              actionStr = t(`activity.sentence.started`);
+              break;
+            }
+            case "DONE": {
+              actionStr = t(`activity.sentence.completed`);
+              break;
+            }
+            case "FAILED": {
+              actionStr = t(`activity.sentence.failed`);
+              break;
+            }
           }
-          case "RUNNING": {
-            actionStr = t(`activity.sentence.started`);
-            break;
-          }
-          case "DONE": {
-            actionStr = t(`activity.sentence.completed`);
-            break;
-          }
-          case "FAILED": {
-            actionStr = t(`activity.sentence.failed`);
-            break;
-          }
+          return `${t("activity.subject-prefix.task")} '${
+            payload.taskName
+          }' ${actionStr} - '${payload?.issueName || ""}'`;
         }
-        return `${t("activity.subject-prefix.task")} '${
-          payload.taskName
-        }' ${actionStr} - '${payload?.issueName || ""}'`;
+        case "bb.pipeline.task.statement.update": {
+          const payload =
+            activity.payload as ActivityTaskStatementUpdatePayload;
+          return t("activity.sentence.changed-from-to", {
+            name: "SQL",
+            oldValue: payload.oldStatement,
+            newValue: payload.newStatement,
+          });
+        }
       }
 
       return "";
