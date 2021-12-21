@@ -503,7 +503,16 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
+	// We don't use transaction for creating databases in Postgres.
+	// https://github.com/bytebase/bytebase/issues/202
+	if !useTransaction {
+		if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
