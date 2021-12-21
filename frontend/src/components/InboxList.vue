@@ -66,7 +66,7 @@ import {
 } from "../types";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { isEmpty } from "lodash";
+import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
 
@@ -98,7 +98,10 @@ export default defineComponent({
     };
 
     const showCreator = (activity: Activity): boolean => {
-      return activity.type.startsWith("bb.issue.");
+      return (
+        activity.type.startsWith("bb.issue.") ||
+        activity.type == "bb.pipeline.task.statement.update"
+      );
     };
 
     const actionSentence = (activity: Activity): string => {
