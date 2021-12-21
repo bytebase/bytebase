@@ -68,7 +68,7 @@ import { Task, TaskCheckRun, TaskCheckStatus } from "../types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
 import { BBTabFilterItem } from "../bbkit/types";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { humanizeTs } from "../utils";
 import { useI18n } from "vue-i18n";
 

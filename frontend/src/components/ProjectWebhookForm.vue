@@ -254,7 +254,7 @@ import {
   PROJECT_HOOK_TYPE_ITEM_LIST,
   PROJECT_HOOK_ACTIVITY_ITEM_LIST,
 } from "../types";
-import { cloneDeep, isEmpty, isEqual } from "lodash";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
 import { useStore } from "vuex";

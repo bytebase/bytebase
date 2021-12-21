@@ -49,7 +49,7 @@ import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
 import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
