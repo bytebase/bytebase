@@ -6,7 +6,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addProjectWebhook"
       >
-        {{ $t("project.webhook.create-webhook") }}
+        {{ $t("project.webhook.add-a-webhook") }}
       </button>
     </div>
     <div class="pt-4">
