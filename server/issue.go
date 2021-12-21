@@ -398,6 +398,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
+	issueCreate.CreatorID = creatorID
+	issueCreate.PipelineID = createdPipeline.ID
 	issue, err := s.IssueService.CreateIssue(ctx, issueCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create issue. Error %w", err)
