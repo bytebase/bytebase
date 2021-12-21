@@ -145,8 +145,8 @@ common:
   grant: 授予
   read-only: 只读
   connection-string: 连接字符串
-  agents: 代理商
-  billings: 收费
+  agents: Agents
+  billings: 计费
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
