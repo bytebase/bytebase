@@ -135,6 +135,14 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  roletype: Role Type
+  readonly: readonly
+  user: User
+  added-time: Added time
+  data-source: Data Source
+  grant: Grant
+  read-only: Read-only
+  connection-string: Connection string
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -776,8 +784,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
@@ -926,3 +934,26 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+datasource:
+  successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
+  create-data-source: Create data source
+  data-source-list: Data source list
+  all-data-source: All data source
+  search-name: Search name
+  search-name-database: Search name, database
+  successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
+  select-database-first: Select database first
+  select-data-source: Select data source
+  search-user: Search user
+  user-list: User list
+  revoke-access: Are you sure to revoke '{0}' access from '{1}'?
+  grant-data-source: Grant data source
+  requested-issue: Requested issue
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
+  your-issue-id-e-g-1234: Your issue id (e.g. 1234)
+  member-principal-name-already-exists: '{0} already exists'
+  successfully-granted-datasource-name-to-addedmember-principal-name: Successfully granted '{0}' to '{1}'.
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: We also linked the granted database to the requested issue '{0}'.
+  new-data-source: New data source
+  connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '
