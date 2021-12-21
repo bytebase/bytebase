@@ -64,7 +64,6 @@ export default {
 
     // for now, we only support two languages
     const isZhCn = computed(() => {
-      console.log(locale.value === "zh-CN");
       return locale.value === "zh-CN";
     });
 
