@@ -1,4 +1,13 @@
-import { GlobalThemeOverrides } from "naive-ui";
+import {
+  GlobalThemeOverrides,
+  zhCN,
+  dateZhCN,
+  NLocale,
+  NDateLocale,
+} from "naive-ui";
+
+import { curLocale } from "./src/plugins/i18n";
+
 import { computed } from "vue";
 
 const callVar = (css: string) => {
@@ -21,4 +30,17 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
       errorColorHover: callVar("--color-error-hover"),
     },
   };
+});
+
+const isZhCn = (): boolean => {
+  console.log("curLocalecurLocalecurLocalecurLocale", curLocale);
+  return curLocale.value === "zh-CN";
+};
+
+export const dateLang = computed((): NDateLocale | null => {
+  return isZhCn() ? dateZhCN : null;
+});
+
+export const generalLang = computed((): NLocale | null => {
+  return isZhCn() ? zhCN : null;
 });
