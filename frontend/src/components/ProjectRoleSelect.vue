@@ -1,13 +1,15 @@
 <template>
   <BBSelect
     :selected-item="selectedRole"
-    :item-list="[$t('project.settings.owner'), 'DEVELOPER']"
+    :item-list="['OWNER', 'DEVELOPER']"
     :placeholder="$t('settings.members.select-role')"
     :disabled="disabled"
     @select-item="(role) => $emit('change-role', role)"
   >
     <template #menuItem="{ item }">
-      {{ item }}
+      {{
+        $t(`common.role.${item.toLowerCase()}`)
+      }}
     </template>
   </BBSelect>
 </template>

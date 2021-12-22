@@ -5,6 +5,7 @@ import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
+import { t } from "../plugins/i18n";
 
 export type IssueActivityType =
   | "bb.issue.create"
@@ -36,37 +37,37 @@ export type ActivityType =
 export function activityName(type: ActivityType): string {
   switch (type) {
     case "bb.issue.create":
-      return "Create issue";
+      return t("activity.type.issue-create");
     case "bb.issue.comment.create":
-      return "Create comment";
+      return t("activity.type.comment-create");
     case "bb.issue.field.update":
-      return "Update issue field";
+      return t("activity.type.issue-field-update");
     case "bb.issue.status.update":
-      return "Update issue status";
+      return t("activity.type.issue-status-update");
     case "bb.pipeline.task.status.update":
-      return "Update issue task status";
+      return t("activity.type.pipeline-task-status-update");
     case "bb.pipeline.task.file.commit":
-      return "Commit file";
+      return t("activity.type.pipeline-task-file-commit");
     case "bb.pipeline.task.statement.update":
-      return "SQL update";
+      return t("activity.type.pipeline-task-statement-update");
     case "bb.member.create":
-      return "Create member";
+      return t("activity.type.member-create");
     case "bb.member.role.update":
-      return "Update role";
+      return t("activity.type.member-role-update");
     case "bb.member.activate":
-      return "Activate member";
+      return t("activity.type.member-activate");
     case "bb.member.deactivate":
-      return "Deactivate member";
+      return t("activity.type.member-deactivate");
     case "bb.project.repository.push":
-      return "Repository push event";
+      return t("activity.type.project-repository-push");
     case "bb.project.database.transfer":
-      return "Database transfer";
+      return t("activity.type.project-database-transfer");
     case "bb.project.member.create":
-      return "Add project member";
+      return t("activity.type.project-member-create");
     case "bb.project.member.delete":
-      return "Delete project member";
+      return t("activity.type.project-member-delete");
     case "bb.project.member.role.update":
-      return "Change project member role";
+      return t("activity.type.project-member-role-update");
   }
 }
 
