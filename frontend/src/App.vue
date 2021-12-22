@@ -3,6 +3,7 @@
   <n-config-provider
     :locale="isZhCn ? zhCN : null"
     :date-locale="isZhCn ? dateZhCN : null"
+    :theme-overrides="themeOverrides"
   >
     <BBModalStack>
       <KBarWrapper>
@@ -30,7 +31,7 @@ import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import { useLanguage } from "./composables/useLanguage";
 import { NConfigProvider, zhCN, dateZhCN } from "naive-ui";
-
+import { themeOverrides } from "../naive-ui.config";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -142,6 +143,7 @@ export default {
       isZhCn,
       zhCN,
       dateZhCN,
+      themeOverrides,
       removeNotification,
     };
   },
