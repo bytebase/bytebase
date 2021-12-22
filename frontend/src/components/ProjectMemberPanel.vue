@@ -29,26 +29,28 @@
             </div>
             <div v-if="hasAdminFeature" class="radio-set-row">
               <div class="radio">
-                <input
-                  v-model="state.role"
-                  :name="`member_role`"
-                  tabindex="-1"
-                  type="radio"
-                  class="btn"
-                  value="OWNER"
-                />
-                <label class="label"> {{ $t("common.role.owner") }} </label>
+                <label class="label">
+                  <input
+                    v-model="state.role"
+                    :name="`member_role`"
+                    tabindex="-1"
+                    type="radio"
+                    class="btn"
+                    value="OWNER"
+                  />
+                 {{ $t("common.role.owner") }} </label>
               </div>
               <div class="radio">
-                <input
-                  v-model="state.role"
-                  :name="`member_role`"
-                  tabindex="-1"
-                  type="radio"
-                  class="btn"
-                  value="DEVELOPER"
-                />
-                <label class="label"> {{ $t("common.role.developer") }} </label>
+                <label class="label">
+                  <input
+                    v-model="state.role"
+                    :name="`member_role`"
+                    tabindex="-1"
+                    type="radio"
+                    class="btn"
+                    value="DEVELOPER"
+                  />
+                 {{ $t("common.role.developer") }} </label>
               </div>
             </div>
             <button
