@@ -312,10 +312,8 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	if issueCreate.ValidateOnly {
-		fmt.Printf("Barny1!\n")
 		return s.createIssueValidateOnly(ctx, issueCreate, creatorID)
 	}
-	fmt.Printf("Barny2!\n")
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
