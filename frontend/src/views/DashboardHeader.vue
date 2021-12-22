@@ -51,7 +51,6 @@
         >
           <span class="hidden lg:block font-normal text-accent">{{ $t('setting.plan.self') }}</span>
           <div
-            v-if="currentPlan != 0"
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
@@ -79,29 +78,26 @@
         >
           <span class="hidden lg:block font-normal text-accent">{{ $t('settings.profile.role') }}</span>
           <div
-            v-if="currentUser.role != 'OWNER'"
             class="bar-link"
+            :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
           >
             {{ $t('common.role.owner') }}
           </div>
-          <div v-else class="underline">Owner</div>
           <div
-            v-if="currentUser.role != 'DBA'"
             class="bar-link"
+            :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
           >
             {{ $t('common.role.dba') }}
           </div>
-          <div v-else class="underline">DBA</div>
           <div
-            v-if="currentUser.role != 'DEVELOPER'"
             class="bar-link"
+            :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
           >
             {{ $t('common.role.developer') }}
           </div>
-          <div v-else class="underline">Developer</div>
         </div>
         <router-link to="/inbox" exact-active-class="">
           <span
@@ -142,22 +138,22 @@
     -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-      >Projects</router-link
+      >{{ $t('common.projects') }}</router-link
     >
 
     <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
-      >Databases</router-link
+      >{{ $t('common.databases') }}</router-link
     >
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-      >Instances</router-link
+      >{{ $t('common.instances') }}</router-link
     >
 
     <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-      >Environments</router-link
+      >{{ $t('common.environments') }}</router-link
     >
 
     <router-link
