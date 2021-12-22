@@ -1,8 +1,9 @@
 <template>
   <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
   <n-config-provider
-    :locale="isZhCn ? zhCN : null"
-    :date-locale="isZhCn ? dateZhCN : null"
+    :locale="generalLang"
+    :date-locale="dateLang"
+    :theme-overrides="themeOverrides"
   >
     <BBModalStack>
       <KBarWrapper>
@@ -20,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, onErrorCaptured, computed } from "vue";
+import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isDev } from "./utils";
@@ -28,9 +29,8 @@ import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
-import { useLanguage } from "./composables/useLanguage";
-import { NConfigProvider, zhCN, dateZhCN } from "naive-ui";
-
+import { NConfigProvider } from "naive-ui";
+import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -55,16 +55,10 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
-    const { locale } = useLanguage();
 
     const state = reactive<LocalState>({
       notificationList: [],
       prevLoggedIn: store.getters["auth/isLoggedIn"](),
-    });
-
-    // for now, we only support two languages
-    const isZhCn = computed(() => {
-      return locale.value === "zh-CN";
     });
 
     setInterval(() => {
@@ -139,9 +133,9 @@ export default {
 
     return {
       state,
-      isZhCn,
-      zhCN,
-      dateZhCN,
+      dateLang,
+      generalLang,
+      themeOverrides,
       removeNotification,
     };
   },
