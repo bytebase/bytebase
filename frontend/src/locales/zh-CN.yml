@@ -177,7 +177,7 @@ task:
     connection: 连接
     migration-schema: 迁移 schema
     earliest-allowed-time: 最早执行时间
-  earliest-allowed-time-hint: "'@:{'common.when'}' 指定了该任务最早允许执行的时间"
+  earliest-allowed-time-hint: '''@:{''common.when''}'' 指定了该任务最早允许执行的时间'
   comment: 评论
   invoker: 执行者
   started: 开始于
@@ -452,7 +452,7 @@ instance:
   new-instance: 新实例
   unable-to-connect: |-
     Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。
-    
+
     错误详情:{0}
   successfully-created-instance-createdinstance-name: 成功创建实例'{0}'。
   successfully-updated-instance-instance-name: 成功更新实例'{0}'。
@@ -463,7 +463,7 @@ instance:
   how-to-setup-instance-description: |-
     每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的
     RDS 实例，也可能您私有化部署的 MySQL 实例。
-    
+
     Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
   grants: 权限
@@ -475,9 +475,9 @@ environment:
   how-to-setup-environment: 如何创建「环境」?
   how-to-setup-environment-description: |-
     每个环境与您的诸如测试，预发，生产环境一一对应。
-    
+
     环境是一个全局配置，1 套 Bytebase 的部署也只包含一套环境配置的集合。
-    
+
     数据库实例是创建在某个特定环境下面的。
 quick-start:
   bookmark-an-issue: 收藏工单
@@ -617,6 +617,7 @@ database:
   index-size: 索引大小
   columns: 列
   indexes: 索引
+  row-count-est: 估计行数
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
@@ -641,7 +642,7 @@ repository:
   restore-to-ui-workflow: 重置到 UI 工作流
   restore-ui-workflow-description: |-
     当使用 UI 工作流时，开发者会通过 Bytebase
-    
+
     控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。
   restore-ui-workflow-success: 成功重置到 UI 工作流
   update-version-control-config-success: 成功更新@:common.version-control配置

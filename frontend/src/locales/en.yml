@@ -177,7 +177,7 @@ task:
     connection: Connection
     migration-schema: Migration schema
     earliest-allowed-time: Earliest allowed time
-  earliest-allowed-time-hint: "'@:{'common.when'}' specifies the expected execution timing for this task"
+  earliest-allowed-time-hint: '''@:{''common.when''}'' specifies the expected execution timing for this task'
   comment: Comment
   invoker: Invoker
   started: Started
@@ -472,8 +472,8 @@ instance:
         warn: >-
           If the connecting instance is managed by the cloud provider, then
           SUPERUSER is not available and you should create the user via that
-          provider's admin console. The created user will have provider
-          specific semi-SUPERUSER privileges.
+          provider's admin console. The created user will have provider specific
+          semi-SUPERUSER privileges.
         template: >-
           Below is an example to create user 'bytebase' with password {password}
           and grant the user with the needed privileges. If the connecting
@@ -484,9 +484,12 @@ instance:
   ignore-and-create: Ignore and create
   connection-info-seems-to-be-incorrect: Connection info seems to be incorrect
   new-instance: New Instance
-  unable-to-connect: |-
-    Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.
-    
+  unable-to-connect: >-
+    Bytebase is unable to connect the instance. We recommend you to review the
+    connection info again. But it's OK to ignore this warning for now. You can
+    still fix the connection info from the instance detail page after creation.
+
+
     Error detail: {0}
   successfully-created-instance-createdinstance-name: Successfully created instance '{0}'.
   successfully-updated-instance-instance-name: Successfully updated instance '{0}'.
@@ -496,10 +499,14 @@ instance:
   successfully-connected-instance: Successfully connected instance.
   failed-to-connect-instance: Failed to connect instance.
   how-to-setup-instance: How to setup 'Instance' ?
-  how-to-setup-instance-description: |-
-    Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.
-    
-    Bytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.
+  how-to-setup-instance-description: >-
+    Each Bytebase instance belongs to an environment. An instance usually maps
+    to one of your database instance represented by an host:port address. This
+    could be your on-premises MySQL instance, a RDS instance.
+
+
+    Bytebase requires read/write (NOT the super privilege) access to the
+    instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
   grants: Grants
 environment:
@@ -510,11 +517,15 @@ environment:
     still restore later from the Archive page.
   create: Create Environment
   how-to-setup-environment: How to setup 'Environment' ?
-  how-to-setup-environment-description: |-
-    Each environment maps to one of your testing, staging, prod environment respectively.
-    
-    Environment is a global setting, one Bytebase deployment only contains a single set of environments.
-    
+  how-to-setup-environment-description: >-
+    Each environment maps to one of your testing, staging, prod environment
+    respectively.
+
+
+    Environment is a global setting, one Bytebase deployment only contains a
+    single set of environments.
+
+
     Database instances are created under a particular environment.
 quick-start:
   bookmark-an-issue: Bookmark an issue
@@ -607,10 +618,13 @@ database:
   last-successful-sync: Last successful sync
   search-database-name: Search database name
   how-to-setup-database: How to setup 'Database' ?
-  show-guide-description: |-
-    Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In Bytebase, a database always belongs to a single project.
-    
-    Bytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.
+  show-guide-description: >-
+    Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In
+    Bytebase, a database always belongs to a single project.
+
+
+    Bytebase will periodically sync the database info for every recorded
+    instance. You can also create a new database from the dashboard.
   restored-from: 'Restored from '
   database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
@@ -664,6 +678,7 @@ database:
   index-size: Index size
   columns: Columns
   indexes: Indexes
+  row-count-est: Row count est.
 t:
   database: {}
 repository:
