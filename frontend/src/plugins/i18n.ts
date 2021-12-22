@@ -27,6 +27,8 @@ const i18n = createI18n({
 
 export const t = i18n.global.t;
 
+export const curLocale = i18n.global.locale;
+
 const install = (app: App) => {
   app.use(i18n);
 };
