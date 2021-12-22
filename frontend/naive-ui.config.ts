@@ -33,7 +33,6 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
 });
 
 const isZhCn = (): boolean => {
-  console.log("curLocalecurLocalecurLocalecurLocale", curLocale);
   return curLocale.value === "zh-CN";
 };
 
