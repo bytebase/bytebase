@@ -190,9 +190,8 @@ banner:
   action: 5 秒部署您自己的服务
 intro:
   content: >-
-    Bytebase 是为 DBA 和开发人员在数据库表结构 (schema) 变更上进行协作而设计的。用户可以通过一个 pipeline，来推进
-    schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发
-    pipeline。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
+    Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流 (pipeline)，来推进
+    schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发工作流。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
   issue: 工单
   quickstart: 快速入门
@@ -262,6 +261,23 @@ activity:
   comment: 评论
   created: 创建于
   invoker: 执行者
+  type:
+    issue-create: 创建工单
+    comment-create: 创建评论
+    issue-field-update: 更新工单字段
+    issue-status-update: 更新工单状态
+    pipeline-task-status-update: 更新工单任务状态
+    pipeline-task-file-commit: 提交文件
+    pipeline-task-statement-update: 更新 SQL 
+    member-create: 创建成员
+    member-role-update: 更新角色
+    member-activate: 激活成员
+    member-deactivate: 禁用成员
+    project-repository-push: 仓库 push 事件
+    project-database-transfer: 转移数据库
+    project-member-create: 添加项目成员
+    project-member-delete: 删除项目成员
+    project-member-role-update: 变更项目成员角色
   sentence:
     created-issue: 创建工单
     commented: 评论
@@ -729,7 +745,7 @@ project:
     in-progress: 进行中
     recently-closed: 近期结束
     info-slot-content: Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。
-    no-db-prompt: 没有数据库属于当前项目 您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库.
+    no-db-prompt: 没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。
   webhook:
     success-created-prompt: 成功创建 {name} webhook.
     success-updated-prompt: 成功更新 {name} webhook.
