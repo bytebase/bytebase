@@ -49,43 +49,41 @@
           v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">Plan</span>
+          <span class="hidden lg:block font-normal text-accent">{{ $t('setting.plan.self') }}</span>
           <div
             v-if="currentPlan != 0"
             class="bar-link"
+            :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
           >
-            Free
+            {{ $t('setting.plan.free') }}
           </div>
-          <div v-else class="underline">Free</div>
           <div
-            v-if="currentPlan != 1"
             class="bar-link"
+            :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
           >
-            Team
+            {{ $t('setting.plan.team') }}
           </div>
-          <div v-else class="underline">Team</div>
           <!-- <div
-            v-if="currentPlan != 2"
             class="bar-link"
+            :class="currentPlan == 2 ? 'underline' : ''"
             @click.prevent="switchToEnterprise"
           >
-            Enterprise
-          </div>
-          <div v-else class="underline">Enterprise</div> -->
+            {{ $t('setting.plan.enterprise') }}
+          </div> -->
         </div>
         <div
           v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">Role</span>
+          <span class="hidden lg:block font-normal text-accent">{{ $t('settings.profile.role') }}</span>
           <div
             v-if="currentUser.role != 'OWNER'"
             class="bar-link"
             @click.prevent="switchToOwner"
           >
-            Owner
+            {{ $t('common.role.owner') }}
           </div>
           <div v-else class="underline">Owner</div>
           <div
@@ -93,7 +91,7 @@
             class="bar-link"
             @click.prevent="switchToDBA"
           >
-            DBA
+            {{ $t('common.role.dba') }}
           </div>
           <div v-else class="underline">DBA</div>
           <div
@@ -101,7 +99,7 @@
             class="bar-link"
             @click.prevent="switchToDeveloper"
           >
-            Developer
+            {{ $t('common.role.developer') }}
           </div>
           <div v-else class="underline">Developer</div>
         </div>
