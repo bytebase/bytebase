@@ -149,7 +149,7 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { cloneDeep, isEmpty, isEqual } from "lodash";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {

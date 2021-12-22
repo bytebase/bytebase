@@ -376,8 +376,10 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 				return -1, "", err
 			}
 		}
-		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction.
-		if err = driver.Execute(ctx, statement); err != nil {
+		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction from previous migration history updates.
+		// Also, we don't use transaction for creating databases in Postgres.
+		// https://github.com/bytebase/bytebase/issues/202
+		if err = driver.Execute(ctx, statement, !m.CreateDatabase); err != nil {
 			return -1, "", formatError(err)
 		}
 	}

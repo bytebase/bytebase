@@ -1,4 +1,5 @@
 common:
+  when: When
   view: view
   you: you
   general: General
@@ -10,6 +11,7 @@ common:
   wecom: WeCom
   overview: Overview
   migration-history: Migration History
+  webhook: Webhook
   webhooks: Webhooks
   key: Key
   workflow: Workflow
@@ -28,6 +30,7 @@ common:
   cancel: Cancel
   comment: Comment
   home: Home
+  setting: Setting
   settings: Settings
   project: Project
   projects: Projects
@@ -113,7 +116,7 @@ common:
   sensitive-placeholder: sensitive - write only
   enabled: enabled
   default: default
-  version-control: version control
+  version-control: Version Control
   restore: Restore
   detailed-guide: detailed guide
   workspace: workspace
@@ -135,6 +138,17 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  roletype: Role Type
+  readonly: readonly
+  user: User
+  added-time: Added time
+  data-source: Data Source
+  grant: Grant
+  read-only: Read-only
+  connection-string: Connection string
+  agents: Agents
+  billings: Billings
+  all: All
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -162,6 +176,8 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    earliest-allowed-time: Earliest allowed time
+  earliest-allowed-time-hint: '''@:{''common.when''}'' specifies the expected execution timing for this task'
   comment: Comment
   invoker: Invoker
   started: Started
@@ -456,8 +472,8 @@ instance:
         warn: >-
           If the connecting instance is managed by the cloud provider, then
           SUPERUSER is not available and you should create the user via that
-          provider\'s admin console. The created user will have provider
-          specific semi-SUPERUSER privileges.
+          provider's admin console. The created user will have provider specific
+          semi-SUPERUSER privileges.
         template: >-
           Below is an example to create user 'bytebase' with password {password}
           and grant the user with the needed privileges. If the connecting
@@ -471,8 +487,10 @@ instance:
   unable-to-connect: >-
     Bytebase is unable to connect the instance. We recommend you to review the
     connection info again. But it's OK to ignore this warning for now. You can
-    still fix the connection info from the instance detail page after
-    creation.\n\nError detail: {0}
+    still fix the connection info from the instance detail page after creation.
+
+
+    Error detail: {0}
   successfully-created-instance-createdinstance-name: Successfully created instance '{0}'.
   successfully-updated-instance-instance-name: Successfully updated instance '{0}'.
   copy-grant-statement: >-
@@ -480,13 +498,15 @@ instance:
     client to apply.
   successfully-connected-instance: Successfully connected instance.
   failed-to-connect-instance: Failed to connect instance.
-  how-to-setup-instance: How to setup \'Instance\' ?
+  how-to-setup-instance: How to setup 'Instance' ?
   how-to-setup-instance-description: >-
     Each Bytebase instance belongs to an environment. An instance usually maps
     to one of your database instance represented by an host:port address. This
-    could be your on-premises MySQL instance, a RDS instance.\n\nBytebase
-    requires read/write (NOT the super privilege) access to the instance in
-    order to perform database operations on behalf of the user.
+    could be your on-premises MySQL instance, a RDS instance.
+
+
+    Bytebase requires read/write (NOT the super privilege) access to the
+    instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
   grants: Grants
 environment:
@@ -496,6 +516,17 @@ environment:
     Archived environment will not be shown on the normal interface. You can
     still restore later from the Archive page.
   create: Create Environment
+  how-to-setup-environment: How to setup 'Environment' ?
+  how-to-setup-environment-description: >-
+    Each environment maps to one of your testing, staging, prod environment
+    respectively.
+
+
+    Environment is a global setting, one Bytebase deployment only contains a
+    single set of environments.
+
+
+    Database instances are created under a particular environment.
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
@@ -527,6 +558,7 @@ auth:
     title: Forgot your password?
     content: Please contact your Bytebase Admin to reset your password.
     return-to-sign-in: Return to Sign in
+  password-forgot: Forgot Password
   password-reset:
     title: Reset your password
     content: Enter your email address and we will send you a password reset link
@@ -585,12 +617,14 @@ database:
   sync-status: Sync status
   last-successful-sync: Last successful sync
   search-database-name: Search database name
-  how-to-setup-database: How to setup \'Database\' ?
+  how-to-setup-database: How to setup 'Database' ?
   show-guide-description: >-
-    Each Bytebase database maps to the one created by \'CREATE DATABASE xxx\'.
-    In Bytebase, a database always belongs to a single project.\n\nBytebase will
-    periodically sync the database info for every recorded instance. You can
-    also create a new database from the dashboard.
+    Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In
+    Bytebase, a database always belongs to a single project.
+
+
+    Bytebase will periodically sync the database info for every recorded
+    instance. You can also create a new database from the dashboard.
   restored-from: 'Restored from '
   database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
@@ -644,6 +678,7 @@ database:
   index-size: Index size
   columns: Columns
   indexes: Indexes
+  row-count-est: Row count est.
 t:
   database: {}
 repository:
@@ -691,6 +726,7 @@ repository:
   restore-ui-workflow-success: Successfully restored to UI workflow
   update-version-control-config-success: Successfully updated @:common.version-control config
   setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
+  add-git-provider: Add Git provider
   choose-git-provider: Choose Git provider
   select-repository: Select repository
   configure-deploy: Configure deploy
@@ -753,7 +789,7 @@ anomaly:
 project:
   dashboard:
     modal:
-      title: How to setup \'@:{'common.project'}\' ?
+      title: How to setup '@:{'common.project'}' ?
       content: >-
         Bytebase project is similar to the project concept in other common dev
         tools.
@@ -776,8 +812,8 @@ project:
     project-name: '@:common.project @:common.name'
     key: '@:common.key'
     key-hint: (Uppercase letters identifying your project)
-    cancel: "@:common.cancel"
-    confirm: "@:common.create"
+    cancel: '@:common.cancel'
+    confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
   overview:
     view-all: View all
@@ -798,7 +834,8 @@ project:
     success-deleted-prompt: Successfully deleted webhook {name}.
     success-tested-prompt: Test webhook event OK.
     fail-tested-title: Test webhook event failed.
-    create-webhook: Add a webhook
+    add-a-webhook: Add a webhook
+    create-webhook: Create webhook
     last-updated-by: Last updated bu
     destination: Destination
     webhook-url: Webhook url
@@ -926,3 +963,27 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+datasource:
+  successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
+  create-data-source: Create data source
+  data-source-list: Data source list
+  all-data-source: All data source
+  search-name: Search name
+  search-name-database: Search name, database
+  successfully-created-data-source-datasource-name: Successfully created data source '{0}'.
+  select-database-first: Select database first
+  select-data-source: Select data source
+  search-user: Search user
+  user-list: User list
+  revoke-access: Are you sure to revoke '{0}' access from '{1}'?
+  grant-data-source: Grant data source
+  grant-database: Grant database
+  requested-issue: Requested issue
+  successfully-revoked-member-principal-name-access-from-props-datasource-name: Successfully revoked '{0}' access from '{1}'.
+  your-issue-id-e-g-1234: Your issue id (e.g. 1234)
+  member-principal-name-already-exists: '{0} already exists'
+  successfully-granted-datasource-name-to-addedmember-principal-name: Successfully granted '{0}' to '{1}'.
+  we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name: We also linked the granted database to the requested issue '{0}'.
+  new-data-source: New data source
+  connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
+  jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '

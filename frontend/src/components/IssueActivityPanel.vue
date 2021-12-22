@@ -349,6 +349,7 @@ import {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityTaskStatementUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
   SYSTEM_BOT_ID,
@@ -665,6 +666,15 @@ export default defineComponent({
             file: payload.filePath,
             branch: payload.branch,
             repo: payload.repositoryFullPath,
+          });
+        }
+        case "bb.pipeline.task.statement.update": {
+          const payload =
+            activity.payload as ActivityTaskStatementUpdatePayload;
+          return t("activity.sentence.changed-from-to", {
+            name: "SQL",
+            oldValue: payload.oldStatement,
+            newValue: payload.newStatement,
           });
         }
       }

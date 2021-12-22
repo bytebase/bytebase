@@ -40,7 +40,7 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 
 interface LocalState {
   searchText: string;

@@ -77,7 +77,7 @@
 <script lang="ts">
 import { computed, PropType, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Database, ProjectId, DEFAULT_PROJECT_ID } from "../types";
 import { sortDatabaseList } from "../utils";

@@ -177,8 +177,89 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
+// shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
+// the logic goes like the following:
+// 1. there is no running timing task check
+// 2(a). the earliestAllowedTs state has been altered since last check (either via new creation or patch).
+// 2(b). the earliestAllowedTs has NOT been altered since last check, however the last check had failed && earliestAllowedTs has passed now.
+// ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
+func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
+	if forceSchedule {
+		return true, nil
+	}
+
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
+	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		Type:       &taskCheckType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+	taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 {
+		return true, nil
+	}
+
+	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
+		return false, nil
+	}
+
+	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Payload), taskCheckPayload); err != nil {
+		return false, err
+	}
+
+	if taskCheckPayload.EarliestAllowedTs != task.EarliestAllowedTs {
+		return true, nil
+	}
+
+	if time.Now().After(time.Unix(task.EarliestAllowedTs, 0)) {
+		checkResult := &api.TaskCheckRunResultPayload{}
+		if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+			return false, err
+		}
+		if checkResult.ResultList[0].Status == api.TaskCheckStatusSuccess {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
+	// the following block is for timing task check
+	{
+		// we only set skipIfAlreadyTerminated to false when user explicitly want to reschedule a taskCheck
+		flag, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated /* forceSchedule */)
+		if err != nil {
+			return nil, err
+		}
+
+		if flag {
+			taskCheckPayload, err := json.Marshal(task)
+			if err != nil {
+				return nil, err
+			}
+			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				Payload:                 string(taskCheckPayload),
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				SkipIfAlreadyTerminated: false,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if task.Type == api.TaskDatabaseSchemaUpdate {
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
@@ -258,4 +339,49 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, err
 	}
 	return task, nil
+}
+
+// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
+// But this method is used for gating the automatic run, so we are more cautious here.
+func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		Type:       &checkType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+
+	taskCheckRunList, err := server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+		server.l.Debug("Task is waiting for check to pass",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.String("task_type", string(task.Type)),
+			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+		)
+		return false, nil
+	}
+
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
+			server.l.Debug("Task is waiting for check to pass",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.String("task_type", string(task.Type)),
+				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

@@ -86,7 +86,7 @@ import { consoleLink, databaseSlug } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import { cloneDeep, isEmpty } from "lodash";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";

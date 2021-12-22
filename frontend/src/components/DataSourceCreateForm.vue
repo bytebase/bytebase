@@ -7,7 +7,7 @@
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2">
           <label for="name" class="textlabel">
-            Name <span class="text-red-600">*</span>
+            {{ $t("common.name") }} <span class="text-red-600">*</span>
           </label>
           <input
             id="name"
@@ -24,12 +24,12 @@
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3 items-center">
         <div class="sm:col-span-2">
           <label for="database" class="textlabel">
-            Database <span class="text-red-600">*</span>
+            {{ $t("common.database") }} <span class="text-red-600">*</span>
           </label>
           <div v-if="database" class="flex flex-row justify-between space-x-2">
             {{ database.name }}
             <BBSwitch
-              :label="'Read-only'"
+              :label="$t('common.read-only')"
               :value="state.dataSource.type == 'RO'"
               @toggle="
                 (on) => {
@@ -52,7 +52,7 @@
               "
             />
             <BBSwitch
-              :label="'Read-only'"
+              :label="$t('common.read-only')"
               :value="state.dataSource.type == 'RO'"
               @toggle="
                 (on) => {
@@ -66,7 +66,9 @@
 
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2">
-          <label for="username" class="textlabel"> Username </label>
+          <label for="username" class="textlabel">
+            {{ $t("common.username") }}
+          </label>
           <input
             id="username"
             name="username"
@@ -81,7 +83,9 @@
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
         <div class="sm:col-span-2">
           <div class="flex flex-row items-center space-x-1">
-            <label for="username" class="textlabel"> Password </label>
+            <label for="username" class="textlabel">
+              {{ $t("common.password") }}
+            </label>
             <button
               class="btn-icon"
               @click.prevent="state.showPassword = !state.showPassword"
@@ -112,14 +116,14 @@
         class="btn-normal py-2 px-4"
         @click.prevent="$emit('cancel')"
       >
-        Cancel
+        {{ $t("common.cancel") }}
       </button>
       <button
         type="submit"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowCreate"
       >
-        Create
+        {{ $t("common.create") }}
       </button>
     </div>
   </form>
@@ -129,6 +133,7 @@
 import { computed, PropType, reactive } from "vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import { DataSourceCreate, Database, UNKNOWN_ID } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   dataSource: DataSourceCreate;
@@ -155,10 +160,10 @@ export default {
     // const currentUser: ComputedRef<Principal> = computed(() =>
     //   store.getters["auth/currentUser"]()
     // );
-
+    const { t } = useI18n();
     const state = reactive<LocalState>({
       dataSource: {
-        name: "New data source",
+        name: t("datasource.new-data-source"),
         type: "RO",
         databaseId: props.database ? props.database.id : UNKNOWN_ID,
         instanceId: props.instanceId,

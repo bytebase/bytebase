@@ -10,6 +10,7 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
+import { t } from "../plugins/i18n";
 import { store } from "../store";
 import { Database, QuickActionType } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
@@ -36,7 +37,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "",
         name: SIGNIN_MODULE,
-        meta: { title: () => "Signin" },
+        meta: { title: () => t("common.sign-in") },
         component: Signin,
         alias: "signin",
         props: true,
@@ -44,7 +45,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "signup",
         name: SIGNUP_MODULE,
-        meta: { title: () => "Signup" },
+        meta: { title: () => t("common.sign-up") },
         component: Signup,
         props: true,
       },
@@ -66,7 +67,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "password-forgot",
         name: PASSWORD_FORGOT_MODULE,
-        meta: { title: () => "Forgot Password" },
+        meta: { title: () => `${t("auth.password-forgot")}` },
         component: () => import("../views/auth/PasswordForgot.vue"),
         props: true,
       },
@@ -181,7 +182,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "inbox",
             name: "workspace.inbox",
-            meta: { title: () => "Inbox" },
+            meta: { title: () => t("common.inbox") },
             components: {
               content: () => import("../views/Inbox.vue"),
               leftSidebar: DashboardSidebar,
@@ -194,7 +195,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "anomaly-center",
             name: "workspace.anomaly-center",
-            meta: { title: () => "Anomaly Center" },
+            meta: { title: () => t("anomaly-center") },
             components: {
               content: () => import("../views/AnomalyCenterDashboard.vue"),
               leftSidebar: DashboardSidebar,
@@ -207,7 +208,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "archive",
             name: "workspace.archive",
-            meta: { title: () => "Archive" },
+            meta: { title: () => t("common.archive") },
             components: {
               content: () => import("../views/Archive.vue"),
               leftSidebar: DashboardSidebar,
@@ -242,7 +243,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "setting",
             name: "setting",
-            meta: { title: () => "Setting" },
+            meta: { title: () => t("common.setting") },
             components: {
               content: () => import("../layouts/SettingLayout.vue"),
               leftSidebar: () => import("../views/SettingSidebar.vue"),
@@ -255,7 +256,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "",
                 name: "setting.profile",
-                meta: { title: () => "Profile" },
+                meta: { title: () => t("settings.sidebar.profile") },
                 component: () => import("../views/ProfileDashboard.vue"),
                 alias: "profile",
                 props: true,
@@ -263,35 +264,35 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "general",
                 name: "setting.workspace.general",
-                meta: { title: () => "General" },
+                meta: { title: () => t("settings.sidebar.general") },
                 component: () => import("../views/SettingWorkspaceGeneral.vue"),
                 props: true,
               },
               {
                 path: "agent",
                 name: "setting.workspace.agent",
-                meta: { title: () => "Agents" },
+                meta: { title: () => t("common.agents") },
                 component: () => import("../views/SettingWorkspaceAgent.vue"),
                 props: true,
               },
               {
                 path: "member",
                 name: "setting.workspace.member",
-                meta: { title: () => "Members" },
+                meta: { title: () => t("settings.sidebar.members") },
                 component: () => import("../views/SettingWorkspaceMember.vue"),
                 props: true,
               },
               {
                 path: "version-control",
                 name: "setting.workspace.version-control",
-                meta: { title: () => "Version Control" },
+                meta: { title: () => t("settings.sidebar.version-control") },
                 component: () => import("../views/SettingWorkspaceVCS.vue"),
                 props: true,
               },
               {
                 path: "version-control/new",
                 name: "setting.workspace.version-control.create",
-                meta: { title: () => "Add Git Provider" },
+                meta: { title: () => t("repository.add-git-provider") },
                 component: () =>
                   import("../views/SettingWorkspaceVCSCreate.vue"),
                 props: true,
@@ -312,21 +313,21 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "plan",
                 name: "setting.workspace.plan",
-                meta: { title: () => "Plans" },
+                meta: { title: () => t("settings.sidebar.plans") },
                 component: () => import("../views/SettingWorkspacePlan.vue"),
                 props: true,
               },
               {
                 path: "billing",
                 name: "setting.workspace.billing",
-                meta: { title: () => "Billings" },
+                meta: { title: () => t("common.billings") },
                 component: () => import("../views/SettingWorkspaceBilling.vue"),
                 props: true,
               },
               {
                 path: "integration/slack",
                 name: "setting.workspace.integration.slack",
-                meta: { title: () => "Slack" },
+                meta: { title: () => t("common.slack") },
                 component: () =>
                   import("../views/SettingWorkspaceIntegrationSlack.vue"),
                 props: true,
@@ -337,7 +338,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "issue",
             name: "workspace.issue",
             meta: {
-              title: () => "Issue",
+              title: () => t("common.issue"),
             },
             components: {
               content: () => import("../views/IssueDashboard.vue"),
@@ -349,7 +350,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "environment",
             name: "workspace.environment",
             meta: {
-              title: () => "Environment",
+              title: () => t("common.environment"),
               quickActionListByRole: () => {
                 return new Map([
                   [
@@ -397,7 +398,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "project",
             name: "workspace.project",
             meta: {
-              title: () => "Project",
+              title: () => t("common.project"),
               quickActionListByRole: () => {
                 return new Map([
                   [
@@ -494,7 +495,7 @@ const routes: Array<RouteRecordRaw> = [
                 path: "webhook/new",
                 name: "workspace.project.hook.create",
                 meta: {
-                  title: () => "Create webhook",
+                  title: () => t("project.webhook.create-webhook"),
                 },
                 component: () => import("../views/ProjectWebhookCreate.vue"),
                 props: true,
@@ -507,13 +508,12 @@ const routes: Array<RouteRecordRaw> = [
                     const projectSlug = route.params.projectSlug as string;
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
-                    return (
-                      "Webhook - " +
+                    return `${t("common.webhook")} - ${
                       store.getters["projectWebhook/projectWebhookById"](
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
-                    );
+                    }`;
                   },
                   allowBookmark: true,
                 },
@@ -526,7 +526,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "instance",
             name: "workspace.instance",
             meta: {
-              title: () => "Instance",
+              title: () => t("common.instance"),
               quickActionListByRole: () => {
                 return new Map([
                   ["OWNER", ["quickaction.bb.instance.create"]],
@@ -544,7 +544,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "db",
             name: "workspace.database",
             meta: {
-              title: () => "Database",
+              title: () => t("common.database"),
               quickActionListByRole: () => {
                 const ownerList: QuickActionType[] = store.getters[
                   "plan/feature"
@@ -599,7 +599,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "db/grant",
             name: "workspace.database.grant",
             meta: {
-              title: () => "Grant database",
+              title: () => t("datasource.grant-database"),
             },
             components: {
               content: () => import("../views/DatabaseGrant.vue"),
@@ -622,7 +622,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.databaseSlug as string;
                     if (slug.toLowerCase() == "new") {
-                      return "New";
+                      return t("common.new");
                     }
                     return store.getters["database/databaseById"](
                       idFromSlug(slug)
@@ -638,7 +638,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: "workspace.database.table.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    return `Table - ${route.params.tableName}`;
+                    return `${t("db.tables")} - ${route.params.tableName}`;
                   },
                   allowBookmark: true,
                 },
@@ -652,14 +652,13 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.dataSourceSlug as string;
                     if (slug.toLowerCase() == "new") {
-                      return "New";
+                      return t("common.new");
                     }
-                    return (
-                      "Data source - " +
+                    return `${t("common.data-source")} - ${
                       store.getters["dataSource/dataSourceById"](
                         idFromSlug(slug)
                       ).name
-                    );
+                    }`;
                   },
                   allowBookmark: true,
                 },
@@ -698,7 +697,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.instanceSlug as string;
                     if (slug.toLowerCase() == "new") {
-                      return "New";
+                      return t("common.new");
                     }
                     return store.getters["instance/instanceById"](
                       idFromSlug(slug)
@@ -717,7 +716,7 @@ const routes: Array<RouteRecordRaw> = [
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.issueSlug as string;
                 if (slug.toLowerCase() == "new") {
-                  return "New";
+                  return t("common.new");
                 }
                 return store.getters["issue/issueById"](idFromSlug(slug)).name;
               },
