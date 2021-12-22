@@ -1,29 +1,29 @@
 # I18n Guide
 
-Bytebase now both supports English and Chinese languages. We provide the language toggle UI on the Sign-up/Sign-in page and on the user profile dropdown menu on the top-right of the dashboard.
+Bytebase supports English and Chinese. We provide the language toggle on the Sign-up/Sign-in page and the user profile dropdown menu on the top-right of the dashboard.
 
 ## How do we translate?
 
 ### Overview
 
-Some tools we required.
+Required tools.
 
 * `vue-i18n` for vue project.
 * `i18n-ally` for VSCode Extension.
 
-With these tools. We could extract translations from code without open the [i18n assets](#i18n-assets).
+With these tools. We could extract translations from code without opening the [i18n assets](#i18n-assets).
 
 ### Vue I18n
 
-In our frontend project. We use `vue-i18n` to translate all the messages. Vue I18n is internationalization plugin for Vue.js.
+In our frontend project. We use `vue-i18n` to translate all the messages. Vue I18n is an internationalization plugin for Vue.js.
 
 Learn about [vue-i18n](https://vue-i18n.intlify.dev/)
 
 ### i18n-ally
 
-We use a VSCode extension called `i18n-ally` to improve our translation progress. It provide a simple and seemless workflow of translations.
+We use a VSCode extension called `i18n-ally`. It provides a simple and seamless translation workflow.
 
-Some usefully features about it:
+Some usefully features:
 
 * Extract Translations from Code
 * Inline Annotations
@@ -37,15 +37,13 @@ Learn about [VSCode Extension i18n-ally](https://marketplace.visualstudio.com/it
 
 ### i18n assets
 
-The `i18n assets` was the locales files in the `bytebase/frontend/src/locales` dir.
+The `i18n assets` refers to the locales files in the `bytebase/frontend/src/locales` dir.
 
-We defined the `en.yml` file presented English messages and the `zh-CN.yml` file presented Chinese messages.
-
-Our team will maintain the i18n assets for a long time.
+We defined the `en.yml` is for English and the `zh-CN.yml` is for Chinese.
 
 ### Translate message in `<template>`
 
-Most of the messages translation works should be done in the Vue file under the `<tempalte>` tag. This part is the page template. vue-i18n injects a Vue global variable `$t` globally. So that we can translate directly from template using the `$t` function.
+Most translation work would be done in the Vue file under the `<template>` tag which is the page template. vue-i18n injects a Vue global variable `$t` globally. So that we can translate directly from template using the `$t` function.
 
 For example:
 
@@ -77,7 +75,7 @@ export default {
 
 ### Translate message in `.ts` file
 
-Sometimes, some constants may be referenced by multiple files, so this part of the code is moved to a separate `.ts` file. At this time, we export the `t` function from `plugins/i18n.ts`.
+Sometimes, some constants may be referenced by multiple files, and we extract those constants to a separate `.ts` file. At this time, we export the `t` function from `plugins/i18n.ts`.
 
 ```ts
 import { t } from "../plugins/i18n";
@@ -113,13 +111,9 @@ yarn && yarn dev
 
 Follow the [How do we translate?](#how-do-we-translate) guide.
 
-### Add another language
-
-If you want to add another language. You can create your language YAML file in the i18n assets dir(bytebase/frontend/src/locales) and translate the message to align with `en.yml`
-
 ## Tools
 
-Some usefully frontend dev tools for i18n in Vue Project.
+Some useful frontend dev tools for i18n in Vue Project.
 
 * [vue-i18n](https://vue-i18n.intlify.dev/)
 * [VSCode Extension i18n-ally](https://marketplace.visualstudio.com/items?itemName=lokalise.i18n-ally) - 🌍 All in one i18n extension for VS Code
