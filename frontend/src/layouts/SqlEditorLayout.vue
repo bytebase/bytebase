@@ -19,9 +19,9 @@
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
-        <ProvideDashboardContext>
+        <ProvideSqlEditorContext>
           <router-view />
-        </ProvideDashboardContext>
+        </ProvideSqlEditorContext>
       </template>
       <template #fallback>
         <div class="flex flex-row justify-between p-4 space-x-2">
@@ -40,11 +40,12 @@
 
 <script lang="ts" setup>
 import { useStore } from "vuex";
-import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
-import EditorHeader from "../views/SqlEditor/EditorHeader.vue";
-import BannerDemo from "../views/BannerDemo.vue";
-import { ServerInfo } from "../types";
 import { computed } from "vue";
+
+import ProvideSqlEditorContext from "@/components/ProvideSqlEditorContext.vue";
+import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
+import BannerDemo from "@/views/BannerDemo.vue";
+import { ServerInfo } from "../types";
 
 const store = useStore();
 
