@@ -107,7 +107,7 @@
                     md:ml-0 md:pl-0 md:text-right
                   "
                 >
-                  Last sync status:
+                  {{ $t('database.last-sync-status') }}:
                   <span
                     :class="
                       database.syncStatus == 'OK'

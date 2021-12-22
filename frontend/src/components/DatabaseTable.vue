@@ -17,7 +17,7 @@
           </span>
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
             <span class="tooltip">{{
-              $t("database.last-sync-status", [
+              $t("database.last-sync-status-long", [
                 database.syncStatus,
                 humanizeTs(database.lastSuccessfulSyncTs),
               ])
