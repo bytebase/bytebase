@@ -1,8 +1,9 @@
 <template>
   <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
-  <n-config-provider
+  <NConfigProvider
     :locale="isZhCn ? zhCN : null"
     :date-locale="isZhCn ? dateZhCN : null"
+    :theme-overrides="themeOverrides"
   >
     <BBModalStack>
       <KBarWrapper>
@@ -16,20 +17,21 @@
         </template>
       </KBarWrapper>
     </BBModalStack>
-  </n-config-provider>
+  </NConfigProvider>
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, onErrorCaptured, computed } from "vue";
+import { reactive, computed, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { NConfigProvider, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui'
+
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import { useLanguage } from "./composables/useLanguage";
-import { NConfigProvider, zhCN, dateZhCN } from "naive-ui";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
@@ -137,12 +139,21 @@ export default {
       return true;
     });
 
+    const themeOverrides: GlobalThemeOverrides = {
+      common: {
+        primaryColor: "#4F46E5",
+        primaryColorHover: "#3730a3",
+        primaryColorPressed: "#a5b4fc"
+      }
+    }
+
     return {
       state,
       isZhCn,
       zhCN,
       dateZhCN,
       removeNotification,
+      themeOverrides
     };
   },
 };

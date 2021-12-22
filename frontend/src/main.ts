@@ -5,6 +5,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import i18n from "./plugins/i18n";
 import splitpanes from "./plugins/splitpanes";
+import NaiveUI from "./plugins/naive-ui";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -141,5 +142,6 @@ Promise.all([
     .use(router)
     .use(i18n)
     .use(splitpanes)
+    .use(NaiveUI)
     .mount("#app");
 });
