@@ -23,28 +23,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
-		// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-		// since we are not creating pipeline/stage list/task list in a single transaction.
-		// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-		// quite unlikely so we will live with it for now.
-		if issueCreate.AssigneeID == api.UnknownID {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-		}
-
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
-		}
-
-		for _, subscriberID := range issueCreate.SubscriberIDList {
-			subscriberCreate := &api.IssueSubscriberCreate{
-				IssueID:      issue.ID,
-				SubscriberID: subscriberID,
-			}
-			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -329,6 +310,14 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	if issueCreate.AssigneeID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+
 	// If frontend does not pass the stageList, we will generate it from backend.
 	if len(issueCreate.Pipeline.StageList) == 0 {
 		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
@@ -467,6 +456,17 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+	}
+
+	for _, subscriberID := range issueCreate.SubscriberIDList {
+		subscriberCreate := &api.IssueSubscriberCreate{
+			IssueID:      issue.ID,
+			SubscriberID: subscriberID,
+		}
+		_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
+		}
 	}
 
 	return issue, nil
