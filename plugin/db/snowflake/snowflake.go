@@ -474,7 +474,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
 	count := 0
 	f := func(stmt string) error {
 		count++
@@ -559,7 +559,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 		// Should use role SYSADMIN.
-		if err := driver.Execute(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema, true /* useTransaction */); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),

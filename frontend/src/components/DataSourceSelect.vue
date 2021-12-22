@@ -9,8 +9,10 @@
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      <template v-if="!database"> Select database first </template>
-      <template v-else> Select data source </template>
+      <template v-if="!database">
+        {{ $t("datasource.select-database-first") }}
+      </template>
+      <template v-else> {{ $t("datasource.select-data-source") }} </template>
     </option>
     <template v-if="database">
       <option
@@ -20,7 +22,7 @@
         :selected="dataSource.id == state.selectedId"
       >
         <template v-if="dataSource.type == 'RO'">
-          {{ dataSource.name }} (readonly)
+          {{ dataSource.name }} ({{ $t("common.readonly") }})
         </template>
         <template v-else>
           {{ dataSource.name }}

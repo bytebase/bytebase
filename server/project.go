@@ -26,6 +26,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
 		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		if projectCreate.TenantMode == "" {
+			projectCreate.TenantMode = api.TenantModeDisabled
+		}
 		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
