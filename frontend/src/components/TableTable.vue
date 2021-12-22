@@ -37,27 +37,7 @@ import { BBTableColumn } from "../bbkit/types";
 import { Table } from "../types";
 import { bytesToString, databaseSlug } from "../utils";
 import { useRouter } from "vue-router";
-
-const COLUMN_LIST: BBTableColumn[] = [
-  {
-    title: "Name",
-  },
-  {
-    title: "Engine",
-  },
-  {
-    title: "Row count est.",
-  },
-  {
-    title: "Data size",
-  },
-  {
-    title: "Index size",
-  },
-  {
-    title: "Created",
-  },
-];
+import { useI18n } from "vue-i18n";
 
 export default {
   name: "TableTable",
@@ -70,6 +50,28 @@ export default {
   },
   setup(props) {
     const router = useRouter();
+    const { t } = useI18n();
+
+    const COLUMN_LIST: BBTableColumn[] = [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("database.engine"),
+      },
+      {
+        title: t("database.row-count-est"),
+      },
+      {
+        title: t("database.data-size"),
+      },
+      {
+        title: t("database.index-size"),
+      },
+      {
+        title: t("common.created-at"),
+      },
+    ];
 
     const clickTable = (section: number, row: number) => {
       const table = props.tableList[row];
