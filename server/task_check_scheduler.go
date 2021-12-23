@@ -197,12 +197,12 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
-	// If there is no taskcheck scheduled before and user has not specified this field, we simply take it as nothing happen
-	// Once user has specified this field, like a one run switch, we will schedule one even it is default value ever since
+	// If there is not any taskcheck scheduled before, we should only schedule one if user has specified a non-default value.
 	if len(taskCheckRunList) == 0 {
 		return task.EarliestAllowedTs != 0, nil
 	}
 
+	// Do not schedule one if there is already one running.
 	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
 		return false, nil
 	}
