@@ -64,7 +64,12 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { Task, TaskCheckRun, TaskCheckStatus } from "../types";
+import {
+  Task,
+  TaskCheckRun,
+  TaskCheckStatus,
+  TaskEarliestAllowedTimePayload,
+} from "../types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
 import { BBTabFilterItem } from "../bbkit/types";
@@ -115,6 +120,29 @@ export default defineComponent({
       clonedList.sort(
         (a: TaskCheckRun, b: TaskCheckRun) => b.createdTs - a.createdTs
       );
+
+      // filter unset timing check, which is set to 0 by default.
+      // since we create a task check for 0 at backend, the date should be 1970-01-01 08:00:00.
+      // At the frontend, we only show the result from the first non-default to the end,
+      // otherwise, we will not show this type of task check at all.
+      if (
+        state.selectedTaskCheckRun.type ===
+        "bb.task-check.general.earliest-allowed-time"
+      ) {
+        const getFirstNonZeroIndex = (runList: TaskCheckRun[]): number => {
+          for (let i = runList.length - 1; 0 <= i; i--) {
+            const payload = runList[i]
+              .payload as TaskEarliestAllowedTimePayload;
+            if (payload.earliestAllowedTs) {
+              return i;
+            }
+          }
+          return -1;
+        };
+        const index = getFirstNonZeroIndex(clonedList);
+        return clonedList.splice(0, index + 1);
+      }
+
       return clonedList;
     });
 
