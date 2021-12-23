@@ -251,9 +251,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
-				Payload:                 string(taskCheckPayload),
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				Payload:                 string(taskCheckPayload),
 				SkipIfAlreadyTerminated: false,
 			})
 			if err != nil {
