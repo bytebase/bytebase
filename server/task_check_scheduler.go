@@ -243,7 +243,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		if flag {
-			taskCheckPayload, err := json.Marshal(task)
+			taskCheckPayload, err := json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
+				EarliestAllowedTs: task.EarliestAllowedTs,
+			})
 			if err != nil {
 				return nil, err
 			}
