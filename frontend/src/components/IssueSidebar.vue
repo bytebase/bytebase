@@ -46,11 +46,10 @@
         </div>
       </h2>
       <div class="col-span-2">
-        <!-- TODO: should added i18n support for naive-i18n & should fit in with the current theme -->
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
-          :is-date-disabled="isDatePassed"
+          :is-date-disabled="isDayPassed"
           class="w-full"
           type="datetime"
           clearable
@@ -451,7 +450,7 @@ export default defineComponent({
       }
     };
 
-    const isDatePassed = (ts: number) => ts < now;
+    const isDayPassed = (ts: number) => ts < now - 24 * 60 * 60 * 1000;
 
     return {
       EMPTY_ID,
@@ -469,7 +468,7 @@ export default defineComponent({
       isDatabaseCreated,
       showDatabaseCreationLabel,
       clickDatabase,
-      isDatePassed,
+      isDayPassed,
     };
   },
 });
