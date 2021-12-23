@@ -178,7 +178,10 @@ task:
     connection: Connection
     migration-schema: Migration schema
     earliest-allowed-time: Earliest allowed time
-  earliest-allowed-time-hint: '''@:{''common.when''}'' specifies the expected execution timing for this task'
+  earliest-allowed-time-hint: >-
+    '@:{'common.when'}' specifies the expected execution timing for this task.
+    If this field is not specified, the task will be executed once it has passed
+    all gating criterion.
   comment: Comment
   invoker: Invoker
   started: Started

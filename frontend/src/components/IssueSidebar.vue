@@ -36,7 +36,7 @@
       </div>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.when") }}<span v-if="create" class="text-red-600">*</span>
+        {{ $t("common.when") }}
         <div class="tooltip-wrapper">
           <span class="tooltip w-60">{{
             $t("task.earliest-allowed-time-hint")
