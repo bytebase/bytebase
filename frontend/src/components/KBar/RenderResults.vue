@@ -15,7 +15,7 @@
               {{ findParent(item).name }}
             </span>
 
-            <span>{{ item.name }}</span>
+            <span class="name">{{ item.name }}</span>
 
             <span v-for="(tag, i) in item.data?.tags" :key="i" class="tag">
               {{ tag }}
@@ -80,7 +80,7 @@ export default defineComponent({
   @apply bg-control-bg-hover border-current;
 }
 .content {
-  @apply flex flex-col;
+  @apply flex flex-col overflow-x-hidden;
 }
 .main {
   @apply flex items-center text-base gap-1;
@@ -88,8 +88,11 @@ export default defineComponent({
 .tag {
   @apply inline-block text-xs px-1 py-0.5 bg-black bg-opacity-10 rounded-sm;
 }
+.name {
+  @apply overflow-x-hidden overflow-ellipsis whitespace-nowrap;
+}
 .subtitle {
-  @apply text-xs text-gray-500;
+  @apply text-xs text-gray-500 overflow-x-hidden overflow-ellipsis whitespace-nowrap;
 }
 .parent {
   @apply text-gray-500;
