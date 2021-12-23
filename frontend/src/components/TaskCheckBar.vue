@@ -121,15 +121,14 @@ export default defineComponent({
         (a: TaskCheckRun, b: TaskCheckRun) => b.createdTs - a.createdTs
       );
 
-      // filter unset timing check, which is set to 0 by default.
-      // since we create a task check for 0 at backend, the date should be 1970-01-01 08:00:00.
-      // At the frontend, we only show the result from the first non-default to the end,
-      // otherwise, we will not show this type of task check at all.
+      // Filter unset timing check, which is set to 0 by default.
+      // Since we create a task check for 0 at backend, and it make no sense that we show user it has passed '0' at the frontend.
+      // So, at the frontend, we only show the result from the first non-default to the end,
       if (
         state.selectedTaskCheckRun.type ===
         "bb.task-check.general.earliest-allowed-time"
       ) {
-        const getFirstNonZeroIndex = (runList: TaskCheckRun[]): number => {
+        const getFirstNonDefaultIndex = (runList: TaskCheckRun[]): number => {
           for (let i = runList.length - 1; 0 <= i; i--) {
             const payload = runList[i]
               .payload as TaskEarliestAllowedTimePayload;
@@ -139,7 +138,7 @@ export default defineComponent({
           }
           return -1;
         };
-        const index = getFirstNonZeroIndex(clonedList);
+        const index = getFirstNonDefaultIndex(clonedList);
         return clonedList.splice(0, index + 1);
       }
 
