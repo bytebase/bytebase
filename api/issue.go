@@ -148,9 +148,12 @@ type UpdateSchemaDetail struct {
 // UpdateSchemaContext is the issue create context for updating database schema.
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
-	MigrationType          db.MigrationType      `json:"migrationType"`
+	MigrationType db.MigrationType `json:"migrationType"`
+	// UpdateSchemaDetail is the details of schema update.
+	// When a project is in tenant mode, there should be one item in the list.
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
-	VCSPushEvent           *common.VCSPushEvent
+	// VCSPushEvent is the event information for VCS push.
+	VCSPushEvent *common.VCSPushEvent
 }
 
 // IssueFind is the API message for finding issues.
