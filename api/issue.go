@@ -111,6 +111,9 @@ type IssueCreate struct {
 	// This consoliates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
 	// we want the complexity resides in the backend.
 	CreateContext string `jsonapi:"attr,createContext"`
+
+	// ValidateOnly validates the request and previews the review, but does not actually post it.
+	ValidateOnly bool `jsonapi:"attr,validateOnly"`
 }
 
 // CreateDatabaseContext is the issue create context for creating a database.
