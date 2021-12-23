@@ -243,6 +243,7 @@ import {
 } from "../types";
 import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
+import moment from "moment";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -304,7 +305,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const now = Date.now();
+    const now = new Date();
     const state = reactive<LocalState>({
       earliestAllowedTs: props.task.earliestAllowedTs
         ? props.task.earliestAllowedTs * 1000
@@ -450,7 +451,7 @@ export default defineComponent({
       }
     };
 
-    const isDayPassed = (ts: number) => ts < now - 24 * 60 * 60 * 1000;
+    const isDayPassed = (ts: number) => !moment(ts).isSameOrAfter(now, "day");
 
     return {
       EMPTY_ID,
