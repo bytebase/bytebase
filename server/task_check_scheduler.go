@@ -184,10 +184,6 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 // 2(b). the earliestAllowedTs has NOT been altered since last check, however the last check had failed && earliestAllowedTs has passed now.
 // ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
-	if forceSchedule {
-		return true, nil
-	}
-
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -209,6 +205,10 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 
 	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
 		return false, nil
+	}
+
+	if forceSchedule {
+		return true, nil
 	}
 
 	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
