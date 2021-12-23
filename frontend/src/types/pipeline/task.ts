@@ -32,6 +32,10 @@ export type TaskGeneralPayload = {
   statement: string;
 };
 
+export type TaskEarliestAllowedTimePayload = {
+  earliestAllowedTs: number;
+};
+
 export type TaskDatabaseCreatePayload = {
   projectId: ProjectId;
   statement: string;
@@ -56,7 +60,8 @@ export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
   | TaskDatabaseSchemaUpdatePayload
-  | TaskDatabaseRestorePayload;
+  | TaskDatabaseRestorePayload
+  | TaskEarliestAllowedTimePayload;
 
 export type Task = {
   id: TaskId;
