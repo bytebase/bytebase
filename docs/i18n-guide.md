@@ -2,7 +2,7 @@
 
 Bytebase supports English and Chinese. We provide the language toggle on the Sign-up/Sign-in page and the user profile dropdown menu on the top-right of the dashboard.
 
-## How do we translate?
+## How do we translate
 
 ### Overview
 
@@ -11,11 +11,11 @@ Required tools.
 * `vue-i18n` for vue project.
 * `i18n-ally` for VSCode Extension.
 
-With these tools. We could extract translations from code without opening the [i18n assets](#i18n-assets).
+With these tools, we could extract translations from code without opening the [i18n assets](#i18n-assets).
 
 ### Vue I18n
 
-In our frontend project. We use `vue-i18n` to translate all the messages. Vue I18n is an internationalization plugin for Vue.js.
+In our frontend project, we use `vue-i18n` to translate all the messages. Vue I18n is an internationalization plugin for Vue.js.
 
 Learn about [vue-i18n](https://vue-i18n.intlify.dev/)
 
@@ -39,7 +39,7 @@ Learn about [VSCode Extension i18n-ally](https://marketplace.visualstudio.com/it
 
 The `i18n assets` refers to the locales files in the `bytebase/frontend/src/locales` dir.
 
-We defined the `en.yml` is for English and the `zh-CN.yml` is for Chinese.
+`en.yml` is for English and `zh-CN.yml` is for Chinese.
 
 ### Translate message in `<template>`
 
@@ -53,7 +53,7 @@ For example:
 
 ### Translate message in `<script>`
 
-Sometimes, we write some texts as constants, such as fixed drop-down menu options. The translation of texts in the `<script>` tag is slightly different, and we need to use the Vue i18n API to complete.
+Sometimes, we write some texts as constants, such as fixed drop-down menu options. The translation of texts in the `<script>` tag is slightly different, and we need to use the Vue i18n API.
 
 For example:
 
@@ -75,7 +75,7 @@ export default {
 
 ### Translate message in `.ts` file
 
-Sometimes, some constants may be referenced by multiple files, and we extract those constants to a separate `.ts` file. At this time, we export the `t` function from `plugins/i18n.ts`.
+Sometimes, some constants may be referenced by multiple files, and we extract those constants into a separate `.ts` file. At this time, we export the `t` function from `plugins/i18n.ts`.
 
 ```ts
 import { t } from "../plugins/i18n";
@@ -91,13 +91,13 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: () => ProjectWebhookTypeIte[] =
   ];
 ```
 
-For more skills of doing translations. check out the [vue-i18n] documents.
+For more advanced usage, check out the [vue-i18n] documents.
 
 ## Contributes
 
-If you would like to help a language's translation up to date. Please follow this guide.
+If you would like to help a language's translation up to date, please follow this guide.
 
-### Suggestion or Improvement
+### How to start
 
 #### Clone to local
 
