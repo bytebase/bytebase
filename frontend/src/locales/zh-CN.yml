@@ -178,13 +178,14 @@ task:
     connection: 连接
     migration-schema: 迁移 schema
     earliest-allowed-time: 最早执行时间
-  earliest-allowed-time-hint: '''@:{''common.when''}'' 指定了该任务最早允许执行的时间'
+  earliest-allowed-time-hint: '''@:{''common.when''}'' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。'
   comment: 评论
   invoker: 执行者
   started: 开始于
   ended: 结束于
   view-migration: 查看迁移
   view-migration-history: 查看迁移历史
+  earliest-allowed-time-unset: 未设置
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本

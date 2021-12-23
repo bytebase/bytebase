@@ -36,7 +36,7 @@
       </div>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.when") }}<span v-if="create" class="text-red-600">*</span>
+        {{ $t("common.when") }}
         <div class="tooltip-wrapper">
           <span class="tooltip w-60">{{
             $t("task.earliest-allowed-time-hint")
@@ -46,11 +46,11 @@
         </div>
       </h2>
       <div class="col-span-2">
-        <!-- TODO: should added i18n support for naive-i18n & should fit in with the current theme -->
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
-          :is-date-disabled="isDatePassed"
+          :is-date-disabled="isDayPassed"
+          :placeholder="$t('task.earliest-allowed-time-unset')"
           class="w-full"
           type="datetime"
           clearable
@@ -244,6 +244,7 @@ import {
 } from "../types";
 import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
+import moment from "moment";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -305,7 +306,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const now = Date.now();
+    const now = new Date();
     const state = reactive<LocalState>({
       earliestAllowedTs: props.task.earliestAllowedTs
         ? props.task.earliestAllowedTs * 1000
@@ -451,7 +452,7 @@ export default defineComponent({
       }
     };
 
-    const isDatePassed = (ts: number) => ts < now;
+    const isDayPassed = (ts: number) => !moment(ts).isSameOrAfter(now, "day");
 
     return {
       EMPTY_ID,
@@ -469,7 +470,7 @@ export default defineComponent({
       isDatabaseCreated,
       showDatabaseCreationLabel,
       clickDatabase,
-      isDatePassed,
+      isDayPassed,
     };
   },
 });
