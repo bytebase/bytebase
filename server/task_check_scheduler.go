@@ -177,17 +177,13 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-// shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
-// the logic goes like the following:
-// 1. there is no running timing task check
-// 2(a). the earliestAllowedTs state has been altered since last check (either via new creation or patch).
-// 2(b). the earliestAllowedTs has NOT been altered since last check, however the last check had failed && earliestAllowedTs has passed now.
-// ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
+// Why this comment is such long and tedious? It a long story...
+// TL;DR
+// 1. We do not want anything happen if user does not set this field at the frontend.
+// 2. If user has specified this field once (even if she sets it to default latter), we will schedule one ever since.
+// 3. We only want to schedule one if the payload field is different from the last run (unless user forces one)
+// 4. Once the specified time has passed, schedule one immediately to unblock the task.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
-	if forceSchedule {
-		return true, nil
-	}
-
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -201,12 +197,18 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
+	// If there is not any taskcheck scheduled before, we should only schedule one if user has specified a non-default value.
 	if len(taskCheckRunList) == 0 {
-		return true, nil
+		return task.EarliestAllowedTs != 0, nil
 	}
 
+	// Do not schedule one if there is already one running.
 	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
 		return false, nil
+	}
+
+	if forceSchedule {
+		return true, nil
 	}
 
 	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
