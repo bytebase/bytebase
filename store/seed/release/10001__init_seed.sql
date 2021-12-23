@@ -84,6 +84,37 @@ VALUES
         '{"schedule":"WEEKLY"}'
     );
 
+-- Create label keys for `bb.location` and `bb.tenant`.
+INSERT INTO
+    label_key (
+        id,
+        creator_id,
+        updater_id,
+        key
+    )
+VALUES
+    (
+        101,
+        1,
+        1,
+        'bb.location'
+    );
+
+INSERT INTO
+    label_key (
+        id,
+        creator_id,
+        updater_id,
+        key
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        'bb.tenant'
+    );
+
 -- Create 1 "test", 1 "prod" instance (including * database and admin data source)
 -- Both instances contains the connection info we expect user to setup according to https://docs.bytebase.com/install/docker#start-a-mysql-docker-instance-for-testing
 -- Set host to 172.17.0.1 which is the default docker gateway ip.
