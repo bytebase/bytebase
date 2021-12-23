@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -84,6 +85,60 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		resultSet := s.syncEngineVersionAndSchema(ctx, instance)
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/sql/execute", func(c echo.Context) error {
+		ctx := context.Background()
+		exec := &api.SQLExecute{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request").SetInternal(err)
+		}
+
+		if exec.InstanceID == 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing instanceId")
+		}
+		if len(exec.Statement) == 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing sql statement")
+		}
+		if !exec.Readonly {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support readonly sql statement")
+		}
+
+		instance, err := s.composeInstanceByID(ctx, exec.InstanceID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
+		}
+
+		resultSet := func() (resultSet *api.SQLResultSet) {
+			resultSet = &api.SQLResultSet{}
+			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
+			if err != nil {
+				resultSet.Error = err.Error()
+				return
+			} else {
+				rowSet, err := driver.Query(ctx, exec.Statement)
+				if err != nil {
+					resultSet.Error = err.Error()
+					return
+				}
+
+				_, err = json.Marshal(rowSet)
+				if err != nil {
+					resultSet.Error = err.Error()
+					return
+				}
+			}
+			return
+		}()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {

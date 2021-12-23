@@ -22,6 +22,16 @@ type SQLSyncSchema struct {
 	InstanceID int `jsonapi:"attr,instanceId"`
 }
 
+// SQLExecute is the API message for execute SQL.
+type SQLExecute struct {
+	InstanceID int `jsonapi:"attr,instanceId"`
+	// For engines like MySQL, databaseName can be empty.
+	DatabaseName string `jsonapi:"attr,databaseName"`
+	Statement    string `jsonapi:"attr,statement"`
+	// For now, Readonly must be true
+	Readonly bool `jsonapi:"attr,readonly"`
+}
+
 // SQLResultSet is the API message for SQL results.
 type SQLResultSet struct {
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.

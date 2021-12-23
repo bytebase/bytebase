@@ -352,6 +352,8 @@ type Driver interface {
 	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
 	Execute(ctx context.Context, statement string, useTransaction bool) error
+	// Used for execute readonly SELECT statement
+	Query(ctx context.Context, statement string) ([]interface{}, error)
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)

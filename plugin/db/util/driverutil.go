@@ -393,6 +393,70 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
+func Query(ctx context.Context, db *sql.DB, statement string) ([]interface{}, error) {
+	rows, err := db.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, formatError(err)
+	}
+
+	count := len(columnTypes)
+	resultSet := []interface{}{}
+	for rows.Next() {
+		scanArgs := make([]interface{}, count)
+		for i, v := range columnTypes {
+			switch v.DatabaseTypeName() {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT4":
+				scanArgs[i] = new(sql.NullInt64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		err := rows.Scan(scanArgs...)
+		if err != nil {
+			return nil, formatError(err)
+		}
+
+		rowData := map[string]interface{}{}
+		for i, v := range columnTypes {
+			if z, ok := (scanArgs[i]).(*sql.NullBool); ok {
+				rowData[v.Name()] = z.Bool
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullString); ok {
+				rowData[v.Name()] = z.String
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullInt64); ok {
+				rowData[v.Name()] = z.Int64
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullFloat64); ok {
+				rowData[v.Name()] = z.Float64
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullInt32); ok {
+				rowData[v.Name()] = z.Int32
+				continue
+			}
+			rowData[v.Name()] = scanArgs[i]
+		}
+
+		resultSet = append(resultSet, rowData)
+	}
+
+	return resultSet, nil
+}
+
 func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
 	queryParams := &db.QueryParams{DatabaseType: dbType}
 	queryParams.AddParam("namespace", namespace)

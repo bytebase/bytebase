@@ -384,6 +384,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, useTransact
 	return err
 }
 
+// Query queries a SQL statement.
+func (driver *Driver) Query(ctx context.Context, statement string) ([]interface{}, error) {
+	return util.Query(ctx, driver.db, statement)
+}
+
 // NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
