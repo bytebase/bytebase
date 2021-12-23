@@ -179,10 +179,10 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 
 // Why this comment is such long and tedious? It a long story...
 // TL;DR
-// 1. we do not want anything happen if user does not set this field at the frontend.
-// 2. If user has specified this field once (even if she set it to default latter), we will schedule one ever since.
-// 3. We only want to schedule one if the payload field is different to the last run (unless user force one)
-// 4. once the specified time has passed, schedule one immediately, so the task will no longger be blocked
+// 1. We do not want anything happen if user does not set this field at the frontend.
+// 2. If user has specified this field once (even if she sets it to default latter), we will schedule one ever since.
+// 3. We only want to schedule one if the payload field is different from the last run (unless user forces one)
+// 4. Once the specified time has passed, schedule one immediately to unblock the task.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
