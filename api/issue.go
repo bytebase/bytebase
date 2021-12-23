@@ -136,6 +136,9 @@ type CreateDatabaseContext struct {
 type UpdateSchemaDetail struct {
 	// DatabaseId is the ID of a database.
 	DatabaseID int `json:"databaseId"`
+	// DatabaseName is the name of databases, mutually exclusive to DatabaseId.
+	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
+	DatabaseName int `json:"databaseName"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
 	// Statement is the rollback statement of the statement.
