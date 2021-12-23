@@ -67,12 +67,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  TaskCheckRun,
-  TaskCheckStatus,
-  TaskCheckType,
-  TaskEarliestAllowedTimePayload,
-} from "../types";
+import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../types";
 
 interface LocalState {
   selectedTaskCheckRun?: TaskCheckRun;
@@ -175,31 +170,12 @@ export default defineComponent({
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
       const result: TaskCheckRun[] = [];
-      const timingTempResult: TaskCheckRun[] = [];
       for (const run of props.taskCheckRunList) {
-        // collect timing task check for further process
-        if (run.type == "bb.task-check.general.earliest-allowed-time") {
-          timingTempResult.push(run);
+        const index = result.findIndex((item) => item.type == run.type);
+        if (index >= 0 && result[index].updatedTs < run.updatedTs) {
+          result[index] = run;
         } else {
-          const index = result.findIndex((item) => item.type == run.type);
-          if (index >= 0 && result[index].updatedTs < run.updatedTs) {
-            result[index] = run;
-          } else {
-            result.push(run);
-          }
-        }
-      }
-
-      // if there exists no non-default timing task check, show nothing
-      // otherwise, show the latest result
-      timingTempResult.sort((a: TaskCheckRun, b: TaskCheckRun) => {
-        return b.updatedTs - a.updatedTs;
-      });
-      for (const run of timingTempResult) {
-        const payload = run.payload as TaskEarliestAllowedTimePayload;
-        if (payload.earliestAllowedTs) {
           result.push(run);
-          break;
         }
       }
 
