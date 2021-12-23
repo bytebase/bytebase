@@ -177,12 +177,12 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-// shouldScheduleTimingTaskCheck will return whether should we schedule a timing task check for current task
-// the logic goes like the following:
-// 1. there is no running timing task check
-// 2(a). the earliestAllowedTs state has been altered since last check (either via new creation or patch).
-// 2(b). the earliestAllowedTs has NOT been altered since last check, however the last check had failed && earliestAllowedTs has passed now.
-// ONLY when {1 && (2.a || 2.b)} listed above or EXPLICITLY set the forceSchedule to TRUE would this function return true
+// Why this comment is such long and tedious? It a long story...
+// TL;DR
+// 1. we do not want anything happen if user does not set this field at the frontend.
+// 2. If user has specified this field once (even if she set it to default latter), we will schedule one ever since.
+// 3. We only want to schedule one if the payload field is different to the last run (unless user force one)
+// 4. once the specified time has passed, schedule one immediately, so the task will no longger be blocked
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
@@ -197,8 +197,8 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
-	// Is there is not any taskcheck scheduled before, and user has not specified this field, we should no schedule one.
-	// Once user has specified this field, like a one run switch, we will schedule one even it is default value
+	// If there is no taskcheck scheduled before and user has not specified this field, we simply take it as nothing happen
+	// Once user has specified this field, like a one run switch, we will schedule one even it is default value ever since
 	if len(taskCheckRunList) == 0 {
 		return task.EarliestAllowedTs != 0, nil
 	}
