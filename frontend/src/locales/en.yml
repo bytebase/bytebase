@@ -182,6 +182,7 @@ task:
     '@:{'common.when'}' specifies the expected execution timing for this task.
     If this field is not specified, the task will be executed once it has passed
     all gating criterion.
+  earliest-allowed-time-unset: Execution timing unset
   comment: Comment
   invoker: Invoker
   started: Started

@@ -50,6 +50,7 @@
           v-if="allowEditEarliestAllowedTime"
           v-model:value="state.earliestAllowedTs"
           :is-date-disabled="isDayPassed"
+          :placeholder="$t('task.earliest-allowed-time-unset')"
           class="w-full"
           type="datetime"
           clearable
