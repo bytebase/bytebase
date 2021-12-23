@@ -16,6 +16,8 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
+  TableId,
+  ViewId
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -163,4 +165,18 @@ export interface NotificationState {
 
 export interface CommandState {
   commandListById: Map<CommandId, Command[]>;
+}
+
+export interface ConnectionAtom {
+  id: InstanceId | DatabaseId | TableId | ViewId;
+  key: InstanceId | DatabaseId | TableId | ViewId;
+  label: string;
+  children: ConnectionAtom[];
+}
+
+export interface SqlEditorState {
+  connectionTree: ConnectionAtom[];
+  currentInstanceId: InstanceId;
+  currentDatabaseId: DatabaseId;
+  currentTableId: TableId;
 }

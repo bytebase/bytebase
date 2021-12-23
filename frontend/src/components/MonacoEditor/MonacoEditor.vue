@@ -4,8 +4,7 @@
 
 <script lang="ts">
 import { defineComponent, onMounted, ref, toRef, toRaw } from "vue";
-// import type { editor as Editor } from 'monaco-editor'
-import setupMonaco from "./editor";
+import setupMonaco from "./setupMonaco";
 
 export default defineComponent({
   name: "MonacoEditor",
@@ -31,7 +30,7 @@ export default defineComponent({
     // }
 
     const init = async () => {
-      const { monaco } = await setupMonaco();
+      const { monaco } = await setupMonaco(language.value);
 
       const model = monaco.editor.createModel(
         sqlCode.value,
@@ -51,23 +50,21 @@ export default defineComponent({
           enabled: false,
         },
         wordWrap: "on",
-        fixedOverflowWidgets: true
+        fixedOverflowWidgets: true,
       });
 
       // add the run query action in context menu
       editorInstance.addAction({
         id: "Bytebase",
         label: "Run Query",
-        keybindings: [
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-        ],
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         contextMenuGroupId: "operation",
         contextMenuOrder: 0,
         run: async () => {
-          console.log('run query')
+          console.log("run query");
           emit("run-query", editorInstance.getValue());
-        }
-      })
+        },
+      });
 
       // for dark mode
       // watch(
