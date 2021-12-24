@@ -297,7 +297,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		issue.SubscriberIDList = append(issue.SubscriberIDList, subscriber.SubscriberID)
 	}
 
-	issue.Project, err = s.composeProjectlByID(ctx, issue.ProjectID)
+	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
