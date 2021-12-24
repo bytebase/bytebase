@@ -55,61 +55,55 @@
           v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">Plan</span>
+          <span class="hidden lg:block font-normal text-accent">{{ $t('setting.plan.self') }}</span>
           <div
-            v-if="currentPlan != 0"
             class="bar-link"
+            :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
           >
-            Free
+            {{ $t('setting.plan.free') }}
           </div>
-          <div v-else class="underline">Free</div>
           <div
-            v-if="currentPlan != 1"
             class="bar-link"
+            :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
           >
-            Team
+            {{ $t('setting.plan.team') }}
           </div>
-          <div v-else class="underline">Team</div>
           <!-- <div
-            v-if="currentPlan != 2"
             class="bar-link"
+            :class="currentPlan == 2 ? 'underline' : ''"
             @click.prevent="switchToEnterprise"
           >
-            Enterprise
-          </div>
-          <div v-else class="underline">Enterprise</div> -->
+            {{ $t('setting.plan.enterprise') }}
+          </div> -->
         </div>
         <div
           v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">Role</span>
+          <span class="hidden lg:block font-normal text-accent">{{ $t('settings.profile.role') }}</span>
           <div
-            v-if="currentUser.role != 'OWNER'"
             class="bar-link"
+            :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
           >
-            Owner
+            {{ $t('common.role.owner') }}
           </div>
-          <div v-else class="underline">Owner</div>
           <div
-            v-if="currentUser.role != 'DBA'"
             class="bar-link"
+            :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
           >
-            DBA
+            {{ $t('common.role.dba') }}
           </div>
-          <div v-else class="underline">DBA</div>
           <div
-            v-if="currentUser.role != 'DEVELOPER'"
             class="bar-link"
+            :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
           >
-            Developer
+            {{ $t('common.role.developer') }}
           </div>
-          <div v-else class="underline">Developer</div>
         </div>
         <router-link to="/inbox" exact-active-class="">
           <span
@@ -150,22 +144,22 @@
     -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-      >Projects</router-link
+      >{{ $t('common.projects') }}</router-link
     >
 
     <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
-      >Databases</router-link
+      >{{ $t('common.databases') }}</router-link
     >
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-      >Instances</router-link
+      >{{ $t('common.instances') }}</router-link
     >
 
     <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-      >Environments</router-link
+      >{{ $t('common.environments') }}</router-link
     >
 
     <router-link

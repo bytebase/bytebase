@@ -149,6 +149,7 @@ common:
   agents: Agents
   billings: Billings
   all: All
+  by: by
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -177,7 +178,10 @@ task:
     connection: Connection
     migration-schema: Migration schema
     earliest-allowed-time: Earliest allowed time
-  earliest-allowed-time-hint: '''@:{''common.when''}'' specifies the expected execution timing for this task'
+  earliest-allowed-time-hint: >-
+    '@:{'common.when'}' specifies the expected execution timing for this task.
+    If this field is not specified, the task will be executed once it has passed all other gating criteria.
+  earliest-allowed-time-unset: Unset
   comment: Comment
   invoker: Invoker
   started: Started
@@ -266,6 +270,23 @@ activity:
   comment: Comment
   created: Created
   invoker: Invoker
+  type:
+    issue-create: create issue
+    comment-create: create comment
+    issue-field-update: update issue field
+    issue-status-update: update issue status
+    pipeline-task-status-update: update issue task status
+    pipeline-task-file-commit: commit file
+    pipeline-task-statement-update: SQL update
+    member-create: create member
+    member-role-update: update role
+    member-activate: activate member
+    member-deactivate: deactivate member
+    project-repository-push: repository push event
+    project-database-transfer: database transfer
+    project-member-create: add project member
+    project-member-delete: delete project member
+    project-member-role-update: change project member role
   sentence:
     created-issue: created issue
     commented: commented
@@ -527,6 +548,7 @@ environment:
 
 
     Database instances are created under a particular environment.
+  restore: Restore this environment
 quick-start:
   bookmark-an-issue: Bookmark an issue
   add-a-comment: Add a comment
@@ -659,7 +681,8 @@ database:
   enabled: Enabled
   action-automatic-backup-for-database-props-database-name: '{0} automatic backup for database ''{1}''.'
   updated-backup-webhook-url-for-database-props-database-name: Updated backup webhook URL for database '{0}'.
-  last-sync-status: Last sync status {0} at {1}
+  last-sync-status: Last sync status
+  last-sync-status-long: Last sync status {0} at {1}
   version-control-enabled: Version control enabled
   restore-backup: Restore backup '{0}' to a new database
   nullable: Nullable
@@ -883,8 +906,13 @@ project:
     owner: '@.upper:common.role.owner'
     developer: '@.upper:common.role.developer'
     archive:
+      title: Archive project
+      description: >-
+        Archived project will not be shown on the normal interface. You can
+        still restore later from the Archive page.
       btn-text: Archive this @.lower:{'common.project'}
     restore:
+      title: Restore project
       btn-text: Restore this @.lower:{'common.project'}
 inbox:
   mark-all-as-read: Mark all as read
@@ -987,3 +1015,9 @@ datasource:
   new-data-source: New data source
   connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
   jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '
+setting:
+  plan:
+    self: Plan
+    free: Free
+    team: Team
+    enterprise: Enterprise

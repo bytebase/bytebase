@@ -10,6 +10,9 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+# Version function used for version string comparison
+function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
+
 if [ `dirname "${BASH_SOURCE[0]}"` != "./scripts" ] && [ `dirname "${BASH_SOURCE[0]}"` != "scripts" ]
 then
   echo "${RED}Precheck failed.${NC} Build script must run from root directory: scripts/build.sh"; exit 1;
@@ -26,7 +29,7 @@ fi
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "${GO_VERSION}" < "1.16" ];
+if [ "$(version ${GO_VERSION})" -lt "$(version 1.16)" ];
 then
    echo "${RED}Precheck failed.${NC} Require go version >= 1.16. Current version ${GO_VERSION}."; exit 1;
 fi

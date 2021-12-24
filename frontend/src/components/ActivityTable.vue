@@ -21,7 +21,7 @@
               <heroicons-outline:exclamation-circle class="text-error" />
             </template>
           </span>
-          <span>{{ activityName(activity.type) }}</span>
+          <span class="capitalize">{{ activityName(activity.type) }}</span>
           <ActivityTypeLink :activity="activity" />
         </div>
       </BBTableCell>

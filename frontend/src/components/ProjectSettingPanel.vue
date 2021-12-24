@@ -9,9 +9,9 @@
         <BBButtonConfirm
           :style="'ARCHIVE'"
           :button-text="$t('project.settings.archive.btn-text')"
-          :ok-text="'Archive'"
-          :confirm-title="`Archive project '${project.name}'?`"
-          :confirm-description="'Archived project will not be shown on the normal interface. You can still restore later from the Archive page.'"
+          :ok-text="$t('common.archive')"
+          :confirm-title="$t('project.settings.archive.title') + ` '${project.name}'?`"
+          :confirm-description="$t('project.settings.archive.description')"
           :require-confirm="true"
           @confirm="archiveOrRestoreProject(true)"
         />
@@ -20,8 +20,8 @@
         <BBButtonConfirm
           :style="'RESTORE'"
           :button-text="$t('project.settings.restore.btn-text')"
-          :ok-text="'Restore'"
-          :confirm-title="`Restore project '${project.name}' to normal state?`"
+          :ok-text="$t('common.restore')"
+          :confirm-title="$t('project.settings.restore.title') + ` '${project.name}'?`"
           :confirm-description="''"
           :require-confirm="true"
           @confirm="archiveOrRestoreProject(false)"

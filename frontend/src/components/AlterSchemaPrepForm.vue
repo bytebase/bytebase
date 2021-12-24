@@ -20,24 +20,26 @@
     >
       <div class="radio-set-row">
         <div class="radio">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="SINGLE_DB"
-          />
-          <label class="label"> {{ $t('alter-schema.alter-single-db') }} </label>
+          <label class="label">
+            <input
+              v-model="state.alterType"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="SINGLE_DB"
+            />
+           {{ $t('alter-schema.alter-single-db') }}</label>
         </div>
         <div class="radio">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="MULTI_DB"
-          />
-          <label class="label"> {{ $t('alter-schema.alter-multiple-db') }} </label>
+          <label class="label">
+            <input
+              v-model="state.alterType"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="MULTI_DB"
+            />
+           {{ $t('alter-schema.alter-multiple-db') }} </label>
         </div>
       </div>
     </div>
@@ -107,7 +109,7 @@
                     md:ml-0 md:pl-0 md:text-right
                   "
                 >
-                  Last sync status:
+                  {{ $t('database.last-sync-status') }}:
                   <span
                     :class="
                       database.syncStatus == 'OK'

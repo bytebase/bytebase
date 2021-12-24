@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -23,28 +24,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
-		// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-		// since we are not creating pipeline/stage list/task list in a single transaction.
-		// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-		// quite unlikely so we will live with it for now.
-		if issueCreate.AssigneeID == api.UnknownID {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-		}
-
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
-		}
-
-		for _, subscriberID := range issueCreate.SubscriberIDList {
-			subscriberCreate := &api.IssueSubscriberCreate{
-				IssueID:      issue.ID,
-				SubscriberID: subscriberID,
-			}
-			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -315,7 +297,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		issue.SubscriberIDList = append(issue.SubscriberIDList, subscriber.SubscriberID)
 	}
 
-	issue.Project, err = s.composeProjectlByID(ctx, issue.ProjectID)
+	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -329,9 +311,20 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	if issueCreate.ValidateOnly {
+		return s.createIssueValidateOnly(ctx, issueCreate, creatorID)
+	}
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	if issueCreate.AssigneeID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+
 	// If frontend does not pass the stageList, we will generate it from backend.
 	if len(issueCreate.Pipeline.StageList) == 0 {
-		pc, err := s.getPipelineFromIssue(ctx, issueCreate)
+		pc, err := s.getPipelineFromIssue(ctx, issueCreate, creatorID)
 		if err != nil {
 			return nil, err
 		}
@@ -469,10 +462,99 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 
+	for _, subscriberID := range issueCreate.SubscriberIDList {
+		subscriberCreate := &api.IssueSubscriberCreate{
+			IssueID:      issue.ID,
+			SubscriberID: subscriberID,
+		}
+		_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
+		}
+	}
+
 	return issue, nil
 }
 
-func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) createIssueValidateOnly(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	if issueCreate.AssigneeID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+	pc, err := s.getPipelineFromIssue(ctx, issueCreate, creatorID)
+	if err != nil {
+		return nil, err
+	}
+	pipeline, err := s.createPipelineValidateOnly(ctx, pc)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := &api.Issue{
+		CreatorID:        creatorID,
+		CreatedTs:        time.Now().Unix(),
+		UpdaterID:        creatorID,
+		UpdatedTs:        time.Now().Unix(),
+		ProjectID:        issueCreate.ProjectID,
+		Name:             issueCreate.Name,
+		Status:           api.IssueOpen,
+		Type:             issueCreate.Type,
+		Description:      issueCreate.Description,
+		AssigneeID:       issueCreate.AssigneeID,
+		SubscriberIDList: issueCreate.SubscriberIDList,
+		PipelineID:       pipeline.ID,
+		Pipeline:         pipeline,
+	}
+
+	issueCreate.Pipeline = *pc
+	issueCreate.Pipeline.CreatorID = creatorID
+
+	return issue, nil
+}
+
+func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate) (*api.Pipeline, error) {
+	pipeline := &api.Pipeline{
+		Name:      pc.Name,
+		Status:    api.PipelineOpen,
+		CreatorID: pc.CreatorID,
+		CreatedTs: time.Now().Unix(),
+		UpdaterID: pc.CreatorID,
+		UpdatedTs: time.Now().Unix(),
+	}
+	for _, sc := range pc.StageList {
+		stage := &api.Stage{
+			Name:          sc.Name,
+			CreatorID:     sc.CreatorID,
+			CreatedTs:     time.Now().Unix(),
+			UpdaterID:     sc.CreatorID,
+			UpdatedTs:     time.Now().Unix(),
+			PipelineID:    sc.PipelineID,
+			EnvironmentID: sc.EnvironmentID,
+			// 	TaskList      []*Task
+		}
+		for _, tc := range sc.TaskList {
+			task := &api.Task{
+				Name:              tc.Name,
+				Status:            tc.Status,
+				CreatorID:         tc.CreatorID,
+				CreatedTs:         time.Now().Unix(),
+				UpdaterID:         tc.CreatorID,
+				UpdatedTs:         time.Now().Unix(),
+				Type:              tc.Type,
+				Payload:           tc.Payload,
+				EarliestAllowedTs: tc.EarliestAllowedTs,
+				PipelineID:        pipeline.ID,
+				StageID:           stage.ID,
+				InstanceID:        tc.InstanceID,
+				DatabaseID:        tc.DatabaseID,
+			}
+			stage.TaskList = append(stage.TaskList, task)
+		}
+		pipeline.StageList = append(pipeline.StageList, stage)
+	}
+	return pipeline, nil
+}
+
+func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
@@ -552,7 +634,8 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			}
 
 			return &api.PipelineCreate{
-				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
+				Name:      fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
+				CreatorID: creatorID,
 				StageList: []api.StageCreate{
 					{
 						Name:          "Create database",
@@ -587,7 +670,8 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			}, nil
 		}
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
+			Name:      fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
+			CreatorID: creatorID,
 			StageList: []api.StageCreate{
 				{
 					Name:          "Create database",
@@ -610,7 +694,9 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
-		pc := &api.PipelineCreate{}
+		pc := &api.PipelineCreate{
+			CreatorID: creatorID,
+		}
 		switch m.MigrationType {
 		case db.Baseline:
 			pc.Name = "Establish database baseline pipeline"

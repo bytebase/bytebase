@@ -35,36 +35,6 @@
         />
       </div>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.when") }}<span v-if="create" class="text-red-600">*</span>
-        <div class="tooltip-wrapper">
-          <span class="tooltip w-60">{{
-            $t("task.earliest-allowed-time-hint")
-          }}</span>
-          <!-- Heroicons name: outline/question-mark-circle -->
-          <heroicons-outline:question-mark-circle class="h-4 w-4" />
-        </div>
-      </h2>
-      <div class="col-span-2">
-        <!-- TODO: should added i18n support for naive-i18n & should fit in with the current theme -->
-        <n-date-picker
-          v-if="allowEditEarliestAllowedTime"
-          v-model:value="state.earliestAllowedTs"
-          :is-date-disabled="isDatePassed"
-          class="w-full"
-          type="datetime"
-          clearable
-          @update:value="
-            (newTimestampNs) => {
-              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
-            }
-          "
-        />
-        <span v-else class="textfield col-span-2">
-          {{ moment(task.earliestAllowedTs * 1000).format("LLL") }}</span
-        >
-      </div>
-
       <template v-for="(field, index) in inputFieldList" :key="index">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ field.name }}
@@ -110,6 +80,43 @@
           />
         </div>
       </template>
+
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        <span class="mr-1">{{ $t("common.when") }}</span>
+        <div class="tooltip-wrapper">
+          <span class="tooltip w-60">{{
+            $t("task.earliest-allowed-time-hint")
+          }}</span>
+          <!-- Heroicons name: outline/question-mark-circle -->
+          <heroicons-outline:question-mark-circle class="h-4 w-4" />
+        </div>
+      </h2>
+      <div class="col-span-2">
+        <n-date-picker
+          v-if="allowEditEarliestAllowedTime"
+          :value="
+            state.earliestAllowedTs ? state.earliestAllowedTs * 1000 : null
+          "
+          :is-date-disabled="isDayPassed"
+          :placeholder="$t('task.earliest-allowed-time-unset')"
+          class="w-full"
+          type="datetime"
+          clearable
+          @update:value="
+            (newTimestampNs) => {
+              state.earliestAllowedTs = newTimestampNs / 1000;
+              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
+            }
+          "
+        />
+        <span v-else class="textfield col-span-2">
+          {{
+            task.earliestAllowedTs === 0
+              ? $t("task.earliest-allowed-time-unset")
+              : moment(task.earliestAllowedTs * 1000).format("LLL")
+          }}</span
+        >
+      </div>
 
       <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -215,7 +222,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
@@ -244,9 +251,12 @@ import {
 } from "../types";
 import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
 import { useRouter } from "vue-router";
+import moment from "moment";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  earliestAllowedTs: number | null;
+}
 
 export default defineComponent({
   name: "IssueSidebar",
@@ -305,12 +315,21 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const now = Date.now();
+    const now = new Date();
     const state = reactive<LocalState>({
       earliestAllowedTs: props.task.earliestAllowedTs
-        ? props.task.earliestAllowedTs * 1000
+        ? props.task.earliestAllowedTs
         : null,
     });
+
+    watch(
+      () => props.task,
+      (cur) => {
+        state.earliestAllowedTs = cur.earliestAllowedTs
+          ? cur.earliestAllowedTs
+          : null;
+      }
+    );
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -370,26 +389,30 @@ export default defineComponent({
     });
 
     const allowEditAssignee = computed(() => {
+      const issue = props.issue as Issue;
       // We allow the current assignee or DBA to re-assign the issue.
       // Though only DBA can be assigned to the issue, the current
       // assignee might not have DBA role in case its role is revoked after
       // being assigned to the issue.
       return (
         props.create ||
-        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
-          (props.issue as Issue).status == "OPEN" &&
-          (currentUser.value.id == (props.issue as Issue).assignee?.id ||
+        (issue.id != ONBOARDING_ISSUE_ID &&
+          issue.status == "OPEN" &&
+          (currentUser.value.id == issue.assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
       );
     });
 
     const allowEditEarliestAllowedTime = computed(() => {
+      const issue = props.issue as Issue;
+      const task = props.task as Task;
       // only the assignee is allowed to modify EarliestAllowedTime
       return (
         props.create ||
-        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
-          (props.issue as Issue).status == "OPEN" &&
-          currentUser.value.id == (props.issue as Issue).assignee?.id)
+        (issue.id != ONBOARDING_ISSUE_ID &&
+          issue.status == "OPEN" &&
+          (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
+          currentUser.value.id == issue.assignee?.id)
       );
     });
 
@@ -451,7 +474,7 @@ export default defineComponent({
       }
     };
 
-    const isDatePassed = (ts: number) => ts < now;
+    const isDayPassed = (ts: number) => !moment(ts).isSameOrAfter(now, "day");
 
     return {
       EMPTY_ID,
@@ -469,7 +492,7 @@ export default defineComponent({
       isDatabaseCreated,
       showDatabaseCreationLabel,
       clickDatabase,
-      isDatePassed,
+      isDayPassed,
     };
   },
 });

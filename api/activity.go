@@ -170,7 +170,7 @@ type ActivityPipelineTaskFileCommitPayload struct {
 	CommitID           string `json:"commitId,omitempty"`
 }
 
-// ActivityPipelineTaskStatementUpdatePayload
+// ActivityPipelineTaskStatementUpdatePayload is the API message payloads for pipeline task statement updates.
 type ActivityPipelineTaskStatementUpdatePayload struct {
 	TaskID       int    `json:"taskId"`
 	OldStatement string `json:"oldStatement,omitempty"`

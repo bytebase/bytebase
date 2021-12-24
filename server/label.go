@@ -26,6 +26,17 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
 		}
 
+		// Add reserved environment key.
+		envs, err := s.EnvironmentService.FindEnvironmentList(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environments").SetInternal(err)
+		}
+		envKey := &api.LabelKey{Key: api.EnvironmentKeyName}
+		for _, env := range envs {
+			envKey.ValueList = append(envKey.ValueList, env.Name)
+		}
+		list = append(list, envKey)
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal label keys response").SetInternal(err)
@@ -47,6 +58,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch label key request").SetInternal(err)
 		}
+		// We don't allow updating reserved environment label keys. Since its ID is zero, it cannot be updated by default.
 
 		labelKey, err := s.LabelService.PatchLabelKey(ctx, patch)
 		if err != nil {

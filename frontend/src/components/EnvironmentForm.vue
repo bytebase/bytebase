@@ -165,9 +165,9 @@
         <BBButtonConfirm
           v-if="allowRestore"
           :style="'RESTORE'"
-          :button-text="'Restore this environment'"
-          :ok-text="'Restore'"
-          :confirm-title="`Restore environment '${state.environment.name}' to normal state?`"
+          :button-text="$t('environment.restore')"
+          :ok-text="$t('common.restore')"
+          :confirm-title="$t('environment.restore') + ` '${state.environment.name}'?`"
           :confirm-description="''"
           :require-confirm="true"
           @confirm="restoreEnvironment"

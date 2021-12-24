@@ -24,7 +24,7 @@ func (s *Server) composeRepositoryRelationship(ctx context.Context, repository *
 		return err
 	}
 
-	repository.Project, err = s.composeProjectlByID(ctx, repository.ProjectID)
+	repository.Project, err = s.composeProjectByID(ctx, repository.ProjectID)
 	if err != nil {
 		return err
 	}

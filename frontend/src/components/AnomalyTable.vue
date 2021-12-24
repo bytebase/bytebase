@@ -154,7 +154,7 @@ export default {
         case "bb.anomaly.database.connection":
           return t("anomaly.types.connection-failure");
         case "bb.anomaly.database.schema.drift":
-          return "t('anomaly.types.schema-drift')";
+          return t("anomaly.types.schema-drift");
       }
     };
 

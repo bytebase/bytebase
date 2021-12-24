@@ -74,7 +74,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasAdminFeature" class="">
+      <BBTableCell v-if="hasAdminFeature" class="whitespace-nowrap">
         <ProjectRoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member.role)"
@@ -90,7 +90,7 @@
           <span>
             {{ humanizeTs(member.updatedTs) }}
           </span>
-          <span>by</span>
+          <span>{{ $t('common.by') }}</span>
           <router-link :to="`/u/${member.updater.id}`" class="normal-link"
             >{{ member.updater.name }}
           </router-link>
