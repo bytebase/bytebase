@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -118,27 +119,41 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
 		}
 
-		resultSet := func() (resultSet *api.SQLResultSet) {
-			resultSet = &api.SQLResultSet{}
+		bytes, err := func() ([]byte, error) {
 			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
 			if err != nil {
-				resultSet.Error = err.Error()
-				return
+				return nil, err
 			}
 
 			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit)
 			if err != nil {
-				resultSet.Error = err.Error()
-				return
+				return nil, err
 			}
 
-			if _, err = json.Marshal(rowSet); err != nil {
-				resultSet.Error = err.Error()
-				return
-			}
-
-			return
+			return json.Marshal(rowSet)
 		}()
+
+		resultSet := &api.SQLResultSet{}
+		if err == nil {
+			resultSet.Result = string(bytes)
+			s.l.Debug("Query result",
+				zap.String("statement", exec.Statement),
+				zap.String("result", resultSet.Result),
+			)
+		} else {
+			resultSet.Error = err.Error()
+			if s.mode == "dev" {
+				s.l.Error("Failed to execute query",
+					zap.Error(err),
+					zap.String("statement", exec.Statement),
+				)
+			} else {
+				s.l.Debug("Failed to execute query",
+					zap.Error(err),
+					zap.String("statement", exec.Statement),
+				)
+			}
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
