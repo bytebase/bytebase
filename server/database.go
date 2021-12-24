@@ -77,7 +77,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		var filteredList []*api.Database
 		role := c.Get(getRoleContextKey()).(api.Role)
-		// If caller is NOT requesting for a particular project and is NOT requesting for a paritcular
+		// If caller is NOT requesting for a particular project and is NOT requesting for a particular
 		// instance or the caller is a Developer, then we will only return databases belonging to the
 		// project where the caller is a member of.
 		// Looking from the UI perspective:
@@ -199,7 +199,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseName: database.Name,
 			})
 			if err == nil {
-				existingDatabase.Project, err = s.composeProjectlByID(ctx, existingDatabase.ProjectID)
+				existingDatabase.Project, err = s.composeProjectByID(ctx, existingDatabase.ProjectID)
 				if err == nil {
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -662,7 +662,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	database.Project, err = s.composeProjectlByID(ctx, database.ProjectID)
+	database.Project, err = s.composeProjectByID(ctx, database.ProjectID)
 	if err != nil {
 		return err
 	}

@@ -99,7 +99,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.composeProjectlByID(ctx, id)
+		project, err := s.composeProjectByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -489,7 +489,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if _, err := s.composeProjectlByID(ctx, id); err != nil {
+		if _, err := s.composeProjectByID(ctx, id); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
@@ -516,7 +516,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		if _, err := s.composeProjectlByID(ctx, id); err != nil {
+		if _, err := s.composeProjectByID(ctx, id); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
 			}
@@ -539,7 +539,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeProjectlByID(ctx context.Context, id int) (*api.Project, error) {
+func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, error) {
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
