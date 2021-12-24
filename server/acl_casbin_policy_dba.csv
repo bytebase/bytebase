@@ -68,6 +68,7 @@ p, DBA, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/check, POST
 p, DBA, /sql/ping, POST
 p, DBA, /sql/syncschema, POST
+p, DBA, /sql/execute, POST
 p, DBA, /vcs, POST
 p, DBA, /vcs, GET
 p, DBA, /vcs/{id}, GET
