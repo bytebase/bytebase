@@ -94,7 +94,9 @@
       <div class="col-span-2">
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
-          v-model:value="state.earliestAllowedTs"
+          :value="
+            state.earliestAllowedTs ? state.earliestAllowedTs * 1000 : null
+          "
           :is-date-disabled="isDayPassed"
           :placeholder="$t('task.earliest-allowed-time-unset')"
           class="w-full"
@@ -102,6 +104,7 @@
           clearable
           @update:value="
             (newTimestampNs) => {
+              state.earliestAllowedTs = newTimestampNs / 1000;
               $emit('update-earliest-allowed-time', newTimestampNs / 1000);
             }
           "
@@ -315,7 +318,7 @@ export default defineComponent({
     const now = new Date();
     const state = reactive<LocalState>({
       earliestAllowedTs: props.task.earliestAllowedTs
-        ? props.task.earliestAllowedTs * 1000
+        ? props.task.earliestAllowedTs
         : null,
     });
 
@@ -323,7 +326,7 @@ export default defineComponent({
       () => props.task,
       (cur) => {
         state.earliestAllowedTs = cur.earliestAllowedTs
-          ? cur.earliestAllowedTs * 1000
+          ? cur.earliestAllowedTs
           : null;
       }
     );
