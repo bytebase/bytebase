@@ -168,13 +168,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
 			}
 
-			err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name)
-			if err != nil {
+			if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 			}
 
-			_, err = s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
-			if err != nil {
+			if _, err = s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", id)).SetInternal(err)
 			}
 		}
