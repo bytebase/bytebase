@@ -354,8 +354,8 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 }
 
 // SetDatabaseLabelList sets the labels for a database.
-func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
-	oldLabels, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
+	oldLabelList, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -370,8 +370,12 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.D
 
 	var ret []*api.DatabaseLabel
 
-	for _, oldLabel := range oldLabels {
+	for _, oldLabel := range oldLabelList {
 		// Archive all old labels
+		// Skip environment label key because we don't store it.
+		if oldLabel.Key == api.EnvironmentKeyName {
+			continue
+		}
 		_, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Archived,
@@ -384,8 +388,12 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labels []*api.D
 		}
 	}
 
-	for _, label := range labels {
+	for _, label := range labelList {
 		// Upsert all new labels
+		// Skip environment label key because we don't store it.
+		if label.Key == api.EnvironmentKeyName {
+			continue
+		}
 		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Normal,
