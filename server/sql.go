@@ -135,10 +135,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		resultSet := &api.SQLResultSet{}
 		if err == nil {
-			resultSet.Result = string(bytes)
+			resultSet.Data = string(bytes)
 			s.l.Debug("Query result",
 				zap.String("statement", exec.Statement),
-				zap.String("result", resultSet.Result),
+				zap.String("data", resultSet.Data),
 			)
 		} else {
 			resultSet.Error = err.Error()

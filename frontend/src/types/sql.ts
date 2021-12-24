@@ -24,6 +24,6 @@ export type QueryInfo = {
 }
 
 export type SqlResultSet = {
-  result: string;
+  data: string;
   error: string;
 };
