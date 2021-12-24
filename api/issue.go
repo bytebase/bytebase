@@ -108,7 +108,7 @@ type IssueCreate struct {
 	Payload          string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
-	// This consoliates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
+	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
 	// we want the complexity resides in the backend.
 	CreateContext string `jsonapi:"attr,createContext"`
 
@@ -136,6 +136,9 @@ type CreateDatabaseContext struct {
 type UpdateSchemaDetail struct {
 	// DatabaseId is the ID of a database.
 	DatabaseID int `json:"databaseId"`
+	// DatabaseName is the name of databases, mutually exclusive to DatabaseId.
+	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
+	DatabaseName string `json:"databaseName"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
 	// Statement is the rollback statement of the statement.
@@ -145,9 +148,12 @@ type UpdateSchemaDetail struct {
 // UpdateSchemaContext is the issue create context for updating database schema.
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
-	MigrationType          db.MigrationType      `json:"migrationType"`
+	MigrationType db.MigrationType `json:"migrationType"`
+	// UpdateSchemaDetail is the details of schema update.
+	// When a project is in tenant mode, there should be one item in the list.
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
-	VCSPushEvent           *common.VCSPushEvent
+	// VCSPushEvent is the event information for VCS push.
+	VCSPushEvent *common.VCSPushEvent
 }
 
 // IssueFind is the API message for finding issues.
@@ -176,7 +182,7 @@ type IssuePatch struct {
 
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
-	// Status is only set manualy via IssueStatusPatch
+	// Status is only set manually via IssueStatusPatch
 	Status      *IssueStatus
 	Description *string `jsonapi:"attr,description"`
 	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
