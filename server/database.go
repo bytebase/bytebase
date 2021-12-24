@@ -170,7 +170,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 			err = s.validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to validate database labels, database labels: %+v", labels)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 			}
 
 			_, err = s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
