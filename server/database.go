@@ -77,7 +77,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		var filteredList []*api.Database
 		role := c.Get(getRoleContextKey()).(api.Role)
-		// If caller is NOT requesting for a particular project and is NOT requesting for a paritcular
+		// If caller is NOT requesting for a particular project and is NOT requesting for a particular
 		// instance or the caller is a Developer, then we will only return databases belonging to the
 		// project where the caller is a member of.
 		// Looking from the UI perspective:
@@ -199,7 +199,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseName: database.Name,
 			})
 			if err == nil {
-				existingDatabase.Project, err = s.composeProjectlByID(ctx, existingDatabase.ProjectID)
+				existingDatabase.Project, err = s.composeProjectByID(ctx, existingDatabase.ProjectID)
 				if err == nil {
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -662,7 +662,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	database.Project, err = s.composeProjectlByID(ctx, database.ProjectID)
+	database.Project, err = s.composeProjectByID(ctx, database.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -701,7 +701,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	rowStatus = api.Normal
-	labels, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &database.ID,
 		RowStatus:  &rowStatus,
 	})
@@ -709,13 +709,23 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	if len(labels) > 0 {
-		labels, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		database.Labels = string(labels)
+	// Since tenants are identified by labels in deployment config, we need an environment
+	// label to identify tenants from different environment in a schema update deployment.
+	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
+
+	// Each database instance is created under a particular environment.
+	// The value of bb.environment is identical to the name of the environment.
+
+	labelList = append(labelList, &api.DatabaseLabel{
+		Key:   api.EnvironmentKeyName,
+		Value: database.Instance.Environment.Name,
+	})
+
+	labels, err := json.Marshal(labelList)
+	if err != nil {
+		return err
 	}
+	database.Labels = string(labels)
 
 	return nil
 }

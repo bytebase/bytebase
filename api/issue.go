@@ -108,7 +108,7 @@ type IssueCreate struct {
 	Payload          string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
-	// This consoliates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
+	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
 	// we want the complexity resides in the backend.
 	CreateContext string `jsonapi:"attr,createContext"`
 
@@ -182,7 +182,7 @@ type IssuePatch struct {
 
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
-	// Status is only set manualy via IssueStatusPatch
+	// Status is only set manually via IssueStatusPatch
 	Status      *IssueStatus
 	Description *string `jsonapi:"attr,description"`
 	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
