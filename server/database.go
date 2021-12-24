@@ -709,8 +709,10 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
+	// Each database instance is created under a particular environment.
+	// The value of bb.environment is identical to the name of the environment.
 	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   "environment",
+		Key:   "bb.environment",
 		Value: database.Instance.Environment.Name,
 	})
 
