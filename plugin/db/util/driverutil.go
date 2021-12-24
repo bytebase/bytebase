@@ -393,21 +393,31 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func Query(ctx context.Context, db *sql.DB, statement string) ([]interface{}, error) {
-	rows, err := db.QueryContext(ctx, statement)
+// Query will execute a readonly / SELECT query.
+func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, limit int) ([]interface{}, error) {
+	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
 	}
+	defer rows.Close()
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, formatError(err)
 	}
 
-	count := len(columnTypes)
+	colCount := len(columnTypes)
+	rowCount := 0
 	resultSet := []interface{}{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, count)
+		scanArgs := make([]interface{}, colCount)
 		for i, v := range columnTypes {
 			switch v.DatabaseTypeName() {
 			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
@@ -421,8 +431,7 @@ func Query(ctx context.Context, db *sql.DB, statement string) ([]interface{}, er
 			}
 		}
 
-		err := rows.Scan(scanArgs...)
-		if err != nil {
+		if err := rows.Scan(scanArgs...); err != nil {
 			return nil, formatError(err)
 		}
 
@@ -452,6 +461,10 @@ func Query(ctx context.Context, db *sql.DB, statement string) ([]interface{}, er
 		}
 
 		resultSet = append(resultSet, rowData)
+		rowCount++
+		if rowCount == limit {
+			break
+		}
 	}
 
 	return resultSet, nil

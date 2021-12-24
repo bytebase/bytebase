@@ -23,6 +23,7 @@ type SQLSyncSchema struct {
 }
 
 // SQLExecute is the API message for execute SQL.
+// For now, we only support readonly / SELECT.
 type SQLExecute struct {
 	InstanceID int `jsonapi:"attr,instanceId"`
 	// For engines like MySQL, databaseName can be empty.
@@ -30,6 +31,9 @@ type SQLExecute struct {
 	Statement    string `jsonapi:"attr,statement"`
 	// For now, Readonly must be true
 	Readonly bool `jsonapi:"attr,readonly"`
+	// The maximum row count returned, only applicable to SELECT query.
+	// Not enforced if limit <= 0.
+	Limit int `jsonapi:"attr,limit"`
 }
 
 // SQLResultSet is the API message for SQL results.

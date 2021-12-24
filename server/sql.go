@@ -124,19 +124,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				resultSet.Error = err.Error()
 				return
-			} else {
-				rowSet, err := driver.Query(ctx, exec.Statement)
-				if err != nil {
-					resultSet.Error = err.Error()
-					return
-				}
-
-				_, err = json.Marshal(rowSet)
-				if err != nil {
-					resultSet.Error = err.Error()
-					return
-				}
 			}
+
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit)
+			if err != nil {
+				resultSet.Error = err.Error()
+				return
+			}
+
+			if _, err = json.Marshal(rowSet); err != nil {
+				resultSet.Error = err.Error()
+				return
+			}
+
 			return
 		}()
 

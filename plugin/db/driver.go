@@ -353,7 +353,8 @@ type Driver interface {
 	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
 	Execute(ctx context.Context, statement string, useTransaction bool) error
 	// Used for execute readonly SELECT statement
-	Query(ctx context.Context, statement string) ([]interface{}, error)
+	// limit is the maximum row count returned. No limit enforced if limit <= 0
+	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
