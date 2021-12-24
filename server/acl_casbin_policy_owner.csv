@@ -73,6 +73,7 @@ p, OWNER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/check, POST
 p, OWNER, /sql/ping, POST
 p, OWNER, /sql/syncschema, POST
+p, OWNER, /sql/execute, POST
 p, OWNER, /vcs, POST
 p, OWNER, /vcs, GET
 p, OWNER, /vcs/{id}, GET

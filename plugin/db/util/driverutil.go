@@ -393,6 +393,83 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
+// Query will execute a readonly / SELECT query.
+func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, limit int) ([]interface{}, error) {
+	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, formatError(err)
+	}
+
+	colCount := len(columnTypes)
+	rowCount := 0
+	resultSet := []interface{}{}
+	for rows.Next() {
+		scanArgs := make([]interface{}, colCount)
+		for i, v := range columnTypes {
+			switch v.DatabaseTypeName() {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT4":
+				scanArgs[i] = new(sql.NullInt64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, formatError(err)
+		}
+
+		rowData := map[string]interface{}{}
+		for i, v := range columnTypes {
+			if z, ok := (scanArgs[i]).(*sql.NullBool); ok {
+				rowData[v.Name()] = z.Bool
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullString); ok {
+				rowData[v.Name()] = z.String
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullInt64); ok {
+				rowData[v.Name()] = z.Int64
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullFloat64); ok {
+				rowData[v.Name()] = z.Float64
+				continue
+			}
+			if z, ok := (scanArgs[i]).(*sql.NullInt32); ok {
+				rowData[v.Name()] = z.Int32
+				continue
+			}
+			rowData[v.Name()] = scanArgs[i]
+		}
+
+		resultSet = append(resultSet, rowData)
+		rowCount++
+		if rowCount == limit {
+			break
+		}
+	}
+
+	return resultSet, nil
+}
+
 func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
 	queryParams := &db.QueryParams{DatabaseType: dbType}
 	queryParams.AddParam("namespace", namespace)
