@@ -22,6 +22,7 @@ type LabelKey struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
+	// bb.environment is a reserved key and identically mapped from environments. It has zero ID and its values are immutable.
 	Key       string   `jsonapi:"attr,key"`
 	ValueList []string `jsonapi:"attr,valueList"`
 }
