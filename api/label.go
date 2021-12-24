@@ -4,6 +4,11 @@ import (
 	"context"
 )
 
+const (
+	// EnvironmentKeyName is the reserved key for environment.
+	EnvironmentKeyName string = "bb.environment"
+)
+
 // LabelKey is the available key for labels.
 type LabelKey struct {
 	ID int `jsonapi:"primary,labelKey"`

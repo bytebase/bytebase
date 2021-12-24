@@ -709,10 +709,26 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
+	// 	Since tenants are identified by labels in deployment config, we need an environment label
+	// to identify tenants from different environment in a schema update deployment.
+	// If we expose the environment label concept in the deployment config, we need it consistently in the label API.
+
+	// Example:
+	// schedule:
+	// deployment1:
+	// bb.environment in "TEST"
+	// deployment2:
+	// bb.environment in "STAGING"
+	// deployment3:
+	// bb.environment in "PROD" AND bb.location in "us-central1"
+	// deployment4:
+	// bb.environment in "PROD"
+
 	// Each database instance is created under a particular environment.
 	// The value of bb.environment is identical to the name of the environment.
+
 	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   "bb.environment",
+		Key:   api.EnvironmentKeyName,
 		Value: database.Instance.Environment.Name,
 	})
 
