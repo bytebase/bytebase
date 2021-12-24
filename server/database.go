@@ -168,7 +168,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
 			}
 
-			err = s.validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name)
+			err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 			}
@@ -830,7 +830,7 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 	return driver, nil
 }
 
-func (s *Server) validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
+func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
 	keyValueList := make(map[string]map[string]bool)
 	for _, labelKey := range labelKeyList {
 		keyValueList[labelKey.Key] = map[string]bool{}
