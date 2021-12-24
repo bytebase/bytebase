@@ -701,7 +701,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	}
 
 	rowStatus = api.Normal
-	labels, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &database.ID,
 		RowStatus:  &rowStatus,
 	})
@@ -709,13 +709,16 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	if len(labels) > 0 {
-		labels, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		database.Labels = string(labels)
+	labelList = append(labelList, &api.DatabaseLabel{
+		Key:   "environment",
+		Value: database.Instance.Environment.Name,
+	})
+
+	labels, err := json.Marshal(labelList)
+	if err != nil {
+		return err
 	}
+	database.Labels = string(labels)
 
 	return nil
 }
