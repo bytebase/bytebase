@@ -10,7 +10,7 @@ import {
 
 function convert(resultSet: ResourceObject): SqlResultSet {
   return {
-    result: JSON.parse((resultSet.attributes.result as string) || "{}"),
+    data: JSON.parse((resultSet.attributes.data as string) || "{}"),
     error: resultSet.attributes.error as string,
   };
 }
