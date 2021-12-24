@@ -35,40 +35,6 @@
         />
       </div>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.when") }}
-        <div class="tooltip-wrapper">
-          <span class="tooltip w-60">{{
-            $t("task.earliest-allowed-time-hint")
-          }}</span>
-          <!-- Heroicons name: outline/question-mark-circle -->
-          <heroicons-outline:question-mark-circle class="h-4 w-4" />
-        </div>
-      </h2>
-      <div class="col-span-2">
-        <n-date-picker
-          v-if="allowEditEarliestAllowedTime"
-          v-model:value="state.earliestAllowedTs"
-          :is-date-disabled="isDayPassed"
-          :placeholder="$t('task.earliest-allowed-time-unset')"
-          class="w-full"
-          type="datetime"
-          clearable
-          @update:value="
-            (newTimestampNs) => {
-              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
-            }
-          "
-        />
-        <span v-else class="textfield col-span-2">
-          {{
-            task.earliestAllowedTs === 0
-              ? $t("task.earliest-allowed-time-unset")
-              : moment(task.earliestAllowedTs * 1000).format("LLL")
-          }}</span
-        >
-      </div>
-
       <template v-for="(field, index) in inputFieldList" :key="index">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ field.name }}
@@ -114,6 +80,40 @@
           />
         </div>
       </template>
+
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        {{ $t("common.when") }}
+        <div class="tooltip-wrapper">
+          <span class="tooltip w-60">{{
+            $t("task.earliest-allowed-time-hint")
+          }}</span>
+          <!-- Heroicons name: outline/question-mark-circle -->
+          <heroicons-outline:question-mark-circle class="h-4 w-4" />
+        </div>
+      </h2>
+      <div class="col-span-2">
+        <n-date-picker
+          v-if="allowEditEarliestAllowedTime"
+          v-model:value="state.earliestAllowedTs"
+          :is-date-disabled="isDayPassed"
+          :placeholder="$t('task.earliest-allowed-time-unset')"
+          class="w-full"
+          type="datetime"
+          clearable
+          @update:value="
+            (newTimestampNs) => {
+              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
+            }
+          "
+        />
+        <span v-else class="textfield col-span-2">
+          {{
+            task.earliestAllowedTs === 0
+              ? $t("task.earliest-allowed-time-unset")
+              : moment(task.earliestAllowedTs * 1000).format("LLL")
+          }}</span
+        >
+      </div>
 
       <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -219,7 +219,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
@@ -229,8 +229,6 @@ import StageSelect from "../components/StageSelect.vue";
 import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-
-type AllowedEditTaskStatus = "PENDING" | "PENDING_APPROVAL";
 
 import { InputField } from "../plugins";
 import {
@@ -253,7 +251,9 @@ import { useRouter } from "vue-router";
 import moment from "moment";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  earliestAllowedTs: number | null;
+}
 
 export default defineComponent({
   name: "IssueSidebar",
@@ -318,6 +318,15 @@ export default defineComponent({
         ? props.task.earliestAllowedTs * 1000
         : null,
     });
+
+    watch(
+      () => props.task,
+      (cur) => {
+        state.earliestAllowedTs = cur.earliestAllowedTs
+          ? cur.earliestAllowedTs * 1000
+          : null;
+      }
+    );
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
