@@ -830,7 +830,7 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 	return driver, nil
 }
 
-func (s *Server) validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentValue string) error {
+func (s *Server) validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
 	keyValueList := make(map[string]map[string]bool)
 	for _, labelKey := range labelKeyList {
 		keyValueList[labelKey.Key] = map[string]bool{}
@@ -839,21 +839,14 @@ func (s *Server) validateDatabaseLabelList(labelList []*api.DatabaseLabel, label
 		}
 	}
 
-	{
-		// environment label is immutable
-		labelKey, ok := keyValueList[api.EnvironmentKeyName]
-		if !ok {
-			return common.Errorf(common.NotFound, fmt.Errorf("database label key %v not found", api.EnvironmentKeyName))
-		}
-		for value := range labelKey {
-			if value != environmentValue {
-				return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentValue, value))
-			}
-		}
-	}
+	var environmentValue *string
 
 	// check label key & value availability
 	for _, label := range labelList {
+		if label.Key == api.EnvironmentKeyName {
+			environmentValue = &label.Value
+			continue
+		}
 		labelKey, ok := keyValueList[label.Key]
 		if !ok {
 			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label key: %v", label.Key))
@@ -863,5 +856,14 @@ func (s *Server) validateDatabaseLabelList(labelList []*api.DatabaseLabel, label
 			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label value %v for key %v", label.Value, label.Key))
 		}
 	}
+
+	// Environment label must exist and is immutable.
+	if environmentValue == nil {
+		return common.Errorf(common.NotFound, fmt.Errorf("database label key %v not found", api.EnvironmentKeyName))
+	}
+	if environmentName != *environmentValue {
+		return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, environmentValue))
+	}
+
 	return nil
 }
