@@ -709,8 +709,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 		return err
 	}
 
-	// Since tenants are identified by labels in deployment config, we need an environment label
-	// to identify tenants from different environment in a schema update deployment.
+	// Since tenants are identified by labels in deployment config, we need an environment
+	// label to identify tenants from different environment in a schema update deployment.
 	// If we expose the environment label concept in the deployment config, we need it consistently in the label API.
 
 	// Each database instance is created under a particular environment.
