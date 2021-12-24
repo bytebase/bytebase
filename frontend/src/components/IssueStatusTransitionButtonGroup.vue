@@ -403,14 +403,6 @@ export default defineComponent({
         return false;
       }
 
-      for (const stage of newIssue.pipeline.stageList) {
-        for (const task of stage.taskList) {
-          if (!task.earliestAllowedTs) {
-            return false;
-          }
-        }
-      }
-
       if (
         newIssue.type == "bb.issue.database.create" ||
         newIssue.type == "bb.issue.database.schema.update"

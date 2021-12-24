@@ -43,6 +43,17 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 		}, nil
 	}
 
+	if payload.EarliestAllowedTs == 0 {
+		return []api.TaskCheckResult{
+			{
+				Status:  api.TaskCheckStatusSuccess,
+				Code:    common.Ok,
+				Title:   "OK",
+				Content: "Earliest allowed time unset",
+			},
+		}, nil
+	}
+
 	return []api.TaskCheckResult{
 		{
 			Status:  api.TaskCheckStatusSuccess,
