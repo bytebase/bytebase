@@ -61,7 +61,11 @@
           "
         />
         <span v-else class="textfield col-span-2">
-          {{ moment(task.earliestAllowedTs * 1000).format("LLL") }}</span
+          {{
+            task.earliestAllowedTs === 0
+              ? $t("task.earliest-allowed-time-unset")
+              : moment(task.earliestAllowedTs * 1000).format("LLL")
+          }}</span
         >
       </div>
 
@@ -226,6 +230,8 @@ import IssueStatusIcon from "../components/IssueStatusIcon.vue";
 import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 
+type AllowedEditTaskStatus = "PENDING" | "PENDING_APPROVAL";
+
 import { InputField } from "../plugins";
 import {
   Database,
@@ -371,26 +377,30 @@ export default defineComponent({
     });
 
     const allowEditAssignee = computed(() => {
+      const issue = props.issue as Issue;
       // We allow the current assignee or DBA to re-assign the issue.
       // Though only DBA can be assigned to the issue, the current
       // assignee might not have DBA role in case its role is revoked after
       // being assigned to the issue.
       return (
         props.create ||
-        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
-          (props.issue as Issue).status == "OPEN" &&
-          (currentUser.value.id == (props.issue as Issue).assignee?.id ||
+        (issue.id != ONBOARDING_ISSUE_ID &&
+          issue.status == "OPEN" &&
+          (currentUser.value.id == issue.assignee?.id ||
             isDBAOrOwner(currentUser.value.role)))
       );
     });
 
     const allowEditEarliestAllowedTime = computed(() => {
+      const issue = props.issue as Issue;
+      const task = props.task as Task;
       // only the assignee is allowed to modify EarliestAllowedTime
       return (
         props.create ||
-        ((props.issue as Issue).id != ONBOARDING_ISSUE_ID &&
-          (props.issue as Issue).status == "OPEN" &&
-          currentUser.value.id == (props.issue as Issue).assignee?.id)
+        (issue.id != ONBOARDING_ISSUE_ID &&
+          issue.status == "OPEN" &&
+          (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
+          currentUser.value.id == issue.assignee?.id)
       );
     });
 
