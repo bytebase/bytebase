@@ -8,6 +8,8 @@ import (
 const (
 	// EnvironmentKeyName is the reserved key for environment.
 	EnvironmentKeyName string = "bb.environment"
+
+	labelLengthMax = 63
 )
 
 // LabelKey is the available key for labels.
@@ -52,8 +54,8 @@ type LabelKeyPatch struct {
 // Validate validates the sanity of patch values.
 func (patch *LabelKeyPatch) Validate() error {
 	for _, v := range patch.ValueList {
-		if len(v) <= 0 || len(v) >= 64 {
-			return fmt.Errorf("label value has a maximum length of 63 characters and cannot be empty")
+		if len(v) <= 0 || len(v) > labelLengthMax {
+			return fmt.Errorf("label value has a maximum length of %v characters and cannot be empty", labelLengthMax)
 		}
 	}
 	return nil
