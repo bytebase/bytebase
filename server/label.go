@@ -58,6 +58,10 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch label key request").SetInternal(err)
 		}
+
+		if err := patch.Validate(); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid patch label key request").SetInternal(err)
+		}
 		// We don't allow updating reserved environment label keys. Since its ID is zero, it cannot be updated by default.
 
 		labelKey, err := s.LabelService.PatchLabelKey(ctx, patch)

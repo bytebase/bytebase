@@ -162,6 +162,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			var labels []*api.DatabaseLabel
 			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
 
+			// For scalability, each database can have up to four labels for now.
+			if len(labels) > api.DatabaseLabelSizeMax {
+				err := fmt.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
+
 			rowStatus := api.Normal
 			labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 			if err != nil {

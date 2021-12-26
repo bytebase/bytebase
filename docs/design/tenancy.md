@@ -322,7 +322,7 @@ We have some reserved/built-in keys to simplify the onboarding and be consistent
 | -------------- | ------------------------------------------------------------------ |
 | bb.location    | The location of a database such as region, zone, datacenter names. |
 | bb.tenant      | The tenant name of a customer.                                     |
-| bb.environment | The environment name mappped from instance environment customer.   |
+| bb.environment | The environment name mappped from instance environment.            |
 
 Note, bb.environemnt labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
 
