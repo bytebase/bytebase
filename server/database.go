@@ -164,7 +164,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 			// For scalability, each database can have up to four labels for now.
 			if len(labels) > 4 {
-				err := fmt.Errorf("database labels are up to a maximum of 8")
+				err := fmt.Errorf("database labels are up to a maximum of 4")
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 
