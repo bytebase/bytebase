@@ -9,7 +9,7 @@ const (
 	// EnvironmentKeyName is the reserved key for environment.
 	EnvironmentKeyName string = "bb.environment"
 
-	// DatabaseLabelSizeMax is the maxmium size of database labels.
+	// DatabaseLabelSizeMax is the maximium size of database labels.
 	DatabaseLabelSizeMax = 4
 	labelLengthMax       = 63
 )
