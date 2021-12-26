@@ -111,7 +111,7 @@
         />
         <span v-else class="textfield col-span-2">
           {{
-            task.earliestAllowedTs === 0
+            task.earliestAllowedTs
               ? $t("task.earliest-allowed-time-unset")
               : moment(task.earliestAllowedTs * 1000).format("LLL")
           }}</span
