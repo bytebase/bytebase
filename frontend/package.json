@@ -15,6 +15,7 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
+    "@vueblocks/vue-use-vuex": "^0.2.11",
     "@vueuse/core": "^7.0.1",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.2",

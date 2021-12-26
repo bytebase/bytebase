@@ -179,4 +179,5 @@ export interface SqlEditorState {
   currentInstanceId: InstanceId;
   currentDatabaseId: DatabaseId;
   currentTableId: TableId;
+  queryResult: Array<Record<any, any>>;
 }
