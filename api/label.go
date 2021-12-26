@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 )
 
 const (
@@ -46,6 +47,16 @@ type LabelKeyPatch struct {
 
 	// Domain specific fields
 	ValueList []string `jsonapi:"attr,valueList"`
+}
+
+// Validate validates the sanity of patch values.
+func (patch *LabelKeyPatch) Validate() error {
+	for _, v := range patch.ValueList {
+		if len(v) <= 0 || len(v) >= 64 {
+			return fmt.Errorf("label value has a maximum length of 63 characters and cannot be empty")
+		}
+	}
+	return nil
 }
 
 // DatabaseLabel is the label associated with a database.
