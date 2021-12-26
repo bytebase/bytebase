@@ -3,12 +3,14 @@ import {
   ConnectionInfo,
   InstanceId,
   INSTANCE_OPERATION_TIMEOUT,
+  QueryInfo,
   ResourceObject,
   SqlResultSet,
 } from "../../types";
 
 function convert(resultSet: ResourceObject): SqlResultSet {
   return {
+    data: JSON.parse((resultSet.attributes.data as string) || "{}"),
     error: resultSet.attributes.error as string,
   };
 }
@@ -64,6 +66,28 @@ const actions = {
       });
     }
 
+    return resultSet;
+  },
+  async query({ dispatch }: any, queryInfo: QueryInfo) {
+    const data = (
+      await axios.post(
+        `/api/sql/execute`,
+        {
+          data: {
+            type: "sqlExecute",
+            attributes: {
+              ...queryInfo,
+              readonly: true
+            },
+          },
+        },
+        {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        }
+      )
+    ).data.data;
+
+    const resultSet = convert(data);
     return resultSet;
   },
 };

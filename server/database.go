@@ -148,6 +148,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Patch database labels
 		// We will completely replace the old labels with the new ones
 		if databasePatch.Labels != nil {
+			database, err := s.composeDatabaseByFind(ctx, &api.DatabaseFind{
+				ID: &id,
+			})
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
@@ -159,8 +162,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			var labels []*api.DatabaseLabel
 			json.Unmarshal([]byte(*databasePatch.Labels), &labels)
 
-			_, err := s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID)
+			rowStatus := api.Normal
+			labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
+			}
+
+			if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
+			}
+
+			if _, err = s.LabelService.SetDatabaseLabelList(ctx, labels, databasePatch.ID, databasePatch.UpdaterID); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", id)).SetInternal(err)
 			}
 		}
@@ -814,4 +826,42 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, instance.Username, err))
 	}
 	return driver, nil
+}
+
+func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
+	keyValueList := make(map[string]map[string]bool)
+	for _, labelKey := range labelKeyList {
+		keyValueList[labelKey.Key] = map[string]bool{}
+		for _, value := range labelKey.ValueList {
+			keyValueList[labelKey.Key][value] = true
+		}
+	}
+
+	var environmentValue *string
+
+	// check label key & value availability
+	for _, label := range labelList {
+		if label.Key == api.EnvironmentKeyName {
+			environmentValue = &label.Value
+			continue
+		}
+		labelKey, ok := keyValueList[label.Key]
+		if !ok {
+			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label key: %v", label.Key))
+		}
+		_, ok = labelKey[label.Value]
+		if !ok {
+			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label value %v for key %v", label.Value, label.Key))
+		}
+	}
+
+	// Environment label must exist and is immutable.
+	if environmentValue == nil {
+		return common.Errorf(common.NotFound, fmt.Errorf("database label key %v not found", api.EnvironmentKeyName))
+	}
+	if environmentName != *environmentValue {
+		return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, environmentValue))
+	}
+
+	return nil
 }

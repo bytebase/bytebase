@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.1
 	github.com/VictoriaMetrics/fastcache v1.6.0
-	github.com/casbin/casbin/v2 v2.29.2
+	github.com/casbin/casbin/v2 v2.40.6
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/golang/protobuf v1.5.2 // indirect

@@ -16,6 +16,14 @@ export type ConnectionInfo = {
   instanceId?: InstanceId;
 };
 
+export type QueryInfo = {
+  instanceId: InstanceId;
+  databaseName?: string;
+  statement: string;
+  limit?: number;
+}
+
 export type SqlResultSet = {
+  data: string;
   error: string;
 };
