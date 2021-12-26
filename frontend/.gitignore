@@ -2,6 +2,7 @@
 .eslintcache
 node_modules
 /dist
+components.d.ts
 
 # local env files
 .env.local

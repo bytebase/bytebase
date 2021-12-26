@@ -39,7 +39,7 @@ type SQLExecute struct {
 // SQLResultSet is the API message for SQL results.
 type SQLResultSet struct {
 	// A list of rows marshalled into a JSON.
-	Result string `jsonapi:"attr,result"`
+	Data string `jsonapi:"attr,data"`
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
 	Error string `jsonapi:"attr,error"`
 }
