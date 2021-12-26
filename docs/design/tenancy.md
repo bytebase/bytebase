@@ -27,7 +27,7 @@ The labels applied to a resource have the following requirements:
 - Keys and values cannot be empty, and have a maximum length of 63 characters. Keys should only have alphanumeric characters ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.). Dots are used for namespace prefixes, e.g. “bb.location”. Namespace prefix is required.
 - The key portion of a label must be unique for a resource. However, the same key or key:value label can be applied to different resources so that labels are not unique identifiers for resources.
 - Labels follow the CRUD resource model.
-- Labels keys are defined at workspace level by workspace owners. Project owners are only allowed to use these predefined label keys. We define it at workspace level for convenience and can be expanded later when we have more hierarchical use cases later (environment, project, etc). Note, we don't allow users to define label keys at all at first but provide several predefined label keys.
+- Labels keys are defined at workspace level by workspace owners. Project owners are only allowed to use these predefined label keys. We define it at workspace level for convenience and can be expanded later when we have more hierarchical use cases later (environment, project, etc). Note, we don't allow users to define label keys at all at first but provide several predefined label keys. Initially, workspace owners also need to pre-define label values before values are used as database labels, because many labels such as locations need tight controls by DBAs and this can simplify some of the user journeys without re-typing values every single time.
 - There are system reserved labels (see Appendix).
 - Labels must be re-applied when a database is created or moved to a different project.
 
@@ -240,14 +240,33 @@ CREATE TABLE label_key (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    key TEXT NOT NULL UNIQUE
+    key TEXT NOT NULL
 );
 
+-- key's are unique within the label_key table.
 CREATE UNIQUE INDEX idx_label_key_key ON label_key(key);
+
+CREATE TABLE label_value (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+    ) DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    FOREIGN KEY(key) REFERENCES label_key(key)
+);
+
+-- key/value's are unique within the label_value table.
+CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
 ```
 
 #### Labels
-We need some JOINs between project and label tables to find databases that match the label patterns in deployment configurations.
+We need some JOINs between project and label tables to find databases that match the label patterns in deployment configurations. This label has a [foreign key](https://www.sqlite.org/foreignkeys.html) to label_value table so that database labels can only use pre-defined keys and values. PRAGMA foreign_keys should be turned on.
+
 ```
 CREATE TABLE db_label (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -259,11 +278,12 @@ CREATE TABLE db_label (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
-    key TEXT NOT NULL REFERENCES label_key (key),
+    key TEXT NOT NULL,
     value TEXT NOT NULL,
-    UNIQUE(database_id, key)
+    FOREIGN KEY(key, value) REFERENCES label_value(key, value)
 );
 
+-- database_id/key's are unique within the db_label table.
 CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
 ```
 
@@ -298,10 +318,14 @@ This will be a new ENUM field on the existing [project table](https://github.com
 ### Reserved label keys
 We have some reserved/built-in keys to simplify the onboarding and be consistent with other products in case of any future integrations.
 
-| Name        | Description                                                        |
-| ----------- | ------------------------------------------------------------------ |
-| bb.location | The location of a database such as region, zone, datacenter names. |
-| bb.tenant   | The tenant name of a customer.                                     |
+| Name           | Description                                                        |
+| -------------- | ------------------------------------------------------------------ |
+| bb.location    | The location of a database such as region, zone, datacenter names. |
+| bb.tenant      | The tenant name of a customer.                                     |
+| bb.environment | The environment name mappped from instance environment customer.   |
+
+Note, bb.environemnt labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
+
 
 ### Octopus Tenant SaaS Deployment
 https://octopus.com/docs/tenants/guides/multi-tenant-saas-application/creating-project-release
