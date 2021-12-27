@@ -41,7 +41,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created database relationship").SetInternal(err)
 		}
 
-		// Set database labels
+		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
@@ -163,7 +163,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		// Patch database labels
-		// We will completely replace the old labels with the new ones
+		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
+		// must match instance environment.
 		if databasePatch.Labels != nil {
 			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, databasePatch.UpdaterID); err != nil {
 				return err
