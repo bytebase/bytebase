@@ -63,14 +63,17 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 			},
 			&api.PipelineCreate{
 				StageList: []api.StageCreate{
-					{},
+					{
+						TaskList: []api.TaskCreate{
+							{
+								DatabaseID: &db[1],
+							},
+						},
+					},
 					{
 						TaskList: []api.TaskCreate{
 							{
 								DatabaseID: &db[0],
-							},
-							{
-								DatabaseID: &db[1],
 							},
 						},
 					},
