@@ -80,6 +80,7 @@ type TaskDatabaseCreatePayload struct {
 	Statement    string `json:"statement,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
+	Labels       string `json:"labels,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
@@ -128,10 +129,10 @@ type Task struct {
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
 
 	// Domain specific fields
-	Name        string     `jsonapi:"attr,name"`
-	Status      TaskStatus `jsonapi:"attr,status"`
-	Type        TaskType   `jsonapi:"attr,type"`
-	Payload     string     `jsonapi:"attr,payload"`
+	Name              string     `jsonapi:"attr,name"`
+	Status            TaskStatus `jsonapi:"attr,status"`
+	Type              TaskType   `jsonapi:"attr,type"`
+	Payload           string     `jsonapi:"attr,payload"`
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
 }
 
@@ -154,12 +155,13 @@ type TaskCreate struct {
 	Type   TaskType   `jsonapi:"attr,type"`
 	// Payload is derived from fields below it
 	Payload           string
-	EarliestAllowedTs       int64  `jsonapi:"attr,earliestAllowedTs"`
+	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
 	Statement         string `jsonapi:"attr,statement"`
 	RollbackStatement string `jsonapi:"attr,rollbackStatement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
+	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *common.VCSPushEvent
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
@@ -194,8 +196,8 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Statement   *string `jsonapi:"attr,statement"`
-	Payload     *string
+	Statement         *string `jsonapi:"attr,statement"`
+	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
