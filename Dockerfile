@@ -5,63 +5,63 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-# FROM mhart/alpine-node:14.17.3 as frontend
+FROM mhart/alpine-node:14.17.3 as frontend
 
-# WORKDIR /frontend-build
+WORKDIR /frontend-build
 
-# # Install build dependency (e.g. vite)
-# COPY ./frontend/package.json ./frontend/yarn.lock ./
-# RUN yarn
+# Install build dependency (e.g. vite)
+COPY ./frontend/package.json ./frontend/yarn.lock ./
+RUN yarn
 
-# COPY ./frontend/ .
+COPY ./frontend/ .
 
-# # Build frontend
-# RUN yarn release-docker
+# Build frontend
+RUN yarn release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 
-# ARG VERSION="development"
-# ARG GO_VERSION="unknown"
-# ARG GIT_COMMIT="unknown"
-# ARG BUILD_TIME="unknown"
-# ARG BUILD_USER="unknown"
+ARG VERSION="development"
+ARG GO_VERSION="unknown"
+ARG GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
 
-# # Need gcc musl-dev for CGO_ENABLED=1
-# RUN apk --no-cache add gcc musl-dev
+# Need gcc musl-dev for CGO_ENABLED=1
+RUN apk --no-cache add gcc musl-dev
 
 WORKDIR /backend-build
 
-# COPY . .
+COPY . .
 
-# # Copy frontend asset
-# COPY --from=frontend /frontend-build/dist ./server/dist
+# Copy frontend asset
+COPY --from=frontend /frontend-build/dist ./server/dist
 
-# # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-# # go-sqlite3 requires CGO_ENABLED
-# RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-#     --tags "release" \
-#     -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
-#     -o bytebase \
-#     ./bin/server/main.go
+# -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
+# go-sqlite3 requires CGO_ENABLED
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    --tags "release" \
+    -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
+    -o bytebase \
+    ./bin/server/main.go
 
-# # Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
-# FROM alpine:3.14.0 as monolithic
+# Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
+FROM alpine:3.14.0 as monolithic
 
-# ARG VERSION="development"
-# ARG GIT_COMMIT="unknown"
-# ARG BUILD_TIME="unknown"
-# ARG BUILD_USER="unknown"
+ARG VERSION="development"
+ARG GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
 
-# # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
-# LABEL org.opencontainers.image.version=${VERSION}
-# LABEL org.opencontainers.image.revision=${GIT_COMMIT}
-# LABEL org.opencontainers.image.created=${BUILD_TIME}
-# LABEL org.opencontainers.image.authors=${BUILD_USER}
+# See https://github.com/opencontainers/image-spec/blob/master/annotations.md
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.revision=${GIT_COMMIT}
+LABEL org.opencontainers.image.created=${BUILD_TIME}
+LABEL org.opencontainers.image.authors=${BUILD_USER}
 
-# COPY --from=backend /backend-build/bytebase /usr/local/bin/
+COPY --from=backend /backend-build/bytebase /usr/local/bin/
 
-# # Directory to store the data, which can be referenced as the mounting point.
-# RUN mkdir -p /var/opt/bytebase
+# Directory to store the data, which can be referenced as the mounting point.
+RUN mkdir -p /var/opt/bytebase
 
 # Copy online demo starting scripts
 COPY ./scripts /usr/local/bin/
