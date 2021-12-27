@@ -895,7 +895,7 @@ export default defineComponent({
           taskPatch,
         })
         .then((updatedTask) => {
-          // For now, the task/patchTask is to change statement and earliest allowed time, which will trigger async task check.
+          // For now, the only task/patchTask is to change statement, which will trigger async task check.
           // Thus we use the short poll interval
           pollIssue(POST_CHANGE_POLL_INTERVAL);
           if (postUpdated) {

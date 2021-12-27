@@ -175,7 +175,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 
 		}
-		// create an activity and trigger task check for earliest allowed time update
+		// create an activity for earliest allowed time update
 		if updatedTask.EarliestAllowedTs != task.EarliestAllowedTs {
 			// create an activity
 			issueFind := &api.IssueFind{
