@@ -52,7 +52,7 @@ export function activityName(type: ActivityType): string {
     case "bb.pipeline.task.statement.update":
       return t("activity.type.pipeline-task-statement-update");
     case "bb.pipeline.task.general.earliest-allowed-time.update":
-      return t("activity.type.pipeline-task-statement-update");
+      return t("activity.type.pipeline-task-earliest-allowed-time-update");
     case "bb.member.create":
       return t("activity.type.member-create");
     case "bb.member.role.update":
