@@ -197,10 +197,11 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
-	// If there is not any taskcheck scheduled before, we should only schedule one if user has specified a non-default value.
+	// If there is not any task check scheduled before, we should only schedule one if user has specified a non-default value.
 	if len(taskCheckRunList) == 0 {
 		return task.EarliestAllowedTs != 0, nil
 	}
+
 	if forceSchedule {
 		return true, nil
 	}
