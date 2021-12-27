@@ -182,7 +182,7 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 // 1. We do not want anything happen if user does not set this field at the frontend.
 // 2. If user has specified this field once (even if she sets it to default latter), we will schedule one ever since.
 // 3. We only want to schedule one if the payload field is different from the last run (unless user forces one).
-//	  (This rule is always satisfied since every time user patch tha EarliestAllowedTs, we will check if this filed has changed, and force scheduling one if needed.)
+//    (This rule is always satisfied since everytime when user patch the EarliestAllowedTs, we will check if this filed has been modified and force scheduling one if needed.)
 // 4. Once the specified time has passed, schedule one immediately to unblock the task.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
@@ -210,10 +210,6 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRunList[0].Payload), taskCheckPayload); err != nil {
 		return false, err
-	}
-
-	if taskCheckPayload.EarliestAllowedTs != task.EarliestAllowedTs {
-		return true, nil
 	}
 
 	if time.Now().After(time.Unix(task.EarliestAllowedTs, 0)) {
