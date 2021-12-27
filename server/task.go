@@ -534,8 +534,9 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			Name:          payload.DatabaseName,
 			CharacterSet:  payload.CharacterSet,
 			Collation:     payload.Collation,
+			Labels:        &payload.Labels,
 		}
-		_, err = s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			// Just emits an error instead of failing, since we have another periodic job to sync db info.
 			// Though the db will be assigned to the default project instead of the desired project in that case.
@@ -545,6 +546,27 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				zap.Int("instance_id", task.InstanceID),
 				zap.Error(err),
 			)
+		}
+		err = s.composeDatabaseRelationship(ctx, database)
+		if err != nil {
+			s.l.Error("failed to compose database relationship after creating database",
+				zap.String("database_name", payload.DatabaseName),
+				zap.Int("project_id", payload.ProjectID),
+				zap.Int("instance_id", task.InstanceID),
+				zap.Error(err),
+			)
+		}
+		// Set database labels, except bb.environment is immutable and must match instance environment.
+		// This needs to be after we compose database relationship.
+		if err != nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
+				s.l.Error("failed to record database labels after creating database",
+					zap.String("database_name", payload.DatabaseName),
+					zap.Int("project_id", payload.ProjectID),
+					zap.Int("instance_id", task.InstanceID),
+					zap.Error(err),
+				)
+			}
 		}
 	}
 
