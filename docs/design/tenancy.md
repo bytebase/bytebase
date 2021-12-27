@@ -47,7 +47,7 @@ Bytebase uses issues to track schema deployment. Internally, issues are converte
 
 Deployment specification follows [Kubernetes' Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) style. A deployment configuration includes multiple deployments meaning different stages in the pipeline. The change will be applied to tenants that match the label selector. The requirements follow `AND` operator for matchExpressions. We don't use k8s' matchLabels because this can be expressed by `In` operation in matchExpression. For `OR` operation requirements, e.g. deployment updating two regions us-central1 and us-central2, `In` operator in LabelSelectorRequirement should already cover most use cases. Otherwise, multiple deployments are needed using some boolean expression..
 
-Tenant databases matching the query in a stage should exclude all databases from previous stages. Deployment configurations are not retroactive meaning updating configuration will not update existing deployments in the issue. We will only support one deployment configuration at first.
+Tenant databases matching the query in a stage should not show up in the following stages because they have been updated already. Deployment configurations are not retroactive meaning updating configuration will not update existing deployments in the issue. We will only support one deployment configuration at first.
 
 ```
 type DeploymentConfig struct {
@@ -219,8 +219,8 @@ Since we will still take the database name that's plugged to deployment configur
 ```
 
 #### Other Workflows
-- Database Schema Baseline: this creates a schema baseline when an existing database is added to Bytebase system. This follows the exact Schema Change workflow process above.
-- Database Create: this creates a new database of an instance. This workflow follows along instances than databases so there is no tenant support at the moment unless we apply tenant and label to instances.
+- Database Create: this creates a new database of an instance with labels in addition. This new database should look like a clone (same schema, no data) of existing tenants, if we look at region turn-up process. The workflow should look like schema change except we append the schema of an existing tenant database to the create database statement.
+- Database Schema Baseline (transfer project): this creates a schema baseline when an existing instance is added to Bytebase system. When an instance is added, its databases are added to a default project. When any database is transferred to a tenant mode project, it should only be allowed when its schema is the same as any other tenant databases and its schema version should be set consistently similar to Database Create workflow above.
 
 ### Permissions
 - Available label keys: workspace owners can read/write; developers can read.
