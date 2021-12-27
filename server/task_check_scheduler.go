@@ -177,12 +177,10 @@ func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecuto
 	s.executors[taskType] = executor
 }
 
-// Why this comment is such long and tedious? It a long story...
-// TL;DR
-// 1. We do not want anything happen if user does not set this field at the frontend.
-// 2. If user has specified this field once (even if she sets it to default latter), we will schedule one ever since.
-// 3. We only want to schedule one if the payload field is different from the last run (unless user forces one)
-// 4. Once the specified time has passed, schedule one immediately to unblock the task.
+// Returns true if we meet either of the following conditions:
+//   1. Task has a non-default value and no task check has run before (so we are about to kick of the check the first time)
+//   2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
+// On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
 	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
@@ -197,26 +195,12 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 		return false, err
 	}
 
-	// If there is not any taskcheck scheduled before, we should only schedule one if user has specified a non-default value.
+	// If there is not any task check scheduled before, we should only schedule one if user has specified a non-default value.
 	if len(taskCheckRunList) == 0 {
 		return task.EarliestAllowedTs != 0, nil
 	}
 
-	// Do not schedule one if there is already one running.
-	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
-		return false, nil
-	}
-
 	if forceSchedule {
-		return true, nil
-	}
-
-	taskCheckPayload := &api.TaskCheckEarliestAllowedTimePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRunList[0].Payload), taskCheckPayload); err != nil {
-		return false, err
-	}
-
-	if taskCheckPayload.EarliestAllowedTs != task.EarliestAllowedTs {
 		return true, nil
 	}
 
