@@ -27,6 +27,8 @@ const (
 	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
+	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
+	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
 
 	// Member related
 
@@ -175,6 +177,16 @@ type ActivityPipelineTaskStatementUpdatePayload struct {
 	TaskID       int    `json:"taskId"`
 	OldStatement string `json:"oldStatement,omitempty"`
 	NewStatement string `json:"newStatement,omitempty"`
+	// Used by inbox to display info without paying the join cost
+	IssueName string `json:"issueName"`
+	TaskName  string `json:"taskName"`
+}
+
+// ActivityPipelineTaskEarliestAllowedTimeUpdatePayload is the API message payloads for pipeline task the earliest allowed time updates.
+type ActivityPipelineTaskEarliestAllowedTimeUpdatePayload struct {
+	TaskID               int   `json:"taskId"`
+	OldEarliestAllowedTs int64 `json:"oldEarliestAllowedTs,omitempty"`
+	NewEarliestAllowedTs int64 `json:"newEarliestAllowedTs,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
