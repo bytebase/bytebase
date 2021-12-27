@@ -755,7 +755,6 @@ export default defineComponent({
           earliestAllowedTs: newEarliestAllowedTsMs,
         };
         patchTask((selectedTask.value as Task).id, taskPatch);
-        console.log("selectedTask", selectedTask.value.earliestAllowedTs);
       }
     };
 

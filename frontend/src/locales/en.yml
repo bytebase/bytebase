@@ -180,7 +180,8 @@ task:
     earliest-allowed-time: Earliest allowed time
   earliest-allowed-time-hint: >-
     '@:{'common.when'}' specifies the expected execution timing for this task.
-    If this field is not specified, the task will be executed once it has passed all other gating criteria.
+    If this field is not specified, the task will be executed once it has passed
+    all other gating criteria.
   earliest-allowed-time-unset: Unset
   comment: Comment
   invoker: Invoker
@@ -287,6 +288,7 @@ activity:
     project-member-create: add project member
     project-member-delete: delete project member
     project-member-role-update: change project member role
+    pipeline-task-earliest-allowed-time-update: update earliest allowed time
   sentence:
     created-issue: created issue
     commented: commented
