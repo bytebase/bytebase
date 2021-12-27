@@ -281,6 +281,7 @@ activity:
     project-member-create: 添加项目成员
     project-member-delete: 删除项目成员
     project-member-role-update: 变更项目成员角色
+    pipeline-task-earliest-allowed-time-update: 更新最早允许执行时间
   sentence:
     created-issue: 创建工单
     commented: 评论

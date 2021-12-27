@@ -276,6 +276,8 @@ func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool,
 		return true, nil
 	case api.ActivityPipelineTaskStatementUpdate:
 		return true, nil
+	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
+		return true, nil
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := new(api.ActivityPipelineTaskStatusUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {

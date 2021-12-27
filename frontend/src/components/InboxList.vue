@@ -61,6 +61,7 @@ import {
   ActivityIssueStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
+  ActivityTaskEarliestAllowedTimeUpdatePayload,
   Activity,
   Inbox,
 } from "../types";
@@ -69,6 +70,7 @@ import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
+import moment from "moment";
 
 export default defineComponent({
   name: "InboxList",
@@ -100,7 +102,8 @@ export default defineComponent({
     const showCreator = (activity: Activity): boolean => {
       return (
         activity.type.startsWith("bb.issue.") ||
-        activity.type == "bb.pipeline.task.statement.update"
+        activity.type == "bb.pipeline.task.statement.update" ||
+        activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
       );
     };
 
@@ -167,6 +170,22 @@ export default defineComponent({
             name: "SQL",
             oldValue: payload.oldStatement,
             newValue: payload.newStatement,
+          });
+        }
+        case "bb.pipeline.task.general.earliest-allowed-time.update": {
+          const payload =
+            activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
+          const oldTs = payload.oldEarliestAllowedTs;
+          const newTs = payload.newEarliestAllowedTs;
+
+          return t("activity.sentence.changed-from-to", {
+            name: "earliest allowed time",
+            oldValue: oldTs
+              ? moment(oldTs * 1000)
+              : t("task.earliest-allowed-time-unset"),
+            newValue: newTs
+              ? moment(newTs * 1000)
+              : t("task.earliest-allowed-time-unset"),
           });
         }
       }

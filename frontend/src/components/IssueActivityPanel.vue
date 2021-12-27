@@ -350,6 +350,7 @@ import {
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
+  ActivityTaskEarliestAllowedTimeUpdatePayload,
   UNKNOWN_ID,
   EMPTY_ID,
   SYSTEM_BOT_ID,
@@ -366,6 +367,7 @@ import {
 } from "../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
 import { useI18n } from "vue-i18n";
+import moment from "moment";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -580,6 +582,12 @@ export default defineComponent({
         }
       } else if (activity.type == "bb.pipeline.task.file.commit") {
         return "commit";
+      } else if (activity.type == "bb.pipeline.task.statement.update") {
+        return "update";
+      } else if (
+        activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
+      ) {
+        return "update";
       }
 
       return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
@@ -675,6 +683,17 @@ export default defineComponent({
             name: "SQL",
             oldValue: payload.oldStatement,
             newValue: payload.newStatement,
+          });
+        }
+        case "bb.pipeline.task.general.earliest-allowed-time.update": {
+          const payload =
+            activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
+          const newVal = payload.newEarliestAllowedTs;
+          const oldVal = payload.oldEarliestAllowedTs;
+          return t("activity.sentence.changed-from-to", {
+            name: "earliest allowed time",
+            oldValue: oldVal ? moment(oldVal * 1000) : "Unset",
+            newValue: newVal ? moment(newVal * 1000) : "Unset",
           });
         }
       }
