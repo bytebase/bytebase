@@ -64,7 +64,7 @@ WORKDIR /backend-build
 # RUN mkdir -p /var/opt/bytebase
 
 # Copy online demo starting scripts
-COPY ./scripts .
+COPY ./scripts /usr/local/bin/
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
