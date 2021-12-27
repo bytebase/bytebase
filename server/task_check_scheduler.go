@@ -201,12 +201,6 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 	if len(taskCheckRunList) == 0 {
 		return task.EarliestAllowedTs != 0, nil
 	}
-
-	// Do not schedule one if there is already one running.
-	if taskCheckRunList[0].Status == api.TaskCheckRunRunning {
-		return false, nil
-	}
-
 	if forceSchedule {
 		return true, nil
 	}

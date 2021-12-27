@@ -209,6 +209,29 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", updatedTask.Name)).SetInternal(err)
 			}
+
+			// trigger task check
+			payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
+				EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+			}
+			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               api.SystemBotID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: false,
+			})
+			if err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				s.l.Error("Failed to trigger timing check after changing task earliest allowed time",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
