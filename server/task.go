@@ -534,6 +534,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			Name:          payload.DatabaseName,
 			CharacterSet:  payload.CharacterSet,
 			Collation:     payload.Collation,
+			Labels:        &payload.Labels,
 		}
 		_, err = s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {

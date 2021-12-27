@@ -618,6 +618,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		payload.ProjectID = issueCreate.ProjectID
 		payload.CharacterSet = m.CharacterSet
 		payload.Collation = m.Collation
+		payload.Labels = m.Labels
 		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
