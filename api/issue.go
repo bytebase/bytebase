@@ -130,6 +130,9 @@ type CreateDatabaseContext struct {
 	BackupID int `json:"backupId"`
 	// BackupName is the name of the backup.
 	BackupName string `json:"backupName"`
+	// Labels is a json-encoded string from a list of DatabaseLabel.
+	// See definition in api.Database.
+	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
 // UpdateSchemaDetail is the detail of updating database schema.

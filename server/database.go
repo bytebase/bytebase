@@ -43,7 +43,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
-		if databaseCreate.Labels != nil {
+		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
 				return err
 			}
