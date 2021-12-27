@@ -1,3 +1,5 @@
+#!/bin/sh
+
 function seedData(){
     echo 'Seeding data for online demo'
     bytebase --host http://localhost --port 80 --demo >& /dev/null &
