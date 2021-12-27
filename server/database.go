@@ -627,7 +627,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, updaterID int) error {
-	// databasePatch.Labels is a JSON-encoded string
 	var labels []*api.DatabaseLabel
 	json.Unmarshal([]byte(labelsJSON), &labels)
 
