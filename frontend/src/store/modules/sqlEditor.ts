@@ -1,20 +1,28 @@
-import { SqlEditorState, ConnectionAtom } from "../../types";
+import { isEmpty } from "lodash-es";
+
+import { SqlEditorState, ConnectionAtom, QueryInfo } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
-  currentInstanceId: 6100,
-  currentDatabaseId: 0,
-  currentTableId: 0,
+  connectionMeta: {
+    instanceId: 6100,
+    instanceName: "",
+    databaseId: 0,
+    databaseName: "",
+    tableId: 0,
+    tableName: "",
+  },
   queryStatement: "",
+  selectedStatement: "",
   queryResult: [],
 });
 
 const getters = {
   connectionTreeByInstanceId(state: SqlEditorState) {
     return state.connectionTree.find((item) => {
-      return item.id === state.currentInstanceId;
+      return item.id === state.connectionMeta.instanceId;
     });
   },
   connectionInfo(
@@ -53,7 +61,11 @@ const getters = {
     };
   },
   currentSlug(state: SqlEditorState) {
-    return `${state.currentInstanceId}/${state.currentDatabaseId}/${state.currentTableId}`;
+    const connectionMeta = state.connectionMeta;
+    return `${connectionMeta.instanceId}/${connectionMeta.databaseId}/${connectionMeta.tableId}`;
+  },
+  isEmptyStatement(state: SqlEditorState) {
+    return isEmpty(state.queryStatement);
   },
 };
 
@@ -63,6 +75,24 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
   }),
+  async executeQueries(
+    { commit, dispatch, state }: any,
+    payload: Partial<QueryInfo>
+  ) {
+    const res = await dispatch(
+      "sql/query",
+      {
+        instanceId: state.connectionMeta.instanceId,
+        statement: !isEmpty(state.selectedStatement)
+          ? state.selectedStatement
+          : state.queryStatement,
+        ...payload,
+      },
+      { root: true }
+    );
+    commit(types.SET_QUERY_RESULT, res.data);
+    return res.data;
+  },
 };
 
 const mutations = {

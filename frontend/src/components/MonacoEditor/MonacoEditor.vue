@@ -14,19 +14,13 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: "update:modelValue", content: string): void;
   (e: "change", content: string): void;
+  (e: "change-selection", content: string): void;
   (e: "run-query", content: string): void;
 }>();
 
 const editorRef = ref();
 const sqlCode = toRef(props, "modelValue");
 const language = toRef(props, "language");
-
-// const vm = getCurrentInstance();
-// console.log(vm)
-// console.log(vm?.proxy)
-// console.log(vm?.proxy?.$store)
-// console.log(vm?.ctx)
-// console.log(vm?.ctx.$store)
 
 // let editorInstance: Editor.IStandaloneCodeEditor
 
@@ -68,7 +62,16 @@ const init = async () => {
     contextMenuOrder: 0,
     run: async () => {
       console.log("run query");
-      emit("run-query", editorInstance.getValue());
+
+      const typedValue = editorInstance.getValue();
+      const selectedValue = editorInstance
+        .getModel()
+        // @ts-expect-error
+        ?.getValueInRange(editorInstance.getSelection()) as string;
+
+      const queryStatement = selectedValue || typedValue;
+
+      emit("run-query", queryStatement);
     },
   });
 
@@ -82,10 +85,22 @@ const init = async () => {
   //   { immediate: true }
   // );
 
+  // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
     emit("update:modelValue", value);
     emit("change", value);
+  });
+
+  // when editor change selection, emit change-selection event with selected text
+  editorInstance.onDidChangeCursorSelection((e) => {
+    const selectedText = editorInstance.getModel()?.getValueInRange({
+      startLineNumber: e.selection.startLineNumber,
+      startColumn: e.selection.startColumn,
+      endLineNumber: e.selection.endLineNumber,
+      endColumn: e.selection.endColumn,
+    }) as string;
+    emit("change-selection", selectedText);
   });
 };
 

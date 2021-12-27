@@ -17,7 +17,7 @@ import {
   ProjectId,
   VCSId,
   TableId,
-  ViewId
+  ViewId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -34,6 +34,7 @@ import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
+import { ConnectionMeta } from "./sqlEditor";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -176,8 +177,8 @@ export interface ConnectionAtom {
 
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
-  currentInstanceId: InstanceId;
-  currentDatabaseId: DatabaseId;
-  currentTableId: TableId;
+  connectionMeta: ConnectionMeta;
+  queryStatement: string;
+  selectedStatement: string;
   queryResult: Array<Record<any, any>>;
 }

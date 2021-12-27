@@ -1,15 +1,21 @@
 <template>
   <div class="sqleditor-editor-actions">
     <div class="actions-left">
-      <n-button type="primary" @click="handleExecuteQueries">
+      <NButton
+        type="primary"
+        @click="handleExecuteQueries"
+        :disabled="isEmptyStatement"
+      >
         <mdi:play class="h-5 w-5" /> Run (⌘+⏎)
-      </n-button>
+      </NButton>
     </div>
     <div class="actions-right space-x-2">
-      <n-button secondary strong type="primary">
+      <NButton secondary strong type="primary" :disabled="isEmptyStatement">
         <carbon:save class="h-5 w-5" /> &nbsp; Save (⌘+S)
-      </n-button>
-      <n-button> <carbon:share class="h-5 w-5" /> &nbsp; Share (⌘+S) </n-button>
+      </NButton>
+      <NButton :disabled="isEmptyStatement">
+        <carbon:share class="h-5 w-5" /> &nbsp; Share (⌘+S)
+      </NButton>
     </div>
   </div>
 </template>
@@ -20,23 +26,22 @@ import { useVuex } from "@vueblocks/vue-use-vuex";
 
 const store = useStore();
 
-const { useActions: useSqlActions } = useVuex("sql", store);
-const { useState: useSqlEditorState, useActions: useSqlEditorActions } =
+const { useGetters: useSqlEditorGetters, useActions: useSqlEditorActions } =
   useVuex("sqlEditor", store);
 
-const { query } = useSqlActions(["query"]) as any;
-const { setQueryResult } = useSqlEditorActions(["setQueryResult"]) as any;
-const { queryStatement } = useSqlEditorState(["queryStatement"]) as any;
+const { isEmptyStatement } = useSqlEditorGetters(["isEmptyStatement"]) as any;
+const { executeQueries } = useSqlEditorActions(["executeQueries"]) as any;
 
 const handleExecuteQueries = async () => {
-  const res = await query({
-    instanceId: 6100,
+  const res = await executeQueries({
     databaseName: "blog",
-    statement: queryStatement.value,
   });
-
   console.log(res);
-  setQueryResult(res.data);
+  // store.dispatch("notification/pushNotification", {
+  //   module: "sqlEditor",
+  //   style: "SUCCESS",
+  //   title: "Query executed successfully",
+  // });
 };
 </script>
 

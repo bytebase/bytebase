@@ -5,12 +5,12 @@ import { useStore } from "vuex";
 import AutoCompletion from "./AutoCompletion";
 import { ConnectionAtom, Table, CompletionItems } from "../../types";
 import { useVuex } from "@vueblocks/vue-use-vuex";
-import type { InstanceGetters } from "../../store/modules/instance"
+import type { InstanceGetters } from "../../store/modules/instance";
 
 const setupMonaco = async (lang: string) => {
   const store = useStore();
 
-  const { useGetters: useInstanceGetters } = useVuex("instance", store)
+  const { useGetters: useInstanceGetters } = useVuex("instance", store);
 
   const { instanceList } = useInstanceGetters(["instanceList"]) as Record<
     keyof InstanceGetters,
@@ -24,7 +24,7 @@ const setupMonaco = async (lang: string) => {
   });
 
   const databases = computed(() => {
-    const currentInstanceId = store.state.sqlEditor.currentInstanceId;
+    const currentInstanceId = store.state.sqlEditor.connectionMeta.instanceId;
     return store.getters["database/databaseListByInstanceId"](
       currentInstanceId
     );
