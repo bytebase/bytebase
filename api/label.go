@@ -2,11 +2,16 @@ package api
 
 import (
 	"context"
+	"fmt"
 )
 
 const (
 	// EnvironmentKeyName is the reserved key for environment.
 	EnvironmentKeyName string = "bb.environment"
+
+	// DatabaseLabelSizeMax is the maximium size of database labels.
+	DatabaseLabelSizeMax = 4
+	labelLengthMax       = 63
 )
 
 // LabelKey is the available key for labels.
@@ -46,6 +51,16 @@ type LabelKeyPatch struct {
 
 	// Domain specific fields
 	ValueList []string `jsonapi:"attr,valueList"`
+}
+
+// Validate validates the sanity of patch values.
+func (patch *LabelKeyPatch) Validate() error {
+	for _, v := range patch.ValueList {
+		if len(v) <= 0 || len(v) > labelLengthMax {
+			return fmt.Errorf("label value has a maximum length of %v characters and cannot be empty", labelLengthMax)
+		}
+	}
+	return nil
 }
 
 // DatabaseLabel is the label associated with a database.

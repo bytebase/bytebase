@@ -158,7 +158,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -171,7 +172,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -238,7 +240,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -251,7 +254,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO

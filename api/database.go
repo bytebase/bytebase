@@ -64,6 +64,7 @@ type Database struct {
 	Name                 string     `jsonapi:"attr,name"`
 	CharacterSet         string     `jsonapi:"attr,characterSet"`
 	Collation            string     `jsonapi:"attr,collation"`
+	SchemaVersion        string     `jsonapi:"attr,schemaVersion"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`
 	// Labels is a json-encoded string from a list of DatabaseLabel,
@@ -87,6 +88,10 @@ type DatabaseCreate struct {
 	CharacterSet string `jsonapi:"attr,characterSet"`
 	Collation    string `jsonapi:"attr,collation"`
 	IssueID      int    `jsonapi:"attr,issueId"`
+	// Labels is a json-encoded string from a list of DatabaseLabel,
+	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
+	Labels        *string `jsonapi:"attr,labels"`
+	SchemaVersion string
 }
 
 // DatabaseFind is the API message for finding databases.
@@ -127,6 +132,7 @@ type DatabasePatch struct {
 	Labels *string `jsonapi:"attr,labels"`
 
 	// Domain specific fields
+	SchemaVersion        *string
 	SyncStatus           *SyncStatus
 	LastSuccessfulSyncTs *int64
 }

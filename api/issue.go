@@ -130,13 +130,16 @@ type CreateDatabaseContext struct {
 	BackupID int `json:"backupId"`
 	// BackupName is the name of the backup.
 	BackupName string `json:"backupName"`
+	// Labels is a json-encoded string from a list of DatabaseLabel.
+	// See definition in api.Database.
+	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
 // UpdateSchemaDetail is the detail of updating database schema.
 type UpdateSchemaDetail struct {
-	// DatabaseId is the ID of a database.
+	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
-	// DatabaseName is the name of databases, mutually exclusive to DatabaseId.
+	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
 	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
 	DatabaseName string `json:"databaseName"`
 	// Statement is the statement to update database schema.
