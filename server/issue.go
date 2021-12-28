@@ -756,7 +756,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 					Name: fmt.Sprintf("Deployment %v", i),
 				}
 				for _, database := range stage {
-					taskCreate, err := getSchemaUpdateTask(database, m, d)
+					taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 					if err != nil {
 						return nil, err
 					}
@@ -782,7 +782,7 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 			}
 
-			taskCreate, err := getSchemaUpdateTask(database, m, d)
+			taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 			if err != nil {
 				return nil, err
 			}
@@ -798,26 +798,26 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 	return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid issue type %q", issueCreate.Type))
 }
 
-func getSchemaUpdateTask(database *api.Database, m api.UpdateSchemaContext, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
+func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *common.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
-	if m.MigrationType == db.Migrate {
+	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
-	payload.MigrationType = m.MigrationType
+	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
 	if d.RollbackStatement != "" {
 		payload.RollbackStatement = d.RollbackStatement
 	}
-	if m.VCSPushEvent != nil {
-		payload.VCSPushEvent = m.VCSPushEvent
+	if vcsPushEvent != nil {
+		payload.VCSPushEvent = vcsPushEvent
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database schema update payload: %v", err))
 	}
 
-	task := &api.TaskCreate{
+	return &api.TaskCreate{
 		Name:              taskName,
 		InstanceID:        database.Instance.ID,
 		DatabaseID:        &database.ID,
@@ -825,10 +825,9 @@ func getSchemaUpdateTask(database *api.Database, m api.UpdateSchemaContext, d *a
 		Type:              api.TaskDatabaseSchemaUpdate,
 		Statement:         d.Statement,
 		RollbackStatement: d.RollbackStatement,
-		MigrationType:     m.MigrationType,
+		MigrationType:     migrationType,
 		Payload:           string(bytes),
-	}
-	return task, nil
+	}, nil
 }
 
 func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation string) (string, string) {
