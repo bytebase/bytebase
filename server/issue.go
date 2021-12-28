@@ -695,6 +695,45 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		// Tenant mode project pipeline has its own generation.
+		if project.TenantMode == api.TenantModeTenant {
+			if m.MigrationType != db.Migrate {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
+			}
+			if len(m.UpdateSchemaDetailList) != 1 {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
+			}
+			d := m.UpdateSchemaDetailList[0]
+			if d.Statement == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+			}
+			deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
+				ProjectID: &issueCreate.ProjectID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deplopment config for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			}
+			if deployConfig == nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			}
+			deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
+			}
+			// Find all databases in the project.
+			databases, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+				ProjectID: &issueCreate.ProjectID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			}
+			return generatePipelineCreateFromDeploymentSchedule(deploySchedule, databases), nil
+		}
+
 		pc := &api.PipelineCreate{
 			CreatorID: creatorID,
 		}
