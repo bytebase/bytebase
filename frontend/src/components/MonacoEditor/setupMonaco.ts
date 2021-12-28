@@ -10,7 +10,7 @@ import {
   InstanceGetters,
 } from "../../types";
 
-import { useNamespacedGetters } from "vuex-composition-helpers"
+import { useNamespacedGetters } from "vuex-composition-helpers";
 
 const setupMonaco = async (lang: string) => {
   const store = useStore();
@@ -19,9 +19,7 @@ const setupMonaco = async (lang: string) => {
     "instanceList",
   ]);
 
-  
   const instances = computed(() => instanceList.value());
-  console.log(instances.value);
 
   const databases = computed(() => {
     const currentInstanceId = store.state.sqlEditor.connectionMeta.instanceId;

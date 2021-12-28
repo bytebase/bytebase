@@ -1,9 +1,10 @@
 <template>
-  <h1>Connection Tree</h1>
-  <NTree 
-    block-line
-    :data="connectionTree"
-  />
+  <div class="databases-tree p-2">
+    <NTree 
+      block-line
+      :data="connectionTree"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>

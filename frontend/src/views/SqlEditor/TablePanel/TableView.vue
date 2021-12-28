@@ -1,5 +1,5 @@
 <template>
-  <div class="table-view h-full" ref="tableViewRef">
+  <div class="table-view h-full p-2" ref="tableViewRef">
     <NDataTable
       size="mini"
       :columns="columns"
@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { useResizeObserver } from "@vueuse/core";
-import { useNamespacedState } from "vuex-composition-helpers"
+import { useNamespacedState } from "vuex-composition-helpers";
 
 const { queryResult } = useNamespacedState("sqlEditor", ["queryResult"]);
 

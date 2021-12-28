@@ -150,6 +150,7 @@ common:
   billings: 计费
   all: 全部
   by: 由
+  share: 分享
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -479,11 +480,9 @@ instance:
   successfully-connected-instance: 成功连接到实例。
   failed-to-connect-instance: 连接到实例失败。
   how-to-setup-instance: 如何设置「实例」?
-  how-to-setup-instance-description: >-
+  how-to-setup-instance-description: |-
     每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的
-
     RDS 实例，也可能是您私有化部署的 MySQL 实例。
-
     Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
   grants: 权限
@@ -892,3 +891,6 @@ setting:
     free: 免费版
     team: 团队版
     enterprise: 企业版
+sql-editor:
+  select-connection: 请选择数据连接
+  sql-editor: SQL 编辑器
