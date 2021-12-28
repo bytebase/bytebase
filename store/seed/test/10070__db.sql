@@ -10,7 +10,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -23,7 +24,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -37,7 +39,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -50,7 +53,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        1624558090
+        1624558090,
+        ''
     );
 
 INSERT INTO
@@ -64,7 +68,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -77,7 +82,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -91,7 +97,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -104,7 +111,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for integration environment instance 6002
@@ -119,7 +127,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -132,7 +141,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -146,7 +156,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -159,7 +170,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -173,7 +185,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -186,7 +199,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -200,7 +214,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -213,7 +228,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for staging environment instance 6003
@@ -228,7 +244,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -241,7 +258,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -255,7 +273,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -268,7 +287,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -282,7 +302,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -295,7 +316,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -309,7 +331,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -322,7 +345,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for prod environment instance 6004
@@ -337,7 +361,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -350,7 +375,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -364,7 +390,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -377,7 +404,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -391,7 +419,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -404,7 +433,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 INSERT INTO
@@ -418,7 +448,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -431,7 +462,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for dev environment PostgreSQL instance 6005
@@ -446,7 +478,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -459,7 +492,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for dev environment TiDB instance 6006
@@ -474,7 +508,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -487,7 +522,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for dev environment ClickHouse instance 6007
@@ -502,7 +538,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -515,7 +552,8 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for dev environment Snowflake instance 6008
@@ -530,7 +568,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -543,7 +582,8 @@ VALUES
         '',
         '',
         'OK',
-        0
+        0,
+        ''
     );
 
 -- Database for prod environment archived mysql instance 6099
@@ -558,7 +598,8 @@ INSERT INTO
         character_set,
         `collation`,
         sync_status,
-        last_successful_sync_ts
+        last_successful_sync_ts,
+        schema_version
     )
 VALUES
     (
@@ -571,5 +612,6 @@ VALUES
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
-        0
+        0,
+        ''
     );

@@ -418,6 +418,7 @@ CREATE TABLE db (
     source_backup_id INTEGER REFERENCES backup (id) ON DELETE SET NULL,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
+    schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
     `collation` TEXT NOT NULL,
