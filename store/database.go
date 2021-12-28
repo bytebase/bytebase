@@ -194,17 +194,32 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 			name,
 			character_set,
 			collation,
+			schema_version,
 			sync_status,
 			last_successful_sync_ts
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, name, character_set, collation, sync_status, last_successful_sync_ts
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
+		RETURNING
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			instance_id,
+			project_id,
+			name,
+			character_set,
+			collation,
+			schema_version,
+			sync_status,
+			last_successful_sync_ts
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
 		create.ProjectID,
 		create.Name,
+		create.SchemaVersion,
 		create.CharacterSet,
 		create.Collation,
 	)
@@ -227,6 +242,7 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 		&database.Name,
 		&database.CharacterSet,
 		&database.Collation,
+		&database.SchemaVersion,
 		&database.SyncStatus,
 		&database.LastSuccessfulSyncTs,
 	); err != nil {
@@ -268,6 +284,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			name,
 			character_set,
 			collation,
+			schema_version,
 			sync_status,
 			last_successful_sync_ts
 		FROM db
@@ -296,6 +313,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
+			&database.SchemaVersion,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
 		); err != nil {
@@ -324,6 +342,9 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 	if v := patch.SourceBackupID; v != nil {
 		set, args = append(set, "source_backup_id = ?"), append(args, *v)
 	}
+	if v := patch.SchemaVersion; v != nil {
+		set, args = append(set, "schema_version = ?"), append(args, *v)
+	}
 	if v := patch.SyncStatus; v != nil {
 		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
 	}
@@ -338,7 +359,21 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, source_backup_id, name, character_set, collation, sync_status, last_successful_sync_ts
+		RETURNING
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			instance_id,
+			project_id,
+			source_backup_id,
+			name,
+			character_set,
+			collation,
+			schema_version,
+			sync_status,
+			last_successful_sync_ts
 	`,
 		args...,
 	)
@@ -362,6 +397,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
+			&database.SchemaVersion,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
 		); err != nil {

@@ -9,6 +9,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -22,6 +23,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -36,6 +38,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -49,6 +52,7 @@ VALUES
         'testdb_dev',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         1624558090
     );
@@ -63,6 +67,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -76,6 +81,7 @@ VALUES
         'shop',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -90,6 +96,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -103,6 +110,7 @@ VALUES
         'blog',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -118,6 +126,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -131,6 +140,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -145,6 +155,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -158,6 +169,7 @@ VALUES
         'testdb_integration',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -172,6 +184,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -185,6 +198,7 @@ VALUES
         'shop',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -199,6 +213,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -212,6 +227,7 @@ VALUES
         'blog',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -227,6 +243,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -240,6 +257,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -254,6 +272,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -267,6 +286,7 @@ VALUES
         'testdb_staging',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -281,6 +301,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -294,6 +315,7 @@ VALUES
         'shop',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -308,6 +330,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -321,6 +344,7 @@ VALUES
         'blog',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -336,6 +360,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -349,6 +374,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -363,6 +389,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -376,6 +403,7 @@ VALUES
         'testdb_prod',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -390,6 +418,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -403,6 +432,7 @@ VALUES
         'shop',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -417,6 +447,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -430,6 +461,7 @@ VALUES
         'blog',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -445,6 +477,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -458,6 +491,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -473,6 +507,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -486,6 +521,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -501,6 +537,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -514,6 +551,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -529,6 +567,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -540,6 +579,7 @@ VALUES
         6008,
         1,
         '*',
+        '',
         '',
         '',
         'OK',
@@ -557,6 +597,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -570,6 +611,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );

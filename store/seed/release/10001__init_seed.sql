@@ -157,6 +157,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -170,6 +171,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
@@ -237,6 +239,7 @@ INSERT INTO
         name,
         character_set,
         `collation`,
+        schema_version,
         sync_status,
         last_successful_sync_ts
     )
@@ -250,6 +253,7 @@ VALUES
         '*',
         'utf8mb4',
         'utf8mb4_general_ci',
+        '',
         'OK',
         0
     );
