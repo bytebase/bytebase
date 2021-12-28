@@ -200,7 +200,7 @@ func TestGetPipelineFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		create := getPipelineFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
+		create, _ := getPipelineFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
 
 		diff := pretty.Diff(create, test.want)
 		if len(diff) > 0 {

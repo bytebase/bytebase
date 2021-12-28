@@ -44,7 +44,7 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 }
 
 // getPipelineFromDeploymentSchedule gets a pipeline based on deployment schedule.
-func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) [][]*api.Database {
+func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([][]*api.Database, error) {
 	var pipeline [][]*api.Database
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
@@ -56,7 +56,9 @@ func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name st
 			idToLabels[database.ID] = make(map[string]string)
 		}
 		var labelList []*api.DatabaseLabel
-		json.Unmarshal([]byte(database.Labels), &labelList)
+		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
+			return nil, err
+		}
 		for _, label := range labelList {
 			idToLabels[database.ID][label.Key] = label.Value
 		}
@@ -95,5 +97,5 @@ func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name st
 		pipeline = append(pipeline, stage)
 	}
 
-	return pipeline
+	return pipeline, nil
 }

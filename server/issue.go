@@ -750,7 +750,10 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			}
 
 			// Convert to pipelineCreate
-			p := getPipelineFromDeploymentSchedule(deploySchedule, d.DatabaseName, databaseList)
+			p, err := getPipelineFromDeploymentSchedule(deploySchedule, d.DatabaseName, databaseList)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+			}
 			for i, stage := range p {
 				stageCreate := api.StageCreate{
 					Name: fmt.Sprintf("Deployment %v", i),
