@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 // TLSConfig is the configuration for SSL connection.
@@ -20,7 +20,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 	rootCertPool := x509.NewCertPool()
-	pem, err := ioutil.ReadFile(tc.SslCA)
+	pem, err := os.ReadFile(tc.SslCA)
 	if err != nil {
 		return nil, err
 	}
