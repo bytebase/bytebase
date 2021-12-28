@@ -6,7 +6,7 @@
 # example usages:
 # ./demo.sh 
 # ./demo.sh https://example.com
-# ./demo.sh. https://example.com:8080
+# ./demo.sh https://example.com:8080
 
 # If no parameter is passed, use https://demo.bytebase.com as host and 80 as port by default
 ONLINE_DEMO_HOST='https://demo.bytebase.com'
@@ -38,7 +38,7 @@ function seedDemoData(){
 }
 
 function startReadonly(){
-    echo 'Starting Bytebase in readonly and demo mode.'
+    echo "Starting Bytebase in readonly and demo mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
     
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --readonly --demo --data /var/opt/bytebase
 }
