@@ -247,13 +247,12 @@ const actions = {
   },
 
   async fetchDatabaseByInstanceIdAndName(
-      { commit, rootGetters }: any,
-      {
-        instanceId,
-        name,
-      }: {instanceId: InstanceId, name: string}
+    { commit, rootGetters }: any,
+    { instanceId, name }: { instanceId: InstanceId; name: string }
   ) {
-    const data = (await axios.get(`/api/database?instance=${instanceId}&name=${name}`)).data;
+    const data = (
+      await axios.get(`/api/database?instance=${instanceId}&name=${name}`)
+    ).data;
     const database = data.data[0];
     return convert(database, data.included, rootGetters);
   },
@@ -407,16 +406,36 @@ const mutations = {
       state.databaseListByInstanceId.set(instanceId, databaseList);
     } else {
       for (const database of databaseList) {
-        const list = state.databaseListByInstanceId.get(database.instance.id);
-        if (list) {
-          const i = list.findIndex((item: Database) => item.id == database.id);
+        const listByInstance = state.databaseListByInstanceId.get(
+          database.instance.id
+        );
+        if (listByInstance) {
+          const i = listByInstance.findIndex(
+            (item: Database) => item.id == database.id
+          );
           if (i != -1) {
-            list[i] = database;
+            listByInstance[i] = database;
           } else {
-            list.push(database);
+            listByInstance.push(database);
           }
         } else {
           state.databaseListByInstanceId.set(database.instance.id, [database]);
+        }
+
+        const listByProject = state.databaseListByProjectId.get(
+          database.project.id
+        );
+        if (listByProject) {
+          const i = listByProject.findIndex(
+            (item: Database) => item.id == database.id
+          );
+          if (i != -1) {
+            listByProject[i] = database;
+          } else {
+            listByProject.push(database);
+          }
+        } else {
+          state.databaseListByProjectId.set(database.instance.id, [database]);
         }
       }
     }
