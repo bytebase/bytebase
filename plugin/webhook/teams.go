@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
@@ -109,7 +109,7 @@ func (receiver *TeamsReceiver) post(context Context) error {
 		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
