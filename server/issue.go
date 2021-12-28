@@ -725,13 +725,13 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
 			}
 			// Find all databases in the project.
-			databases, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+			databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 				ProjectID: &issueCreate.ProjectID,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			return generatePipelineCreateFromDeploymentSchedule(deploySchedule, databases), nil
+			return generatePipelineCreateFromDeploymentSchedule(deploySchedule, databaseList), nil
 		}
 
 		pc := &api.PipelineCreate{
