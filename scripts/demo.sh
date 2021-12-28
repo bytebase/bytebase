@@ -3,7 +3,7 @@
 # For now, we use this script to start our demo on rederer
 # by changing the ENTRYPOINT and CMD at the dockerfile to this.
 
-# If no parameter is passed, use https://demo.bytebase.com:80 as host by default
+# If no parameter is passed, use https://demo.bytebase.com as host and 80 as port by default
 ONLINE_DEMO_HOST=$1
 ONLINE_DEMO_PORT=$2
 if [ ! $ONLINE_DEMO_HOST ];then
