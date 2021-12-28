@@ -10,27 +10,24 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { debounce } from "lodash-es";
-import { useStore } from "vuex";
-import { useVuex } from "@vueblocks/vue-use-vuex";
+import { useNamespacedActions } from "vuex-composition-helpers"
 
-const sqlCode = ref(`SELECT * FROM author WHERE author.name LIKE "y%"`);
-const store = useStore();
-const { useActions } = useVuex("sqlEditor", store);
+import { SqlEditorActions } from "../../../types";
 
-const { setSqlEditorState, executeQueries } = useActions([
+const sqlCode = ref('');
+
+const { setSqlEditorState, executeQueries } = useNamespacedActions<SqlEditorActions>("sqlEditor", [
   "setSqlEditorState",
   "executeQueries",
-]) as any;
+]);
 
 const handleChange = debounce((value: string) => {
-  console.log("handleChange", value);
   setSqlEditorState({
     queryStatement: value,
   });
 }, 300);
 
 const handleChangeSelection = debounce((value: string) => {
-  console.log("handleChangeSelection", value);
   setSqlEditorState({
     selectedStatement: value,
   });

@@ -19,15 +19,10 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import { useStore } from "vuex";
-import { useVuex } from "@vueblocks/vue-use-vuex";
 import { useResizeObserver } from "@vueuse/core";
+import { useNamespacedState } from "vuex-composition-helpers"
 
-const store = useStore();
-
-const { useState } = useVuex("sqlEditor", store);
-
-const { queryResult } = useState(["queryResult"]) as any;
+const { queryResult } = useNamespacedState("sqlEditor", ["queryResult"]);
 
 const tableViewRef = ref<HTMLDivElement>();
 const tableMaxHeight = ref(0);

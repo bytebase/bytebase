@@ -509,8 +509,6 @@ const mutations = {
   },
 };
 
-export type InstanceGetters = typeof getters
-
 export default {
   namespaced: true,
   state,

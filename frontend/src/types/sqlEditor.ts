@@ -1,10 +1,17 @@
 import * as monaco from "monaco-editor";
 
-import { InstanceId, DatabaseId, TableId } from "../types";
+import { InstanceId, DatabaseId, TableId, ViewId } from "../types";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
 export type CompletionItems = monaco.languages.CompletionItem[];
+
+export interface ConnectionAtom {
+  id: InstanceId | DatabaseId | TableId | ViewId;
+  key: InstanceId | DatabaseId | TableId | ViewId;
+  label: string;
+  children: ConnectionAtom[];
+}
 
 export enum SortText {
   TABLE = "0",

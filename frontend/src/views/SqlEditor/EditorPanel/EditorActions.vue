@@ -21,16 +21,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useStore } from "vuex";
-import { useVuex } from "@vueblocks/vue-use-vuex";
+import { useNamespacedActions, useNamespacedGetters } from "vuex-composition-helpers"
+import { SqlEditorGetters, SqlEditorActions } from "../../../types"
 
-const store = useStore();
-
-const { useGetters: useSqlEditorGetters, useActions: useSqlEditorActions } =
-  useVuex("sqlEditor", store);
-
-const { isEmptyStatement } = useSqlEditorGetters(["isEmptyStatement"]) as any;
-const { executeQueries } = useSqlEditorActions(["executeQueries"]) as any;
+const { isEmptyStatement } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", ["isEmptyStatement", "connectionInfo"]);
+const { executeQueries } = useNamespacedActions<SqlEditorActions>("sqlEditor", ["executeQueries"]);
 
 const handleExecuteQueries = async () => {
   const res = await executeQueries({

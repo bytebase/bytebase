@@ -5,7 +5,7 @@ const makeAction = (type: string, namspace?: string) => {
   return ({ commit }: any, ...args: any) => commit(mutationType, ...args);
 };
 
-export const makeActions = (types: StringRecord = {}) => {
+export function makeActions<T>(types: StringRecord = {}): T {
   const actions = {};
 
   for (const type of Object.keys(types)) {
@@ -15,5 +15,5 @@ export const makeActions = (types: StringRecord = {}) => {
     Object.assign(actions, action);
   }
 
-  return actions;
+  return actions as T;
 };

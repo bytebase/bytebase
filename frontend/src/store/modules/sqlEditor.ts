@@ -69,8 +69,32 @@ const getters = {
   },
 };
 
+const mutations = {
+  [types.SET_SQL_EDITOR_STATE](
+    state: SqlEditorState,
+    payload: Partial<SqlEditorState>
+  ) {
+    Object.assign(state, payload);
+  },
+  [types.SET_CONNECTION_TREE](
+    state: SqlEditorState,
+    payload: ConnectionAtom[]
+  ) {
+    state.connectionTree = payload;
+  },
+  [types.SET_QUERY_RESULT](state: SqlEditorState, payload: Array<any>) {
+    state.queryResult = payload;
+  },
+};
+
+type SqlEditorActionsMap = {
+  setSqlEditorState: typeof mutations.SET_SQL_EDITOR_STATE;
+  setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
+  setQueryResult: typeof mutations.SET_QUERY_RESULT;
+};
+
 const actions = {
-  ...makeActions({
+  ...makeActions<SqlEditorActionsMap>({
     setSqlEditorState: types.SET_SQL_EDITOR_STATE,
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
@@ -92,24 +116,6 @@ const actions = {
     );
     commit(types.SET_QUERY_RESULT, res.data);
     return res.data;
-  },
-};
-
-const mutations = {
-  [types.SET_SQL_EDITOR_STATE](
-    state: SqlEditorState,
-    payload: Partial<SqlEditorState>
-  ) {
-    Object.assign(state, payload);
-  },
-  [types.SET_CONNECTION_TREE](
-    state: SqlEditorState,
-    payload: ConnectionAtom[]
-  ) {
-    state.connectionTree = payload;
-  },
-  [types.SET_QUERY_RESULT](state: SqlEditorState, payload: Array<any>) {
-    state.queryResult = payload;
   },
 };
 

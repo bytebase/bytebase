@@ -1,27 +1,27 @@
 import * as monaco from "monaco-editor";
-import { computed, ComputedRef } from "vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
 
 import AutoCompletion from "./AutoCompletion";
-import { ConnectionAtom, Table, CompletionItems } from "../../types";
-import { useVuex } from "@vueblocks/vue-use-vuex";
-import type { InstanceGetters } from "../../store/modules/instance";
+import {
+  ConnectionAtom,
+  Table,
+  CompletionItems,
+  InstanceGetters,
+} from "../../types";
+
+import { useNamespacedGetters } from "vuex-composition-helpers"
 
 const setupMonaco = async (lang: string) => {
   const store = useStore();
 
-  const { useGetters: useInstanceGetters } = useVuex("instance", store);
+  const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
+    "instanceList",
+  ]);
 
-  const { instanceList } = useInstanceGetters(["instanceList"]) as Record<
-    keyof InstanceGetters,
-    ComputedRef
-  >;
-
-  console.log(instanceList.value());
-
-  const instances = computed(() => {
-    return store.getters["instance/instanceList"]();
-  });
+  
+  const instances = computed(() => instanceList.value());
+  console.log(instances.value);
 
   const databases = computed(() => {
     const currentInstanceId = store.state.sqlEditor.connectionMeta.instanceId;

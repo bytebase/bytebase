@@ -4807,6 +4807,11 @@ vueuc@^0.4.18:
     vdirs "^0.1.4"
     vooks "^0.2.4"
 
+vuex-composition-helpers@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/vuex-composition-helpers/-/vuex-composition-helpers-2.0.1.tgz#8a1a2e5ac18e5e8e2c52f7ec717797f6261bcf6c"
+  integrity sha512-i2Bg24AH9/AL5nDdh2lmP19Mcl86EJLV7EeVjrCtqY29wkzZa6PWaYYKcbwbYffYoAiTtz1n54VhIaZ1MxNAkw==
+
 vuex@^4.0.0:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/vuex/-/vuex-4.0.2.tgz#f896dbd5bf2a0e963f00c67e9b610de749ccacc9"

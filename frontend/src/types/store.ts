@@ -16,8 +16,6 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
-  TableId,
-  ViewId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -34,7 +32,10 @@ import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
-import { ConnectionMeta } from "./sqlEditor";
+import { ConnectionAtom, ConnectionMeta } from "./sqlEditor";
+
+import instanceStore from "../store/modules/instance"
+import sqlEditorStore from "../store/modules/sqlEditor"
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -114,6 +115,9 @@ export interface InstanceState {
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
+export type InstanceGetters = typeof instanceStore.getters;
+export type InstanceActions = typeof instanceStore.actions;
+export type InstanceMutations = typeof instanceStore.mutations;
 
 export interface DataSourceState {
   dataSourceById: Map<DataSourceId, DataSource>;
@@ -168,13 +172,7 @@ export interface CommandState {
   commandListById: Map<CommandId, Command[]>;
 }
 
-export interface ConnectionAtom {
-  id: InstanceId | DatabaseId | TableId | ViewId;
-  key: InstanceId | DatabaseId | TableId | ViewId;
-  label: string;
-  children: ConnectionAtom[];
-}
-
+// type for vuex
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
   connectionMeta: ConnectionMeta;
@@ -182,3 +180,6 @@ export interface SqlEditorState {
   selectedStatement: string;
   queryResult: Array<Record<any, any>>;
 }
+export type SqlEditorGetters = typeof sqlEditorStore.getters;
+export type SqlEditorActions = typeof sqlEditorStore.actions;
+export type SqlEditorMutations = typeof sqlEditorStore.mutations;

@@ -15,7 +15,6 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
-    "@vueblocks/vue-use-vuex": "^0.2.11",
     "@vueuse/core": "^7.0.1",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.2",
@@ -34,7 +33,8 @@
     "vue": "^3.2.13",
     "vue-i18n": "^9.2.0-beta.20",
     "vue-router": "^4.0.8",
-    "vuex": "^4.0.0"
+    "vuex": "^4.0.0",
+    "vuex-composition-helpers": "^2.0.1"
   },
   "devDependencies": {
     "@iconify/json": "^1.1.432",
