@@ -63,7 +63,8 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 
-# Copy online demo starting scripts
+# Copy utility scripts, we have
+# - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
