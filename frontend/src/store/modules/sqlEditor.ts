@@ -133,6 +133,7 @@ const actions = {
       { root: true }
     );
     commit(types.SET_SQL_EDITOR_STATE, {
+      queryResult: [],
       connectionMeta: {
         instanceId,
         instanceName: instanceInfo.name,
