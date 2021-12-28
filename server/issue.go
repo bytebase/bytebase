@@ -571,6 +571,11 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 			return nil, err
 		}
 
+		// Validate the labels.
+		if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
+		}
+
 		switch instance.Engine {
 		case db.ClickHouse:
 			// ClickHouse does not support character set and collation at the database level.

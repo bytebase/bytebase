@@ -44,7 +44,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -166,7 +166,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if databasePatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, databasePatch.UpdaterID); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, databasePatch.UpdaterID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -627,9 +627,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, updaterID int) error {
+func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, updaterID int, validateOnly bool) error {
 	var labels []*api.DatabaseLabel
-	json.Unmarshal([]byte(labelsJSON), &labels)
+	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+		return err
+	}
 
 	// For scalability, each database can have up to four labels for now.
 	if len(labels) > api.DatabaseLabelSizeMax {
@@ -647,8 +649,10 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
-	if _, err = s.LabelService.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
+	if !validateOnly {
+		if _, err = s.LabelService.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
+		}
 	}
 	return nil
 }
@@ -880,7 +884,7 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 		return common.Errorf(common.NotFound, fmt.Errorf("database label key %v not found", api.EnvironmentKeyName))
 	}
 	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, environmentValue))
+		return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue))
 	}
 
 	return nil
