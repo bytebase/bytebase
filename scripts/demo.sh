@@ -1,16 +1,26 @@
 #!/bin/sh
 
-# For now, we use this script to start our demo on rederer
+# For now, we use this script to start our demo on render
 # by changing the ENTRYPOINT and CMD at the dockerfile to this.
 
+# example usages:
+# ./demo.sh 
+# ./demo.sh https://example.com
+# ./demo.sh. https://example.com:8080
+
 # If no parameter is passed, use https://demo.bytebase.com as host and 80 as port by default
-ONLINE_DEMO_HOST=$1
-ONLINE_DEMO_PORT=$2
-if [ ! $ONLINE_DEMO_HOST ];then
-    ONLINE_DEMO_HOST='https://demo.bytebase.com'
-fi
-if [ ! $ONLINE_DEMO_PORT ];then
-    ONLINE_DEMO_PORT='80'
+ONLINE_DEMO_HOST='https://demo.bytebase.com'
+ONLINE_DEMO_PORT='80'
+if [ $1 ]; then
+    PROTOCAL=`echo $1 | awk -F ':' '{ print $1 }'`
+    URI=`echo $1 | awk -F '[/:]' '{ print $4; }'`
+    PORT=`echo $1 | awk -F '[/:]' '{ print $5; }'`
+
+    ONLINE_DEMO_HOST=$PROTOCAL://$URI
+
+    if [ $PORT ]; then
+        ONLINE_DEMO_PORT=$PORT
+    fi
 fi
 
 function seedDemoData(){
@@ -19,7 +29,7 @@ function seedDemoData(){
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
     
     echo 'Sleep 10 seconds for bytebase to finish migration...'
-    
+
     sleep 10
 
     echo 'Killing seeding program'
