@@ -43,18 +43,22 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 	return true
 }
 
-// generatePipelineCreateFromDeploymentSchedule generates a pipeline, based on deployment schedule. It creates each stage and corresponding task list filled with database id. The caller is responsible to fill in other fields.
-func generatePipelineCreateFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*api.Database) *api.PipelineCreate {
-	create := &api.PipelineCreate{}
+// getPipelineFromDeploymentSchedule gets a pipeline based on deployment schedule.
+func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([][]*api.Database, error) {
+	var pipeline [][]*api.Database
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
 	idToLabels := make(map[int]map[string]string)
+	databaseMap := make(map[int]*api.Database)
 	for _, database := range databaseList {
+		databaseMap[database.ID] = database
 		if _, ok := idToLabels[database.ID]; !ok {
 			idToLabels[database.ID] = make(map[string]string)
 		}
 		var labelList []*api.DatabaseLabel
-		json.Unmarshal([]byte(database.Labels), &labelList)
+		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
+			return nil, err
+		}
 		for _, label := range labelList {
 			idToLabels[database.ID][label.Key] = label.Value
 		}
@@ -65,34 +69,33 @@ func generatePipelineCreateFromDeploymentSchedule(schedule *api.DeploymentSchedu
 
 	// For each stage, we loop over all databases to see if it is a match.
 	for _, deployment := range schedule.Deployments {
-
 		// For each stage, we will get a list of matched databases.
 		var matchedDatabaseList []int
-
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
-			databaseID := database.ID
-			labels := idToLabels[databaseID]
-
-			// Skip if the database is already in a stage.
-			if idsSeen[databaseID] {
+			// The tenant database should match the database name.
+			if database.Name != name {
 				continue
 			}
+			// Skip if the database is already in a stage.
+			if _, ok := idsSeen[database.ID]; ok {
+				continue
+			}
+
+			labels := idToLabels[database.ID]
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
-				matchedDatabaseList = append(matchedDatabaseList, databaseID)
+				matchedDatabaseList = append(matchedDatabaseList, database.ID)
+				idsSeen[database.ID] = true
 			}
 		}
 
-		stageCreate := api.StageCreate{}
-
+		var stage []*api.Database
 		for _, id := range matchedDatabaseList {
-			databaseID := id
-			stageCreate.TaskList = append(stageCreate.TaskList, api.TaskCreate{DatabaseID: &databaseID})
-			idsSeen[id] = true
+			stage = append(stage, databaseMap[id])
 		}
 
-		create.StageList = append(create.StageList, stageCreate)
+		pipeline = append(pipeline, stage)
 	}
 
-	return create
+	return pipeline, nil
 }
