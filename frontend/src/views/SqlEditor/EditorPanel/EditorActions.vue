@@ -34,6 +34,7 @@
 <script lang="ts" setup>
 import { ref, watch } from "vue";
 import { CascaderOption } from "naive-ui";
+import { useStore } from "vuex";
 
 import {
   useNamespacedState,
@@ -44,8 +45,6 @@ import {
   SqlEditorState,
   SqlEditorGetters,
   SqlEditorActions,
-  Instance,
-  Database,
   ConnectionMeta,
 } from "../../../types";
 
@@ -65,15 +64,23 @@ const { executeQueries, setSqlEditorState } =
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
+const store = useStore();
 
 const handleExecuteQueries = async () => {
-  const res = await executeQueries();
-  console.log(res);
-  // store.dispatch("notification/pushNotification", {
-  //   module: "sqlEditor",
-  //   style: "SUCCESS",
-  //   title: "Query executed successfully",
-  // });
+  try {
+    const res = await executeQueries();
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: "Query executed successfully!",
+    });
+  } catch (error) {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "CRITICAL",
+      title: error,
+    });
+  }
 };
 
 watch(

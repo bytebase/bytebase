@@ -11,9 +11,11 @@
 import { ref } from "vue";
 import { debounce } from "lodash-es";
 import { useNamespacedActions } from "vuex-composition-helpers";
+import { useStore } from "vuex";
 
 import { SqlEditorActions } from "../../../types";
 
+const store = useStore();
 const sqlCode = ref("");
 
 const { setSqlEditorState, executeQueries } =
@@ -34,9 +36,22 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = (statement: string) => {
-  return executeQueries({
-    statement,
-  });
+const handleRunQuery = async (statement: string) => {
+  try {
+    const res = await executeQueries({
+      statement,
+    });
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: "Query executed successfully!",
+    });
+  } catch (error) {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "CRITICAL",
+      title: error,
+    });
+  }
 };
 </script>
