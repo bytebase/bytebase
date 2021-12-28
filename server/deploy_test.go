@@ -9,13 +9,15 @@ import (
 
 func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 
-	db := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	db := []int{0, 1, 2, 3, 4, 5, 6, 7}
 
 	tests := []struct {
-		name      string
-		schedule  *api.DeploymentSchedule
-		labelList []*api.DatabaseLabel
-		want      *api.PipelineCreate
+		name         string
+		schedule     *api.DeploymentSchedule
+		databaseList []*api.Database
+		want         *api.PipelineCreate
+		// Notice relevant position is preserved from databaseList to want.
+		// e.g. in simpleDeployments the result is [db[0], db[1]] instead of [db[1], db[0]] in the first stage.
 	}{
 		{
 			"Tenant databases matching the query in a stage should exclude all databases from previous stages.",
@@ -49,16 +51,14 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.DatabaseLabel{
+			[]*api.Database{
 				{
-					DatabaseID: db[0],
-					Key:        "bb.location",
-					Value:      "earth",
+					ID:     db[0],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 				{
-					DatabaseID: db[1],
-					Key:        "bb.location",
-					Value:      "us-central1",
+					ID:     db[1],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 			},
 			&api.PipelineCreate{
@@ -66,14 +66,14 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 					{
 						TaskList: []api.TaskCreate{
 							{
-								DatabaseID: &db[1],
+								DatabaseID: &db[0],
 							},
 						},
 					},
 					{
 						TaskList: []api.TaskCreate{
 							{
-								DatabaseID: &db[0],
+								DatabaseID: &db[1],
 							},
 						},
 					},
@@ -112,26 +112,18 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.DatabaseLabel{
+			[]*api.Database{
 				{
-					DatabaseID: db[0],
-					Key:        "bb.location",
-					Value:      "earth",
+					ID:     db[0],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 				{
-					DatabaseID: db[1],
-					Key:        "bb.location",
-					Value:      "us-central1",
+					ID:     db[1],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"europe-west1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 				{
-					DatabaseID: db[2],
-					Key:        "bb.location",
-					Value:      "europe-west1",
-				},
-				{
-					DatabaseID: db[0],
-					Key:        "bb.tenant",
-					Value:      "bytebase",
+					ID:     db[2],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 			},
 			&api.PipelineCreate{
@@ -139,17 +131,17 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 					{
 						TaskList: []api.TaskCreate{
 							{
-								DatabaseID: &db[1],
+								DatabaseID: &db[0],
 							},
 							{
-								DatabaseID: &db[2],
+								DatabaseID: &db[1],
 							},
 						},
 					},
 					{
 						TaskList: []api.TaskCreate{
 							{
-								DatabaseID: &db[0],
+								DatabaseID: &db[2],
 							},
 						},
 					},
@@ -157,7 +149,7 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			"simpleDeployments",
+			"twoDifferentKeys",
 			&api.DeploymentSchedule{
 				Deployments: []*api.Deployment{
 
@@ -189,26 +181,18 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.DatabaseLabel{
+			[]*api.Database{
 				{
-					DatabaseID: db[0],
-					Key:        "bb.location",
-					Value:      "earth",
+					ID:     db[0],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 				{
-					DatabaseID: db[1],
-					Key:        "bb.location",
-					Value:      "us-central1",
+					ID:     db[1],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"europe-west1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 				{
-					DatabaseID: db[2],
-					Key:        "bb.location",
-					Value:      "europe-west1",
-				},
-				{
-					DatabaseID: db[0],
-					Key:        "bb.tenant",
-					Value:      "bytebase",
+					ID:     db[2],
+					Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 				},
 			},
 			&api.PipelineCreate{
@@ -218,17 +202,13 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 							{
 								DatabaseID: &db[0],
 							},
-						},
-					},
-					{
-						TaskList: []api.TaskCreate{
 							{
 								DatabaseID: &db[1],
 							},
-							{
-								DatabaseID: &db[2],
-							},
 						},
+					},
+					{
+						TaskList: []api.TaskCreate{},
 					},
 				},
 			},
@@ -236,7 +216,7 @@ func TestGeneratePipelineCreateFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		create := generatePipelineCreateFromDeploymentSchedule(test.schedule, test.labelList)
+		create := generatePipelineCreateFromDeploymentSchedule(test.schedule, test.databaseList)
 
 		diff := pretty.Diff(create, test.want)
 		if len(diff) > 0 {

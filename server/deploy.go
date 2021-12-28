@@ -1,6 +1,10 @@
 package server
 
-import "github.com/bytebase/bytebase/api"
+import (
+	"encoding/json"
+
+	"github.com/bytebase/bytebase/api"
+)
 
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
@@ -40,16 +44,20 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 }
 
 // generatePipelineCreateFromDeploymentSchedule generates a pipeline, based on deployment schedule. It creates each stage and corresponding task list filled with database id. The caller is responsible to fill in other fields.
-func generatePipelineCreateFromDeploymentSchedule(schedule *api.DeploymentSchedule, labelList []*api.DatabaseLabel) *api.PipelineCreate {
+func generatePipelineCreateFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*api.Database) *api.PipelineCreate {
 	create := &api.PipelineCreate{}
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
 	idToLabels := make(map[int]map[string]string)
-	for _, label := range labelList {
-		if _, ok := idToLabels[label.DatabaseID]; !ok {
-			idToLabels[label.DatabaseID] = make(map[string]string)
+	for _, database := range databaseList {
+		if _, ok := idToLabels[database.ID]; !ok {
+			idToLabels[database.ID] = make(map[string]string)
 		}
-		idToLabels[label.DatabaseID][label.Key] = label.Value
+		var labelList []*api.DatabaseLabel
+		json.Unmarshal([]byte(database.Labels), &labelList)
+		for _, label := range labelList {
+			idToLabels[database.ID][label.Key] = label.Value
+		}
 	}
 
 	// idsSeen records database id which is already in a stage.
@@ -59,22 +67,25 @@ func generatePipelineCreateFromDeploymentSchedule(schedule *api.DeploymentSchedu
 	for _, deployment := range schedule.Deployments {
 
 		// For each stage, we will get a list of matched databases.
-		var databaseList []int
+		var matchedDatabaseList []int
 
-		// Loop over all databases.
-		for databaseID, labels := range idToLabels {
-			// Skip if database is already in a stage.
+		// Loop over databaseList instead of idToLabels to get determinant results.
+		for _, database := range databaseList {
+			databaseID := database.ID
+			labels := idToLabels[databaseID]
+
+			// Skip if the database is already in a stage.
 			if idsSeen[databaseID] {
 				continue
 			}
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
-				databaseList = append(databaseList, databaseID)
+				matchedDatabaseList = append(matchedDatabaseList, databaseID)
 			}
 		}
 
 		stageCreate := api.StageCreate{}
 
-		for _, id := range databaseList {
+		for _, id := range matchedDatabaseList {
 			databaseID := id
 			stageCreate.TaskList = append(stageCreate.TaskList, api.TaskCreate{DatabaseID: &databaseID})
 			idsSeen[id] = true
