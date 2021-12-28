@@ -86,7 +86,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 
 	switch len(ret) {
 	case 0:
-		return &api.DeploymentConfig{}, nil
+		return nil, nil
 	case 1:
 		return ret[0], nil
 	default:
