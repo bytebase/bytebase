@@ -194,11 +194,11 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 			name,
 			character_set,
 			collation,
-			schema_version,
 			sync_status,
-			last_successful_sync_ts
+			last_successful_sync_ts,
+			schema_version
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')))
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?)
 		RETURNING
 			id,
 			creator_id,
@@ -210,18 +210,18 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 			name,
 			character_set,
 			collation,
-			schema_version,
 			sync_status,
-			last_successful_sync_ts
+			last_successful_sync_ts,
+			schema_version
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
 		create.ProjectID,
 		create.Name,
-		create.SchemaVersion,
 		create.CharacterSet,
 		create.Collation,
+		create.SchemaVersion,
 	)
 
 	if err != nil {
@@ -242,9 +242,9 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 		&database.Name,
 		&database.CharacterSet,
 		&database.Collation,
-		&database.SchemaVersion,
 		&database.SyncStatus,
 		&database.LastSuccessfulSyncTs,
+		&database.SchemaVersion,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -284,9 +284,9 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			name,
 			character_set,
 			collation,
-			schema_version,
 			sync_status,
-			last_successful_sync_ts
+			last_successful_sync_ts,
+			schema_version
 		FROM db
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -313,9 +313,9 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
-			&database.SchemaVersion,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
+			&database.SchemaVersion,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -371,9 +371,9 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			name,
 			character_set,
 			collation,
-			schema_version,
 			sync_status,
-			last_successful_sync_ts
+			last_successful_sync_ts,
+			schema_version
 	`,
 		args...,
 	)
@@ -397,9 +397,9 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *Tx, patch *api.
 			&database.Name,
 			&database.CharacterSet,
 			&database.Collation,
-			&database.SchemaVersion,
 			&database.SyncStatus,
 			&database.LastSuccessfulSyncTs,
+			&database.SchemaVersion,
 		); err != nil {
 			return nil, FormatError(err)
 		}

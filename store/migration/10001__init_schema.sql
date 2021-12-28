@@ -416,9 +416,9 @@ CREATE TABLE db (
     project_id INTEGER NOT NULL REFERENCES project (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER REFERENCES backup (id) ON DELETE SET NULL,
-    schema_version TEXT NOT NULL,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
+    schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
     `collation` TEXT NOT NULL,
