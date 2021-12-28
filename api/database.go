@@ -87,6 +87,9 @@ type DatabaseCreate struct {
 	CharacterSet string `jsonapi:"attr,characterSet"`
 	Collation    string `jsonapi:"attr,collation"`
 	IssueID      int    `jsonapi:"attr,issueId"`
+	// Labels is a json-encoded string from a list of DatabaseLabel,
+	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
+	Labels *string `jsonapi:"attr,labels"`
 }
 
 // DatabaseFind is the API message for finding databases.

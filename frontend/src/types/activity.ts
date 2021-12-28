@@ -14,7 +14,8 @@ export type IssueActivityType =
   | "bb.issue.status.update"
   | "bb.pipeline.task.status.update"
   | "bb.pipeline.task.file.commit"
-  | "bb.pipeline.task.statement.update";
+  | "bb.pipeline.task.statement.update"
+  | "bb.pipeline.task.general.earliest-allowed-time.update";
 
 export type MemberActivityType =
   | "bb.member.create"
@@ -50,6 +51,8 @@ export function activityName(type: ActivityType): string {
       return t("activity.type.pipeline-task-file-commit");
     case "bb.pipeline.task.statement.update":
       return t("activity.type.pipeline-task-statement-update");
+    case "bb.pipeline.task.general.earliest-allowed-time.update":
+      return t("activity.type.pipeline-task-earliest-allowed-time-update");
     case "bb.member.create":
       return t("activity.type.member-create");
     case "bb.member.role.update":
@@ -120,6 +123,14 @@ export type ActivityTaskStatementUpdatePayload = {
   taskName: string;
 };
 
+export type ActivityTaskEarliestAllowedTimeUpdatePayload = {
+  taskId: TaskId;
+  oldEarliestAllowedTs: number;
+  newEarliestAllowedTs: number;
+  issueName: string;
+  taskName: string;
+};
+
 export type ActivityMemberCreatePayload = {
   principalId: PrincipalId;
   principalName: string;
@@ -161,6 +172,8 @@ export type ActionPayloadType =
   | ActivityIssueStatusUpdatePayload
   | ActivityTaskStatusUpdatePayload
   | ActivityTaskFileCommitPayload
+  | ActivityTaskStatementUpdatePayload
+  | ActivityTaskEarliestAllowedTimeUpdatePayload
   | ActivityMemberCreatePayload
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload

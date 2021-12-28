@@ -81,17 +81,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 		}
 
-		// we only create an activity for statement update for now
+		if err := s.composeTaskRelationship(ctx, updatedTask); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
+		}
+
+		// create an activity and trigger task check for statement update
 		if updatedTask.Type == api.TaskDatabaseSchemaUpdate {
 			oldPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			newPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-			if err := json.Unmarshal([]byte(updatedTask.Payload), oldPayload); err != nil {
+			if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
 			}
-			if err := json.Unmarshal([]byte(task.Payload), newPayload); err != nil {
+			if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
 			}
 			if oldPayload.Statement != newPayload.Statement {
+				// create an activity
 				issueFind := &api.IssueFind{
 					PipelineID: &task.PipelineID,
 				}
@@ -114,8 +119,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					CreatorID:   updatedTask.CreatorID,
 					ContainerID: issue.ID,
 					Type:        api.ActivityPipelineTaskStatementUpdate,
-					Level:       api.ActivityInfo,
 					Payload:     string(payload),
+					Level:       api.ActivityInfo,
 				}
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 					issue: issue,
@@ -123,57 +128,109 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", updatedTask.Name)).SetInternal(err)
 				}
+
+				// For now, we supported MySQL and TiDB dialect check
+				if updatedTask.Database.Instance.Engine == db.MySQL || updatedTask.Database.Instance.Engine == db.TiDB {
+					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+						Statement: *taskPatch.Statement,
+						DbType:    updatedTask.Database.Instance.Engine,
+						Charset:   updatedTask.Database.CharacterSet,
+						Collation: updatedTask.Database.Collation,
+					})
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+					}
+					_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+						CreatorID:               api.SystemBotID,
+						TaskID:                  task.ID,
+						Type:                    api.TaskCheckDatabaseStatementSyntax,
+						Payload:                 string(payload),
+						SkipIfAlreadyTerminated: false,
+					})
+					if err != nil {
+						// It's OK if we failed to trigger a check, just emit an error log
+						s.l.Error("Failed to trigger syntax check after changing task statement",
+							zap.Int("task_id", task.ID),
+							zap.String("task_name", task.Name),
+							zap.Error(err),
+						)
+					}
+
+					_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+						CreatorID:               api.SystemBotID,
+						TaskID:                  task.ID,
+						Type:                    api.TaskCheckDatabaseStatementCompatibility,
+						Payload:                 string(payload),
+						SkipIfAlreadyTerminated: false,
+					})
+					if err != nil {
+						// It's OK if we failed to trigger a check, just emit an error log
+						s.l.Error("Failed to trigger compatibility check after changing task statement",
+							zap.Int("task_id", task.ID),
+							zap.String("task_name", task.Name),
+							zap.Error(err),
+						)
+					}
+				}
 			}
+
 		}
+		// create an activity and trigger task check for earliest allowed time update
+		if updatedTask.EarliestAllowedTs != task.EarliestAllowedTs {
+			// create an activity
+			issueFind := &api.IssueFind{
+				PipelineID: &task.PipelineID,
+			}
+			issue, err := s.IssueService.FindIssue(ctx, issueFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task's earliest allowed time: %v", task.PipelineID)).SetInternal(err)
+			}
 
-		if err := s.composeTaskRelationship(ctx, updatedTask); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", updatedTask.Name)).SetInternal(err)
-		}
+			payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
+				TaskID:               updatedTask.ID,
+				OldEarliestAllowedTs: task.EarliestAllowedTs,
+				NewEarliestAllowedTs: updatedTask.EarliestAllowedTs,
+				TaskName:             task.Name,
+				IssueName:            issue.Name,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal earliest allowed time activity payload: %v, err: %w", task.Name, err))
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   updatedTask.CreatorID,
+				ContainerID: issue.ID,
+				Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+				Payload:     string(payload),
+				Level:       api.ActivityInfo,
+			}
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+				issue: issue,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", updatedTask.Name)).SetInternal(err)
+			}
 
-		// If we have updated the statement, then we trigger syntax and compatibility check
-		if task.Type == api.TaskDatabaseSchemaUpdate && taskPatch.Statement != nil {
-			// For now we only supported MySQL dialect check
-			if updatedTask.Database.Instance.Engine == db.MySQL || updatedTask.Database.Instance.Engine == db.TiDB {
-				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-					Statement: *taskPatch.Statement,
-					DbType:    updatedTask.Database.Instance.Engine,
-					Charset:   updatedTask.Database.CharacterSet,
-					Collation: updatedTask.Database.Collation,
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
-				}
-				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementSyntax,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
-				})
-				if err != nil {
-					// It's OK if we failed to trigger a check, just emit an error log
-					s.l.Error("Failed to trigger syntax check after changing task statement",
-						zap.Int("task_id", task.ID),
-						zap.String("task_name", task.Name),
-						zap.Error(err),
-					)
-				}
-
-				_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementCompatibility,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
-				})
-				if err != nil {
-					// It's OK if we failed to trigger a check, just emit an error log
-					s.l.Error("Failed to trigger compatibility check after changing task statement",
-						zap.Int("task_id", task.ID),
-						zap.String("task_name", task.Name),
-						zap.Error(err),
-					)
-				}
+			// trigger task check
+			payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
+				EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+			}
+			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               api.SystemBotID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: false,
+			})
+			if err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				s.l.Error("Failed to trigger timing check after changing task earliest allowed time",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
 			}
 		}
 
@@ -477,8 +534,9 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			Name:          payload.DatabaseName,
 			CharacterSet:  payload.CharacterSet,
 			Collation:     payload.Collation,
+			Labels:        &payload.Labels,
 		}
-		_, err = s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			// Just emits an error instead of failing, since we have another periodic job to sync db info.
 			// Though the db will be assigned to the default project instead of the desired project in that case.
@@ -488,6 +546,27 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				zap.Int("instance_id", task.InstanceID),
 				zap.Error(err),
 			)
+		}
+		err = s.composeDatabaseRelationship(ctx, database)
+		if err != nil {
+			s.l.Error("failed to compose database relationship after creating database",
+				zap.String("database_name", payload.DatabaseName),
+				zap.Int("project_id", payload.ProjectID),
+				zap.Int("instance_id", task.InstanceID),
+				zap.Error(err),
+			)
+		}
+		// Set database labels, except bb.environment is immutable and must match instance environment.
+		// This needs to be after we compose database relationship.
+		if err == nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
+				s.l.Error("failed to record database labels after creating database",
+					zap.String("database_name", payload.DatabaseName),
+					zap.Int("project_id", payload.ProjectID),
+					zap.Int("instance_id", task.InstanceID),
+					zap.Error(err),
+				)
+			}
 		}
 	}
 
