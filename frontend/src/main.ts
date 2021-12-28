@@ -23,6 +23,7 @@ import {
   humanizeTs,
   instanceName,
   instanceSlug,
+  connectionSlug,
   isDev,
   isRelease,
   projectName,
@@ -131,6 +132,7 @@ Promise.all([
   app.config.globalProperties.instanceSlug = instanceSlug;
   app.config.globalProperties.databaseSlug = databaseSlug;
   app.config.globalProperties.dataSourceSlug = dataSourceSlug;
+  app.config.globalProperties.connectionSlug = connectionSlug;
 
   app
     // Need to use a directive on the element.

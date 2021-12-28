@@ -84,3 +84,12 @@ export function fullDataSourcePath(dataSource: DataSource): string {
 export function vcsSlug(vcs: VCS): string {
   return [slug(vcs.name), vcs.id].join("-");
 }
+
+export function connectionSlug(database: Database): string {
+  return [
+    slug(database.instance.name),
+    database.instance.id,
+    slug(database.name),
+    database.id,
+  ].join("_");
+}

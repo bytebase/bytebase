@@ -24,8 +24,8 @@ export enum SortText {
 export type ConnectionMeta = {
   instanceId: InstanceId;
   instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  tableId: TableId;
-  tableName: string;
+  databaseId?: DatabaseId;
+  databaseName?: string;
+  tableId?: TableId;
+  tableName?: string;
 };

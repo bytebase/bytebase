@@ -162,6 +162,21 @@ const getters = {
         }
       }
 
+      {
+        // /sql-editor/:connectionSlug
+        const sqlEditorComponents = currentRoute.path.match(
+          "/sql-editor/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+
+        if (sqlEditorComponents[1]) {
+          return {
+            connectionSlug: sqlEditorComponents[1],
+          };
+        }
+      }
+
+      console.log(currentRoute);
+
       return {};
     },
 };

@@ -7,7 +7,7 @@ import { makeActions } from "../actions";
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
   connectionMeta: {
-    instanceId: 6100,
+    instanceId: 0,
     instanceName: "",
     databaseId: 0,
     databaseName: "",
@@ -101,12 +101,13 @@ const actions = {
   }),
   async executeQueries(
     { commit, dispatch, state }: any,
-    payload: Partial<QueryInfo>
+    payload: Partial<QueryInfo> = {}
   ) {
     const res = await dispatch(
       "sql/query",
       {
         instanceId: state.connectionMeta.instanceId,
+        databaseName: state.connectionMeta.databaseName,
         statement: !isEmpty(state.selectedStatement)
           ? state.selectedStatement
           : state.queryStatement,
@@ -116,6 +117,29 @@ const actions = {
     );
     commit(types.SET_QUERY_RESULT, res.data);
     return res.data;
+  },
+  async setConnectionFromRoute(
+    { commit, dispatch }: any,
+    { instanceId, databaseId }: Partial<SqlEditorState["connectionMeta"]>
+  ) {
+    const instanceInfo = await dispatch(
+      "instance/fetchInstanceById",
+      instanceId,
+      { root: true }
+    );
+    const databaseInfo = await dispatch(
+      "database/fetchDatabaseById",
+      { databaseId },
+      { root: true }
+    );
+    commit(types.SET_SQL_EDITOR_STATE, {
+      connectionMeta: {
+        instanceId,
+        instanceName: instanceInfo.name,
+        databaseId,
+        databaseName: databaseInfo.name,
+      },
+    });
   },
 };
 

@@ -745,6 +745,13 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("../views/SqlEditor/SqlEditor.vue"),
         props: true,
       },
+      {
+        path: "/sql-editor/:connectionSlug",
+        name: "sql-editor.repl",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        props: true,
+      },
     ],
   },
 ];
@@ -904,6 +911,7 @@ router.beforeEach((to, from, next) => {
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
+  const connectionSlug = routerSlug.connectionSlug;
 
   if (principalId) {
     store
@@ -1085,6 +1093,27 @@ router.beforeEach((to, from, next) => {
   if (vcsSlug) {
     store
       .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
+  if (connectionSlug) {
+    const [instanceSlug, instanceId, databaseSlug, databaseId] =
+      connectionSlug.split("_");
+    store
+      .dispatch("sqlEditor/setConnectionFromRoute", {
+        instanceId: Number(instanceId),
+        databaseId: Number(databaseId),
+      })
       .then(() => {
         next();
       })
