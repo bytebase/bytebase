@@ -40,7 +40,7 @@ COPY --from=frontend /frontend-build/dist ./server/dist
 # Copy utility scripts for building staging env
 COPY ./scripts .
 
-RUN sh ./build_staging
+RUN sh ./build_staging.sh
 
 # Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
 FROM alpine:3.14.0 as monolithic
