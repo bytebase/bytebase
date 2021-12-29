@@ -11,6 +11,8 @@ export type ProjectWorkflowType = "UI" | "VCS";
 
 export type ProjectVisibility = "PUBLIC" | "PRIVATE";
 
+export type ProjectTenantMode = "DISABLED" | "TENANT";
+
 // Project
 export type Project = {
   id: ProjectId;
@@ -30,6 +32,7 @@ export type Project = {
   memberList: ProjectMember[];
   workflowType: ProjectWorkflowType;
   visibility: ProjectVisibility;
+  tenantMode: ProjectTenantMode;
 };
 
 export type ProjectCreate = {

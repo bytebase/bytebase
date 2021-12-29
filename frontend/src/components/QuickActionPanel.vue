@@ -232,7 +232,7 @@ import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import InstanceForm from "../components/InstanceForm.vue";
-import AlterSchemaPrepForm from "../components/AlterSchemaPrepForm.vue";
+import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
