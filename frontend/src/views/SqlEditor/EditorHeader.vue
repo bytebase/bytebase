@@ -2,28 +2,19 @@
   <div class="flex items-center justify-between h-16">
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
-        <router-link
-          to="/"
-          class="select-none"
-          active-class=""
-          exact-active-class=""
-          ><img
-            class="h-12 w-auto"
-            src="../../assets/logo-full.svg"
-            alt="Bytebase"
-        /></router-link>
+        <router-link to="/" class="select-none" active-class exact-active-class>
+          <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+        </router-link>
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md"
-            >SQL Editor</router-link
-          >
+          <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">SQL Editor</router-link>
         </div>
       </div>
     </div>
     <div>
       <div class="flex items-center space-x-3">
-        <router-link to="/inbox" exact-active-class="">
+        <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
@@ -31,11 +22,7 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <!-- TODO test for now, will delete -->
-        <div
-          v-if="showSwitchPlan"
-          class="cursor-pointer"
-          @click="toggleLocales"
-        >
+        <div v-if="showSwitchPlan" class="cursor-pointer" @click="toggleLocales">
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
@@ -64,32 +51,24 @@
       Mobile menu, toggle classes based on menu state.
 
       Open: "block", closed: "hidden"
-    -->
+  -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-      >Projects</router-link
-    >
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">Projects</router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
-      >Databases</router-link
-    >
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">Databases</router-link>
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-      >Instances</router-link
-    >
+    >Instances</router-link>
 
-    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-      >Environments</router-link
-    >
+    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2">Environments</router-link>
 
     <router-link
-      to="/setting/general"
+      to="/setting/member"
       class="bar-link rounded-md block px-3 py-2"
-      >{{ $t("common.settings") }}</router-link
-    >
+    >{{ $t("common.settings") }}</router-link>
   </div>
 </template>
 
@@ -221,7 +200,7 @@ export default {
         shortcut: ["g", "s"],
         section: t("kbar.navigation"),
         keywords: "navigation",
-        perform: () => router.push({ name: "setting.workspace.general" }),
+        perform: () => router.push({ name: "setting.workspace.member" }),
       }),
       defineAction({
         id: "bb.navigation.inbox",

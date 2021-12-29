@@ -226,13 +226,6 @@ settings:
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
     plan: （升级到团队方案来开启角色管理）
-  workspace:
-    url-section: SQL Console URL
-    url-tip: '提示: 用 {schema} 作为真实数据库名称的占位符'
-    tip: >-
-      如果您的团队使用一个单独的 SQL 控制台，如 phpMyAdmin，那么可以在这里提供他的 URL 模板，Bytebase
-      就可以将控制台链接到相关的数据库和表的界面上。
-    tip-link: 详细指引
   members:
     active: 已激活
     inactive: 未激活
@@ -589,7 +582,6 @@ database:
     您还可以从仪表板创建新数据库。
   restored-from: 恢复于
   database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
-  sql-console: SQL控制台
   transfer-project: 转移项目
   alter-schema-in-vcs: 变更 Schema(VCS)
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: 成功将'{0}'转移到项目'{1}'。
@@ -893,5 +885,5 @@ setting:
     team: 团队版
     enterprise: 企业版
 sql-editor:
+  self: SQL 编辑器
   select-connection: 请选择数据连接
-  sql-editor: SQL 编辑器

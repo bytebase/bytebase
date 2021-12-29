@@ -39,6 +39,7 @@ function convert(
     memberList: [],
     workflowType: attrs.workflowType,
     visibility: attrs.visibility,
+    tenantMode: attrs.tenantMode,
   };
 
   const memberList: ProjectMember[] = [];
