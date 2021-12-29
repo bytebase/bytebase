@@ -793,6 +793,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			pipelineCreate = pc
 		}
+	default:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
 
 	// Create the pipeline, stages, and tasks.
