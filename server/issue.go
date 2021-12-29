@@ -302,18 +302,17 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		return err
 	}
 
-	issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
-	if err != nil {
-		return err
+	if issue.Pipeline == nil {
+		issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	if issueCreate.ValidateOnly {
-		return s.createIssueValidateOnly(ctx, issueCreate, creatorID)
-	}
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
@@ -322,80 +321,112 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
 
+	var pipeline *api.Pipeline
 	// If frontend does not pass the stageList, we will generate it from backend.
 	if len(issueCreate.Pipeline.StageList) == 0 {
-		pc, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
+		p, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
 		if err != nil {
 			return nil, err
 		}
-		issueCreate.Pipeline = *pc
-	}
-	issueCreate.Pipeline.CreatorID = creatorID
+		pipeline = p
+	} else {
+		// TODO(spinningbot): remove this fallback logic once frontend is fully migrated to createContext.
+		issueCreate.Pipeline.CreatorID = creatorID
 
-	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
-	}
-
-	for _, stageCreate := range issueCreate.Pipeline.StageList {
-		stageCreate.CreatorID = creatorID
-		stageCreate.PipelineID = createdPipeline.ID
-		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
+		createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
+			return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
 		}
 
-		for _, taskCreate := range stageCreate.TaskList {
-			taskCreate.CreatorID = creatorID
-			taskCreate.PipelineID = createdPipeline.ID
-			taskCreate.StageID = createdStage.ID
-			instanceFind := &api.InstanceFind{
-				ID: &taskCreate.InstanceID,
-			}
-			instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+		for _, stageCreate := range issueCreate.Pipeline.StageList {
+			stageCreate.CreatorID = creatorID
+			stageCreate.PipelineID = createdPipeline.ID
+			createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
+				return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
 			}
-			if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				payload.MigrationType = taskCreate.MigrationType
-				payload.Statement = taskCreate.Statement
-				if taskCreate.RollbackStatement != "" {
-					payload.RollbackStatement = taskCreate.RollbackStatement
+
+			for _, taskCreate := range stageCreate.TaskList {
+				taskCreate.CreatorID = creatorID
+				taskCreate.PipelineID = createdPipeline.ID
+				taskCreate.StageID = createdStage.ID
+				instanceFind := &api.InstanceFind{
+					ID: &taskCreate.InstanceID,
 				}
-				if taskCreate.VCSPushEvent != nil {
-					payload.VCSPushEvent = taskCreate.VCSPushEvent
-				}
-				bytes, err := json.Marshal(payload)
+				instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 				if err != nil {
-					return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+					return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
 				}
-				taskCreate.Payload = string(bytes)
-			} else if taskCreate.Type == api.TaskDatabaseRestore {
-				// Snowflake needs to use upper case of DatabaseName.
-				if instance.Engine == db.Snowflake {
-					taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
+					payload := api.TaskDatabaseSchemaUpdatePayload{}
+					payload.MigrationType = taskCreate.MigrationType
+					payload.Statement = taskCreate.Statement
+					if taskCreate.RollbackStatement != "" {
+						payload.RollbackStatement = taskCreate.RollbackStatement
+					}
+					if taskCreate.VCSPushEvent != nil {
+						payload.VCSPushEvent = taskCreate.VCSPushEvent
+					}
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
+				} else if taskCreate.Type == api.TaskDatabaseRestore {
+					// Snowflake needs to use upper case of DatabaseName.
+					if instance.Engine == db.Snowflake {
+						taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
+					}
+					payload := api.TaskDatabaseRestorePayload{}
+					payload.DatabaseName = taskCreate.DatabaseName
+					payload.BackupID = *taskCreate.BackupID
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
 				}
-				payload := api.TaskDatabaseRestorePayload{}
-				payload.DatabaseName = taskCreate.DatabaseName
-				payload.BackupID = *taskCreate.BackupID
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+				if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
+					return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
 				}
-				taskCreate.Payload = string(bytes)
-			}
-			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
-				return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
 			}
 		}
+		pipeline = createdPipeline
 	}
 
-	issueCreate.CreatorID = creatorID
-	issueCreate.PipelineID = createdPipeline.ID
-	issue, err := s.IssueService.CreateIssue(ctx, issueCreate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create issue. Error %w", err)
+	var issue *api.Issue
+	if issueCreate.ValidateOnly {
+		issue = &api.Issue{
+			CreatorID:        creatorID,
+			CreatedTs:        time.Now().Unix(),
+			UpdaterID:        creatorID,
+			UpdatedTs:        time.Now().Unix(),
+			ProjectID:        issueCreate.ProjectID,
+			Name:             issueCreate.Name,
+			Status:           api.IssueOpen,
+			Type:             issueCreate.Type,
+			Description:      issueCreate.Description,
+			AssigneeID:       issueCreate.AssigneeID,
+			SubscriberIDList: issueCreate.SubscriberIDList,
+			PipelineID:       pipeline.ID,
+			Pipeline:         pipeline,
+		}
+	} else {
+		issueCreate.CreatorID = creatorID
+		issueCreate.PipelineID = pipeline.ID
+		issueCreated, err := s.IssueService.CreateIssue(ctx, issueCreate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create issue. Error %w", err)
+		}
+		issue = issueCreated
+	}
+	if err := s.composeIssueRelationship(ctx, issue); err != nil {
+		return nil, err
+	}
+
+	// Return early if this is a validate only request.
+	if issueCreate.ValidateOnly {
+		return issue, nil
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -454,10 +485,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if err := s.composeIssueRelationship(ctx, issue); err != nil {
-		return nil, err
-	}
-
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
@@ -476,42 +503,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createIssueValidateOnly(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	if issueCreate.AssigneeID == api.UnknownID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-	}
-	pc, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
-	if err != nil {
-		return nil, err
-	}
-	pipeline, err := s.createPipelineValidateOnly(ctx, pc)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := &api.Issue{
-		CreatorID:        creatorID,
-		CreatedTs:        time.Now().Unix(),
-		UpdaterID:        creatorID,
-		UpdatedTs:        time.Now().Unix(),
-		ProjectID:        issueCreate.ProjectID,
-		Name:             issueCreate.Name,
-		Status:           api.IssueOpen,
-		Type:             issueCreate.Type,
-		Description:      issueCreate.Description,
-		AssigneeID:       issueCreate.AssigneeID,
-		SubscriberIDList: issueCreate.SubscriberIDList,
-		PipelineID:       pipeline.ID,
-		Pipeline:         pipeline,
-	}
-
-	issueCreate.Pipeline = *pc
-	issueCreate.Pipeline.CreatorID = creatorID
-
-	return issue, nil
-}
-
-func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate) (*api.Pipeline, error) {
+func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate) (*api.Pipeline, error) {
 	pipeline := &api.Pipeline{
 		Name:      pc.Name,
 		Status:    api.PipelineOpen,
@@ -529,7 +521,6 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 			UpdatedTs:     time.Now().Unix(),
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
-			// 	TaskList      []*Task
 		}
 		for _, tc := range sc.TaskList {
 			task := &api.Task{
@@ -554,7 +545,8 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 	return pipeline, nil
 }
 
-func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.PipelineCreate, error) {
+func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
+	var pipelineCreate *api.PipelineCreate
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
@@ -571,9 +563,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, err
 		}
 
-		// Validate the labels.
+		// Validate the labels. Labels are set upon task completion.
 		if m.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, validateOnly); err != nil {
+			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
 			}
 		}
@@ -641,9 +633,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 			}
 
-			return &api.PipelineCreate{
-				Name:      fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
-				CreatorID: creatorID,
+			pipelineCreate = &api.PipelineCreate{
+				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
 				StageList: []api.StageCreate{
 					{
 						Name:          "Create database",
@@ -675,36 +666,34 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 						},
 					},
 				},
-			}, nil
-		}
-		return &api.PipelineCreate{
-			Name:      fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
-			CreatorID: creatorID,
-			StageList: []api.StageCreate{
-				{
-					Name:          "Create database",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   m.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       api.TaskPendingApproval,
-							Type:         api.TaskDatabaseCreate,
-							DatabaseName: payload.DatabaseName,
-							Payload:      string(bytes),
+			}
+		} else {
+			pipelineCreate = &api.PipelineCreate{
+				Name: fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
+				StageList: []api.StageCreate{
+					{
+						Name:          "Create database",
+						EnvironmentID: instance.EnvironmentID,
+						TaskList: []api.TaskCreate{
+							{
+								InstanceID:   m.InstanceID,
+								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+								Status:       api.TaskPendingApproval,
+								Type:         api.TaskDatabaseCreate,
+								DatabaseName: payload.DatabaseName,
+								Payload:      string(bytes),
+							},
 						},
 					},
 				},
-			},
-		}, nil
+			}
+		}
 	case api.IssueDatabaseSchemaUpdate:
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
 		}
-		pc := &api.PipelineCreate{
-			CreatorID: creatorID,
-		}
+		pc := &api.PipelineCreate{}
 		switch m.MigrationType {
 		case db.Baseline:
 			pc.Name = "Establish database baseline pipeline"
@@ -774,38 +763,69 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 				pc.StageList = append(pc.StageList, stageCreate)
 			}
-			return pc, nil
-		}
-
-		for _, d := range m.UpdateSchemaDetailList {
-			if m.MigrationType == db.Migrate && d.Statement == "" {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-			}
-			databaseFind := &api.DatabaseFind{
-				ID: &d.DatabaseID,
-			}
-			database, err := s.composeDatabaseByFind(ctx, databaseFind)
-			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+			pipelineCreate = pc
+		} else {
+			for _, d := range m.UpdateSchemaDetailList {
+				if m.MigrationType == db.Migrate && d.Statement == "" {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 				}
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
-			}
+				databaseFind := &api.DatabaseFind{
+					ID: &d.DatabaseID,
+				}
+				database, err := s.composeDatabaseByFind(ctx, databaseFind)
+				if err != nil {
+					if common.ErrorCode(err) == common.NotFound {
+						return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+					}
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+				}
 
-			taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
-			if err != nil {
-				return nil, err
-			}
+				taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
+				if err != nil {
+					return nil, err
+				}
 
-			pc.StageList = append(pc.StageList, api.StageCreate{
-				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-				EnvironmentID: database.Instance.Environment.ID,
-				TaskList:      []api.TaskCreate{*taskCreate},
-			})
+				pc.StageList = append(pc.StageList, api.StageCreate{
+					Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+					EnvironmentID: database.Instance.Environment.ID,
+					TaskList:      []api.TaskCreate{*taskCreate},
+				})
+			}
+			pipelineCreate = pc
 		}
-		return pc, nil
+	default:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
-	return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid issue type %q", issueCreate.Type))
+
+	// Create the pipeline, stages, and tasks.
+	if validateOnly {
+		return createPipelineValidateOnly(ctx, pipelineCreate)
+	}
+
+	pipelineCreate.CreatorID = creatorID
+	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, pipelineCreate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
+	}
+
+	for _, stageCreate := range pipelineCreate.StageList {
+		stageCreate.CreatorID = creatorID
+		stageCreate.PipelineID = createdPipeline.ID
+		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
+		}
+
+		for _, taskCreate := range stageCreate.TaskList {
+			taskCreate.CreatorID = creatorID
+			taskCreate.PipelineID = createdPipeline.ID
+			taskCreate.StageID = createdStage.ID
+			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
+				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
+			}
+		}
+	}
+	return createdPipeline, nil
 }
 
 func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *common.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
