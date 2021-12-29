@@ -89,7 +89,7 @@ const actions = {
       subscriberId: PrincipalId;
     }
   ) {
-    axios.delete(`/api/issue/${issueId}/subscriber/${subscriberId}`);
+    await axios.delete(`/api/issue/${issueId}/subscriber/${subscriberId}`);
 
     commit("deleteIssueSubscriberByIssueId", { issueId, subscriberId });
   },
