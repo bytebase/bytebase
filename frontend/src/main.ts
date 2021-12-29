@@ -83,14 +83,12 @@ axios.interceptors.response.use(
           title: error.response.data.message,
         });
       }
-      return;
     } else if (error.code == "ECONNABORTED") {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
         title: "Connecting server timeout. Make sure the server is running.",
       });
-      return;
     }
 
     throw error;
