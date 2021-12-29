@@ -3,14 +3,7 @@
     <template v-if="isDemo">
       <BannerDemo />
     </template>
-    <template v-else-if="isReadonly">
-      <div
-        class="h-12 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
-      >
-        The server is in read-only mode. You can execute SQL queries only with
-        the "SELECT" statement.
-      </div>
-    </template>
+
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-4">
         <EditorHeader />
