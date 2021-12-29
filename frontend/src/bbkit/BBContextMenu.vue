@@ -47,10 +47,12 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
+
 import clickInsideOutside from "./directives/click-inside-outside";
 
-export default {
+export default defineComponent({
   name: "BBContextMenu",
   directives: {
     "click-inside-outside": clickInsideOutside,
@@ -58,11 +60,11 @@ export default {
   data: function () {
     return {
       isOpen: false,
-      context: {},
+      context: {} as any,
     };
   },
   methods: {
-    open(evt, context) {
+    open(evt: any, context: any) {
       // This is a hack, upon intial click to bring up the context menu, it will
       // trigger both open and close. The latter is triggered because the click
       // is outside of the menu which hasn't brought up yet. So here, we use
@@ -77,13 +79,13 @@ export default {
       this.isOpen = false;
       this.context = null;
     },
-    toggle(evt, context) {
+    toggle(evt: any, context: any) {
       if (!this.isOpen) {
         this.open(evt, context);
       } else {
-        this.close(evt, false);
+        this.close();
       }
     },
   },
-};
+});
 </script>

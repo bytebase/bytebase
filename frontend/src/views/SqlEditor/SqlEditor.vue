@@ -1,0 +1,87 @@
+<template>
+  <div class="sqleditor--wrapper">
+    <QuerySelector />
+    <Splitpanes class="default-theme splitpanes-wrap">
+      <Pane size="20" min-size="0" max-size="30">
+        <AsidePanel />
+      </Pane>
+      <Pane size="80">
+        <template v-if="hasTabs">
+          <Splitpanes :key="randomKey" horizontal class="default-theme">
+            <Pane size="60">
+              <EditorPanel />
+            </Pane>
+            <Pane size="40">
+              <TablePanel />
+            </Pane>
+          </Splitpanes>
+        </template>
+        <template v-else>
+          <GettingStarted />
+        </template>
+      </Pane>
+    </Splitpanes>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import AsidePanel from "./AsidePanel/AsidePanel.vue";
+import EditorPanel from "./EditorPanel/EditorPanel.vue";
+import QuerySelector from "./QuerySelector.vue";
+import TablePanel from "./TablePanel/TablePanel.vue";
+import GettingStarted from "./GettingStarted.vue";
+
+const hasTabs = true;
+const randomKey = Math.random();
+</script>
+
+<style>
+/* splitpanes pane style */
+.splitpanes.default-theme .splitpanes__pane {
+  @apply bg-transparent;
+}
+.splitpanes.default-theme .splitpanes__splitter {
+  @apply bg-gray-100;
+  min-height: 16px;
+  min-width: 16px;
+}
+
+.splitpanes.default-theme .splitpanes__splitter::before,
+.splitpanes.default-theme .splitpanes__splitter::after {
+  @apply bg-gray-700 opacity-50;
+}
+
+.splitpanes.default-theme .splitpanes__splitter:hover::before,
+.splitpanes.default-theme .splitpanes__splitter:hover::after {
+  @apply bg-transparent;
+}
+
+.default-theme.splitpanes--vertical > .splitpanes__splitter,
+.default-theme .splitpanes--vertical > .splitpanes__splitter {
+  @apply border-l border-r;
+  border-color: var(--border-color);
+}
+
+.default-theme.splitpanes--horizontal > .splitpanes__splitter,
+.default-theme .splitpanes--horizontal > .splitpanes__splitter {
+  @apply border-t border-b;
+  border-color: var(--border-color);
+}
+</style>
+
+<style scoped>
+.sqleditor--wrapper {
+  color: var(--base);
+  --base: #444;
+  --nav-height: 64px;
+  --tab-height: 48px;
+  --font-code: "Source Code Pro", monospace;
+  --color-branding: #4f46e5;
+  --border-color: rgba(200, 200, 200, 0.2);
+  height: calc(100vh - var(--nav-height));
+}
+
+.splitpanes.default-theme.splitpanes-wrap {
+  height: calc(100% - var(--tab-height));
+}
+</style>
