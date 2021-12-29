@@ -411,6 +411,11 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			for _, schema := range schemaList {
+				schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
+				if err != nil {
+					return err
+				}
+
 				var matchedDb *api.Database
 				for _, db := range dbList {
 					if db.Name == schema.Name {
@@ -427,6 +432,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						UpdaterID:            api.SystemBotID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
+						SchemaVersion:        &schemaVersion,
 					}
 					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
@@ -475,6 +481,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:          schema.Name,
 						CharacterSet:  schema.CharacterSet,
 						Collation:     schema.Collation,
+						SchemaVersion: schemaVersion,
 					}
 					database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 					if err != nil {
@@ -517,6 +524,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						UpdaterID:            api.SystemBotID,
 						SyncStatus:           &syncStatus,
 						LastSuccessfulSyncTs: &ts,
+						// SchemaVersion will not be over-written.
 					}
 					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
@@ -536,4 +544,30 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 	}
 
 	return resultSet
+}
+
+func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
+	limit := 1
+	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+		Database: &databaseName,
+		Limit:    &limit,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get migration history for database %q, error %v", databaseName, err)
+	}
+	var schemaVersion string
+	if len(history) == 1 {
+		schemaVersion = history[0].Version
+	}
+	return schemaVersion, nil
+}
+
+func getMigrationVersion(ctx context.Context, database *api.Database, logger *zap.Logger) (string, error) {
+	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, logger)
+	if err != nil {
+		return "", err
+	}
+	defer driver.Close(ctx)
+
+	return getLatestSchemaVersion(ctx, driver, database.Name)
 }
