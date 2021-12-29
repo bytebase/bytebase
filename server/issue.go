@@ -324,7 +324,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 
 	// If frontend does not pass the stageList, we will generate it from backend.
 	if len(issueCreate.Pipeline.StageList) == 0 {
-		pc, err := s.getPipelineFromIssue(ctx, issueCreate, creatorID)
+		pc, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -480,7 +480,7 @@ func (s *Server) createIssueValidateOnly(ctx context.Context, issueCreate *api.I
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
-	pc, err := s.getPipelineFromIssue(ctx, issueCreate, creatorID)
+	pc, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +554,7 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 	return pipeline, nil
 }
 
-func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
+func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
@@ -569,6 +569,11 @@ func (s *Server) getPipelineFromIssue(ctx context.Context, issueCreate *api.Issu
 		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
 		if err != nil {
 			return nil, err
+		}
+
+		// Validate the labels.
+		if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, validateOnly); err != nil {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
 		}
 
 		switch instance.Engine {

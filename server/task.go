@@ -559,7 +559,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if err == nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
 				s.l.Error("failed to record database labels after creating database",
 					zap.String("database_name", payload.DatabaseName),
 					zap.Int("project_id", payload.ProjectID),
