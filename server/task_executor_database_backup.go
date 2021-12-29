@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -122,26 +121,4 @@ func getAndCreateBackupPath(dataDir string, database *api.Database, name string)
 		return "", err
 	}
 	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
-}
-
-func getMigrationVersion(ctx context.Context, database *api.Database, logger *zap.Logger) (string, error) {
-	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, logger)
-	if err != nil {
-		return "", err
-	}
-	defer driver.Close(ctx)
-
-	limit := 1
-	find := &db.MigrationHistoryFind{
-		Database: &database.Name,
-		Limit:    &limit,
-	}
-	list, err := driver.FindMigrationHistoryList(ctx, find)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch migration history list: %w", err)
-	}
-	if len(list) == 0 {
-		return "", nil
-	}
-	return list[0].Version, nil
 }
