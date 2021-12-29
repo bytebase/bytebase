@@ -747,7 +747,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: "/sql-editor/:connectionSlug",
-        name: "sql-editor.repl",
+        name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
         component: () => import("../views/SqlEditor/SqlEditor.vue"),
         props: true,

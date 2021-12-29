@@ -456,7 +456,7 @@ export default defineComponent({
 
     const gotoSqlEditor = () => {
       router.replace({
-        name: "sql-editor.repl",
+        name: "sql-editor.detail",
         params: {
           connectionSlug: connectionSlug(database.value),
         },
