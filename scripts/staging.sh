@@ -23,6 +23,6 @@ if [ $1 ]; then
     fi
 fi
 
-echo "Starting Bytebase at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
+echo "Starting Bytebase in demo mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
 
-bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --data /var/opt/bytebase
+bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase
