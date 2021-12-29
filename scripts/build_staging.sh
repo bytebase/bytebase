@@ -1,6 +1,13 @@
+#!/bin/sh
+
+# This script is for preview purpose on Render only
+# For now, this script is used at '/Dockerfile.staging' to substitude the backend building part.
+# We mainly adopt this script for we can pass the env variable provided by render to show more information at staging env.
+
 VERSION=`cat ./scripts/VERSION`
 MODE="release"
 GO_VERSION="unknown"
+# $1 is a parameter passed from '/Dockerfile.staging' and is defined by Render
 GIT_COMMIT=$1
 BUILD_TIME="unknown"
 BUILD_USER="unknown"
