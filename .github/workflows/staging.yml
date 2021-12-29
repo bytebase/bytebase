@@ -1,4 +1,4 @@
-name: Staging Env
+name: "Staging Env"
 
 on:
   release:
