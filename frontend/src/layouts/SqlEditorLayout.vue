@@ -7,8 +7,8 @@
       <div
         class="h-12 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
       >
-        Server is in readonly mode. You can still view the console, but any
-        change attempt will fail.
+        The server is in read-only mode. You can Execute SQL queries us the
+        "SELECT" statement but not modify the database.
       </div>
     </template>
     <nav class="bg-white border-b border-block-border">
