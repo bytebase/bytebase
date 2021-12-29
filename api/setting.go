@@ -11,12 +11,6 @@ type SettingName string
 const (
 	// SettingAuthSecret is the setting name for auth secret.
 	SettingAuthSecret SettingName = "bb.auth.secret"
-	// SettingConsoleURL is the setting name for console URL.
-	// The console URL supports following variables
-	// {{DB_NAME}}: the database name
-	// e.g. For a phpmyadmin instance running on http://myphpadmin.example.com:8080, the setting would be:
-	// http://myphpadmin.example.com:8080/index.php?route=/database/sql&db={{DB_NAME}}
-	SettingConsoleURL SettingName = "bb.console.url"
 )
 
 // Setting is the API message for a setting.

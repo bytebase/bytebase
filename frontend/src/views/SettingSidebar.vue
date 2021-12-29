@@ -3,19 +3,7 @@
   <nav class="flex-1 flex flex-col px-3 overflow-y-auto">
     <div class="space-y-1">
       <button
-        class="
-          group
-          flex
-          items-center
-          px-2
-          py-2
-          text-base
-          leading-5
-          font-normal
-          rounded-md
-          text-gray-700
-          focus:outline-none
-        "
+        class="group flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
         @click.prevent="goBack"
       >
         <heroicons-outline:chevron-left
@@ -26,18 +14,7 @@
 
       <div class="mt-8">
         <div
-          class="
-            group
-            flex
-            items-center
-            px-2
-            py-2
-            text-sm
-            leading-5
-            font-medium
-            rounded-md
-            text-gray-700
-          "
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
           <heroicons-solid:user-circle class="mr-3 w-5 h-5" />
           {{ $t("settings.sidebar.account") }}
@@ -46,71 +23,52 @@
           <router-link
             to="/setting/profile"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.profile") }}
-          </router-link>
+          >{{ $t("settings.sidebar.profile") }}</router-link>
         </div>
       </div>
       <div class="mt-8">
         <div
-          class="
-            group
-            flex
-            items-center
-            px-2
-            py-2
-            text-sm
-            leading-5
-            font-medium
-            rounded-md
-            text-gray-700
-          "
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
         >
           <heroicons-solid:office-building class="mr-3 w-5 h-5" />
           {{ $t("settings.sidebar.workspace") }}
         </div>
         <div class="space-y-1">
-          <router-link
+          <!-- <router-link
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             {{ $t("settings.sidebar.general") }}
-          </router-link>
+          </router-link>-->
           <!-- <router-link
             to="/setting/agent"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Agents
-          </router-link> -->
+          </router-link>-->
           <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.members") }}
-          </router-link>
+          >{{ $t("settings.sidebar.members") }}</router-link>
           <router-link
             v-if="showOwnerItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.version-control") }}
-          </router-link>
+          >{{ $t("settings.sidebar.version-control") }}</router-link>
           <router-link
             v-if="false"
             to="/setting/plan"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.plans") }}
-          </router-link>
+          >{{ $t("settings.sidebar.plans") }}</router-link>
           <!-- <router-link
             to="/setting/billing"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             Billing
-          </router-link> -->
+          </router-link>-->
           <!-- <div class="pl-9 mt-1">
             <BBOutline :title="'Integrations'" :itemList="integrationList" />
-          </div> -->
+          </div>-->
         </div>
       </div>
     </div>
