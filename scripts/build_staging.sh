@@ -1,9 +1,12 @@
 VERSION=`cat ./scripts/VERSION`
 MODE="release"
 GO_VERSION="unknown"
-GIT_COMMIT="unknown"
+GIT_COMMIT=${RENDER_GIT_COMMIT}
 BUILD_TIME="unknown"
 BUILD_USER="unknown"
+
+# we append 5 digits commit hash to the version for stating env (e.g. v0.10.0-abcde)
+VERSION=${VERSION}-${GIT_COMMIT:0:5}
 
 CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
     --tags ${MODE} \
