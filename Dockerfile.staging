@@ -20,12 +20,13 @@ RUN yarn release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 
-ARG MODE="release"
-ARG VERSION="development"
+ARG MODE="dev"
+ARG VERSION="staging"
 ARG GO_VERSION="unknown"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
+ENV RENDER false
 
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apk --no-cache add gcc musl-dev
