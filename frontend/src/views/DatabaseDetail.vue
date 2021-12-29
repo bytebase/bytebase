@@ -81,7 +81,7 @@
                 </router-link>
               </dd>
             </template>
-            <dd
+            <!-- <dd
               v-if="databaseConsoleLink.length > 0"
               class="flex items-center text-sm md:mr-4"
             >
@@ -92,6 +92,12 @@
                   window.open(urlfy(databaseConsoleLink), '_blank')
                 "
               >
+                <heroicons-outline:external-link class="w-4 h-4" />
+              </button>
+            </dd> -->
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel">{{ $t("sql-editor.sql-editor") }}</span>
+              <button class="ml-1 btn-icon" @click.prevent="gotoSqlEditor">
                 <heroicons-outline:external-link class="w-4 h-4" />
               </button>
             </dd>
@@ -202,7 +208,7 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import ProjectSelect from "../components/ProjectSelect.vue";
@@ -210,7 +216,12 @@ import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { consoleLink, idFromSlug, isDBAOrOwner } from "../utils";
+import {
+  consoleLink,
+  idFromSlug,
+  isDBAOrOwner,
+  connectionSlug,
+} from "../utils";
 import {
   ProjectId,
   UNKNOWN_ID,
@@ -237,7 +248,7 @@ interface LocalState {
   selectedIndex: number;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseDetail",
   components: {
     ProjectSelect,
@@ -277,14 +288,14 @@ export default {
       );
     });
 
-    const databaseConsoleLink = computed(() => {
-      const consoleUrl =
-        store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleUrl)) {
-        return consoleLink(consoleUrl, database.value.name);
-      }
-      return "";
-    });
+    // const databaseConsoleLink = computed(() => {
+    //   const consoleUrl =
+    //     store.getters["setting/settingByName"]("bb.console.url").value;
+    //   if (!isEmpty(consoleUrl)) {
+    //     return consoleLink(consoleUrl, database.value.name);
+    //   }
+    //   return "";
+    // });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -443,6 +454,15 @@ export default {
       }
     };
 
+    const gotoSqlEditor = () => {
+      router.replace({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: connectionSlug(database.value),
+        },
+      });
+    };
+
     onMounted(() => {
       selectDatabaseTabOnHash();
     });
@@ -462,7 +482,7 @@ export default {
       BACKUP_TAB,
       state,
       database,
-      databaseConsoleLink,
+      // databaseConsoleLink,
       allowChangeProject,
       allowAdmin,
       allowEdit,
@@ -472,7 +492,8 @@ export default {
       alterSchemaText,
       updateProject,
       selectTab,
+      gotoSqlEditor,
     };
   },
-};
+});
 </script>

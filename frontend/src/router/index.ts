@@ -10,6 +10,7 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
+import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import { store } from "../store";
 import { Database, QuickActionType } from "../types";
@@ -732,6 +733,27 @@ const routes: Array<RouteRecordRaw> = [
       },
     ],
   },
+  {
+    path: "/sql-editor",
+    name: "sql-editor",
+    component: SqlEditorLayout,
+    children: [
+      {
+        path: "",
+        name: "sql-editor.home",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        props: true,
+      },
+      {
+        path: "/sql-editor/:connectionSlug",
+        name: "sql-editor.detail",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        props: true,
+      },
+    ],
+  },
 ];
 
 export const router = createRouter({
@@ -862,6 +884,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
+    to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail")
   ) {
@@ -888,6 +911,7 @@ router.beforeEach((to, from, next) => {
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
+  const connectionSlug = routerSlug.connectionSlug;
 
   if (principalId) {
     store
@@ -1069,6 +1093,27 @@ router.beforeEach((to, from, next) => {
   if (vcsSlug) {
     store
       .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
+  if (connectionSlug) {
+    const [instanceSlug, instanceId, databaseSlug, databaseId] =
+      connectionSlug.split("_");
+    store
+      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
+        instanceId: Number(instanceId),
+        databaseId: Number(databaseId),
+      })
       .then(() => {
         next();
       })
