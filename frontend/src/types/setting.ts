@@ -1,8 +1,6 @@
 import { SettingId } from "./id";
 import { Principal } from "./principal";
 
-export type SettingName = "bb.console.url";
-
 export type Setting = {
   id: SettingId;
 
