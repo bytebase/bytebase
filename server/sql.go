@@ -411,6 +411,8 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			for _, schema := range schemaList {
+				// When there are too many databases, this might have performance issue and will
+				// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
 				schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
 				if err != nil {
 					return err
