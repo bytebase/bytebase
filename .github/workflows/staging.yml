@@ -11,4 +11,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "trigger render's webhook"
-        run: curl https://api.render.com/deploy/srv-c75ut6pg7hp4jqrf6ngg?key=OhYoeLwl7qM
+        run: curl ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
+
