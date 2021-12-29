@@ -45,20 +45,21 @@ import {
   SqlEditorState,
   SqlEditorGetters,
   SqlEditorActions,
-  ConnectionMeta,
+  ConnectionContext,
 } from "../../../types";
 
-const { connectionTree, connectionMeta } = useNamespacedState<SqlEditorState>(
-  "sqlEditor",
-  ["connectionTree", "connectionMeta"]
-);
+const { connectionTree, connectionContext } =
+  useNamespacedState<SqlEditorState>("sqlEditor", [
+    "connectionTree",
+    "connectionContext",
+  ]);
 const { isEmptyStatement } = useNamespacedGetters<SqlEditorGetters>(
   "sqlEditor",
   ["isEmptyStatement", "connectionInfo"]
 );
-const { executeQueries, setSqlEditorState } =
+const { executeQuery, setSqlEditorState } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "executeQueries",
+    "executeQuery",
     "setSqlEditorState",
   ]);
 
@@ -68,7 +69,7 @@ const store = useStore();
 
 const handleExecuteQueries = async () => {
   try {
-    const res = await executeQueries();
+    const res = await executeQuery();
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "SUCCESS",
@@ -88,9 +89,9 @@ watch(
   (newVal) => {
     if (newVal) {
       selectedConnection.value =
-        connectionMeta.value.tableId ||
-        connectionMeta.value.databaseId ||
-        connectionMeta.value.instanceId;
+        connectionContext.value.tableId ||
+        connectionContext.value.databaseId ||
+        connectionContext.value.instanceId;
     }
   }
 );
@@ -103,27 +104,27 @@ const handleConnectionChange = (
   isSeletedDatabase.value = pathValues.length >= 2;
 
   if (pathValues.length >= 1) {
-    let connectionMeta: ConnectionMeta = {
+    let connectionContext: ConnectionContext = {
       instanceId: 0,
       instanceName: "",
     };
     const [instanceInfo, databaseInfo, tableInfo] = pathValues;
 
     if (pathValues.length >= 1) {
-      connectionMeta.instanceId = instanceInfo.id as number;
-      connectionMeta.instanceName = instanceInfo.label as string;
+      connectionContext.instanceId = instanceInfo.id as number;
+      connectionContext.instanceName = instanceInfo.label as string;
     }
     if (pathValues.length >= 2) {
-      connectionMeta.databaseId = databaseInfo.id as number;
-      connectionMeta.databaseName = databaseInfo.label as string;
+      connectionContext.databaseId = databaseInfo.id as number;
+      connectionContext.databaseName = databaseInfo.label as string;
     }
     if (pathValues.length >= 3) {
-      connectionMeta.tableId = tableInfo.id as number;
-      connectionMeta.tableName = tableInfo.label as string;
+      connectionContext.tableId = tableInfo.id as number;
+      connectionContext.tableName = tableInfo.label as string;
     }
 
     setSqlEditorState({
-      connectionMeta,
+      connectionContext,
     });
   }
 };

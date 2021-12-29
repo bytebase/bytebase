@@ -1110,7 +1110,7 @@ router.beforeEach((to, from, next) => {
     const [instanceSlug, instanceId, databaseSlug, databaseId] =
       connectionSlug.split("_");
     store
-      .dispatch("sqlEditor/setConnectionFromRoute", {
+      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
         instanceId: Number(instanceId),
         databaseId: Number(databaseId),
       })

@@ -18,10 +18,10 @@ import { SqlEditorActions } from "../../../types";
 const store = useStore();
 const sqlCode = ref("");
 
-const { setSqlEditorState, executeQueries } =
+const { setSqlEditorState, executeQuery } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
     "setSqlEditorState",
-    "executeQueries",
+    "executeQuery",
   ]);
 
 const handleChange = debounce((value: string) => {
@@ -38,7 +38,7 @@ const handleChangeSelection = debounce((value: string) => {
 
 const handleRunQuery = async (statement: string) => {
   try {
-    const res = await executeQueries({
+    const res = await executeQuery({
       statement,
     });
     store.dispatch("notification/pushNotification", {

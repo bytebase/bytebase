@@ -6,7 +6,7 @@ import { makeActions } from "../actions";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
-  connectionMeta: {
+  connectionContext: {
     instanceId: 0,
     instanceName: "",
     databaseId: 0,
@@ -22,7 +22,7 @@ const state: () => SqlEditorState = () => ({
 const getters = {
   connectionTreeByInstanceId(state: SqlEditorState) {
     return state.connectionTree.find((item) => {
-      return item.id === state.connectionMeta.instanceId;
+      return item.id === state.connectionContext.instanceId;
     });
   },
   connectionInfo(
@@ -61,8 +61,8 @@ const getters = {
     };
   },
   currentSlug(state: SqlEditorState) {
-    const connectionMeta = state.connectionMeta;
-    return `${connectionMeta.instanceId}/${connectionMeta.databaseId}/${connectionMeta.tableId}`;
+    const connectionContext = state.connectionContext;
+    return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
   isEmptyStatement(state: SqlEditorState) {
     return isEmpty(state.queryStatement);
@@ -99,15 +99,15 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
   }),
-  async executeQueries(
+  async executeQuery(
     { commit, dispatch, state }: any,
     payload: Partial<QueryInfo> = {}
   ) {
     const res = await dispatch(
       "sql/query",
       {
-        instanceId: state.connectionMeta.instanceId,
-        databaseName: state.connectionMeta.databaseName,
+        instanceId: state.connectionContext.instanceId,
+        databaseName: state.connectionContext.databaseName,
         statement: !isEmpty(state.selectedStatement)
           ? state.selectedStatement
           : state.queryStatement,
@@ -118,9 +118,9 @@ const actions = {
     commit(types.SET_QUERY_RESULT, res.data);
     return res.data;
   },
-  async setConnectionFromRoute(
+  async fetchConnectionByInstanceIdAndDatabaseId(
     { commit, dispatch }: any,
-    { instanceId, databaseId }: Partial<SqlEditorState["connectionMeta"]>
+    { instanceId, databaseId }: Partial<SqlEditorState["connectionContext"]>
   ) {
     const instanceInfo = await dispatch(
       "instance/fetchInstanceById",
@@ -134,7 +134,7 @@ const actions = {
     );
     commit(types.SET_SQL_EDITOR_STATE, {
       queryResult: [],
-      connectionMeta: {
+      connectionContext: {
         instanceId,
         instanceName: instanceInfo.name,
         databaseId,

@@ -32,10 +32,10 @@ import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
-import { ConnectionAtom, ConnectionMeta } from "./sqlEditor";
+import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 
-import instanceStore from "../store/modules/instance"
-import sqlEditorStore from "../store/modules/sqlEditor"
+import instanceStore from "../store/modules/instance";
+import sqlEditorStore from "../store/modules/sqlEditor";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -175,7 +175,7 @@ export interface CommandState {
 // type for vuex
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
-  connectionMeta: ConnectionMeta;
+  connectionContext: ConnectionContext;
   queryStatement: string;
   selectedStatement: string;
   queryResult: Array<Record<any, any>>;

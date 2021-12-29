@@ -22,7 +22,8 @@ const setupMonaco = async (lang: string) => {
   const instances = computed(() => instanceList.value());
 
   const databases = computed(() => {
-    const currentInstanceId = store.state.sqlEditor.connectionMeta.instanceId;
+    const currentInstanceId =
+      store.state.sqlEditor.connectionContext.instanceId;
     return store.getters["database/databaseListByInstanceId"](
       currentInstanceId
     );
