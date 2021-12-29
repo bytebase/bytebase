@@ -63,6 +63,7 @@ export type RouterSlug = {
   dataSourceSlug?: string;
   migrationHistorySlug?: string;
   vcsSlug?: string;
+  connectionSlug?: string;
 };
 
 // Quick Action Type
@@ -197,6 +198,7 @@ export const unknown = (
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
+    tenantMode: "DISABLED",
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -548,6 +550,7 @@ export const empty = (
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
+    tenantMode: "DISABLED",
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
