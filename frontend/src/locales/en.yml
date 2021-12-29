@@ -232,14 +232,6 @@ settings:
     password-confirm-placeholder: Confirm new password
     password-mismatch: mismatch
     plan: (Upgrade to Team plan to enable role management)
-  workspace:
-    url-section: SQL Console URL
-    url-tip: 'Tip: Use {schema} as the placeholder for the actual database name'
-    tip: >-
-      If your team use a separate SQL console such as phpMyAdmin, you can
-      provide its URL pattern here. Once provided, Bytebase will surface the
-      console link on the relevant database and table UI.
-    tip-link: Detailed guide
   members:
     active: Active members
     inactive: Inactive members
@@ -653,7 +645,6 @@ database:
   restored-from: 'Restored from '
   database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
-  sql-console: SQL Console
   transfer-project: Transfer Project
   alter-schema-in-vcs: Alter Schema in VCS
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
@@ -1025,5 +1016,5 @@ setting:
     team: Team
     enterprise: Enterprise
 sql-editor:
+  self: SQL Editor
   select-connection: Select Connections
-  sql-editor: SQL Editor
