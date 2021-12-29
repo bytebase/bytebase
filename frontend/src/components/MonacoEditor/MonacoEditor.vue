@@ -75,16 +75,6 @@ const init = async () => {
     },
   });
 
-  // for dark mode
-  // watch(
-  //   () => isDarkmode.value,
-  //   (val) => {
-  //     // TODO not support have multiple editors of different themes.
-  //     monaco.editor.setTheme(val ? "vs-dark" : "vs-light");
-  //   },
-  //   { immediate: true }
-  // );
-
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
