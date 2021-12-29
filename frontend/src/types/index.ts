@@ -33,3 +33,4 @@ export * from "./table";
 export * from "./tableIndex";
 export * from "./vcs";
 export * from "./view";
+export * from "./sqlEditor";

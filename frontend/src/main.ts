@@ -4,6 +4,8 @@ import moment from "moment";
 import { createApp } from "vue";
 import App from "./App.vue";
 import i18n from "./plugins/i18n";
+import splitpanes from "./plugins/splitpanes";
+import NaiveUI from "./plugins/naive-ui";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -21,6 +23,7 @@ import {
   humanizeTs,
   instanceName,
   instanceSlug,
+  connectionSlug,
   isDev,
   isRelease,
   projectName,
@@ -129,6 +132,7 @@ Promise.all([
   app.config.globalProperties.instanceSlug = instanceSlug;
   app.config.globalProperties.databaseSlug = databaseSlug;
   app.config.globalProperties.dataSourceSlug = dataSourceSlug;
+  app.config.globalProperties.connectionSlug = connectionSlug;
 
   app
     // Need to use a directive on the element.
@@ -139,5 +143,7 @@ Promise.all([
     .use(store)
     .use(router)
     .use(i18n)
+    .use(splitpanes)
+    .use(NaiveUI)
     .mount("#app");
 });
