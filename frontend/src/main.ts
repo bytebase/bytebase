@@ -74,9 +74,7 @@ axios.interceptors.response.use(
           try {
             await store.dispatch("auth/logout");
           } finally {
-            {
-              router.push({ name: "auth.signin" });
-            }
+            router.push({ name: "auth.signin" });
           }
       }
 
