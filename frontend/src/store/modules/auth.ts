@@ -50,9 +50,11 @@ const actions = {
   },
 
   async logout({ commit }: any) {
-    await axios.post("/api/auth/logout");
-
-    commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
+    try {
+      await axios.post("/api/auth/logout");
+    } finally {
+      commit("setCurrentUser", unknown("PRINCIPAL") as Principal);
+    }
     return unknown("PRINCIPAL") as Principal;
   },
 
