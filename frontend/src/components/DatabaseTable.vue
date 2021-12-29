@@ -12,16 +12,16 @@
     <template #body="{ rowData: database }">
       <BBTableCell :left-padding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
-          <span>
-            {{ database.name }}
-          </span>
+          <span>{{ database.name }}</span>
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span class="tooltip">{{
-              $t("database.last-sync-status-long", [
-                database.syncStatus,
-                humanizeTs(database.lastSuccessfulSyncTs),
-              ])
-            }}</span>
+            <span class="tooltip">
+              {{
+                $t("database.last-sync-status-long", [
+                  database.syncStatus,
+                  humanizeTs(database.lastSuccessfulSyncTs),
+                ])
+              }}
+            </span>
             <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
           </div>
         </div>
@@ -37,41 +37,38 @@
               stroke="currentColor"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
-            ></svg>
+            />
             <template v-else-if="database.project.workflowType == 'VCS'">
-              <span class="tooltip">{{
-                $t("database.version-control-enabled")
-              }}</span>
-              <heroicons-outline:collection
-                class="w-4 h-4 text-control hover:text-control-hover"
-              />
+              <span class="tooltip">
+                {{
+                  $t("database.version-control-enabled")
+                }}
+              </span>
+              <heroicons-outline:collection class="w-4 h-4 text-control hover:text-control-hover" />
             </template>
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showEnvironmentColumn" class="w-16">
-        {{ environmentName(database.instance.environment) }}
-      </BBTableCell>
+      <BBTableCell
+        v-if="showEnvironmentColumn"
+        class="w-16"
+      >{{ environmentName(database.instance.environment) }}</BBTableCell>
       <BBTableCell v-if="showInstanceColumn" class="w-32">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon :instance="database.instance" />
           <span>{{ instanceName(database.instance) }}</span>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-8">
-        {{ database.syncStatus }}
-      </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-16">
-        {{ humanizeTs(database.lastSuccessfulSyncTs) }}
-      </BBTableCell>
-      <BBTableCell v-if="showConsoleLink" class="w-4">
-        <button
-          class="btn-icon"
-          @click.stop="
-            window.open(databaseConsoleLink(database.name), '_blank')
-          "
-        >
-          <heroicons-outline:external-link class="w-4 h-4" />
+      <BBTableCell v-if="showMiscColumn" class="w-4">{{ database.syncStatus }}</BBTableCell>
+      <BBTableCell
+        v-if="showMiscColumn"
+        class="w-16"
+      >{{ humanizeTs(database.lastSuccessfulSyncTs) }}</BBTableCell>
+      <BBTableCell v-if="showSqlEditorLink" class="w-16">
+        <button class="btn-icon" @click.stop="
+          gotoSqlEditor(database)
+        ">
+          <heroicons-outline:terminal class="w-4 h-4" />
         </button>
       </BBTableCell>
     </template>
@@ -82,7 +79,7 @@
 import { computed, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { consoleLink, databaseSlug } from "../utils";
+import { connectionSlug, databaseSlug } from "../utils";
 import { Database } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
@@ -238,31 +235,28 @@ export default {
 
     const columnList = computed(() => {
       var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
-      if (showConsoleLink.value) {
+      if (showSqlEditorLink.value) {
         // Use cloneDeep, otherwise it will alter the one in columnListMap
         list = cloneDeep(list);
-        list.push({ title: t("database.sql-console") });
+        list.push({ title: t("sql-editor.self") });
       }
       return list;
     });
 
-    const showConsoleLink = computed(() => {
+    const showSqlEditorLink = computed(() => {
       if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
         return false;
       }
-
-      const consoleUrl =
-        store.getters["setting/settingByName"]("bb.console.url").value;
-      return !isEmpty(consoleUrl);
+      return true
     });
 
-    const databaseConsoleLink = (databaseName: string) => {
-      const consoleUrl =
-        store.getters["setting/settingByName"]("bb.console.url").value;
-      if (!isEmpty(consoleUrl)) {
-        return consoleLink(consoleUrl, databaseName);
-      }
-      return "";
+    const gotoSqlEditor = (database: Database) => {
+      router.push({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: connectionSlug(database),
+        },
+      });
     };
 
     const clickDatabase = function (section: number, row: number) {
@@ -280,8 +274,8 @@ export default {
       showEnvironmentColumn,
       showMiscColumn,
       columnList,
-      showConsoleLink,
-      databaseConsoleLink,
+      showSqlEditorLink,
+      gotoSqlEditor,
       clickDatabase,
     };
   },

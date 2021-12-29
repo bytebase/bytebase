@@ -13,7 +13,7 @@ import (
 
 var (
 	// Some settings contain secret info so we only return settings that are needed by the client.
-	whitelistSettings = []api.SettingName{api.SettingConsoleURL}
+	whitelistSettings = []api.SettingName{}
 )
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
