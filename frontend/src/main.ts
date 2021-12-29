@@ -62,7 +62,7 @@ axios.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response) {
       // When receiving 401 and is returned by our server, it means the current
       // login user's token becomes invalid. Thus we force a logout.
@@ -71,9 +71,11 @@ axios.interceptors.response.use(
       if (error.response.status == 401) {
         const host = store.getters["actuator/info"]().host;
         if (error.response.request.responseURL.startsWith(host))
-          store.dispatch("auth/logout").then(() => {
+          try {
+            await store.dispatch("auth/logout");
+          } finally {
             router.push({ name: "auth.signin" });
-          });
+          }
       }
 
       if (error.response.data.message) {
@@ -83,14 +85,12 @@ axios.interceptors.response.use(
           title: error.response.data.message,
         });
       }
-      return;
     } else if (error.code == "ECONNABORTED") {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
         title: "Connecting server timeout. Make sure the server is running.",
       });
-      return;
     }
 
     throw error;
