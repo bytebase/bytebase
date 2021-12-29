@@ -252,19 +252,6 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 		result.secret = config.Value
 	}
 
-	{
-		configCreate := &api.SettingCreate{
-			CreatorID:   api.SystemBotID,
-			Name:        api.SettingConsoleURL,
-			Value:       "",
-			Description: "URL for the external console (e.g. phpMyAdmin).",
-		}
-		_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return result, nil
 }
 
