@@ -1,6 +1,6 @@
 <template>
   <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
-  <n-config-provider
+  <NConfigProvider
     :locale="generalLang"
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
@@ -17,18 +17,20 @@
         </template>
       </KBarWrapper>
     </BBModalStack>
-  </n-config-provider>
+  </NConfigProvider>
 </template>
 
 <script lang="ts">
 import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+
 import { isDev } from "./utils";
 import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
+
 import { NConfigProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
