@@ -1,0 +1,14 @@
+name: Staging Env
+
+on:
+  release:
+    types: [ prereleased ]
+  workflow_dispatch:
+
+jobs:
+  initiate-render-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: "trigger render's webhook"
+        run: curl https://api.render.com/deploy/srv-c75ut6pg7hp4jqrf6ngg?key=OhYoeLwl7qM
