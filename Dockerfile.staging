@@ -39,6 +39,7 @@ COPY --from=frontend /frontend-build/dist ./server/dist
 
 # Copy utility scripts for building staging env
 COPY ./scripts .
+ARG RENDER_GIT_COMMIT="unknown"
 
 RUN sh ./build_staging.sh ${RENDER_GIT_COMMIT}
 
