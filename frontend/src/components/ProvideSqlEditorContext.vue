@@ -5,60 +5,49 @@
 <script lang="ts" setup>
 import { watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Instance, Database } from "../types";
+import { Instance, Database, Table, ConnectionAtom } from "../types";
 // import { idFromSlug } from "../utils";
 
 const store = useStore();
 
 const prepareSqlEdtiorContext = async function () {
-  let connectionTree = []
+  let connectionTree = [];
 
-  const instances = await store.dispatch("instance/fetchInstanceList");
-  connectionTree = instances.map((item: Instance) => ({
-    id: item.id,
-    key: item.id,
-    label: item.name,
-    children: []
-  }))
+  const mapConnectionAtom = (item: Instance | Database | Table) => {
+    const connectionAtom: ConnectionAtom = {
+      id: item.id,
+      key: item.id,
+      label: item.name,
+    };
 
-  for (const instance of instances) {
-    const databases = await store.dispatch(
+    return connectionAtom;
+  };
+
+  const instanceList = await store.dispatch("instance/fetchInstanceList");
+  connectionTree = instanceList.map(mapConnectionAtom);
+
+  for (const instance of instanceList) {
+    const databaseList = await store.dispatch(
       "database/fetchDatabaseListByInstanceId",
       instance.id
     );
 
-    const InstanceItem = connectionTree.find(
-      (item: any) => item.id === instance.id
+    const instanceItem = connectionTree.find(
+      (item: ConnectionAtom) => item.id === instance.id
     );
-    InstanceItem.children = databases.map((item: Database) => ({
-      id: item.id,
-      key: item.id,
-      label: item.name,
-      children: []
-    }));
+    instanceItem.children = databaseList.map(mapConnectionAtom);
 
-    for (const db of databases) {
-      const tables = await store.dispatch(
+    for (const db of databaseList) {
+      const tableList = await store.dispatch(
         "table/fetchTableListByDatabaseId",
         db.id
       );
 
-      const DatabaseItem = InstanceItem.children.find(
-        (item: any) => item.id === db.id
+      const databaseItem = instanceItem.children.find(
+        (item: ConnectionAtom) => item.id === db.id
       );
 
-      DatabaseItem.children = tables.map((item: any) => {
-        // await store.dispatch("table/fetchTableByDatabaseIdAndTableName", {
-        //   databaseId: db.id,
-        //   tableName: item.name
-        // });
-
-        return {
-          id: item.id,
-          key: item.id,
-          label: item.name
-        }
-      });
+      databaseItem.children = tableList.map(mapConnectionAtom);
     }
   }
 

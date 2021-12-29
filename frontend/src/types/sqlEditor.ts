@@ -10,7 +10,7 @@ export interface ConnectionAtom {
   id: InstanceId | DatabaseId | TableId | ViewId;
   key: InstanceId | DatabaseId | TableId | ViewId;
   label: string;
-  children: ConnectionAtom[];
+  children?: ConnectionAtom[];
 }
 
 export enum SortText {
@@ -21,7 +21,7 @@ export enum SortText {
   INSTASNCE = "4",
 }
 
-export type ConnectionMeta = {
+export type ConnectionContext = {
   instanceId: InstanceId;
   instanceName: string;
   databaseId?: DatabaseId;
