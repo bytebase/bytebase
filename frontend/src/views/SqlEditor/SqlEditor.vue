@@ -40,32 +40,25 @@ const randomKey = Math.random();
 .splitpanes.default-theme .splitpanes__pane {
   @apply bg-transparent;
 }
+
 .splitpanes.default-theme .splitpanes__splitter {
   @apply bg-gray-100;
-  min-height: 16px;
-  min-width: 16px;
+  min-height: 8px;
+  min-width: 8px;
+}
+
+.splitpanes.default-theme .splitpanes__splitter:hover {
+  @apply bg-indigo-400;
 }
 
 .splitpanes.default-theme .splitpanes__splitter::before,
 .splitpanes.default-theme .splitpanes__splitter::after {
-  @apply bg-gray-700 opacity-50;
+  @apply bg-gray-700 opacity-50 text-white;
 }
 
 .splitpanes.default-theme .splitpanes__splitter:hover::before,
 .splitpanes.default-theme .splitpanes__splitter:hover::after {
-  @apply bg-transparent;
-}
-
-.default-theme.splitpanes--vertical > .splitpanes__splitter,
-.default-theme .splitpanes--vertical > .splitpanes__splitter {
-  @apply border-l border-r;
-  border-color: var(--border-color);
-}
-
-.default-theme.splitpanes--horizontal > .splitpanes__splitter,
-.default-theme .splitpanes--horizontal > .splitpanes__splitter {
-  @apply border-t border-b;
-  border-color: var(--border-color);
+  @apply bg-white opacity-100;
 }
 </style>
 
