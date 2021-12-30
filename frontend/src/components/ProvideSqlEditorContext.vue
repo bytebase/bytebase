@@ -22,10 +22,12 @@ const prepareSqlEdtiorContext = async function () {
   let connectionTree = [];
 
   const mapConnectionAtom =
-    (type: ConnectionAtomType) => (item: Instance | Database | Table) => {
+    (type: ConnectionAtomType, parentId: number) =>
+    (item: Instance | Database | Table) => {
       const connectionAtom: ConnectionAtom = {
+        parentId,
         id: item.id,
-        key: item.id,
+        key: `${type}-${item.id}`,
         label: item.name,
         type,
       };
@@ -34,7 +36,7 @@ const prepareSqlEdtiorContext = async function () {
     };
 
   const instanceList = await store.dispatch("instance/fetchInstanceList");
-  connectionTree = instanceList.map(mapConnectionAtom("instance"));
+  connectionTree = instanceList.map(mapConnectionAtom("instance", 0));
 
   for (const instance of instanceList) {
     const databaseList = await store.dispatch(
@@ -45,7 +47,9 @@ const prepareSqlEdtiorContext = async function () {
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
     );
-    instanceItem.children = databaseList.map(mapConnectionAtom("database"));
+    instanceItem.children = databaseList.map(
+      mapConnectionAtom("database", instance.id)
+    );
 
     for (const db of databaseList) {
       const tableList = await store.dispatch(
@@ -57,7 +61,7 @@ const prepareSqlEdtiorContext = async function () {
         (item: ConnectionAtom) => item.id === db.id
       );
 
-      databaseItem.children = tableList.map(mapConnectionAtom("table"));
+      databaseItem.children = tableList.map(mapConnectionAtom("table", db.id));
     }
   }
 

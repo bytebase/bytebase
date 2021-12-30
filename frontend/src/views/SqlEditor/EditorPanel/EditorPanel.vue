@@ -1,7 +1,9 @@
 <template>
-  <EditorActions />
+  <div class="editor-pane h-full">
+    <EditorActions />
 
-  <QueryEditor />
+    <QueryEditor />
+  </div>
 </template>
 
 <script lang="ts" setup>
