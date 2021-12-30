@@ -111,7 +111,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					msg := fmt.Sprintf("Activity ID not found: %d", activityID)
-					httpErr := echo.NewHTTPError(http.StatusUnauthorized, msg)
+					httpErr := echo.NewHTTPError(http.StatusNotFound, msg)
 					return false, httpErr
 				}
 				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
@@ -134,7 +134,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					msg := fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)
-					return false, echo.NewHTTPError(http.StatusUnauthorized, msg)
+					return false, echo.NewHTTPError(http.StatusNotFound, msg)
 				}
 				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 				return false, httpErr
@@ -156,7 +156,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					msg := fmt.Sprintf("Inbox ID not found: %d", inboxID)
-					return false, echo.NewHTTPError(http.StatusUnauthorized, msg)
+					return false, echo.NewHTTPError(http.StatusNotFound, msg)
 				}
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
