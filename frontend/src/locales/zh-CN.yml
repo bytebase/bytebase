@@ -138,6 +138,9 @@ common:
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
+  label: 标签
+  labels: 标签
+  mode: 模式
   roletype: 角色类型
   readonly: 只读
   user: 用户
@@ -149,7 +152,9 @@ common:
   agents: Agents
   billings: 计费
   all: 全部
+  deployment-config: 部署配置
   by: 由
+  ok: OK
   share: 分享
 error-page:
   go-back-home: 回到主页
@@ -218,6 +223,7 @@ settings:
     members: 成员
     version-control: 版本控制
     plans: 价格方案
+    label-management: 标签管理
   profile:
     email: 邮箱
     role: 角色
@@ -253,6 +259,10 @@ settings:
       upgrade: 升级到团队版来开启成员管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
+  label-management:
+    key: Key
+    values: 值
+    value-placeholder: 标签值…
 activity:
   name: 名称
   comment: 评论
@@ -633,7 +643,22 @@ database:
   index-size: 索引大小
   columns: 列
   indexes: 索引
+  empty-label-value: <空值>
   row-count-est: 估计行数
+  no-label: 没有标签
+  label-error:
+    key-necessary: 需要指定 Key
+    value-necessary: 需要指定值
+    key-duplicated: Key 重复了
+    value-duplicated: 值重复了
+    max-length-exceeded: 长度不能超过 {len} 字符
+    max-label-count-exceeded: 不能多于 {count} 个标签
+    cannot-edit-reserved-label: 不能编辑预留标签 "{key}"
+  label:
+    placeholder:
+      select-key: 选择 Key…
+      select-value: 选择值…
+      select-values: 选择值…
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
@@ -801,6 +826,9 @@ project:
     restore:
       title: 恢复项目
       btn-text: 恢复这个@:common.project
+  mode:
+    standard: 标准
+    tenant: 多租户
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早
@@ -854,6 +882,11 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+deployment-config:
+  stage-n: 阶段 - {n}
+  add-selector: 添加选择条件
+  update-success: 成功更新部署配置
+  this-is-example-deployment-config: 这是部署配置的样例，你需要在此基础上编辑并保存。
 datasource:
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源

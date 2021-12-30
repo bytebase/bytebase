@@ -138,6 +138,9 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  label: Label
+  labels: Labels
+  mode: Mode
   roletype: Role Type
   readonly: readonly
   user: User
@@ -149,7 +152,9 @@ common:
   agents: Agents
   billings: Billings
   all: All
+  deployment-config: Deployment Config
   by: by
+  ok: OK
   share: Share
 error-page:
   go-back-home: Go back home
@@ -224,6 +229,7 @@ settings:
     members: Members
     version-control: Version Control
     plans: Plans
+    label-management: Label Management
   profile:
     email: Email
     role: Role
@@ -259,6 +265,10 @@ settings:
       upgrade: Upgrade to Team plan to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
+  label-management:
+    key: Key
+    values: Values
+    value-placeholder: Label value...
 activity:
   name: Name
   comment: Comment
@@ -695,7 +705,22 @@ database:
   index-size: Index size
   columns: Columns
   indexes: Indexes
+  empty-label-value: <Empty Value>
   row-count-est: Row count est.
+  no-label: No labels
+  label-error:
+    key-necessary: Key is required
+    value-necessary: Value is required
+    key-duplicated: Duplicated keys
+    value-duplicated: Duplicated values
+    max-length-exceeded: Length cannot exceed {len} characters
+    max-label-count-exceeded: Cannot exceed {count} labels
+    cannot-edit-reserved-label: Cannot edit reserved label "{key}"
+  label:
+    placeholder:
+      select-key: Select key...
+      select-value: Select value...
+      select-values: Select values...
 t:
   database: {}
 repository:
@@ -908,6 +933,9 @@ project:
     restore:
       title: Restore project
       btn-text: Restore this @.lower:{'common.project'}
+  mode:
+    standard: Standard
+    tenant: Tenant
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older
@@ -985,6 +1013,11 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+deployment-config:
+  stage-n: Stage - {n}
+  add-selector: Add selector
+  update-success: Successfully updated deployment config.
+  this-is-example-deployment-config: This is the deployment config example. You need to edit and save it.
 datasource:
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source
