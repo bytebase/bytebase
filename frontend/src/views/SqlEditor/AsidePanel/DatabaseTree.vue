@@ -1,20 +1,32 @@
 <template>
   <div
-    class="databases-tree p-2 space-y-2 overflow-x-auto"
+    class="databases-tree p-2 space-y-2 h-full"
     v-if="!connectionContext.isLoadingTree"
   >
-    <NInput v-model:value="searchPattern" placeholder="Search Databases" />
-    <NTree
-      block-line
-      :data="connectionTree"
-      :pattern="searchPattern"
-      :default-expanded-keys="defaultExpanedKeys"
-      :default-selected-keys="defaultSelectedKeys"
-      :on-update:selected-keys="handleSelectedKeysChange"
-    />
+    <div class="databases-tree--input">
+      <NInput
+        v-model:value="searchPattern"
+        :placeholder="$t('sql-editor.search-databases')"
+      >
+        <template #prefix>
+          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
+        </template>
+      </NInput>
+    </div>
+    <div class="databases-tree--tree overflow-y-auto">
+      <NTree
+        block-line
+        leaf-only
+        :data="connectionTree"
+        :pattern="searchPattern"
+        :default-expanded-keys="defaultExpanedKeys"
+        :default-selected-keys="defaultSelectedKeys"
+        :on-update:selected-keys="handleSelectedKeysChange"
+      />
+    </div>
   </div>
   <div v-else class="flex justify-center items-center h-full">
-    <BBSpin title="Loading Databases..." />
+    <BBSpin :title="$t('sql-editor.loading-databases')" />
   </div>
 </template>
 
@@ -67,8 +79,15 @@ const handleSelectedKeysChange = (
   const [selectedItem] = options;
   if (selectedItem.type === "table") {
     setConnectionContext({
-      selectedTableId: selectedItem.id,
+      selectedDatabaseId: selectedItem.parentId,
+      selectedTableName: selectedItem.label,
     });
   }
 };
 </script>
+
+<style scoped>
+.databases-tree--tree {
+  height: calc(100% - 40px);
+}
+</style>
