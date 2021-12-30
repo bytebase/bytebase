@@ -614,43 +614,19 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 
-		// Find and use schema from existing tenants.
 		var schemaVersion, schema string
 		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 		}
+		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			p, err := s.getTenantDatabases(ctx, issueCreate.ProjectID, m.DatabaseName)
+			// Find all databases in the project.
+			sv, s, err := s.getTenantDatabaseSchema(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
-			var existDB *api.Database
-			for _, l := range p {
-				if len(l) > 0 {
-					existDB = l[0]
-					break
-				}
-			}
-			if existDB == nil {
-				// TODO(spinningbot): handle the case when there is no existing tenant.
-			} else {
-				driver, err := getDatabaseDriver(ctx, existDB.Instance, existDB.Name, s.l)
-				if err != nil {
-					return nil, err
-				}
-				defer driver.Close(ctx)
-				schemaVersion, err = getLatestSchemaVersion(ctx, driver, existDB.Name)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get migration history for database %q: %w", existDB.Name, err)
-				}
-
-				var schemaBuf bytes.Buffer
-				if err := driver.Dump(ctx, existDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-					return nil, err
-				}
-				schema = schemaBuf.String()
-			}
+			schemaVersion, schema = sv, s
 		}
 
 		payload := api.TaskDatabaseCreatePayload{}
@@ -761,7 +737,13 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 
-			p, err := s.getTenantDatabases(ctx, issueCreate.ProjectID, d.DatabaseName)
+			databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+				ProjectID: &issueCreate.ProjectID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			}
+			p, err := s.getTenantDatabases(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -1028,26 +1010,19 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabases(ctx context.Context, projectID int, databaseName string) ([][]*api.Database, error) {
+func (s *Server) getTenantDatabases(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deplopment config for project ID: %v", projectID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
 	}
 	if deployConfig == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
-	}
-	// Find all databases in the project.
-	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
 	for _, database := range databaseList {
 		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
@@ -1059,4 +1034,74 @@ func (s *Server) getTenantDatabases(ctx context.Context, projectID int, database
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
 	return p, nil
+}
+
+func (s *Server) getTenantDatabaseSchema(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
+	// Find all databases in the project.
+	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
+	}
+
+	pipeline, err := s.getTenantDatabases(ctx, projectID, databaseList, databaseName)
+	if err != nil {
+		return "", "", err
+	}
+	var existDB *api.Database
+	// We try to use an existing tenant with the same environment and fallback of any first tenant found.
+	for _, stage := range pipeline {
+		for _, db := range stage {
+			if db.Instance.EnvironmentID == instance.EnvironmentID {
+				existDB = db
+				break
+			}
+		}
+		if existDB != nil {
+			break
+		}
+	}
+	if existDB == nil {
+		for _, stage := range pipeline {
+			if len(stage) > 0 {
+				existDB = stage[0]
+				break
+			}
+		}
+	}
+
+	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
+	// If there are existing databases with the same name, we will disallow the database creation.
+	// Otherwise, we will create a blank new database.
+	if existDB == nil {
+		found := false
+		for _, db := range databaseList {
+			if db.Name == databaseName {
+				found = true
+				break
+			}
+		}
+		if found {
+			err := fmt.Errorf("It's disallowed to create a database without tenant but there are existing databases with the same name %q", databaseName)
+			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		return "", "", nil
+	}
+
+	driver, err := getDatabaseDriver(ctx, existDB.Instance, existDB.Name, s.l)
+	if err != nil {
+		return "", "", err
+	}
+	defer driver.Close(ctx)
+	schemaVersion, err := getLatestSchemaVersion(ctx, driver, existDB.Name)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", existDB.Name, err)
+	}
+
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(ctx, existDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+		return "", "", err
+	}
+	return schemaVersion, schemaBuf.String(), nil
 }
