@@ -107,10 +107,10 @@ export default defineComponent({
 
     const COLUMN_LIST = computed((): BBTableColumn[] => [
       {
-        title: t("settings.labels.key"),
+        title: t("setting.label.key"),
       },
       {
-        title: t("settings.labels.values"),
+        title: t("setting.label.values"),
       },
     ]);
 

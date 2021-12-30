@@ -270,10 +270,10 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "labels",
-                name: "setting.workspace.labels",
+                path: "label",
+                name: "setting.workspace.label",
                 meta: { title: () => t("settings.sidebar.labels") },
-                component: () => import("../views/SettingWorkspaceLabels.vue"),
+                component: () => import("../views/SettingWorkspaceLabel.vue"),
                 props: true,
               },
               {

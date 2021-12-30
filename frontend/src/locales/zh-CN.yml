@@ -257,10 +257,6 @@ settings:
       upgrade: 升级到团队版来开启成员管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
-  labels:
-    key: Key
-    values: 值
-    value-placeholder: 标签值…
 activity:
   name: 名称
   comment: 评论
@@ -892,10 +888,14 @@ setting:
     free: 免费版
     team: 团队版
     enterprise: 企业版
+  label:
+    key: Key
+    values: 值
+    value-placeholder: 标签值…
 sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
-labels:
+label:
   error:
     key-necessary: 需要指定 Key
     value-necessary: 需要指定值

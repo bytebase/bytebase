@@ -59,7 +59,7 @@
             but only editable to Owners and DBAs
           -->
           <router-link
-            to="/setting/labels"
+            to="/setting/label"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             {{ $t("settings.sidebar.labels") }}

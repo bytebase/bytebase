@@ -263,10 +263,6 @@ settings:
       upgrade: Upgrade to Team plan to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
-  labels:
-    key: Key
-    values: Values
-    value-placeholder: Label value...
 activity:
   name: Name
   comment: Comment
@@ -1021,10 +1017,14 @@ setting:
     free: Free
     team: Team
     enterprise: Enterprise
+  label:
+    key: Key
+    values: Values
+    value-placeholder: Label value...
 sql-editor:
   self: SQL Editor
   select-connection: Select Connections
-labels:
+label:
   error:
     key-necessary: Key is required
     value-necessary: Value is required
