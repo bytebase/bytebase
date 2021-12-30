@@ -3,12 +3,23 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, toRef, toRaw } from "vue";
+import { onMounted, ref, toRef, toRaw, PropType } from "vue";
+import type { editor as Editor } from "monaco-editor";
+
 import setupMonaco from "./setupMonaco";
+import sqlFormatter from "./sqlFormatter";
+
+import { SqlLanguage } from "../../types";
 
 const props = defineProps({
-  modelValue: { type: String, default: "" },
-  language: { type: String, default: "mysql" },
+  modelValue: {
+    type: String,
+    required: true,
+  },
+  language: {
+    type: String as PropType<SqlLanguage>,
+    default: "mysql",
+  },
 });
 
 const emit = defineEmits<{
@@ -22,22 +33,26 @@ const editorRef = ref();
 const sqlCode = toRef(props, "modelValue");
 const language = toRef(props, "language");
 
-// let editorInstance: Editor.IStandaloneCodeEditor
+let editorInstance: Editor.IStandaloneCodeEditor;
 
-// const setContent = (content: string) => {
-//   if (editorInstance) editorInstance.setValue(content)
-// }
+const setContent = (content: string) => {
+  if (editorInstance) editorInstance.setValue(content);
+};
 
-// const formatContent = () => {
-//   if (editorInstance) editorInstance.getAction('editor.action.formatDocument').run()
-// }
+const formatContent = () => {
+  if (editorInstance) {
+    const sql = editorInstance.getValue();
+    const { data } = sqlFormatter(sql, language.value);
+    setContent(data);
+  }
+};
 
 const init = async () => {
   const { monaco } = await setupMonaco(language.value);
 
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
 
-  const editorInstance = monaco.editor.create(editorRef.value, {
+  editorInstance = monaco.editor.create(editorRef.value, {
     model,
     tabSize: 2,
     insertSpaces: true,
@@ -55,14 +70,12 @@ const init = async () => {
 
   // add the run query action in context menu
   editorInstance.addAction({
-    id: "Bytebase",
+    id: "RunQuery",
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
     run: async () => {
-      console.log("run query");
-
       const typedValue = editorInstance.getValue();
       const selectedValue = editorInstance
         .getModel()
@@ -72,6 +85,17 @@ const init = async () => {
       const queryStatement = selectedValue || typedValue;
 
       emit("run-query", queryStatement);
+    },
+  });
+
+  editorInstance.addAction({
+    id: "FormatSQL",
+    label: "Format SQL",
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 1,
+    run: () => {
+      formatContent();
     },
   });
 
