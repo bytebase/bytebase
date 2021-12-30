@@ -32,8 +32,8 @@ import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
+import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
-
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
 
@@ -170,6 +170,10 @@ export interface NotificationState {
 
 export interface CommandState {
   commandListById: Map<CommandId, Command[]>;
+}
+
+export interface LabelState {
+  labelList: Label[];
 }
 
 // type for vuex

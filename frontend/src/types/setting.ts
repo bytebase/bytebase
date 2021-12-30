@@ -1,6 +1,8 @@
 import { SettingId } from "./id";
 import { Principal } from "./principal";
 
+export type SettingName = string;
+
 export type Setting = {
   id: SettingId;
 
