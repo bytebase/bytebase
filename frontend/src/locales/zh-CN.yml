@@ -140,7 +140,6 @@ common:
   created: 已创建
   label: 标签
   labels: 标签
-  mode: 模式
   roletype: 角色类型
   readonly: 只读
   user: 用户
@@ -810,9 +809,6 @@ project:
     restore:
       title: 恢复项目
       btn-text: 恢复这个@:common.project
-  mode:
-    standard: 标准
-    tenant: 多租户
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早

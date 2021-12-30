@@ -140,7 +140,6 @@ common:
   created: Created
   label: Label
   labels: Labels
-  mode: Mode
   roletype: Role Type
   readonly: readonly
   user: User
@@ -915,9 +914,6 @@ project:
     restore:
       title: Restore project
       btn-text: Restore this @.lower:{'common.project'}
-  mode:
-    standard: Standard
-    tenant: Tenant
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older
