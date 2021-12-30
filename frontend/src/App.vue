@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, onErrorCaptured } from "vue";
+import { reactive, watchEffect, onErrorCaptured, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
@@ -47,7 +47,7 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "App",
   components: {
     KBarWrapper,
@@ -141,5 +141,11 @@ export default {
       removeNotification,
     };
   },
-};
+});
 </script>
+
+<style>
+body {
+  @apply text-base;
+}
+</style>

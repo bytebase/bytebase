@@ -1,18 +1,26 @@
 import { isEmpty } from "lodash-es";
 
-import { SqlEditorState, ConnectionAtom, QueryInfo } from "../../types";
+import {
+  SqlEditorState,
+  ConnectionAtom,
+  QueryInfo,
+  ConnectionContext,
+} from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
   connectionContext: {
+    hasSlug: false,
     instanceId: 0,
     instanceName: "",
     databaseId: 0,
     databaseName: "",
     tableId: 0,
     tableName: "",
+    isLoadingTree: false,
+    selectedTableId: 0,
   },
   queryStatement: "",
   selectedStatement: "",
@@ -85,12 +93,19 @@ const mutations = {
   [types.SET_QUERY_RESULT](state: SqlEditorState, payload: Array<any>) {
     state.queryResult = payload;
   },
+  [types.SET_CONNECTION_CONTEXT](
+    state: SqlEditorState,
+    payload: Partial<ConnectionContext>
+  ) {
+    Object.assign(state.connectionContext, payload);
+  },
 };
 
 type SqlEditorActionsMap = {
   setSqlEditorState: typeof mutations.SET_SQL_EDITOR_STATE;
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
   setQueryResult: typeof mutations.SET_QUERY_RESULT;
+  setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
 };
 
 const actions = {
@@ -98,6 +113,7 @@ const actions = {
     setSqlEditorState: types.SET_SQL_EDITOR_STATE,
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
+    setConnectionContext: types.SET_CONNECTION_CONTEXT,
   }),
   async executeQuery(
     { commit, dispatch, state }: any,
@@ -134,12 +150,13 @@ const actions = {
     );
     commit(types.SET_SQL_EDITOR_STATE, {
       queryResult: [],
-      connectionContext: {
-        instanceId,
-        instanceName: instanceInfo.name,
-        databaseId,
-        databaseName: databaseInfo.name,
-      },
+    });
+    commit(types.SET_CONNECTION_CONTEXT, {
+      hasSlug: true,
+      instanceId,
+      instanceName: instanceInfo.name,
+      databaseId,
+      databaseName: databaseInfo.name,
     });
   },
 };

@@ -35,6 +35,7 @@
 import { ref, watch } from "vue";
 import { CascaderOption } from "naive-ui";
 import { useStore } from "vuex";
+import { cloneDeep } from "lodash-es";
 
 import {
   useNamespacedState,
@@ -57,10 +58,10 @@ const { isEmptyStatement } = useNamespacedGetters<SqlEditorGetters>(
   "sqlEditor",
   ["isEmptyStatement", "connectionInfo"]
 );
-const { executeQuery, setSqlEditorState } =
+const { executeQuery, setConnectionContext } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
     "executeQuery",
-    "setSqlEditorState",
+    "setConnectionContext",
   ]);
 
 const selectedConnection = ref();
@@ -88,10 +89,10 @@ watch(
   () => connectionTree.value,
   (newVal) => {
     if (newVal) {
-      selectedConnection.value =
-        connectionContext.value.tableId ||
-        connectionContext.value.databaseId ||
-        connectionContext.value.instanceId;
+      const ctx = connectionContext.value;
+      selectedConnection.value = ctx.hasSlug
+        ? ctx.tableId || ctx.databaseId || ctx.instanceId
+        : null;
     }
   }
 );
@@ -104,27 +105,29 @@ const handleConnectionChange = (
   isSeletedDatabase.value = pathValues.length >= 2;
 
   if (pathValues.length >= 1) {
-    let connectionContext: ConnectionContext = {
-      instanceId: 0,
-      instanceName: "",
-    };
+    let ctx: ConnectionContext = cloneDeep(connectionContext.value);
     const [instanceInfo, databaseInfo, tableInfo] = pathValues;
 
     if (pathValues.length >= 1) {
-      connectionContext.instanceId = instanceInfo.id as number;
-      connectionContext.instanceName = instanceInfo.label as string;
+      ctx.instanceId = instanceInfo.id as number;
+      ctx.instanceName = instanceInfo.label as string;
     }
     if (pathValues.length >= 2) {
-      connectionContext.databaseId = databaseInfo.id as number;
-      connectionContext.databaseName = databaseInfo.label as string;
+      ctx.databaseId = databaseInfo.id as number;
+      ctx.databaseName = databaseInfo.label as string;
     }
     if (pathValues.length >= 3) {
-      connectionContext.tableId = tableInfo.id as number;
-      connectionContext.tableName = tableInfo.label as string;
+      ctx.tableId = tableInfo.id as number;
+      ctx.tableName = tableInfo.label as string;
     }
 
-    setSqlEditorState({
-      connectionContext,
+    setConnectionContext({
+      instanceId: ctx.instanceId,
+      instanceName: ctx.instanceName,
+      databaseId: ctx.databaseId,
+      databaseName: ctx.databaseName,
+      tableId: ctx.tableId,
+      tableName: ctx.tableName,
     });
   }
 };
