@@ -48,7 +48,7 @@ import { useI18n } from "vue-i18n";
 import AddLabelValue from "../components/AddLabelValue.vue";
 
 export default defineComponent({
-  name: "SettingWorkspaceLabelManagement",
+  name: "SettingWorkspaceLabels",
   components: {
     BBTable,
     BBTableCell,
@@ -107,10 +107,10 @@ export default defineComponent({
 
     const COLUMN_LIST = computed((): BBTableColumn[] => [
       {
-        title: t("settings.label-management.key"),
+        title: t("settings.labels.key"),
       },
       {
-        title: t("settings.label-management.values"),
+        title: t("settings.labels.values"),
       },
     ]);
 

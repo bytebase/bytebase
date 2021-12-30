@@ -227,7 +227,7 @@ settings:
     members: Members
     version-control: Version Control
     plans: Plans
-    label-management: Label Management
+    labels: Labels
   profile:
     email: Email
     role: Role
@@ -263,7 +263,7 @@ settings:
       upgrade: Upgrade to Team plan to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
-  label-management:
+  labels:
     key: Key
     values: Values
     value-placeholder: Label value...

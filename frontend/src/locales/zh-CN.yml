@@ -221,7 +221,7 @@ settings:
     members: 成员
     version-control: 版本控制
     plans: 价格方案
-    label-management: 标签管理
+    labels: 标签
   profile:
     email: 邮箱
     role: 角色
@@ -257,7 +257,7 @@ settings:
       upgrade: 升级到团队版来开启成员管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
-  label-management:
+  labels:
     key: Key
     values: 值
     value-placeholder: 标签值…

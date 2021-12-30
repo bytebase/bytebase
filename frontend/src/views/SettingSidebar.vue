@@ -59,10 +59,10 @@
             but only editable to Owners and DBAs
           -->
           <router-link
-            to="/setting/label-management"
+            to="/setting/labels"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
-            {{ $t("settings.sidebar.label-management") }}
+            {{ $t("settings.sidebar.labels") }}
           </router-link>
           <router-link
             v-if="showOwnerItem"
