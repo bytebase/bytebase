@@ -887,3 +887,6 @@ setting:
 sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
+  search-databases: 搜索数据库
+  loading-databases: 加载数据库信息...
+  close-pane: 关闭面板

@@ -3,12 +3,18 @@
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
         <router-link to="/" class="select-none" active-class exact-active-class>
-          <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+          <img
+            class="h-12 w-auto"
+            src="../../assets/logo-full.svg"
+            alt="Bytebase"
+          />
         </router-link>
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">SQL Editor</router-link>
+          <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">{{
+            $t("sql-editor.self")
+          }}</router-link>
         </div>
       </div>
     </div>
@@ -22,7 +28,11 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <!-- TODO test for now, will delete -->
-        <div v-if="showSwitchPlan" class="cursor-pointer" @click="toggleLocales">
+        <div
+          v-if="showSwitchPlan"
+          class="cursor-pointer"
+          @click="toggleLocales"
+        >
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
@@ -53,28 +63,36 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">Projects</router-link>
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
+      >Projects</router-link
+    >
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">Databases</router-link>
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
+      >Databases</router-link
+    >
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-    >Instances</router-link>
+      >Instances</router-link
+    >
 
-    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2">Environments</router-link>
+    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
+      >Environments</router-link
+    >
 
     <router-link
       to="/setting/member"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.settings") }}</router-link>
+      >{{ $t("common.settings") }}</router-link
+    >
   </div>
 </template>
 
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -88,7 +106,7 @@ interface LocalState {
   showMobileMenu: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "EditorHeader",
   components: { ProfileDropdown },
   setup() {
@@ -259,19 +277,11 @@ export default {
 
     return {
       state,
-      currentUser,
-      currentPlan,
       showDBAItem,
       showSwitchPlan,
       inboxSummary,
-      switchToOwner,
-      switchToDBA,
-      switchToDeveloper,
-      switchToFree,
-      switchToTeam,
-      switchToEnterprise,
       toggleLocales,
     };
   },
-};
+});
 </script>

@@ -1018,3 +1018,6 @@ setting:
 sql-editor:
   self: SQL Editor
   select-connection: Select Connections
+  search-databases: Search Databases
+  loading-databases: Loading Databases...
+  close-pane: Close Pane

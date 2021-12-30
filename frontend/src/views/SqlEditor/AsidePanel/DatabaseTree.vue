@@ -57,7 +57,7 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
 const defaultExpanedKeys = computed(() => {
   const ctx = connectionContext.value;
   if (ctx.hasSlug) {
-    return [ctx.instanceId, ctx.databaseId];
+    return [`instance-${ctx.instanceId}`, `database-${ctx.databaseId}`];
   } else {
     [];
   }
@@ -66,7 +66,7 @@ const defaultExpanedKeys = computed(() => {
 const defaultSelectedKeys = computed(() => {
   const ctx = connectionContext.value;
   if (ctx.hasSlug) {
-    return [ctx.databaseId];
+    return [`database-${ctx.databaseId}`];
   } else {
     [];
   }
