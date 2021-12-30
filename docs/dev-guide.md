@@ -10,6 +10,7 @@ Now, **each PR** to the main branch will be deployed on Render automatically, an
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/preview-env1.png)
 
 ## Environment
+
 For now, we have three environments configured at Render:
 | Env     | Creation                                      | Destroy       | URL                                               |
 | ------- | --------------------------------------------- | ------------- | ------------------------------------------------- |
