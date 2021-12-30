@@ -1089,11 +1089,11 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	return schemaVersion, schemaBuf.String(), nil
 }
 
-func getPeerTenantDatabase(pipeline [][]*api.Database, environmentID int) *api.Database {
+func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
 	var similarDB *api.Database
 	// We try to use an existing tenant with the same environment.
-	for _, stage := range pipeline {
-		for _, db := range stage {
+	for _, databaseList := range databaseMatrix {
+		for _, db := range databaseList {
 			if db.Instance.EnvironmentID == environmentID {
 				similarDB = db
 				break
@@ -1104,7 +1104,7 @@ func getPeerTenantDatabase(pipeline [][]*api.Database, environmentID int) *api.D
 		}
 	}
 	if similarDB == nil {
-		for _, stage := range pipeline {
+		for _, stage := range databaseMatrix {
 			if len(stage) > 0 {
 				similarDB = stage[0]
 				break
