@@ -75,12 +75,13 @@ const (
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
-	ProjectID    int    `json:"projectId,omitempty"`
-	DatabaseName string `json:"databaseName,omitempty"`
-	Statement    string `json:"statement,omitempty"`
-	CharacterSet string `json:"character,omitempty"`
-	Collation    string `json:"collation,omitempty"`
-	Labels       string `json:"labels,omitempty"`
+	ProjectID     int    `json:"projectId,omitempty"`
+	DatabaseName  string `json:"databaseName,omitempty"`
+	Statement     string `json:"statement,omitempty"`
+	CharacterSet  string `json:"character,omitempty"`
+	Collation     string `json:"collation,omitempty"`
+	Labels        string `json:"labels,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
