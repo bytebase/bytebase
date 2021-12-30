@@ -1,7 +1,7 @@
 <template>
   <div
-    class="databases-tree p-2 space-y-2 h-full"
     v-if="!connectionContext.isLoadingTree"
+    class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
       <NInput
@@ -59,7 +59,7 @@ const defaultExpanedKeys = computed(() => {
   if (ctx.hasSlug) {
     return [`instance-${ctx.instanceId}`, `database-${ctx.databaseId}`];
   } else {
-    [];
+    return [];
   }
 });
 
@@ -68,7 +68,7 @@ const defaultSelectedKeys = computed(() => {
   if (ctx.hasSlug) {
     return [`database-${ctx.databaseId}`];
   } else {
-    [];
+    return [];
   }
 });
 

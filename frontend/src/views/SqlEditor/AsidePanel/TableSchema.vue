@@ -1,9 +1,9 @@
 <template>
-  <div class="table-schema" v-if="tableInfo">
+  <div v-if="tableInfo" class="table-schema">
     <div class="table-schema--header">
       <div class="table-schema--header-title mr-1 flex items-center">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
-        <span class="font-semibold ">{{ tableInfo.name }}</span>
+        <span class="font-semibold">{{ tableInfo.name }}</span>
       </div>
       <div
         class="table-schema--header-actions flex-1 flex justify-end space-x-2"
@@ -15,9 +15,8 @@
                 <heroicons-outline:pencil-alt class="w-4 h-4" />
               </NButton>
             </template>
-            {{ $t('quick-action.alter-schema') }}
+            {{ $t("quick-action.alter-schema") }}
           </NTooltip>
-          
         </div>
         <div class="action-close flex items-center">
           <NTooltip trigger="hover">
@@ -26,7 +25,7 @@
                 <heroicons-outline:x class="w-4 h-4" />
               </NButton>
             </template>
-            {{ $t('sql-editor.close-pane') }}
+            {{ $t("sql-editor.close-pane") }}
           </NTooltip>
         </div>
       </div>
@@ -35,9 +34,7 @@
       <div class="pb-1">
         <span>{{ tableInfo.rowCount }} rows</span>
       </div>
-      <div
-        class="flex justify-between items-center w-full text-xs py-2"
-      >
+      <div class="flex justify-between items-center w-full text-xs py-2">
         <div class="table-schema--content-column">
           <span>Columns</span>
         </div>
@@ -47,10 +44,10 @@
       </div>
     </div>
     <div class="table-schema--content text-sm text-gray-400 overflow-y-auto">
-      
       <div
-        class="flex justify-between items-center w-full p-1 hover:bg-link-hover"
         v-for="(column, index) in tableInfo.columnList"
+        :key="index"
+        class="flex justify-between items-center w-full p-1 hover:bg-link-hover"
       >
         <div class="table-schema--content-column text-gray-600">
           <span>{{ column.name }}</span>
@@ -76,7 +73,7 @@ import {
 import type { SqlEditorState } from "../../../types";
 
 const emit = defineEmits<{
-  (e: "close-table-schema-pane"): void;
+  (e: "close-pane"): void;
 }>();
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -94,7 +91,7 @@ const handleEditorSchema = () => {
 };
 
 const handleClosePane = () => {
-  emit("close-table-schema-pane");
+  emit("close-pane");
 };
 
 watch(
