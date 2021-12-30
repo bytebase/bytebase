@@ -1,6 +1,6 @@
 previewsEnabled: true
 previewsExpireAfterDays: 3
-service:
+services:
   - type: web
     plan: free
     previewPlan: starter
