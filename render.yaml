@@ -1,10 +1,10 @@
 previewsEnabled: true
 previewsExpireAfterDays: 3
 service:
-- type: web
-  plan: free
-  previewPlan: starter
-  name: preview-env
-  env: docker
-  dockerCommand: /usr/local/bin/staging.sh
-  dockerfilePath: ./Dockerfile.render
+  - type: web
+    plan: free
+    previewPlan: starter
+    name: preview-env
+    env: docker
+    dockerCommand: /usr/local/bin/staging.sh
+    dockerfilePath: ./Dockerfile.render
