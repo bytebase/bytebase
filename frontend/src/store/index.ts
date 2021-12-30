@@ -2,14 +2,14 @@ import { createStore, Store } from "vuex";
 
 /**
  * Following states are persisted in database
- * activity | actuator | anomlay | auth | backup | bookmark |
+ * activity | actuator | anomaly | auth | backup | bookmark |
  * command | database | dataSource | environment | gitlab |
  * inbox |instance | issue | issueSubscriber | member | notification |
  * pipeline | plan | policy | principal | project | projectWebhook | repository |
- * 
+ *
  * Following states are only stored in memory
- * router | setting | sql | stage | table | task | sqlEdtior
- * 
+ * router | setting | sql | stage | table | task | sqlEditor
+ *
  * Following states are persisted in local storage
  * uistate | vsc | view
  */

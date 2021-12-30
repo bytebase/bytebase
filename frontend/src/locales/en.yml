@@ -138,6 +138,8 @@ common:
   assigned: Assigned
   subscribed: Subscribed
   created: Created
+  label: Label
+  labels: Labels
   roletype: Role Type
   readonly: readonly
   user: User
@@ -150,6 +152,7 @@ common:
   billings: Billings
   all: All
   by: by
+  ok: OK
   share: Share
 error-page:
   go-back-home: Go back home
@@ -224,6 +227,7 @@ settings:
     members: Members
     version-control: Version Control
     plans: Plans
+    labels: Labels
   profile:
     email: Email
     role: Role
@@ -696,8 +700,6 @@ database:
   columns: Columns
   indexes: Indexes
   row-count-est: Row count est.
-t:
-  database: {}
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
   branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
@@ -1015,9 +1017,22 @@ setting:
     free: Free
     team: Team
     enterprise: Enterprise
+  label:
+    key: Key
+    values: Values
+    value-placeholder: Label value...
 sql-editor:
   self: SQL Editor
   select-connection: Select Connections
   search-databases: Search Databases
   loading-databases: Loading Databases...
   close-pane: Close Pane
+label:
+  error:
+    key-necessary: Key is required
+    value-necessary: Value is required
+    key-duplicated: Duplicated keys
+    value-duplicated: Duplicated values
+    max-length-exceeded: Length cannot exceed {len} characters
+    max-label-count-exceeded: Cannot exceed {count} labels
+    cannot-edit-reserved-label: Cannot edit reserved label "{key}"

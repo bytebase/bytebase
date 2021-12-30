@@ -144,8 +144,10 @@ type UpdateSchemaDetail struct {
 	DatabaseName string `json:"databaseName"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
-	// Statement is the rollback statement of the statement.
+	// RollbackStatement is the rollback statement of the statement.
 	RollbackStatement string `json:"rollbackStatement"`
+	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in nanoseconds.
+	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
 // UpdateSchemaContext is the issue create context for updating database schema.

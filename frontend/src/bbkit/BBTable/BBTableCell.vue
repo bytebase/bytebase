@@ -1,14 +1,13 @@
 <template>
-  <td
-    class="table-cell text-sm leading-5 py-2 max-w-prose"
-    :class="`pl-` + leftPadding + ` pr-` + rightPadding"
-  >
+  <td class="table-cell text-sm leading-5 max-w-prose" :class="classNames">
     <slot />
   </td>
 </template>
 
 <script lang="ts">
-export default {
+import { defineComponent } from "vue";
+
+export default defineComponent({
   name: "BBTableCell",
   props: {
     leftPadding: {
@@ -19,6 +18,19 @@ export default {
       type: Number,
       default: 2,
     },
+    compact: {
+      type: Boolean,
+      default: false,
+    },
   },
-};
+  setup(props) {
+    const classNames: string[] = [];
+    if (!props.compact) {
+      classNames.push(`pl-${props.leftPadding}`);
+      classNames.push(`pr-${props.rightPadding}`);
+      classNames.push("py-2");
+    }
+    return { classNames };
+  },
+});
 </script>
