@@ -7,7 +7,7 @@ import (
 	"github.com/kr/pretty"
 )
 
-func TestGetPipelineFromDeploymentSchedule(t *testing.T) {
+func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	dbs := []*api.Database{
 		{
 			ID:     0,
@@ -34,7 +34,7 @@ func TestGetPipelineFromDeploymentSchedule(t *testing.T) {
 			Name:   "world",
 			Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 		},
-	} // , 1, 2, 3, 4, 5, 6, 7}
+	}
 
 	tests := []struct {
 		name         string
@@ -200,7 +200,7 @@ func TestGetPipelineFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		create, _ := getPipelineFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
+		create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
 
 		diff := pretty.Diff(create, test.want)
 		if len(diff) > 0 {
