@@ -855,6 +855,7 @@ func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType,
 		Type:              api.TaskDatabaseSchemaUpdate,
 		Statement:         d.Statement,
 		RollbackStatement: d.RollbackStatement,
+		EarliestAllowedTs: d.EarliestAllowedTs,
 		MigrationType:     migrationType,
 		Payload:           string(bytes),
 	}, nil
