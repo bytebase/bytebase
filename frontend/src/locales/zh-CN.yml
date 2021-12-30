@@ -138,6 +138,8 @@ common:
   assigned: 已指派
   subscribed: 已订阅
   created: 已创建
+  label: 标签
+  labels: 标签
   roletype: 角色类型
   readonly: 只读
   user: 用户
@@ -150,6 +152,7 @@ common:
   billings: 计费
   all: 全部
   by: 由
+  ok: OK
   share: 分享
 error-page:
   go-back-home: 回到主页
@@ -218,6 +221,7 @@ settings:
     members: 成员
     version-control: 版本控制
     plans: 价格方案
+    labels: 标签
   profile:
     email: 邮箱
     role: 角色
@@ -884,6 +888,19 @@ setting:
     free: 免费版
     team: 团队版
     enterprise: 企业版
+  label:
+    key: Key
+    values: 值
+    value-placeholder: 标签值…
 sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
+label:
+  error:
+    key-necessary: 需要指定 Key
+    value-necessary: 需要指定值
+    key-duplicated: Key 重复了
+    value-duplicated: 值重复了
+    max-length-exceeded: 长度不能超过 {len} 字符
+    max-label-count-exceeded: 不能多于 {count} 个标签
+    cannot-edit-reserved-label: 不能编辑预留标签 "{key}"

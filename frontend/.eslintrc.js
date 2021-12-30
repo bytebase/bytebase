@@ -25,7 +25,13 @@ module.exports = {
     "vue/no-unused-components": "warn",
     "vue/no-useless-template-attributes": "warn",
   },
-  ignorePatterns: ["node_modules", "build", "dist", "public"],
+  ignorePatterns: [
+    "node_modules",
+    "build",
+    "dist",
+    "public",
+    "components.d.ts",
+  ],
   overrides: [
     {
       files: ["./*.js"],
