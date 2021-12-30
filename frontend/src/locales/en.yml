@@ -152,7 +152,6 @@ common:
   agents: Agents
   billings: Billings
   all: All
-  deployment-config: Deployment Config
   by: by
   ok: OK
   share: Share
@@ -705,24 +704,7 @@ database:
   index-size: Index size
   columns: Columns
   indexes: Indexes
-  empty-label-value: <Empty Value>
   row-count-est: Row count est.
-  no-label: No labels
-  label-error:
-    key-necessary: Key is required
-    value-necessary: Value is required
-    key-duplicated: Duplicated keys
-    value-duplicated: Duplicated values
-    max-length-exceeded: Length cannot exceed {len} characters
-    max-label-count-exceeded: Cannot exceed {count} labels
-    cannot-edit-reserved-label: Cannot edit reserved label "{key}"
-  label:
-    placeholder:
-      select-key: Select key...
-      select-value: Select value...
-      select-values: Select values...
-t:
-  database: {}
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
   branch-specify-tip: 'Tip: You can also use wildcard like ''feature/*'
@@ -1013,11 +995,6 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
-deployment-config:
-  stage-n: Stage - {n}
-  add-selector: Add selector
-  update-success: Successfully updated deployment config.
-  this-is-example-deployment-config: This is the deployment config example. You need to edit and save it.
 datasource:
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source

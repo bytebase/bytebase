@@ -152,7 +152,6 @@ common:
   agents: Agents
   billings: 计费
   all: 全部
-  deployment-config: 部署配置
   by: 由
   ok: OK
   share: 分享
@@ -643,22 +642,7 @@ database:
   index-size: 索引大小
   columns: 列
   indexes: 索引
-  empty-label-value: <空值>
   row-count-est: 估计行数
-  no-label: 没有标签
-  label-error:
-    key-necessary: 需要指定 Key
-    value-necessary: 需要指定值
-    key-duplicated: Key 重复了
-    value-duplicated: 值重复了
-    max-length-exceeded: 长度不能超过 {len} 字符
-    max-label-count-exceeded: 不能多于 {count} 个标签
-    cannot-edit-reserved-label: 不能编辑预留标签 "{key}"
-  label:
-    placeholder:
-      select-key: 选择 Key…
-      select-value: 选择值…
-      select-values: 选择值…
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
   branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
@@ -882,11 +866,6 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
-deployment-config:
-  stage-n: 阶段 - {n}
-  add-selector: 添加选择条件
-  update-success: 成功更新部署配置
-  this-is-example-deployment-config: 这是部署配置的样例，你需要在此基础上编辑并保存。
 datasource:
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源
