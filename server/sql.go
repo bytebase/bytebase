@@ -563,13 +563,3 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 	}
 	return schemaVersion, nil
 }
-
-func getMigrationVersion(ctx context.Context, database *api.Database, logger *zap.Logger) (string, error) {
-	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, logger)
-	if err != nil {
-		return "", err
-	}
-	defer driver.Close(ctx)
-
-	return getLatestSchemaVersion(ctx, driver, database.Name)
-}
