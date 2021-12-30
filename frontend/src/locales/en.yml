@@ -1024,3 +1024,12 @@ setting:
 sql-editor:
   self: SQL Editor
   select-connection: Select Connections
+labels:
+  error:
+    key-necessary: Key is required
+    value-necessary: Value is required
+    key-duplicated: Duplicated keys
+    value-duplicated: Duplicated values
+    max-length-exceeded: Length cannot exceed {len} characters
+    max-label-count-exceeded: Cannot exceed {count} labels
+    cannot-edit-reserved-label: Cannot edit reserved label "{key}"

@@ -14,7 +14,7 @@
 
         <span class="text-red-600">
           {{
-            $t("database.label-error.cannot-edit-reserved-label", {
+            $t("labels.error.cannot-edit-reserved-label", {
               key: label.key,
             })
           }}
@@ -29,7 +29,7 @@
         autocomplete="off"
         class="textfield"
         :class="{ error: !!state.error && state.changed }"
-        :placeholder="$t('settings.label-management.value-placeholder')"
+        :placeholder="$t('settings.labels.value-placeholder')"
         @blur="cancel"
         @keyup.esc="cancel"
         @keyup.enter="tryAdd"
@@ -111,13 +111,13 @@ export default defineComponent({
       const v = state.text.trim();
       if (!v) {
         // can't be empty
-        state.error = t("database.label-error.value-necessary");
+        state.error = t("labels.error.value-necessary");
       } else if (props.label.valueList.includes(v)) {
         // must be unique
-        state.error = t("database.label-error.value-duplicated");
+        state.error = t("labels.error.value-duplicated");
       } else if (v.length > MAX_VALUE_LENGTH) {
         // max length exceeded
-        state.error = t("database.label-error.max-length-exceeded", {
+        state.error = t("labels.error.max-length-exceeded", {
           len: MAX_VALUE_LENGTH,
         });
       } else {

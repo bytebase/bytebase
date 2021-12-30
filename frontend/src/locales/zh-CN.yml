@@ -895,3 +895,12 @@ setting:
 sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
+labels:
+  error:
+    key-necessary: 需要指定 Key
+    value-necessary: 需要指定值
+    key-duplicated: Key 重复了
+    value-duplicated: 值重复了
+    max-length-exceeded: 长度不能超过 {len} 字符
+    max-label-count-exceeded: 不能多于 {count} 个标签
+    cannot-edit-reserved-label: 不能编辑预留标签 "{key}"
