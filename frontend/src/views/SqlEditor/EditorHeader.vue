@@ -27,7 +27,6 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <!-- TODO test for now, will delete -->
         <div
           v-if="showSwitchPlan"
           class="cursor-pointer"
@@ -63,23 +62,25 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-      >Projects</router-link
-    >
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">{{
+      $t("common.projects")
+    }}</router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
-      >Databases</router-link
-    >
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">{{
+      $t("common.databases")
+    }}</router-link>
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-      >Instances</router-link
+      >{{ $t("common.instances") }}</router-link
     >
 
-    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-      >Environments</router-link
+    <router-link
+      to="/environment"
+      class="bar-link rounded-md block px-3 py-2"
+      >{{ $t("common.environments") }}</router-link
     >
 
     <router-link
@@ -145,39 +146,6 @@ export default defineComponent({
     const inboxSummary = computed((): InboxSummary => {
       return store.getters["inbox/inboxSummaryByUser"](currentUser.value.id);
     });
-
-    const switchToOwner = () => {
-      store.dispatch("auth/login", {
-        email: "demo@example.com",
-        password: "1024",
-      });
-    };
-
-    const switchToDBA = () => {
-      store.dispatch("auth/login", {
-        email: "jerry@example.com",
-        password: "2048",
-      });
-    };
-
-    const switchToDeveloper = () => {
-      store.dispatch("auth/login", {
-        email: "tom@example.com",
-        password: "4096",
-      });
-    };
-
-    const switchToFree = () => {
-      store.dispatch("plan/changePlan", PlanType.FREE);
-    };
-
-    const switchToTeam = () => {
-      store.dispatch("plan/changePlan", PlanType.TEAM);
-    };
-
-    const switchToEnterprise = () => {
-      store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
-    };
 
     const kbarActions = computed(() => [
       defineAction({
