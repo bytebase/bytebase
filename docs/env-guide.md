@@ -1,47 +1,43 @@
 # Environment Guide
 
-This guide describes the environments for our dev workflow.
-
-## Summary
-
-Sometime it is really pain in the neck that reviewers would read your changes line by line without running it.
-To ease this, we adopt [Render](https://render.com/) for feature preview.
-Now, **each PR** to the main branch will be deployed on Render automatically, and a link to your preview environment would be commented by Render right at your PR.
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/preview-env1.png)
+This guide describes the environments used in the Bytebase dev workflow. We use [Render](https://render.com/) to deploy our build for the corresponding environment.
 
 ## Environment
 
-For now, we have three environments configured at Render:
-| Env     | Creation                                      | Destroy       | URL                                               |
-| ------- | --------------------------------------------- | ------------- | ------------------------------------------------- |
-| Preview | New **PR** created                            | **PR** closed | [internal-preview-pr-**${PR No}**.onrender.com]() |
-| Staging | New **Pre-Release** created                   | **Never**     | staging.bytebase.com                              |
-| Demo    | New **commits** merged to **the main branch** | **Never**     | demo.bytebase.com                                 |
+| Env     |              | When created or reloaded                      | Destroy       | URL                                           |
+| ------- | ------------ | --------------------------------------------- | ------------- | ----------------------------------------------|
+| Preview | Read & Write | New **PR** created                            | **PR** closed | internal-preview-pr-**${PR No}**.onrender.com |
+| Staging | Read & Write | New **Pre-Release** created                   | **Never**     | [staging.bytebase.com](staging.bytebase.com)  |
+| Demo    | Read Only    | New **commits** merged to **the main branch** | **Never**     | [demo.bytebase.com](demo.bytebase.com)        |
 
 ### Preview Environment
 
-Preview environment will be deploy on a PR basis.
-Once a new pull request is created, a preview environment for your PR would automatically be deployed.
+Whenever a new PR is created, a preview environment for that PR will be automatically deployed on render.
 You can use the link commented at your PR to do some testing and share with your reviewers.
-Also, any new commit pushed to your PR branch will trigger a update. However, it may take a while (usually within minutes) for Render to update the environment. We added a 5-digits commit hash to the version tag at the left bottom, please check this to see whether your newest commit has been updated.
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/preview-env1.png)
+
+Any following commits pushed to that PR will trigger an update. However, it may take a while (usually within minutes) for Render to update the environment. We add a 5-digits git commit hash to the version tag at the left bottom, please check this to see whether the preview has loaded your latest commit.
+
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/preview-env2.png)
 
-### [Staging Environment](https://staging.bytebase.com/)
+### [Staging Environment (staging.bytebase.com)](https://staging.bytebase.com)
 
 Staging Environment is for release preview, and it would be triggered by a prerelease action in Github.
-You can access this environment by clicking [here](https://staging.bytebase.com/).
+
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/staging-env1.png)
 
-### [Demo Environment](https://demo.bytebase.com/)
+### [Demo Environment (demo.bytebase.com)](https://demo.bytebase.com)
 
-Demo Environment always reflect the main branch. Every updates at the main branch will trigger a update for Demo Environment.
-You can access this environment by clicking [here](https://demo.bytebase.com/).
+Demo Environment always reflects the main branch. Every update at the main branch will trigger an update for the Demo Environment. 
+
+**We intentionally do this because we adopt trunk based development and we want the main branch to always stay in a deployable state.**
 
 ## The Dev Workflow with Environment
 
 1. Design your feature, our [API style guide](https://github.com/bytebase/bytebase/blob/main/docs/coding-guide.md).
-2. Create a Pull Request, and checkout the environment.
-3. Request a review, our [Review guide](https://github.com/bytebase/bytebase/blob/main/docs/code-review-guide.md)
+2. Create a Pull Request, and check the preview.
+3. Request a review, our [Review guide](https://github.com/bytebase/bytebase/blob/main/docs/code-review-guide.md).
 4. Make changes if necessary.
-5. Merge to the main branch
-6. Checkout the [Demo Environment](https://demo.bytebase.com/) to see if your new feature is well function.
+5. Merge to the main branch.
+6. Checkout the [Demo Environment](https://demo.bytebase.com/) to see if your new feature behaves properly.
