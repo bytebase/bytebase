@@ -2,50 +2,42 @@
   <div class="flex items-center justify-between h-16">
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
-        <router-link
-          to="/"
-          class="select-none"
-          active-class=""
-          exact-active-class=""
-          ><img
-            class="h-12 w-auto"
-            src="../assets/logo-full.svg"
-            alt="Bytebase"
-        /></router-link>
+        <router-link to="/" class="select-none" active-class exact-active-class>
+          <img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase" />
+        </router-link>
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
-            {{ $t("common.projects") }}
-          </router-link>
+          <router-link
+            to="/project"
+            class="bar-link px-2 py-2 rounded-md"
+          >{{ $t("common.projects") }}</router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
-            $t("common.databases")
-          }}</router-link>
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">
+            {{
+              $t("common.databases")
+            }}
+          </router-link>
 
           <router-link
             v-if="showDBAItem"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
-            >{{ $t("common.instances") }}</router-link
-          >
+          >{{ $t("common.instances") }}</router-link>
 
           <router-link
             to="/environment"
             class="bar-link px-2 py-2 rounded-md"
-            >{{ $t("common.environments") }}</router-link
-          >
+          >{{ $t("common.environments") }}</router-link>
           <router-link
-            to="/setting/general"
+            to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
-            >{{ $t("common.settings") }}</router-link
-          >
+          >{{ $t("common.settings") }}</router-link>
           <router-link
             v-if="isDevFeatures"
             to="/sql-editor"
             class="bar-link px-2 py-2 rounded-md"
-            >SQL Editor</router-link
-          >
+          >{{ $t('sql-editor.self') }}</router-link>
         </div>
       </div>
     </div>
@@ -60,23 +52,19 @@
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
-          >
-            {{ $t('setting.plan.free') }}
-          </div>
+          >{{ $t('setting.plan.free') }}</div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
-          >
-            {{ $t('setting.plan.team') }}
-          </div>
+          >{{ $t('setting.plan.team') }}</div>
           <!-- <div
             class="bar-link"
             :class="currentPlan == 2 ? 'underline' : ''"
             @click.prevent="switchToEnterprise"
           >
             {{ $t('setting.plan.enterprise') }}
-          </div> -->
+          </div>-->
         </div>
         <div
           v-if="!isRelease"
@@ -87,25 +75,19 @@
             class="bar-link"
             :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
-          >
-            {{ $t('common.role.owner') }}
-          </div>
+          >{{ $t('common.role.owner') }}</div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
-          >
-            {{ $t('common.role.dba') }}
-          </div>
+          >{{ $t('common.role.dba') }}</div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
-          >
-            {{ $t('common.role.developer') }}
-          </div>
+          >{{ $t('common.role.developer') }}</div>
         </div>
-        <router-link to="/inbox" exact-active-class="">
+        <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
@@ -141,32 +123,30 @@
       Mobile menu, toggle classes based on menu state.
 
       Open: "block", closed: "hidden"
-    -->
+  -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2"
-      >{{ $t('common.projects') }}</router-link
-    >
+    <router-link
+      to="/project"
+      class="bar-link rounded-md block px-3 py-2"
+    >{{ $t('common.projects') }}</router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2"
-      >{{ $t('common.databases') }}</router-link
-    >
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">{{ $t('common.databases') }}</router-link>
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-      >{{ $t('common.instances') }}</router-link
-    >
-
-    <router-link to="/environment" class="bar-link rounded-md block px-3 py-2"
-      >{{ $t('common.environments') }}</router-link
-    >
+    >{{ $t('common.instances') }}</router-link>
 
     <router-link
-      to="/setting/general"
+      to="/environment"
       class="bar-link rounded-md block px-3 py-2"
-      >{{ $t("common.settings") }}</router-link
-    >
+    >{{ $t('common.environments') }}</router-link>
+
+    <router-link
+      to="/setting/member"
+      class="bar-link rounded-md block px-3 py-2"
+    >{{ $t("common.settings") }}</router-link>
   </div>
 </template>
 
@@ -299,7 +279,7 @@ export default {
         shortcut: ["g", "s"],
         section: t("kbar.navigation"),
         keywords: "navigation",
-        perform: () => router.push({ name: "setting.workspace.general" }),
+        perform: () => router.push({ name: "setting.workspace.member" }),
       }),
       defineAction({
         id: "bb.navigation.inbox",

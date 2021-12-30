@@ -69,9 +69,3 @@ export function sortDatabaseList(
     return bEnvIndex - aEnvIndex;
   });
 }
-
-// templateUrl corresponds to the "bb.console.url" setting.
-// This method replaces {{DB_NAME}} with the actual database name.
-export function consoleLink(templateUrl: string, databaseName: string): string {
-  return templateUrl.replace("{{DB_NAME}}", databaseName);
-}
