@@ -34,7 +34,7 @@ func TestGetPipelineFromDeploymentSchedule(t *testing.T) {
 			Name:   "world",
 			Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 		},
-	} // , 1, 2, 3, 4, 5, 6, 7}
+	}
 
 	tests := []struct {
 		name         string

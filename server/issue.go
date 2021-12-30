@@ -621,8 +621,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			// Find all databases in the project.
-			sv, s, err := s.getTenantDatabaseSchema(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
+			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -1036,7 +1035,11 @@ func (s *Server) getTenantDatabases(ctx context.Context, projectID int, database
 	return p, nil
 }
 
-func (s *Server) getTenantDatabaseSchema(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
+// getSchemaFromPeerTenantDatabase gets the schema version and schema from peer a peer tenant database.
+// It's used for creating a database in a tenant mode project.
+// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
+// Otherwise, we will create a blank database without schema.
+func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
 	// Find all databases in the project.
 	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
@@ -1049,32 +1052,12 @@ func (s *Server) getTenantDatabaseSchema(ctx context.Context, instance *api.Inst
 	if err != nil {
 		return "", "", err
 	}
-	var existDB *api.Database
-	// We try to use an existing tenant with the same environment and fallback of any first tenant found.
-	for _, stage := range pipeline {
-		for _, db := range stage {
-			if db.Instance.EnvironmentID == instance.EnvironmentID {
-				existDB = db
-				break
-			}
-		}
-		if existDB != nil {
-			break
-		}
-	}
-	if existDB == nil {
-		for _, stage := range pipeline {
-			if len(stage) > 0 {
-				existDB = stage[0]
-				break
-			}
-		}
-	}
+	similarDB := getPeerTenantDatabase(pipeline, instance.EnvironmentID)
 
 	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
 	// If there are existing databases with the same name, we will disallow the database creation.
 	// Otherwise, we will create a blank new database.
-	if existDB == nil {
+	if similarDB == nil {
 		found := false
 		for _, db := range databaseList {
 			if db.Name == databaseName {
@@ -1083,25 +1066,51 @@ func (s *Server) getTenantDatabaseSchema(ctx context.Context, instance *api.Inst
 			}
 		}
 		if found {
-			err := fmt.Errorf("It's disallowed to create a database without tenant but there are existing databases with the same name %q", databaseName)
+			err := fmt.Errorf("Peer tenant database isn't found, but there are existing databases with the same name %q; the request is not allowed because of ambiguity", databaseName)
 			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		return "", "", nil
 	}
 
-	driver, err := getDatabaseDriver(ctx, existDB.Instance, existDB.Name, s.l)
+	driver, err := getDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.l)
 	if err != nil {
 		return "", "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, existDB.Name)
+	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", existDB.Name, err)
+		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", similarDB.Name, err)
 	}
 
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, existDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+	if err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil
+}
+
+func getPeerTenantDatabase(pipeline [][]*api.Database, environmentID int) *api.Database {
+	var similarDB *api.Database
+	// We try to use an existing tenant with the same environment.
+	for _, stage := range pipeline {
+		for _, db := range stage {
+			if db.Instance.EnvironmentID == environmentID {
+				similarDB = db
+				break
+			}
+		}
+		if similarDB != nil {
+			break
+		}
+	}
+	if similarDB == nil {
+		for _, stage := range pipeline {
+			if len(stage) > 0 {
+				similarDB = stage[0]
+				break
+			}
+		}
+	}
+
+	return similarDB
 }
