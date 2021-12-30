@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -613,12 +614,52 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 
+		// Find and use schema from existing tenants.
+		var schemaVersion, schema string
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		if project.TenantMode == api.TenantModeTenant {
+			p, err := s.getTenantDatabases(ctx, issueCreate.ProjectID, m.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			var existDB *api.Database
+			for _, l := range p {
+				if len(l) > 0 {
+					existDB = l[0]
+					break
+				}
+			}
+			if existDB == nil {
+				// TODO(spinningbot): handle the case when there is no existing tenant.
+			} else {
+				driver, err := getDatabaseDriver(ctx, existDB.Instance, existDB.Name, s.l)
+				if err != nil {
+					return nil, err
+				}
+				defer driver.Close(ctx)
+				schemaVersion, err = getLatestSchemaVersion(ctx, driver, existDB.Name)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get migration history for database %q: %w", existDB.Name, err)
+				}
+
+				var schemaBuf bytes.Buffer
+				if err := driver.Dump(ctx, existDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+					return nil, err
+				}
+				schema = schemaBuf.String()
+			}
+		}
+
 		payload := api.TaskDatabaseCreatePayload{}
 		payload.ProjectID = issueCreate.ProjectID
 		payload.CharacterSet = m.CharacterSet
 		payload.Collation = m.Collation
 		payload.Labels = m.Labels
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation)
+		payload.SchemaVersion = schemaVersion
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
@@ -719,37 +760,12 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
-			deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
-				ProjectID: &issueCreate.ProjectID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deplopment config for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-			if deployConfig == nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-			deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
-			}
-			// Find all databases in the project.
-			databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
-				ProjectID: &issueCreate.ProjectID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-			for _, database := range databaseList {
-				if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
-				}
-			}
 
-			// Convert to pipelineCreate
-			p, err := getPipelineFromDeploymentSchedule(deploySchedule, d.DatabaseName, databaseList)
+			p, err := s.getTenantDatabases(ctx, issueCreate.ProjectID, d.DatabaseName)
 			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+				return nil, err
 			}
+			// Convert to pipelineCreate
 			for i, stage := range p {
 				stageCreate := api.StageCreate{
 					Name: fmt.Sprintf("Deployment %v", i),
@@ -861,7 +877,7 @@ func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType,
 	}, nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, schema string) (string, string) {
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
@@ -882,6 +898,11 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 	case db.Snowflake:
 		databaseName = strings.ToUpper(databaseName)
 		stmt = fmt.Sprintf("CREATE DATABASE %s", databaseName)
+	}
+
+	// Append schema.
+	if schema != "" {
+		stmt = fmt.Sprintf("%s\n%s", stmt, schema)
 	}
 
 	return databaseName, stmt
@@ -1005,4 +1026,37 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	}
 
 	return nil
+}
+
+func (s *Server) getTenantDatabases(ctx context.Context, projectID int, databaseName string) ([][]*api.Database, error) {
+	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deplopment config for project ID: %v", projectID)).SetInternal(err)
+	}
+	if deployConfig == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
+	}
+	// Find all databases in the project.
+	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
+	}
+	for _, database := range databaseList {
+		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
+		}
+	}
+	p, err := getPipelineFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+	}
+	return p, nil
 }

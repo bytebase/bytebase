@@ -445,7 +445,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		version, err := getMigrationVersion(ctx, database, s.l)
+		driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+		if err != nil {
+			return err
+		}
+		defer driver.Close(ctx)
+
+		version, err := getLatestSchemaVersion(ctx, driver, database.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
 		}
