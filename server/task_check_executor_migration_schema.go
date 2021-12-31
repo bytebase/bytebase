@@ -30,6 +30,16 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
+	if task == nil {
+		return []api.TaskCheckResult{
+			{
+				Status:  api.TaskCheckStatusError,
+				Code:    common.Internal,
+				Title:   "Error",
+				Content: fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
+			},
+		}, nil
+	}
 
 	instance, err := server.composeInstanceByID(ctx, task.InstanceID)
 	if err != nil {

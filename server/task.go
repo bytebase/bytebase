@@ -47,10 +47,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(ctx, taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
+		}
+		if task == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
 		if taskPatch.Statement != nil {
@@ -103,6 +103,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				issue, err := s.IssueService.FindIssue(ctx, issueFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task statement: %v", task.PipelineID)).SetInternal(err)
+				}
+				if issue == nil {
+					err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+					return echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
 				}
 
 				payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
@@ -185,6 +189,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task's earliest allowed time: %v", task.PipelineID)).SetInternal(err)
 			}
+			if issue == nil {
+				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+				return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
+			}
 
 			payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
 				TaskID:               updatedTask.ID,
@@ -261,10 +269,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(ctx, taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
+		}
+		if task == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
 		updatedTask, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
@@ -298,10 +306,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		task, err := s.TaskService.FindTask(ctx, taskFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
+		}
+		if task == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
 		skipIfAlreadyTerminated := false
@@ -445,9 +453,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	issue, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
-		if common.ErrorCode(err) != common.NotFound {
-			return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
-		}
+		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 	}
 
 	// Create an activity
@@ -588,6 +594,9 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		pipeline, err := s.composePipelineByID(ctx, updatedTask.PipelineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", updatedTask.Name)
+		}
+		if pipeline == nil {
+			return nil, fmt.Errorf("pipeline not found for ID %v", updatedTask.PipelineID)
 		}
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == updatedTask.ID {

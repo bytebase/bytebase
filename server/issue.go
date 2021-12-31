@@ -97,10 +97,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -130,10 +130,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		issue, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 		}
 
 		updatedIssue, err := s.IssueService.PatchIssue(ctx, issuePatch)
@@ -223,10 +223,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
 		updatedIssue, err := s.changeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
@@ -259,9 +259,14 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 	if err != nil {
 		return nil, err
 	}
+	if id > 0 && issue == nil {
+		return nil, fmt.Errorf("issue not found for ID %v", id)
+	}
 
-	if err := s.composeIssueRelationship(ctx, issue); err != nil {
-		return nil, err
+	if issue != nil {
+		if err := s.composeIssueRelationship(ctx, issue); err != nil {
+			return nil, err
+		}
 	}
 
 	return issue, nil
@@ -463,6 +468,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		rollbackIssue, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
+		}
+		if rollbackIssue == nil {
+			return nil, fmt.Errorf("Rollback issue not found for ID %v", issueCreate.RollbackIssueID)
 		}
 		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
 			IssueName: rollbackIssue.Name,

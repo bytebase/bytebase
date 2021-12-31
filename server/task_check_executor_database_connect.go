@@ -30,6 +30,16 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
+	if task == nil {
+		return []api.TaskCheckResult{
+			{
+				Status:  api.TaskCheckStatusError,
+				Code:    common.Internal,
+				Title:   fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
+				Content: err.Error(),
+			},
+		}, nil
+	}
 
 	databaseFind := &api.DatabaseFind{
 		ID: task.DatabaseID,

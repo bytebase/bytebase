@@ -15,10 +15,11 @@ func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline
 		return nil, err
 	}
 
-	if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
-		return nil, err
+	if pipeline != nil {
+		if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
+			return nil, err
+		}
 	}
-
 	return pipeline, nil
 }
 

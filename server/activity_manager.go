@@ -241,6 +241,14 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 				zap.Error(err))
 			return webhookCtx, err
 		}
+		if task == nil {
+			err := fmt.Errorf("Failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
+			m.s.l.Warn(err.Error(),
+				zap.String("issue_name", meta.issue.Name),
+				zap.Int("task_id", update.TaskID),
+				zap.Error(err))
+			return webhookCtx, err
+		}
 
 		title = "Task changed - " + task.Name
 		switch update.NewStatus {
