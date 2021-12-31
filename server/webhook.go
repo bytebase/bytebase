@@ -15,8 +15,9 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
@@ -107,7 +108,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 				}
 
-				vcsPushEvent := common.VCSPushEvent{
+				vcsPushEvent := vcs.VCSPushEvent{
 					VCSType:            repository.VCS.Type,
 					BaseDirectory:      repository.BaseDirectory,
 					Ref:                pushEvent.Ref,
@@ -115,7 +116,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					RepositoryURL:      pushEvent.Project.WebURL,
 					RepositoryFullPath: pushEvent.Project.FullPath,
 					AuthorName:         pushEvent.AuthorName,
-					FileCommit: common.VCSFileCommit{
+					FileCommit: vcs.VCSFileCommit{
 						ID:         commit.ID,
 						Title:      commit.Title,
 						Message:    commit.Message,

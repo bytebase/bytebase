@@ -1,4 +1,4 @@
-package common
+package vcs
 
 // VCSType is the type of VCS.
 type VCSType string

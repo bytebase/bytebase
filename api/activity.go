@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // ActivityType is the type for an activity.
@@ -220,7 +220,7 @@ type ActivityMemberActivateDeactivatePayload struct {
 
 // ActivityProjectRepositoryPushPayload is the API message payloads for pushing repositories.
 type ActivityProjectRepositoryPushPayload struct {
-	VCSPushEvent common.VCSPushEvent `json:"pushEvent"`
+	VCSPushEvent vcs.VCSPushEvent `json:"pushEvent"`
 	// Used by activity table to display info without paying the join cost
 	// IssueID/IssueName only exist if the push event leads to the issue creation.
 	IssueID   int    `json:"issueId,omitempty"`
