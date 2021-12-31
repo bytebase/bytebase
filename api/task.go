@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // These are special onboarding tasks for demo purpose when bootstraping the workspace.
@@ -86,10 +87,10 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
 type TaskDatabaseSchemaUpdatePayload struct {
-	MigrationType     db.MigrationType     `json:"migrationType,omitempty"`
-	Statement         string               `json:"statement,omitempty"`
-	RollbackStatement string               `json:"rollbackStatement,omitempty"`
-	VCSPushEvent      *common.VCSPushEvent `json:"pushEvent,omitempty"`
+	MigrationType     db.MigrationType  `json:"migrationType,omitempty"`
+	Statement         string            `json:"statement,omitempty"`
+	RollbackStatement string            `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -164,7 +165,7 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
-	VCSPushEvent      *common.VCSPushEvent
+	VCSPushEvent      *vcs.VCSPushEvent
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 

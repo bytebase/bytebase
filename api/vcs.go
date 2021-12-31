@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // VCS is the API message for VCS.
@@ -20,12 +20,12 @@ type VCS struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Name          string         `jsonapi:"attr,name"`
-	Type          common.VCSType `jsonapi:"attr,type"`
-	InstanceURL   string         `jsonapi:"attr,instanceUrl"`
-	APIURL        string         `jsonapi:"attr,apiUrl"`
-	ApplicationID string         `jsonapi:"attr,applicationId"`
-	Secret        string         `jsonapi:"attr,secret"`
+	Name          string      `jsonapi:"attr,name"`
+	Type          vcs.VCSType `jsonapi:"attr,type"`
+	InstanceURL   string      `jsonapi:"attr,instanceUrl"`
+	APIURL        string      `jsonapi:"attr,apiUrl"`
+	ApplicationID string      `jsonapi:"attr,applicationId"`
+	Secret        string      `jsonapi:"attr,secret"`
 }
 
 // VCSCreate is the API message for creating a VCS.
@@ -35,9 +35,9 @@ type VCSCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name        string         `jsonapi:"attr,name"`
-	Type        common.VCSType `jsonapi:"attr,type"`
-	InstanceURL string         `jsonapi:"attr,instanceUrl"`
+	Name        string      `jsonapi:"attr,name"`
+	Type        vcs.VCSType `jsonapi:"attr,type"`
+	InstanceURL string      `jsonapi:"attr,instanceUrl"`
 	// APIURL derives from InstanceURL
 	APIURL        string
 	ApplicationID string `jsonapi:"attr,applicationId"`
