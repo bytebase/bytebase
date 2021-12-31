@@ -104,6 +104,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
+	}
+	if issue == nil {
+		err := fmt.Errorf("Failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		exec.l.Error(err.Error(),
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
 	} else {
 		mi.IssueID = strconv.Itoa(issue.ID)
 	}
