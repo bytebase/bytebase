@@ -26,10 +26,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 		user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+		}
+		if user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
 		}
 
 		memberFind := &api.MemberFind{
