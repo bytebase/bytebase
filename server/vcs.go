@@ -9,7 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -25,7 +25,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.APIURL = fmt.Sprintf("%s/%s", vcsCreate.InstanceURL, gitlab.APIPath)
+		vcsCreate.APIURL = vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).APIURL(vcsCreate.InstanceURL)
 
 		vcs, err := s.VCSService.CreateVCS(ctx, vcsCreate)
 		if err != nil {
