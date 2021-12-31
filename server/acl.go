@@ -44,10 +44,10 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+		if member == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
 		}
 		if member.RowStatus == api.Archived {
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
@@ -109,13 +109,10 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 			activity, err := s.ActivityService.FindActivity(ctx, activityFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					msg := fmt.Sprintf("Activity ID not found: %d", activityID)
-					httpErr := echo.NewHTTPError(http.StatusNotFound, msg)
-					return false, httpErr
-				}
-				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			if activity == nil {
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", activityID))
 			}
 			return activity.CreatorID == curPrincipalID, nil
 		}
@@ -132,12 +129,10 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 			bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					msg := fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)
-					return false, echo.NewHTTPError(http.StatusNotFound, msg)
-				}
-				httpErr := echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			if bookmark == nil {
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID))
 			}
 			return bookmark.CreatorID == curPrincipalID, nil
 		}
@@ -154,11 +149,10 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 			inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					msg := fmt.Sprintf("Inbox ID not found: %d", inboxID)
-					return false, echo.NewHTTPError(http.StatusNotFound, msg)
-				}
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			if inbox == nil {
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID))
 			}
 			return inbox.ReceiverID == curPrincipalID, nil
 		}

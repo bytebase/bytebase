@@ -172,6 +172,9 @@ func (s *Server) composePrincipalRole(ctx context.Context, principal *api.Princi
 		if err != nil {
 			return err
 		}
+		if principal.ID > 0 && member == nil {
+			return fmt.Errorf("Member not found for ID %v", principal.ID)
+		}
 		principal.Role = member.Role
 	}
 	return nil
