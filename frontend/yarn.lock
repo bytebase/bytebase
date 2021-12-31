@@ -389,6 +389,11 @@
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.0.tgz#2f8bb441434d163b35fb8ffdccd7138927ffb8c0"
   integrity sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==
 
+"@types/prettier@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.4.2.tgz#4c62fae93eb479660c3bd93f9d24d561597a8281"
+  integrity sha512-ekoj4qOQYp7CvjX8ZDBgN86w3MqQhLE1hczEJbEIjgFEumDy+na/4AJAbLXfgEWFNB2pKadM5rPFtuSGMWK7xA==
+
 "@types/responselike@*":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@types/responselike/-/responselike-1.0.0.tgz#251f4fe7d154d2bad125abe1b429b23afd262e29"
@@ -4149,6 +4154,13 @@ splitpanes@^3.0.6:
   version "3.0.6"
   resolved "https://registry.yarnpkg.com/splitpanes/-/splitpanes-3.0.6.tgz#45636c36972d3391f837073807726a2dcc49af15"
   integrity sha512-Ogxc+e2te4Tp5IpMwjOPO1ZvXUf2PsuEoyZhF9H5Hp6XOB0mLg/OnEZFaK2MxT7Q3O+WSEKE7CeOoTC+4zsQ6A==
+
+sql-formatter@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/sql-formatter/-/sql-formatter-4.0.2.tgz#2b359e5a4c611498d327b9659da7329d71724607"
+  integrity sha512-R6u9GJRiXZLr/lDo8p56L+OyyN2QFJPCDnsyEOsbdIpsnDKL8gubYFo7lNR7Zx7hfdWT80SfkoVS0CMaF/DE2w==
+  dependencies:
+    argparse "^2.0.1"
 
 string-width@^1.0.1:
   version "1.0.2"
