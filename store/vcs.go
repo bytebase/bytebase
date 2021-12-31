@@ -62,7 +62,6 @@ func (s *VCSService) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api
 }
 
 // FindVCS retrieves a single vcs based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *VCSService) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,8 +73,10 @@ func (s *VCSService) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, 
 	list, err := findVCSList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d vcss with filter %+v, expect 1", len(list), find)}
 	}
