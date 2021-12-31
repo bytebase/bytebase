@@ -43,8 +43,8 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 	return true
 }
 
-// getPipelineFromDeploymentSchedule gets a pipeline based on deployment schedule.
-func getPipelineFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([][]*api.Database, error) {
+// getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
+func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([][]*api.Database, error) {
 	var pipeline [][]*api.Database
 
 	// idToLabels maps databaseID -> label.Key -> label.Value

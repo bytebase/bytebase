@@ -130,7 +130,12 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	// Store the migration history version if exists.
-	migrationHistoryVersion, err := getMigrationVersion(ctx, database, s.l)
+	driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+	if err != nil {
+		return err
+	}
+	defer driver.Close(ctx)
+	migrationHistoryVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
 	if err != nil {
 		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}

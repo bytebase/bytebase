@@ -1,6 +1,6 @@
 <template>
   <div class="sqleditor-editor-actions">
-    <div class="actions-left w-3/5">
+    <div class="actions-left w-1/2">
       <NButton
         type="primary"
         @click="handleExecuteQueries"
@@ -9,7 +9,7 @@
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
     </div>
-    <div class="actions-right space-x-2 flex w-2/5 justify-end">
+    <div class="actions-right space-x-2 flex w-1/2 justify-end">
       <NCascader
         v-model:value="selectedConnection"
         expand-trigger="hover"

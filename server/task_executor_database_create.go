@@ -66,9 +66,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	// Create a baseline migration history upon creating the database.
+	version := payload.SchemaVersion
+	if version == "" {
+		version = defaultMigrationVersionFromTaskID(task.ID)
+	}
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(task.ID),
+		Version:        version,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
