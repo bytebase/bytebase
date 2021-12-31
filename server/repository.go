@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 )
@@ -22,6 +23,10 @@ func (s *Server) composeRepositoryRelationship(ctx context.Context, repository *
 	repository.VCS, err = s.composeVCSByID(ctx, repository.VCSID)
 	if err != nil {
 		return err
+	}
+	// We should always expect VCS to exist when ID isn't the default zero.
+	if repository.VCSID > 0 && repository.VCS == nil {
+		return fmt.Errorf("VCS not found for ID: %v", repository.VCSID)
 	}
 
 	repository.Project, err = s.composeProjectByID(ctx, repository.ProjectID)
