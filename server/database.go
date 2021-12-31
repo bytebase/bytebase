@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -160,6 +161,44 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+		}
+
+		if databasePatch.ProjectID != nil {
+			toProject, err := s.composeProjectByID(ctx, *databasePatch.ProjectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *databasePatch.ProjectID))
+			}
+			if toProject.TenantMode == api.TenantModeTenant {
+				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
+				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
+				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, *databasePatch.ProjectID, database.Name)
+				if err != nil {
+					return err
+				}
+
+				if peerSchemaVersion != "" || peerSchema != "" {
+					driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					if err != nil {
+						return err
+					}
+					defer driver.Close(ctx)
+					schemaVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
+					if err != nil {
+						return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
+					}
+					if peerSchemaVersion != schemaVersion {
+						return fmt.Errorf("The schema version %q has to match the one from peer database %q", schemaVersion, peerSchemaVersion)
+					}
+
+					var schemaBuf bytes.Buffer
+					if err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
+					}
+					if peerSchema != schemaBuf.String() {
+						return fmt.Errorf("the schema for database %q has to match the one from peer database", database.Name)
+					}
+				}
+			}
 		}
 
 		// Patch database labels
