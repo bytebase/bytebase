@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"go.uber.org/zap"
 )
 
@@ -193,7 +193,7 @@ func (e MigrationStatus) String() string {
 
 // MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {
-	VCSPushEvent *common.VCSPushEvent `json:"pushEvent,omitempty"`
+	VCSPushEvent *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
 }
 
 // MigrationInfo is the API message for migration info.
