@@ -227,14 +227,14 @@ func (provider *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthCon
 		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
 
-	if resp.StatusCode >= 300 && resp.StatusCode != 404 {
+	if resp.StatusCode == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file %s from GitLab instance %s, file not found", filePath, instanceURL))
+	} else if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s, status code: %d",
 			filePath,
 			instanceURL,
 			resp.StatusCode,
 		)
-	} else if resp.StatusCode == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file %s from GitLab instance %s, file not found", filePath, instanceURL))
 	}
 
 	return resp.Body, nil
@@ -257,16 +257,15 @@ func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.Oaut
 		return nil, fmt.Errorf("failed to read file meta %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
 
-	if resp.StatusCode >= 300 && resp.StatusCode != 404 {
+	if resp.StatusCode == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file meta %s from GitLab instance %s, file not found", filePath, instanceURL))
+	} else if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("failed to read file meta %s from GitLab instance %s, status code: %d",
 			filePath,
 			instanceURL,
 			resp.StatusCode,
 		)
-	} else if resp.StatusCode == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file meta %s from GitLab instance %s, file not found", filePath, instanceURL))
 	}
-
 	defer resp.Body.Close()
 
 	file := &fileMeta{}
