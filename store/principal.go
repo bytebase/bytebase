@@ -76,7 +76,6 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 }
 
 // FindPrincipal retrieves a principal based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
 	if find.ID != nil {
@@ -99,12 +98,13 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	list, err := findPrincipalList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with filter %+v, expect 1", len(list), find)}
 	}
-
 	if err := s.cache.UpsertCache(api.PrincipalCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
