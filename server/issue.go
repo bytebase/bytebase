@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -96,10 +98,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -129,10 +131,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		issue, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 		}
 
 		updatedIssue, err := s.IssueService.PatchIssue(ctx, issuePatch)
@@ -222,10 +224,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issue, err := s.composeIssueByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
 		updatedIssue, err := s.changeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
@@ -258,9 +260,14 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 	if err != nil {
 		return nil, err
 	}
+	if id > 0 && issue == nil {
+		return nil, fmt.Errorf("issue not found for ID %v", id)
+	}
 
-	if err := s.composeIssueRelationship(ctx, issue); err != nil {
-		return nil, err
+	if issue != nil {
+		if err := s.composeIssueRelationship(ctx, issue); err != nil {
+			return nil, err
+		}
 	}
 
 	return issue, nil
@@ -463,6 +470,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
 		}
+		if rollbackIssue == nil {
+			return nil, fmt.Errorf("Rollback issue not found for ID %v", issueCreate.RollbackIssueID)
+		}
 		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
 			IssueName: rollbackIssue.Name,
 		})
@@ -613,12 +623,27 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 
+		var schemaVersion, schema string
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+		if project.TenantMode == api.TenantModeTenant {
+			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			schemaVersion, schema = sv, s
+		}
+
 		payload := api.TaskDatabaseCreatePayload{}
 		payload.ProjectID = issueCreate.ProjectID
 		payload.CharacterSet = m.CharacterSet
 		payload.Collation = m.Collation
 		payload.Labels = m.Labels
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation)
+		payload.SchemaVersion = schemaVersion
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, m.DatabaseName, m.CharacterSet, m.Collation, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
@@ -719,37 +744,18 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
-			deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
-				ProjectID: &issueCreate.ProjectID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deplopment config for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-			if deployConfig == nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-			deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deplopment schedule").SetInternal(err)
-			}
-			// Find all databases in the project.
+
 			databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 				ProjectID: &issueCreate.ProjectID,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			for _, database := range databaseList {
-				if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
-				}
-			}
-
-			// Convert to pipelineCreate
-			p, err := getPipelineFromDeploymentSchedule(deploySchedule, d.DatabaseName, databaseList)
+			p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
 			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+				return nil, err
 			}
+			// Convert to pipelineCreate
 			for i, stage := range p {
 				stageCreate := api.StageCreate{
 					Name: fmt.Sprintf("Deployment %v", i),
@@ -828,7 +834,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *common.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
+func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
@@ -861,7 +867,7 @@ func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType,
 	}, nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, schema string) (string, string) {
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
@@ -882,6 +888,11 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 	case db.Snowflake:
 		databaseName = strings.ToUpper(databaseName)
 		stmt = fmt.Sprintf("CREATE DATABASE %s", databaseName)
+	}
+
+	// Append schema.
+	if schema != "" {
+		stmt = fmt.Sprintf("%s\n%s", stmt, schema)
 	}
 
 	return databaseName, stmt
@@ -1005,4 +1016,110 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	}
 
 	return nil
+}
+
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([][]*api.Database, error) {
+	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
+	}
+	if deployConfig == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+	}
+	for _, database := range databaseList {
+		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
+		}
+	}
+	p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+	}
+	return p, nil
+}
+
+// getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
+// It's used for creating a database in a tenant mode project.
+// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
+// Otherwise, we will create a blank database without schema.
+func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
+	// Find all databases in the project.
+	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
+	}
+
+	pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
+	if err != nil {
+		return "", "", err
+	}
+	similarDB := getPeerTenantDatabase(pipeline, instance.EnvironmentID)
+
+	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
+	// If there are existing databases with the same name, we will disallow the database creation.
+	// Otherwise, we will create a blank new database.
+	if similarDB == nil {
+		found := false
+		for _, db := range databaseList {
+			if db.Name == databaseName {
+				found = true
+				break
+			}
+		}
+		if found {
+			err := fmt.Errorf("Conflicting database name, project has existing database named %q, but it's not from the selected peer tenants", databaseName)
+			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		return "", "", nil
+	}
+
+	driver, err := getDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.l)
+	if err != nil {
+		return "", "", err
+	}
+	defer driver.Close(ctx)
+	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", similarDB.Name, err)
+	}
+
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+		return "", "", err
+	}
+	return schemaVersion, schemaBuf.String(), nil
+}
+
+func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
+	var similarDB *api.Database
+	// We try to use an existing tenant with the same environment.
+	for _, databaseList := range databaseMatrix {
+		for _, db := range databaseList {
+			if db.Instance.EnvironmentID == environmentID {
+				similarDB = db
+				break
+			}
+		}
+		if similarDB != nil {
+			break
+		}
+	}
+	if similarDB == nil {
+		for _, stage := range databaseMatrix {
+			if len(stage) > 0 {
+				similarDB = stage[0]
+				break
+			}
+		}
+	}
+
+	return similarDB
 }

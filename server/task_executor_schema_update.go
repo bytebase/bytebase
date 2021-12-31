@@ -12,8 +12,9 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/external/gitlab"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"go.uber.org/zap"
 )
 
@@ -115,6 +116,14 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
+	}
+
+	if issue == nil {
+		err := fmt.Errorf("Failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		exec.l.Error(err.Error(),
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
 	} else {
 		mi.IssueID = strconv.Itoa(issue.ID)
 	}
@@ -165,6 +174,9 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		repository.VCS, err = server.composeVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+		}
+		if repository.VCS == nil {
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repository.VCSID)
 		}
 
 		// Writes back the latest schema file to the same branch as the push event.
@@ -243,7 +255,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *common.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcs.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	filePath := fmt.Sprintf("projects/%s/repository/files/%s", repository.ExternalID, url.QueryEscape(latestSchemaFile))
 	getFilePath := filePath + "?ref=" + url.QueryEscape(branch)
 

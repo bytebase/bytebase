@@ -62,7 +62,6 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 }
 
 // FindView retrieves a single view based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.View, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,8 +73,10 @@ func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.Vi
 	list, err := s.findViewList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("view not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d views with filter %+v, expect 1", len(list), find)}
 	}

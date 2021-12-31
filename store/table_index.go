@@ -62,7 +62,6 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 }
 
 // FindIndex retrieves a single index based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,8 +73,10 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	list, err := s.findIndexList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("index not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexs with filter %+v, expect 1", len(list), find)}
 	}

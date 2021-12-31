@@ -50,6 +50,9 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
+	if backup == nil {
+		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+	}
 	exec.l.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),

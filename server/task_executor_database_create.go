@@ -66,9 +66,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	// Create a baseline migration history upon creating the database.
+	version := payload.SchemaVersion
+	if version == "" {
+		version = defaultMigrationVersionFromTaskID(task.ID)
+	}
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(task.ID),
+		Version:        version,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
@@ -97,6 +101,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
 		exec.l.Error("Failed to fetch containing issue for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	}
+	if issue == nil {
+		err := fmt.Errorf("Failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		exec.l.Error(err.Error(),
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
