@@ -67,7 +67,6 @@ func (s *TaskService) FindTaskList(ctx context.Context, find *api.TaskFind) ([]*
 }
 
 // FindTask retrieves a single task based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Task, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -393,6 +392,9 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 	if err != nil {
 		return nil, err
 	}
+	if task == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
+	}
 
 	if !(task.Status == api.TaskPendingApproval && patch.Status == api.TaskPending) {
 		taskRunFind := &api.TaskRunFind{
@@ -404,13 +406,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		taskRun, err := s.TaskRunService.FindTaskRunTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				if patch.Status != api.TaskRunning {
-					return nil, fmt.Errorf("no applicable running task to change status")
-				}
 			} else {
 				return nil, err
 			}
-		} else if patch.Status == api.TaskRunning {
+		}
+		if taskRun == nil && patch.Status != api.TaskRunning {
+			return nil, fmt.Errorf("no applicable running task to change status")
+		}
+		if patch.Status == api.TaskRunning {
 			return nil, fmt.Errorf("task is already running: %v", task.Name)
 		}
 

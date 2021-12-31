@@ -166,14 +166,15 @@ func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sq
 }
 
 // FindTaskCheckRunTx retrieves a single taskCheckRun based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *TaskCheckRunService) FindTaskCheckRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) (*api.TaskCheckRun, error) {
 	list, err := s.findTaskCheckRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task run not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d task runs with filter %+v, expect 1", len(list), find)}
 	}
