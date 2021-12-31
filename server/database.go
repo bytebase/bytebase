@@ -655,13 +655,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSetting, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-				backupSetting = &api.BackupSetting{
-					ID: api.UnknownID,
-				}
-			} else {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
+		}
+		if backupSetting == nil {
+			// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
+			backupSetting = &api.BackupSetting{
+				ID: api.UnknownID,
 			}
 		}
 
