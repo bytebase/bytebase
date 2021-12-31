@@ -271,27 +271,27 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						TableID:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
-					_, err := s.ColumnService.FindColumn(ctx, columnFind)
+					col, err := s.ColumnService.FindColumn(ctx, columnFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.NotFound {
-							columnCreate := &api.ColumnCreate{
-								CreatorID:    api.SystemBotID,
-								DatabaseID:   database.ID,
-								TableID:      upsertedTable.ID,
-								Name:         column.Name,
-								Position:     column.Position,
-								Default:      column.Default,
-								Nullable:     column.Nullable,
-								Type:         column.Type,
-								CharacterSet: column.CharacterSet,
-								Collation:    column.Collation,
-								Comment:      column.Comment,
-							}
-							if err := createColumn(database, upsertedTable, columnCreate); err != nil {
-								return err
-							}
-						} else {
-							return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+					}
+					// Create column if not exists yet.
+					if col == nil {
+						columnCreate := &api.ColumnCreate{
+							CreatorID:    api.SystemBotID,
+							DatabaseID:   database.ID,
+							TableID:      upsertedTable.ID,
+							Name:         column.Name,
+							Position:     column.Position,
+							Default:      column.Default,
+							Nullable:     column.Nullable,
+							Type:         column.Type,
+							CharacterSet: column.CharacterSet,
+							Collation:    column.Collation,
+							Comment:      column.Comment,
+						}
+						if err := createColumn(database, upsertedTable, columnCreate); err != nil {
+							return err
 						}
 					}
 				}
