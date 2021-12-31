@@ -851,10 +851,11 @@ func (s *Server) composeBackupByID(ctx context.Context, id int) (*api.Backup, er
 		return nil, err
 	}
 
-	if err := s.composeBackupRelationship(ctx, backup); err != nil {
-		return nil, err
+	if backup != nil {
+		if err := s.composeBackupRelationship(ctx, backup); err != nil {
+			return nil, err
+		}
 	}
-
 	return backup, nil
 }
 
