@@ -7,6 +7,6 @@
 </template>
 
 <script lang="ts" setup>
-import EditorActions from "./EditorActions.vue";
+import EditorActions from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 </script>
