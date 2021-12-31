@@ -1,15 +1,15 @@
 import { format, FormatOptions } from "sql-formatter";
 
-import { SqlLanguage } from "../../types";
+import { SqlDialect } from "../../types";
 
 type FormatResult = {
   data: string;
   error: Error | null;
 };
 
-const formatSQL = (sql: string, lang: SqlLanguage): FormatResult => {
+const formatSQL = (sql: string, dialect: SqlDialect): FormatResult => {
   const options: FormatOptions = {
-    language: lang,
+    language: dialect,
   };
   try {
     const formatted = format(sql, options);
