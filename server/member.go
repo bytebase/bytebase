@@ -38,10 +38,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalID))
-				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", member.PrincipalID)).SetInternal(err)
+			}
+			if user == nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", member.PrincipalID))
 			}
 
 			bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
@@ -111,10 +111,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		member, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find member ID: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find member ID: %d", id)).SetInternal(err)
+		}
+		if member == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find member ID: %d", id))
 		}
 
 		memberPatch := &api.MemberPatch{
@@ -140,10 +140,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 			user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalID))
-				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalID)).SetInternal(err)
+			}
+			if user == nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", updatedMember.PrincipalID))
 			}
 
 			if memberPatch.Role != nil {

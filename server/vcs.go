@@ -73,10 +73,10 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 
 		vcs, err := s.composeVCSByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs ID: %v", id)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -182,10 +182,11 @@ func (s *Server) composeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 		return nil, err
 	}
 
-	if err := s.composeVCSRelationship(ctx, vcs); err != nil {
-		return nil, err
+	if vcs != nil {
+		if err := s.composeVCSRelationship(ctx, vcs); err != nil {
+			return nil, err
+		}
 	}
-
 	return vcs, nil
 }
 
