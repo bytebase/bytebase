@@ -166,6 +166,9 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
+		if repository.VCS == nil {
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repository.VCSID)
+		}
 
 		// Writes back the latest schema file to the same branch as the push event.
 		// Ref format refs/heads/<<branch>>
