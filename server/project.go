@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/external/gitlab"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
