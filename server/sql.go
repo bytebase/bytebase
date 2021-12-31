@@ -304,26 +304,26 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					_, err := s.IndexService.FindIndex(ctx, indexFind)
+					index, err := s.IndexService.FindIndex(ctx, indexFind)
 					if err != nil {
-						if common.ErrorCode(err) == common.NotFound {
-							indexCreate := &api.IndexCreate{
-								CreatorID:  api.SystemBotID,
-								DatabaseID: database.ID,
-								TableID:    upsertedTable.ID,
-								Name:       index.Name,
-								Expression: index.Expression,
-								Position:   index.Position,
-								Type:       index.Type,
-								Unique:     index.Unique,
-								Visible:    index.Visible,
-								Comment:    index.Comment,
-							}
-							if err := createIndex(database, upsertedTable, indexCreate); err != nil {
-								return err
-							}
-						} else {
-							return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+					}
+					if index == nil {
+						// Create index if not exists.
+						indexCreate := &api.IndexCreate{
+							CreatorID:  api.SystemBotID,
+							DatabaseID: database.ID,
+							TableID:    upsertedTable.ID,
+							Name:       index.Name,
+							Expression: index.Expression,
+							Position:   index.Position,
+							Type:       index.Type,
+							Unique:     index.Unique,
+							Visible:    index.Visible,
+							Comment:    index.Comment,
+						}
+						if err := createIndex(database, upsertedTable, indexCreate); err != nil {
+							return err
 						}
 					}
 				}

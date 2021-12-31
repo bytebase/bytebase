@@ -76,7 +76,6 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 }
 
 // FindPipeline retrieves a single pipeline based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFind) (*api.Pipeline, error) {
 	if find.ID != nil {
@@ -99,16 +98,16 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	list, err := s.findPipelineList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d pipelines with filter %+v, expect 1", len(list), find)}
 	}
-
 	if err := s.cache.UpsertCache(api.PipelineCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
-
 	return list[0], nil
 }
 
