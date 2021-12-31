@@ -62,7 +62,6 @@ func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) (
 }
 
 // FindTable retrieves a single table based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,8 +73,10 @@ func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api
 	list, err := s.findTableList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("table not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tables with filter %+v, expect 1", len(list), find)}
 	}
