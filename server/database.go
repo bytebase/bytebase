@@ -176,6 +176,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					return err
 				}
 
+				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
 					driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
 					if err != nil {
@@ -187,7 +188,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 					}
 					if peerSchemaVersion != schemaVersion {
-						return fmt.Errorf("The schema version %q has to match the one from peer database %q", schemaVersion, peerSchemaVersion)
+						return fmt.Errorf("the schema version %q does not match the peer database schema version %q in the target tenant mode project %q", schemaVersion, peerSchemaVersion, toProject.Name)
 					}
 
 					var schemaBuf bytes.Buffer
@@ -195,7 +196,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
 					}
 					if peerSchema != schemaBuf.String() {
-						return fmt.Errorf("the schema for database %q has to match the one from peer database", database.Name)
+						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name)
 					}
 				}
 			}
