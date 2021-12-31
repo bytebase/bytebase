@@ -28,7 +28,6 @@ func NewPolicyService(logger *zap.Logger, db *DB, cache api.CacheService) *Polic
 }
 
 // FindPolicy finds the policy for an environment.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	// Validate policy type existence.
@@ -47,7 +46,9 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	var ret *api.Policy
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
+	}
+
+	if len(list) == 0 {
 		ret = &api.Policy{
 			CreatorID:     api.SystemBotID,
 			UpdaterID:     api.SystemBotID,
