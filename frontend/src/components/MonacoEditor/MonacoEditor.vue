@@ -9,7 +9,7 @@ import type { editor as Editor } from "monaco-editor";
 import setupMonaco from "./setupMonaco";
 import sqlFormatter from "./sqlFormatter";
 
-import { SqlLanguage } from "../../types";
+import { SqlDialect } from "../../types";
 
 const props = defineProps({
   modelValue: {
@@ -17,7 +17,7 @@ const props = defineProps({
     required: true,
   },
   language: {
-    type: String as PropType<SqlLanguage>,
+    type: String as PropType<SqlDialect>,
     default: "mysql",
   },
 });
