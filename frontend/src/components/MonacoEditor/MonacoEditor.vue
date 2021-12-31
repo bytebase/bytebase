@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, toRef, toRaw, PropType } from "vue";
+import { onMounted, ref, toRef, toRaw, PropType, nextTick } from "vue";
 import type { editor as Editor } from "monaco-editor";
 
 import setupMonaco from "./setupMonaco";
@@ -79,6 +79,7 @@ const init = async () => {
       const typedValue = editorInstance.getValue();
       const selectedValue = editorInstance
         .getModel()
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         ?.getValueInRange(editorInstance.getSelection()) as string;
 
@@ -91,11 +92,22 @@ const init = async () => {
   editorInstance.addAction({
     id: "FormatSQL",
     label: "Format SQL",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF],
+    keybindings: [
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+    ],
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
       formatContent();
+      nextTick(() => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        const range = editorInstance.getModel().getFullModelRange();
+        editorInstance.setPosition({
+          lineNumber: range?.endLineNumber,
+          column: range?.endColumn,
+        });
+      });
     },
   });
 
