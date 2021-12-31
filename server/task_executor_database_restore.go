@@ -54,6 +54,9 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
+	if backup == nil {
+		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+	}
 
 	sourceDatabaseFind := &api.DatabaseFind{
 		ID: &backup.DatabaseID,
