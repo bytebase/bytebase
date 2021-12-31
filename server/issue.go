@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -833,7 +834,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *common.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
+func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)

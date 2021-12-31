@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // IssueStatus is the status of an issue.
@@ -158,7 +158,7 @@ type UpdateSchemaContext struct {
 	// When a project is in tenant mode, there should be one item in the list.
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
-	VCSPushEvent *common.VCSPushEvent
+	VCSPushEvent *vcs.VCSPushEvent
 }
 
 // IssueFind is the API message for finding issues.
