@@ -62,7 +62,6 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 }
 
 // FindActivity retrieves a single activity based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFind) (*api.Activity, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -74,8 +73,10 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 	list, err := findActivityList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}

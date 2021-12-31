@@ -94,10 +94,10 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		hook, err := s.ProjectWebhookService.FindProjectWebhook(ctx, find)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
+		}
+		if hook == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 		}
 
 		if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
@@ -210,10 +210,10 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		hook, err := s.ProjectWebhookService.FindProjectWebhook(ctx, find)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
+		}
+		if hook == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 		}
 
 		result := &api.ProjectWebhookTestResult{}
