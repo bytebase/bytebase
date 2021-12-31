@@ -59,6 +59,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
+		if repository.VCS == nil {
+			err := fmt.Errorf("VCS not found for ID: %v", repository.VCSID)
+			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
+		}
 
 		if c.Request().Header.Get("X-Gitlab-Token") != repository.WebhookSecretToken {
 			return echo.NewHTTPError(http.StatusBadRequest, "Secret token mismatch")
