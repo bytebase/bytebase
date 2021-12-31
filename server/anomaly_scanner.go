@@ -377,20 +377,18 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 	}
 	backupSetting, err := s.server.BackupService.FindBackupSetting(ctx, backupSettingFind)
 	if err != nil {
-		if common.ErrorCode(err) != common.NotFound {
-			s.l.Error("Failed to retrieve backup setting",
-				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
-				zap.Error(err))
-			return
-		}
-	} else {
-		if backupSetting.Enabled && backupSetting.Hour != -1 {
-			if backupSetting.DayOfWeek == -1 {
-				schedule = api.BackupPlanPolicyScheduleDaily
-			} else {
-				schedule = api.BackupPlanPolicyScheduleWeekly
-			}
+		s.l.Error("Failed to retrieve backup setting",
+			zap.String("instance", instance.Name),
+			zap.String("database", database.Name),
+			zap.Error(err))
+		return
+	}
+
+	if backupSetting != nil && backupSetting.Enabled && backupSetting.Hour != -1 {
+		if backupSetting.DayOfWeek == -1 {
+			schedule = api.BackupPlanPolicyScheduleDaily
+		} else {
+			schedule = api.BackupPlanPolicyScheduleWeekly
 		}
 	}
 

@@ -283,7 +283,6 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 }
 
 // FindBackupSetting finds the backup setting for a database.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupSettingFind) (*api.BackupSetting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -295,12 +294,13 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	list, err := s.findBackupSetting(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup setting not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
 	}
-
 	return list[0], nil
 }
 
