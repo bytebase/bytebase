@@ -783,10 +783,10 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 				database, err := s.composeDatabaseByFind(ctx, databaseFind)
 				if err != nil {
-					if common.ErrorCode(err) == common.NotFound {
-						return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
-					}
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+				}
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 				}
 
 				taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
