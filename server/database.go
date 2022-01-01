@@ -31,7 +31,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if instance == nil {
 			err := fmt.Errorf("Instance ID not found %v", databaseCreate.InstanceID)
-			return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		databaseCreate.EnvironmentID = instance.EnvironmentID
 

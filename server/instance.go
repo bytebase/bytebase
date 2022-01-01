@@ -150,7 +150,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			if adminDataSource == nil {
 				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
-				return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
