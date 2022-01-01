@@ -400,6 +400,9 @@ func (s *Server) composeTaskRelationship(ctx context.Context, task *api.Task) er
 		if err != nil {
 			return err
 		}
+		if task.Database == nil {
+			return fmt.Errorf("database ID not found %v", task.DatabaseID)
+		}
 	}
 
 	return nil
