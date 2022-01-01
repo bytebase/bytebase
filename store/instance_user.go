@@ -2,11 +2,9 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +60,6 @@ func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *ap
 }
 
 // DeleteInstanceUser deletes an existing instance user by ID.
-// Returns ENOTFOUND if instanceUser does not exist.
 func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUserDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -172,15 +169,8 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 // deleteInstanceUser permanently deletes a instance user by ID.
 func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance user ID not found: %d", delete.ID)}
-	}
-
 	return nil
 }

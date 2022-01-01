@@ -90,11 +90,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			IssueID:      issueID,
 			SubscriberID: subscriberID,
 		}
-		err = s.IssueSubscriberService.DeleteIssueSubscriber(ctx, issueSubscriberDelete)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Subscriber %d not found in issue %d", subscriberID, issueID))
-			}
+		if err := s.IssueSubscriberService.DeleteIssueSubscriber(ctx, issueSubscriberDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberID, issueID)).SetInternal(err)
 		}
 

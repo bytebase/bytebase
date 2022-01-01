@@ -104,7 +104,6 @@ func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *ap
 }
 
 // DeleteProjectMember deletes an existing projectMember by ID.
-// Returns ENOTFOUND if projectMember does not exist.
 func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -271,15 +270,8 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 // deleteProjectMember permanently deletes a projectMember by ID.
 func deleteProjectMember(ctx context.Context, tx *Tx, delete *api.ProjectMemberDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", delete.ID)}
-	}
-
 	return nil
 }
