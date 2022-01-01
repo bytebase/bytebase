@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -159,28 +158,30 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Retrieve sql by reading the file content
-				resp, err := gitlab.GET(
-					repository.VCS.InstanceURL,
-					fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repository.ExternalID, url.QueryEscape(added), commit.ID),
-					&repository.AccessToken,
-					gitlab.OauthContext{
+				reader, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
+					ctx,
+					common.OauthContext{
 						ClientID:     repository.VCS.ApplicationID,
 						ClientSecret: repository.VCS.Secret,
 						RefreshToken: repository.RefreshToken,
+						Refresher:    s.refreshToken(ctx, repository.ID),
 					},
-					s.refreshToken(ctx, repository.ID),
+					repository.VCS.InstanceURL,
+					repository.ExternalID,
+					added,
+					commit.ID,
 				)
 				if err != nil {
-					createIgnoredFileActivity(fmt.Errorf("failed to read file: %w", err))
+					createIgnoredFileActivity(err)
 					continue
 				}
+				defer reader.Close()
 
-				b, err := io.ReadAll(resp.Body)
+				b, err := io.ReadAll(reader)
 				if err != nil {
 					createIgnoredFileActivity(fmt.Errorf("failed to read file response: %w", err))
 					continue
 				}
-				defer resp.Body.Close()
 
 				// Find matching database list
 				databaseFind := &api.DatabaseFind{
