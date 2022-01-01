@@ -76,7 +76,6 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 }
 
 // FindEnvironment retrieves a single environment based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) (*api.Environment, error) {
 	if find.ID != nil {
@@ -99,16 +98,16 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	list, err := s.findEnvironmentList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(list), find)}
 	}
-
 	if err := s.cache.UpsertCache(api.EnvironmentCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
-
 	return list[0], nil
 }
 

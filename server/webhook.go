@@ -50,10 +50,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repository, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		}
+		if repository == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
 		}
 
 		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {

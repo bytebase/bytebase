@@ -133,10 +133,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			instance, err = s.InstanceService.FindInstance(ctx, instanceFind)
 			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+			}
+			if instance == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 
 			dataSourceType := api.Admin
@@ -147,6 +147,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+			}
+			if adminDataSource == nil {
+				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
@@ -438,6 +442,9 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 	instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
 	if err != nil {
 		return nil, err
+	}
+	if instance == nil {
+		return nil, fmt.Errorf("instance ID not found %v", id)
 	}
 
 	if err := s.composeInstanceRelationship(ctx, instance); err != nil {

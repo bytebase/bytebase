@@ -364,6 +364,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				if err != nil {
 					return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
 				}
+				if instance == nil {
+					return nil, fmt.Errorf("instance ID not found %v", taskCreate.InstanceID)
+				}
 				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 					payload := api.TaskDatabaseSchemaUpdatePayload{}
 					payload.MigrationType = taskCreate.MigrationType

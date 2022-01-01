@@ -267,6 +267,9 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if err != nil {
 			return nil, err
 		}
+		if instance == nil {
+			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
+		}
 		// For now we only supported MySQL dialect syntax and compatibility check
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
