@@ -144,11 +144,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		err = s.ActivityService.DeleteActivity(ctx, activityDelete)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", id))
-			}
+		if err := s.ActivityService.DeleteActivity(ctx, activityDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete activity ID: %v", id)).SetInternal(err)
 		}
 
