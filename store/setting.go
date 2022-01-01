@@ -34,25 +34,25 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 	}
 	setting, err := s.FindSetting(ctx, find)
 	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			tx, err := s.db.BeginTx(ctx, nil)
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			defer tx.Rollback()
-
-			setting, err = createSetting(ctx, tx, create)
-			if err != nil {
-				return nil, err
-			}
-
-			if err := tx.Commit(); err != nil {
-				return nil, FormatError(err)
-			}
-
-			return setting, nil
-		}
 		return nil, err
+	}
+	if setting == nil {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer tx.Rollback()
+
+		setting, err = createSetting(ctx, tx, create)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := tx.Commit(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return setting, nil
 	}
 
 	return setting, nil
@@ -74,7 +74,6 @@ func (s *SettingService) FindSettingList(ctx context.Context, find *api.SettingF
 }
 
 // FindSetting retrieves a single setting based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -86,8 +85,10 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 	list, err := findSettingList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}

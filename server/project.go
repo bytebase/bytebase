@@ -531,6 +531,9 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 	if err != nil {
 		return nil, err
 	}
+	if project == nil {
+		return nil, fmt.Errorf("project ID not found %v", id)
+	}
 
 	if err := s.composeProjectRelationship(ctx, project); err != nil {
 		return nil, err
