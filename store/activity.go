@@ -105,7 +105,6 @@ func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.Activity
 }
 
 // DeleteActivity deletes an existing activity by ID.
-// Returns ENOTFOUND if activity does not exist.
 func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.ActivityDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -289,15 +288,8 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 // deleteActivity permanently deletes a activity by ID.
 func deleteActivity(ctx context.Context, tx *Tx, delete *api.ActivityDelete) error {
 	// Remove row from activity.
-	result, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = ?`, delete.ID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", delete.ID)}
-	}
-
 	return nil
 }

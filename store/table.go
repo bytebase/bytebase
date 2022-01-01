@@ -84,7 +84,6 @@ func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api
 }
 
 // DeleteTable deletes an existing table by ID.
-// Returns ENOTFOUND if table does not exist.
 func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -253,10 +252,8 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 // deleteTable permanently deletes tables from a database.
 func deleteTable(ctx context.Context, tx *Tx, delete *api.TableDelete) error {
 	// Remove row from database.
-	_, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseID); err != nil {
 		return FormatError(err)
 	}
-
 	return nil
 }

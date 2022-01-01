@@ -2,11 +2,9 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +60,6 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 }
 
 // DeleteIssueSubscriber deletes an existing issueSubscriber by ID.
-// Returns ENOTFOUND if issueSubscriber does not exist.
 func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, delete *api.IssueSubscriberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -160,15 +157,8 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 // deleteIssueSubscriber permanently deletes a issueSubscriber by ID.
 func deleteIssueSubscriber(ctx context.Context, tx *Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("subscriber %d not found in issue %d", delete.SubscriberID, delete.IssueID)}
-	}
-
 	return nil
 }
