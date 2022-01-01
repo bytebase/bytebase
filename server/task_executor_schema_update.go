@@ -81,6 +81,9 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
+		if repository == nil {
+			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+		}
 
 		mi, err = db.ParseMigrationInfo(
 			payload.VCSPushEvent.FileCommit.Added,

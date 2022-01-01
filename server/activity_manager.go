@@ -75,6 +75,9 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
+		if meta.issue.Project == nil {
+			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
+		}
 	}
 
 	principalFind := &api.PrincipalFind{
