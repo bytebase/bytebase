@@ -196,7 +196,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		webhookId, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
+		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
 			ctx,
 			common.OauthContext{
 				AccessToken: repositoryCreate.AccessToken,
@@ -211,7 +211,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 		}
-		repositoryCreate.ExternalWebhookID = webhookId
+		repositoryCreate.ExternalWebhookID = webhookID
 
 		repositoryCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		// Remove enclosing /
