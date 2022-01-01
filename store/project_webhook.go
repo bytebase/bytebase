@@ -105,7 +105,6 @@ func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *
 }
 
 // DeleteProjectWebhook deletes an existing projectWebhook by ID.
-// Returns ENOTFOUND if projectWebhook does not exist.
 func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete *api.ProjectWebhookDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -305,15 +304,8 @@ func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookP
 // deleteProjectWebhook permanently deletes a projectWebhook by ID.
 func deleteProjectWebhook(ctx context.Context, tx *Tx, delete *api.ProjectWebhookDelete) error {
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = ?`, delete.ID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", delete.ID)}
-	}
-
 	return nil
 }
