@@ -81,6 +81,14 @@ func (s *BackupRunner) Run() error {
 							zap.Error(err))
 						continue
 					}
+					if database == nil {
+						err := fmt.Errorf("Failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
+						s.l.Error(err.Error(),
+							zap.Int("id", backupSetting.ID),
+							zap.Int("databaseID", backupSetting.DatabaseID),
+							zap.Error(err))
+						continue
+					}
 					backupSetting.Database = database
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
