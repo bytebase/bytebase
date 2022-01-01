@@ -530,7 +530,10 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			ID: &task.InstanceID,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("invalid instance ID: %v", task.InstanceID)
+			return nil, fmt.Errorf("failed to find instance: %v", task.InstanceID)
+		}
+		if instance == nil {
+			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
 		databaseCreate := &api.DatabaseCreate{
 			CreatorID:     taskStatusPatch.UpdaterID,
