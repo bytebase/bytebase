@@ -253,18 +253,14 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	for _, database := range filteredDatabaseList {
 		databaseListByEnv[database.Instance.EnvironmentID] = append(databaseListByEnv[database.Instance.EnvironmentID], database)
 	}
-	multipleDatabaseForSameEnv := false
+	var multipleDatabaseForSameEnv []string
 	for environmentID, databaseList := range databaseListByEnv {
 		if len(databaseList) > 1 {
-			multipleDatabaseForSameEnv = true
-			s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environmentID),
-				zap.Int("project_id", repository.ProjectID),
-				zap.String("file", added),
-			)
+			multipleDatabaseForSameEnv = append(multipleDatabaseForSameEnv, fmt.Sprintf("file %q database %q environment %d", added, mi.Database, environmentID))
 		}
 	}
-	if multipleDatabaseForSameEnv {
-		return nil, nil
+	if len(multipleDatabaseForSameEnv) > 0 {
+		return nil, fmt.Errorf("Ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -330,9 +326,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	}
 	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 	if err != nil {
-		s.l.Warn("Failed to create update schema issue for added repository file", zap.Error(err),
-			zap.String("file", added))
-		return nil, nil
+		return nil, fmt.Errorf("Failed to create update schema issue for added repository file %q, error %v", added, err)
 	}
 	return issue, nil
 }
