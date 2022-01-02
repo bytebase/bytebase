@@ -298,7 +298,6 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 
 func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
-	// We support 1 patterns on how to organize the schema files.
 	if mi.Environment != "" {
 		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
 	}
