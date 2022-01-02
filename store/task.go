@@ -409,14 +409,10 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		if err != nil {
 			return nil, err
 		}
-		if taskRun == nil && patch.Status != api.TaskRunning {
-			return nil, fmt.Errorf("no applicable running task to change status")
-		}
-		if taskRun != nil && patch.Status == api.TaskRunning {
-			return nil, fmt.Errorf("task is already running: %v", task.Name)
-		}
-
-		if patch.Status == api.TaskRunning {
+		if taskRun == nil {
+			if patch.Status != api.TaskRunning {
+				return nil, fmt.Errorf("no applicable running task to change status")
+			}
 			taskRunCreate := &api.TaskRunCreate{
 				CreatorID: patch.UpdaterID,
 				TaskID:    task.ID,
@@ -428,6 +424,9 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				return nil, err
 			}
 		} else {
+			if patch.Status == api.TaskRunning {
+				return nil, fmt.Errorf("task is already running: %v", task.Name)
+			}
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
 				ID:        &taskRun.ID,
 				UpdaterID: patch.UpdaterID,
