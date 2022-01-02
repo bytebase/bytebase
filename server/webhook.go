@@ -167,7 +167,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Create schema update issue.
-				issue, err := s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+				var issue *api.Issue
+				if repository.Project.TenantMode == api.TenantModeTenant {
+					issue, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+				} else {
+					issue, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+				}
 				if err != nil {
 					createIgnoredFileActivity(err)
 					continue
@@ -242,45 +247,24 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		filteredDatabaseList = databaseList
 	}
 
-	var pipelineApprovalByEnv = map[int]api.PipelineApprovalValue{}
-	{
-		// It could happen that for a particular environment a project contain 2 database with the same name.
-		// We will emit warning in this case.
-		var databaseListByEnv = map[int][]*api.Database{}
-		for _, database := range filteredDatabaseList {
-			list, ok := databaseListByEnv[database.Instance.EnvironmentID]
-			if ok {
-				databaseListByEnv[database.Instance.EnvironmentID] = append(list, database)
-			} else {
-				list := make([]*api.Database, 0)
-				databaseListByEnv[database.Instance.EnvironmentID] = append(list, database)
-			}
-
-			// Load pipeline approval policy per environment.
-			if _, ok := pipelineApprovalByEnv[database.Instance.EnvironmentID]; !ok {
-				p, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
-				if err != nil {
-					return nil, fmt.Errorf("failed to find pipeline approval policy for environment %v", database.Instance.EnvironmentID)
-				}
-				pipelineApprovalByEnv[database.Instance.EnvironmentID] = p.Value
-			}
+	// It could happen that for a particular environment a project contain 2 database with the same name.
+	// We will emit warning in this case.
+	var databaseListByEnv = map[int][]*api.Database{}
+	for _, database := range filteredDatabaseList {
+		databaseListByEnv[database.Instance.EnvironmentID] = append(databaseListByEnv[database.Instance.EnvironmentID], database)
+	}
+	multipleDatabaseForSameEnv := false
+	for environmentID, databaseList := range databaseListByEnv {
+		if len(databaseList) > 1 {
+			multipleDatabaseForSameEnv = true
+			s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environmentID),
+				zap.Int("project_id", repository.ProjectID),
+				zap.String("file", added),
+			)
 		}
-
-		var multipleDatabaseForSameEnv = false
-		for environmentID, databaseList := range databaseListByEnv {
-			if len(databaseList) > 1 {
-				multipleDatabaseForSameEnv = true
-
-				s.l.Warn(fmt.Sprintf("Ignored committed file, multiple ambiguous databases named %q for environment %d.", mi.Database, environmentID),
-					zap.Int("project_id", repository.ProjectID),
-					zap.String("file", added),
-				)
-			}
-		}
-
-		if multipleDatabaseForSameEnv {
-			return nil, nil
-		}
+	}
+	if multipleDatabaseForSameEnv {
+		return nil, nil
 	}
 
 	// Compose the new issue
@@ -310,7 +294,43 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 
 	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 	if err != nil {
-		s.l.Warn("Failed to create update schema task for added repository file", zap.Error(err),
+		s.l.Warn("Failed to create update schema issue for added repository file", zap.Error(err),
+			zap.String("file", added))
+		return nil, nil
+	}
+	return issue, nil
+}
+
+func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (*api.Issue, error) {
+	if mi.Environment != "" {
+		return nil, fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
+	}
+
+	m := &api.UpdateSchemaContext{
+		MigrationType: mi.Type,
+		VCSPushEvent:  &vcsPushEvent,
+		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+			{
+				DatabaseName: mi.Database,
+				Statement:    statement,
+			},
+		},
+	}
+	createContext, err := json.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+	}
+	issueCreate := &api.IssueCreate{
+		ProjectID:     repository.ProjectID,
+		Name:          commit.Title,
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   commit.Message,
+		AssigneeID:    api.SystemBotID,
+		CreateContext: string(createContext),
+	}
+	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+	if err != nil {
+		s.l.Warn("Failed to create update schema issue for added repository file", zap.Error(err),
 			zap.String("file", added))
 		return nil, nil
 	}
