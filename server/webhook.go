@@ -167,16 +167,30 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Create schema update issue.
-				var issue *api.Issue
+				var createContext string
 				if repository.Project.TenantMode == api.TenantModeTenant {
-					issue, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
 				} else {
-					issue, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+					createContext, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
 				}
 				if err != nil {
 					createIgnoredFileActivity(err)
 					continue
 				}
+				issueCreate := &api.IssueCreate{
+					ProjectID:     repository.ProjectID,
+					Name:          commit.Title,
+					Type:          api.IssueDatabaseSchemaUpdate,
+					Description:   commit.Message,
+					AssigneeID:    api.SystemBotID,
+					CreateContext: createContext,
+				}
+				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+				if err != nil {
+					createIgnoredFileActivity(fmt.Errorf("Failed to create update schema issue for added repository file %q, error %v", added, err))
+					continue
+				}
+
 				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
 
 				// Create a project activity after successfully creating the issue as the result of the push event
@@ -207,7 +221,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (*api.Issue, error) {
+func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
 	// Find matching database list
 	databaseFind := &api.DatabaseFind{
 		ProjectID: &repository.ProjectID,
@@ -215,9 +229,9 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	databaseList, err := s.composeDatabaseListByFind(ctx, databaseFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
+		return "", fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
 	} else if len(databaseList) == 0 {
-		return nil, fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
+		return "", fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -241,7 +255,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 			}
 		}
 		if len(filteredDatabaseList) == 0 {
-			return nil, fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
+			return "", fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
 		}
 	} else {
 		filteredDatabaseList = databaseList
@@ -260,7 +274,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		}
 	}
 	if len(multipleDatabaseForSameEnv) > 0 {
-		return nil, fmt.Errorf("Ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
+		return "", fmt.Errorf("Ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -277,31 +291,20 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
 	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:     repository.ProjectID,
-		Name:          commit.Title,
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   commit.Message,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	}
-
-	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-	if err != nil {
-		s.l.Warn("Failed to create update schema issue for added repository file", zap.Error(err),
-			zap.String("file", added))
-		return nil, nil
-	}
-	return issue, nil
+	return string(createContext), nil
 }
 
-func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (*api.Issue, error) {
+func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
+	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
+	// We support 1 patterns on how to organize the schema files.
+	// Pattern 1: 	Like 1, the database name is the same across all tenants or environments. All tenants and environments shares the same schema file,
+	//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
+	//              each stage corresponds to a deployment in deployment configuration schedule.
 	if mi.Environment != "" {
-		return nil, fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
+		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
 	}
-
 	m := &api.UpdateSchemaContext{
 		MigrationType: mi.Type,
 		VCSPushEvent:  &vcsPushEvent,
@@ -314,21 +317,9 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
 	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:     repository.ProjectID,
-		Name:          commit.Title,
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   commit.Message,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	}
-	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create update schema issue for added repository file %q, error %v", added, err)
-	}
-	return issue, nil
+	return string(createContext), nil
 }
 
 func isSkipGeneratedSchemaFile(repository *api.Repository, added string, logger *zap.Logger) bool {
