@@ -299,9 +299,6 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.VCSPushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	// We support 1 patterns on how to organize the schema files.
-	// Pattern 1: 	Like 1, the database name is the same across all tenants or environments. All tenants and environments shares the same schema file,
-	//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
-	//              each stage corresponds to a deployment in deployment configuration schedule.
 	if mi.Environment != "" {
 		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
 	}
