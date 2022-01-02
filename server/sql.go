@@ -304,11 +304,11 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					index, err := s.IndexService.FindIndex(ctx, indexFind)
+					idx, err := s.IndexService.FindIndex(ctx, indexFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
-					if index == nil {
+					if idx == nil {
 						// Create index if not exists.
 						indexCreate := &api.IndexCreate{
 							CreatorID:  api.SystemBotID,
