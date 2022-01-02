@@ -64,6 +64,15 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 		return []*api.Environment{}, err
 	}
 
+	// Skip the internal bb system environment.
+	var filtered []*api.Environment
+	for _, env := range list {
+		if env.ID != api.SystemEnvironmentID {
+			filtered = append(filtered, env)
+		}
+	}
+	list = filtered
+
 	if err == nil {
 		for _, environment := range list {
 			if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {

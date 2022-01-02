@@ -760,8 +760,10 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			// Convert to pipelineCreate
 			for i, stage := range p {
+				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
 				stageCreate := api.StageCreate{
-					Name: fmt.Sprintf("Deployment %v", i),
+					Name:          fmt.Sprintf("Deployment %v", i),
+					EnvironmentID: api.SystemEnvironmentID,
 				}
 				for _, database := range stage {
 					taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)

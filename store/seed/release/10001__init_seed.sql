@@ -1,3 +1,21 @@
+-- Create 
+INSERT INTO
+    environment (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `order`
+    )
+VALUES
+    (
+        1,
+        101,
+        101,
+        'bb system',
+        -1
+    );
+
 -- Create "test" and "prod" environments
 INSERT INTO
     environment (

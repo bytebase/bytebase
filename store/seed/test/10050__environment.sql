@@ -8,6 +8,23 @@ INSERT INTO
     )
 VALUES
     (
+        1,
+        101,
+        101,
+        'bb system',
+        -1
+    );
+
+INSERT INTO
+    environment (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `order`
+    )
+VALUES
+    (
         5001,
         101,
         101,
