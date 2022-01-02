@@ -407,15 +407,12 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		}
 		taskRun, err := s.TaskRunService.FindTaskRunTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
 		if taskRun == nil && patch.Status != api.TaskRunning {
 			return nil, fmt.Errorf("no applicable running task to change status")
 		}
-		if patch.Status == api.TaskRunning {
+		if taskRun != nil && patch.Status == api.TaskRunning {
 			return nil, fmt.Errorf("task is already running: %v", task.Name)
 		}
 
