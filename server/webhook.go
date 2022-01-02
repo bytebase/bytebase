@@ -187,8 +187,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
 				if err != nil {
-					createIgnoredFileActivity(fmt.Errorf("Failed to create update schema issue for added repository file %q, error %v", added, err))
-					continue
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create schema update issue").SetInternal(err)
 				}
 
 				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
