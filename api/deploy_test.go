@@ -15,7 +15,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 	}{
 		{
 			"complexDeployments",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{
 				Deployments: []*Deployment{
 					{
@@ -23,6 +23,10 @@ func TestGetDeploymentSchedule(t *testing.T) {
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
+										Key:      "bb.environment",
+										Operator: "In",
+										Values:   []string{"prod"},
+									}, {
 										Key:      "location",
 										Operator: "In",
 										Values:   []string{"us-central1", "europe-west1"},
@@ -36,6 +40,10 @@ func TestGetDeploymentSchedule(t *testing.T) {
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
+										Key:      "bb.environment",
+										Operator: "In",
+										Values:   []string{"prod"},
+									}, {
 										Key:      "location",
 										Operator: "Exists",
 										Values:   nil,
@@ -47,34 +55,44 @@ func TestGetDeploymentSchedule(t *testing.T) {
 				},
 			},
 			false,
-		},
-		{
+		}, {
 			"invalidPayload",
-			`{"unmatchdeployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"unmatchdeployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{},
 			false,
-		},
-		{
+		}, {
 			"json",
 			`{`,
 			nil,
 			true,
-		},
-		{
+		}, {
 			"inOperatorWithNoValue",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In"}]}}}]}`,
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
 			nil,
 			true,
-		},
-		{
+		}, {
 			"existsOperatorWithValues",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
-		},
-		{
+		}, {
 			"invalidOperator",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"invalid"}]}}}]}`,
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
+			nil,
+			true,
+		}, {
+			"missingEnvironment",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			nil,
+			true,
+		}, {
+			"environmentExistsOperator",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			nil,
+			true,
+		}, {
+			"environmentMultiValues",
+			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
 		},
