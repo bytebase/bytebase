@@ -761,18 +761,28 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			// Convert to pipelineCreate
 			for i, stage := range p {
 				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
-				stageCreate := api.StageCreate{
-					Name:          fmt.Sprintf("Deployment %v", i),
-					EnvironmentID: api.SystemEnvironmentID,
-				}
+				var environmentID *int
+				var taskCreateList []api.TaskCreate
 				for _, database := range stage {
+					if environmentID == nil {
+						environmentID = &database.Instance.EnvironmentID
+					}
+					if *environmentID != database.Instance.EnvironmentID {
+						err := fmt.Errorf("All databases in tenant mode deployment should have the same environment")
+						return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+					}
 					taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 					if err != nil {
 						return nil, err
 					}
-					stageCreate.TaskList = append(stageCreate.TaskList, *taskCreate)
+					taskCreateList = append(taskCreateList, *taskCreate)
 				}
-				pc.StageList = append(pc.StageList, stageCreate)
+
+				pc.StageList = append(pc.StageList, api.StageCreate{
+					Name:          fmt.Sprintf("Deployment %v", i),
+					EnvironmentID: *environmentID,
+					TaskList:      taskCreateList,
+				})
 			}
 			pipelineCreate = pc
 		} else {

@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 )
 
-// SystemEnvironmentID is the ID of the system environment.
-// This is used for tenant deployment pipeline where environment doesn't matter across stages.
-const SystemEnvironmentID = 1
-
 // Environment is the API message for an environment.
 type Environment struct {
 	ID int `jsonapi:"primary,environment"`
