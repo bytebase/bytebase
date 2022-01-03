@@ -116,6 +116,7 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 	}
 
 	for _, d := range schedule.Deployments {
+		hasEnv := false
 		for _, e := range d.Spec.Selector.MatchExpressions {
 			switch e.Operator {
 			case InOperatorType:
@@ -129,6 +130,15 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 			default:
 				return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q has invalid operator %q", e.Key, e.Operator))
 			}
+			if e.Key == EnvironmentKeyName {
+				hasEnv = true
+				if e.Operator != InOperatorType || len(e.Values) != 1 {
+					return nil, common.Errorf(common.Invalid, fmt.Errorf("label %q should must use operator %q with exactly one value", EnvironmentKeyName, InOperatorType))
+				}
+			}
+		}
+		if !hasEnv {
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("deployment should contain %q label", EnvironmentKeyName))
 		}
 	}
 	return schedule, nil
