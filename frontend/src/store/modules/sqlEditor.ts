@@ -133,7 +133,7 @@ const actions = {
       { root: true }
     );
     commit(types.SET_QUERY_RESULT, res.data);
-    return res.data;
+    return res;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
     { commit, dispatch }: any,
