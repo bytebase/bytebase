@@ -11,7 +11,7 @@
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
   },
   "dependencies": {
-    "@bytebase/vue-kbar": "^0.1.4",
+    "@bytebase/vue-kbar": "^0.1.5",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",

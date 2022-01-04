@@ -194,6 +194,11 @@ export default {
         key: "guide.database",
         newState: false,
       });
+
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "kbar.open",
+        newState: false,
+      });
     };
 
     const switchToOwner = () => {
