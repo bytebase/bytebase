@@ -15,7 +15,7 @@ VALUES
         101,
         3005,
         'regional-1',
-        '{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.location","operator":"In","values":["earth"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
+        '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.location","operator":"In","values":["earth"]}]}}},{"name":"Integration Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
     );
 
 INSERT INTO
@@ -34,5 +34,5 @@ VALUES
         101,
         3006,
         'regional-2',
-        '{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.location","operator":"In","values":["earth"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
+        '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.location","operator":"In","values":["earth"]}]}}},{"name":"Integration Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
     );
