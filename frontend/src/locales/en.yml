@@ -556,8 +556,7 @@ quick-start:
   visit-database: '@:common.visit @:common.databases'
   visit-environment: '@:common.visit @:common.environments'
   add-a-member: Add a member
-  use-kbar: Use kbar
-  use-kbar-tooltip: Press {mod}-k to open kbar
+  use-kbar: Use kbar ({shortcut})
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu

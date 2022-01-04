@@ -12,9 +12,12 @@
       <ol class="space-y-4 w-full">
         <li v-for="(intro, index) in effectiveList" :key="index">
           <!-- Complete Task -->
-          <router-link
+          <!-- use <router-link> if intro.link is not empty -->
+          <!-- use <span> otherwise -->
+          <component
+            :is="intro.link ? 'router-link' : 'span'"
             :to="intro.link"
-            class="group tooltip-wrapper"
+            class="group cursor-pointer"
             @click="intro.click"
           >
             <span class="flex items-start">
@@ -47,14 +50,7 @@
                 >{{ intro.name }}</span
               >
             </span>
-
-            <span
-              v-if="intro.tooltip"
-              class="whitespace-nowrap tooltip -top-full"
-            >
-              {{ intro.tooltip }}
-            </span>
-          </router-link>
+          </component>
         </li>
       </ol>
     </nav>
@@ -74,7 +70,6 @@ type IntroItem = {
   allowDBA: boolean;
   allowDeveloper: boolean;
   done: ComputedRef<boolean>;
-  tooltip?: string;
   click?: () => void;
 };
 
@@ -152,16 +147,14 @@ export default defineComponent({
         ),
       },
       {
-        name: computed(() => t("quick-start.use-kbar")),
+        name: computed(() =>
+          t("quick-start.use-kbar", {
+            shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
+          })
+        ),
         link: "",
         allowDBA: true,
         allowDeveloper: true,
-        // provide a help info tooltip to this item
-        tooltip: computed(() =>
-          t("quick-start.use-kbar-tooltip", {
-            mod: navigator.platform.match(/mac/i) ? "cmd" : "ctrl",
-          })
-        ),
         click: () => {
           kbarHandler.value.show();
         },
