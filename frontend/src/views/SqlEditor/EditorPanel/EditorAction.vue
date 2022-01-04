@@ -3,8 +3,8 @@
     <div class="actions-left w-1/2">
       <NButton
         type="primary"
-        @click="handleExecuteQueries"
         :disabled="isEmptyStatement"
+        @click="handleExecuteQueries"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
@@ -48,6 +48,7 @@ import {
   SqlEditorActions,
   ConnectionContext,
 } from "../../../types";
+import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -58,32 +59,16 @@ const { isEmptyStatement } = useNamespacedGetters<SqlEditorGetters>(
   "sqlEditor",
   ["isEmptyStatement", "connectionInfo"]
 );
-const { executeQuery, setConnectionContext } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "executeQuery",
-    "setConnectionContext",
-  ]);
+const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setConnectionContext"]
+);
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
 const store = useStore();
 
-const handleExecuteQueries = async () => {
-  try {
-    const res = await executeQuery();
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "Query executed successfully!",
-    });
-  } catch (error) {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: error,
-    });
-  }
-};
+const handleExecuteQueries = () => useExecuteSQL(store);
 
 watch(
   () => connectionTree.value,
