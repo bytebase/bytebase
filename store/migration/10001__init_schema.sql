@@ -59,6 +59,63 @@ VALUES
         ''
     );
 
+-- 3rd parties auth provider
+CREATE TABLE third_party_auth_provider
+(
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    row_status TEXT    NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+        )                       DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
+    `type`     TEXT    NOT NULL CHECK (`type` LIKE 'bb.auth.provider.%'),
+    payload    TEXT    NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_third_party_auth_provider_modification_time`
+    AFTER
+        UPDATE
+    ON `third_party_auth_provider`
+    FOR EACH ROW
+BEGIN
+    UPDATE
+        `third_party_auth_provider`
+    SET updated_ts = (strftime('%s', 'now'))
+    WHERE rowid = old.rowid;
+END;
+
+-- 3rd parties account
+CREATE TABLE third_party_account
+(
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    principal_id INTEGER NOT NULL REFERENCES principal (id),
+    row_status   TEXT    NOT NULL CHECK (
+        row_status IN ('NORMAL', 'ARCHIVED')
+        )                         DEFAULT 'NORMAL',
+    creator_id   INTEGER NOT NULL REFERENCES principal (id),
+    created_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id   INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
+    `type`       TEXT    NOT NULL CHECK (`type` LIKE 'bb.auth.provider.%'),
+    payload      TEXT    NOT NULL
+);
+
+CREATE INDEX idx_third_party_account_type ON third_party_account (`type`);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_third_party_account_modification_time`
+    AFTER
+        UPDATE
+    ON `third_party_account`
+    FOR EACH ROW
+BEGIN
+    UPDATE
+        `third_party_account`
+    SET updated_ts = (strftime('%s', 'now'))
+    WHERE rowid = old.rowid;
+END;
+
 -- Setting
 CREATE TABLE setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
