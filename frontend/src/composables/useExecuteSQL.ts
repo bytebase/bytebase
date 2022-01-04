@@ -28,12 +28,6 @@ const useExecuteSQL = async (store: any) => {
       });
       return;
     }
-
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "Query executed successfully!",
-    });
   } catch (error) {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
