@@ -18,7 +18,10 @@ const parseSQL = (sql: string): ParseResult => {
 
 export const isSelectStatement = (sql: string) => {
   const { data } = parseSQL(sql);
-  return data?.type.toLowerCase() === "select";
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // if parser returns the null AST. it's an invalid sql statement
+  return data?.type.toLowerCase() === "select" || data === null;
 };
 
 export default parseSQL;
