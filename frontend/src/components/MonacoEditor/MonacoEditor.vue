@@ -8,7 +8,6 @@ import type { editor as Editor } from "monaco-editor";
 
 import setupMonaco from "./setupMonaco";
 import sqlFormatter from "./sqlFormatter";
-
 import { SqlDialect } from "../../types";
 
 const props = defineProps({

@@ -14,15 +14,15 @@ import { useNamespacedActions } from "vuex-composition-helpers";
 import { useStore } from "vuex";
 
 import { SqlEditorActions } from "../../../types";
+import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 
 const store = useStore();
 const sqlCode = ref("");
 
-const { setSqlEditorState, executeQuery } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "setSqlEditorState",
-    "executeQuery",
-  ]);
+const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setSqlEditorState"]
+);
 
 const handleChange = debounce((value: string) => {
   setSqlEditorState({
@@ -36,22 +36,5 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = async (statement: string) => {
-  try {
-    const res = await executeQuery({
-      statement,
-    });
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "Query executed successfully!",
-    });
-  } catch (error) {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: error,
-    });
-  }
-};
+const handleRunQuery = () => useExecuteSQL(store);
 </script>
