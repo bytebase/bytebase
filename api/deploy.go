@@ -37,6 +37,7 @@ type DeploymentSchedule struct {
 
 // Deployment is the API message for deployment.
 type Deployment struct {
+	Name string          `json:"name"`
 	Spec *DeploymentSpec `json:"spec"`
 }
 
@@ -116,6 +117,9 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 	}
 
 	for _, d := range schedule.Deployments {
+		if d.Name == "" {
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("Deployment name must not be empty"))
+		}
 		hasEnv := false
 		for _, e := range d.Spec.Selector.MatchExpressions {
 			switch e.Operator {

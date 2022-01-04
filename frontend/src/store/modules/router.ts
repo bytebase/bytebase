@@ -175,8 +175,6 @@ const getters = {
         }
       }
 
-      console.log(currentRoute);
-
       return {};
     },
 };

@@ -754,7 +754,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
+			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -783,7 +783,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 
 				pc.StageList = append(pc.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment %v", i),
+					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})
@@ -1037,30 +1037,30 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
 	}
 	if deployConfig == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
 	for _, database := range databaseList {
 		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
-	return p, nil
+	return d, p, nil
 }
 
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
@@ -1076,7 +1076,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
+	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
 	if err != nil {
 		return "", "", err
 	}

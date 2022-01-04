@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-2 w-full pl-4 pr-2">
     <div class="flex flex-row justify-between">
       <div class="outline-title toplevel flex">
         {{ $t("common.quickstart") }}
@@ -9,10 +9,17 @@
       </button>
     </div>
     <nav class="flex justify-center" aria-label="Progress">
-      <ol class="space-y-4">
+      <ol class="space-y-4 w-full">
         <li v-for="(intro, index) in effectiveList" :key="index">
           <!-- Complete Task -->
-          <router-link :to="intro.link" class="group">
+          <!-- use <router-link> if intro.link is not empty -->
+          <!-- use <span> otherwise -->
+          <component
+            :is="intro.link ? 'router-link' : 'span'"
+            :to="intro.link"
+            class="group cursor-pointer"
+            @click="intro.click"
+          >
             <span class="flex items-start">
               <span
                 class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center"
@@ -43,7 +50,7 @@
                 >{{ intro.name }}</span
               >
             </span>
-          </router-link>
+          </component>
         </li>
       </ol>
     </nav>
@@ -51,11 +58,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, ComputedRef } from "vue";
+import { computed, reactive, ComputedRef, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-
 import { isDBA, isOwner } from "../utils";
+import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 
 type IntroItem = {
   name: string;
@@ -63,14 +70,15 @@ type IntroItem = {
   allowDBA: boolean;
   allowDeveloper: boolean;
   done: ComputedRef<boolean>;
+  click?: () => void;
 };
 
-export default {
+export default defineComponent({
   name: "QuickStart",
-
   setup() {
     const store = useStore();
     const { t } = useI18n();
+    const kbarHandler = useKBarHandler();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -138,6 +146,22 @@ export default {
           store.getters["uistate/introStateByKey"]("member.addOrInvite")
         ),
       },
+      {
+        name: computed(() =>
+          t("quick-start.use-kbar", {
+            shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
+          })
+        ),
+        link: "",
+        allowDBA: true,
+        allowDeveloper: true,
+        click: () => {
+          kbarHandler.value.show();
+        },
+        done: computed(() =>
+          store.getters["uistate/introStateByKey"]("kbar.open")
+        ),
+      },
     ]);
 
     const effectiveList = computed(() => {
@@ -176,11 +200,19 @@ export default {
         });
     };
 
+    useKBarEventOnce("open", () => {
+      // once kbar is open, mark the quickstart as done
+      store.dispatch("uistate/saveIntroStateByKey", {
+        key: "kbar.open",
+        newState: true,
+      });
+    });
+
     return {
       effectiveList,
       isTaskActive,
       hideQuickstart,
     };
   },
-};
+});
 </script>
