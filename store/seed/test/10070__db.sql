@@ -586,6 +586,120 @@ VALUES
         ''
     );
 
+-- Databases for tenant mode project.
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7021,
+        101,
+        101,
+        6001,
+        3005,
+        'tenant_db1',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        'v1'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7022,
+        101,
+        101,
+        6002,
+        3005,
+        'tenant_db1',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        'v1'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7023,
+        101,
+        101,
+        6001,
+        3006,
+        'tenant_db2',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2021v1'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        `collation`,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7024,
+        101,
+        101,
+        6002,
+        3006,
+        'tenant_db2',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2021v1'
+    );
+
 -- Database for prod environment archived mysql instance 6099
 INSERT INTO
     db (

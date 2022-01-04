@@ -148,6 +148,9 @@ func (s *Server) composeEnvironmentByID(ctx context.Context, id int) (*api.Envir
 	if err != nil {
 		return nil, err
 	}
+	if environment == nil {
+		return nil, fmt.Errorf("environment ID not found %v", id)
+	}
 
 	if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
 		return nil, err

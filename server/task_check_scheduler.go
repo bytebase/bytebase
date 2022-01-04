@@ -261,6 +261,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		if err != nil {
 			return nil, err
 		}
+		if database == nil {
+			return nil, fmt.Errorf("database ID not found %v", task.DatabaseID)
+		}
 
 		_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatorID,

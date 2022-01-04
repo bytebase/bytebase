@@ -84,7 +84,6 @@ func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.Vi
 }
 
 // DeleteView deletes an existing view by ID.
-// Returns ENOTFOUND if view does not exist.
 func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -219,10 +218,8 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 // deleteView permanently deletes views from a database.
 func deleteView(ctx context.Context, tx *Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
-	_, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = ?`, delete.DatabaseID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = ?`, delete.DatabaseID); err != nil {
 		return FormatError(err)
 	}
-
 	return nil
 }

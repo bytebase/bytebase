@@ -166,7 +166,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 			[][]*api.Database{
 				{dbs[0], dbs[2]},
-				{},
 			},
 		},
 		{

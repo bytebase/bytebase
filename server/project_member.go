@@ -160,11 +160,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		err = s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
-			}
+		if err := s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
 

@@ -364,6 +364,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				if err != nil {
 					return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
 				}
+				if instance == nil {
+					return nil, fmt.Errorf("instance ID not found %v", taskCreate.InstanceID)
+				}
 				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
 					payload := api.TaskDatabaseSchemaUpdatePayload{}
 					payload.MigrationType = taskCreate.MigrationType
@@ -757,17 +760,33 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			// Convert to pipelineCreate
 			for i, stage := range p {
-				stageCreate := api.StageCreate{
-					Name: fmt.Sprintf("Deployment %v", i),
-				}
+				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
+				environmentSet := make(map[string]bool)
+				var environmentID int
+				var taskCreateList []api.TaskCreate
 				for _, database := range stage {
+					environmentSet[database.Instance.Environment.Name] = true
+					environmentID = database.Instance.EnvironmentID
 					taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 					if err != nil {
 						return nil, err
 					}
-					stageCreate.TaskList = append(stageCreate.TaskList, *taskCreate)
+					taskCreateList = append(taskCreateList, *taskCreate)
 				}
-				pc.StageList = append(pc.StageList, stageCreate)
+				if len(environmentSet) != 1 {
+					var environments []string
+					for k := range environmentSet {
+						environments = append(environments, k)
+					}
+					err := fmt.Errorf("All databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+				}
+
+				pc.StageList = append(pc.StageList, api.StageCreate{
+					Name:          fmt.Sprintf("Deployment %v", i),
+					EnvironmentID: environmentID,
+					TaskList:      taskCreateList,
+				})
 			}
 			pipelineCreate = pc
 		} else {
@@ -780,10 +799,10 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 				database, err := s.composeDatabaseByFind(ctx, databaseFind)
 				if err != nil {
-					if common.ErrorCode(err) == common.NotFound {
-						return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
-					}
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+				}
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 				}
 
 				taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)

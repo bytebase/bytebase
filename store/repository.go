@@ -64,7 +64,6 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 }
 
 // FindRepository retrieves a single repository based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *RepositoryService) FindRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -76,8 +75,10 @@ func (s *RepositoryService) FindRepository(ctx context.Context, find *api.Reposi
 	list, err := findRepositoryList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
 	}
@@ -106,7 +107,6 @@ func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.Repo
 }
 
 // DeleteRepository deletes an existing repository by ID.
-// Returns ENOTFOUND if repository does not exist.
 func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.RepositoryDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -403,15 +403,8 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 	}
 
 	// Remove row from database.
-	result, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectID)
-	if err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectID); err != nil {
 		return FormatError(err)
 	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository not found for project ID: %d", delete.ProjectID)}
-	}
-
 	return nil
 }

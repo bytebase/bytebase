@@ -226,8 +226,10 @@ func (s *TaskService) findTask(ctx context.Context, tx *Tx, find *api.TaskFind) 
 	list, err := s.findTaskList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tasks with filter %+v, expect 1", len(list), find)}
 	}
@@ -405,19 +407,12 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		}
 		taskRun, err := s.TaskRunService.FindTaskRunTx(ctx, tx.Tx, taskRunFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-			} else {
-				return nil, err
+			return nil, err
+		}
+		if taskRun == nil {
+			if patch.Status != api.TaskRunning {
+				return nil, fmt.Errorf("no applicable running task to change status")
 			}
-		}
-		if taskRun == nil && patch.Status != api.TaskRunning {
-			return nil, fmt.Errorf("no applicable running task to change status")
-		}
-		if patch.Status == api.TaskRunning {
-			return nil, fmt.Errorf("task is already running: %v", task.Name)
-		}
-
-		if patch.Status == api.TaskRunning {
 			taskRunCreate := &api.TaskRunCreate{
 				CreatorID: patch.UpdaterID,
 				TaskID:    task.ID,
@@ -429,6 +424,9 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 				return nil, err
 			}
 		} else {
+			if patch.Status == api.TaskRunning {
+				return nil, fmt.Errorf("task is already running: %v", task.Name)
+			}
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
 				ID:        &taskRun.ID,
 				UpdaterID: patch.UpdaterID,

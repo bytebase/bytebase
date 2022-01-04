@@ -77,7 +77,6 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 }
 
 // FindProject retrieves a single project based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind) (*api.Project, error) {
 	if find.ID != nil {
@@ -100,16 +99,16 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	list, err := findProjectList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
-
 	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
-
 	return list[0], nil
 }
 

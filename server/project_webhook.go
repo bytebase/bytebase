@@ -169,11 +169,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		err = s.ProjectWebhookService.DeleteProjectWebhook(ctx, hookDelete)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-			}
+		if err := s.ProjectWebhookService.DeleteProjectWebhook(ctx, hookDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project webhook ID: %v", id)).SetInternal(err)
 		}
 
@@ -194,10 +190,10 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		project, err := s.ProjectService.FindProject(ctx, projectFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
 		}
 
 		id, err := strconv.Atoi(c.Param("webhookID"))

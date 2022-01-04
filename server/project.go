@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,11 +10,12 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
@@ -178,6 +178,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
+
+		// Create webhook and retrieve the created webhook id
+		var webhookCreatePayload []byte
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
@@ -187,38 +190,28 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
 				EnableSSLVerification:  false,
 			}
-			body, err := json.Marshal(webhookPost)
+			webhookCreatePayload, err = json.Marshal(webhookPost)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
-			resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryCreate.ExternalID)
-			// We use s.refreshTokenNoop() because the repository isn't created yet.
-			resp, err := gitlab.POST(vcs.InstanceURL, resourcePath, &repositoryCreate.AccessToken, bytes.NewBuffer(body), gitlab.OauthContext{}, s.refreshTokenNoop())
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 300 {
-				reason := fmt.Sprintf(
-					"Failed to create webhook for project ID: %d, status code: %d",
-					repositoryCreate.ProjectID,
-					resp.StatusCode,
-				)
-				// Add helper tips if the status code is 422, refer to bytebase#101 for more context.
-				if resp.StatusCode == http.StatusUnprocessableEntity {
-					reason += ".\n\nIf GitLab and Bytebase are in the same private network, " +
-						"please follow the instructions in https://docs.gitlab.com/ee/security/webhooks.html"
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, reason)
-			}
-
-			webhookInfo := &gitlab.WebhookInfo{}
-			if err := json.NewDecoder(resp.Body).Decode(webhookInfo); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal create webhook response for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
-			}
-			repositoryCreate.ExternalWebhookID = strconv.Itoa(webhookInfo.ID)
 		}
+
+		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
+			ctx,
+			common.OauthContext{
+				AccessToken: repositoryCreate.AccessToken,
+				// We use s.refreshTokenNoop() because the repository isn't created yet.
+				Refresher: s.refreshTokenNoop(),
+			},
+			vcs.InstanceURL,
+			repositoryCreate.ExternalID,
+			webhookCreatePayload,
+		)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
+		}
+		repositoryCreate.ExternalWebhookID = webhookID
 
 		repositoryCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		// Remove enclosing /
@@ -342,51 +335,42 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
 			if vcs == nil {
-				err := fmt.Errorf("Failed to find VCS configuration for ID: %d", repository.VCSID)
+				err := fmt.Errorf("failed to find VCS configuration for ID: %d", repository.VCSID)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
-			// Updates the webhook after we successfully update the repository.
+			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
 			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
+			var webhookPatchPayload []byte
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
 					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepository.WebhookEndpointID),
 					PushEventsBranchFilter: *repositoryPatch.BranchFilter,
 				}
-				json, err := json.Marshal(webhookPut)
+				webhookPatchPayload, err = json.Marshal(webhookPut)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
-				resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repository.ExternalID, repository.ExternalWebhookID)
-				resp, err := gitlab.PUT(
-					vcs.InstanceURL,
-					resourcePath,
-					&repository.AccessToken,
-					bytes.NewBuffer(json),
-					gitlab.OauthContext{
-						ClientID:     repository.VCS.ApplicationID,
-						ClientSecret: repository.VCS.Secret,
-						RefreshToken: repository.RefreshToken,
-					},
-					s.refreshToken(ctx, repository.ID),
-				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
-				}
-				defer resp.Body.Close()
+			}
 
-				// Just emits a warning since we have already updated the repository entry. We will have a separate process to reconcile the state.
-				if resp.StatusCode >= 300 {
-					s.l.Error(("Failed to update gitlab webhook when updating repository for project"),
-						zap.Int("status_code", resp.StatusCode),
-						zap.String("status", resp.Status),
-						zap.Int("project_id", projectID),
-						zap.Int("repository_id", repository.ID),
-						zap.String("resource_path", resourcePath),
-						zap.String("body", string(json)),
-					)
-				}
+			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).PatchWebhook(
+				ctx,
+				common.OauthContext{
+					ClientID:     repository.VCS.ApplicationID,
+					ClientSecret: repository.VCS.Secret,
+					AccessToken:  repository.AccessToken,
+					RefreshToken: repository.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repository.ID),
+				},
+				vcs.InstanceURL,
+				repository.ExternalID,
+				repository.ExternalWebhookID,
+				webhookPatchPayload,
+			)
+
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 			}
 		}
 
@@ -445,38 +429,25 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
-		// Deletes the webhook after we successfully delete the repository.
+		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		switch vcs.Type {
-		case "GITLAB_SELF_HOST":
-			resp, err := gitlab.DELETE(
-				vcs.InstanceURL,
-				fmt.Sprintf("projects/%s/hooks/%s",
-					repository.ExternalID,
-					repository.ExternalWebhookID),
-				&repository.AccessToken,
-				gitlab.OauthContext{
-					ClientID:     repository.VCS.ApplicationID,
-					ClientSecret: repository.VCS.Secret,
-					RefreshToken: repository.RefreshToken,
-				},
-				s.refreshToken(ctx, repository.ID),
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
-			}
-			defer resp.Body.Close()
+		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).DeleteWebhook(
+			ctx,
+			common.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
+				RefreshToken: repository.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repository.ID),
+			},
+			vcs.InstanceURL,
+			repository.ExternalID,
+			repository.ExternalWebhookID,
+		)
 
-			// Just emits a warning since we have already removed the repository entry. We will have a separate process to cleanup the orphaned webhook.
-			if resp.StatusCode >= 300 {
-				s.l.Error(("Failed to delete gitlab webhook when unlinking repository from project"),
-					zap.Int("status_code", resp.StatusCode),
-					zap.Int("project_id", projectID),
-					zap.Int("repository_id", repository.ID),
-					zap.String("gitlab_project_id", repository.ExternalID),
-					zap.String("gitlab_webhook_id", repository.ExternalWebhookID))
-			}
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -560,6 +531,9 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 	if err != nil {
 		return nil, err
 	}
+	if project == nil {
+		return nil, fmt.Errorf("project ID not found %v", id)
+	}
 
 	if err := s.composeProjectRelationship(ctx, project); err != nil {
 		return nil, err
@@ -613,7 +587,7 @@ func validateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 }
 
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
-func (s *Server) refreshToken(ctx context.Context, repositoryID int) gitlab.TokenRefresher {
+func (s *Server) refreshToken(ctx context.Context, repositoryID int) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
 		if _, err := s.RepositoryService.PatchRepository(ctx, &api.RepositoryPatch{
 			ID:           repositoryID,
@@ -629,7 +603,7 @@ func (s *Server) refreshToken(ctx context.Context, repositoryID int) gitlab.Toke
 }
 
 // refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
-func (s *Server) refreshTokenNoop() gitlab.TokenRefresher {
+func (s *Server) refreshTokenNoop() common.TokenRefresher {
 	return func(newToken, newRefreshToken string, expiresTs int64) error {
 		return nil
 	}

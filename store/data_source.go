@@ -68,7 +68,6 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 }
 
 // FindDataSource retrieves a single dataSource based on find.
-// Returns ENOTFOUND if no matching record.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -80,8 +79,10 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	list, err := s.findDataSourceList(ctx, tx, find)
 	if err != nil {
 		return nil, err
-	} else if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("data source not found: %+v", find)}
+	}
+
+	if len(list) == 0 {
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
