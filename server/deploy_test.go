@@ -199,7 +199,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
+		_, create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseList)
 
 		diff := pretty.Diff(create, test.want)
 		if len(diff) > 0 {
