@@ -508,6 +508,8 @@ quick-start:
   notice:
     title: 快速入门导览已关闭
     desc: 您稍后仍可以从右上角的菜单中再次打开快速入门导览
+  use-kbar: 使用 kbar
+  use-kbar-tooltip: 按 {mod}-k 打开 kbar
 auth:
   sign-up:
     title: 注册您的账号

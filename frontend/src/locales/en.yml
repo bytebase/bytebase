@@ -559,6 +559,8 @@ quick-start:
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
+  use-kbar: Use kbar
+  use-kbar-tooltip: Press {mod}-k to open kbar
 auth:
   sign-up:
     title: Register your account
