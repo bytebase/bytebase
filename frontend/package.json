@@ -11,7 +11,7 @@
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
   },
   "dependencies": {
-    "@bytebase/vue-kbar": "^0.1.4",
+    "@bytebase/vue-kbar": "^0.1.5",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
@@ -24,6 +24,7 @@
     "moment": "^2.29.1",
     "monaco-editor": "^0.31.1",
     "naive-ui": "^2.23.1",
+    "node-sql-parser": "^4.0.3",
     "postcss": "^8.3.5",
     "slug": "^4.0.2",
     "splitpanes": "^3.0.6",
