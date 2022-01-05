@@ -108,11 +108,15 @@ WHERE
 DELETE FROM
     member;
 
+DELETE FROM
+    external_account
+
 -- Principal 1 refers to bytebase system account which is considered as part of schema
 DELETE FROM
     principal
 WHERE
     id != 1;
+
 
 -- By default, for every table, we reserve id <=100 for internal user
 UPDATE
