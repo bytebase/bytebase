@@ -21,10 +21,16 @@
         :style="{ width: '400px' }"
         @update:value="handleConnectionChange"
       />
-      <NButton secondary strong type="primary" :disabled="isEmptyStatement">
+      <NButton
+        v-if="isDev()"
+        secondary
+        strong
+        type="primary"
+        :disabled="isEmptyStatement"
+      >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
-      <NButton :disabled="isEmptyStatement">
+      <NButton v-if="isDev()" :disabled="isEmptyStatement">
         <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }} (⌘+S)
       </NButton>
     </div>
@@ -49,6 +55,7 @@ import {
   ConnectionContext,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+import { isDev } from "../../../utils";
 
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [

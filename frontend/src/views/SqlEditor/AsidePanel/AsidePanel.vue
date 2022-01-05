@@ -17,7 +17,9 @@
           </Pane>
         </Splitpanes>
       </n-tab-pane>
-      <n-tab-pane name="queries" tab="Queries"> Queries Page </n-tab-pane>
+      <n-tab-pane name="queries" tab="Queries" disabled>
+        Queries Page
+      </n-tab-pane>
     </n-tabs>
   </div>
 </template>
