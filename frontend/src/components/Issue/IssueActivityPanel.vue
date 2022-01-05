@@ -25,7 +25,7 @@
                       >
                         <img
                           class="mt-1"
-                          src="../assets/logo-icon.svg"
+                          src="../../assets/logo-icon.svg"
                           alt="Bytebase"
                         />
                       </div>
