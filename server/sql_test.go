@@ -18,6 +18,30 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 			want:         true,
 		},
 		{
+			sqlStatement: "SELECT\n*\nFROM\ntest",
+			want:         true,
+		},
+		{
+			sqlStatement: "SELECT * FROM test",
+			want:         true,
+		},
+		{
+			sqlStatement: "select *",
+			want:         true,
+		},
+		{
+			sqlStatement: "select ",
+			want:         true,
+		},
+		{
+			sqlStatement: "select",
+			want:         true,
+		},
+		{
+			sqlStatement: "SELECTfoo",
+			want:         false,
+		},
+		{
 			sqlStatement: "insert into asd",
 			want:         false,
 		},
@@ -26,15 +50,7 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 			want:         false,
 		},
 		{
-			sqlStatement: "select",
-			want:         true,
-		},
-		{
 			sqlStatement: "",
-			want:         false,
-		},
-		{
-			sqlStatement: "    ",
 			want:         false,
 		},
 	}

@@ -568,7 +568,11 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 }
 
 func validateSQLSelectStatement(sqlStatement string) bool {
-	matchResult, err := regexp.MatchString("^SELECT", strings.ToUpper(strings.TrimSpace(sqlStatement)))
+	formatedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
+	if formatedStr == "SELECT" {
+		return true
+	}
+	matchResult, err := regexp.MatchString(`^SELECT\s`, formatedStr)
 	if err != nil {
 		return false
 	}
