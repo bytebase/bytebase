@@ -3,11 +3,19 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, toRef, toRaw, PropType, nextTick } from "vue";
+import {
+  onMounted,
+  ref,
+  toRef,
+  toRaw,
+  PropType,
+  nextTick,
+  defineProps,
+  defineEmits,
+} from "vue";
 import type { editor as Editor } from "monaco-editor";
 
-import setupMonaco from "./setupMonaco";
-import sqlFormatter from "./sqlFormatter";
+import { useMonaco } from "./useMonaco";
 import { SqlDialect } from "../../types";
 
 const props = defineProps({
@@ -34,20 +42,10 @@ const language = toRef(props, "language");
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
-const setContent = (content: string) => {
-  if (editorInstance) editorInstance.setValue(content);
-};
-
-const formatContent = () => {
-  if (editorInstance) {
-    const sql = editorInstance.getValue();
-    const { data } = sqlFormatter(sql, language.value);
-    setContent(data);
-  }
-};
-
 const init = async () => {
-  const { monaco } = await setupMonaco(language.value);
+  const { monaco, setPostionAtEndOfLine, formatContent } = await useMonaco(
+    language.value
+  );
 
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
 
@@ -88,6 +86,7 @@ const init = async () => {
     },
   });
 
+  // add format sql action in context menu
   editorInstance.addAction({
     id: "FormatSQL",
     label: "Format SQL",
@@ -97,16 +96,8 @@ const init = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
-      formatContent();
-      nextTick(() => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        const range = editorInstance.getModel().getFullModelRange();
-        editorInstance.setPosition({
-          lineNumber: range?.endLineNumber,
-          column: range?.endColumn,
-        });
-      });
+      formatContent(editorInstance, language.value);
+      nextTick(() => setPostionAtEndOfLine(editorInstance));
     },
   });
 
