@@ -97,6 +97,7 @@ common:
   unassigned: Unassigned
   new: New
   add: Add
+  confirm-and-add: Confirm and add
   query: Query
   transfer: Transfer
   migration: Migration

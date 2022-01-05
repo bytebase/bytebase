@@ -261,6 +261,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
 			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    server.refreshToken(ctx, repository.ID),
 		},
@@ -303,6 +304,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
 				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    server.refreshToken(ctx, repository.ID),
 			},
@@ -322,6 +324,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
 				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    server.refreshToken(ctx, repository.ID),
 			},
@@ -341,6 +344,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
 			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
 			Refresher:    server.refreshToken(ctx, repository.ID),
 		},
