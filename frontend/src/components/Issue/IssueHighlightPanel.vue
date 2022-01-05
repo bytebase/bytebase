@@ -18,7 +18,7 @@
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"
-            @end-editing="(text) => trySaveName(text)"
+            @end-editing="(text: string) => trySaveName(text)"
           />
         </div>
         <div v-if="!create">
@@ -44,7 +44,7 @@
             class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
-              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+              <img class="h-4 w-auto" src="../../assets/gitlab-logo.svg" />
             </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
@@ -82,9 +82,13 @@
 
 <script lang="ts">
 import { reactive, watch, PropType, computed, defineComponent } from "vue";
-import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { activeTask } from "../utils";
-import { TaskDatabaseSchemaUpdatePayload, Issue, VCSPushEvent } from "../types";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import { activeTask } from "../../utils";
+import {
+  TaskDatabaseSchemaUpdatePayload,
+  Issue,
+  VCSPushEvent,
+} from "../../types";
 
 interface LocalState {
   editing: boolean;

@@ -72,7 +72,7 @@
       "
       @input="
         (e) => {
-          sizeToFit(e.target);
+          sizeToFit(e.target as HTMLTextAreaElement);
           // When creating the issue, we will emit the event on keystroke to update the in-memory state.
           if (create) {
             $emit('update-statement', state.editStatement);
@@ -81,7 +81,7 @@
       "
       @focus="
         (e) => {
-          sizeToFit(e.target);
+          sizeToFit(e.target as HTMLTextAreaElement);
         }
       "
     ></textarea>
@@ -112,7 +112,7 @@ import {
   watch,
   defineComponent,
 } from "vue";
-import { sizeToFit } from "../utils";
+import { sizeToFit } from "../../utils";
 
 interface LocalState {
   editing: boolean;
