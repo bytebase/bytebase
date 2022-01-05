@@ -59,9 +59,8 @@ VALUES
         ''
     );
 
--- 3rd parties auth provider
-CREATE TABLE third_party_auth_provider
-(
+-- auth provider table store the config of 3rd party auth provider
+CREATE TABLE auth_provider (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT    NOT NULL CHECK (
         row_status IN ('NORMAL', 'ARCHIVED')
@@ -70,25 +69,25 @@ CREATE TABLE third_party_auth_provider
     created_ts BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
-    `type`     TEXT    NOT NULL CHECK (`type` LIKE 'bb.auth.provider.%'),
+    `type`     TEXT    NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
+    -- payload is determined by the type of the auth provider
     payload    TEXT    NOT NULL
 );
 
-CREATE TRIGGER IF NOT EXISTS `trigger_update_third_party_auth_provider_modification_time`
+CREATE TRIGGER IF NOT EXISTS `trigger_update_auth_provider_modification_time`
     AFTER
         UPDATE
-    ON `third_party_auth_provider`
+    ON `auth_provider`
     FOR EACH ROW
 BEGIN
     UPDATE
-        `third_party_auth_provider`
+        `auth_provider`
     SET updated_ts = (strftime('%s', 'now'))
     WHERE rowid = old.rowid;
 END;
 
--- 3rd parties account
-CREATE TABLE third_party_account
-(
+-- third parties account
+CREATE TABLE third_party_account (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     row_status   TEXT    NOT NULL CHECK (
@@ -98,7 +97,8 @@ CREATE TABLE third_party_account
     created_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id   INTEGER NOT NULL REFERENCES principal (id),
     updated_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
-    `type`       TEXT    NOT NULL CHECK (`type` LIKE 'bb.auth.provider.%'),
+    `type`       TEXT    NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
+    -- payload is determined by the type of the third_party_account.
     payload      TEXT    NOT NULL
 );
 
