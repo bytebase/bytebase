@@ -159,7 +159,7 @@ const useMonaco = async (lang: string) => {
     }
   };
 
-  const setPostionAtEndOfLine = (
+  const setPositionAtEndOfLine = (
     editorInstance: Editor.IStandaloneCodeEditor
   ) => {
     if (editorInstance) {
@@ -178,7 +178,7 @@ const useMonaco = async (lang: string) => {
     completionItemProvider,
     formatContent,
     setContent,
-    setPostionAtEndOfLine,
+    setPositionAtEndOfLine,
   };
 };
 

@@ -43,7 +43,7 @@ const language = toRef(props, "language");
 let editorInstance: Editor.IStandaloneCodeEditor;
 
 const init = async () => {
-  const { monaco, setPostionAtEndOfLine, formatContent } = await useMonaco(
+  const { monaco, setPositionAtEndOfLine, formatContent } = await useMonaco(
     language.value
   );
 
@@ -97,7 +97,7 @@ const init = async () => {
     contextMenuOrder: 1,
     run: () => {
       formatContent(editorInstance, language.value);
-      nextTick(() => setPostionAtEndOfLine(editorInstance));
+      nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
   });
 
