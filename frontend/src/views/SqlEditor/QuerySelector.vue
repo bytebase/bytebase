@@ -1,7 +1,7 @@
 <template>
   <div class="query-selector border-b">
     <div
-      v-for="tab in queryTabs"
+      v-for="tab in queryTabList"
       :key="tab.id"
       class="query-selector--tab"
       :class="{ active: tab.id === activeTab.id }"
@@ -15,7 +15,7 @@
       <span class="label">
         {{ tab.label }}
       </span>
-      <template v-if="enterTabIdx === tab.idx && queryTabs.length > 1">
+      <template v-if="enterTabIdx === tab.idx && queryTabList.length > 1">
         <span
           class="suffix close hover:bg-gray-200 rounded-sm"
           @click.prevent="handleRemoveTab(tab)"
@@ -29,7 +29,7 @@
             <carbon:dot-mark class="h-4 w-4" />
           </span>
         </template> -->
-        <template v-if="tab.id === activeTab.id && queryTabs.length > 1">
+        <template v-if="tab.id === activeTab.id && queryTabList.length > 1">
           <span
             class="suffix close hover:bg-gray-200 rounded-sm"
             @click.prevent="handleRemoveTab(tab)"
@@ -69,9 +69,9 @@ import {
 } from "../../types";
 import { isDev } from "../../utils";
 
-const { queryTabs, activeTab } = useNamespacedState<EditorSelectorState>(
+const { queryTabList, activeTab } = useNamespacedState<EditorSelectorState>(
   "editorSelector",
-  ["queryTabs", "activeTab"]
+  ["queryTabList", "activeTab"]
 );
 const { addTab, setActiveTab, removeTab, updateTab } =
   useNamespacedActions<EditorSelectorActions>("editorSelector", [
@@ -86,7 +86,7 @@ const { queryStatement } = useNamespacedState<SqlEditorState>("sqlEditor", [
 
 const enterTabIdx = ref(-1);
 
-if (queryTabs.value.length === 0) {
+if (queryTabList.value.length === 0) {
   addTab({});
 }
 

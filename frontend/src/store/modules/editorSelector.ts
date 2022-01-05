@@ -5,7 +5,7 @@ import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
 const state: () => EditorSelectorState = () => ({
-  queryTabs: [],
+  queryTabList: [],
   activeTab: {
     id: uuidv1(),
     idx: 0,
@@ -19,13 +19,13 @@ const state: () => EditorSelectorState = () => ({
 
 const getters = {
   currentTab(state: EditorSelectorState) {
-    const idx = state.queryTabs.findIndex(
+    const idx = state.queryTabList.findIndex(
       (tab: TabInfo) => tab.idx === state.activeTabIdx
     );
-    return idx === -1 ? {} : state.queryTabs[idx];
+    return idx === -1 ? {} : state.queryTabList[idx];
   },
   hasTabs(state: EditorSelectorState) {
-    return state.queryTabs.length > 0;
+    return state.queryTabList.length > 0;
   },
 };
 
@@ -37,16 +37,16 @@ const mutations = {
     Object.assign(state, payload);
   },
   [types.ADD_TAB](state: EditorSelectorState, payload: TabInfo) {
-    state.queryTabs.push(payload);
+    state.queryTabList.push(payload);
   },
   [types.REMOVE_TAB](state: EditorSelectorState, payload: TabInfo) {
-    state.queryTabs.splice(state.queryTabs.indexOf(payload), 1);
+    state.queryTabList.splice(state.queryTabList.indexOf(payload), 1);
   },
   [types.UPDATE_TAB](state: EditorSelectorState, payload: TabInfo) {
-    const idx = state.queryTabs.findIndex(
+    const idx = state.queryTabList.findIndex(
       (tab: TabInfo) => tab.id === payload.id
     );
-    Object.assign(state.queryTabs[idx], payload);
+    Object.assign(state.queryTabList[idx], payload);
   },
 };
 
@@ -61,9 +61,9 @@ const actions = {
   addTab({ commit, state }: any, payload: AnyTabInfo) {
     const id = uuidv1();
     const idx =
-      state.queryTabs.length === 0
+      state.queryTabList.length === 0
         ? 0
-        : Math.max(...state.queryTabs.map((tab: TabInfo) => tab.idx)) + 1;
+        : Math.max(...state.queryTabList.map((tab: TabInfo) => tab.idx)) + 1;
     const newTab = {
       id,
       idx,
@@ -81,15 +81,15 @@ const actions = {
   },
   removeTab({ commit, state, dispatch }: any, payload: TabInfo) {
     commit(types.REMOVE_TAB, payload);
-    const tabsLength = state.queryTabs.length;
+    const tabsLength = state.queryTabList.length;
 
     if (tabsLength > 0) {
-      dispatch("setActiveTab", state.queryTabs[tabsLength - 1]);
+      dispatch("setActiveTab", state.queryTabList[tabsLength - 1]);
     }
   },
   updateTab({ commit, state }: any, payload: AnyTabInfo) {
     const { idx } = payload;
-    const tab = state.queryTabs.find((tab: TabInfo) => tab.idx === idx);
+    const tab = state.queryTabList.find((tab: TabInfo) => tab.idx === idx);
 
     if (tab) {
       commit(types.SET_EDITOR_SELECTOR_STATE, {
@@ -101,7 +101,7 @@ const actions = {
   },
   setActiveTab({ commit, state }: any, payload: TabInfo) {
     const { idx } = payload;
-    const tab = state.queryTabs.find((tab: TabInfo) => tab.idx === idx);
+    const tab = state.queryTabList.find((tab: TabInfo) => tab.idx === idx);
 
     if (tab) {
       commit(types.SET_EDITOR_SELECTOR_STATE, {

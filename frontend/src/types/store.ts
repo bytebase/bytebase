@@ -191,7 +191,7 @@ export type SqlEditorActions = typeof sqlEditorStore.actions;
 export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface EditorSelectorState {
-  queryTabs: TabInfo[];
+  queryTabList: TabInfo[];
   activeTab: TabInfo;
   activeTabIdx: number;
 }
