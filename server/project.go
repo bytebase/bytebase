@@ -357,8 +357,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).PatchWebhook(
 				ctx,
 				common.OauthContext{
-					ClientID:     repository.VCS.ApplicationID,
-					ClientSecret: repository.VCS.Secret,
+					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
 					AccessToken:  repository.AccessToken,
 					RefreshToken: repository.RefreshToken,
 					Refresher:    s.refreshToken(ctx, repository.ID),
@@ -434,9 +435,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
 		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).DeleteWebhook(
 			ctx,
+			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			common.OauthContext{
-				ClientID:     repository.VCS.ApplicationID,
-				ClientSecret: repository.VCS.Secret,
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
 				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    s.refreshToken(ctx, repository.ID),
