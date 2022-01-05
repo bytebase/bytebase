@@ -1,14 +1,10 @@
 <template>
-  <BBAttention
-    v-if="showAttention"
-    :style="'WARN'"
-    :description="attentionText"
-  />
+  <BBAttention v-if="showAttention" :style="'WARN'" :description="attentionText" />
   <BBStepTab
     class="mt-4"
     :step-item-list="stepList"
     :allow-next="allowNext"
-    :finish-title="'Confirm and add'"
+    :finish-title="$t('common.confirm-and-add')"
     @try-change-step="tryChangeStep"
     @try-finish="tryFinishSetup"
     @cancel="cancelSetup"
