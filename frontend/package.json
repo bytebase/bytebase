@@ -18,6 +18,7 @@
     "@vueuse/core": "^7.0.1",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.2",
+    "dayjs": "^1.10.7",
     "highlight.js": "^10.6.0",
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",

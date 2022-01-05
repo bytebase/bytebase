@@ -1,6 +1,6 @@
 <template>
   <MonacoEditor
-    v-model="sqlCode"
+    v-model:value="sqlCode"
     @change="handleChange"
     @change-selection="handleChangeSelection"
     @run-query="handleRunQuery"
@@ -8,21 +8,28 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { computed } from "vue";
 import { debounce } from "lodash-es";
-import { useNamespacedActions } from "vuex-composition-helpers";
-import { useStore } from "vuex";
+import {
+  useNamespacedActions,
+  useNamespacedState,
+} from "vuex-composition-helpers";
 
-import { SqlEditorActions } from "../../../types";
+import { SqlEditorActions, EditorSelectorState } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 
-const store = useStore();
-const sqlCode = ref("");
-
+const { activeTab } = useNamespacedState<EditorSelectorState>(
+  "editorSelector",
+  ["activeTab"]
+);
 const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setSqlEditorState"]
 );
+
+const { execute } = useExecuteSQL();
+
+const sqlCode = computed(() => activeTab.value.queries);
 
 const handleChange = debounce((value: string) => {
   setSqlEditorState({
@@ -36,5 +43,7 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = () => useExecuteSQL(store);
+const handleRunQuery = () => {
+  execute();
+};
 </script>

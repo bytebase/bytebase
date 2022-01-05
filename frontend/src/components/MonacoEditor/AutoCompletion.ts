@@ -129,7 +129,7 @@ export default class AutoCompletion {
 
   getCompletionItemsForTableColumns(
     table: Table,
-    withTablePrefix: boolean = true
+    withTablePrefix = true
   ): CompletionItems {
     const suggestions: CompletionItems = [];
 

@@ -3,15 +3,24 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, toRef, toRaw, PropType, nextTick } from "vue";
+import {
+  onMounted,
+  ref,
+  toRef,
+  toRaw,
+  PropType,
+  nextTick,
+  defineProps,
+  defineEmits,
+  onUnmounted,
+} from "vue";
 import type { editor as Editor } from "monaco-editor";
 
-import setupMonaco from "./setupMonaco";
-import sqlFormatter from "./sqlFormatter";
+import { useMonaco } from "./useMonaco";
 import { SqlDialect } from "../../types";
 
 const props = defineProps({
-  modelValue: {
+  value: {
     type: String,
     required: true,
   },
@@ -22,33 +31,26 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update:modelValue", content: string): void;
+  (e: "update:value", content: string): void;
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
   (e: "run-query", content: string): void;
 }>();
 
 const editorRef = ref();
-const sqlCode = toRef(props, "modelValue");
+const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
-const setContent = (content: string) => {
-  if (editorInstance) editorInstance.setValue(content);
-};
-
-const formatContent = () => {
-  if (editorInstance) {
-    const sql = editorInstance.getValue();
-    const { data } = sqlFormatter(sql, language.value);
-    setContent(data);
-  }
-};
+const {
+  monaco,
+  setPositionAtEndOfLine,
+  formatContent,
+  completionItemProvider,
+} = await useMonaco(language.value);
 
 const init = async () => {
-  const { monaco } = await setupMonaco(language.value);
-
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
 
   editorInstance = monaco.editor.create(editorRef.value, {
@@ -88,6 +90,7 @@ const init = async () => {
     },
   });
 
+  // add format sql action in context menu
   editorInstance.addAction({
     id: "FormatSQL",
     label: "Format SQL",
@@ -97,23 +100,15 @@ const init = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
-      formatContent();
-      nextTick(() => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        const range = editorInstance.getModel().getFullModelRange();
-        editorInstance.setPosition({
-          lineNumber: range?.endLineNumber,
-          column: range?.endColumn,
-        });
-      });
+      formatContent(editorInstance, language.value);
+      nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
   });
 
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
-    emit("update:modelValue", value);
+    // emit("update:value", value);
     emit("change", value);
   });
 
@@ -130,4 +125,9 @@ const init = async () => {
 };
 
 onMounted(init);
+
+onUnmounted(() => {
+  completionItemProvider.dispose();
+  editorInstance.dispose();
+});
 </script>

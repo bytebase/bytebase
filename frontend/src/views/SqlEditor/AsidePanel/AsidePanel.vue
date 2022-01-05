@@ -1,7 +1,7 @@
 <template>
   <div class="aside-panel h-full">
     <n-tabs type="segment" default-value="databases" class="h-full">
-      <n-tab-pane name="databases" tab="Databases">
+      <n-tab-pane name="databases" :tab="$t('common.databases')">
         <Splitpanes
           horizontal
           class="default-theme"
@@ -17,7 +17,9 @@
           </Pane>
         </Splitpanes>
       </n-tab-pane>
-      <n-tab-pane name="queries" tab="Queries"> Queries Page </n-tab-pane>
+      <n-tab-pane v-if="isDev()" name="queries" tab="Queries">
+        Queries Page
+      </n-tab-pane>
     </n-tabs>
   </div>
 </template>
@@ -27,6 +29,7 @@ import { ref, watch } from "vue";
 import { useNamespacedState } from "vuex-composition-helpers";
 
 import type { SqlEditorState } from "../../../types";
+import { isDev } from "../../../utils";
 import DatabaseTree from "./DatabaseTree.vue";
 import TableSchema from "./TableSchema.vue";
 
