@@ -900,6 +900,8 @@ sql-editor:
   search-databases: 搜索数据库
   loading-databases: 加载数据库信息...
   close-pane: 关闭面板
+  loading-data: 加载数据中...
+  table-empty-placehoder: 点击 ”运行“ 执行查询
 label:
   error:
     key-necessary: 需要指定 Key

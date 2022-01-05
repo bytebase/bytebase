@@ -35,3 +35,4 @@ export * from "./vcs";
 export * from "./view";
 export * from "./label";
 export * from "./sqlEditor";
+export * from "./editorSelector";
