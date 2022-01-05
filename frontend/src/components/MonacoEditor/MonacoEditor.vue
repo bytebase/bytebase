@@ -12,6 +12,7 @@ import {
   nextTick,
   defineProps,
   defineEmits,
+  onUnmounted,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 
@@ -19,7 +20,7 @@ import { useMonaco } from "./useMonaco";
 import { SqlDialect } from "../../types";
 
 const props = defineProps({
-  modelValue: {
+  value: {
     type: String,
     required: true,
   },
@@ -30,23 +31,26 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update:modelValue", content: string): void;
+  (e: "update:value", content: string): void;
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
   (e: "run-query", content: string): void;
 }>();
 
 const editorRef = ref();
-const sqlCode = toRef(props, "modelValue");
+const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
-const init = async () => {
-  const { monaco, setPositionAtEndOfLine, formatContent } = await useMonaco(
-    language.value
-  );
+const {
+  monaco,
+  setPositionAtEndOfLine,
+  formatContent,
+  completionItemProvider,
+} = await useMonaco(language.value);
 
+const init = async () => {
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
 
   editorInstance = monaco.editor.create(editorRef.value, {
@@ -104,7 +108,7 @@ const init = async () => {
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
-    emit("update:modelValue", value);
+    // emit("update:value", value);
     emit("change", value);
   });
 
@@ -121,4 +125,9 @@ const init = async () => {
 };
 
 onMounted(init);
+
+onUnmounted(() => {
+  completionItemProvider.dispose();
+  editorInstance.dispose();
+});
 </script>

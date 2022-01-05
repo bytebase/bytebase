@@ -4,7 +4,7 @@
       <NButton
         type="primary"
         :disabled="isEmptyStatement"
-        @click="handleExecuteQueries"
+        @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
@@ -40,7 +40,6 @@
 <script lang="ts" setup>
 import { ref, watch } from "vue";
 import { CascaderOption } from "naive-ui";
-import { useStore } from "vuex";
 import { cloneDeep } from "lodash-es";
 
 import {
@@ -73,9 +72,11 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
-const store = useStore();
+const { execute } = useExecuteSQL();
 
-const handleExecuteQueries = () => useExecuteSQL(store);
+const handleRunQuery = () => {
+  execute();
+};
 
 watch(
   () => connectionTree.value,

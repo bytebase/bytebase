@@ -1028,6 +1028,8 @@ sql-editor:
   search-databases: Search Databases
   loading-databases: Loading Databases...
   close-pane: Close Pane
+  loading-data: Loading Data...
+  table-empty-placehoder: Click Run to execute the query.
 label:
   error:
     key-necessary: Key is required
