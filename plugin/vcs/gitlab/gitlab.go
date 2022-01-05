@@ -147,9 +147,10 @@ func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthC
 	if err != nil {
 		return fmt.Errorf("failed to marshal file commit: %w", err)
 	}
+
 	resp, err := httpPost(
 		instanceURL,
-		filePath,
+		fmt.Sprintf("projects/%s/repository/files/%s", repositoryID, url.QueryEscape(filePath)),
 		&oauthCtx.AccessToken,
 		bytes.NewBuffer(body),
 		oauthContext{
@@ -186,7 +187,7 @@ func (provider *Provider) OverwriteFile(ctx context.Context, oauthCtx common.Oau
 
 	resp, err := httpPut(
 		instanceURL,
-		filePath,
+		fmt.Sprintf("projects/%s/repository/files/%s", repositoryID, url.QueryEscape(filePath)),
 		&oauthCtx.AccessToken,
 		bytes.NewBuffer(body),
 		oauthContext{
@@ -459,8 +460,8 @@ RETRY:
 	if err != nil {
 		return nil, err
 	}
-	err = getErrorDetails(resp)
-	if expiredTokenError(err) && retries < maxRetries {
+
+	if err := getOAuthErrorDetails(resp); err != nil && retries < maxRetries {
 		// Refresh and store the token.
 		if err := refreshToken(instanceURL, token, oauthContext, refresher); err != nil {
 			return nil, err
@@ -483,7 +484,11 @@ func (e *oauthError) Error() string {
 	return fmt.Sprintf("gitlab oauth response error %q description %q", e.Err, e.ErrorDescription)
 }
 
-func getErrorDetails(resp *http.Response) error {
+// Only returns error if it's an oauth error. For other errors like 404 we don't return error.
+// We do this because this method is only intended to be used by oauth to refresh access token
+// on expiration. When it's error like 404, GitLab api doesn't return it as error so we keep the
+// similar behavior and let caller check the response status code.
+func getOAuthErrorDetails(resp *http.Response) error {
 	if 200 <= resp.StatusCode && resp.StatusCode < 300 {
 		return nil
 	}
@@ -495,23 +500,12 @@ func getErrorDetails(resp *http.Response) error {
 	if err = json.Unmarshal([]byte(body), &oe); err != nil {
 		return err
 	}
-	if oe.Err != "" || oe.ErrorDescription != "" {
-		return &oe
-	}
-	return fmt.Errorf("gitlab response code %v error %q", resp.StatusCode, body)
-}
-
-func expiredTokenError(e error) bool {
-	if e == nil {
-		return false
-	}
-	oe, ok := e.(*oauthError)
-	if !ok {
-		return false
-	}
 	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 	// {"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-	return oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired")
+	if oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired") {
+		return &oe
+	}
+	return nil
 }
 
 // oauthContext is the request context for refreshing oauth token.
@@ -548,7 +542,7 @@ func refreshToken(instanceURL string, oldToken *string, oauthContext oauthContex
 	if err != nil {
 		return fmt.Errorf("failed to send refresh token POST %v (%w)", url, err)
 	}
-	if err := getErrorDetails(resp); err != nil {
+	if err := getOAuthErrorDetails(resp); err != nil {
 		return err
 	}
 
