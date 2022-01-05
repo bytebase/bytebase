@@ -1,12 +1,33 @@
 import { isEmpty } from "lodash-es";
-import { isSelectStatement } from "../components/MonacoEditor/sqlParser";
+import {
+  isSelectStatement,
+  isValidStatement,
+} from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = async (store: any) => {
   const queryStatement = store.state.sqlEditor.queryStatement;
   const selectedStatement = store.state.sqlEditor.selectedStatement;
   const sqlStatement = selectedStatement || queryStatement;
 
-  if (!isEmpty(sqlStatement) && !isSelectStatement(sqlStatement)) {
+  if (isEmpty(sqlStatement)) {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Please input your SQL codes in the editor",
+    });
+    return;
+  }
+
+  if (!isValidStatement(sqlStatement)) {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Please check if the statement is correct",
+    });
+    return;
+  }
+
+  if (!isSelectStatement(sqlStatement)) {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "CRITICAL",
