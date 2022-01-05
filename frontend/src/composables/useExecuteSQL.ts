@@ -1,40 +1,75 @@
+import { ref } from "vue";
 import { isEmpty } from "lodash-es";
-import { isSelectStatement } from "../components/MonacoEditor/sqlParser";
+import { useStore } from "vuex";
+import {
+  isSelectStatement,
+  isValidStatement,
+} from "../components/MonacoEditor/sqlParser";
 
-const useExecuteSQL = async (store: any) => {
-  const queryStatement = store.state.sqlEditor.queryStatement;
-  const selectedStatement = store.state.sqlEditor.selectedStatement;
-  const sqlStatement = selectedStatement || queryStatement;
+const useExecuteSQL = () => {
+  const store = useStore();
+  const isLoadingData = ref(false);
 
-  if (!isEmpty(sqlStatement) && !isSelectStatement(sqlStatement)) {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Only SELECT statements are allowed",
-    });
-    return;
-  }
+  const execute = async () => {
+    const queryStatement = store.state.sqlEditor.queryStatement;
+    const selectedStatement = store.state.sqlEditor.selectedStatement;
+    const sqlStatement = selectedStatement || queryStatement;
 
-  try {
-    const res = await store.dispatch("sqlEditor/executeQuery", {
-      statement: sqlStatement,
-    });
-
-    if (res.error) {
+    if (isEmpty(sqlStatement)) {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",
-        title: res.error,
+        title: "Please input your SQL codes in the editor",
       });
       return;
     }
-  } catch (error) {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: error,
-    });
-  }
+
+    if (!isValidStatement(sqlStatement)) {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Please check if the statement is correct",
+      });
+      return;
+    }
+
+    if (!isSelectStatement(sqlStatement)) {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Only SELECT statements are allowed",
+      });
+      return;
+    }
+    try {
+      isLoadingData.value = true;
+      const res = await store.dispatch("sqlEditor/executeQuery", {
+        statement: sqlStatement,
+      });
+      isLoadingData.value = false;
+
+      if (res.error) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: res.error,
+        });
+        return;
+      }
+    } catch (error) {
+      isLoadingData.value = false;
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: error,
+      });
+    }
+  };
+
+  return {
+    isLoadingData,
+    execute,
+  };
 };
 
 export { useExecuteSQL };

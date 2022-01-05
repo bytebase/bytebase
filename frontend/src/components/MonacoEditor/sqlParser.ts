@@ -16,6 +16,11 @@ const parseSQL = (sql: string): ParseResult => {
   }
 };
 
+export const isValidStatement = (sql: string) => {
+  const { data } = parseSQL(sql);
+  return data !== null;
+};
+
 export const isSelectStatement = (sql: string) => {
   const { data } = parseSQL(sql);
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
