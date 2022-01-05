@@ -109,7 +109,7 @@ DELETE FROM
     member;
 
 DELETE FROM
-    external_account
+    external_account;
 
 -- Principal 1 refers to bytebase system account which is considered as part of schema
 DELETE FROM
