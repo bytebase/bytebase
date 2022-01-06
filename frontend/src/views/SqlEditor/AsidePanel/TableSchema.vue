@@ -8,7 +8,7 @@
       <div
         class="table-schema--header-actions flex-1 flex justify-end space-x-2"
       >
-        <div class="action-edit flex items-center">
+        <div v-if="isDev()" class="action-edit flex items-center">
           <NTooltip trigger="hover">
             <template #trigger>
               <NButton text @click="handleEditorSchema">
@@ -64,13 +64,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { ref, watch, defineEmits } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
 
 import type { SqlEditorState } from "../../../types";
+import { isDev } from "../../../utils";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;

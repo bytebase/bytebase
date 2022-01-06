@@ -146,6 +146,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					common.OauthContext{
 						ClientID:     repository.VCS.ApplicationID,
 						ClientSecret: repository.VCS.Secret,
+						AccessToken:  repository.AccessToken,
 						RefreshToken: repository.RefreshToken,
 						Refresher:    s.refreshToken(ctx, repository.ID),
 					},
