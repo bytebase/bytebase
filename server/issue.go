@@ -314,6 +314,10 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		if err != nil {
 			return err
 		}
+	} else {
+		if err := s.composePipelineRelationship(ctx, issue.Pipeline); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -516,33 +520,42 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate) (*api.Pipeline, error) {
+func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
+	// jsonapi resource relationships will collide different resources into the same bucket.
+	id := 0
+	ts := time.Now().Unix()
 	pipeline := &api.Pipeline{
+		ID:        id,
 		Name:      pc.Name,
 		Status:    api.PipelineOpen,
-		CreatorID: pc.CreatorID,
-		CreatedTs: time.Now().Unix(),
-		UpdaterID: pc.CreatorID,
-		UpdatedTs: time.Now().Unix(),
+		CreatorID: creatorID,
+		CreatedTs: ts,
+		UpdaterID: creatorID,
+		UpdatedTs: ts,
 	}
 	for _, sc := range pc.StageList {
+		id++
 		stage := &api.Stage{
+			ID:            id,
 			Name:          sc.Name,
-			CreatorID:     sc.CreatorID,
-			CreatedTs:     time.Now().Unix(),
-			UpdaterID:     sc.CreatorID,
-			UpdatedTs:     time.Now().Unix(),
+			CreatorID:     creatorID,
+			CreatedTs:     ts,
+			UpdaterID:     creatorID,
+			UpdatedTs:     ts,
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
 		}
 		for _, tc := range sc.TaskList {
+			id++
 			task := &api.Task{
+				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         tc.CreatorID,
-				CreatedTs:         time.Now().Unix(),
-				UpdaterID:         tc.CreatorID,
-				UpdatedTs:         time.Now().Unix(),
+				CreatorID:         creatorID,
+				CreatedTs:         ts,
+				UpdaterID:         creatorID,
+				UpdatedTs:         ts,
 				Type:              tc.Type,
 				Payload:           tc.Payload,
 				EarliestAllowedTs: tc.EarliestAllowedTs,
@@ -824,7 +837,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
-		return createPipelineValidateOnly(ctx, pipelineCreate)
+		return createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
