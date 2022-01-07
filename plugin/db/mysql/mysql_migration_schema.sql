@@ -21,7 +21,7 @@ CREATE TABLE bytebase.migration_history (
     sequence INTEGER UNSIGNED NOT NULL,
     -- We call it engine because maybe we could load history from other migration tool.
     `engine` ENUM('UI', 'VCS') NOT NULL,
-    `type` ENUM('BASELINE', 'MIGRATE', 'BRANCH') NOT NULL,
+    `type` ENUM('BASELINE', 'MIGRATE', 'BRANCH', 'DATA') NOT NULL,
     -- MySQL runs DDL in its own transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
     `status` ENUM('PENDING', 'DONE', 'FAILED') NOT NULL,
