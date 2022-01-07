@@ -148,11 +148,19 @@ type MigrationType string
 
 const (
 	// Baseline is the migration type for BASELINE.
+	// Used for establishing schema baseline, this is used when
+	// 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+	// 2. Had schema drift and need to re-establish the baseline.
 	Baseline MigrationType = "BASELINE"
 	// Migrate is the migration type for MIGRATE.
+	// Used for DDL change.
 	Migrate MigrationType = "MIGRATE"
 	// Branch is the migration type for BRANCH.
+	// Used when restoring from a backup (the restored database branched from the original backup).
 	Branch MigrationType = "BRANCH"
+	// Data is the migration type for DATA.
+	// Used for DML change.
+	Data MigrationType = "DATA"
 )
 
 func (e MigrationType) String() string {
@@ -163,6 +171,8 @@ func (e MigrationType) String() string {
 		return "MIGRATE"
 	case Branch:
 		return "BRANCH"
+	case Data:
+		return "DATA"
 	}
 	return "UNKNOWN"
 }
@@ -254,10 +264,12 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 			} else if placeholder == "TYPE" {
 				if matchList[index] == "baseline" {
 					mi.Type = Baseline
+				} else if matchList[index] == "data" {
+					mi.Type = Data
 				} else if matchList[index] == "migrate" {
 					mi.Type = Migrate
 				} else {
-					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline' or 'migrate'", filePath, matchList[index])
+					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline', 'migrate' or 'data'", filePath, matchList[index])
 				}
 			} else if placeholder == "DESCRIPTION" {
 				mi.Description = matchList[index]
@@ -275,8 +287,10 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	if mi.Description == "" {
 		if mi.Type == Baseline {
 			mi.Description = fmt.Sprintf("Create %s baseline", mi.Database)
+		} else if mi.Type == Data {
+			mi.Description = fmt.Sprintf("Create %s data change", mi.Database)
 		} else {
-			mi.Description = fmt.Sprintf("Create %s migration", mi.Database)
+			mi.Description = fmt.Sprintf("Create %s schema migration", mi.Database)
 		}
 	} else {
 		// Replace _ with space
