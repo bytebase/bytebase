@@ -25,7 +25,7 @@ type VCS struct {
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
 	APIURL        string   `jsonapi:"attr,apiUrl"`
 	ApplicationID string   `jsonapi:"attr,applicationId"`
-	Secret        string   `jsonapi:"attr,secret"`
+	Secret        string
 }
 
 // VCSCreate is the API message for creating a VCS.
