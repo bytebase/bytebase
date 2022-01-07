@@ -4,7 +4,7 @@
       <NButton
         type="primary"
         :disabled="isEmptyStatement"
-        @click="handleExecuteQueries"
+        @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
@@ -21,10 +21,16 @@
         :style="{ width: '400px' }"
         @update:value="handleConnectionChange"
       />
-      <NButton secondary strong type="primary" :disabled="isEmptyStatement">
+      <NButton
+        v-if="isDev()"
+        secondary
+        strong
+        type="primary"
+        :disabled="isEmptyStatement"
+      >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
-      <NButton :disabled="isEmptyStatement">
+      <NButton v-if="isDev()" :disabled="isEmptyStatement">
         <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }} (⌘+S)
       </NButton>
     </div>
@@ -34,7 +40,6 @@
 <script lang="ts" setup>
 import { ref, watch } from "vue";
 import { CascaderOption } from "naive-ui";
-import { useStore } from "vuex";
 import { cloneDeep } from "lodash-es";
 
 import {
@@ -49,6 +54,7 @@ import {
   ConnectionContext,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+import { isDev } from "../../../utils";
 
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -66,9 +72,11 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
-const store = useStore();
+const { execute } = useExecuteSQL();
 
-const handleExecuteQueries = () => useExecuteSQL(store);
+const handleRunQuery = () => {
+  execute();
+};
 
 watch(
   () => connectionTree.value,
