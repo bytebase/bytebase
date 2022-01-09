@@ -1,11 +1,12 @@
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
-import moment from "moment";
 import { createApp } from "vue";
+
 import App from "./App.vue";
 import i18n from "./plugins/i18n";
 import splitpanes from "./plugins/splitpanes";
 import NaiveUI from "./plugins/naive-ui";
+import dayjs from "./plugins/dayjs";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -117,7 +118,7 @@ Promise.all([
   // Allow template to access various function
   app.config.globalProperties.window = window;
   app.config.globalProperties.console = console;
-  app.config.globalProperties.moment = moment;
+  app.config.globalProperties.dayjs = dayjs;
   app.config.globalProperties.humanizeTs = humanizeTs;
   app.config.globalProperties.isDev = isDev();
   app.config.globalProperties.isRelease = isRelease();
