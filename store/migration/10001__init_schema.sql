@@ -12,6 +12,7 @@ CREATE TABLE principal (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
+    auth_type TEST NOT NULL CHECK (auth_type in ('BYTEBASE', 'GITLAB_SELF_HOST'))
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -58,36 +59,6 @@ VALUES
         'support@bytebase.com',
         ''
     );
-
--- third parties account
-CREATE TABLE external_account (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status   TEXT    NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-        )                         DEFAULT 'NORMAL',
-    creator_id   INTEGER NOT NULL REFERENCES principal (id),
-    created_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
-    updater_id   INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts   BIGINT  NOT NULL DEFAULT (strftime('%s', 'now')),
-    principal_id INTEGER NOT NULL REFERENCES principal (id),
-    `type`       TEXT    NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
-    -- payload is determined by the type of the third_party_account.
-    payload      TEXT    NOT NULL
-);
-
-CREATE INDEX idx_external_account_principal_id ON external_account (`principal_id`);
-
-CREATE TRIGGER IF NOT EXISTS `trigger_update_external_account_modification_time`
-    AFTER
-        UPDATE
-    ON `external_account`
-    FOR EACH ROW
-BEGIN
-    UPDATE
-        `external_account`
-    SET updated_ts = (strftime('%s', 'now'))
-    WHERE rowid = old.rowid;
-END;
 
 -- Setting
 CREATE TABLE setting (
