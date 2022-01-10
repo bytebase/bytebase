@@ -3,14 +3,21 @@
     <MemberAddOrInvite />
   </div>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">
-      {{ $t("settings.members.active") }}
-    </p>
+    <div class="flex flex-row space-x-2">
+      <p class="text-lg font-medium leading-7 text-main">{{ $t("settings.members.active") }}</p>
+      <div v-if="showUpgradeInfo" class="flex flex-row items-center space-x-1">
+        <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
+        <router-link
+          to="/setting/subscription"
+          class="text-lg accent-link"
+        >{{ $t("settings.members.upgrade") }}</router-link>
+      </div>
+    </div>
     <MemberTable :member-list="activeMemberList" />
     <div v-if="inactiveMemberList.length > 0" class="mt-8">
-      <p class="text-lg font-medium leading-7 text-control-light">
-        {{ $t("settings.members.inactive") }}
-      </p>
+      <p
+        class="text-lg font-medium leading-7 text-control-light"
+      >{{ $t("settings.members.inactive") }}</p>
       <MemberTable :member-list="inactiveMemberList" />
     </div>
   </div>
@@ -30,6 +37,10 @@ export default {
   setup() {
     const store = useStore();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    const hasAdminFeature = computed(() =>
+      store.getters["plan/feature"]("bb.admin")
+    );
 
     const prepareMemberList = () => {
       store.dispatch("member/fetchMemberList");
@@ -57,10 +68,15 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
+    const showUpgradeInfo = computed(() => {
+      return !hasAdminFeature.value && isOwner(currentUser.value.role);
+    });
+
     return {
       activeMemberList,
       inactiveMemberList,
       allowAddOrInvite,
+      showUpgradeInfo,
     };
   },
 };
