@@ -8,7 +8,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -33,7 +33,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -58,7 +58,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -84,7 +84,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -110,7 +110,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -135,7 +135,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
@@ -160,7 +160,7 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_pattern
+        db_name_template
     )
 VALUES
     (
