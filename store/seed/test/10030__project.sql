@@ -7,7 +7,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -18,7 +19,8 @@ VALUES
         'TEST',
         'UI',
         'PUBLIC',
-        'DISABLED'
+        'DISABLED',
+        ''
     );
 
 INSERT INTO
@@ -30,7 +32,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -41,7 +44,8 @@ VALUES
         'SHP',
         'VCS',
         'PUBLIC',
-        'DISABLED'
+        'DISABLED',
+        ''
     );
 
 INSERT INTO
@@ -53,7 +57,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -64,7 +69,8 @@ VALUES
         'BLG',
         'VCS',
         'PUBLIC',
-        'DISABLED'
+        'DISABLED',
+        ''
     );
 
 INSERT INTO
@@ -77,7 +83,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -89,7 +96,8 @@ VALUES
         'RTR',
         'UI',
         'PUBLIC',
-        'DISABLED'
+        'DISABLED',
+        ''
     );
 
 INSERT INTO
@@ -101,7 +109,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -112,7 +121,8 @@ VALUES
         'TNTG',
         'VCS',
         'PUBLIC',
-        'TENANT'
+        'TENANT',
+        ''
     );
 
 INSERT INTO
@@ -124,7 +134,8 @@ INSERT INTO
         `key`,
         workflow_type,
         visibility,
-        tenant_mode
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -135,5 +146,31 @@ VALUES
         'TNTU',
         'UI',
         'PUBLIC',
-        'TENANT'
+        'TENANT',
+        ''
+    );
+
+INSERT INTO
+    project (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `key`,
+        workflow_type,
+        visibility,
+        tenant_mode,
+        db_name_template
+    )
+VALUES
+    (
+        3007,
+        101,
+        101,
+        'Tenant (db pattern)',
+        'TNMG',
+        'UI',
+        'PUBLIC',
+        'TENANT',
+        '{{DB_NAME}}_{{TENANT}}'
     );
