@@ -215,6 +215,7 @@ CREATE TABLE project (
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT')),
     -- db_name_pattern is only used when a project is in tenant mode.
+    -- Empty value means {{DB_NAME}}.
     db_name_pattern TEXT NOT NULL
 );
 

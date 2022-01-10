@@ -82,6 +82,7 @@ type Project struct {
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 	// DBNamePattern is only used when a project is in tenant mode.
+	// Empty value means {{DB_NAME}}.
 	DBNamePattern string `jsonapi:"attr,dbNamePattern"`
 }
 
