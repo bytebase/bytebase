@@ -6,8 +6,8 @@ INSERT INTO
         creator_id,
         updater_id,
         `type`,
-        name,
         auth_provider,
+        name,
         email,
         password_hash
     )
@@ -16,8 +16,8 @@ VALUES
         1,
         1,
         'END_USER',
-        'Demo Owner',
         'BYTEBASE',
+        'Demo Owner',
         'demo@example.com',
         -- 1024
         '$2a$10$/65QFlHOmDzXshEMt/qYuunbJrXtRLcaYDcRODbyOPa/9/N0N8Zc2'
@@ -29,8 +29,8 @@ INSERT INTO
         creator_id,
         updater_id,
         `type`,
-        name,
         auth_provider,
+        name,
         email,
         password_hash
     )
@@ -39,8 +39,8 @@ VALUES
         1,
         1,
         'END_USER',
-        'Jerry DBA',
         'BYTEBASE',
+        'Jerry DBA',
         'jerry@example.com',
         -- 2048
         '$2a$10$Q2NJib9bRvDkap1N1RDP2O3HyxjCldwfvGoxAzZL5gbbBgKAFD4cq'
@@ -62,8 +62,8 @@ VALUES
         1,
         1,
         'END_USER',
-        'Tom Dev',
         'BYTEBASE',
+        'Tom Dev',
         'tom@example.com',
         -- 4096
         '$2a$10$X5bvIWk4BKhEaZqlNLGjgOUB09i97olKBfjTQT49zMtNGnhoy6GIW'
@@ -85,8 +85,8 @@ VALUES
         1,
         1,
         'END_USER',
-        'Jane Dev',
         'BYTEBASE',
+        'Jane Dev',
         'jane@example.com',
         -- 8192
         '$2a$10$2QTgsuKDTGYe68lpeqRqouw1dQTRhssrYSnwQVzQUctQvhnVIccRa'
