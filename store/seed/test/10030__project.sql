@@ -149,3 +149,28 @@ VALUES
         'TENANT',
         ''
     );
+
+INSERT INTO
+    project (
+        id,
+        creator_id,
+        updater_id,
+        name,
+        `key`,
+        workflow_type,
+        visibility,
+        tenant_mode,
+        db_name_pattern
+    )
+VALUES
+    (
+        3007,
+        101,
+        101,
+        'Tenant (db pattern)',
+        'TNMG',
+        'UI',
+        'PUBLIC',
+        'TENANT',
+        '{{DB_NAME}}_{{TENANT}}'
+    );
