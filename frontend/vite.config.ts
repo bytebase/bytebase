@@ -57,5 +57,9 @@ export default defineConfig(() => {
         "@/": `${resolve(__dirname, "src")}/`,
       },
     },
+    test: {
+      global: true,
+      environment: "node",
+    },
   };
 });

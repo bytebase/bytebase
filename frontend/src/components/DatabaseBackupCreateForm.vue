@@ -41,17 +41,20 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, defineComponent } from "vue";
 import { Database } from "../types";
 import { isEmpty } from "lodash-es";
-import moment from "moment";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import slug from "slug";
+
+dayjs.extend(utc);
 
 interface LocalState {
   backupName: string;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseBackupCreateForm",
   props: {
     database: {
@@ -65,7 +68,7 @@ export default {
       // The default format is consistent with the default automatic backup name format used in the server.
       backupName: `${slug(props.database.project.name)}-${slug(
         props.database.instance.environment.name
-      )}-${moment.utc().local().format("YYYYMMDDTHHmmss")}`,
+      )}-${dayjs.utc().local().format("YYYYMMDDTHHmmss")}`,
     });
 
     const allowCreate = computed(() => {
@@ -77,5 +80,5 @@ export default {
       allowCreate,
     };
   },
-};
+});
 </script>
