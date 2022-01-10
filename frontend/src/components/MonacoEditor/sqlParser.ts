@@ -1,4 +1,5 @@
 import { Parser, AST } from "node-sql-parser";
+import { isObject, isArray } from "lodash-es";
 
 type ParseResult = {
   data: AST | AST[] | null;
@@ -23,10 +24,17 @@ export const isValidStatement = (sql: string) => {
 
 export const isSelectStatement = (sql: string) => {
   const { data } = parseSQL(sql);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
+
   // if parser returns the null AST. it's an invalid sql statement
-  return data?.type.toLowerCase() === "select" || data === null;
+  if (data === null) return true;
+  // if the sql statement is an object, it's a single sql statement
+  if (isObject(data) && !isArray(data)) {
+    return data.type.toLowerCase() === "select";
+  }
+  // if the sql statement is an array, it's a multiple sql statements
+  if (isArray(data)) {
+    return data.every((statement) => statement.type.toLowerCase() === "select");
+  }
 };
 
 export default parseSQL;
