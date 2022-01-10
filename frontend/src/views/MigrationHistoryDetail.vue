@@ -3,19 +3,14 @@
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="
-          px-4
-          pb-4
-          border-b border-block-border
-          md:flex md:items-center md:justify-between
-        "
+        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
       >
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
           <div class="pt-2 flex items-center space-x-2">
             <MigrationHistoryStatusIcon :status="migrationHistory.status" />
             <h1 class="text-xl font-bold leading-6 text-main truncate">
-              {{ $t('common.version') }} {{ migrationHistory.version }}
+              {{ $t("common.version") }} {{ migrationHistory.version }}
             </h1>
           </div>
           <p class="text-control">
@@ -23,15 +18,13 @@
             {{ migrationHistory.description }}
           </p>
           <dl
-            class="
-              flex flex-col
-              space-y-1
-              md:space-y-0 md:flex-row md:flex-wrap
-            "
+            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
-            <dt class="sr-only">{{ $t('common.issue') }}</dt>
+            <dt class="sr-only">{{ $t("common.issue") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">{{ $t('common.issue') }}&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
+              >
               <router-link
                 :to="`/issue/${migrationHistory.issueId}`"
                 class="normal-link"
@@ -39,32 +32,32 @@
                 {{ migrationHistory.issueId }}
               </router-link>
             </dd>
-            <dt class="sr-only">{{ $t('common.duration') }}</dt>
+            <dt class="sr-only">{{ $t("common.duration") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">{{ $t('common.duration') }}&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.duration") }}&nbsp;-&nbsp;</span
+              >
               {{ secondsToString(migrationHistory.executionDuration) }}
             </dd>
-            <dt class="sr-only">{{ $t('common.creator') }}</dt>
+            <dt class="sr-only">{{ $t("common.creator") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">{{ $t('common.creator') }}&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.creator") }}&nbsp;-&nbsp;</span
+              >
               {{ migrationHistory.creator }}
             </dd>
-            <dt class="sr-only">{{ $t('common.created-at') }}</dt>
+            <dt class="sr-only">{{ $t("common.created-at") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">{{ $t('common.created-at') }}&nbsp;-&nbsp;</span>
+              <span class="textlabel"
+                >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
+              >
               {{ humanizeTs(migrationHistory.createdTs) }} by
               {{ `version ${migrationHistory.releaseVersion}` }}
             </dd>
           </dl>
           <div
             v-if="pushEvent"
-            class="
-              mt-1
-              text-sm text-control-light
-              flex flex-row
-              items-center
-              space-x-1
-            "
+            class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
             <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
@@ -73,7 +66,7 @@
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
             <span>
-              {{ $t('common.commit') }}
+              {{ $t("common.commit") }}
               <a
                 :href="pushEvent.fileCommit.url"
                 target="_blank"
@@ -82,13 +75,15 @@
                 {{ pushEvent.fileCommit.id.substring(0, 7) }}:
               </a>
               <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
-              <i18n-t keypath="migration-history.commit-info" >
-                <template v-slot:author>
+              <i18n-t keypath="migration-history.commit-info">
+                <template #author>
                   {{ pushEvent.authorName }}
-                 </template>
-                <template v-slot:time>
-                  {{ moment(pushEvent.fileCommit.createdTs * 1000).format("LLL")  }}
-                 </template>
+                </template>
+                <template #time>
+                  {{
+                    dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL")
+                  }}
+                </template>
               </i18n-t>
             </span>
           </div>
@@ -101,7 +96,7 @@
           href="#statement"
           class="flex items-center text-lg text-main mb-2 hover:underline"
         >
-          {{ $t('common.statement') }}
+          {{ $t("common.statement") }}
           <button
             tabindex="-1"
             class="btn-icon ml-1"
@@ -118,7 +113,7 @@
           href="#schema"
           class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
         >
-          Schema {{ $t('common.snapshot') }}
+          Schema {{ $t("common.snapshot") }}
           <button
             tabindex="-1"
             class="btn-icon ml-1"
@@ -133,7 +128,7 @@
             :label="$t('migration-history.show-diff')"
             :value="state.showDiff"
             @toggle="
-              (on) => {
+              (on: any) => {
                 state.showDiff = on;
               }
             "
@@ -141,15 +136,15 @@
           <div class="textinfolabel">
             {{
               state.showDiff
-                ? $t('migration-history.left-vs-right')
-                : $t('migration-history.schema-snapshot-after-migration')
+                ? $t("migration-history.left-vs-right")
+                : $t("migration-history.schema-snapshot-after-migration")
             }}
           </div>
           <div
             v-if="migrationHistory.schemaPrev == migrationHistory.schema"
             class="text-sm font-normal text-accent"
           >
-            ({{ $t('migration-history.no-schema-change') }})
+            ({{ $t("migration-history.no-schema-change") }})
           </div>
         </div>
         <code-diff
@@ -172,7 +167,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
@@ -188,7 +183,7 @@ interface LocalState {
   showDiff: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "MigrationHistoryDetail",
   components: { CodeDiff, MigrationHistoryStatusIcon },
   props: {
@@ -277,5 +272,5 @@ export default {
       copySchema,
     };
   },
-};
+});
 </script>
