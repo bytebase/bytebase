@@ -213,7 +213,9 @@ CREATE TABLE project (
     `key` TEXT NOT NULL UNIQUE,
     workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
-    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT'))
+    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT')),
+    -- db_name_pattern is only used when a project is in tenant mode.
+    db_name_pattern TEXT NOT NULL
 );
 
 INSERT INTO
@@ -224,7 +226,9 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode,
+        db_name_pattern
     )
 VALUES
     (
@@ -234,7 +238,9 @@ VALUES
         'Default',
         'DEFAULT',
         'UI',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED',
+        ''
     );
 
 UPDATE
