@@ -1,4 +1,13 @@
-import moment from "moment";
+import dayjs from "dayjs";
+import dayOfYear from "dayjs/plugin/dayOfYear";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(dayOfYear);
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+dayjs.extend(utc);
 
 export function isDev(): boolean {
   return import.meta.env.DEV;
@@ -9,12 +18,12 @@ export function isRelease(): boolean {
 }
 
 export function humanizeTs(ts: number): string {
-  const time = moment.utc(ts * 1000);
-  if (moment().year() == time.year()) {
-    if (moment().dayOfYear() == time.dayOfYear()) {
+  const time = dayjs.utc(ts * 1000);
+  if (dayjs().year() == time.year()) {
+    if (dayjs().dayOfYear() == time.dayOfYear()) {
       return time.local().format("HH:mm");
     }
-    if (moment().diff(time, "days") < 3) {
+    if (dayjs().diff(time, "days") < 3) {
       return time.local().format("MMM D HH:mm");
     }
     return time.local().format("MMM D");
@@ -35,7 +44,7 @@ export function bytesToString(size: number): string {
 }
 
 export function secondsToString(second: number): string {
-  return moment.duration(second).humanize();
+  return dayjs.duration(second).humanize();
 }
 
 export function timezoneString(zoneName: string, offset: number): string {
