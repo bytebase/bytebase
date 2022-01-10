@@ -9,6 +9,8 @@ import {
   ResourceObject,
   unknown,
   PrincipalId,
+  AuthProvider,
+  GitlabLoginInfo,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 
@@ -16,11 +18,20 @@ function convert(user: ResourceObject, rootGetters: any): Principal {
   return rootGetters["principal/principalById"](user.id);
 }
 
+function convertAuthProvider(authProvider: ResourceObject) {
+  return { ...authProvider.attributes };
+}
+
 const state: () => AuthState = () => ({
+  authProviderList: unknown as unknown as AuthProvider[],
   currentUser: unknown("PRINCIPAL") as Principal,
 });
 
 const getters = {
+  authProviderList: (state: AuthState) => (): AuthProvider[] => {
+    return state.authProviderList;
+  },
+
   isLoggedIn: (state: AuthState) => (): boolean => {
     return getIntCookie("user") != undefined;
   },
@@ -31,6 +42,30 @@ const getters = {
 };
 
 const actions = {
+  async provider({ commit }: any) {
+    const providerList = (await axios.get("/api/auth/provider")).data.data;
+    const convertedProviderList = providerList.map(
+      (provider: ResourceObject) => {
+        return convertAuthProvider(provider);
+      }
+    );
+    commit("setAuthProviderList", convertedProviderList);
+    console.log(convertedProviderList);
+    return convertedProviderList;
+  },
+
+  async loginWithGitlab({ commit }: any, gitlabLoginInfo: GitlabLoginInfo) {
+    console.log("gitlabLoginInfo", gitlabLoginInfo);
+
+    const email = (
+      await axios.post("/api/auth/gitlab/login", {
+        data: { type: "gitlabLoginInfo", attributes: gitlabLoginInfo },
+      })
+    ).data.data;
+
+    console.log("user", email);
+  },
+
   async login({ commit, dispatch, rootGetters }: any, loginInfo: LoginInfo) {
     const loggedInUser = (
       await axios.post("/api/auth/login", {
@@ -126,6 +161,10 @@ const actions = {
 };
 
 const mutations = {
+  setAuthProviderList(state: AuthState, authProviderList: AuthProvider[]) {
+    state.authProviderList = authProviderList;
+  },
+
   setCurrentUser(state: AuthState, user: Principal) {
     state.currentUser = user;
   },

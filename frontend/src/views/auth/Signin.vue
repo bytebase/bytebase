@@ -61,14 +61,43 @@
           </div>
 
           <div>
-            <span class="block w-full rounded-md shadow-sm">
+            <span class="flex w-full rounded-md items-center">
               <button
                 type="submit"
                 :disabled="!allowSignin"
-                class="btn-primary w-full flex justify-center py-2 px-4"
+                class="btn-primary justify-center flex-grow py-2 px-4"
               >
                 {{ $t("common.sign-in") }}
               </button>
+
+              <template
+                v-for="authProvider in authProviderList"
+                :key="authProvider.type"
+              >
+                <!-- GitLab auth provider -->
+                <n-button
+                  circle
+                  quaternary
+                  :bordered="false"
+                  @click.prevent="
+                    () => {
+                      state.activeAuthProvider = authProvider;
+                      const window = openWindowForOAuth(
+                        `${authProvider.instanceUrl}/${
+                          AuthProviderConfig[authProvider.type].apiPath
+                        }`,
+                        authProvider.applicationId,
+                        'login'
+                      );
+                    }
+                  "
+                >
+                  <img
+                    class="w-4"
+                    :src="AuthProviderConfig[authProvider.type].iconPath"
+                  />
+                </n-button>
+              </template>
             </span>
           </div>
         </form>
@@ -94,16 +123,28 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { LoginInfo } from "../../types";
+import {
+  AuthProvider,
+  EmptyAuthProvider,
+  GitlabLoginInfo,
+  LoginInfo,
+  OAuthConfig,
+  OAuthToken,
+  OAuthWindowEvent,
+  OAuthWindowEventPayload,
+  openWindowForOAuth,
+  redirectUrl,
+} from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
   password: string;
+  activeAuthProvider: AuthProvider;
 }
 
 export default {
@@ -116,6 +157,7 @@ export default {
     const state = reactive<LocalState>({
       email: "",
       password: "",
+      activeAuthProvider: EmptyAuthProvider,
     });
 
     onMounted(() => {
@@ -128,11 +170,57 @@ export default {
       if (store.getters["actuator/needAdminSetup"]()) {
         router.push({ name: "auth.signup", replace: true });
       }
+
+      store.dispatch("auth/provider");
+      window.addEventListener(OAuthWindowEvent, eventListener, false);
     });
+
+    const AuthProviderConfig = {
+      GITLAB_SELF_HOST: {
+        apiPath: "oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+    };
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;
     });
+
+    const authProviderList = computed(() => {
+      return store.getters["auth/authProviderList"]();
+    });
+
+    const eventListener = (event: Event) => {
+      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+      if (payload.error) {
+        return;
+      }
+      const oAuthConfig: OAuthConfig = {
+        endpoint: `${state.activeAuthProvider.instanceUrl}/oauth/token`,
+        applicationId: state.activeAuthProvider!.applicationId,
+        secret: state.activeAuthProvider!.secret,
+        redirectUrl: redirectUrl(),
+      };
+      store
+        .dispatch("gitlab/exchangeToken", {
+          oAuthConfig,
+          code: payload.code,
+        })
+        .then((token: OAuthToken) => {
+          console.log(token);
+          const gitlabLoginInfo: GitlabLoginInfo = {
+            applicationId: state.activeAuthProvider!.applicationId,
+            secret: state.activeAuthProvider!.secret,
+            instanceUrl: state.activeAuthProvider.instanceUrl,
+            accessToken: token.accessToken,
+          };
+
+          store.dispatch("auth/loginWithGitlab", gitlabLoginInfo).then(() => {
+            router.push("/");
+          });
+        });
+    };
 
     const trySignin = () => {
       const loginInfo: LoginInfo = {
@@ -147,7 +235,10 @@ export default {
     return {
       state,
       allowSignin,
+      authProviderList,
+      AuthProviderConfig,
       trySignin,
+      openWindowForOAuth,
     };
   },
 };

@@ -1,4 +1,11 @@
-import { EnvironmentId, MigrationHistoryId, Policy, PolicyType, View } from ".";
+import {
+  AuthProvider,
+  EnvironmentId,
+  MigrationHistoryId,
+  Policy,
+  PolicyType,
+  View,
+} from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
@@ -42,6 +49,7 @@ export interface ActuatorState {
 }
 
 export interface AuthState {
+  authProviderList: AuthProvider[];
   currentUser: Principal;
 }
 
