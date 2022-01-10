@@ -1435,7 +1435,7 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	query := "" +
 		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
-		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
+		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND view_definition IS NOT NULL;"
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
