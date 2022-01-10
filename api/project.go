@@ -81,6 +81,9 @@ type Project struct {
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+	// DBNameTemplate is only used when a project is in tenant mode.
+	// Empty value means {{DB_NAME}}.
+	DBNameTemplate string `jsonapi:"attr,dbNameTemplate"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -90,9 +93,10 @@ type ProjectCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name       string            `jsonapi:"attr,name"`
-	Key        string            `jsonapi:"attr,key"`
-	TenantMode ProjectTenantMode `jsonapi:"attr,tenantMode"`
+	Name           string            `jsonapi:"attr,name"`
+	Key            string            `jsonapi:"attr,key"`
+	TenantMode     ProjectTenantMode `jsonapi:"attr,tenantMode"`
+	DBNameTemplate string            `jsonapi:"attr,dbNameTemplate"`
 }
 
 // ProjectFind is the API message for finding projects.
@@ -125,10 +129,11 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name         *string              `jsonapi:"attr,name"`
-	Key          *string              `jsonapi:"attr,key"`
-	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	TenantMode   *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+	Name           *string              `jsonapi:"attr,name"`
+	Key            *string              `jsonapi:"attr,key"`
+	WorkflowType   *ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	TenantMode     *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+	DBNameTemplate *string              `jsonapi:"attr,dbNameTemplate"`
 }
 
 // ProjectService is the service for projects.
