@@ -14,37 +14,17 @@
         :title="$t(COLUMN_LIST[0].title)"
       />
       <BBTableHeaderCell class="w-8 table-cell" :title="$t(COLUMN_LIST[1].title)" />
-      <BBTableHeaderCell
-        class="w-72 table-cell"
-        :title="$t(COLUMN_LIST[2].title)"
-      />
-      <BBTableHeaderCell
-        class="w-auto table-cell"
-        :title="$t(COLUMN_LIST[3].title)"
-      />
+      <BBTableHeaderCell class="w-72 table-cell" :title="$t(COLUMN_LIST[2].title)" />
+      <BBTableHeaderCell class="w-auto table-cell" :title="$t(COLUMN_LIST[3].title)" />
     </template>
     <template #body="{ rowData: member }">
       <BBTableCell :left-padding="4" class="table-cell">
         <div class="flex flex-row items-center space-x-2">
           <template v-if="'INVITED' == member.principal.status">
             <span
-              class="
-                inline-flex
-                items-center
-                px-2
-                py-0.5
-                rounded-lg
-                text-xs
-                font-semibold
-                bg-main
-                text-main-text
-              "
-            >
-              {{ $t("settings.members.invited") }}
-            </span>
-            <span class="textlabel">
-              {{ member.principal.email }}
-            </span>
+              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
+            >{{ $t("settings.members.invited") }}</span>
+            <span class="textlabel">{{ member.principal.email }}</span>
           </template>
           <template v-else>
             <PrincipalAvatar :principal="member.principal" />
@@ -53,36 +33,19 @@
                 <router-link
                   :to="`/u/${member.principal.id}`"
                   class="normal-link"
-                  >{{ member.principal.name }}
-                </router-link>
+                >{{ member.principal.name }}</router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
-                  class="
-                    inline-flex
-                    items-center
-                    px-2
-                    py-0.5
-                    rounded-lg
-                    text-xs
-                    font-semibold
-                    bg-green-100
-                    text-green-800
-                  "
-                >
-                  {{ $t("settings.members.yourself") }}
-                </span>
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                >{{ $t("settings.members.yourself") }}</span>
               </div>
-              <span class="textlabel">
-                {{ member.principal.email }}
-              </span>
+              <span class="textlabel">{{ member.principal.email }}</span>
             </div>
           </template>
         </div>
       </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper">
-        <span v-if="changeRoleTooltip(member)" class="tooltip">
-          {{ changeRoleTooltip(member) }}
-        </span>
+        <span v-if="changeRoleTooltip(member)" class="tooltip">{{ changeRoleTooltip(member) }}</span>
         <RoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
@@ -95,13 +58,9 @@
       </BBTableCell>
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
-          <span>
-            {{ humanizeTs(member.updatedTs) }}
-          </span>
+          <span>{{ humanizeTs(member.updatedTs) }}</span>
           <span>by</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link"
-            >{{ member.updater.name }}
-          </router-link>
+          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{ member.updater.name }}</router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -126,15 +85,6 @@
       </BBTableCell>
     </template>
   </BBTable>
-  <div v-if="showUpgradeInfo" class="mt-6 border-t pt-4 border-block-border">
-    <div class="flex flex-row items-center space-x-1">
-      <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
-      <router-link to="/setting/plan" class="text-lg accent-link"
-        >{{ $t("settings.members.upgrade") }}</router-link
-      >
-    </div>
-    <img class="w-full" src="../assets/role_management_screenshot.png" />
-  </div>
 </template>
 
 <script lang="ts">
@@ -163,7 +113,7 @@ const COLUMN_LIST: BBTableColumn[] = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState { }
 
 export default {
   name: "MemberTable",
@@ -264,11 +214,6 @@ export default {
       return allowEdit.value && member.rowStatus == "ARCHIVED";
     };
 
-    const showUpgradeInfo = computed(() => {
-      return false;
-      // return !hasAdminFeature.value && isOwner(currentUser.value.role);
-    });
-
     const changeRole = (id: MemberId, role: RoleType) => {
       const memberPatch: MemberPatch = {
         role,
@@ -294,7 +239,6 @@ export default {
       state,
       currentUser,
       hasAdminFeature,
-      showUpgradeInfo,
       dataSource,
       allowEdit,
       allowChangeRole,

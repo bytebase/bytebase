@@ -36,7 +36,7 @@
               </router-link>
             </template>
             <template #time>
-              {{ moment(issue.updatedTs * 1000).format("LLL") }}
+              {{ dayjs(issue.updatedTs * 1000).format("LLL") }}
             </template>
           </i18n-t>
           <p
@@ -65,9 +65,7 @@
               </template>
               <template #author>{{ pushEvent.authorName }}</template>
               <template #time>
-                {{
-                  moment(pushEvent.fileCommit.createdTs * 1000).format("LLL")
-                }}
+                {{ dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
               </template>
             </i18n-t>
           </p>
