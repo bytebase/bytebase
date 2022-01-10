@@ -21,7 +21,7 @@ CREATE TABLE migration_history (
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
     -- We call it engine because maybe we could load history from other migration tool.
     engine TEXT NOT NULL CHECK (engine in ('UI', 'VCS')),
-    type TEXT NOT NULL CHECK (type in ('BASELINE', 'MIGRATE', 'BRANCH')),
+    type TEXT NOT NULL CHECK (type in ('BASELINE', 'MIGRATE', 'BRANCH', 'DATA')),
     -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
     status TEXT NOT NULL CHECK (status in ('PENDING', 'DONE', 'FAILED')),
