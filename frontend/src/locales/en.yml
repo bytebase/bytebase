@@ -227,7 +227,7 @@ settings:
     general: General
     members: Members
     version-control: Version Control
-    plans: Plans
+    subscription: Subscription
     labels: Labels
   profile:
     email: Email
@@ -236,7 +236,7 @@ settings:
     password-confirm: Confirm
     password-confirm-placeholder: Confirm new password
     password-mismatch: mismatch
-    plan: (Upgrade to Team plan to enable role management)
+    subscription: (Upgrade to enable role management)
   members:
     active: Active members
     inactive: Inactive members
@@ -246,7 +246,7 @@ settings:
     invites: Send Invites
     invited: Invited
     yourself: You
-    upgrade: Upgrade to unlock Owner and DBA roles
+    upgrade: Upgrade to enable role management
     select-role: Select role
     not-assigned: Not assigned
     table:
@@ -261,7 +261,7 @@ settings:
       reactivate: Reactivate
       reactivate-confirm-title: Are you sure to reactivate
     tooltip:
-      upgrade: Upgrade to Team plan to enable role management
+      upgrade: Upgrade to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
 activity:

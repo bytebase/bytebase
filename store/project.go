@@ -164,16 +164,18 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 			key,
 			workflow_type,
 			visibility,
-			tenant_mode
+			tenant_mode,
+			db_name_template
 		)
-		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode"+`
+		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', ?, ?)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode, db_name_template"+`
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		strings.ToUpper(create.Key),
 		create.TenantMode,
+		create.DBNameTemplate,
 	)
 
 	if err != nil {
@@ -195,6 +197,7 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 		&project.WorkflowType,
 		&project.Visibility,
 		&project.TenantMode,
+		&project.DBNameTemplate,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -227,7 +230,8 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			key,
 			workflow_type,
 			visibility,
-			tenant_mode
+			tenant_mode,
+			db_name_template
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -253,6 +257,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 			&project.WorkflowType,
 			&project.Visibility,
 			&project.TenantMode,
+			&project.DBNameTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -285,6 +290,9 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 	if v := patch.TenantMode; v != nil {
 		set, args = append(set, "`tenant_mode` = ?"), append(args, *v)
 	}
+	if v := patch.DBNameTemplate; v != nil {
+		set, args = append(set, "`db_name_template` = ?"), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -293,7 +301,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, `+"`key`, workflow_type, visibility, tenant_mode, db_name_template"+`
 	`,
 		args...,
 	)
@@ -316,6 +324,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 			&project.WorkflowType,
 			&project.Visibility,
 			&project.TenantMode,
+			&project.DBNameTemplate,
 		); err != nil {
 			return nil, FormatError(err)
 		}
