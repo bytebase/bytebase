@@ -1433,8 +1433,6 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
-	// Exlucde views without view_definition.
-	// https://github.com/bytebase/bytebase/issues/343
 	query := "" +
 		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
 		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
@@ -1451,6 +1449,8 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
 			return nil, err
 		}
+		// Return error on NULL view definition.
+		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
 			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
