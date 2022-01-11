@@ -173,7 +173,7 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 		where, args = append(where, "`database_id` = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "`type` = ?"), append(args, api.DataSourceType(*v))
+		where, args = append(where, "type = ?"), append(args, api.DataSourceType(*v))
 	}
 
 	rows, err := tx.QueryContext(ctx, `

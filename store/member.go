@@ -143,12 +143,12 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 		INSERT INTO member (
 			creator_id,
 			updater_id,
-			`+"`status`,"+`
+			status,
 			role,
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -202,7 +202,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		    created_ts,
 		    updater_id,
 		    updated_ts,
-			`+"`status`,"+`
+			status,
 		    role,
 		    principal_id
 		FROM member
@@ -259,7 +259,7 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, `+"`status`, role, principal_id"+`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`,
 		args...,
 	)

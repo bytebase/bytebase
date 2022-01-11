@@ -21,13 +21,13 @@ CREATE TABLE bytebase.migration_history (
     sequence INTEGER UNSIGNED NOT NULL,
     -- We call it engine because maybe we could load history from other migration tool.
     -- Current allowed values are UI, VCS.
-    `engine` TEXT NOT NULL,
+    engine TEXT NOT NULL,
     -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
-    `type` TEXT NOT NULL,
+    type TEXT NOT NULL,
     -- Current allowed values are PENDING, DONE, FAILED.
     -- MySQL runs DDL in its own transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
-    `status` TEXT NOT NULL,
+    status TEXT NOT NULL,
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -45,8 +45,8 @@ CREATE TABLE bytebase.migration_history (
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase.migration_history (namespace(256), sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), `engine`, version(256));
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), engine, version(256));
 
-CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), `engine`, `type`);
+CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), engine, type);
 
 CREATE INDEX bytebase_idx_migration_history_namespace_created ON bytebase.migration_history(namespace(256), `created_ts`);

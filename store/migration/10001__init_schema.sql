@@ -11,7 +11,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
     auth_provider TEXT NOT NULL CHECK (auth_provider in ('BYTEBASE', 'GITLAB_SELF_HOST')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
@@ -44,7 +44,7 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `type`,
+        type,
         auth_provider,
         name,
         email,
@@ -106,9 +106,9 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    `status` TEXT NOT NULL CHECK (`status` IN ('INVITED', 'ACTIVE')),
-    `role` TEXT NOT NULL CHECK (
-        `role` IN ('OWNER', 'DBA', 'DEVELOPER')
+    status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
+    role TEXT NOT NULL CHECK (
+        role IN ('OWNER', 'DBA', 'DEVELOPER')
     ),
     principal_id INTEGER NOT NULL REFERENCES principal (id) UNIQUE
 );
@@ -176,7 +176,7 @@ CREATE TABLE policy (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.policy.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload TEXT NOT NULL
 );
 
@@ -213,7 +213,7 @@ CREATE TABLE project (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    `key` TEXT NOT NULL UNIQUE,
+    key TEXT NOT NULL UNIQUE,
     workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT')),
@@ -228,7 +228,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `key`,
+        key,
         workflow_type,
         visibility,
         tenant_mode,
@@ -278,7 +278,7 @@ CREATE TABLE project_member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    `role` TEXT NOT NULL CHECK (`role` IN ('OWNER', 'DEVELOPER')),
+    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     UNIQUE(project_id, principal_id)
 );
@@ -352,7 +352,7 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    `engine` TEXT NOT NULL CHECK (`engine` IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
+    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
@@ -431,7 +431,7 @@ CREATE TABLE db (
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
-    `collation` TEXT NOT NULL,
+    collation TEXT NOT NULL,
     UNIQUE(instance_id, name)
 );
 
@@ -468,15 +468,15 @@ CREATE TABLE tbl (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    `type` TEXT NOT NULL,
-    `engine` TEXT NOT NULL,
-    `collation` TEXT NOT NULL,
+    type TEXT NOT NULL,
+    engine TEXT NOT NULL,
+    collation TEXT NOT NULL,
     row_count BIGINT NOT NULL,
     data_size BIGINT NOT NULL,
     index_size BIGINT NOT NULL,
     data_free BIGINT NOT NULL,
     create_options TEXT NOT NULL,
-    `comment` TEXT NOT NULL,
+    comment TEXT NOT NULL,
     UNIQUE(database_id, name)
 );
 
@@ -516,11 +516,11 @@ CREATE TABLE col (
     name TEXT NOT NULL,
     position INTEGER NOT NULL,
     `default` TEXT,
-    `nullable` INTEGER NOT NULL,
-    `type` TEXT NOT NULL,
+    nullable INTEGER NOT NULL,
+    type TEXT NOT NULL,
     character_set TEXT NOT NULL,
-    `collation` TEXT NOT NULL,
-    `comment` TEXT NOT NULL,
+    collation TEXT NOT NULL,
+    comment TEXT NOT NULL,
     UNIQUE(database_id, table_id, name)
 );
 
@@ -560,10 +560,10 @@ CREATE TABLE idx (
     name TEXT NOT NULL,
     expression TEXT NOT NULL,
     position INTEGER NOT NULL,
-    `type` TEXT NOT NULL,
+    type TEXT NOT NULL,
     `unique` INTEGER NOT NULL,
     visible INTEGER NOT NULL,
-    `comment` TEXT NOT NULL,
+    comment TEXT NOT NULL,
     UNIQUE(database_id, table_id, name, expression)
 );
 
@@ -638,9 +638,9 @@ CREATE TABLE data_source (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    `type` TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
+    type TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
-    `password` TEXT NOT NULL,
+    password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
     ssl_cert TEXT NOT NULL DEFAULT '',
     ssl_ca TEXT NOT NULL DEFAULT '',
@@ -679,12 +679,12 @@ CREATE TABLE backup (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (`status` IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    `type` TEXT NOT NULL CHECK (`type` IN ('MANUAL', 'AUTOMATIC')),
+    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
-    `comment` TEXT NOT NULL DEFAULT '',
+    comment TEXT NOT NULL DEFAULT '',
     UNIQUE(database_id, name)
 );
 
@@ -720,7 +720,7 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
-    `enabled` INTEGER NOT NULL CHECK (`enabled` IN (0, 1)),
+    enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
     hour INTEGER NOT NULL CHECK (
         0 <= hour
         AND hour < 24
@@ -767,10 +767,10 @@ CREATE TABLE pipeline (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED'))
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED'))
 );
 
-CREATE INDEX idx_pipeline_status ON pipeline(`status`);
+CREATE INDEX idx_pipeline_status ON pipeline(status);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -841,8 +841,8 @@ CREATE TABLE task (
     -- Could be empty for tasks like creating database
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (
-        `status` IN (
+    status TEXT NOT NULL CHECK (
+        status IN (
             'PENDING',
             'PENDING_APPROVAL',
             'RUNNING',
@@ -851,14 +851,14 @@ CREATE TABLE task (
             "CANCELED"
         )
     ),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload TEXT NOT NULL DEFAULT '',
-    `earliest_allowed_ts` BIGINT NOT NULL DEFAULT 0
+    earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
 
-CREATE INDEX idx_task_status ON task(`status`);
+CREATE INDEX idx_task_status ON task(status);
 
 CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
@@ -889,15 +889,15 @@ CREATE TABLE task_run (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (
-        `status` IN (
+    status TEXT NOT NULL CHECK (
+        status IN (
             'RUNNING',
             'DONE',
             'FAILED',
             "CANCELED"
         )
     ),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
@@ -933,15 +933,15 @@ CREATE TABLE task_check_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
-    `status` TEXT NOT NULL CHECK (
-        `status` IN (
+    status TEXT NOT NULL CHECK (
+        status IN (
             'RUNNING',
             'DONE',
             'FAILED',
             "CANCELED"
         )
     ),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.task-check.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
@@ -985,8 +985,8 @@ CREATE TABLE issue (
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
-    `status` TEXT NOT NULL CHECK (`status` IN ('OPEN', 'DONE', 'CANCELED')),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.issue.%'),
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1043,9 +1043,9 @@ CREATE TABLE activity (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     container_id INTEGER NOT NULL CHECK (container_id != 0),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.%'),
-    `level` TEXT NOT NULL CHECK (`level` IN ('INFO', 'WARN', 'ERROR')),
-    `comment` TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
+    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
+    comment TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
 
@@ -1080,12 +1080,12 @@ CREATE TABLE inbox (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    `status` TEXT NOT NULL CHECK (`status` IN ('UNREAD', 'READ'))
+    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
 
-CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, `status`);
+CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, status);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -1136,7 +1136,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    `type` TEXT NOT NULL CHECK (`type` IN ('GITLAB_SELF_HOST')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
     instance_url TEXT NOT NULL CHECK (
         (
             instance_url LIKE 'http://%'
@@ -1257,7 +1257,7 @@ CREATE TABLE anomaly (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),
-    `type` TEXT NOT NULL CHECK (`type` LIKE 'bb.anomaly.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
     payload TEXT NOT NULL DEFAULT ''
 );
 

@@ -7,8 +7,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -37,8 +37,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -67,8 +67,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -97,8 +97,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -129,8 +129,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -161,8 +161,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -193,8 +193,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -225,8 +225,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -255,8 +255,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
