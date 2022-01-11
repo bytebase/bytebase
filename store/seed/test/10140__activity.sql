@@ -5,8 +5,8 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         payload
     )
 VALUES
@@ -26,9 +26,9 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
-        `comment`,
+        type,
+        level,
+        comment,
         payload
     )
 VALUES
@@ -49,9 +49,9 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
-        `comment`,
+        type,
+        level,
+        comment,
         payload
     )
 VALUES
@@ -72,9 +72,9 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
-        `comment`,
+        type,
+        level,
+        comment,
         payload
     )
 VALUES
@@ -98,8 +98,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         payload
     )
 VALUES
@@ -123,8 +123,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -150,8 +150,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -177,8 +177,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -204,8 +204,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -231,8 +231,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         payload
     )
 VALUES
@@ -257,8 +257,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         payload
     )
 VALUES
@@ -281,8 +281,8 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -304,8 +304,8 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         payload
     )
 VALUES
@@ -327,8 +327,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -352,8 +352,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -377,8 +377,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -402,8 +402,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -428,8 +428,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -453,8 +453,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -478,8 +478,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -503,8 +503,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -529,8 +529,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -554,8 +554,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -579,8 +579,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -604,8 +604,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -630,8 +630,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -655,8 +655,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -680,8 +680,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -705,8 +705,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -731,8 +731,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -756,8 +756,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -781,8 +781,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -807,8 +807,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -832,8 +832,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -857,8 +857,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -882,8 +882,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -907,8 +907,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -932,8 +932,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -957,8 +957,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -983,8 +983,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1009,8 +1009,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1034,8 +1034,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1060,8 +1060,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1085,8 +1085,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1110,8 +1110,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1135,8 +1135,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1160,8 +1160,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )
@@ -1185,8 +1185,8 @@ INSERT INTO
         updater_id,
         updated_ts,
         container_id,
-        `type`,
-        `level`,
+        type,
+        level,
         COMMENT,
         payload
     )

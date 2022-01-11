@@ -7,8 +7,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -37,8 +37,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -66,8 +66,8 @@ INSERT INTO
         updater_id,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result
     )
@@ -93,8 +93,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -123,8 +123,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -153,8 +153,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -183,8 +183,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -213,8 +213,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -243,8 +243,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload
@@ -273,8 +273,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         result,
         payload
     )
@@ -301,8 +301,8 @@ INSERT INTO
         updated_ts,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         code,
         result,
         payload

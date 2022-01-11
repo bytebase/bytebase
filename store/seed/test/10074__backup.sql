@@ -8,12 +8,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -40,12 +40,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -71,12 +71,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -102,12 +102,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -134,12 +134,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -165,12 +165,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -196,12 +196,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -227,12 +227,12 @@ INSERT INTO
         updated_ts,
         database_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         storage_backend,
         migration_history_version,
         path,
-        `comment`
+        comment
     )
 VALUES
     (

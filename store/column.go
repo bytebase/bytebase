@@ -125,14 +125,14 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 			name,
 			position,
 			`+"`default`,"+`
-			`+"`nullable`,"+`
-			`+"`type`,"+`
+			nullable,
+			type,
 			character_set,
 			collation,
 			comment
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `+"`default`, "+`nullable, type, character_set, collation, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -210,8 +210,8 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 			name,
 			position,
 			`+"`default`,"+`
-			`+"`nullable`,"+`
-			`+"`type`,"+`
+			nullable,
+			type,
 			character_set,
 			collation,
 			comment
@@ -275,7 +275,7 @@ func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.Colu
 		UPDATE col
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, `nullable`, `type`, character_set, `collation`, comment"+`
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, nullable, type, character_set, collation, comment"+`
 	`,
 		args...,
 	)

@@ -6,7 +6,7 @@ INSERT INTO
         updater_id,
         instance_id,
         database_id,
-        `type`,
+        type,
         payload
     )
 VALUES
@@ -26,7 +26,7 @@ INSERT INTO
         updater_id,
         instance_id,
         database_id,
-        `type`,
+        type,
         payload
     )
 VALUES
@@ -45,7 +45,7 @@ INSERT INTO
         updater_id,
         instance_id,
         database_id,
-        `type`,
+        type,
         payload
     )
 VALUES
@@ -64,7 +64,7 @@ INSERT INTO
         updater_id,
         instance_id,
         database_id,
-        `type`,
+        type,
         payload
     )
 VALUES
@@ -83,7 +83,7 @@ INSERT INTO
         creator_id,
         updater_id,
         instance_id,
-        `type`,
+        type,
         payload
     )
 VALUES
@@ -100,7 +100,7 @@ INSERT INTO
         creator_id,
         updater_id,
         instance_id,
-        `type`,
+        type,
         payload
     )
 VALUES

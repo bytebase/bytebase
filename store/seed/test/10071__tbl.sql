@@ -6,15 +6,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -41,15 +41,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -75,15 +75,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -109,15 +109,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -143,15 +143,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -177,15 +177,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -211,15 +211,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -244,15 +244,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -277,15 +277,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -311,15 +311,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -344,15 +344,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -377,15 +377,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -411,15 +411,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -444,15 +444,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -477,15 +477,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -511,15 +511,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -544,15 +544,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -577,15 +577,15 @@ INSERT INTO
         updater_id,
         database_id,
         name,
-        `type`,
+        type,
         ENGINE,
-        `collation`,
+        collation,
         row_count,
         data_size,
         index_size,
         data_free,
         create_options,
-        `comment`
+        comment
     )
 VALUES
     (

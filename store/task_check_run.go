@@ -96,13 +96,13 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 			creator_id,
 			updater_id,
 			task_id,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			comment,
 			payload
 		)
 		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -205,7 +205,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "`status` = ?"), append(args, patch.Status)
+	set, args = append(set, "status = ?"), append(args, patch.Status)
 	set, args = append(set, "code = ?"), append(args, patch.Code)
 	set, args = append(set, "result = ?"), append(args, patch.Result)
 
@@ -219,7 +219,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 		UPDATE task_check_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
 	`,
 		args...,
 	)
@@ -261,7 +261,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 		where, args = append(where, "task_id = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "`type` = ?"), append(args, *v)
+		where, args = append(where, "type = ?"), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
@@ -269,7 +269,7 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			list = append(list, "?")
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
 	orderAndLimit := ""
@@ -285,8 +285,8 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			updater_id,
 		    updated_ts,
 			task_id,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			code,
 			comment,
 			result,
