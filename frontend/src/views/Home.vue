@@ -52,7 +52,7 @@ import { watchEffect, computed, onMounted, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import IssueTable from "../components/IssueTable.vue";
+import { IssueTable } from "../components/Issue";
 import { activeEnvironment, activeTask } from "../utils";
 import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
 

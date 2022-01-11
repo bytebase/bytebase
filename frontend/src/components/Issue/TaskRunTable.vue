@@ -71,10 +71,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import PrincipalAvatar from "./PrincipalAvatar.vue";
-import { BBTableColumn } from "../bbkit/types";
-import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../types";
-import { databaseSlug, instanceSlug, migrationHistorySlug } from "../utils";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
+import { BBTableColumn } from "../../bbkit/types";
+import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../../types";
+import { databaseSlug, instanceSlug, migrationHistorySlug } from "../../utils";
 import { useI18n } from "vue-i18n";
 
 type CommentLink = {
