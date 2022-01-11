@@ -921,6 +921,7 @@ version-control:
       scripts will automatically trigger the corresponding database change.
       Bytebase owners manage all the applicable VCSs here, so that project
       owners can link the projects with their Git repositories from these VCSs.
+      **Once configured, Bytebase will enable third party login via your configured VCSs**
     add-git-provider:
       self: Add a Git provider
       description: >-
