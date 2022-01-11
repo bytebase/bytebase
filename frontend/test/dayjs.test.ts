@@ -2,14 +2,14 @@ import moment from "moment";
 import dayjs from "dayjs";
 
 import utc from "dayjs/plugin/utc";
-import LocalizedFormat from "dayjs/plugin/LocalizedFormat";
+import localizedFormat from "dayjs/plugin/localizedFormat";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(utc);
-dayjs.extend(LocalizedFormat);
+dayjs.extend(localizedFormat);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
