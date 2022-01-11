@@ -1,10 +1,7 @@
 import { ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useStore } from "vuex";
-import {
-  isSelectStatement,
-  isValidStatement,
-} from "../components/MonacoEditor/sqlParser";
+import { isSelectStatement } from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
   const store = useStore();
@@ -20,15 +17,6 @@ const useExecuteSQL = () => {
         module: "bytebase",
         style: "CRITICAL",
         title: "Please input your SQL codes in the editor",
-      });
-      return;
-    }
-
-    if (!isValidStatement(sqlStatement)) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Please check if the statement is correct",
       });
       return;
     }
