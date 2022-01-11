@@ -771,11 +771,16 @@ export default defineComponent({
         //   with type "bb.issue.database.schema.update" with dummy SQL statement.
         // In this case, it's schema.update, and it's TENANT mode, but it's not
         //   a tenancy-based deployment
-        if (stages && stages.length > 1) {
-          return true;
-        }
-        if (stages && stages[0].taskList.length > 1) {
-          return true;
+        if (stages) {
+          if (stages.length > 1) {
+            // n stages, it's tenant mode
+            // we won't down-grade to multi-database deployment here
+            return true;
+          }
+          if (stages.length === 1 && stages[0].taskList.length > 1) {
+            // 1 stage, n tasks, yes it's tenant mode
+            return true;
+          }
         }
       }
       return false;
