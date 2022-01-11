@@ -4,18 +4,16 @@
     :class="borderVisibility"
   >
     <thead v-if="showHeader && !sectionDataSource" class="bg-gray-50">
-      <tr>
+      <template v-if="customHeader">
+        <!-- different implements for legacy compatibility -->
+        <slot name="header" />
+      </template>
+      <tr v-else>
         <th
           v-for="(column, index) in columnList"
           :key="index"
           scope="col"
-          class="
-            py-2
-            text-left text-xs
-            font-medium
-            text-gray-500
-            tracking-wider
-          "
+          class="py-2 text-left text-xs font-medium text-gray-500 tracking-wider"
           :class="index == 0 ? 'pl-4' : 'pl-2'"
         >
           {{ column.title }}
@@ -29,16 +27,7 @@
           <th
             v-if="!compactSection || sectionDataSource.length > 1"
             :colspan="columnList.length"
-            class="
-              text-left
-              pl-4
-              pt-4
-              pb-2
-              py-text-base
-              leading-6
-              font-medium
-              text-gray-900
-            "
+            class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
           >
             <template v-if="section.link">
               <router-link :to="section.link" class="normal-link">
@@ -102,16 +91,16 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../types";
 
-export default {
+export default defineComponent({
   name: "BBTable",
   components: {},
   props: {
     columnList: {
-      required: true,
-      type: Object as PropType<BBTableColumn[]>,
+      type: Array as PropType<BBTableColumn[]>,
+      default: () => [],
     },
     dataSource: {
       default: () => [],
@@ -119,6 +108,7 @@ export default {
     },
     sectionDataSource: {
       type: Array as PropType<BBTableSectionDataSource<any>[]>,
+      default: undefined,
     },
     // Only applicable to sectionDataSource. If true, when there is only one
     // section, it won't render the extra section header. In another words, it will
@@ -129,6 +119,10 @@ export default {
     },
     showHeader: {
       default: true,
+      type: Boolean,
+    },
+    customHeader: {
+      default: false,
       type: Boolean,
     },
     rowClickable: {
@@ -175,5 +169,5 @@ export default {
     });
     return { borderVisibility };
   },
-};
+});
 </script>
