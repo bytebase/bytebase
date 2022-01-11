@@ -4,7 +4,7 @@
       <BBTableSearch
         ref="searchField"
         :placeholder="$t('project.dashboard.search-bar-placeholder')"
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
     <ProjectTable :project-list="filteredList(state.projectList)" />
@@ -28,7 +28,14 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, onMounted, reactive, ref } from "vue";
+import {
+  watchEffect,
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Project, UNKNOWN_ID } from "../types";
@@ -39,8 +46,8 @@ interface LocalState {
   showGuide: boolean;
 }
 
-export default {
-  name: "Home",
+export default defineComponent({
+  name: "ProjectDashboard",
   components: {
     ProjectTable,
   },
@@ -120,5 +127,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>
