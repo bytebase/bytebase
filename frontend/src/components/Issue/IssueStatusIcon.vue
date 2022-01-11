@@ -33,7 +33,7 @@
 
 <script lang="ts">
 import { PropType } from "vue";
-import { TaskStatus, IssueStatus } from "../types";
+import { TaskStatus, IssueStatus } from "../../types";
 
 type SizeType = "small" | "normal";
 
