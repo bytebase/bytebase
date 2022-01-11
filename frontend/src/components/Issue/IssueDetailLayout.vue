@@ -402,7 +402,8 @@ export default defineComponent({
         }
       } else {
         if (isTenantDeployMode.value) {
-          // For tenant deploy mode, we patch the issue's create context
+          // <del>For tenant deploy mode, we patch the issue's create context</del>
+          // nope, we are not allowed to update statement in tenant deploy mode anyway
         } else {
           // otherwise, patch the task
           patchTask(
@@ -877,14 +878,17 @@ export default defineComponent({
       if (issue.status !== "OPEN") return false;
       if (issue.creator.id !== currentUser.value.id) return false;
       if (issue.project.workflowType !== "UI") return false;
+
       if (isTenantDeployMode.value) {
-        // then if in tenant deploy mode, EVERY task must be PENDING or PENDING_APPROVAL or FAILED
-        const allTasks = issue.pipeline.stageList.flatMap(
-          (stage) => stage.taskList
-        );
-        return allTasks.every((task) => checkTask(task));
+        // <del>then if in tenant deploy mode, EVERY task must be PENDING or PENDING_APPROVAL or FAILED</del>
+        // nope, we are not allowed to update statement in tenant deploy mode anyway
+        // const allTasks = issue.pipeline.stageList.flatMap(
+        //   (stage) => stage.taskList
+        // );
+        // return allTasks.every((task) => checkTask(task));
+        return false;
       } else {
-        // otherwise, check `selectedTask` only
+        // otherwise, check `selectedTask`, expected to be PENDING or PENDING_APPROVAL or FAILED
         return checkTask(selectedTask.value as Task);
       }
     });
