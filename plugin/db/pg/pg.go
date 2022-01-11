@@ -1437,7 +1437,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	// https://github.com/bytebase/bytebase/issues/343
 	query := "" +
 		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
-		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND view_definition IS NOT NULL;"
+		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1447,10 +1447,14 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for rows.Next() {
 		var view viewSchema
-		if err := rows.Scan(&view.schemaName, &view.name, &view.definition); err != nil {
+		var def sql.NullString
+		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
 			return nil, err
 		}
-		view.schemaName, view.name = quoteIdentifier(view.schemaName), quoteIdentifier(view.name)
+		if !def.Valid {
+			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+		}
+		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
 		views = append(views, &view)
 	}
 
