@@ -25,6 +25,6 @@
 import { defineComponent } from "vue";
 
 export default defineComponent({
-  name: "Spinner",
+  name: "TaskSpinner",
 });
 </script>
