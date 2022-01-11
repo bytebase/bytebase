@@ -75,7 +75,7 @@ const (
 // UserInfo is the API message for user info.
 type UserInfo struct {
 	Email string    `json:"email"`
-	Name  string    `json:"Name"`
+	Name  string    `json:"name"`
 	State UserState `json:"state"`
 }
 
