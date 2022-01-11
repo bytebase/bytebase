@@ -186,15 +186,15 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 
 	var query = `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			container_id,
-		    type,
+			type,
 			level,
-		    comment,
+			comment,
 			payload
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")

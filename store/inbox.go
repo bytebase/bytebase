@@ -218,18 +218,18 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    inbox.id,
-		    receiver_id,
+			inbox.id,
+			receiver_id,
 			status,
 			activity.id,
 			activity.creator_id,
-		    activity.created_ts,
-		    activity.updater_id,
-		    activity.updated_ts,
+			activity.created_ts,
+			activity.updater_id,
+			activity.updated_ts,
 			activity.container_id,
-		    activity.type,
+			activity.type,
 			activity.level,
-		    activity.comment,
+			activity.comment,
 			activity.payload
 		FROM inbox, activity
 		WHERE `+strings.Join(where, " AND ")+`
