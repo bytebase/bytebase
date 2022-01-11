@@ -12,6 +12,7 @@ CREATE TABLE principal (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
+    auth_provider TEXT NOT NULL CHECK (auth_provider in ('BYTEBASE', 'GITLAB_SELF_HOST')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -44,6 +45,7 @@ INSERT INTO
         creator_id,
         updater_id,
         `type`,
+        auth_provider,
         name,
         email,
         password_hash
@@ -54,6 +56,7 @@ VALUES
         1,
         1,
         'SYSTEM_BOT',
+        'BYTEBASE',
         'Bytebase',
         'support@bytebase.com',
         ''

@@ -1,5 +1,23 @@
 package api
 
+import "github.com/bytebase/bytebase/plugin/vcs"
+
+type AuthProvider struct {
+	Type          *vcs.Type `jsonapi:"attr,type"`
+	InstanceURL   string    `jsonapi:"attr,instanceUrl"`
+	ApplicationID string    `jsonapi:"attr,applicationId"`
+	// Secret will be used for OAuth on the client side when user choose to login via Gitlab
+	Secret string `jsonapi:"attr,secret"`
+}
+
+// GitlabLogin is the API message for logins via Gitlab.
+type GitlabLogin struct {
+	InstanceURL   string `jsonapi:"attr,instanceUrl"`
+	ApplicationID string `jsonapi:"attr,applicationId"`
+	Secret        string `jsonapi:"attr,secret"`
+	AccessToken   string `jsonapi:"attr,accessToken"`
+}
+
 // Login is the API message for logins.
 type Login struct {
 	// Domain specific fields
