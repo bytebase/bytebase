@@ -51,21 +51,21 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showEnvironmentColumn" class="w-16">{{
-        environmentName(database.instance.environment)
-      }}</BBTableCell>
+      <BBTableCell v-if="showEnvironmentColumn" class="w-16">
+        {{ environmentName(database.instance.environment) }}
+      </BBTableCell>
       <BBTableCell v-if="showInstanceColumn" class="w-32">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon :instance="database.instance" />
           <span>{{ instanceName(database.instance) }}</span>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-4">{{
-        database.syncStatus
-      }}</BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-16">{{
-        humanizeTs(database.lastSuccessfulSyncTs)
-      }}</BBTableCell>
+      <BBTableCell v-if="showMiscColumn" class="w-4">
+        {{ database.syncStatus }}
+      </BBTableCell>
+      <BBTableCell v-if="showMiscColumn" class="w-16">
+        {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+      </BBTableCell>
       <BBTableCell v-if="showSqlEditorLink" class="w-16">
         <button class="btn-icon" @click.stop="gotoSqlEditor(database)">
           <heroicons-outline:terminal class="w-4 h-4" />
