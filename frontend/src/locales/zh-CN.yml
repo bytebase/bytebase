@@ -154,6 +154,7 @@ common:
   by: 由
   ok: OK
   share: 分享
+  or: 或者
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心

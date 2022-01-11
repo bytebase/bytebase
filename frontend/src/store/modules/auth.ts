@@ -10,7 +10,6 @@ import {
   unknown,
   PrincipalId,
   AuthProvider,
-  GitlabLoginInfo,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 

@@ -154,6 +154,7 @@ common:
   by: by
   ok: OK
   share: Share
+  or: or
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
