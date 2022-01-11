@@ -65,9 +65,30 @@ type VCSPushEvent struct {
 	FileCommit         VCSFileCommit `json:"fileCommit"`
 }
 
+type UserState string
+
+const (
+	UserStateActive   UserState = "active"
+	UserStateArchived UserState = "archived"
+)
+
+// UserInfo is the API message for user info.
+type UserInfo struct {
+	Email string    `json:"email"`
+	Name  string    `json:"name"`
+	State UserState `json:"state"`
+}
+
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
+
+	// Try to use this provider as an auth provider and fetch the user info stored at this provider
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

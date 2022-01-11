@@ -114,6 +114,7 @@ DELETE FROM
 WHERE
     id != 1;
 
+
 -- By default, for every table, we reserve id <=100 for internal user
 UPDATE
     sqlite_sequence

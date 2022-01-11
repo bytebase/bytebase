@@ -203,22 +203,31 @@ export default {
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
-        email: "demo@example.com",
-        password: "1024",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "demo@example.com",
+          password: "1024",
+        },
       });
     };
 
     const switchToDBA = () => {
       store.dispatch("auth/login", {
-        email: "jerry@example.com",
-        password: "aaa",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "jerry@example.com",
+          password: "aaa",
+        },
       });
     };
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
-        email: "tom@example.com",
-        password: "aaa",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "tom@example.com",
+          password: "aaa",
+        },
       });
     };
 
