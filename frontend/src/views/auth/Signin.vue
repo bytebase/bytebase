@@ -177,7 +177,7 @@ export default {
         router.push({ name: "auth.signup", replace: true });
       }
 
-      store.dispatch("auth/provider");
+      store.dispatch("auth/fetchProviderList");
       window.addEventListener(OAuthWindowEvent, eventListener, false);
     });
 
@@ -204,8 +204,8 @@ export default {
       }
       const oAuthConfig: OAuthConfig = {
         endpoint: `${state.activeAuthProvider.instanceUrl}/oauth/token`,
-        applicationId: state.activeAuthProvider!.applicationId,
-        secret: state.activeAuthProvider!.secret,
+        applicationId: state.activeAuthProvider.applicationId,
+        secret: state.activeAuthProvider.secret,
         redirectUrl: redirectUrl(),
       };
       store
@@ -214,10 +214,9 @@ export default {
           code: payload.code,
         })
         .then((token: OAuthToken) => {
-          console.log(token);
           const gitlabLoginInfo: GitlabLoginInfo = {
             applicationId: state.activeAuthProvider!.applicationId,
-            secret: state.activeAuthProvider!.secret,
+            secret: state.activeAuthProvider.secret,
             instanceUrl: state.activeAuthProvider.instanceUrl,
             accessToken: token.accessToken,
           };

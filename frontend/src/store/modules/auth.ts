@@ -23,7 +23,7 @@ function convertAuthProvider(authProvider: ResourceObject) {
 }
 
 const state: () => AuthState = () => ({
-  authProviderList: unknown as unknown as AuthProvider[],
+  authProviderList: [],
   currentUser: unknown("PRINCIPAL") as Principal,
 });
 
@@ -42,7 +42,7 @@ const getters = {
 };
 
 const actions = {
-  async provider({ commit }: any) {
+  async fetchProviderList({ commit }: any) {
     const providerList = (await axios.get("/api/auth/provider")).data.data;
     const convertedProviderList = providerList.map(
       (provider: ResourceObject) => {
@@ -50,7 +50,6 @@ const actions = {
       }
     );
     commit("setAuthProviderList", convertedProviderList);
-    console.log(convertedProviderList);
     return convertedProviderList;
   },
 

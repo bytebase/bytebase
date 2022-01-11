@@ -79,7 +79,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// we only allow active user to login via gitlab
-		// TODO:
 		if *GitlabUserInfo.State != vcsPlugin.UserStateActive {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
 		}
@@ -121,7 +120,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			}
 		}
 
-		s.l.Debug("Generating Token")
 		if err := GenerateTokensAndSetCookies(c, user, s.mode, s.secret); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 		}

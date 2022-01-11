@@ -32,7 +32,8 @@ export function openWindowForOAuth(
   applicationId: string,
   type: OAuthType
 ): Window | null {
-  const stateQueryParameter = `${randomString(20)}-${type}`;
+  // we use type to determine oauth type when receiving the callback
+  const stateQueryParameter = `${type}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   return window.open(

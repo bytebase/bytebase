@@ -151,7 +151,7 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 			password_hash
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, auth_provider,  name, email, password_hash
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, auth_provider, name, email, password_hash
 	`,
 		create.CreatorID,
 		create.CreatorID,

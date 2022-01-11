@@ -152,9 +152,9 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	)
 
 	if resp.StatusCode == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch userInfo"))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s", instanceURL))
 	} else if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("failed to read user'f info from GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, status code: %d",
 			instanceURL,
 			resp.StatusCode,
 		)

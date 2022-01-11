@@ -18,7 +18,7 @@ export type ActivateInfo = {
 };
 
 // For now, a single user's auth provider should either belong to BYTEBASE or GITLAB_SELF_HOST
-export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE" | unknown;
+export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE" | "";
 
 export type AuthProvider = {
   type: AuthProviderType;
@@ -30,8 +30,8 @@ export type AuthProvider = {
 export const EmptyAuthProvider: AuthProvider = {
   type: "",
   instanceUrl: "",
-  applicationId: "unknown",
-  secret: "unknown",
+  applicationId: "",
+  secret: "",
 };
 
 export type GitlabLoginInfo = {
