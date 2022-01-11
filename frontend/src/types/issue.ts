@@ -84,7 +84,7 @@ export type Issue = {
 export type IssueCreate = {
   // Related fields
   projectId: ProjectId;
-  pipeline: PipelineCreate;
+  pipeline?: PipelineCreate;
 
   // Domain specific fields
   name: string;
