@@ -38,6 +38,30 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 			want:         true,
 		},
 		{
+			sqlStatement: "explain select",
+			want:         true,
+		},
+		{
+			sqlStatement: "explain \n select",
+			want:         true,
+		},
+		{
+			sqlStatement: "\n explain \n \r  select",
+			want:         true,
+		},
+		{
+			sqlStatement: "explain select *",
+			want:         true,
+		},
+		{
+			sqlStatement: "  explain select ",
+			want:         true,
+		},
+		{
+			sqlStatement: "asd  explain selectasd ",
+			want:         false,
+		},
+		{
 			sqlStatement: "SELECTfoo",
 			want:         false,
 		},
@@ -47,6 +71,10 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 		},
 		{
 			sqlStatement: "SETEST * FROM test",
+			want:         false,
+		},
+		{
+			sqlStatement: " asdexplain selectasd ",
 			want:         false,
 		},
 		{
