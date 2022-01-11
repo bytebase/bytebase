@@ -42,7 +42,7 @@
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import IssueTable from "../components/IssueTable.vue";
+import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { reactive, ref, computed, onMounted, watchEffect } from "vue";

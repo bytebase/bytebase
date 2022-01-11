@@ -25,46 +25,18 @@
           <div class="flex flex-row">
             <input
               type="text"
-              class="
-                flex-1
-                min-w-0
-                block
-                w-full
-                px-3
-                py-2
-                rounded-l-md
-                border border-r border-control-border
-                focus:mr-0.5 focus:ring-control focus:border-control
-                sm:text-sm
-                disabled:bg-gray-50
-              "
+              class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
               :disabled="!allowEdit"
               :name="field.id"
               :value="fieldValue(field)"
               autocomplete="off"
-              @blur="$emit('update-custom-field', field, $event.target.value)"
+              @blur="(e: any) => $emit('update-custom-field', field, e.target.value)"
             />
             <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
             <button
               tabindex="-1"
               :disabled="!fieldValue(field)"
-              class="
-                -ml-px
-                px-2
-                py-2
-                border border-gray-300
-                text-sm
-                font-medium
-                text-control-light
-                disabled:text-gray-300
-                bg-gray-50
-                hover:bg-gray-100
-                disabled:bg-gray-50
-                focus:ring-control focus:outline-none
-                focus-visible:ring-2
-                focus:ring-offset-1
-                disabled:cursor-not-allowed
-              "
+              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
               @click.prevent="copyText(field)"
             >
               <heroicons-outline:clipboard class="w-6 h-6" />
@@ -72,23 +44,7 @@
             <button
               tabindex="-1"
               :disabled="!isValidLink(fieldValue(field))"
-              class="
-                -ml-px
-                px-2
-                py-2
-                border border-gray-300
-                text-sm
-                font-medium
-                rounded-r-md
-                text-control-light
-                disabled:text-gray-300
-                bg-gray-50
-                hover:bg-gray-100
-                disabled:bg-gray-50
-                focus:ring-control focus:outline-none
-                focus-visible:ring-2
-                focus:ring-offset-1
-              "
+              class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1"
               @click.prevent="goToLink(fieldValue(field))"
             >
               <heroicons-outline:external-link class="w-6 h-6" />
@@ -107,7 +63,7 @@
             :environmentId="environmentId"
             :selectedId="fieldValue(field) || UNKNOWN_ID"
             @select-database-id="
-              (databaseId) => {
+              (databaseId: number) => {
                 trySaveCustomField(field, databaseId);
               }
             "
@@ -133,20 +89,20 @@
 </template>
 
 <script lang="ts">
-import { PropType, computed, reactive } from "vue";
+import { PropType, computed, reactive, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import DatabaseSelect from "../components/DatabaseSelect.vue";
-import { activeEnvironment } from "../utils";
-import { OutputField, IssueContext } from "../plugins";
-import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../types";
+import DatabaseSelect from "../DatabaseSelect.vue";
+import { activeEnvironment } from "../../utils";
+import { OutputField, IssueContext } from "../../plugins";
+import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../../types";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "IssueOutputPanel",
   components: { DatabaseSelect },
   props: {
@@ -249,5 +205,5 @@ export default {
       trySaveCustomField,
     };
   },
-};
+});
 </script>

@@ -1,31 +1,11 @@
 <template>
   <div class="sm:flex sm:flex-col sm:align-center">
     <div
-      class="
-        relative
-        self-center
-        mt-6
-        bg-gray-100
-        rounded-lg
-        p-0.5
-        flex
-        sm:mt-8
-      "
+      class="relative self-center mt-6 bg-gray-100 rounded-lg p-0.5 flex sm:mt-8"
     >
       <button
         type="button"
-        class="
-          relative
-          w-1/2
-          rounded-md
-          py-2
-          text-sm
-          font-medium
-          text-gray-700
-          whitespace-nowrap
-          focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10
-          sm:w-auto sm:px-8
-        "
+        class="relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
         :class="state.isMonthly ? '' : 'bg-white border-gray-200 shadow-sm'"
         @click.prevent="state.isMonthly = false"
       >
@@ -33,19 +13,7 @@
       </button>
       <button
         type="button"
-        class="
-          ml-0.5
-          relative
-          w-1/2
-          rounded-md
-          py-2
-          text-sm
-          font-medium
-          text-gray-700
-          whitespace-nowrap
-          focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10
-          sm:w-auto sm:px-8
-        "
+        class="ml-0.5 relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
         :class="state.isMonthly ? 'bg-white border-gray-200 shadow-sm' : ''"
         @click.prevent="state.isMonthly = true"
       >
@@ -55,12 +23,7 @@
   </div>
   <div class="mt-12 grid grid-cols-3 gap-6">
     <div
-      class="
-        border border-gray-200
-        rounded-lg
-        shadow-sm
-        divide-y divide-block-border
-      "
+      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
     >
       <div class="px-6 pt-6 pb-4">
         <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
@@ -68,18 +31,7 @@
         </h2>
         <a
           href="#"
-          class="
-            mt-8
-            block
-            w-full
-            border border-accent
-            rounded-md
-            py-4
-            text-2xl
-            font-semibold
-            text-accent text-center
-            hover:bg-accent hover:text-white
-          "
+          class="mt-8 block w-full border border-accent rounded-md py-4 text-2xl font-semibold text-accent text-center hover:bg-accent hover:text-white"
           >Deploy</a
         >
         <div class="mt-6 flex justify-center flex-row">
@@ -174,50 +126,20 @@
     </div>
 
     <div
-      class="
-        border border-gray-200
-        rounded-lg
-        shadow-sm
-        divide-y divide-block-border
-      "
+      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
     >
       <div class="px-6 pt-6 pb-4">
         <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
           Standard
           <span
-            class="
-              ml-1
-              absolute
-              inline-flex
-              items-center
-              px-1.5
-              py-0.5
-              rounded-full
-              text-xs
-              font-medium
-              bg-gray-100
-              text-gray-800
-            "
+            class="ml-1 align-top inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
           >
             Beta
           </span>
         </h2>
         <a
           href="#"
-          class="
-            mt-8
-            block
-            w-full
-            border border-green-500
-            rounded-md
-            py-4
-            text-2xl
-            font-semibold
-            text-white text-center
-            bg-green-500
-            hover:bg-green-600 hover:border-green-600 hover:text-white
-            whitespace-nowrap
-          "
+          class="mt-8 block w-full border border-green-500 rounded-md py-4 text-2xl font-semibold text-white text-center bg-green-500 hover:bg-green-600 hover:border-green-600 hover:text-white whitespace-nowrap"
           >Buy now</a
         >
         <div class="mt-6 flex justify-center flex-row">
@@ -320,30 +242,14 @@
     </div>
 
     <div
-      class="
-        border border-gray-200
-        rounded-lg
-        shadow-sm
-        divide-y divide-block-border
-      "
+      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
     >
       <div class="px-6 pt-6 pb-4">
         <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
           Premium
         </h2>
         <div
-          class="
-            mt-8
-            block
-            w-full
-            border border-gray-800
-            rounded-md
-            py-4
-            text-2xl
-            font-semibold
-            text-gray-800 text-center
-            whitespace-nowrap
-          "
+          class="mt-8 block w-full border border-gray-800 rounded-md py-4 text-2xl font-semibold text-gray-800 text-center whitespace-nowrap"
         >
           Coming soon
         </div>
