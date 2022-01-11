@@ -3,41 +3,46 @@
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
         <router-link to="/" class="select-none" active-class exact-active-class>
-          <img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase" />
+          <img
+            class="h-12 w-auto"
+            src="../assets/logo-full.svg"
+            alt="Bytebase"
+          />
         </router-link>
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link
-            to="/project"
-            class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.projects") }}</router-link>
+          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">{{
+            $t("common.projects")
+          }}</router-link>
 
           <router-link to="/db" class="bar-link px-2 py-2 rounded-md">
-            {{
-              $t("common.databases")
-            }}
+            {{ $t("common.databases") }}
           </router-link>
 
           <router-link
             v-if="showDBAItem"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.instances") }}</router-link>
+            >{{ $t("common.instances") }}</router-link
+          >
 
           <router-link
             to="/environment"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.environments") }}</router-link>
+            >{{ $t("common.environments") }}</router-link
+          >
           <router-link
             to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.settings") }}</router-link>
+            >{{ $t("common.settings") }}</router-link
+          >
           <router-link
             v-if="isDevFeatures"
             to="/sql-editor"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t('sql-editor.self') }}</router-link>
+            >{{ $t("sql-editor.self") }}</router-link
+          >
         </div>
       </div>
     </div>
@@ -47,17 +52,23 @@
           v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">{{ $t('setting.plan.self') }}</span>
+          <span class="hidden lg:block font-normal text-accent">{{
+            $t("setting.plan.self")
+          }}</span>
           <div
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
-          >{{ $t('setting.plan.free') }}</div>
+          >
+            {{ $t("setting.plan.free") }}
+          </div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
-          >{{ $t('setting.plan.team') }}</div>
+          >
+            {{ $t("setting.plan.team") }}
+          </div>
           <!-- <div
             class="bar-link"
             :class="currentPlan == 2 ? 'underline' : ''"
@@ -70,22 +81,30 @@
           v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">{{ $t('settings.profile.role') }}</span>
+          <span class="hidden lg:block font-normal text-accent">{{
+            $t("settings.profile.role")
+          }}</span>
           <div
             class="bar-link"
             :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
-          >{{ $t('common.role.owner') }}</div>
+          >
+            {{ $t("common.role.owner") }}
+          </div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
-          >{{ $t('common.role.dba') }}</div>
+          >
+            {{ $t("common.role.dba") }}
+          </div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
-          >{{ $t('common.role.developer') }}</div>
+          >
+            {{ $t("common.role.developer") }}
+          </div>
         </div>
         <router-link to="/inbox" exact-active-class>
           <span
@@ -125,28 +144,32 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link
-      to="/project"
-      class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.projects') }}</router-link>
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">{{
+      $t("common.projects")
+    }}</router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">{{ $t('common.databases') }}</router-link>
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">{{
+      $t("common.databases")
+    }}</router-link>
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.instances') }}</router-link>
+      >{{ $t("common.instances") }}</router-link
+    >
 
     <router-link
       to="/environment"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.environments') }}</router-link>
+      >{{ $t("common.environments") }}</router-link
+    >
 
     <router-link
       to="/setting/member"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.settings") }}</router-link>
+      >{{ $t("common.settings") }}</router-link
+    >
   </div>
 </template>
 
@@ -209,22 +232,31 @@ export default {
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
-        email: "demo@example.com",
-        password: "1024",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "demo@example.com",
+          password: "1024",
+        },
       });
     };
 
     const switchToDBA = () => {
       store.dispatch("auth/login", {
-        email: "jerry@example.com",
-        password: "2048",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "jerry@example.com",
+          password: "2048",
+        },
       });
     };
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
-        email: "tom@example.com",
-        password: "4096",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "tom@example.com",
+          password: "4096",
+        },
       });
     };
 
