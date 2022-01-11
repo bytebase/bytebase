@@ -12,6 +12,7 @@ CREATE TABLE principal (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     `type` TEXT NOT NULL CHECK (`type` IN ('END_USER', 'SYSTEM_BOT')),
+    auth_provider TEXT NOT NULL CHECK (auth_provider in ('BYTEBASE', 'GITLAB_SELF_HOST')),
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -44,6 +45,7 @@ INSERT INTO
         creator_id,
         updater_id,
         `type`,
+        auth_provider,
         name,
         email,
         password_hash
@@ -54,6 +56,7 @@ VALUES
         1,
         1,
         'SYSTEM_BOT',
+        'BYTEBASE',
         'Bytebase',
         'support@bytebase.com',
         ''
@@ -213,7 +216,10 @@ CREATE TABLE project (
     `key` TEXT NOT NULL UNIQUE,
     workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
-    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT'))
+    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT')),
+    -- db_name_template is only used when a project is in tenant mode.
+    -- Empty value means {{DB_NAME}}.
+    db_name_template TEXT NOT NULL
 );
 
 INSERT INTO
@@ -224,7 +230,9 @@ INSERT INTO
         name,
         `key`,
         workflow_type,
-        visibility
+        visibility,
+        tenant_mode,
+        db_name_template
     )
 VALUES
     (
@@ -234,7 +242,9 @@ VALUES
         'Default',
         'DEFAULT',
         'UI',
-        'PUBLIC'
+        'PUBLIC',
+        'DISABLED',
+        ''
     );
 
 UPDATE

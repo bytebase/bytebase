@@ -21,8 +21,8 @@
 
 <script lang="ts">
 import { defineComponent, PropType, reactive, watch } from "vue";
-import { UNKNOWN_ID, Pipeline, StageId } from "../types";
-import { activeStage } from "../utils";
+import { UNKNOWN_ID, Pipeline, StageId } from "../../types";
+import { activeStage } from "../../utils";
 
 interface LocalState {
   selectedId: number;

@@ -119,7 +119,8 @@ export default {
       state.selectedVCS = vcs;
       const newWindow = openWindowForOAuth(
         `${vcs.instanceUrl}/oauth/authorize`,
-        vcs.applicationId
+        vcs.applicationId,
+        "register"
       );
       if (newWindow) {
         window.addEventListener(OAuthWindowEvent, eventListener, false);

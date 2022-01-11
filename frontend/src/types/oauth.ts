@@ -25,11 +25,15 @@ export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
+type OAuthType = "login" | "register";
+
 export function openWindowForOAuth(
   endpoint: string,
-  applicationId: string
+  applicationId: string,
+  type: OAuthType
 ): Window | null {
-  const stateQueryParameter = randomString(40);
+  // we use type to determine oauth type when receiving the callback
+  const stateQueryParameter = `${type}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   return window.open(
