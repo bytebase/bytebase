@@ -287,12 +287,6 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, "`workflow_type` = ?"), append(args, *v)
 	}
-	if v := patch.TenantMode; v != nil {
-		set, args = append(set, "`tenant_mode` = ?"), append(args, *v)
-	}
-	if v := patch.DBNameTemplate; v != nil {
-		set, args = append(set, "`db_name_template` = ?"), append(args, *v)
-	}
 
 	args = append(args, patch.ID)
 

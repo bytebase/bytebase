@@ -134,12 +134,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
 		}
-		if err := api.ValidateProjectDBNameTemplate(*projectPatch.DBNameTemplate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch project request: %s", err.Error()))
-		}
-		if projectPatch.TenantMode != nil && projectPatch.DBNameTemplate != nil && *projectPatch.TenantMode != api.TenantModeTenant && *projectPatch.DBNameTemplate != "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
-		}
 
 		project, err := s.ProjectService.PatchProject(ctx, projectPatch)
 		if err != nil {
