@@ -101,6 +101,15 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if GitlabUserInfo.State != vcsPlugin.UserStateActive {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
 				}
+
+				principalFind := &api.PrincipalFind{
+					Email: &GitlabUserInfo.Email,
+				}
+				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+				}
+
 				// create a new user if not exist
 				if user == nil {
 					// if user login via gitlab at the first time, we will generate a random password
