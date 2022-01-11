@@ -97,6 +97,7 @@ common:
   unassigned: 未指派
   new: 创建
   add: 添加
+  confirm-and-add: 确认并添加
   query: 查询
   transfer: 转移
   migration: 迁移
@@ -220,7 +221,7 @@ settings:
     general: 通用
     members: 成员
     version-control: 版本控制
-    plans: 价格方案
+    subscription: 订阅
     labels: 标签
   profile:
     email: 邮箱
@@ -229,7 +230,7 @@ settings:
     password-confirm: 确认密码
     password-confirm-placeholder: 再次输入以确认
     password-mismatch: 密码输入不一致
-    plan: （升级到团队方案来开启角色管理）
+    subscription: （升级到付费方案来解锁角色管理）
   members:
     active: 已激活
     inactive: 未激活
@@ -239,7 +240,7 @@ settings:
     invites: 发送邀请
     invited: 已邀请
     yourself: 您自己
-    upgrade: 升级付费方案来解锁其他角色
+    upgrade: 升级到付费方案来解锁角色管理
     select-role: 选择角色
     not-assigned: 未指派
     table:
@@ -254,7 +255,7 @@ settings:
       reactivate: 启用
       reactivate-confirm-title: 确定启用
     tooltip:
-      upgrade: 升级到团队版来开启成员管理
+      upgrade: 升级到付费方案来解锁角色管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
 activity:
@@ -899,6 +900,8 @@ sql-editor:
   search-databases: 搜索数据库
   loading-databases: 加载数据库信息...
   close-pane: 关闭面板
+  loading-data: 加载数据中...
+  table-empty-placehoder: 点击 ”运行“ 执行查询
 label:
   error:
     key-necessary: 需要指定 Key

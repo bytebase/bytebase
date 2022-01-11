@@ -70,7 +70,7 @@ import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
-import moment from "moment";
+import dayjs from "dayjs";
 
 export default defineComponent({
   name: "InboxList",
@@ -181,10 +181,10 @@ export default defineComponent({
           return t("activity.sentence.changed-from-to", {
             name: "earliest allowed time",
             oldValue: oldTs
-              ? moment(oldTs * 1000)
+              ? dayjs(oldTs * 1000)
               : t("task.earliest-allowed-time-unset"),
             newValue: newTs
-              ? moment(newTs * 1000)
+              ? dayjs(newTs * 1000)
               : t("task.earliest-allowed-time-unset"),
           });
         }

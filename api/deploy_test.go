@@ -15,10 +15,11 @@ func TestGetDeploymentSchedule(t *testing.T) {
 	}{
 		{
 			"complexDeployments",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{
 				Deployments: []*Deployment{
 					{
+						Name: "deployment1",
 						Spec: &DeploymentSpec{
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
@@ -36,6 +37,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 						},
 					},
 					{
+						Name: "deployment2",
 						Spec: &DeploymentSpec{
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
@@ -57,7 +59,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			false,
 		}, {
 			"invalidPayload",
-			`{"unmatchdeployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"unmatchdeployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{},
 			false,
 		}, {
@@ -67,32 +69,32 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			true,
 		}, {
 			"inOperatorWithNoValue",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
 			nil,
 			true,
 		}, {
 			"existsOperatorWithValues",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
 		}, {
 			"invalidOperator",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
 			nil,
 			true,
 		}, {
 			"missingEnvironment",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
 		}, {
 			"environmentExistsOperator",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
 		}, {
 			"environmentMultiValues",
-			`{"deployments":[{"spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			true,
 		},

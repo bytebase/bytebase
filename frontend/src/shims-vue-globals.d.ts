@@ -11,14 +11,14 @@ import type {
   sizeToFit,
   urlfy,
 } from "./utils";
-import type moment from "moment";
+import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
 
 declare module "@vue/runtime-core" {
   export interface ComponentCustomProperties {
     window: Window & typeof globalThis;
     console: Console;
-    moment: typeof moment;
+    dayjs: typeof dayjs;
     humanizeTs: typeof humanizeTs;
     isDev: boolean;
     isRelease: boolean;

@@ -367,7 +367,7 @@ import {
 } from "../../utils";
 import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
-import moment from "moment";
+import dayjs from "dayjs";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -692,8 +692,8 @@ export default defineComponent({
           const oldVal = payload.oldEarliestAllowedTs;
           return t("activity.sentence.changed-from-to", {
             name: "earliest allowed time",
-            oldValue: oldVal ? moment(oldVal * 1000) : "Unset",
-            newValue: newVal ? moment(newVal * 1000) : "Unset",
+            oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
+            newValue: newVal ? dayjs(newVal * 1000) : "Unset",
           });
         }
       }

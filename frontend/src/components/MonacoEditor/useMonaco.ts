@@ -1,6 +1,8 @@
-import * as monaco from "monaco-editor";
 import { computed } from "vue";
 import { useStore } from "vuex";
+import { useNamespacedGetters } from "vuex-composition-helpers";
+import * as monaco from "monaco-editor";
+import type { editor as Editor } from "monaco-editor";
 
 import AutoCompletion from "./AutoCompletion";
 import {
@@ -8,11 +10,11 @@ import {
   Table,
   CompletionItems,
   InstanceGetters,
+  SqlDialect,
 } from "../../types";
+import sqlFormatter from "./sqlFormatter";
 
-import { useNamespacedGetters } from "vuex-composition-helpers";
-
-const setupMonaco = async (lang: string) => {
+const useMonaco = async (lang: string) => {
   const store = useStore();
 
   const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
@@ -124,10 +126,12 @@ const setupMonaco = async (lang: string) => {
     // load workers
     (async () => {
       const [{ default: EditorWorker }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         import("monaco-editor/esm/vs/editor/editor.worker.js?worker"),
       ]);
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       window.MonacoEnvironment = {
         getWorker(_: any, label: string) {
@@ -137,7 +141,45 @@ const setupMonaco = async (lang: string) => {
     })(),
   ]);
 
-  return { monaco, completionItemProvider };
+  const setContent = (
+    editorInstance: Editor.IStandaloneCodeEditor,
+    content: string
+  ) => {
+    if (editorInstance) editorInstance.setValue(content);
+  };
+
+  const formatContent = (
+    editorInstance: Editor.IStandaloneCodeEditor,
+    language: SqlDialect
+  ) => {
+    if (editorInstance) {
+      const sql = editorInstance.getValue();
+      const { data } = sqlFormatter(sql, language);
+      setContent(editorInstance, data);
+    }
+  };
+
+  const setPositionAtEndOfLine = (
+    editorInstance: Editor.IStandaloneCodeEditor
+  ) => {
+    if (editorInstance) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      const range = editorInstance.getModel().getFullModelRange();
+      editorInstance.setPosition({
+        lineNumber: range?.endLineNumber,
+        column: range?.endColumn,
+      });
+    }
+  };
+
+  return {
+    monaco,
+    completionItemProvider,
+    formatContent,
+    setContent,
+    setPositionAtEndOfLine,
+  };
 };
 
-export default setupMonaco;
+export { useMonaco };

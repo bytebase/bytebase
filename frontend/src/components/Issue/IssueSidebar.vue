@@ -113,7 +113,7 @@
           {{
             task.earliestAllowedTs === 0
               ? $t("task.earliest-allowed-time-unset")
-              : moment(task.earliestAllowedTs * 1000).format("LLL")
+              : dayjs(task.earliestAllowedTs * 1000).format("LLL")
           }}</span
         >
       </div>
@@ -181,14 +181,14 @@
           {{ $t("common.updated-at") }}
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.updatedTs * 1000).format("LLL") }}</span
+          {{ dayjs(issue.updatedTs * 1000).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.created-at") }}
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.createdTs * 1000).format("LLL") }}</span
+          {{ dayjs(issue.createdTs * 1000).format("LLL") }}</span
         >
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.creator") }}
@@ -251,7 +251,9 @@ import {
 } from "../../types";
 import { allTaskList, databaseSlug, isDBAOrOwner } from "../../utils";
 import { useRouter } from "vue-router";
-import moment from "moment";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+dayjs.extend(isSameOrAfter);
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
@@ -474,7 +476,7 @@ export default defineComponent({
       }
     };
 
-    const isDayPassed = (ts: number) => !moment(ts).isSameOrAfter(now, "day");
+    const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
     return {
       EMPTY_ID,
