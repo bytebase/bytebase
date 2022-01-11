@@ -32,7 +32,9 @@
             class="w-5 mr-1"
             :src="AuthProviderConfig[authProvider.type].iconPath"
           /><span class="text-center font-semibold align-middle">{{
-            authProvider.name
+            authProviderList.length == 1
+              ? $t("auth.sign-in.gitlab")
+              : authProvider.name
           }}</span>
         </n-button>
       </template>

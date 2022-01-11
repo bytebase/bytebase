@@ -4,7 +4,7 @@
 export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE" | "";
 
 export type LoginInfo = {
-  AuthPro: AuthProviderType;
+  authProvider: AuthProviderType;
   payload: GitlabLoginInfo | BytebaseLoginInfo;
 };
 
