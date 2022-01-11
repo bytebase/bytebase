@@ -154,7 +154,8 @@ export default {
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         const newWindow = openWindowForOAuth(
           `${state.config.instanceUrl}/oauth/authorize`,
-          state.config.applicationId
+          state.config.applicationId,
+          "register"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {

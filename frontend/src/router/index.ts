@@ -796,7 +796,8 @@ router.beforeEach((to, from, next) => {
     to.name === SIGNUP_MODULE ||
     to.name === ACTIVATE_MODULE ||
     to.name === PASSWORD_RESET_MODULE ||
-    to.name === PASSWORD_FORGOT_MODULE
+    to.name === PASSWORD_FORGOT_MODULE ||
+    to.name === "oauth-callback"
   ) {
     if (isLoggedIn) {
       next({ name: HOME_MODULE, replace: true });

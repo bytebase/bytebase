@@ -54,16 +54,25 @@ const actions = {
     return convertedProviderList;
   },
 
-  async loginWithGitlab({ commit }: any, gitlabLoginInfo: GitlabLoginInfo) {
-    console.log("gitlabLoginInfo", gitlabLoginInfo);
-
-    const email = (
+  async loginWithGitlab(
+    { commit, dispatch, rootGetters }: any,
+    gitlabLoginInfo: GitlabLoginInfo
+  ) {
+    const loggedInUser = (
       await axios.post("/api/auth/gitlab/login", {
         data: { type: "gitlabLoginInfo", attributes: gitlabLoginInfo },
       })
     ).data.data;
 
-    console.log("user", email);
+    // Refresh the corresponding principal
+    await dispatch("principal/fetchPrincipalById", loggedInUser.id, {
+      root: true,
+    });
+
+    // The conversion relies on the above refresh.
+    const convertedUser = convert(loggedInUser, rootGetters);
+    commit("setCurrentUser", convertedUser);
+    return convertedUser;
   },
 
   async login({ commit, dispatch, rootGetters }: any, loginInfo: LoginInfo) {

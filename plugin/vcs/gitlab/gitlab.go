@@ -138,6 +138,31 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
+func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (io.ReadCloser, error) {
+	resp, err := httpGet(
+		instanceURL,
+		"user",
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+
+	if resp.StatusCode == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch userInfo"))
+	} else if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("failed to read user'f info from GitLab instance %s, status code: %d",
+			instanceURL,
+			resp.StatusCode,
+		)
+	}
+
+	return resp.Body, err
+}
+
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(fileCommit{
 		Branch:        fileCommitCreate.Branch,

@@ -28,6 +28,15 @@ func (e PrincipalType) String() string {
 	return ""
 }
 
+type PrincipalAuthProvider string
+
+const (
+	PrincipalAuthProviderBytebase       PrincipalAuthProvider = "BYTEBASE"
+	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
+)
+
+const PrincipalDefaultPassword string = "bytebase"
+
 // Principal is the API message for principals.
 type Principal struct {
 	ID int `jsonapi:"primary,principal"`
@@ -39,9 +48,10 @@ type Principal struct {
 	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Type  PrincipalType `jsonapi:"attr,type"`
-	Name  string        `jsonapi:"attr,name"`
-	Email string        `jsonapi:"attr,email"`
+	Type         PrincipalType         `jsonapi:"attr,type"`
+	AuthProvider PrincipalAuthProvider `jsonapi:"attr,authProvider"`
+	Name         string                `jsonapi:"attr,name"`
+	Email        string                `jsonapi:"attr,email"`
 	// Do not return to the client
 	PasswordHash string
 	// Role is stored in the member table, but we include it when returning the principal.
@@ -53,25 +63,27 @@ type Principal struct {
 // can map directly to the frontend Principal object without any conversion.
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		ID        int           `json:"id"`
-		CreatorID int           `json:"creatorId"`
-		CreatedTs int64         `json:"createdTs"`
-		UpdaterID int           `json:"updaterId"`
-		UpdatedTs int64         `json:"updatedTs"`
-		Type      PrincipalType `json:"type"`
-		Name      string        `json:"name"`
-		Email     string        `json:"email"`
-		Role      Role          `json:"role"`
+		ID           int                   `json:"id"`
+		CreatorID    int                   `json:"creatorId"`
+		CreatedTs    int64                 `json:"createdTs"`
+		UpdaterID    int                   `json:"updaterId"`
+		UpdatedTs    int64                 `json:"updatedTs"`
+		Type         PrincipalType         `json:"type"`
+		AuthProvider PrincipalAuthProvider `json:"authProvider"`
+		Name         string                `json:"name"`
+		Email        string                `json:"email"`
+		Role         Role                  `json:"role"`
 	}{
-		ID:        p.ID,
-		CreatorID: p.CreatorID,
-		CreatedTs: p.CreatedTs,
-		UpdaterID: p.UpdaterID,
-		UpdatedTs: p.UpdatedTs,
-		Type:      p.Type,
-		Name:      p.Name,
-		Email:     p.Email,
-		Role:      p.Role,
+		ID:           p.ID,
+		CreatorID:    p.CreatorID,
+		CreatedTs:    p.CreatedTs,
+		UpdaterID:    p.UpdaterID,
+		UpdatedTs:    p.UpdatedTs,
+		Type:         p.Type,
+		AuthProvider: p.AuthProvider,
+		Name:         p.Name,
+		Email:        p.Email,
+		Role:         p.Role,
 	})
 }
 
@@ -84,6 +96,7 @@ type PrincipalCreate struct {
 
 	// Domain specific fields
 	Type         PrincipalType
+	AuthProvider PrincipalAuthProvider
 	Name         string `jsonapi:"attr,name"`
 	Email        string `jsonapi:"attr,email"`
 	Password     string `jsonapi:"attr,password"`
