@@ -221,16 +221,24 @@ export default {
             accessToken: token.accessToken,
           };
 
-          store.dispatch("auth/loginWithGitlab", gitlabLoginInfo).then(() => {
-            router.push("/");
-          });
+          store
+            .dispatch("auth/login", {
+              authProvider: "GITLAB_SELF_HOST",
+              payload: gitlabLoginInfo,
+            })
+            .then(() => {
+              router.push("/");
+            });
         });
     };
 
     const trySignin = () => {
       const loginInfo: LoginInfo = {
-        email: state.email,
-        password: state.password,
+        authProvider: "BYTEBASE",
+        payload: {
+          email: state.email,
+          password: state.password,
+        },
       };
       store.dispatch("auth/login", loginInfo).then(() => {
         router.push("/");

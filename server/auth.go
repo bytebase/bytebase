@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/bytebase/bytebase/api"
@@ -44,111 +43,77 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/auth/gitlab/login", func(c echo.Context) error {
+	g.POST("/auth/login/:auth_provider", func(c echo.Context) error {
 		ctx := context.Background()
-		gitlabLogin := &api.GitlabLogin{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
-		}
+		var user *api.Principal
 
-		reader, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
-			common.OauthContext{
-				ClientID:     gitlabLogin.ApplicationID,
-				ClientSecret: gitlabLogin.Secret,
-				AccessToken:  gitlabLogin.AccessToken,
-				RefreshToken: "",
-				Refresher:    nil,
-			},
-			gitlabLogin.InstanceURL,
-		)
-		defer func() {
-			reader.Close()
-		}()
+		authProvider := api.PrincipalAuthProvider(c.Param("auth_provider"))
+		switch authProvider {
+		case api.PrincipalAuthProviderBytebase:
+			{
+				login := &api.Login{}
+				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
+				}
 
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user info").SetInternal(err)
-		}
-
-		b, err := io.ReadAll(reader)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user info").SetInternal(err)
-		}
-		GitlabUserInfo := &vcsPlugin.UserInfo{}
-		if err := json.Unmarshal(b, GitlabUserInfo); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal user info").SetInternal(err)
-		}
-
-		// we only allow active user to login via gitlab
-		if *GitlabUserInfo.State != vcsPlugin.UserStateActive {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
-		}
-
-		principalFind := &api.PrincipalFind{
-			Email: GitlabUserInfo.Email,
-		}
-		user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
-		}
-
-		// create a new user if not exist
-		if user == nil {
-			signup := &api.Signup{
-				Email:    *GitlabUserInfo.Email,
-				Password: api.PrincipalDefaultPassword,
-				Name:     *GitlabUserInfo.Name,
+				principalFind := &api.PrincipalFind{
+					Email: &login.Email,
+				}
+				var err error
+				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+				}
+				if user == nil {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
+				}
+				// Compare the stored hashed password, with the hashed version of the password that was received.
+				if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(login.Password)); err != nil {
+					// If the two passwords don't match, return a 401 status.
+					return echo.NewHTTPError(http.StatusUnauthorized, "Incorrect password").SetInternal(err)
+				}
 			}
-			var httpError *echo.HTTPError
-			user, httpError = trySignup(ctx, signup, api.PrincipalAuthProviderGitlabSelfHost, s)
-			if httpError != nil {
-				return httpError
-			}
-		} else {
-			// if user exist, try login
-			memberFind := &api.MemberFind{
-				PrincipalID: &user.ID,
-			}
-			member, err := s.MemberService.FindMember(ctx, memberFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
-			}
-			if member == nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", *GitlabUserInfo.Email))
-			}
-			if member.RowStatus == api.Archived {
-				return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
+		case api.PrincipalAuthProviderGitlabSelfHost:
+			{
+				gitlabLogin := &api.GitlabLogin{}
+				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
+				}
+				GitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+					common.OauthContext{
+						ClientID:     gitlabLogin.ApplicationID,
+						ClientSecret: gitlabLogin.Secret,
+						AccessToken:  gitlabLogin.AccessToken,
+						RefreshToken: "",
+						Refresher:    nil,
+					},
+					gitlabLogin.InstanceURL,
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
+				}
+
+				// we only allow active user to login via gitlab
+				if *GitlabUserInfo.State != vcsPlugin.UserStateActive {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
+				}
+				// create a new user if not exist
+				if user == nil {
+					signup := &api.Signup{
+						Email:    *GitlabUserInfo.Email,
+						Password: api.PrincipalDefaultPassword,
+						Name:     *GitlabUserInfo.Name,
+					}
+					var httpError *echo.HTTPError
+					user, httpError = trySignup(ctx, signup, api.PrincipalAuthProviderGitlabSelfHost, s)
+					if httpError != nil {
+						return httpError
+					}
+				}
 			}
 		}
 
-		if err := GenerateTokensAndSetCookies(c, user, s.mode, s.secret); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal auth provider").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.POST("/auth/login", func(c echo.Context) error {
-		ctx := context.Background()
-		login := &api.Login{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
-		}
-
-		principalFind := &api.PrincipalFind{
-			Email: &login.Email,
-		}
-		user, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
-		}
-		if user == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
-		}
-
+		// test the status of this user
 		memberFind := &api.MemberFind{
 			PrincipalID: &user.ID,
 		}
@@ -157,16 +122,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
 		if member == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", login.Email))
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", user.Email))
 		}
 		if member.RowStatus == api.Archived {
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
-		}
-
-		// Compare the stored hashed password, with the hashed version of the password that was received.
-		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(login.Password)); err != nil {
-			// If the two passwords don't match, return a 401 status.
-			return echo.NewHTTPError(http.StatusUnauthorized, "Incorrect password").SetInternal(err)
 		}
 
 		// If password is correct, generate tokens and set cookies.

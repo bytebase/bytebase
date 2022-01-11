@@ -87,7 +87,7 @@ type Provider interface {
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (io.ReadCloser, error)
+	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 
 	// Commits a new file
 	//

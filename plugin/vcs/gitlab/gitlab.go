@@ -138,7 +138,7 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (io.ReadCloser, error) {
+func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
 	resp, err := httpGet(
 		instanceURL,
 		"user",
@@ -150,6 +150,9 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 		},
 		oauthCtx.Refresher,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	if resp.StatusCode == 404 {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s", instanceURL))
@@ -160,7 +163,17 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 		)
 	}
 
-	return resp.Body, err
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	UserInfo := &vcs.UserInfo{}
+	if err := json.Unmarshal(b, UserInfo); err != nil {
+		return nil, err
+	}
+
+	return UserInfo, err
 }
 
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {

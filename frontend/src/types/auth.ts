@@ -1,7 +1,11 @@
 // Auth
+
+// For now, a single user's auth provider should either belong to BYTEBASE or GITLAB_SELF_HOST
+export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE" | "";
+
 export type LoginInfo = {
-  email: string;
-  password: string;
+  authProvider: AuthProviderType;
+  payload: GitlabLoginInfo | BytebaseLoginInfo;
 };
 
 export type SignupInfo = {
@@ -17,8 +21,10 @@ export type ActivateInfo = {
   token: string;
 };
 
-// For now, a single user's auth provider should either belong to BYTEBASE or GITLAB_SELF_HOST
-export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE" | "";
+export type BytebaseLoginInfo = {
+  email: string;
+  password: string;
+};
 
 export type AuthProvider = {
   type: AuthProviderType;
