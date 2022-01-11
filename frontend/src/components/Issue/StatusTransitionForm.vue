@@ -34,7 +34,7 @@
                 :environmentId="environmentId"
                 :selectedId="state.outputValueList[index]"
                 @select-database-id="
-                  (databaseId) => {
+                  (databaseId: string) => {
                     state.outputValueList[index] = databaseId;
                   }
                 "
@@ -87,12 +87,12 @@
             :placeholder="$t('issue.status-transition.form.placeholder')"
             @input="
               (e) => {
-                sizeToFit(e.target);
+                sizeToFit(e.target as HTMLTextAreaElement);
               }
             "
             @focus="
               (e) => {
-                sizeToFit(e.target);
+                sizeToFit(e.target as HTMLTextAreaElement);
               }
             "
           ></textarea>
@@ -125,11 +125,11 @@
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import cloneDeep from "lodash-es/cloneDeep";
-import DatabaseSelect from "./DatabaseSelect.vue";
+import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
-import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../types";
-import { OutputField } from "../plugins";
-import { activeEnvironment, TaskStatusTransition } from "../utils";
+import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../../types";
+import { OutputField } from "../../plugins";
+import { activeEnvironment, TaskStatusTransition } from "../../utils";
 
 type CheckSummary = {
   successCount: number;

@@ -17,15 +17,15 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, computed } from "vue";
-import TaskRunTable from "../components/TaskRunTable.vue";
-import { Stage, Task } from "../types";
-import { activeTaskInStage } from "../utils";
+import { reactive, PropType, computed, defineComponent } from "vue";
+import TaskRunTable from "./TaskRunTable.vue";
+import { Stage, Task } from "../../types";
+import { activeTaskInStage } from "../../utils";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "IssueStagePanel",
   components: { TaskRunTable },
   props: {
@@ -46,5 +46,5 @@ export default {
       activeTask,
     };
   },
-};
+});
 </script>

@@ -41,7 +41,7 @@
           :tab-item-list="tabItemList"
           :selected-index="state.selectedTabIndex"
           @select-index="
-            (index) => {
+            (index: number) => {
               state.selectedTaskCheckRun = tabTaskCheckRunList[index];
               state.selectedTabIndex = index;
             }
@@ -64,12 +64,12 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { Task, TaskCheckRun, TaskCheckStatus } from "../types";
+import { Task, TaskCheckRun, TaskCheckStatus } from "../../types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
-import { BBTabFilterItem } from "../bbkit/types";
+import { BBTabFilterItem } from "../../bbkit/types";
 import { cloneDeep } from "lodash-es";
-import { humanizeTs } from "../utils";
+import { humanizeTs } from "../../utils";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {

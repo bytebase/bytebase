@@ -54,7 +54,7 @@
     :readonly="!state.editing"
     @input="
       (e) => {
-        sizeToFit(e.target);
+        sizeToFit(e.target as HTMLTextAreaElement);
         // When creating the issue, we will emit the event on keystroke to update the in-memory state.
         if (create) {
           $emit('update-description', state.editDescription);
@@ -63,7 +63,7 @@
     "
     @focus="
       (e) => {
-        sizeToFit(e.target);
+        sizeToFit(e.target as HTMLTextAreaElement);
       }
     "
   ></textarea>
@@ -78,16 +78,17 @@ import {
   ref,
   reactive,
   watch,
+  defineComponent,
 } from "vue";
-import { Issue } from "../types";
-import { sizeToFit } from "../utils";
+import { Issue } from "../../types";
+import { sizeToFit } from "../../utils";
 
 interface LocalState {
   editing: boolean;
   editDescription: string;
 }
 
-export default {
+export default defineComponent({
   name: "IssueDescriptionPanel",
   props: {
     issue: {
@@ -203,5 +204,5 @@ export default {
       cancelEdit,
     };
   },
-};
+});
 </script>
