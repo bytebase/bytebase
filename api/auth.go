@@ -6,10 +6,10 @@ type AuthProvider struct {
 	Type          *vcs.Type `jsonapi:"attr,type"`
 	InstanceURL   string    `jsonapi:"attr,instanceUrl"`
 	ApplicationID string    `jsonapi:"attr,applicationId"`
-	Secret        string    `jsonapi:"attr,secret"`
+	// Secret will be used for OAuth on the client side when user choose to login via Gitlab
+	Secret string `jsonapi:"attr,secret"`
 }
 
-// TODO(zilong): if the number of auth provider adds up, we should use dynamic shcema to avoid repetitive work
 // GitlabLogin is the API message for logins via Gitlab.
 type GitlabLogin struct {
 	InstanceURL   string `jsonapi:"attr,instanceUrl"`

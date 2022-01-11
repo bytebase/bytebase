@@ -74,9 +74,9 @@ const (
 
 // UserInfo is the API message for user info.
 type UserInfo struct {
-	Email *string    `json:"email"`
-	Name  *string    `json:"Name"`
-	State *UserState `json:"state"`
+	Email string    `json:"email"`
+	Name  string    `json:"Name"`
+	State UserState `json:"state"`
 }
 
 type Provider interface {

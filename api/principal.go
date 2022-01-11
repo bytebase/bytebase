@@ -35,8 +35,6 @@ const (
 	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
 )
 
-const PrincipalDefaultPassword string = "bytebase"
-
 // Principal is the API message for principals.
 type Principal struct {
 	ID int `jsonapi:"primary,principal"`
