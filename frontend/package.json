@@ -24,7 +24,6 @@
     "highlight.js": "^10.6.0",
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",
-    "moment": "^2.29.1",
     "monaco-editor": "^0.31.1",
     "naive-ui": "^2.23.1",
     "node-sql-parser": "^4.0.3",
