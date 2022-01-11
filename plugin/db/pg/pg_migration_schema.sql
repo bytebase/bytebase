@@ -20,11 +20,14 @@ CREATE TABLE migration_history (
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
     -- We call it engine because maybe we could load history from other migration tool.
-    engine TEXT NOT NULL CHECK (engine in ('UI', 'VCS')),
-    type TEXT NOT NULL CHECK (type in ('BASELINE', 'MIGRATE', 'BRANCH', 'DATA')),
+    -- Current allowed values are UI, VCS.
+    engine TEXT NOT NULL,
+    -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
+    type TEXT NOT NULL,
+    -- Current allowed values are PENDING, DONE, FAILED.
     -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
-    status TEXT NOT NULL CHECK (status in ('PENDING', 'DONE', 'FAILED')),
+    status TEXT NOT NULL,
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
