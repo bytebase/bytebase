@@ -132,11 +132,9 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name           *string              `jsonapi:"attr,name"`
-	Key            *string              `jsonapi:"attr,key"`
-	WorkflowType   *ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	TenantMode     *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
-	DBNameTemplate *string              `jsonapi:"attr,dbNameTemplate"`
+	Name         *string              `jsonapi:"attr,name"`
+	Key          *string              `jsonapi:"attr,key"`
+	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
 }
 
 var (
