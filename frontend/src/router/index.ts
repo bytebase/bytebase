@@ -322,7 +322,8 @@ const routes: Array<RouteRecordRaw> = [
                 path: "subscription",
                 name: "setting.workspace.subscription",
                 meta: { title: () => t("settings.sidebar.subscription") },
-                component: () => import("../views/SettingWorkspaceSubscription.vue"),
+                component: () =>
+                  import("../views/SettingWorkspaceSubscription.vue"),
                 props: true,
               },
               {
