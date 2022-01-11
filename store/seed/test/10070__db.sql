@@ -8,7 +8,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -37,7 +37,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -66,7 +66,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -95,7 +95,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -125,7 +125,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -154,7 +154,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -183,7 +183,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -212,7 +212,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -242,7 +242,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -271,7 +271,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -300,7 +300,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -329,7 +329,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -359,7 +359,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -388,7 +388,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -417,7 +417,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -446,7 +446,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -476,7 +476,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -506,7 +506,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -536,7 +536,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -566,7 +566,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -596,7 +596,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -624,7 +624,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -652,7 +652,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -680,7 +680,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -710,7 +710,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version

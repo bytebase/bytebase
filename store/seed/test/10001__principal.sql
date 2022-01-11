@@ -5,7 +5,7 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
         auth_provider,
         name,
         email,
@@ -28,7 +28,7 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
         auth_provider,
         name,
         email,
@@ -51,7 +51,7 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
         auth_provider,
         name,
         email,
@@ -74,7 +74,7 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
         auth_provider,
         name,
         email,

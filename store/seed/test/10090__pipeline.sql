@@ -5,7 +5,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -25,7 +25,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -45,7 +45,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -65,7 +65,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -87,7 +87,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -109,7 +109,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -131,7 +131,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -153,7 +153,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -175,7 +175,7 @@ INSERT INTO
         updater_id,
         updated_ts,
         name,
-        `status`
+        status
     )
 VALUES
     (

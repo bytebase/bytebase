@@ -134,13 +134,13 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			stage_id,
 			instance_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			payload,
 			earliest_allowed_ts
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -163,13 +163,13 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			instance_id,
 			database_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			payload,
 			earliest_allowed_ts
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -254,7 +254,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			list = append(list, "?")
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -269,8 +269,8 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 			instance_id,
 			database_id,
 		    name,
-		    `+"`status`,"+`
-			`+"`type`,"+`
+		    status,
+			type,
 			payload,
 			earliest_allowed_ts
 		FROM task
@@ -346,7 +346,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
 	)
@@ -454,7 +454,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 	// Updates the task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "`status` = ?"), append(args, patch.Status)
+	set, args = append(set, "status = ?"), append(args, patch.Status)
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -462,7 +462,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, `+"`status`, `type`, payload, earliest_allowed_ts"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
 	)

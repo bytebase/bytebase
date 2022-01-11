@@ -9,11 +9,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -42,11 +42,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -74,11 +74,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -106,11 +106,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -138,11 +138,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -169,11 +169,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -200,11 +200,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -232,11 +232,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -263,11 +263,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -294,11 +294,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -326,11 +326,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -357,11 +357,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -388,11 +388,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -420,11 +420,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -451,11 +451,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -482,11 +482,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -513,11 +513,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -545,11 +545,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -576,11 +576,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -607,11 +607,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -638,11 +638,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -670,11 +670,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -701,11 +701,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -732,11 +732,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -764,11 +764,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -795,11 +795,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -826,11 +826,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -857,11 +857,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -889,11 +889,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -920,11 +920,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -951,11 +951,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -982,11 +982,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1014,11 +1014,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1045,11 +1045,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1076,11 +1076,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1108,11 +1108,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1139,11 +1139,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1170,11 +1170,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1201,11 +1201,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1233,11 +1233,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1264,11 +1264,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1295,11 +1295,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1326,11 +1326,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1358,11 +1358,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1389,11 +1389,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1420,11 +1420,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1452,11 +1452,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1483,11 +1483,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1514,11 +1514,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1545,11 +1545,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1577,11 +1577,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1608,11 +1608,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1639,11 +1639,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (
@@ -1670,11 +1670,11 @@ INSERT INTO
         name,
         position,
         `default`,
-        `nullable`,
-        `type`,
+        nullable,
+        type,
         character_set,
-        `collation`,
-        `comment`
+        collation,
+        comment
     )
 VALUES
     (

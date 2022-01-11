@@ -135,14 +135,14 @@ func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.Issu
 			project_id,
 			pipeline_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			description,
 			assignee_id,
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -207,7 +207,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			list = append(list, "?")
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
 	var query = `
@@ -220,8 +220,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 			project_id,
 			pipeline_id,
 		    name,
-			` + "`status`," + `
-			` + "`type`," + `
+			status,
+			type,
 			description,
 			assignee_id,
 			payload
@@ -276,7 +276,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		set, args = append(set, "name = ?"), append(args, *v)
 	}
 	if v := patch.Status; v != nil {
-		set, args = append(set, "`status` = ?"), append(args, api.IssueStatus(*v))
+		set, args = append(set, "status = ?"), append(args, api.IssueStatus(*v))
 	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, "description = ?"), append(args, *v)
@@ -299,7 +299,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, `+"`status`, `type`, description, assignee_id, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
 	`,
 		args...,
 	)

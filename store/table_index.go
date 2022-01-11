@@ -95,13 +95,13 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 			name,
 			expression,
 			position,
-			`+"`type`,"+`
+			type,
 			`+"`unique`,"+`
 			visible,
 			comment
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, `type`, `unique`, visible, comment"+`
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, `unique`, visible, comment"+`
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -176,7 +176,7 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 			name,
 			expression,
 			position,
-			`+"`type`,"+`
+			`+"type,"+`
 			`+"`unique`,"+`
 			visible,
 			comment

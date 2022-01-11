@@ -121,11 +121,11 @@ func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api
 			updater_id,
 			instance_id,
 			database_id,
-			`+"`type`,"+`
+			type,
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, `+"`type`"+`, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
 	`,
 		upsert.CreatorID,
 		upsert.CreatorID,
@@ -183,7 +183,7 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "`type` = ?"), append(args, *v)
+		where, args = append(where, "type = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -195,7 +195,7 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 			updated_ts,
 			instance_id,
 			database_id,
-			`+"`type`,"+`
+			type,
 			payload
 		FROM anomaly
 		WHERE `+strings.Join(where, " AND ")+`
@@ -262,7 +262,7 @@ func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomal
 		UPDATE anomaly
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, `+"`type`"+`, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
 	`,
 		args...,
 	)

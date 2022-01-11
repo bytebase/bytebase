@@ -165,10 +165,10 @@ func (s *InboxService) createInbox(ctx context.Context, tx *Tx, create *api.Inbo
 		INSERT INTO inbox (
 			receiver_id,
 			activity_id,
-			`+"`status`"+`
+			status
 		)
 		VALUES (?, ?, 'UNREAD')
-		RETURNING id, receiver_id, activity_id, `+"`status`"+`
+		RETURNING id, receiver_id, activity_id, status
 	`,
 		create.ReceiverID,
 		create.ActivityID,
@@ -220,7 +220,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 		SELECT
 		    inbox.id,
 		    receiver_id,
-			`+"`status`,"+`
+			status,
 			activity.id,
 			activity.creator_id,
 		    activity.created_ts,
@@ -276,7 +276,7 @@ func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.I
 // patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
 func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*api.Inbox, error) {
 	// Build UPDATE clause.
-	set, args := []string{"`status` = ?"}, []interface{}{patch.Status}
+	set, args := []string{"status = ?"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -284,7 +284,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *Tx, patch *api.InboxP
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, receiver_id, activity_id, `+"`status`"+`
+		RETURNING id, receiver_id, activity_id, `+"status"+`
 	`,
 		args...,
 	)

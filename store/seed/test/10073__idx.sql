@@ -9,10 +9,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -40,10 +40,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -70,10 +70,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -100,10 +100,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -130,10 +130,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -160,10 +160,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -190,10 +190,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -220,10 +220,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -250,10 +250,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -280,10 +280,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -310,10 +310,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -340,10 +340,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -370,10 +370,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -400,10 +400,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -430,10 +430,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -460,10 +460,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -490,10 +490,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (
@@ -520,10 +520,10 @@ INSERT INTO
         name,
         expression,
         position,
-        `type`,
+        type,
         `unique`,
         visible,
-        `comment`
+        comment
     )
 VALUES
     (

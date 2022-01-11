@@ -115,14 +115,14 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 			updater_id,
 			database_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			storage_backend,
 			migration_history_version,
 			path
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -176,7 +176,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 	if v := find.Status; v != nil {
-		where, args = append(where, "`status` = ?"), append(args, *v)
+		where, args = append(where, "status = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -188,8 +188,8 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 			updated_ts,
 			database_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			storage_backend,
 			migration_history_version,
 			path,
@@ -248,7 +248,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`status`,"+` `+"`type`, storage_backend, migration_history_version, path, comment"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		args...,
 	)
@@ -412,7 +412,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 			creator_id,
 			updater_id,
 			database_id,
-			`+"`enabled`,"+`
+			enabled,
 			hour,
 			day_of_week,
 			hook_url
@@ -423,7 +423,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 				hour = excluded.hour,
 				day_of_week = excluded.day_of_week,
 				hook_url = excluded.hook_url
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, `+"`enabled`,"+` `+"hour, day_of_week"+`, hook_url
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week , hook_url
 		`,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
