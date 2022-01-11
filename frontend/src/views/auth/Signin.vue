@@ -8,7 +8,7 @@
       />
     </div>
 
-    <div class="mt-2">
+    <div class="mt-8 mb-3">
       <template
         v-for="authProvider in authProviderList"
         :key="authProvider.type"
