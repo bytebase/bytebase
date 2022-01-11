@@ -4,12 +4,22 @@
   <div class="project-tenant-view">
     <template v-if="!!project">
       <template v-if="deployment?.id === UNKNOWN_ID">
-        <p>this project has no deployment config. go and config first.</p>
-        <p>
-          <router-link to="#deployment-config" @click="$emit('dismiss')">
-            go
-          </router-link>
-        </p>
+        <i18n-t
+          tag="p"
+          keypath="deployment-config.project-has-no-deployment-config"
+        >
+          <template #go>
+            <router-link
+              to="#deployment-config"
+              active-class=""
+              exact-active-class=""
+              class="px-1 underline hover:bg-link-hover"
+              @click="$emit('dismiss')"
+            >
+              {{ $t("deployment-config.go-and-config") }}
+            </router-link>
+          </template>
+        </i18n-t>
       </template>
       <template v-else>
         <div v-if="databaseListGroupByName.length === 0" class="textinfolabel">

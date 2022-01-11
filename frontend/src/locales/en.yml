@@ -1021,6 +1021,8 @@ deployment-config:
     env-selector-must-has-one-value: '"bb.environment In" must has exactly one value'
     key-required: Key is required
     values-required: Values are required
+  project-has-no-deployment-config: This project has no deployment config yet. Please {go} first.
+  go-and-config: Go and config
 datasource:
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source

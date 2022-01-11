@@ -892,6 +892,8 @@ deployment-config:
     env-selector-must-has-one-value: '"bb.environment In" 必须有且只有 1 个值'
     key-required: 需要指定 Key
     values-required: 需要指定值
+  project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
+  go-and-config: 去配置
 datasource:
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源
