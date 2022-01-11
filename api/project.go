@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"regexp"
+	"strings"
 )
 
 // DefaultProjectID is the ID for the default project.
@@ -134,6 +137,55 @@ type ProjectPatch struct {
 	WorkflowType   *ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	TenantMode     *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 	DBNameTemplate *string              `jsonapi:"attr,dbNameTemplate"`
+}
+
+var (
+	repositoryFilePathTemplateTokens = map[string]bool{
+		"{{VERSION}}": true,
+		"{{DB_NAME}}": true,
+		"{{TYPE}}":    true,
+	}
+)
+
+// ValidateRepositoryFilePathTemplate validates the repository file path template.
+func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
+	tokens := getTemplateTokens(filePathTemplate)
+	tokenMap := make(map[string]bool)
+	for _, token := range tokens {
+		tokenMap[token] = true
+	}
+
+	for token := range repositoryFilePathTemplateTokens {
+		if _, ok := tokenMap[token]; !ok {
+			return fmt.Errorf("missing %s in file path template", token)
+		}
+	}
+	for token := range tokenMap {
+		if _, ok := repositoryFilePathTemplateTokens[token]; !ok {
+			return fmt.Errorf("unknown token %s in file path template", token)
+		}
+	}
+	return nil
+}
+
+// ValidateRepositorySchemaPathTemplate validates the repository schema path template.
+func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
+	if schemaPathTemplate == "" {
+		return nil
+	}
+	tokens := getTemplateTokens(schemaPathTemplate)
+	if len(tokens) != 1 {
+		return fmt.Errorf("invalid number of tokens %s", strings.Join(tokens, ","))
+	}
+	if tokens[0] != "{{DB_NAME}}" {
+		return fmt.Errorf("invalid token %s, only {{DB_NAME}} is supported in schema path template", tokens[0])
+	}
+	return nil
+}
+
+func getTemplateTokens(template string) []string {
+	r := regexp.MustCompile(`{{[^{}]+}}`)
+	return r.FindAllString(template, -1)
 }
 
 // ProjectService is the service for projects.
