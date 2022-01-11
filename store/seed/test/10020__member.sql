@@ -3,7 +3,7 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `status`,
+        status,
         role,
         principal_id
     )
@@ -15,7 +15,7 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `status`,
+        status,
         role,
         principal_id
     )
@@ -27,7 +27,7 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `status`,
+        status,
         role,
         principal_id
     )
@@ -39,7 +39,7 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        `status`,
+        status,
         role,
         principal_id
     )

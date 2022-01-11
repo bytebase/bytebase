@@ -132,13 +132,13 @@ func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*a
 			creator_id,
 			updater_id,
 			container_id,
-			`+"`type`,"+`
-			`+"`level`,"+`
+			type,
+			level,
 			comment,
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, level, comment, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -186,15 +186,15 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 
 	var query = `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			container_id,
-		    ` + "`type`," + `
-			` + "`level`," + `
-		    comment,
+			type,
+			level,
+			comment,
 			payload
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
@@ -253,7 +253,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 		UPDATE activity
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, `+"`type`, level, comment, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
 	`,
 		args...,
 	)

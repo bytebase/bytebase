@@ -34,12 +34,12 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 			updater_id,
 			task_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			payload
 		)
 		VALUES (?, ?, ?, ?, 'RUNNING', ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, type, code, comment, result, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -106,7 +106,7 @@ func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *ap
 func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "`status` = ?"), append(args, patch.Status)
+	set, args = append(set, "status = ?"), append(args, patch.Status)
 	if v := patch.Code; v != nil {
 		set, args = append(set, "code = ?"), append(args, *v)
 	}
@@ -130,7 +130,7 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, `+"`status`, `type`, code, comment, result, payload"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, type, code, comment, result, payload
 	`,
 		args...,
 	)
@@ -179,7 +179,7 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			list = append(list, "?")
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("`status` in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -191,8 +191,8 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 		    updated_ts,
 			task_id,
 			name,
-			`+"`status`,"+`
-			`+"`type`,"+`
+			status,
+			type,
 			code,
 			comment,
 			result,
