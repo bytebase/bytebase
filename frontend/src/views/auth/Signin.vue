@@ -9,10 +9,16 @@
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         {{ $t("auth.sign-in.title") }}
       </h2>
+      <h2
+        v-if="authProviderList.length == 0"
+        class="text-gray-500 leading-4 tracking-wide font-light text-sm"
+      >
+        {{ $t("auth.sign-in.third-party") }}
+      </h2>
     </div>
 
-    <div class="mt-8">
-      <div class="mt-6">
+    <div class="mt-4">
+      <div class="mt-4">
         <form class="space-y-6" @submit.prevent="trySignin">
           <div>
             <label
