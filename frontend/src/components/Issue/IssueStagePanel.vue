@@ -1,13 +1,22 @@
 <template>
   <div class="space-y-4">
-    <div v-for="(task, index) in taskList" :key="index">
-      <div class="flex flex-row items-center space-x-1" :data-task-id="task.id">
+    <div v-for="(task, index) in filteredTaskList" :key="index">
+      <div class="flex flex-row items-center space-x-1">
         <heroicons-solid:arrow-narrow-right
-          v-if="!singleMode && taskList.length > 1 && activeTask.id == task.id"
+          v-if="
+            !singleMode &&
+            filteredTaskList.length > 1 &&
+            activeTask.id == task.id
+          "
           class="w-5 h-5 text-info"
         />
-        <div v-if="!singleMode && taskList.length > 1" class="textlabel">
-          <span v-if="taskList.length > 1"> Step {{ index + 1 }} - </span>
+        <div
+          v-if="!singleMode && filteredTaskList.length > 1"
+          class="textlabel"
+        >
+          <span v-if="filteredTaskList.length > 1">
+            Step {{ index + 1 }} -
+          </span>
           {{ task.name }}
         </div>
       </div>
@@ -37,9 +46,6 @@ export default defineComponent({
       type: Object as PropType<Task>,
       default: undefined,
     },
-    /**
-     * when single-mode === true && task !== undefined, display task only
-     */
     singleMode: {
       type: Boolean,
       default: false,
@@ -52,7 +58,7 @@ export default defineComponent({
       return activeTaskInStage(props.stage);
     });
 
-    const taskList = computed((): Task[] => {
+    const filteredTaskList = computed(() => {
       if (props.singleMode && props.selectedTask) {
         return [props.selectedTask];
       }
@@ -61,8 +67,8 @@ export default defineComponent({
 
     return {
       state,
-      taskList,
       activeTask,
+      filteredTaskList,
     };
   },
 });
