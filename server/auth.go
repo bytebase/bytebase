@@ -112,7 +112,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// create a new user if not exist
 				if user == nil {
-					// if user login via gitlab at the first time, we will generate a random password
+					// if user login via gitlab at the first time, we will generate a random password.
+					// The random password is supposed to be not guessable.
+					// But even one can guess the password, she won't be allowed to login.
+					// If user signs up via 3rd party login like GitLab, we will disallow bytebase builtin password/email login unless user manually switch the login option later.
 					signup := &api.Signup{
 						Email:    GitlabUserInfo.Email,
 						Password: common.RandomString(20),

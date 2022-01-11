@@ -83,7 +83,7 @@ type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
-	// Try to use this provider as a auth provider and fetch the user info stored at this provider
+	// Try to use this provider as an auth provider and fetch the user info stored at this provider
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
