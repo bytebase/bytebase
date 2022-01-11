@@ -140,10 +140,16 @@ type ProjectPatch struct {
 }
 
 var (
+	dbNameToken                      = "{{DB_NAME}}"
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}": true,
-		"{{DB_NAME}}": true,
+		dbNameToken:   true,
 		"{{TYPE}}":    true,
+	}
+	allowedProjectDBNameTemplateTokens = map[string]bool{
+		dbNameToken:    true,
+		"{{LOCATION}}": true,
+		"{{TENANT}}":   true,
 	}
 )
 
@@ -179,6 +185,28 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 	}
 	if tokens[0] != "{{DB_NAME}}" {
 		return fmt.Errorf("invalid token %s, only {{DB_NAME}} is supported in schema path template", tokens[0])
+	}
+	return nil
+}
+
+// ValidateProjectDBNameTemplate validates the project database name template.
+func ValidateProjectDBNameTemplate(template string) error {
+	if template == "" {
+		return nil
+	}
+	tokens := getTemplateTokens(template)
+	// Must contain {{DB_NAME}}
+	hasDBName := false
+	for _, token := range tokens {
+		if token == dbNameToken {
+			hasDBName = true
+		}
+		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
+			return fmt.Errorf("invalid token %v in database name template", token)
+		}
+	}
+	if !hasDBName {
+		return fmt.Errorf("project database name template must include token %v", dbNameToken)
 	}
 	return nil
 }
