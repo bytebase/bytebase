@@ -1,11 +1,7 @@
 <template>
   <nav aria-label="Pipeline">
     <ol
-      class="
-        border-t border-b border-block-border
-        divide-y divide-gray-300
-        lg:flex lg:divide-y-0
-      "
+      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
     >
       <li
         v-for="(item, index) in itemList"
@@ -17,16 +13,7 @@
         >
           <span class="pl-4 py-2 flex items-center text-sm font-medium">
             <div
-              class="
-                relative
-                w-6
-                h-6
-                flex flex-shrink-0
-                items-center
-                justify-center
-                rounded-full
-                select-none
-              "
+              class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="flowItemIconClass(item)"
             >
               <template v-if="item.taskStatus === 'PENDING'">
@@ -58,27 +45,14 @@
               </template>
               <template v-else-if="item.taskStatus == 'FAILED'">
                 <span
-                  class="
-                    h-2.5
-                    w-2.5
-                    rounded-full
-                    text-center
-                    pb-6
-                    font-medium
-                    text-base
-                  "
+                  class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
                   aria-hidden="true"
                   >!</span
                 >
               </template>
             </div>
             <div
-              class="
-                hidden
-                cursor-pointer
-                hover:underline
-                lg:ml-4 lg:flex lg:flex-col
-              "
+              class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col"
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
@@ -99,18 +73,7 @@
               <span class="tooltip">Missing SQL statement</span>
               <span
                 v-if="!item.valid"
-                class="
-                  ml-2
-                  w-5
-                  h-5
-                  flex
-                  justify-center
-                  rounded-full
-                  select-none
-                  bg-error
-                  text-white
-                  hover:bg-error-hover
-                "
+                class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
               >
                 <span class="text-center font-normal" aria-hidden="true"
                   >!</span
@@ -146,7 +109,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import {
   Pipeline,
   TaskStatus,
@@ -157,9 +120,9 @@ import {
   PipelineCreate,
   Task,
   TaskCreate,
-} from "../types";
-import { activeTask, activeTaskInStage } from "../utils";
-import isEmpty from "lodash-es/isEmpty";
+} from "../../types";
+import { activeTask, activeTaskInStage } from "../../utils";
+import { isEmpty } from "lodash-es";
 
 interface FlowItem {
   stageId: StageId;
@@ -170,7 +133,7 @@ interface FlowItem {
   valid: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "PipelineSimpleFlow",
   props: {
     create: {
@@ -303,5 +266,5 @@ export default {
       clickItem,
     };
   },
-};
+});
 </script>

@@ -95,7 +95,7 @@
         <BBStepBar
           :step-list="taskStepList(issue)"
           @click-step="
-            (step) => {
+            (step: any) => {
               clickIssueStep(issue, step);
             }
           "
@@ -129,8 +129,8 @@ import {
   BBTableSectionDataSource,
   BBStep,
   BBStepStatus,
-} from "../bbkit/types";
-import IssueStatusIcon from "../components/IssueStatusIcon.vue";
+} from "../../bbkit/types";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
   issueSlug,
   activeEnvironment,
@@ -138,8 +138,8 @@ import {
   activeTask,
   stageSlug,
   activeTaskInStage,
-} from "../utils";
-import { Issue, Task } from "../types";
+} from "../../utils";
+import { Issue, Task } from "../../types";
 
 type Mode = "ALL" | "PROJECT";
 

@@ -24,11 +24,11 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { MigrationStatus } from "../types";
 
-export default {
-  name: "IssueStatusIcon",
+export default defineComponent({
+  name: "MigrationHistoryStatusIcon",
   props: {
     status: {
       required: true,
@@ -52,5 +52,5 @@ export default {
       iconClass,
     };
   },
-};
+});
 </script>

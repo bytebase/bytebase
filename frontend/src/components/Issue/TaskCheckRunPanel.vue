@@ -54,14 +54,14 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableColumn } from "../bbkit/types";
+import { BBTableColumn } from "../../bbkit/types";
 import {
   TaskCheckStatus,
   TaskCheckRun,
   TaskCheckResult,
   ErrorCode,
   ERROR_LIST,
-} from "../types";
+} from "../../types";
 
 const columnList: BBTableColumn[] = [
   {
