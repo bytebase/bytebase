@@ -319,10 +319,10 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "plan",
-                name: "setting.workspace.plan",
-                meta: { title: () => t("settings.sidebar.plans") },
-                component: () => import("../views/SettingWorkspacePlan.vue"),
+                path: "subscription",
+                name: "setting.workspace.subscription",
+                meta: { title: () => t("settings.sidebar.subscription") },
+                component: () => import("../views/SettingWorkspaceSubscription.vue"),
                 props: true,
               },
               {

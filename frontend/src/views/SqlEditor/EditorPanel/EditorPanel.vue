@@ -1,12 +1,12 @@
 <template>
   <div class="editor-pane h-full">
-    <EditorActions />
+    <EditorAction />
 
     <QueryEditor />
   </div>
 </template>
 
 <script lang="ts" setup>
-import EditorActions from "./EditorAction.vue";
+import EditorAction from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 </script>

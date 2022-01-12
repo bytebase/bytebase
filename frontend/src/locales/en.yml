@@ -97,6 +97,7 @@ common:
   unassigned: Unassigned
   new: New
   add: Add
+  confirm-and-add: Confirm and add
   query: Query
   transfer: Transfer
   migration: Migration
@@ -227,7 +228,7 @@ settings:
     general: General
     members: Members
     version-control: Version Control
-    plans: Plans
+    subscription: Subscription
     labels: Labels
   profile:
     email: Email
@@ -236,7 +237,7 @@ settings:
     password-confirm: Confirm
     password-confirm-placeholder: Confirm new password
     password-mismatch: mismatch
-    plan: (Upgrade to Team plan to enable role management)
+    subscription: (Upgrade to enable role management)
   members:
     active: Active members
     inactive: Inactive members
@@ -246,7 +247,7 @@ settings:
     invites: Send Invites
     invited: Invited
     yourself: You
-    upgrade: Upgrade to unlock Owner and DBA roles
+    upgrade: Upgrade to enable role management
     select-role: Select role
     not-assigned: Not assigned
     table:
@@ -261,7 +262,7 @@ settings:
       reactivate: Reactivate
       reactivate-confirm-title: Are you sure to reactivate
     tooltip:
-      upgrade: Upgrade to Team plan to enable role management
+      upgrade: Upgrade to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
 activity:
@@ -557,6 +558,7 @@ quick-start:
   visit-database: '@:common.visit @:common.databases'
   visit-environment: '@:common.visit @:common.environments'
   add-a-member: Add a member
+  use-kbar: Use kbar ({shortcut})
   notice:
     title: Quickstart guide dismissed
     desc: You can still bring it back later from the top right menu
@@ -1032,6 +1034,8 @@ sql-editor:
   search-databases: Search Databases
   loading-databases: Loading Databases...
   close-pane: Close Pane
+  loading-data: Loading Data...
+  table-empty-placehoder: Click Run to execute the query.
 label:
   error:
     key-necessary: Key is required

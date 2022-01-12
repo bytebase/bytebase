@@ -8,6 +8,8 @@ import ViteComponents from "vite-plugin-components";
 const SERVER_PORT = process.env.PORT || 3000;
 const HTTPS_PORT = 443;
 const r = (...args: string[]) => resolve(__dirname, ...args);
+const defineGlobal =
+  process.env.NODE_ENV === "development" ? { global: {} } : {};
 
 export default defineConfig(() => {
   // NOTE: the following lines is to solve https://github.com/gitpod-io/gitpod/issues/6719
@@ -16,6 +18,9 @@ export default defineConfig(() => {
     process.env["GITPOD_WORKSPACE_ID"] !== null &&
     process.env["GITPOD_WORKSPACE_ID"] !== undefined;
   return {
+    define: {
+      ...defineGlobal,
+    },
     plugins: [
       vue(),
       // https://github.com/intlify/vite-plugin-vue-i18n
@@ -56,6 +61,10 @@ export default defineConfig(() => {
       alias: {
         "@/": `${resolve(__dirname, "src")}/`,
       },
+    },
+    test: {
+      global: true,
+      environment: "node",
     },
   };
 });

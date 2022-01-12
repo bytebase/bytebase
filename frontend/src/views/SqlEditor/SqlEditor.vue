@@ -7,9 +7,9 @@
       </Pane>
       <Pane size="80">
         <template v-if="hasTabs">
-          <Splitpanes :key="randomKey" horizontal class="default-theme">
+          <Splitpanes horizontal class="default-theme">
             <Pane size="60">
-              <EditorPanel />
+              <EditorPanel :key="paneKey" />
             </Pane>
             <Pane size="40">
               <TablePanel />
@@ -25,14 +25,18 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import { useStore } from "vuex";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import QuerySelector from "./QuerySelector.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
 
-const hasTabs = true;
-const randomKey = Math.random();
+const store = useStore();
+
+const hasTabs = computed(() => store.getters["editorSelector/hasTabs"]);
+const paneKey = computed(() => store.getters["editorSelector/currentTab"].id);
 </script>
 
 <style>
@@ -67,7 +71,7 @@ const randomKey = Math.random();
   color: var(--base);
   --base: #444;
   --nav-height: 64px;
-  --tab-height: 48px;
+  --tab-height: 36px;
   --font-code: "Source Code Pro", monospace;
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);

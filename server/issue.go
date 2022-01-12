@@ -314,6 +314,10 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		if err != nil {
 			return err
 		}
+	} else {
+		if err := s.composePipelineRelationship(ctx, issue.Pipeline); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -516,33 +520,42 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate) (*api.Pipeline, error) {
+func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
+	// jsonapi resource relationships will collide different resources into the same bucket.
+	id := 0
+	ts := time.Now().Unix()
 	pipeline := &api.Pipeline{
+		ID:        id,
 		Name:      pc.Name,
 		Status:    api.PipelineOpen,
-		CreatorID: pc.CreatorID,
-		CreatedTs: time.Now().Unix(),
-		UpdaterID: pc.CreatorID,
-		UpdatedTs: time.Now().Unix(),
+		CreatorID: creatorID,
+		CreatedTs: ts,
+		UpdaterID: creatorID,
+		UpdatedTs: ts,
 	}
 	for _, sc := range pc.StageList {
+		id++
 		stage := &api.Stage{
+			ID:            id,
 			Name:          sc.Name,
-			CreatorID:     sc.CreatorID,
-			CreatedTs:     time.Now().Unix(),
-			UpdaterID:     sc.CreatorID,
-			UpdatedTs:     time.Now().Unix(),
+			CreatorID:     creatorID,
+			CreatedTs:     ts,
+			UpdaterID:     creatorID,
+			UpdatedTs:     ts,
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
 		}
 		for _, tc := range sc.TaskList {
+			id++
 			task := &api.Task{
+				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         tc.CreatorID,
-				CreatedTs:         time.Now().Unix(),
-				UpdaterID:         tc.CreatorID,
-				UpdatedTs:         time.Now().Unix(),
+				CreatorID:         creatorID,
+				CreatedTs:         ts,
+				UpdaterID:         creatorID,
+				UpdatedTs:         ts,
 				Type:              tc.Type,
 				Payload:           tc.Payload,
 				EarliestAllowedTs: tc.EarliestAllowedTs,
@@ -754,7 +767,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
+			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -783,7 +796,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 
 				pc.StageList = append(pc.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment %v", i),
+					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})
@@ -824,7 +837,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
-		return createPipelineValidateOnly(ctx, pipelineCreate)
+		return createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
@@ -1037,30 +1050,30 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
 	}
 	if deployConfig == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deployment config missing for project ID: %v", projectID)).SetInternal(err)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
 	for _, database := range databaseList {
 		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
-	return p, nil
+	return d, p, nil
 }
 
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
@@ -1076,7 +1089,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
+	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
 	if err != nil {
 		return "", "", err
 	}

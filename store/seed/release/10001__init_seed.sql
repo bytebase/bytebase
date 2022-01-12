@@ -127,7 +127,7 @@ INSERT INTO
         updater_id,
         environment_id,
         name,
-        `engine`,
+        engine,
         engine_version,
         host,
         port,
@@ -156,7 +156,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -186,7 +186,7 @@ INSERT INTO
         name,
         TYPE,
         username,
-        `password`
+        password
     )
 VALUES
     (
@@ -209,7 +209,7 @@ INSERT INTO
         updater_id,
         environment_id,
         name,
-        `engine`,
+        engine,
         engine_version,
         host,
         port,
@@ -238,7 +238,7 @@ INSERT INTO
         project_id,
         name,
         character_set,
-        `collation`,
+        collation,
         sync_status,
         last_successful_sync_ts,
         schema_version
@@ -268,7 +268,7 @@ INSERT INTO
         name,
         TYPE,
         username,
-        `password`
+        password
     )
 VALUES
     (
@@ -291,7 +291,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `status`
+        status
     )
 VALUES
     (
@@ -352,8 +352,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -382,8 +382,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -408,8 +408,8 @@ INSERT INTO
         updater_id,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         comment,
         result,
         payload
@@ -433,8 +433,8 @@ INSERT INTO
         updater_id,
         task_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         comment,
         payload
     )
@@ -459,8 +459,8 @@ INSERT INTO
         project_id,
         pipeline_id,
         name,
-        `status`,
-        `type`,
+        status,
+        type,
         description,
         assignee_id
     )
@@ -485,7 +485,7 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
+        type,
         level
     )
 VALUES
@@ -503,9 +503,9 @@ INSERT INTO
         creator_id,
         updater_id,
         container_id,
-        `type`,
+        type,
         level,
-        `comment`
+        comment
     )
 VALUES
     (

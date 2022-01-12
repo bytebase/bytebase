@@ -25,7 +25,7 @@
                       >
                         <img
                           class="mt-1"
-                          src="../assets/logo-icon.svg"
+                          src="../../assets/logo-icon.svg"
                           alt="Bytebase"
                         />
                       </div>
@@ -343,7 +343,7 @@ import {
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
 import {
   Issue,
   Activity,
@@ -357,17 +357,17 @@ import {
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
-} from "../types";
+} from "../../types";
 import {
   findTaskById,
   issueActivityActionSentence,
   issueSlug,
   sizeToFit,
   taskSlug,
-} from "../utils";
-import { IssueTemplate, IssueBuiltinFieldId } from "../plugins";
+} from "../../utils";
+import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
-import moment from "moment";
+import dayjs from "dayjs";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -692,8 +692,8 @@ export default defineComponent({
           const oldVal = payload.oldEarliestAllowedTs;
           return t("activity.sentence.changed-from-to", {
             name: "earliest allowed time",
-            oldValue: oldVal ? moment(oldVal * 1000) : "Unset",
-            newValue: newVal ? moment(newVal * 1000) : "Unset",
+            oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
+            newValue: newVal ? dayjs(newVal * 1000) : "Unset",
           });
         }
       }

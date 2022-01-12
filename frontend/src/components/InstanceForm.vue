@@ -17,33 +17,24 @@
             @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
-              <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
-              https://github.com/vitejs/vite/issues/1265-->
-              <template v-if="engine == 'MYSQL'">
-                <img class="h-8 w-auto" src="../assets/db-mysql.png" alt />
-              </template>
-              <template v-else-if="engine == 'POSTGRES'">
-                <img class="h-8 w-auto" src="../assets/db-postgres.png" alt />
-              </template>
-              <template v-else-if="engine == 'TIDB'">
-                <img class="h-8 w-auto" src="../assets/db-tidb.png" />
-              </template>
-              <template v-else-if="engine == 'SNOWFLAKE'">
-                <img class="h-8 w-auto" src="../assets/db-snowflake.png" alt />
-              </template>
-              <template v-else-if="engine == 'CLICKHOUSE'">
-                <img class="h-8 w-auto" src="../assets/db-clickhouse.png" alt />
-              </template>
+              <img class="h-8 w-auto" :src="EngineIconPath[engine]" alt />
               <p class="mt-1 text-center textlabel">{{ engineName(engine) }}</p>
               <div class="mt-3 radio text-sm">
-                <input type="radio" class="btn" :checked="state.instance.engine == engine" />
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="state.instance.engine == engine"
+                />
               </div>
             </div>
           </div>
         </template>
       </div>
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4" :class="create ? 'pt-4' : ''">
+      <div
+        class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4"
+        :class="create ? 'pt-4' : ''"
+      >
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
@@ -124,11 +115,15 @@
           <div
             v-if="state.instance.engine == 'SNOWFLAKE'"
             class="mt-2 textinfolabel"
-          >{{ $t("instance.sentence.proxy.snowflake") }}</div>
+          >
+            {{ $t("instance.sentence.proxy.snowflake") }}
+          </div>
         </div>
 
         <div class="sm:col-span-1">
-          <label for="port" class="textlabel block">{{ $t("instance.port") }}</label>
+          <label for="port" class="textlabel block">{{
+            $t("instance.port")
+          }}</label>
           <input
             id="port"
             type="number"
@@ -173,7 +168,9 @@
             />
           </template>
           <template v-else>
-            <div class="mt-1 textinfolabel">{{ $t("instance.sentence.console.snowflake") }}</div>
+            <div class="mt-1 textinfolabel">
+              {{ $t("instance.sentence.console.snowflake") }}
+            </div>
             <input
               id="externallink"
               required
@@ -203,7 +200,10 @@
       <!-- Create button group -->
       <div v-if="create" class="flex justify-end items-center">
         <div>
-          <BBSpin v-if="state.creatingOrUpdating" :title="$t('common.creating')" />
+          <BBSpin
+            v-if="state.creatingOrUpdating"
+            :title="$t('common.creating')"
+          />
         </div>
         <div class="ml-2">
           <button
@@ -211,19 +211,26 @@
             class="btn-normal py-2 px-4"
             :disabled="state.creatingOrUpdating"
             @click.prevent="cancel"
-          >{{ $t("common.cancel") }}</button>
+          >
+            {{ $t("common.cancel") }}
+          </button>
           <button
             type="button"
             class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
             :disabled="!allowCreate || state.creatingOrUpdating"
             @click.prevent="tryCreate"
-          >{{ $t("common.create") }}</button>
+          >
+            {{ $t("common.create") }}
+          </button>
         </div>
       </div>
       <!-- Update button group -->
       <div v-else class="flex justify-end items-center">
         <div>
-          <BBSpin v-if="state.creatingOrUpdating" :title="$t('common.updating')" />
+          <BBSpin
+            v-if="state.creatingOrUpdating"
+            :title="$t('common.updating')"
+          />
         </div>
         <button
           v-if="allowEdit"
@@ -231,7 +238,9 @@
           class="btn-normal ml-2 inline-flex justify-center py-2 px-4"
           :disabled="!valueChanged || state.creatingOrUpdating"
           @click.prevent="doUpdate"
-        >{{ $t("common.update") }}</button>
+        >
+          {{ $t("common.update") }}
+        </button>
       </div>
     </div>
   </form>
@@ -310,20 +319,28 @@ export default {
       store.getters["auth/currentUser"]()
     );
 
+    const EngineIconPath = {
+      MYSQL: new URL("../assets/db-mysql.png", import.meta.url).href,
+      POSTGRES: new URL("../assets/db-postgres.png", import.meta.url).href,
+      TIDB: new URL("../assets/db-tidb.png", import.meta.url).href,
+      SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
+      CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
+    };
+
     const state = reactive<LocalState>({
       originalInstance: props.instance,
       // Make hard copy since we are going to make equal comparison to determine the update button enable state.
       instance: props.instance
         ? cloneDeep(props.instance)
         : {
-          environmentId: UNKNOWN_ID,
-          name: t("instance.new-instance"),
-          engine: "MYSQL",
-          // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
-          // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
-          host: isDev() ? "127.0.0.1" : "host.docker.internal",
-          username: "",
-        },
+            environmentId: UNKNOWN_ID,
+            name: t("instance.new-instance"),
+            engine: "MYSQL",
+            // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
+            // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
+            host: isDev() ? "127.0.0.1" : "host.docker.internal",
+            username: "",
+          },
       updatedPassword: "",
       useEmptyPassword: false,
       showCreateInstanceWarningModal: false,
@@ -382,8 +399,9 @@ export default {
     const instanceLink = (instance: Instance): string => {
       if (instance.engine == "SNOWFLAKE") {
         if (instance.host) {
-          return `https://${instance.host.split("@")[0]
-            }.snowflakecomputing.com/console`;
+          return `https://${
+            instance.host.split("@")[0]
+          }.snowflakecomputing.com/console`;
         }
       }
       return instance.host;
@@ -409,7 +427,7 @@ export default {
 
     const updateUsername = (username: string) => {
       state.instance.username = username;
-    }
+    };
 
     const updatePassword = (password: string) => {
       if (props.create) {
@@ -417,11 +435,11 @@ export default {
       } else {
         state.updatedPassword = password;
       }
-    }
+    };
 
     const toggleEmptyPassword = (useEmptyPassword: boolean) => {
       state.useEmptyPassword = useEmptyPassword;
-    }
+    };
 
     const updateInstance = (field: string, value: string) => {
       (state.instance as any)[field] = value;
@@ -552,6 +570,7 @@ export default {
       allowCreate,
       allowEdit,
       valueChanged,
+      EngineIconPath,
       defaultPort,
       engineName,
       instanceLink,

@@ -18,7 +18,7 @@
             :bordered="false"
             :value="state.name"
             :placeholder="'Issue name'"
-            @end-editing="(text) => trySaveName(text)"
+            @end-editing="(text: string) => trySaveName(text)"
           />
         </div>
         <div v-if="!create">
@@ -36,7 +36,7 @@
               </router-link>
             </template>
             <template #time>
-              {{ moment(issue.updatedTs * 1000).format("LLL") }}
+              {{ dayjs(issue.updatedTs * 1000).format("LLL") }}
             </template>
           </i18n-t>
           <p
@@ -44,7 +44,7 @@
             class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
-              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+              <img class="h-4 w-auto" src="../../assets/gitlab-logo.svg" />
             </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
@@ -65,9 +65,7 @@
               </template>
               <template #author>{{ pushEvent.authorName }}</template>
               <template #time>
-                {{
-                  moment(pushEvent.fileCommit.createdTs * 1000).format("LLL")
-                }}
+                {{ dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}
               </template>
             </i18n-t>
           </p>
@@ -82,9 +80,13 @@
 
 <script lang="ts">
 import { reactive, watch, PropType, computed, defineComponent } from "vue";
-import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import { activeTask } from "../utils";
-import { TaskDatabaseSchemaUpdatePayload, Issue, VCSPushEvent } from "../types";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import { activeTask } from "../../utils";
+import {
+  TaskDatabaseSchemaUpdatePayload,
+  Issue,
+  VCSPushEvent,
+} from "../../types";
 
 interface LocalState {
   editing: boolean;

@@ -1445,10 +1445,16 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for rows.Next() {
 		var view viewSchema
-		if err := rows.Scan(&view.schemaName, &view.name, &view.definition); err != nil {
+		var def sql.NullString
+		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
 			return nil, err
 		}
-		view.schemaName, view.name = quoteIdentifier(view.schemaName), quoteIdentifier(view.name)
+		// Return error on NULL view definition.
+		// https://github.com/bytebase/bytebase/issues/343
+		if !def.Valid {
+			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+		}
+		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
 		views = append(views, &view)
 	}
 

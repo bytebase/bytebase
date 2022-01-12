@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -109,6 +111,9 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		if !exec.Readonly {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support readonly sql statement")
+		}
+		if !validateSQLSelectStatement(exec.Statement) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
 		}
 
 		instance, err := s.composeInstanceByID(ctx, exec.InstanceID)
@@ -560,4 +565,16 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 		schemaVersion = history[0].Version
 	}
 	return schemaVersion, nil
+}
+
+func validateSQLSelectStatement(sqlStatement string) bool {
+	whiteListRegs := []string{`^SELECT$`, `^EXPLAIN\s+?SELECT$`, `^(EXPLAIN\s+?)?SELECT\s`}
+	formatedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
+	for _, reg := range whiteListRegs {
+		matchResult, _ := regexp.MatchString(reg, formatedStr)
+		if matchResult {
+			return true
+		}
+	}
+	return false
 }

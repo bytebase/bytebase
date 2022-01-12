@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"regexp"
+	"strings"
 )
 
 // DefaultProjectID is the ID for the default project.
@@ -81,6 +84,9 @@ type Project struct {
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+	// DBNameTemplate is only used when a project is in tenant mode.
+	// Empty value means {{DB_NAME}}.
+	DBNameTemplate string `jsonapi:"attr,dbNameTemplate"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -90,9 +96,10 @@ type ProjectCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name       string            `jsonapi:"attr,name"`
-	Key        string            `jsonapi:"attr,key"`
-	TenantMode ProjectTenantMode `jsonapi:"attr,tenantMode"`
+	Name           string            `jsonapi:"attr,name"`
+	Key            string            `jsonapi:"attr,key"`
+	TenantMode     ProjectTenantMode `jsonapi:"attr,tenantMode"`
+	DBNameTemplate string            `jsonapi:"attr,dbNameTemplate"`
 }
 
 // ProjectFind is the API message for finding projects.
@@ -128,7 +135,83 @@ type ProjectPatch struct {
 	Name         *string              `jsonapi:"attr,name"`
 	Key          *string              `jsonapi:"attr,key"`
 	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	TenantMode   *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+}
+
+var (
+	dbNameToken                      = "{{DB_NAME}}"
+	repositoryFilePathTemplateTokens = map[string]bool{
+		"{{VERSION}}": true,
+		dbNameToken:   true,
+		"{{TYPE}}":    true,
+	}
+	allowedProjectDBNameTemplateTokens = map[string]bool{
+		dbNameToken:    true,
+		"{{LOCATION}}": true,
+		"{{TENANT}}":   true,
+	}
+)
+
+// ValidateRepositoryFilePathTemplate validates the repository file path template.
+func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
+	tokens := getTemplateTokens(filePathTemplate)
+	tokenMap := make(map[string]bool)
+	for _, token := range tokens {
+		tokenMap[token] = true
+	}
+
+	for token := range repositoryFilePathTemplateTokens {
+		if _, ok := tokenMap[token]; !ok {
+			return fmt.Errorf("missing %s in file path template", token)
+		}
+	}
+	for token := range tokenMap {
+		if _, ok := repositoryFilePathTemplateTokens[token]; !ok {
+			return fmt.Errorf("unknown token %s in file path template", token)
+		}
+	}
+	return nil
+}
+
+// ValidateRepositorySchemaPathTemplate validates the repository schema path template.
+func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
+	if schemaPathTemplate == "" {
+		return nil
+	}
+	tokens := getTemplateTokens(schemaPathTemplate)
+	if len(tokens) != 1 {
+		return fmt.Errorf("invalid number of tokens %s", strings.Join(tokens, ","))
+	}
+	if tokens[0] != "{{DB_NAME}}" {
+		return fmt.Errorf("invalid token %s, only {{DB_NAME}} is supported in schema path template", tokens[0])
+	}
+	return nil
+}
+
+// ValidateProjectDBNameTemplate validates the project database name template.
+func ValidateProjectDBNameTemplate(template string) error {
+	if template == "" {
+		return nil
+	}
+	tokens := getTemplateTokens(template)
+	// Must contain {{DB_NAME}}
+	hasDBName := false
+	for _, token := range tokens {
+		if token == dbNameToken {
+			hasDBName = true
+		}
+		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
+			return fmt.Errorf("invalid token %v in database name template", token)
+		}
+	}
+	if !hasDBName {
+		return fmt.Errorf("project database name template must include token %v", dbNameToken)
+	}
+	return nil
+}
+
+func getTemplateTokens(template string) []string {
+	r := regexp.MustCompile(`{{[^{}]+}}`)
+	return r.FindAllString(template, -1)
 }
 
 // ProjectService is the service for projects.

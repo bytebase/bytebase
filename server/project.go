@@ -29,6 +29,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode == "" {
 			projectCreate.TenantMode = api.TenantModeDisabled
 		}
+		if err := api.ValidateProjectDBNameTemplate(projectCreate.DBNameTemplate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create project request: %s", err.Error()))
+		}
+		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
+		}
 		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
@@ -156,11 +162,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
 
-		if err := validateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate); err != nil {
+		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
-		if err := validateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate); err != nil {
+		if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
@@ -287,13 +293,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if repositoryPatch.FilePathTemplate != nil {
-			if err := validateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate); err != nil {
+			if err := api.ValidateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch linked repository request: %s", err.Error()))
 			}
 		}
 
 		if repositoryPatch.SchemaPathTemplate != nil {
-			if err := validateRepositorySchemaPathTemplate(*repositoryPatch.SchemaPathTemplate); err != nil {
+			if err := api.ValidateRepositorySchemaPathTemplate(*repositoryPatch.SchemaPathTemplate); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 			}
 		}
@@ -357,8 +363,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).PatchWebhook(
 				ctx,
 				common.OauthContext{
-					ClientID:     repository.VCS.ApplicationID,
-					ClientSecret: repository.VCS.Secret,
+					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
 					AccessToken:  repository.AccessToken,
 					RefreshToken: repository.RefreshToken,
 					Refresher:    s.refreshToken(ctx, repository.ID),
@@ -434,9 +441,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
 		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).DeleteWebhook(
 			ctx,
+			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			common.OauthContext{
-				ClientID:     repository.VCS.ApplicationID,
-				ClientSecret: repository.VCS.Secret,
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
 				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
 				Refresher:    s.refreshToken(ctx, repository.ID),
@@ -560,29 +568,6 @@ func (s *Server) composeProjectRelationship(ctx context.Context, project *api.Pr
 		return err
 	}
 
-	return nil
-}
-
-func validateRepositoryFilePathTemplate(filePathTemplate string) error {
-	if !strings.Contains(filePathTemplate, "{{VERSION}}") {
-		return fmt.Errorf("missing {{VERSION}} in file path template")
-	}
-	if !strings.Contains(filePathTemplate, "{{DB_NAME}}") {
-		return fmt.Errorf("missing {{DB_NAME}} in file path template")
-	}
-	if !strings.Contains(filePathTemplate, "{{TYPE}}") {
-		return fmt.Errorf("missing {{TYPE}} in file path template")
-	}
-	return nil
-}
-
-func validateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
-	if schemaPathTemplate == "" {
-		return nil
-	}
-	if !strings.Contains(schemaPathTemplate, "{{DB_NAME}}") {
-		return fmt.Errorf("missing {{DB_NAME}} in schema path template")
-	}
 	return nil
 }
 

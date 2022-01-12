@@ -1,29 +1,33 @@
 {
   "name": "bytebase",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --mode dev",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "release-docker": "vite build --mode release",
+    "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:summary": "SORT_BY=rule DESC=true eslint -f summary --cache --ext .js,.ts,.tsx,.vue src",
-    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src"
+    "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
+    "test": "vitest",
+    "coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@bytebase/vue-kbar": "^0.1.4",
+    "@bytebase/vue-kbar": "^0.1.5",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.2.1",
     "@tailwindcss/typography": "^0.4.0",
     "@vueuse/core": "^7.0.1",
     "autoprefixer": "^10.2.6",
     "axios": "^0.21.2",
+    "dayjs": "^1.10.7",
     "highlight.js": "^10.6.0",
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",
     "moment": "^2.29.1",
     "monaco-editor": "^0.31.1",
     "naive-ui": "^2.23.1",
+    "node-sql-parser": "^4.0.3",
     "postcss": "^8.3.5",
     "slug": "^4.0.2",
     "splitpanes": "^3.0.6",
@@ -61,6 +65,7 @@
     "vite": "^2.6.14",
     "vite-plugin-components": "^0.13.3",
     "vite-plugin-icons": "^0.6.5",
+    "vitest": "^0.0.139",
     "vue-tsc": "^0.29.6"
   }
 }

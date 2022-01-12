@@ -28,7 +28,7 @@
           :selectedId="create ? issue.assigneeId : issue.assignee?.id"
           :allowed-role-list="['OWNER', 'DBA']"
           @select-principal-id="
-            (principalId) => {
+            (principalId: number) => {
               $emit('update-assignee-id', principalId);
             }
           "
@@ -48,7 +48,7 @@
               :required="true"
               :value="fieldValue(field)"
               :placeholder="field.placeholder"
-              @end-editing="(text) => trySaveCustomField(field, text)"
+              @end-editing="(text: string) => trySaveCustomField(field, text)"
             />
           </template>
           <template v-else-if="field.type == 'Boolean'">
@@ -56,7 +56,7 @@
               :disabled="!allowEditCustomField(field)"
               :value="fieldValue(field)"
               @toggle="
-                (on) => {
+                (on: boolean) => {
                   trySaveCustomField(field, on);
                 }
               "
@@ -75,7 +75,7 @@
         <div class="col-span-2">
           <StageSelect
             :pipeline="issue.pipeline"
-            :selected-i-d="selectedStage.id"
+            :selected-id="selectedStage.id"
             @select-stage-id="(stageId) => $emit('select-stage-id', stageId)"
           />
         </div>
@@ -113,7 +113,7 @@
           {{
             task.earliestAllowedTs === 0
               ? $t("task.earliest-allowed-time-unset")
-              : moment(task.earliestAllowedTs * 1000).format("LLL")
+              : dayjs(task.earliestAllowedTs * 1000).format("LLL")
           }}</span
         >
       </div>
@@ -181,14 +181,14 @@
           {{ $t("common.updated-at") }}
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.updatedTs * 1000).format("LLL") }}</span
+          {{ dayjs(issue.updatedTs * 1000).format("LLL") }}</span
         >
 
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.created-at") }}
         </h2>
         <span class="textfield col-span-2">
-          {{ moment(issue.createdTs * 1000).format("LLL") }}</span
+          {{ dayjs(issue.createdTs * 1000).format("LLL") }}</span
         >
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.creator") }}
@@ -226,14 +226,14 @@ import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import MemberSelect from "../components/MemberSelect.vue";
-import StageSelect from "../components/StageSelect.vue";
-import IssueStatusIcon from "../components/IssueStatusIcon.vue";
-import IssueSubscriberPanel from "../components/IssueSubscriberPanel.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
+import MemberSelect from "../MemberSelect.vue";
+import StageSelect from "./StageSelect.vue";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 
-import { InputField } from "../plugins";
+import { InputField } from "../../plugins";
 import {
   Database,
   Environment,
@@ -248,10 +248,12 @@ import {
   Instance,
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
-} from "../types";
-import { allTaskList, databaseSlug, isDBAOrOwner } from "../utils";
+} from "../../types";
+import { allTaskList, databaseSlug, isDBAOrOwner } from "../../utils";
 import { useRouter } from "vue-router";
-import moment from "moment";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+dayjs.extend(isSameOrAfter);
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
@@ -474,7 +476,7 @@ export default defineComponent({
       }
     };
 
-    const isDayPassed = (ts: number) => !moment(ts).isSameOrAfter(now, "day");
+    const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
     return {
       EMPTY_ID,

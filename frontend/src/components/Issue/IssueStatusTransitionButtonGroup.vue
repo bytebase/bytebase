@@ -33,8 +33,8 @@
           class="text-control-light"
           aria-label="User menu"
           aria-haspopup="true"
-          @click.prevent="$refs.menu.toggle($event)"
-          @contextmenu.capture.prevent="$refs.menu.toggle($event)"
+          @click.prevent="menu?.toggle($event, {})"
+          @contextmenu.capture.prevent="menu?.toggle($event, {})"
         >
           <heroicons-solid:dots-vertical class="w-6 h-6" />
         </button>
@@ -116,16 +116,16 @@
 </template>
 
 <script lang="ts">
-import { PropType, computed, reactive, defineComponent } from "vue";
+import { PropType, computed, reactive, defineComponent, ref } from "vue";
 import { Store, useStore } from "vuex";
-import StatusTransitionForm from "../components/StatusTransitionForm.vue";
+import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   activeTask,
   allTaskList,
   applicableTaskTransition,
   isDBAOrOwner,
   TaskStatusTransition,
-} from "../utils";
+} from "../../utils";
 import {
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
@@ -139,10 +139,11 @@ import {
   SYSTEM_BOT_ID,
   Task,
   UNKNOWN_ID,
-} from "../types";
-import { IssueTemplate } from "../plugins";
+} from "../../types";
+import { IssueTemplate } from "../../plugins";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
+import { BBContextMenu } from "../../bbkit";
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
@@ -189,6 +190,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const { t } = useI18n();
     const store = useStore();
+    const menu = ref<InstanceType<typeof BBContextMenu>>();
 
     const updateStatusModalState = reactive<UpdateStatusModalState>({
       mode: "ISSUE",
@@ -441,6 +443,7 @@ export default defineComponent({
     };
 
     return {
+      menu,
       updateStatusModalState,
       applicableTaskStatusTransitionList,
       tryStartTaskStatusTransition,

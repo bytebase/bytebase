@@ -76,7 +76,7 @@ import { reactive, watchEffect, PropType } from "vue";
 import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import IssueTable from "../components/IssueTable.vue";
+import { IssueTable } from "../components/Issue";
 import {
   Activity,
   Database,

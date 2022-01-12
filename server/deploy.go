@@ -45,8 +45,9 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The returned matrix doesn't include deployment with no matched database.
-func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([][]*api.Database, error) {
+func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
 	var pipeline [][]*api.Database
+	var deployments []*api.Deployment
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
 	idToLabels := make(map[int]map[string]string)
@@ -58,7 +59,7 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, n
 		}
 		var labelList []*api.DatabaseLabel
 		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for _, label := range labelList {
 			idToLabels[database.ID][label.Key] = label.Value
@@ -97,8 +98,9 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, n
 
 		if len(stage) > 0 {
 			pipeline = append(pipeline, stage)
+			deployments = append(deployments, deployment)
 		}
 	}
 
-	return pipeline, nil
+	return deployments, pipeline, nil
 }

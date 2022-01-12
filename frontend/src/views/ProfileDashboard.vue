@@ -1,8 +1,5 @@
 <template>
-  <main
-    class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last"
-    tabindex="0"
-  >
+  <main class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last" tabindex="0">
     <article>
       <!-- Profile header -->
       <div>
@@ -11,23 +8,12 @@
           <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
             <PrincipalAvatar :principal="principal" :size="'HUGE'" />
             <div
-              class="
-                mt-6
-                sm:flex-1
-                sm:min-w-0
-                sm:flex
-                sm:items-center
-                sm:justify-end
-                sm:space-x-6
-                sm:pb-1
-              "
+              class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
             >
               <div class="mt-6 flex flex-row justify-stretch space-x-4">
                 <button v-if="false" type="button" class="btn-normal">
                   <!-- Heroicon name: solid/mail -->
-                  <heroicons-solid:mail
-                    class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                  />
+                  <heroicons-solid:mail class="-ml-1 mr-2 h-5 w-5 text-control-light" />
                   <span>Message</span>
                 </button>
                 <template v-if="allowEdit">
@@ -36,9 +22,7 @@
                       type="button"
                       class="btn-normal"
                       @click.prevent="cancelEdit"
-                    >
-                      {{ $t("common.cancel") }}
-                    </button>
+                    >{{ $t("common.cancel") }}</button>
                     <button
                       type="button"
                       class="btn-normal"
@@ -46,22 +30,13 @@
                       @click.prevent="saveEdit"
                     >
                       <!-- Heroicon name: solid/save -->
-                      <heroicons-solid:save
-                        class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                      />
+                      <heroicons-solid:save class="-ml-1 mr-2 h-5 w-5 text-control-light" />
                       <span>{{ $t("common.save") }}</span>
                     </button>
                   </template>
-                  <button
-                    v-else
-                    type="button"
-                    class="btn-normal"
-                    @click.prevent="editUser"
-                  >
+                  <button v-else type="button" class="btn-normal" @click.prevent="editUser">
                     <!-- Heroicon name: solid/pencil -->
-                    <heroicons-solid:pencil
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
+                    <heroicons-solid:pencil class="-ml-1 mr-2 h-5 w-5 text-control-light" />
                     <span>{{ $t("common.edit") }}</span>
                   </button>
                 </template>
@@ -82,9 +57,7 @@
               @input="updatePrincipal('name', $event.target.value)"
             />
             <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
-            <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
-              {{ principal.name }}
-            </h1>
+            <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">{{ principal.name }}</h1>
           </div>
         </div>
       </div>
@@ -96,36 +69,29 @@
       >
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">
-              {{ $t("settings.profile.role") }}
-            </dt>
+            <dt class="text-sm font-medium text-control-light">{{ $t("settings.profile.role") }}</dt>
             <dd class="mt-1 text-sm text-main">
               <router-link
                 :to="'/setting/member'"
                 class="normal-link capitalize"
-              >
-                {{ $t(`common.role.${principal.role.toLowerCase()}`) }}
-              </router-link>
-              <router-link :to="'/setting/plan'" class="normal-link">
-                {{ $t("settings.profile.plan") }}
-              </router-link>
+              >{{ $t(`common.role.${principal.role.toLowerCase()}`) }}</router-link>
+              <router-link
+                :to="'/setting/subscription'"
+                class="normal-link"
+              >{{ $t("settings.profile.subscription") }}</router-link>
             </dd>
           </div>
 
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">
-              {{ $t("settings.profile.email") }}
-            </dt>
-            <dd class="mt-1 text-sm text-main">
-              {{ principal.email }}
-            </dd>
+            <dt class="text-sm font-medium text-control-light">{{ $t("settings.profile.email") }}</dt>
+            <dd class="mt-1 text-sm text-main">{{ principal.email }}</dd>
           </div>
 
           <template v-if="state.editing">
             <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("settings.profile.password") }}
-              </dt>
+              <dt
+                class="text-sm font-medium text-control-light"
+              >{{ $t("settings.profile.password") }}</dt>
               <dd class="mt-1 text-sm text-main">
                 <input
                   id="password"
@@ -143,9 +109,10 @@
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
                 {{ $t("settings.profile.password-confirm") }}
-                <span v-if="passwordMismatch" class="text-error">
-                  {{ $t("settings.profile.password-mismatch") }}
-                </span>
+                <span
+                  v-if="passwordMismatch"
+                  class="text-error"
+                >{{ $t("settings.profile.password-mismatch") }}</span>
               </dt>
               <dd class="mt-1 text-sm text-main">
                 <input

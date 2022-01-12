@@ -309,6 +309,15 @@ CREATE UNIQUE INDEX idx_deployment_config_project_id_name ON deployment_config(p
 #### Tenant Mode
 This will be a new ENUM field on the existing [project table](https://github.com/bytebase/bytebase/blob/main/store/migration/10001__init_schema.sql#L202).
 
+### Tenancy with different database names
+
+There are use cases that customers put different tenant databases onto the same or a few instances. Since database names are unique within an instance, tenants will have different database names. There are two approaches to solve the problem by reusing most of the infrastructure above.
+
+- Database naming template: most users have tenant names as part of database names such as `db1_customer1`, `db1_customer2`, `db2_customer1`, `db2_customer2`. We can allow users to provide a database name template e.g. `{{DB_NAME}}_{{TENANT}}` or `{{DB_NAME}}_{{LOCATION}}` to pin a collection of tenant databases with the same `{{DB_NAME}}` prefix. This name template is a project level setting which is allowed only for projects in tenant mode.
+- Namespace: this is a database level setting similar to [k8s namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/). For example, all tenant databases with the same prefix `db1` are in the same namespace. Deployments and deployment configurations are tighted to namespaces.
+
+We choose the first option because it is easy to understand, solving most use cases with minimal changes. More importantly, it's compatible with the second option if we want to support the rest use cases latter e.g. migrating existing tenant databases to Bytebase platform.
+
 ### API
 - Available Label Keys: workspace level:Create(), Delete(), List(). Note: Create() and Delete() methods are not provided at first as described in the Label Design section.
 - Labels: labels should be a field of database object.
