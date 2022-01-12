@@ -156,6 +156,7 @@ common:
   ok: OK
   share: Share
   or: or
+  export: Export
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1032,10 +1033,14 @@ sql-editor:
   self: SQL Editor
   select-connection: Select Connections
   search-databases: Search Databases
+  search-results: Search Results
   loading-databases: Loading Databases...
   close-pane: Close Pane
   loading-data: Loading Data...
   table-empty-placehoder: Click Run to execute the query.
+  no-rows-found: No rows found
+  download-as-csv: Download as CSV
+  download-as-json: Download as JSON
 label:
   error:
     key-necessary: Key is required
