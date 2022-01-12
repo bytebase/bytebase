@@ -110,10 +110,10 @@
           clearable
           @update:value="
             (newTimestampNs) => {
-              state.earliestAllowedTs = newTimestampNs / 1000;
-              // we use utc+0 to avoid inconsistency in timezone
-              const utc0Ts = dayjs(newTimestampNs).utcOffset(0).unix();
-              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
+              const newTs = newTimestampNs / 1000;
+              // we show user the local time
+              state.earliestAllowedTs = newTs;
+              $emit('update-earliest-allowed-time', localToUTC0(newTs));
             }
           "
         />
@@ -257,7 +257,13 @@ import {
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
 } from "../../types";
-import { allTaskList, databaseSlug, isDBAOrOwner } from "../../utils";
+import {
+  allTaskList,
+  databaseSlug,
+  isDBAOrOwner,
+  UTC0ToLocal,
+  localToUTC0,
+} from "../../utils";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -327,17 +333,14 @@ export default defineComponent({
 
     const now = new Date();
     const state = reactive<LocalState>({
-      earliestAllowedTs: props.task.earliestAllowedTs
-        ? props.task.earliestAllowedTs
-        : null,
+      earliestAllowedTs: UTC0ToLocal(props.task.earliestAllowedTs),
     });
 
     watch(
       () => props.task,
       (cur) => {
-        state.earliestAllowedTs = cur.earliestAllowedTs
-          ? cur.earliestAllowedTs
-          : null;
+        // we show user local time
+        state.earliestAllowedTs = UTC0ToLocal(cur.earliestAllowedTs);
       }
     );
 
@@ -503,6 +506,7 @@ export default defineComponent({
       showDatabaseCreationLabel,
       clickDatabase,
       isDayPassed,
+      localToUTC0,
     };
   },
 });

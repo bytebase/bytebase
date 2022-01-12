@@ -59,6 +59,26 @@ export function timezoneString(zoneName: string, offset: number): string {
   ).padStart(2, "0")}`;
 }
 
+export const UTC0ToLocal = (utc0Ts: number | null): number | null => {
+  const diff = dayjs().utcOffset();
+  const localTs = utc0Ts
+    ? dayjs(utc0Ts * 1000)
+        .add(diff, "minutes")
+        .unix()
+    : null;
+  return localTs;
+};
+
+export const localToUTC0 = (utc0Ts: number | null): number | null => {
+  const diff = dayjs().utcOffset();
+  const localTs = utc0Ts
+    ? dayjs(utc0Ts * 1000)
+        .subtract(diff, "minutes")
+        .unix()
+    : null;
+  return localTs;
+};
+
 export function urlfy(str: string): string {
   let result = str.trim();
   if (result.search(/^http[s]?:\/\//) == -1) {

@@ -43,14 +43,16 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 		}, nil
 	}
 
+	// we use UTC+0000 time for comparison
+	utc, _ := time.LoadLocation(time.UTC.String())
 	// EarliestAllowedTs is store as UTC+0000
-	if time.Now().UTC().Before(time.Unix(payload.EarliestAllowedTs, 0)) {
+	if time.Now().In(utc).Before(time.Unix(payload.EarliestAllowedTs, 0)) {
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TaskTimingNotAllowed,
 				Title:   "Not ready to run",
-				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
+				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
 			},
 		}, nil
 	}
@@ -60,7 +62,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: fmt.Sprintf("Passed the configured earliest running time: %s", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
+			Content: fmt.Sprintf("Passed the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
 		},
 	}, nil
 }
