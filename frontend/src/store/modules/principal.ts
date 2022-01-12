@@ -88,6 +88,7 @@ const actions = {
           data: {
             type: "PrincipalCreate",
             attributes: {
+              authProvider: newPrincipal.authProvider,
               name: newPrincipal.name,
               email: newPrincipal.email,
               password: randomString(),
