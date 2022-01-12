@@ -141,12 +141,17 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}()
 
 		{
+			errMessage := ""
+			if err != nil {
+				errMessage = err.Error()
+			}
+
 			bytes, err := json.Marshal(api.ActivitySQLQueryHistoryPayload{
 				Statement:    exec.Statement,
 				Duration:     time.Now().UnixMilli() - startTms,
 				InstanceID:   exec.InstanceID,
 				DatabaseName: exec.DatabaseName,
-				Error:        err.Error(),
+				Error:        errMessage,
 			})
 
 			if err != nil {
