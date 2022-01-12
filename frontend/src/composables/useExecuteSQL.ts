@@ -31,10 +31,12 @@ const useExecuteSQL = () => {
     }
     try {
       isLoadingData.value = true;
+      store.dispatch("sqlEditor/setIsExecuting", true);
       const res = await store.dispatch("sqlEditor/executeQuery", {
         statement: sqlStatement,
       });
       isLoadingData.value = false;
+      store.dispatch("sqlEditor/setIsExecuting", false);
 
       if (res.error) {
         store.dispatch("notification/pushNotification", {
@@ -46,6 +48,7 @@ const useExecuteSQL = () => {
       }
     } catch (error) {
       isLoadingData.value = false;
+      store.dispatch("sqlEditor/setIsExecuting", false);
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",

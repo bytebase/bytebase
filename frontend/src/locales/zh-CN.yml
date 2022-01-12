@@ -156,6 +156,7 @@ common:
   ok: OK
   share: 分享
   or: 或者
+  export: 导出
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -901,10 +902,14 @@ sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
   search-databases: 搜索数据库
+  search-results: 搜索结果
   loading-databases: 加载数据库信息...
   close-pane: 关闭面板
   loading-data: 加载数据中...
   table-empty-placehoder: 点击 ”运行“ 执行查询
+  no-rows-found: 无数据
+  download-as-csv: 下载为 CSV 格式
+  download-as-json: 下载为 JSON 格式
 label:
   error:
     key-necessary: 需要指定 Key
