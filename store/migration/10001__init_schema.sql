@@ -1425,3 +1425,33 @@ WHERE
     rowid = old.rowid;
 
 END;
+
+-- query table stores the saved queries for the user
+CREATE TABLE query (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    name TEXT NOT NULL,
+    statement TEXT NOT NULL,
+    UNIQUE(creator_id)
+);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('query', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_query_modification_time`
+AFTER
+UPDATE
+    ON `query` FOR EACH ROW BEGIN
+UPDATE
+    `query`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;

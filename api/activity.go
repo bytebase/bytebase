@@ -53,6 +53,11 @@ const (
 	ActivityProjectMemberDelete ActivityType = "bb.project.member.delete"
 	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
 	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
+
+	// SQL(Editor) related
+
+	// ActivitySQLQueryHistory is the type for executing query.
+	ActivitySQLQueryHistory ActivityType = "bb.sql.query.history"
 )
 
 func (e ActivityType) String() string {
@@ -89,6 +94,8 @@ func (e ActivityType) String() string {
 		return "bb.project.member.delete"
 	case ActivityProjectMemberRoleUpdate:
 		return "bb.project.member.role.update"
+	case ActivitySQLQueryHistory:
+		return "bb.sql.query.history"
 	}
 	return "bb.activity.unknown"
 }
@@ -232,6 +239,16 @@ type ActivityProjectDatabaseTransferPayload struct {
 	DatabaseID int `json:"databaseId,omitempty"`
 	// Used by activity table to display info without paying the join cost
 	DatabaseName string `json:"databaseName,omitempty"`
+}
+
+// ActivitySQLQueryHistoryPayload is the API message payloads for executing query.
+type ActivitySQLQueryHistoryPayload struct {
+	// Used by activity table to display info without paying the join cost
+	Statement    string `json:"statement"`
+	Duration     int64  `json:"duration"`
+	InstanceID   int    `json:"instanceId"`
+	DatabaseName string `json:"databaseName"`
+	Error        string `json:"error"`
 }
 
 // Activity is the API message for an activity.

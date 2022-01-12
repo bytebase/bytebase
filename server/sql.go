@@ -124,6 +124,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
 		}
 
+		startTms := time.Now().UnixMilli()
+
 		bytes, err := func() ([]byte, error) {
 			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
 			if err != nil {
@@ -137,6 +139,44 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			return json.Marshal(rowSet)
 		}()
+
+		{
+			bytes, err := json.Marshal(api.ActivitySQLQueryHistoryPayload{
+				Statement:    exec.Statement,
+				Duration:     time.Now().UnixMilli() - startTms,
+				InstanceID:   exec.InstanceID,
+				DatabaseName: exec.DatabaseName,
+				Error:        err.Error(),
+			})
+
+			if err != nil {
+				s.l.Warn("Failed to create history activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.Int("instance_id", exec.InstanceID),
+					zap.String("sql statement", exec.Statement),
+					zap.Error(err))
+			}
+
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerID: exec.InstanceID,
+				Type:        api.ActivityProjectDatabaseTransfer,
+				Level:       api.ActivityInfo,
+				Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
+					exec.Statement, exec.DatabaseName, exec.InstanceID),
+				Payload: string(bytes),
+			}
+
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+
+			if err != nil {
+				s.l.Warn("Failed to create history activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.Int("instance_id", exec.InstanceID),
+					zap.String("sql statement", exec.Statement),
+					zap.Error(err))
+			}
+		}
 
 		resultSet := &api.SQLResultSet{}
 		if err == nil {
