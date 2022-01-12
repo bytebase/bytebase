@@ -28,6 +28,7 @@ export type BytebaseLoginInfo = {
 
 export type AuthProvider = {
   type: AuthProviderType;
+  name: string;
   instanceUrl: string;
   applicationId: string;
   secret: string;
@@ -35,6 +36,7 @@ export type AuthProvider = {
 
 export const EmptyAuthProvider: AuthProvider = {
   type: "BYTEBASE",
+  name: "",
   instanceUrl: "",
   applicationId: "",
   secret: "",
