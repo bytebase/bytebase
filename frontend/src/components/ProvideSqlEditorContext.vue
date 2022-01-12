@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watchEffect } from "vue";
+import { computed, reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
   Instance,
@@ -11,11 +11,50 @@ import {
   Table,
   ConnectionAtom,
   ConnectionAtomType,
+  UNKNOWN_ID,
+  InstanceId,
+  DatabaseId,
+  Project,
 } from "../types";
 
 const store = useStore();
+const state = reactive<{
+  projectList: Project[];
+  instanceIdList: Map<InstanceId, Instance["name"]>;
+  databaseIdList: Map<DatabaseId, Database["name"]>;
+}>({
+  projectList: [],
+  instanceIdList: new Map(),
+  databaseIdList: new Map(),
+});
 
-const prepareSqlEdtiorContext = async function () {
+const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+const prepareAccessibleConnectionByProject = async () => {
+  // It will also be called when user logout
+  if (currentUser.value.id != UNKNOWN_ID) {
+    state.projectList = await store.dispatch("project/fetchProjectListByUser", {
+      userId: currentUser.value.id,
+    });
+  }
+
+  const promises = state.projectList.map(async (project) => {
+    const databaseList = await store.dispatch(
+      "database/fetchDatabaseListByProjectId",
+      project.id
+    );
+    if (databaseList.length >= 0) {
+      databaseList.forEach((database: Database) => {
+        state.databaseIdList.set(database.id, database.name);
+        state.instanceIdList.set(database.instance.id, database.instance.name);
+      });
+    }
+  });
+
+  await Promise.all(promises);
+};
+
+const prepareSqlEdtiorContext = async () => {
   store.dispatch("sqlEditor/setConnectionContext", {
     isLoadingTree: true,
   });
@@ -36,9 +75,12 @@ const prepareSqlEdtiorContext = async function () {
     };
 
   const instanceList = await store.dispatch("instance/fetchInstanceList");
-  connectionTree = instanceList.map(mapConnectionAtom("instance", 0));
+  const filteredInstanceList = instanceList.filter((instance: Instance) =>
+    state.instanceIdList.has(instance.id)
+  );
+  connectionTree = filteredInstanceList.map(mapConnectionAtom("instance", 0));
 
-  for (const instance of instanceList) {
+  for (const instance of filteredInstanceList) {
     const databaseList = await store.dispatch(
       "database/fetchDatabaseListByInstanceId",
       instance.id
@@ -47,11 +89,15 @@ const prepareSqlEdtiorContext = async function () {
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
     );
-    instanceItem.children = databaseList.map(
+    const filteredDatabaseList = databaseList.filter((database: Database) =>
+      state.databaseIdList.has(database.id)
+    );
+
+    instanceItem.children = filteredDatabaseList.map(
       mapConnectionAtom("database", instance.id)
     );
 
-    for (const db of databaseList) {
+    for (const db of filteredDatabaseList) {
       const tableList = await store.dispatch(
         "table/fetchTableListByDatabaseId",
         db.id
@@ -71,5 +117,8 @@ const prepareSqlEdtiorContext = async function () {
   });
 };
 
-watchEffect(prepareSqlEdtiorContext);
+onMounted(async () => {
+  await prepareAccessibleConnectionByProject();
+  await prepareSqlEdtiorContext();
+});
 </script>
