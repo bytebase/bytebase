@@ -526,7 +526,7 @@ auth:
     forget-password: 忘记密码?
     new-user: 第一次使用 Bytebase?
     third-party: 您可联系管理员开启第三方认证登录
-    gitlab: 通过 Gitlab 登录
+    gitlab: 通过 GitLab 登录
   password-forget:
     title: 忘记了您的密码？
     content: 请联系的您的 Bytebase 管理员重置密码
