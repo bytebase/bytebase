@@ -1,6 +1,7 @@
 // This is a facet of the underlying identity entity.
 // For now, there is only user type. In the future,
 
+import { AuthProviderType } from ".";
 import { PrincipalId } from "./id";
 import { RoleType } from "./member";
 
@@ -19,6 +20,7 @@ export type Principal = {
   updatedTs: number;
 
   // Domain specific fields
+  authProvider: AuthProviderType;
   type: PrincipalType;
   name: string;
   email: string;
@@ -27,6 +29,7 @@ export type Principal = {
 
 export type PrincipalCreate = {
   // Domain specific fields
+  authProvider: AuthProviderType;
   name: string;
   email: string;
 };
