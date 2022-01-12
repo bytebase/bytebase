@@ -45,7 +45,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 
 	// we use UTC+0000 time for comparison
 	utc, _ := time.LoadLocation(time.UTC.String())
-	// EarliestAllowedTs is store as UTC+0000
+	// EarliestAllowedTs is store in UTC+0000
 	if time.Now().In(utc).Before(time.Unix(payload.EarliestAllowedTs, 0)) {
 		return []api.TaskCheckResult{
 			{
