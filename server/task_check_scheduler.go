@@ -353,7 +353,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.String("task_type", string(task.Type)),
-			zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			zap.String("task_check_type", string(checkType)),
 		)
 		return false, nil
 	}
