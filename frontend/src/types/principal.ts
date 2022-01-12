@@ -20,6 +20,7 @@ export type Principal = {
   updatedTs: number;
 
   // Domain specific fields
+  authProvider: AuthProviderType;
   type: PrincipalType;
   name: string;
   email: string;
@@ -27,8 +28,8 @@ export type Principal = {
 };
 
 export type PrincipalCreate = {
-  authProvider: AuthProviderType;
   // Domain specific fields
+  authProvider: AuthProviderType;
   name: string;
   email: string;
 };

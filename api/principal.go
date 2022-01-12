@@ -94,10 +94,10 @@ type PrincipalCreate struct {
 
 	// Domain specific fields
 	Type         PrincipalType
-	AuthProvider PrincipalAuthProvider
-	Name         string `jsonapi:"attr,name"`
-	Email        string `jsonapi:"attr,email"`
-	Password     string `jsonapi:"attr,password"`
+	AuthProvider PrincipalAuthProvider `jsonapi:"attr,authProvider"`
+	Name         string                `jsonapi:"attr,name"`
+	Email        string                `jsonapi:"attr,email"`
+	Password     string                `jsonapi:"attr,password"`
 	PasswordHash string
 }
 
