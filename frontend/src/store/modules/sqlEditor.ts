@@ -28,7 +28,8 @@ const state: () => SqlEditorState = () => ({
   },
   queryStatement: "",
   selectedStatement: "",
-  queryResult: [],
+  isExecuting: false,
+  queryResult: null,
 });
 
 const getters = {
@@ -130,6 +131,9 @@ const mutations = {
   ) {
     Object.assign(state.connectionContext, payload);
   },
+  [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
+    state.isExecuting = payload;
+  },
 };
 
 type SqlEditorActionsMap = {
@@ -137,6 +141,7 @@ type SqlEditorActionsMap = {
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
   setQueryResult: typeof mutations.SET_QUERY_RESULT;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
+  setIsExecuting: typeof mutations.SET_IS_EXECUTING;
 };
 
 const actions = {
@@ -145,6 +150,7 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
+    setIsExecuting: types.SET_IS_EXECUTING,
   }),
   async executeQuery(
     { commit, dispatch, state }: any,
@@ -180,7 +186,7 @@ const actions = {
       { root: true }
     );
     commit(types.SET_SQL_EDITOR_STATE, {
-      queryResult: [],
+      queryResult: null,
     });
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
