@@ -81,16 +81,22 @@
         </div>
       </template>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        <span class="mr-1">{{ $t("common.when") }}</span>
-        <div class="tooltip-wrapper">
-          <span class="tooltip w-60">{{
-            $t("task.earliest-allowed-time-hint")
-          }}</span>
-          <!-- Heroicons name: outline/question-mark-circle -->
-          <heroicons-outline:question-mark-circle class="h-4 w-4" />
-        </div>
-      </h2>
+      <div>
+        <h2 class="textlabel flex items-center">
+          <span class="mr-1">{{ $t("common.when") }}</span>
+          <div class="tooltip-wrapper">
+            <span class="tooltip w-60">{{
+              $t("task.earliest-allowed-time-hint")
+            }}</span>
+            <!-- Heroicons name: outline/question-mark-circle -->
+            <heroicons-outline:question-mark-circle class="h-4 w-4" />
+          </div>
+        </h2>
+        <h2 class="text-gray-600 text-sm">
+          <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
+        </h2>
+      </div>
+
       <div class="col-span-2">
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
@@ -105,6 +111,8 @@
           @update:value="
             (newTimestampNs) => {
               state.earliestAllowedTs = newTimestampNs / 1000;
+              // we use utc+0 to avoid inconsistency in timezone
+              const utc0Ts = dayjs(newTimestampNs).utcOffset(0).unix();
               $emit('update-earliest-allowed-time', newTimestampNs / 1000);
             }
           "
