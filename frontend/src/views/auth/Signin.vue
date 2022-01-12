@@ -6,19 +6,64 @@
         src="../../assets/logo-full.svg"
         alt="Bytebase"
       />
-      <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        {{ $t("auth.sign-in.title") }}
-      </h2>
-      <h2
-        v-if="authProviderList.length == 0"
-        class="text-gray-500 leading-4 tracking-wide font-light text-sm"
-      >
-        {{ $t("auth.sign-in.third-party") }}
-      </h2>
     </div>
 
-    <div class="mt-4">
-      <div class="mt-4">
+    <div class="mt-8 mb-3">
+      <template
+        v-for="authProvider in authProviderList"
+        :key="authProvider.type"
+      >
+        <n-button
+          class="w-full h-10 mb-2"
+          @click.prevent="
+            () => {
+              state.activeAuthProvider = authProvider;
+              const window = openWindowForOAuth(
+                `${authProvider.instanceUrl}/${
+                  AuthProviderConfig[authProvider.type].apiPath
+                }`,
+                authProvider.applicationId,
+                'login'
+              );
+            }
+          "
+        >
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig[authProvider.type].iconPath"
+          /><span class="text-center font-semibold align-middle">{{
+            authProviderList.length == 1
+              ? $t("auth.sign-in.gitlab")
+              : authProvider.name
+          }}</span>
+        </n-button>
+      </template>
+
+      <template v-if="authProviderList.length == 0">
+        <n-button class="w-full h-10 mb-2" disabled>
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
+          /><span class="text-center font-semibold align-middle">
+            {{ $t("auth.sign-in.third-party") }}
+          </span>
+        </n-button>
+      </template>
+    </div>
+
+    <div class="relative">
+      <div class="absolute inset-0 flex items-center" aria-hidden="true">
+        <div class="w-full border-t border-control-border"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-white text-control">
+          {{ $t("common.or") }}
+        </span>
+      </div>
+    </div>
+
+    <div class="mt-2">
+      <div class="mt-2">
         <form class="space-y-6" @submit.prevent="trySignin">
           <div>
             <label
@@ -75,35 +120,6 @@
               >
                 {{ $t("common.sign-in") }}
               </button>
-
-              <template
-                v-for="authProvider in authProviderList"
-                :key="authProvider.type"
-              >
-                <!-- GitLab auth provider -->
-                <n-button
-                  circle
-                  quaternary
-                  :bordered="false"
-                  @click.prevent="
-                    () => {
-                      state.activeAuthProvider = authProvider;
-                      const window = openWindowForOAuth(
-                        `${authProvider.instanceUrl}/${
-                          AuthProviderConfig[authProvider.type].apiPath
-                        }`,
-                        authProvider.applicationId,
-                        'login'
-                      );
-                    }
-                  "
-                >
-                  <img
-                    class="w-4"
-                    :src="AuthProviderConfig[authProvider.type].iconPath"
-                  />
-                </n-button>
-              </template>
             </span>
           </div>
         </form>
@@ -111,9 +127,6 @@
     </div>
 
     <div class="mt-6 relative">
-      <div class="absolute inset-0 flex items-center" aria-hidden="true">
-        <div class="w-full border-t border-control-border"></div>
-      </div>
       <div class="relative flex justify-center text-sm">
         <span class="pl-2 bg-white text-control">
           {{ $t("auth.sign-in.new-user") }}
