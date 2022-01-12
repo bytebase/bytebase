@@ -28,7 +28,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		authProvider := make([]*api.AuthProvider, 0)
 		for _, vcs := range list {
 			newProvider := &api.AuthProvider{
-				Type:          &vcs.Type,
+				Type:          vcs.Type,
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
