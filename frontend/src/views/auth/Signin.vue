@@ -148,7 +148,7 @@ import { useRouter } from "vue-router";
 import {
   AuthProvider,
   EmptyAuthProvider,
-  GitlabLoginInfo,
+  VCSLoginInfo,
   LoginInfo,
   OAuthConfig,
   OAuthToken,
@@ -227,7 +227,7 @@ export default {
           code: payload.code,
         })
         .then((token: OAuthToken) => {
-          const gitlabLoginInfo: GitlabLoginInfo = {
+          const gitlabLoginInfo: VCSLoginInfo = {
             applicationId: state.activeAuthProvider!.applicationId,
             secret: state.activeAuthProvider.secret,
             instanceUrl: state.activeAuthProvider.instanceUrl,
