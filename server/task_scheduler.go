@@ -233,9 +233,8 @@ func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
 
 // ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	// only schema update task has required task check
-	if task.Type == api.TaskDatabaseSchemaUpdate {
-		// timing task check
+	// timing task check
+	if task.EarliestAllowedTs != 0 {
 		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
 			return nil, err
@@ -243,8 +242,11 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if !pass {
 			return task, nil
 		}
+	}
 
-		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+	// only schema update task has required task check
+	if task.Type == api.TaskDatabaseSchemaUpdate {
+		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return nil, err
 		}
