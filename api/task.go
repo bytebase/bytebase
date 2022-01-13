@@ -135,7 +135,6 @@ type Task struct {
 	Status  TaskStatus `jsonapi:"attr,status"`
 	Type    TaskType   `jsonapi:"attr,type"`
 	Payload string     `jsonapi:"attr,payload"`
-	// This field is stored in UTC+0000
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
