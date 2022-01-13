@@ -67,6 +67,16 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.GET("/activity", func(c echo.Context) error {
 		ctx := context.Background()
 		activityFind := &api.ActivityFind{}
+		if creatorIDStr := c.QueryParams().Get("user"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", creatorIDStr)).SetInternal(err)
+			}
+			activityFind.CreatorID = &creatorID
+		}
+		if typeStr := c.QueryParams().Get("type"); typeStr != "" {
+			activityFind.Type = &typeStr
+		}
 		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
 			containerID, err := strconv.Atoi(containerIDStr)
 			if err != nil {
