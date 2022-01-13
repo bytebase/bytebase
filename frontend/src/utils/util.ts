@@ -59,7 +59,7 @@ export function timezoneString(zoneName: string, offset: number): string {
   ).padStart(2, "0")}`;
 }
 
-export const UTC0ToLocal = (utc0Ts: number | null): number | null => {
+export const UTCToLocal = (utc0Ts: number | null): number | null => {
   const diff = dayjs().utcOffset();
   const localTs = utc0Ts
     ? dayjs(utc0Ts * 1000)
@@ -69,7 +69,7 @@ export const UTC0ToLocal = (utc0Ts: number | null): number | null => {
   return localTs;
 };
 
-export const localToUTC0 = (utc0Ts: number | null): number | null => {
+export const localToUTC = (utc0Ts: number | null): number | null => {
   const diff = dayjs().utcOffset();
   const localTs = utc0Ts
     ? dayjs(utc0Ts * 1000)

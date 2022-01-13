@@ -113,7 +113,7 @@
               const newTs = newTimestampNs / 1000;
               // we show user the local time
               state.earliestAllowedTs = newTs;
-              $emit('update-earliest-allowed-time', localToUTC0(newTs));
+              $emit('update-earliest-allowed-time', localToUTC(newTs));
             }
           "
         />
@@ -261,8 +261,8 @@ import {
   allTaskList,
   databaseSlug,
   isDBAOrOwner,
-  UTC0ToLocal,
-  localToUTC0,
+  UTCToLocal,
+  localToUTC,
 } from "../../utils";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
@@ -333,14 +333,14 @@ export default defineComponent({
 
     const now = new Date();
     const state = reactive<LocalState>({
-      earliestAllowedTs: UTC0ToLocal(props.task.earliestAllowedTs),
+      earliestAllowedTs: UTCToLocal(props.task.earliestAllowedTs),
     });
 
     watch(
       () => props.task,
       (cur) => {
         // we show user local time
-        state.earliestAllowedTs = UTC0ToLocal(cur.earliestAllowedTs);
+        state.earliestAllowedTs = UTCToLocal(cur.earliestAllowedTs);
       }
     );
 
@@ -506,7 +506,7 @@ export default defineComponent({
       showDatabaseCreationLabel,
       clickDatabase,
       isDayPassed,
-      localToUTC0,
+      localToUTC,
     };
   },
 });
