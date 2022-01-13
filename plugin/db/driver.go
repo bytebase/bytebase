@@ -311,20 +311,20 @@ type MigrationHistory struct {
 	Updater   string
 	UpdatedTs int64
 
-	ReleaseVersion    string
-	Namespace         string
-	Sequence          int
-	Engine            MigrationEngine
-	Type              MigrationType
-	Status            MigrationStatus
-	Version           string
-	Description       string
-	Statement         string
-	Schema            string
-	SchemaPrev        string
-	ExecutionDuration int
-	IssueID           string
-	Payload           string
+	ReleaseVersion      string
+	Namespace           string
+	Sequence            int
+	Engine              MigrationEngine
+	Type                MigrationType
+	Status              MigrationStatus
+	Version             string
+	Description         string
+	Statement           string
+	Schema              string
+	SchemaPrev          string
+	ExecutionDurationNs int64
+	IssueID             string
+	Payload             string
 }
 
 // MigrationHistoryFind is the API message for finding migration historys.

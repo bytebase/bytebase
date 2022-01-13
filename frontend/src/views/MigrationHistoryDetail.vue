@@ -37,7 +37,7 @@
               <span class="textlabel"
                 >{{ $t("common.duration") }}&nbsp;-&nbsp;</span
               >
-              {{ secondsToString(migrationHistory.executionDuration) }}
+              {{ nanosecondsToString(migrationHistory.executionDurationNs) }}
             </dd>
             <dt class="sr-only">{{ $t("common.creator") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -172,7 +172,7 @@ import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
-import { idFromSlug, secondsToString } from "../utils";
+import { idFromSlug, nanosecondsToString } from "../utils";
 import {
   MigrationHistory,
   MigrationHistoryPayload,
@@ -262,7 +262,7 @@ export default defineComponent({
 
     return {
       state,
-      secondsToString,
+      nanosecondsToString,
       database,
       migrationHistory,
       pushEvent,
