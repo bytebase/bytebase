@@ -1440,14 +1440,14 @@ CREATE TABLE saved_query (
 INSERT INTO
     sqlite_sequence (name, seq)
 VALUES
-    ('query', 100);
+    ('saved_query', 100);
 
 CREATE TRIGGER IF NOT EXISTS `trigger_update_saved_query_modification_time`
 AFTER
 UPDATE
-    ON `query` FOR EACH ROW BEGIN
+    ON `saved_query` FOR EACH ROW BEGIN
 UPDATE
-    `query`
+    `saved_query`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE
