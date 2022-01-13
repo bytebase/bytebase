@@ -124,6 +124,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
 		}
 
+		start := time.Now().UnixNano()
+
 		bytes, err := func() ([]byte, error) {
 			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
 			if err != nil {
@@ -137,6 +139,52 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			return json.Marshal(rowSet)
 		}()
+
+		{
+			errMessage := ""
+			activityLevel := api.ActivityInfo
+			if err != nil {
+				errMessage = err.Error()
+				activityLevel = api.ActivityError
+			}
+
+			bytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
+				Statement:    exec.Statement,
+				DurationNs:   time.Now().UnixNano() - start,
+				InstanceName: instance.Name,
+				DatabaseName: exec.DatabaseName,
+				Error:        errMessage,
+			})
+
+			if err != nil {
+				s.l.Warn("Failed to marshal activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.String("instance_name", instance.Name),
+					zap.String("statement", exec.Statement),
+					zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+			}
+
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				Type:        api.ActivitySQLEditorQuery,
+				ContainerID: exec.InstanceID,
+				Level:       activityLevel,
+				Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
+					exec.Statement, exec.DatabaseName, instance.Name),
+				Payload: string(bytes),
+			}
+
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+
+			if err != nil {
+				s.l.Warn("Failed to create activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.String("instance_name", instance.Name),
+					zap.String("statement", exec.Statement),
+					zap.Error(err))
+			}
+		}
 
 		resultSet := &api.SQLResultSet{}
 		if err == nil {
