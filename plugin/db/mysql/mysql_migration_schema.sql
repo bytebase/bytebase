@@ -38,15 +38,15 @@ CREATE TABLE bytebase.migration_history (
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
     -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
     schema_prev MEDIUMTEXT NOT NULL,
-    execution_duration BIGINT NOT NULL,
+    execution_duration_ns BIGINT NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase.migration_history (namespace(256), sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), engine, version(256));
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), engine(256), version(256));
 
-CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), engine, type);
+CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), engine(256), type(256));
 
 CREATE INDEX bytebase_idx_migration_history_namespace_created ON bytebase.migration_history(namespace(256), `created_ts`);

@@ -183,6 +183,12 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 	if v := find.ContainerID; v != nil {
 		where, args = append(where, "container_id = ?"), append(args, *v)
 	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, "creator_id = ?"), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, "type = ?"), append(args, *v)
+	}
 
 	var query = `
 		SELECT
