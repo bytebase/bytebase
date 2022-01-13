@@ -131,11 +131,11 @@ type Task struct {
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
 
 	// Domain specific fields
-	Name    string     `jsonapi:"attr,name"`
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Type    TaskType   `jsonapi:"attr,type"`
-	Payload string     `jsonapi:"attr,payload"`
-	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+	Name              string     `jsonapi:"attr,name"`
+	Status            TaskStatus `jsonapi:"attr,status"`
+	Type              TaskType   `jsonapi:"attr,type"`
+	Payload           string     `jsonapi:"attr,payload"`
+	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
 }
 
 // TaskCreate is the API message for creating a task.
