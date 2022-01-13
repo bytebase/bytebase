@@ -117,9 +117,9 @@ func formatDatabaseName(databaseName, dbNameTemplate string, labels map[string]s
 	tokens[api.DBNameToken] = databaseName
 	for k, v := range labels {
 		switch k {
-		case "bb.location":
+		case api.LocationLabelKey:
 			tokens[api.LocationToken] = v
-		case "bb.tenant":
+		case api.TenantLabelKey:
 			tokens[api.TenantToken] = v
 		}
 	}
