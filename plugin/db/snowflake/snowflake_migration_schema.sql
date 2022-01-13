@@ -6,7 +6,7 @@ CREATE DATABASE bytebase;
 -- Note, we don't create trigger to update created_ts and updated_ts because that may causes error:
 -- ERROR 1419 (HY000): You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators variable)
 CREATE TABLE bytebase.public.migration_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGINT PRIMARY KEY AUTOINCREMENT,
     created_by TEXT NOT NULL,
     created_ts BIGINT NOT NULL,
     updated_by TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE bytebase.public.migration_history (
     -- Since bytebase also manages different application databases from an instance, it leverages this field to track each database migration history.
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
-    sequence INTEGER NOT NULL,
+    sequence BIGINT NOT NULL,
     -- We call it engine because maybe we could load history from other migration tool.
     -- Current allowed values are UI, VCS.
     engine TEXT NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE bytebase.public.migration_history (
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
     -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
     schema_prev TEXT NOT NULL,
-    execution_duration INTEGER NOT NULL,
+    execution_duration BIGINT NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL
 );
