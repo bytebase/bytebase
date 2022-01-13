@@ -15,7 +15,6 @@ const useExecuteSQL = () => {
   const { t } = useI18n();
   const state = reactive({
     isLoadingData: false,
-    isSelectStatement: false,
   });
 
   const notify = (type: string, title: string, description?: string) => {
@@ -28,6 +27,10 @@ const useExecuteSQL = () => {
   };
 
   const execute = async () => {
+    if (state.isLoadingData) {
+      notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
+    }
+
     const queryStatement = store.state.sqlEditor.queryStatement;
     const selectedStatement = store.state.sqlEditor.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
