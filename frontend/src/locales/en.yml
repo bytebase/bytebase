@@ -84,6 +84,7 @@ common:
   creator: Creator
   version: Version
   issue: Issue
+  issues: Issues
   duration: Duration
   created-at: Created
   updated-at: Updated

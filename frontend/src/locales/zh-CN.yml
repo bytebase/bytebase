@@ -84,6 +84,7 @@ common:
   creator: 创建人
   version: 版本
   issue: 工单
+  issues: 工单
   duration: 时长
   created-at: 创建于
   updated-at: 更新于
