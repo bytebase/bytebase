@@ -59,24 +59,34 @@ export function timezoneString(zoneName: string, offset: number): string {
   ).padStart(2, "0")}`;
 }
 
-export const UTCToLocal = (utc0Ts: number | null): number | null => {
+/**
+ * UTCToLocal takes in utc+0000 timestamp and convert it into local timestamp in milisecond
+ * @param utcTs utc timestamp in milisecond
+ * @returns local timestamp in milisecond
+ */
+export const UTCToLocal = (utcTs: number | null): number | null => {
   const diff = dayjs().utcOffset();
-  const localTs = utc0Ts
-    ? dayjs(utc0Ts * 1000)
+  const local = utcTs
+    ? dayjs(utcTs * 1000) // dayjs takes in timestamp in nanosecond
         .add(diff, "minutes")
         .unix()
     : null;
-  return localTs;
+  return local;
 };
 
-export const localToUTC = (utc0Ts: number | null): number | null => {
+/**
+ * localToUTC takes in local timestamp and convert it into UTC+0000 timestamp in milisecond
+ * @param localTs local timestamp in milisecond
+ * @returns utc+0000 timestamp in milisecond
+ */
+export const localToUTC = (localTs: number | null): number | null => {
   const diff = dayjs().utcOffset();
-  const localTs = utc0Ts
-    ? dayjs(utc0Ts * 1000)
+  const utc = localTs
+    ? dayjs(localTs * 1000) // dayjs takes in timestamp in nanosecond
         .subtract(diff, "minutes")
         .unix()
     : null;
-  return localTs;
+  return utc;
 };
 
 export function urlfy(str: string): string {
