@@ -111,7 +111,7 @@
           @update:value="
             (newTimestampNs) => {
               // n-date-picker would pass timestamp in nanosecond.
-              // We divided it by 1000 to get timestamp in milisecond
+              // We divide it by 1000 to get timestamp in milisecond
               const newTs = newTimestampNs / 1000;
               // we show user the local time
               state.earliestAllowedTs = newTs;
