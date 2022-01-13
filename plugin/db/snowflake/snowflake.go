@@ -603,7 +603,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			statement,
 			schema,
 			schema_prev,
-			execution_duration,
+			execution_duration_ns,
 			issue_id,
 			payload
 		)
@@ -614,7 +614,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			bytebase.public.migration_history
 		SET
 			status = 'DONE',
-			execution_duration = ?,
+			execution_duration_ns = ?,
 			schema = ?
 		WHERE id = ?
 	`
@@ -624,7 +624,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			bytebase.public.migration_history
 		SET
 			status = 'FAILED',
-			execution_duration = ?
+			execution_duration_ns = ?
 		WHERE id = ?
 	`
 
@@ -657,7 +657,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		statement,
 		schema,
 		schema_prev,
-		execution_duration,
+		execution_duration_ns,
 		issue_id,
 		payload
 		FROM bytebase.public.migration_history `

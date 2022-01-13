@@ -43,8 +43,9 @@ export function bytesToString(size: number): string {
   return size.toString() + " " + unitList[i];
 }
 
-export function secondsToString(second: number): string {
-  return dayjs.duration(second).humanize();
+export function nanosecondsToString(nanoseconds: number): string {
+  // dayjs.duration() takes the length of time in milliseconds.
+  return dayjs.duration(nanoseconds/1000000).humanize();
 }
 
 export function timezoneString(zoneName: string, offset: number): string {
