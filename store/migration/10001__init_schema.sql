@@ -4,15 +4,16 @@ PRAGMA foreign_keys = ON;
 -- principal
 CREATE TABLE principal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
-    auth_provider TEXT NOT NULL CHECK (auth_provider in ('BYTEBASE', 'GITLAB_SELF_HOST')),
+    -- allowed types are 'END_USER', 'SYSTEM_BOT'.
+    type TEXT NOT NULL,
+    -- allowed auth providers are 'BYTEBASE', 'GITLAB_SELF_HOST'.
+    auth_provider TEXT NOT NULL,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -65,9 +66,8 @@ VALUES
 -- Setting
 CREATE TABLE setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -99,17 +99,16 @@ END;
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
 CREATE TABLE member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
-    role TEXT NOT NULL CHECK (
-        role IN ('OWNER', 'DBA', 'DEVELOPER')
-    ),
+    -- allowed status are 'INVITED', 'ACTIVE'.
+    status TEXT NOT NULL,
+    -- allowed roles are 'OWNER', 'DBA', 'DEVELOPER'.
+    role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id) UNIQUE
 );
 
@@ -134,9 +133,8 @@ END;
 -- Environment
 CREATE TABLE environment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -168,15 +166,15 @@ END;
 -- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
 CREATE TABLE policy (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
+    -- allowed types are in the format of 'bb.policy.*'.
+    type TEXT NOT NULL,
     payload TEXT NOT NULL
 );
 
@@ -205,18 +203,20 @@ END;
 -- Project
 CREATE TABLE project (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
     key TEXT NOT NULL UNIQUE,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
-    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
-    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED' CHECK (tenant_mode IN ('DISABLED', 'TENANT')),
+    -- allowed workflow types are 'UI', 'VCS'.
+    workflow_type TEXT NOT NULL,
+    -- allowed visibilities are 'PUBLIC', 'PRIVATE'.
+    visibility TEXT NOT NULL,
+    -- allowed tenant modes are 'DISABLED', 'TENANT'.
+    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED',
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL
@@ -270,15 +270,15 @@ END;
 -- Project member
 CREATE TABLE project_member (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
+    -- allowed roles are 'OWNER', 'DEVELOPER'.
+    role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     UNIQUE(project_id, principal_id)
 );
@@ -304,15 +304,15 @@ END;
 -- Project Hook
 CREATE TABLE project_webhook (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
+    -- allowed types are in the format of 'bb.plugin.webhook.*'.
+    type TEXT NOT NULL,
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
@@ -343,16 +343,16 @@ END;
 -- Instance
 CREATE TABLE instance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
+    -- allowed engines are 'MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE'.
+    engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
@@ -380,9 +380,8 @@ END;
 -- Instance user stores the users for a particular instance
 CREATE TABLE instance_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -415,9 +414,8 @@ END;
 -- data is synced periodically from the instance
 CREATE TABLE db (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -426,7 +424,8 @@ CREATE TABLE db (
     project_id INTEGER NOT NULL REFERENCES project (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER REFERENCES backup (id) ON DELETE SET NULL,
-    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
+    -- allowed sync status are 'OK', 'NOT_FOUND'.
+    sync_status TEXT NOT NULL,
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -459,9 +458,8 @@ END;
 -- data is synced periodically from the instance
 CREATE TABLE tbl (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -504,9 +502,8 @@ END;
 -- data is synced periodically from the instance
 CREATE TABLE col (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -548,9 +545,8 @@ END;
 -- data is synced periodically from the instance
 CREATE TABLE idx (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -591,9 +587,8 @@ END;
 -- data is synced periodically from the instance
 CREATE TABLE vw (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -628,9 +623,8 @@ END;
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -638,7 +632,8 @@ CREATE TABLE data_source (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (TYPE IN ('ADMIN', 'RW', 'RO')),
+    -- allowed types are 'ADMIN', 'RW', 'RO'.
+    type TEXT NOT NULL,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
@@ -670,18 +665,20 @@ END;
 -- backup stores the backups for a particular database.
 CREATE TABLE backup (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
-    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
+    -- allowed status are 'PENDING_CREATE', 'DONE', 'FAILED'.
+    status TEXT NOT NULL,
+    -- allowed types are 'MANUAL', 'AUTOMATIC'.
+    type TEXT NOT NULL,
+    -- allowed storage backends are 'LOCAL'.
+    storage_backend TEXT NOT NULL,
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
@@ -712,24 +709,20 @@ END;
 -- This is a strict version of cron expression using UTC timezone uniformly.
 CREATE TABLE backup_setting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
-    enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
-    hour INTEGER NOT NULL CHECK (
-        0 <= hour
-        AND hour < 24
-    ),
+    -- allowed enabled values are 0, 1.
+    enabled INTEGER NOT NULL,
+    -- allowed hour is from 0 to 23 (included).
+    hour INTEGER NOT NULL,
+    -- allowed day_of_week is from -1 to 6.
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL CHECK (
-        -1 <= day_of_week
-        AND day_of_week < 7
-    ),
+    day_of_week INTEGER NOT NULL,
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
@@ -759,15 +752,15 @@ END;
 -- pipeline table
 CREATE TABLE pipeline (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED'))
+    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
+    status TEXT NOT NULL
 );
 
 CREATE INDEX idx_pipeline_status ON pipeline(status);
@@ -793,9 +786,8 @@ END;
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -828,9 +820,8 @@ END;
 -- task table stores the task for the stage
 CREATE TABLE task (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -841,17 +832,10 @@ CREATE TABLE task (
     -- Could be empty for tasks like creating database
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (
-        status IN (
-            'PENDING',
-            'PENDING_APPROVAL',
-            'RUNNING',
-            'DONE',
-            'FAILED',
-            "CANCELED"
-        )
-    ),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
+    -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
+    status TEXT NOT NULL,
+    -- allowed types are in the format of 'bb.task.*'.
+    type TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT '',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
@@ -889,15 +873,10 @@ CREATE TABLE task_run (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (
-        status IN (
-            'RUNNING',
-            'DONE',
-            'FAILED',
-            "CANCELED"
-        )
-    ),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
+    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
+    status TEXT NOT NULL,
+    -- allowed types are in the format of 'bb.task.*'.
+    type TEXT NOT NULL,
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
@@ -933,15 +912,10 @@ CREATE TABLE task_check_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     task_id INTEGER NOT NULL REFERENCES task (id),
-    status TEXT NOT NULL CHECK (
-        status IN (
-            'RUNNING',
-            'DONE',
-            'FAILED',
-            "CANCELED"
-        )
-    ),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
+    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
+    status TEXT NOT NULL,
+    -- allowed types are in the format of 'bb.task-check.*'.
+    type TEXT NOT NULL,
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
@@ -975,9 +949,8 @@ END;
 -- Each issue links a pipeline driving the resolution.
 CREATE TABLE issue (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -985,8 +958,10 @@ CREATE TABLE issue (
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
+    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
+    status TEXT NOT NULL,
+    -- allowed types are in the format of 'bb.issue.*'.
+    type TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1035,16 +1010,18 @@ CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_i
 -- activity table stores the activity for the container such as issue
 CREATE TABLE activity (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    container_id INTEGER NOT NULL CHECK (container_id != 0),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
-    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
+    -- container_id is not zero.
+    container_id INTEGER NOT NULL,
+    -- allowed types are in the format of 'bb.*'.
+    type TEXT NOT NULL,
+    -- allowed levels are 'INFO', 'WARN', 'ERROR'.
+    level TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
     payload TEXT NOT NULL DEFAULT ''
 );
@@ -1080,7 +1057,8 @@ CREATE TABLE inbox (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
+    -- allowed status are 'UNREAD', 'READ'.
+    status TEXT NOT NULL
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
@@ -1095,9 +1073,8 @@ VALUES
 -- bookmark table stores the bookmark for the user
 CREATE TABLE bookmark (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1128,29 +1105,19 @@ END;
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
-    instance_url TEXT NOT NULL CHECK (
-        (
-            instance_url LIKE 'http://%'
-            OR instance_url LIKE 'https://%'
-        )
-        AND instance_url = rtrim(instance_url, '/')
-    ),
-    api_url TEXT NOT NULL CHECK (
-        (
-            api_url LIKE 'http://%'
-            OR api_url LIKE 'https://%'
-        )
-        AND api_url = rtrim(api_url, '/')
-    ),
+    -- allowed types are 'GITLAB_SELF_HOST'.
+    type TEXT NOT NULL,
+    -- instance_url follows (instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')
+    instance_url TEXT NOT NULL,
+    -- api_url follows (api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/').
+    api_url TEXT NOT NULL,
     application_id TEXT NOT NULL,
     secret TEXT NOT NULL
 );
@@ -1178,9 +1145,8 @@ END;
 -- A project can only link one repository (at least for now).
 CREATE TABLE repository (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1198,7 +1164,8 @@ CREATE TABLE repository (
     web_url TEXT NOT NULL,
     -- Branch we are interested.
     -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
-    branch_filter TEXT NOT NULL CHECK (trim(branch_filter) != ''),
+    -- branch_filter follows trim(branch_filter) != ''.
+    branch_filter TEXT NOT NULL,
     -- Base working directory we are interested.
     base_directory TEXT NOT NULL DEFAULT '',
     -- The file path template for matching the commited migration script.
@@ -1247,9 +1214,8 @@ END;
 -- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1257,7 +1223,8 @@ CREATE TABLE anomaly (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
+    -- allowed types are in the format of 'bb.anomaly.*'.
+    type TEXT NOT NULL,
     payload TEXT NOT NULL DEFAULT ''
 );
 
@@ -1286,9 +1253,8 @@ END;
 -- label_key stores available label keys at workspace level.
 CREATE TABLE label_key (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1320,9 +1286,8 @@ END;
 -- label_value stores available label key values at workspace level.
 CREATE TABLE label_value (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1356,9 +1321,8 @@ END;
 -- db_label stores labels asscociated with databases.
 CREATE TABLE db_label (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1394,9 +1358,8 @@ END;
 -- deployment_config stores deployment configurations at project level.
 CREATE TABLE deployment_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    row_status TEXT NOT NULL CHECK (
-        row_status IN ('NORMAL', 'ARCHIVED')
-    ) DEFAULT 'NORMAL',
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
