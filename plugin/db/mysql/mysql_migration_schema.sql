@@ -45,8 +45,8 @@ CREATE TABLE bytebase.migration_history (
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase.migration_history (namespace(256), sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), engine, version(256));
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase.migration_history (namespace(256), engine(256), version(256));
 
-CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), engine, type);
+CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase.migration_history(namespace(256), engine(256), type(256));
 
 CREATE INDEX bytebase_idx_migration_history_namespace_created ON bytebase.migration_history(namespace(256), `created_ts`);
