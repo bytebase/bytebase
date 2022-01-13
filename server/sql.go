@@ -155,7 +155,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			})
 
 			if err != nil {
-				s.l.Warn("Failed to create history activity after executing sql statement",
+				s.l.Warn("Failed to marshal activity after executing sql statement",
 					zap.String("database_name", exec.DatabaseName),
 					zap.Int("instance_id", exec.InstanceID),
 					zap.String("sql statement", exec.Statement),
