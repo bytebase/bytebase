@@ -5,7 +5,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -23,7 +23,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -40,7 +40,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -58,7 +58,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -75,7 +75,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -93,7 +93,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -110,7 +110,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -128,7 +128,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -145,7 +145,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -162,7 +162,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -180,7 +180,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -197,7 +197,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -215,7 +215,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -232,7 +232,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES
@@ -249,7 +249,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
-        `role`,
+        role,
         principal_id
     )
 VALUES

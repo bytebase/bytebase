@@ -143,10 +143,10 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 			creator_id,
 			updater_id,
 			name,
-			`+"`status`"+`
+			status
 		)
 		VALUES (?, ?, ?, 'OPEN')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -182,7 +182,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 		where, args = append(where, "id = ?"), append(args, *v)
 	}
 	if v := find.Status; v != nil {
-		where, args = append(where, "`status` = ?"), append(args, *v)
+		where, args = append(where, "status = ?"), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -193,7 +193,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 		    updater_id,
 		    updated_ts,
 		    name,
-		    `+"`status`"+`
+		    status
 		FROM pipeline
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -243,7 +243,7 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`status`"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`,
 		args...,
 	)

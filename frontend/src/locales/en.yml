@@ -155,6 +155,8 @@ common:
   by: by
   ok: OK
   share: Share
+  or: or
+  export: Export
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -577,6 +579,8 @@ auth:
     admin-account: admin account
     forget-password: Forgot your password?
     new-user: New to Bytebase?
+    third-party: You can reach to your Admin to enable third party login.
+    gitlab: Login with GitLab
   password-forget:
     title: Forgot your password?
     content: Please contact your Bytebase Admin to reset your password.
@@ -923,6 +927,8 @@ version-control:
       scripts will automatically trigger the corresponding database change.
       Bytebase owners manage all the applicable VCSs here, so that project
       owners can link the projects with their Git repositories from these VCSs.
+      **Once configured, Bytebase will enable third party login via your
+      configured VCSs**
     add-git-provider:
       self: Add a Git provider
       description: >-
@@ -1027,10 +1033,14 @@ sql-editor:
   self: SQL Editor
   select-connection: Select Connections
   search-databases: Search Databases
+  search-results: Search Results
   loading-databases: Loading Databases...
   close-pane: Close Pane
   loading-data: Loading Data...
   table-empty-placehoder: Click Run to execute the query.
+  no-rows-found: No rows found
+  download-as-csv: Download as CSV
+  download-as-json: Download as JSON
 label:
   error:
     key-necessary: Key is required

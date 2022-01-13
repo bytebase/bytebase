@@ -114,7 +114,7 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			updated_ts,
 			database_id,
 			name,
-			`+"`type`,"+`
+			type,
 			engine,
 			collation,
 			row_count,
@@ -125,7 +125,7 @@ func (s *TableService) createTable(ctx context.Context, tx *Tx, create *api.Tabl
 			comment
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, `+"`type`, engine, collation, row_count, data_size, index_size, data_free, create_options, comment"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, collation, row_count, data_size, index_size, data_free, create_options, comment
 	`,
 		create.CreatorID,
 		create.CreatedTs,
@@ -197,7 +197,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 		    updated_ts,
 			database_id,
 		    name,
-			`+"`type`,"+`
+			type,
 			engine,
 			collation,
 			row_count,

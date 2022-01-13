@@ -29,6 +29,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode == "" {
 			projectCreate.TenantMode = api.TenantModeDisabled
 		}
+		if err := api.ValidateProjectDBNameTemplate(projectCreate.DBNameTemplate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create project request: %s", err.Error()))
+		}
+		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
+		}
 		project, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {

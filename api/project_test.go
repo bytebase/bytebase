@@ -110,3 +110,42 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateProjectDBNameTemplate(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		errPart  string
+	}{
+		{
+			"location",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			"",
+		}, {
+			"tenant",
+			"{{DB_NAME}}_{{TENANT}}.sql",
+			"",
+		}, {
+			"InvalidToken",
+			"{{DB_NAME}}_{{TYPE}}",
+			"invalid token {{TYPE}}",
+		}, {
+			"DatabaseNameTokenNotExists",
+			"{{TENANT}}",
+			"must include token {{DB_NAME}}",
+		},
+	}
+
+	for _, test := range tests {
+		err := ValidateProjectDBNameTemplate(test.template)
+		if err != nil {
+			if !strings.Contains(err.Error(), test.errPart) {
+				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
+			}
+		} else {
+			if test.errPart != "" {
+				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got no error, want errPart %q.", test.name, test.template, test.errPart)
+			}
+		}
+	}
+}

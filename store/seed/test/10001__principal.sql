@@ -5,7 +5,8 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
+        auth_provider,
         name,
         email,
         password_hash
@@ -15,6 +16,7 @@ VALUES
         1,
         1,
         'END_USER',
+        'BYTEBASE',
         'Demo Owner',
         'demo@example.com',
         -- 1024
@@ -26,7 +28,8 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
+        auth_provider,
         name,
         email,
         password_hash
@@ -36,6 +39,7 @@ VALUES
         1,
         1,
         'END_USER',
+        'BYTEBASE',
         'Jerry DBA',
         'jerry@example.com',
         -- 2048
@@ -47,7 +51,8 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
+        auth_provider,
         name,
         email,
         password_hash
@@ -57,6 +62,7 @@ VALUES
         1,
         1,
         'END_USER',
+        'BYTEBASE',
         'Tom Dev',
         'tom@example.com',
         -- 4096
@@ -68,7 +74,8 @@ INSERT INTO
     principal (
         creator_id,
         updater_id,
-        `type`,
+        type,
+        auth_provider,
         name,
         email,
         password_hash
@@ -78,6 +85,7 @@ VALUES
         1,
         1,
         'END_USER',
+        'BYTEBASE',
         'Jane Dev',
         'jane@example.com',
         -- 8192

@@ -155,6 +155,8 @@ common:
   by: 由
   ok: OK
   share: 分享
+  or: 或者
+  export: 导出
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -524,6 +526,8 @@ auth:
     title: 登录您的账号
     forget-password: 忘记密码?
     new-user: 第一次使用 Bytebase?
+    third-party: 您可联系管理员开启第三方认证登录
+    gitlab: 通过 GitLab 登录
   password-forget:
     title: 忘记了您的密码？
     content: 请联系的您的 Bytebase 管理员重置密码
@@ -815,7 +819,7 @@ version-control:
     description: >-
       Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
       (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
-      中选取他们的 Git 仓库。
+      中选取他们的 Git 仓库。 **配置VCS后，Bytebase 将自动开启通过 VCS 的第三方认证登录**
     add-git-provider:
       self: 添加 Git 提供方
       description: >-
@@ -898,10 +902,14 @@ sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
   search-databases: 搜索数据库
+  search-results: 搜索结果
   loading-databases: 加载数据库信息...
   close-pane: 关闭面板
   loading-data: 加载数据中...
   table-empty-placehoder: 点击 ”运行“ 执行查询
+  no-rows-found: 无数据
+  download-as-csv: 下载为 CSV 格式
+  download-as-json: 下载为 JSON 格式
 label:
   error:
     key-necessary: 需要指定 Key

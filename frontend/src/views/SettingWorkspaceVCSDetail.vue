@@ -6,14 +6,20 @@
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
-          {{ $t('version-control.setting.add-git-provider.gitlab-self-host-ce-ee') }}
+          {{
+            $t(
+              "version-control.setting.add-git-provider.gitlab-self-host-ce-ee"
+            )
+          }}
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
     </div>
 
     <div>
-      <label for="instanceurl" class="textlabel"> {{ $t('common.instance') }} URL </label>
+      <label for="instanceurl" class="textlabel">
+        {{ $t("common.instance") }} URL
+      </label>
       <input
         id="instanceurl"
         name="instanceurl"
@@ -25,9 +31,17 @@
     </div>
 
     <div>
-      <label for="name" class="textlabel"> {{ $t('version-control.setting.add-git-provider.basic-info.display-name') }} </label>
+      <label for="name" class="textlabel">
+        {{
+          $t("version-control.setting.add-git-provider.basic-info.display-name")
+        }}
+      </label>
       <p class="mt-1 textinfolabel">
-        {{ $t('version-control.setting.add-git-provider.basic-info.display-name-label') }}
+        {{
+          $t(
+            "version-control.setting.add-git-provider.basic-info.display-name-label"
+          )
+        }}
       </p>
       <input
         id="name"
@@ -39,13 +53,15 @@
     </div>
 
     <div>
-      <label for="applicationid" class="textlabel"> {{ $t('common.application') }} ID </label>
+      <label for="applicationid" class="textlabel">
+        {{ $t("common.application") }} ID
+      </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t('version-control.setting.git-provider.application-id-label') }}
-          <a :href="adminApplicationUrl" target="_blank" class="normal-link"
-            >{{ $t('version-control.setting.git-provider.view-in-gitlab') }}</a
-          >
+          {{ $t("version-control.setting.git-provider.application-id-label") }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("version-control.setting.git-provider.view-in-gitlab")
+          }}</a>
         </template>
       </p>
       <input
@@ -61,7 +77,7 @@
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t('version-control.setting.git-provider.secret-label-gitlab') }}
+          {{ $t("version-control.setting.git-provider.secret-label-gitlab") }}
         </template>
       </p>
       <input
@@ -87,7 +103,7 @@
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-         {{ $t('version-control.setting.git-provider.delete') }}
+          {{ $t("version-control.setting.git-provider.delete") }}
         </div>
       </template>
       <div>
@@ -96,7 +112,7 @@
           class="btn-normal py-2 px-4"
           @click.prevent="cancel"
         >
-          {{ $t('common.cancel') }}
+          {{ $t("common.cancel") }}
         </button>
         <button
           type="button"
@@ -104,7 +120,7 @@
           :disabled="!allowUpdate"
           @click.prevent="doUpdate"
         >
-          {{ $t('common.update') }}
+          {{ $t("common.update") }}
         </button>
       </div>
     </div>
@@ -112,7 +128,7 @@
 
   <div class="py-6">
     <div class="text-lg leading-6 font-medium text-main">
-      {{ $t('repository.linked') + ` (${repositoryList.length})` }}
+      {{ $t("repository.linked") + ` (${repositoryList.length})` }}
     </div>
     <div class="mt-4">
       <RepositoryTable :repository-list="repositoryList" />
@@ -229,7 +245,8 @@ export default {
       ) {
         const newWindow = openWindowForOAuth(
           `${vcs.value.instanceUrl}/oauth/authorize`,
-          vcs.value.applicationId
+          vcs.value.applicationId,
+          "register"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
