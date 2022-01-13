@@ -60,9 +60,9 @@ export function timezoneString(zoneName: string, offset: number): string {
 }
 
 /**
- * UTCToLocal takes in utc+0000 timestamp and convert it into local timestamp in milisecond
- * @param utcTs utc timestamp in milisecond
- * @returns local timestamp in milisecond
+ * UTCToLocal takes in utc+0000 timestamp in second and convert it into local timestamp in second
+ * @param utcTs utc timestamp in second
+ * @returns local timestamp in second
  */
 export const UTCToLocal = (utcTs: number | null): number | null => {
   const diff = dayjs().utcOffset();
@@ -75,9 +75,9 @@ export const UTCToLocal = (utcTs: number | null): number | null => {
 };
 
 /**
- * localToUTC takes in local timestamp and convert it into UTC+0000 timestamp in milisecond
- * @param localTs local timestamp in milisecond
- * @returns utc+0000 timestamp in milisecond
+ * localToUTC takes in local timestamp in second and convert it into UTC+0000 timestamp in second
+ * @param localTs local timestamp in second
+ * @returns utc+0000 timestamp in second
  */
 export const localToUTC = (localTs: number | null): number | null => {
   const diff = dayjs().utcOffset();
