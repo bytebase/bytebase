@@ -7,7 +7,7 @@
       v-show="queryResult !== null"
       class="w-full flex justify-between items-center mb-2"
     >
-      <n-input
+      <NInput
         v-model:value="state.search"
         class="max-w-xs"
         type="text"
@@ -16,22 +16,20 @@
         <template #prefix>
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
-      </n-input>
+      </NInput>
       <div class="flex justify-between items-center">
-        <n-dropdown
+        <NDropdown
           trigger="hover"
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
         >
-          <n-button>
+          <NButton>
             <template #icon>
-              <n-icon>
-                <heroicons-solid:download class="h-5 w-5" />
-              </n-icon>
+              <heroicons-outline:download class="h-5 w-5" />
             </template>
             {{ t("common.export") }}
-          </n-button>
-        </n-dropdown>
+          </NButton>
+        </NDropdown>
       </div>
     </div>
     <NDataTable
@@ -49,7 +47,8 @@
     </NDataTable>
     <div
       v-show="notifyMessage"
-      class="absolute w-full h-full flex justify-center items-center"
+      class="absolute w-full h-full flex justify-center items-center transition-all bg-transparent"
+      :class="notifyMessage ? 'bg-white bg-opacity-90' : ''"
     >
       {{ notifyMessage }}
     </div>
@@ -114,7 +113,7 @@ const notifyMessage = computed(() => {
     return t("sql-editor.table-empty-placehoder");
   }
   if (isExecuting.value) {
-    return t("loading-data");
+    return t("sql-editor.loading-data");
   }
   if (data.value.length === 0) {
     return t("sql-editor.no-rows-found");
@@ -123,7 +122,7 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const exportDropdownOptions = [
+const exportDropdownOptions = computed(() => [
   {
     label: t("sql-editor.download-as-csv"),
     key: "csv",
@@ -132,7 +131,7 @@ const exportDropdownOptions = [
     label: t("sql-editor.download-as-json"),
     key: "json",
   },
-];
+]);
 
 const handleExportBtnClick = (format: "csv" | "json") => {
   let rawText = "";
