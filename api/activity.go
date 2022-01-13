@@ -241,7 +241,7 @@ type ActivityProjectDatabaseTransferPayload struct {
 	DatabaseName string `json:"databaseName,omitempty"`
 }
 
-// ActivitySQLEditorQueryPayload is the API message payloads for executing query.
+// ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
 	Statement    string `json:"statement"`
