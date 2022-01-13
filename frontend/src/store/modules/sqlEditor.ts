@@ -5,6 +5,9 @@ import {
   ConnectionAtom,
   QueryInfo,
   ConnectionContext,
+  Database,
+  DatabaseId,
+  ProjectId,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
@@ -25,14 +28,17 @@ const state: () => SqlEditorState = () => ({
   },
   queryStatement: "",
   selectedStatement: "",
-  queryResult: [],
+  isExecuting: false,
+  queryResult: null,
 });
 
 const getters = {
-  connectionTreeByInstanceId(state: SqlEditorState) {
-    return state.connectionTree.find((item) => {
+  connectionTreeByInstanceId(state: SqlEditorState): Partial<ConnectionAtom> {
+    const idx = state.connectionTree.findIndex((item) => {
       return item.id === state.connectionContext.instanceId;
     });
+
+    return idx !== -1 ? state.connectionTree[idx] : {};
   },
   connectionInfo(
     state: SqlEditorState,
@@ -41,9 +47,11 @@ const getters = {
     rootGetters: any
   ) {
     return {
-      allInstances: rootState.instance.instanceById,
-      allDatabases: rootState.database.databaseListByInstanceId,
-      allTables: rootState.table.tableListByDatabaseId,
+      projectListById: rootState.project.projectById,
+      instanceListById: rootState.instance.instanceById,
+      databaseListByInstanceId: rootState.database.databaseListByInstanceId,
+      databaseListByProjectId: rootState.database.databaseListByProjectId,
+      tableListByDatabaseId: rootState.table.tableListByDatabaseId,
     };
   },
   connectionInfoByInstanceId(
@@ -52,23 +60,46 @@ const getters = {
     rootState: any,
     rootGetters: any
   ) {
-    const instance = getter.connectionTreeByInstanceId;
-    const databases = rootGetters["database/databaseListByInstanceId"](
-      instance.id
-    );
+    let instance = {} as any;
+    let databaseList = [];
+    let tableList = [];
 
-    const tables = instance.children
-      .map((item: ConnectionAtom) =>
-        rootGetters["table/tableListByDatabaseId"](item.id)
-      )
-      .flat();
+    if (!isEmpty(getter.connectionTreeByInstanceId)) {
+      instance = getter.connectionTreeByInstanceId;
+      databaseList = rootGetters["database/databaseListByInstanceId"](
+        instance.id
+      );
+
+      tableList = instance.children
+        .map((item: ConnectionAtom) =>
+          rootGetters["table/tableListByDatabaseId"](item.id)
+        )
+        .flat();
+    }
 
     return {
       instance,
-      databases,
-      tables,
+      databaseList,
+      tableList,
     };
   },
+  findProjectIdByDatabaseId:
+    (state: SqlEditorState, getter: any) =>
+    (databaseId: DatabaseId): ProjectId => {
+      let projectId = 0;
+      const databaseListByProjectId =
+        getter.connectionInfo.databaseListByProjectId;
+      for (const [id, databaseList] of databaseListByProjectId) {
+        const idx = databaseList.findIndex(
+          (database: Database) => database.id === databaseId
+        );
+        if (idx !== -1) {
+          projectId = id;
+          break;
+        }
+      }
+      return projectId;
+    },
   currentSlug(state: SqlEditorState) {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
@@ -100,6 +131,9 @@ const mutations = {
   ) {
     Object.assign(state.connectionContext, payload);
   },
+  [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
+    state.isExecuting = payload;
+  },
 };
 
 type SqlEditorActionsMap = {
@@ -107,6 +141,7 @@ type SqlEditorActionsMap = {
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
   setQueryResult: typeof mutations.SET_QUERY_RESULT;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
+  setIsExecuting: typeof mutations.SET_IS_EXECUTING;
 };
 
 const actions = {
@@ -115,6 +150,7 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setQueryResult: types.SET_QUERY_RESULT,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
+    setIsExecuting: types.SET_IS_EXECUTING,
   }),
   async executeQuery(
     { commit, dispatch, state }: any,
@@ -150,7 +186,7 @@ const actions = {
       { root: true }
     );
     commit(types.SET_SQL_EDITOR_STATE, {
-      queryResult: [],
+      queryResult: null,
     });
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
