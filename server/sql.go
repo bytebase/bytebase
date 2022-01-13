@@ -158,7 +158,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				s.l.Warn("Failed to marshal activity after executing sql statement",
 					zap.String("database_name", exec.DatabaseName),
 					zap.Int("instance_id", exec.InstanceID),
-					zap.String("sql statement", exec.Statement),
+					zap.String("statement", exec.Statement),
 					zap.Error(err))
 			}
 
