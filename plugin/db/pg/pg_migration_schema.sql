@@ -38,7 +38,7 @@ CREATE TABLE migration_history (
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
     -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
     schema_prev TEXT NOT NULL,
-    execution_duration BIGINT NOT NULL,
+    execution_duration_ns BIGINT NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL
 );
