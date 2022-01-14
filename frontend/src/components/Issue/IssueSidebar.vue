@@ -113,9 +113,8 @@
               // n-date-picker would pass timestamp in milisecond.
               // We divide it by 1000 to get timestamp in second
               const newTs = newTimestampMiliSec / 1000;
-              // we show user the local time
               state.earliestAllowedTs = newTs;
-              $emit('update-earliest-allowed-time', localToUTC(newTs));
+              $emit('update-earliest-allowed-time', newTs);
             }
           "
         />
@@ -259,13 +258,7 @@ import {
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
 } from "../../types";
-import {
-  allTaskList,
-  databaseSlug,
-  isDBAOrOwner,
-  UTCToLocal,
-  localToUTC,
-} from "../../utils";
+import { allTaskList, databaseSlug, isDBAOrOwner } from "../../utils";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -335,14 +328,14 @@ export default defineComponent({
 
     const now = new Date();
     const state = reactive<LocalState>({
-      earliestAllowedTs: UTCToLocal(props.task.earliestAllowedTs),
+      earliestAllowedTs: props.task.earliestAllowedTs,
     });
 
     watch(
       () => props.task,
       (cur) => {
         // we show user local time
-        state.earliestAllowedTs = UTCToLocal(cur.earliestAllowedTs);
+        state.earliestAllowedTs = cur.earliestAllowedTs;
       }
     );
 
@@ -508,7 +501,6 @@ export default defineComponent({
       showDatabaseCreationLabel,
       clickDatabase,
       isDayPassed,
-      localToUTC,
     };
   },
 });
