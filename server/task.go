@@ -569,6 +569,14 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		if instance == nil {
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
+		project, err := s.composeProjectByID(ctx, payload.ProjectID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
+		}
+		if project == nil {
+			return nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
+		}
+
 		databaseCreate := &api.DatabaseCreate{
 			CreatorID:     taskStatusPatch.UpdaterID,
 			ProjectID:     payload.ProjectID,
@@ -603,7 +611,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if err == nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
 				s.l.Error("failed to record database labels after creating database",
 					zap.String("database_name", payload.DatabaseName),
 					zap.Int("project_id", payload.ProjectID),

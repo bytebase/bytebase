@@ -579,8 +579,8 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 
 func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
 	var pipelineCreate *api.PipelineCreate
-	switch issueCreate.Type {
-	case api.IssueDatabaseCreate:
+	switch {
+	case issueCreate.Type == api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -594,12 +594,17 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		if err != nil {
 			return nil, err
 		}
-
-		// Validate the labels. Labels are set upon task completion.
-		if m.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
-			}
+		if instance == nil {
+			return nil, fmt.Errorf("instance ID not found %v", m.InstanceID)
+		}
+		// Find project
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		if project == nil {
+			err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		switch instance.Engine {
@@ -645,11 +650,14 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 
-		var schemaVersion, schema string
-		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		// Validate the labels. Labels are set upon task completion.
+		if m.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Name: m.DatabaseName, Instance: instance} /* dummp database */, project, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
+			}
 		}
+
+		var schemaVersion, schema string
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
 			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, m.DatabaseName)
@@ -735,8 +743,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				},
 			}
 		}
-	case api.IssueDatabaseSchemaUpdate:
-	case api.IssueDatabaseDataUpdate:
+	case issueCreate.Type == api.IssueDatabaseSchemaUpdate || issueCreate.Type == api.IssueDatabaseDataUpdate:
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
