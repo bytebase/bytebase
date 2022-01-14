@@ -13,7 +13,7 @@ const (
 	DatabaseLabelSizeMax = 4
 	labelLengthMax       = 63
 
-	// LocationLabelKey is the label key for location/
+	// LocationLabelKey is the label key for location
 	LocationLabelKey = "bb.location"
 	// TenantLabelKey is the label key for tenant
 	TenantLabelKey = "bb.tenant"
