@@ -63,6 +63,8 @@ const (
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseDataUpdate is the task type for updating database data.
+	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
@@ -85,9 +87,16 @@ type TaskDatabaseCreatePayload struct {
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
-// TaskDatabaseSchemaUpdatePayload is the task payload for database schema update.
+// TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
 	MigrationType     db.MigrationType  `json:"migrationType,omitempty"`
+	Statement         string            `json:"statement,omitempty"`
+	RollbackStatement string            `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
+}
+
+// TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+type TaskDatabaseDataUpdatePayload struct {
 	Statement         string            `json:"statement,omitempty"`
 	RollbackStatement string            `json:"rollbackStatement,omitempty"`
 	VCSPushEvent      *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
