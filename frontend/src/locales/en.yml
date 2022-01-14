@@ -1010,7 +1010,7 @@ deployment-config:
   this-is-example-deployment-config: This is the deployment config example. You need to edit and save it.
   n-databases: '{n} database | {n} databases'
   selectors: Selectors
-  wont-be-deployed: Will no be deployed
+  wont-be-deployed: Will not be deployed
   add-stage: Add stage
   name-placeholder: Stage name...
   error:
