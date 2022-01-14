@@ -7,6 +7,10 @@ type ParseResult = {
 };
 
 export const parseSQL = (sql: string): ParseResult => {
+  if (sql === "") {
+    return { data: [], error: null };
+  }
+
   const parser = new Parser();
 
   try {
