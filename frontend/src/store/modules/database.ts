@@ -485,7 +485,7 @@ const mutations = {
             listByProject.push(database);
           }
         } else {
-          state.databaseListByProjectId.set(database.instance.id, [database]);
+          state.databaseListByProjectId.set(database.project.id, [database]);
         }
       }
     }

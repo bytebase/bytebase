@@ -803,6 +803,11 @@ export default defineComponent({
           return payload.statement;
         }
       } else {
+        if (router.currentRoute.value.query.sql) {
+          const sql = router.currentRoute.value.query.sql as string;
+          updateStatement(sql);
+        }
+
         const task = (selectedStage.value as StageCreate).taskList[0];
         return task.statement;
       }

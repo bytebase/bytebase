@@ -5,7 +5,7 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        `type`,
+        type,
         instance_url,
         api_url,
         application_id,

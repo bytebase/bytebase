@@ -110,3 +110,87 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateProjectDBNameTemplate(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		errPart  string
+	}{
+		{
+			"location",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			"",
+		}, {
+			"tenant",
+			"{{DB_NAME}}_{{TENANT}}.sql",
+			"",
+		}, {
+			"InvalidToken",
+			"{{DB_NAME}}_{{TYPE}}",
+			"invalid token {{TYPE}}",
+		}, {
+			"DatabaseNameTokenNotExists",
+			"{{TENANT}}",
+			"must include token {{DB_NAME}}",
+		},
+	}
+
+	for _, test := range tests {
+		err := ValidateProjectDBNameTemplate(test.template)
+		if err != nil {
+			if !strings.Contains(err.Error(), test.errPart) {
+				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
+			}
+		} else {
+			if test.errPart != "" {
+				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got no error, want errPart %q.", test.name, test.template, test.errPart)
+			}
+		}
+	}
+}
+
+func TestFormatTemplate(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		tokens   map[string]string
+		want     string
+		errPart  string
+	}{
+		{
+			"valid",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello_us-central1",
+			"",
+		}, {
+			"tokenNotFound",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}": "db1",
+			},
+			"",
+			"not found",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := FormatTemplate(test.template, test.tokens)
+		if err != nil {
+			if !strings.Contains(err.Error(), test.errPart) {
+				t.Errorf("%q: FormatTemplate(%q, %+v) got error %q, want errPart %q.", test.name, test.template, test.tokens, err.Error(), test.errPart)
+			}
+		} else {
+			if test.errPart != "" {
+				t.Errorf("%q: FormatTemplate(%q, %+v) got no error, want errPart %q.", test.name, test.template, test.tokens, test.errPart)
+			}
+		}
+		if got != test.want {
+			t.Errorf("%q: FormatTemplate(%q, %+v) got %q, want %q.", test.name, test.template, test.tokens, got, test.want)
+		}
+	}
+}

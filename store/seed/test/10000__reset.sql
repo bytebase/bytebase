@@ -99,6 +99,9 @@ DELETE FROM
 DELETE FROM
     deployment_config;
 
+DELETE FROM
+    saved_query;
+
 -- Project 1 refers to DEFAULT project which is considered as part of schema
 DELETE FROM
     project
@@ -113,6 +116,7 @@ DELETE FROM
     principal
 WHERE
     id != 1;
+
 
 -- By default, for every table, we reserve id <=100 for internal user
 UPDATE

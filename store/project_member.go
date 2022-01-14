@@ -131,7 +131,7 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 			creator_id,
 			updater_id,
 			project_id,
-			`+"`role`,"+`
+			role,
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)

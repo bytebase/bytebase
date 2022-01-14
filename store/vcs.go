@@ -132,14 +132,14 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 			creator_id,
 			updater_id,
 			name,
-			`+"`type`,"+`
+			type,
 			instance_url,
 			api_url,
 			application_id,
 			secret
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -192,7 +192,7 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 		    updater_id,
 		    updated_ts,
 			name,
-			`+"`type`,"+`
+			type,
 			instance_url,
 			api_url,
 			application_id,
@@ -255,7 +255,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, `+"`type`, instance_url, api_url, application_id, secret"+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`,
 		args...,
 	)

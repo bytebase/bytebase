@@ -6,7 +6,7 @@
 -- Note, we don't create trigger to update created_ts and updated_ts because that may causes error:
 -- ERROR 1419 (HY000): You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators variable)
 CREATE TABLE migration_history (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_by TEXT NOT NULL,
     created_ts BIGINT NOT NULL,
     updated_by TEXT NOT NULL,
@@ -18,13 +18,16 @@ CREATE TABLE migration_history (
     -- Since bytebase also manages different application databases from an instance, it leverages this field to track each database migration history.
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
-    sequence INTEGER NOT NULL CHECK (sequence >= 0),
+    sequence BIGINT NOT NULL CHECK (sequence >= 0),
     -- We call it engine because maybe we could load history from other migration tool.
-    engine TEXT NOT NULL CHECK (engine in ('UI', 'VCS')),
-    type TEXT NOT NULL CHECK (type in ('BASELINE', 'MIGRATE', 'BRANCH', 'DATA')),
+    -- Current allowed values are UI, VCS.
+    engine TEXT NOT NULL,
+    -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
+    type TEXT NOT NULL,
+    -- Current allowed values are PENDING, DONE, FAILED.
     -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
-    status TEXT NOT NULL CHECK (status in ('PENDING', 'DONE', 'FAILED')),
+    status TEXT NOT NULL,
     -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -35,7 +38,7 @@ CREATE TABLE migration_history (
     -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
     -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
     schema_prev TEXT NOT NULL,
-    execution_duration INTEGER NOT NULL,
+    execution_duration_ns BIGINT NOT NULL,
     issue_id TEXT NOT NULL,
     payload TEXT NOT NULL
 );

@@ -6,13 +6,64 @@
         src="../../assets/logo-full.svg"
         alt="Bytebase"
       />
-      <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        {{ $t("auth.sign-in.title") }}
-      </h2>
     </div>
 
-    <div class="mt-8">
-      <div class="mt-6">
+    <div class="mt-8 mb-3">
+      <template
+        v-for="authProvider in authProviderList"
+        :key="authProvider.type"
+      >
+        <n-button
+          class="w-full h-10 mb-2"
+          @click.prevent="
+            () => {
+              state.activeAuthProvider = authProvider;
+              const window = openWindowForOAuth(
+                `${authProvider.instanceUrl}/${
+                  AuthProviderConfig[authProvider.type].apiPath
+                }`,
+                authProvider.applicationId,
+                'login'
+              );
+            }
+          "
+        >
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig[authProvider.type].iconPath"
+          /><span class="text-center font-semibold align-middle">{{
+            authProviderList.length == 1
+              ? $t("auth.sign-in.gitlab")
+              : authProvider.name
+          }}</span>
+        </n-button>
+      </template>
+
+      <template v-if="authProviderList.length == 0">
+        <n-button class="w-full h-10 mb-2" disabled>
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
+          /><span class="text-center font-semibold align-middle">
+            {{ $t("auth.sign-in.third-party") }}
+          </span>
+        </n-button>
+      </template>
+    </div>
+
+    <div class="relative">
+      <div class="absolute inset-0 flex items-center" aria-hidden="true">
+        <div class="w-full border-t border-control-border"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-white text-control">
+          {{ $t("common.or") }}
+        </span>
+      </div>
+    </div>
+
+    <div class="mt-2">
+      <div class="mt-2">
         <form class="space-y-6" @submit.prevent="trySignin">
           <div>
             <label
@@ -61,11 +112,11 @@
           </div>
 
           <div>
-            <span class="block w-full rounded-md shadow-sm">
+            <span class="flex w-full rounded-md items-center">
               <button
                 type="submit"
                 :disabled="!allowSignin"
-                class="btn-primary w-full flex justify-center py-2 px-4"
+                class="btn-primary justify-center flex-grow py-2 px-4"
               >
                 {{ $t("common.sign-in") }}
               </button>
@@ -76,9 +127,6 @@
     </div>
 
     <div class="mt-6 relative">
-      <div class="absolute inset-0 flex items-center" aria-hidden="true">
-        <div class="w-full border-t border-control-border"></div>
-      </div>
       <div class="relative flex justify-center text-sm">
         <span class="pl-2 bg-white text-control">
           {{ $t("auth.sign-in.new-user") }}
@@ -94,16 +142,28 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { LoginInfo } from "../../types";
+import {
+  AuthProvider,
+  EmptyAuthProvider,
+  VCSLoginInfo,
+  LoginInfo,
+  OAuthConfig,
+  OAuthToken,
+  OAuthWindowEvent,
+  OAuthWindowEventPayload,
+  openWindowForOAuth,
+  redirectUrl,
+} from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
   password: string;
+  activeAuthProvider: AuthProvider;
 }
 
 export default {
@@ -116,6 +176,7 @@ export default {
     const state = reactive<LocalState>({
       email: "",
       password: "",
+      activeAuthProvider: EmptyAuthProvider,
     });
 
     onMounted(() => {
@@ -128,16 +189,69 @@ export default {
       if (store.getters["actuator/needAdminSetup"]()) {
         router.push({ name: "auth.signup", replace: true });
       }
+
+      store.dispatch("auth/fetchProviderList");
+      window.addEventListener(OAuthWindowEvent, eventListener, false);
     });
+
+    const AuthProviderConfig = {
+      GITLAB_SELF_HOST: {
+        apiPath: "oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+    };
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;
     });
 
+    const authProviderList = computed(() => {
+      return store.getters["auth/authProviderList"]();
+    });
+
+    const eventListener = (event: Event) => {
+      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+      if (payload.error) {
+        return;
+      }
+      const oAuthConfig: OAuthConfig = {
+        endpoint: `${state.activeAuthProvider.instanceUrl}/oauth/token`,
+        applicationId: state.activeAuthProvider.applicationId,
+        secret: state.activeAuthProvider.secret,
+        redirectUrl: redirectUrl(),
+      };
+      store
+        .dispatch("gitlab/exchangeToken", {
+          oAuthConfig,
+          code: payload.code,
+        })
+        .then((token: OAuthToken) => {
+          const gitlabLoginInfo: VCSLoginInfo = {
+            applicationId: state.activeAuthProvider!.applicationId,
+            secret: state.activeAuthProvider.secret,
+            instanceUrl: state.activeAuthProvider.instanceUrl,
+            accessToken: token.accessToken,
+          };
+
+          store
+            .dispatch("auth/login", {
+              authProvider: "GITLAB_SELF_HOST",
+              payload: gitlabLoginInfo,
+            })
+            .then(() => {
+              router.push("/");
+            });
+        });
+    };
+
     const trySignin = () => {
       const loginInfo: LoginInfo = {
-        email: state.email,
-        password: state.password,
+        authProvider: "BYTEBASE",
+        payload: {
+          email: state.email,
+          password: state.password,
+        },
       };
       store.dispatch("auth/login", loginInfo).then(() => {
         router.push("/");
@@ -147,7 +261,10 @@ export default {
     return {
       state,
       allowSignin,
+      authProviderList,
+      AuthProviderConfig,
       trySignin,
+      openWindowForOAuth,
     };
   },
 };

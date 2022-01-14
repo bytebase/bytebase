@@ -7,20 +7,22 @@
         </router-link>
       </div>
       <div class="hidden sm:block">
-        <div class="ml-6 flex items-baseline space-x-1">
+        <div class="ml-6 flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            to="/project"
+            v-if="showDBAItem"
+            to="/issue"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.projects") }}</router-link>
+          >{{ $t("common.issues") }}</router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">
+          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
             {{
-              $t("common.databases")
+              $t("common.projects")
             }}
           </router-link>
 
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{ $t("common.databases") }}</router-link>
+
           <router-link
-            v-if="showDBAItem"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
           >{{ $t("common.instances") }}</router-link>
@@ -37,7 +39,7 @@
             v-if="isDevFeatures"
             to="/sql-editor"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t('sql-editor.self') }}</router-link>
+          >{{ $t("sql-editor.self") }}</router-link>
         </div>
       </div>
     </div>
@@ -47,17 +49,21 @@
           v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">{{ $t('setting.plan.self') }}</span>
+          <span class="hidden lg:block font-normal text-accent">
+            {{
+              $t("setting.plan.self")
+            }}
+          </span>
           <div
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
-          >{{ $t('setting.plan.free') }}</div>
+          >{{ $t("setting.plan.free") }}</div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
-          >{{ $t('setting.plan.team') }}</div>
+          >{{ $t("setting.plan.team") }}</div>
           <!-- <div
             class="bar-link"
             :class="currentPlan == 2 ? 'underline' : ''"
@@ -70,22 +76,26 @@
           v-if="!isRelease"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">{{ $t('settings.profile.role') }}</span>
+          <span class="hidden lg:block font-normal text-accent">
+            {{
+              $t("settings.profile.role")
+            }}
+          </span>
           <div
             class="bar-link"
             :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
-          >{{ $t('common.role.owner') }}</div>
+          >{{ $t("common.role.owner") }}</div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
-          >{{ $t('common.role.dba') }}</div>
+          >{{ $t("common.role.dba") }}</div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
-          >{{ $t('common.role.developer') }}</div>
+          >{{ $t("common.role.developer") }}</div>
         </div>
         <router-link to="/inbox" exact-active-class>
           <span
@@ -125,23 +135,33 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link
-      to="/project"
-      class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.projects') }}</router-link>
+    <router-link v-if="showDBAItem" to="/issue" class="bar-link rounded-md block px-3 py-2">
+      {{
+        $t("common.issues")
+      }}
+    </router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">{{ $t('common.databases') }}</router-link>
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
+      {{
+        $t("common.projects")
+      }}
+    </router-link>
+
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
+      {{
+        $t("common.databases")
+      }}
+    </router-link>
 
     <router-link
-      v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.instances') }}</router-link>
+    >{{ $t("common.instances") }}</router-link>
 
     <router-link
       to="/environment"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t('common.environments') }}</router-link>
+    >{{ $t("common.environments") }}</router-link>
 
     <router-link
       to="/setting/member"
@@ -185,7 +205,6 @@ export default {
 
     const showDBAItem = computed((): boolean => {
       return (
-        !store.getters["plan/feature"]("bb.dba-workflow") ||
         isDBAOrOwner(currentUser.value.role)
       );
     });
@@ -209,22 +228,31 @@ export default {
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
-        email: "demo@example.com",
-        password: "1024",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "demo@example.com",
+          password: "1024",
+        },
       });
     };
 
     const switchToDBA = () => {
       store.dispatch("auth/login", {
-        email: "jerry@example.com",
-        password: "2048",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "jerry@example.com",
+          password: "2048",
+        },
       });
     };
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
-        email: "tom@example.com",
-        password: "4096",
+        authProvider: "BYTEBASE",
+        payload: {
+          email: "tom@example.com",
+          password: "4096",
+        },
       });
     };
 

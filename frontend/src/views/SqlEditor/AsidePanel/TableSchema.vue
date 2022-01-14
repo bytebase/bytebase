@@ -8,10 +8,10 @@
       <div
         class="table-schema--header-actions flex-1 flex justify-end space-x-2"
       >
-        <div v-if="isDev()" class="action-edit flex items-center">
+        <div class="action-edit flex items-center">
           <NTooltip trigger="hover">
             <template #trigger>
-              <NButton text @click="handleEditorSchema">
+              <NButton text @click="gotoAlterSchema">
                 <heroicons-outline:pencil-alt class="w-4 h-4" />
               </NButton>
             </template>
@@ -59,24 +59,34 @@
     </div>
   </div>
   <div v-else class="h-full flex justify-center items-center">
-    Select a table to see its schema
+    {{ $t("sql-editor.table-schema-placeholder") }}
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch, defineEmits } from "vue";
 import {
+  useNamespacedGetters,
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
+import { useRouter } from "vue-router";
 
-import type { SqlEditorState } from "../../../types";
-import { isDev } from "../../../utils";
+import type {
+  SqlEditorState,
+  SqlEditorGetters,
+  Database,
+} from "../../../types";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
+const { findProjectIdByDatabaseId, connectionInfo } =
+  useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+    "findProjectIdByDatabaseId",
+    "connectionInfo",
+  ]);
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
@@ -86,9 +96,28 @@ const { fetchTableByDatabaseIdAndTableName } = useNamespacedActions("table", [
 
 const tableInfo = ref();
 const ctx = connectionContext.value;
+const router = useRouter();
 
-const handleEditorSchema = () => {
-  // TODO goto main console, create an issue
+const gotoAlterSchema = () => {
+  const projectId = findProjectIdByDatabaseId.value(ctx.selectedDatabaseId);
+  const databaseList =
+    connectionInfo.value.databaseListByProjectId.get(projectId);
+  const databaseName = databaseList.find(
+    (database: Database) => database.id === ctx.selectedDatabaseId
+  ).name;
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.database.schema.update",
+      name: `[${databaseName}] Alter schema`,
+      project: projectId,
+      databaseList: ctx.selectedDatabaseId,
+      sql: `ALTER TABLE ${ctx.selectedTableName}`,
+    },
+  });
 };
 
 const handleClosePane = () => {

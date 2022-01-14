@@ -375,15 +375,21 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					payload := api.TaskDatabaseSchemaUpdatePayload{}
 					payload.MigrationType = taskCreate.MigrationType
 					payload.Statement = taskCreate.Statement
-					if taskCreate.RollbackStatement != "" {
-						payload.RollbackStatement = taskCreate.RollbackStatement
-					}
-					if taskCreate.VCSPushEvent != nil {
-						payload.VCSPushEvent = taskCreate.VCSPushEvent
-					}
+					payload.RollbackStatement = taskCreate.RollbackStatement
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
 					bytes, err := json.Marshal(payload)
 					if err != nil {
 						return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
+					}
+					taskCreate.Payload = string(bytes)
+				} else if taskCreate.Type == api.TaskDatabaseDataUpdate {
+					payload := api.TaskDatabaseDataUpdatePayload{}
+					payload.Statement = taskCreate.Statement
+					payload.RollbackStatement = taskCreate.RollbackStatement
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
+					bytes, err := json.Marshal(payload)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create data update task, unable to marshal payload %w", err)
 					}
 					taskCreate.Payload = string(bytes)
 				} else if taskCreate.Type == api.TaskDatabaseRestore {
@@ -646,7 +652,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
+			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, m.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -730,6 +736,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 	case api.IssueDatabaseSchemaUpdate:
+	case api.IssueDatabaseDataUpdate:
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -740,6 +747,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			pc.Name = "Establish database baseline pipeline"
 		case db.Migrate:
 			pc.Name = "Update database schema pipeline"
+		case db.Data:
+			pc.Name = "Update database data pipeline"
 		default:
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", m.MigrationType))
 		}
@@ -767,7 +776,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
+			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, d.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -780,7 +789,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				for _, database := range stage {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-					taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
+					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 					if err != nil {
 						return nil, err
 					}
@@ -791,7 +800,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					for k := range environmentSet {
 						environments = append(environments, k)
 					}
-					err := fmt.Errorf("All databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+					err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 				}
 
@@ -818,7 +827,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 				}
 
-				taskCreate, err := getSchemaUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
+				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
 				if err != nil {
 					return nil, err
 				}
@@ -866,10 +875,12 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
+	} else if migrationType == db.Data {
+		taskName = fmt.Sprintf("Update %q data", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
 	payload.MigrationType = migrationType
@@ -882,15 +893,23 @@ func getSchemaUpdateTask(database *api.Database, migrationType db.MigrationType,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database schema update payload: %v", err))
+		errMsg := fmt.Sprintf("Failed to marshal database schema update payload: %v", err)
+		if migrationType == db.Data {
+			errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
 	}
 
+	taskType := api.TaskDatabaseSchemaUpdate
+	if migrationType == db.Data {
+		taskType = api.TaskDatabaseDataUpdate
+	}
 	return &api.TaskCreate{
 		Name:              taskName,
 		InstanceID:        database.Instance.ID,
 		DatabaseID:        &database.ID,
 		Status:            api.TaskPendingApproval,
-		Type:              api.TaskDatabaseSchemaUpdate,
+		Type:              taskType,
 		Statement:         d.Statement,
 		RollbackStatement: d.RollbackStatement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
@@ -1050,7 +1069,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
@@ -1069,7 +1088,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dat
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, dbNameTemplate, databaseList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
@@ -1080,7 +1099,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dat
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
+func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, databaseName string) (string, string, error) {
 	// Find all databases in the project.
 	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
@@ -1089,7 +1108,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
+	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, databaseName)
 	if err != nil {
 		return "", "", err
 	}

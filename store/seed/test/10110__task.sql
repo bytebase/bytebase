@@ -9,8 +9,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -42,8 +42,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -76,8 +76,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -110,8 +110,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -144,8 +144,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -177,8 +177,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -207,8 +207,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -239,8 +239,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -273,8 +273,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -307,8 +307,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -341,8 +341,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -375,8 +375,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -408,8 +408,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -438,8 +438,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -469,8 +469,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES
@@ -499,8 +499,8 @@ INSERT INTO
         instance_id,
         database_id,
         name,
-        `type`,
-        `status`,
+        type,
+        status,
         payload
     )
 VALUES

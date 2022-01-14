@@ -1,10 +1,12 @@
 import type { App } from "vue";
 import {
   create,
+  NAlert,
   NButton,
   NButtonGroup,
   NCascader,
   NDataTable,
+  NDropdown,
   NInput,
   NMessageProvider,
   NModal,
@@ -22,10 +24,12 @@ import {
 
 const naive = create({
   components: [
+    NAlert,
     NButton,
     NButtonGroup,
     NCascader,
     NDataTable,
+    NDropdown,
     NInput,
     NMessageProvider,
     NModal,

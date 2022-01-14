@@ -132,18 +132,28 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name           *string              `jsonapi:"attr,name"`
-	Key            *string              `jsonapi:"attr,key"`
-	WorkflowType   *ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	TenantMode     *ProjectTenantMode   `jsonapi:"attr,tenantMode"`
-	DBNameTemplate *string              `jsonapi:"attr,dbNameTemplate"`
+	Name         *string              `jsonapi:"attr,name"`
+	Key          *string              `jsonapi:"attr,key"`
+	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
 }
 
 var (
+	// DBNameToken is the token for database name.
+	DBNameToken = "{{DB_NAME}}"
+	// LocationToken is the token for location.
+	LocationToken = "{{LOCATION}}"
+	// TenantToken is the token for tenant.
+	TenantToken = "{{TENANT}}"
+
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}": true,
-		"{{DB_NAME}}": true,
+		DBNameToken:   true,
 		"{{TYPE}}":    true,
+	}
+	allowedProjectDBNameTemplateTokens = map[string]bool{
+		DBNameToken:   true,
+		LocationToken: true,
+		TenantToken:   true,
 	}
 )
 
@@ -181,6 +191,40 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 		return fmt.Errorf("invalid token %s, only {{DB_NAME}} is supported in schema path template", tokens[0])
 	}
 	return nil
+}
+
+// ValidateProjectDBNameTemplate validates the project database name template.
+func ValidateProjectDBNameTemplate(template string) error {
+	if template == "" {
+		return nil
+	}
+	tokens := getTemplateTokens(template)
+	// Must contain {{DB_NAME}}
+	hasDBName := false
+	for _, token := range tokens {
+		if token == DBNameToken {
+			hasDBName = true
+		}
+		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
+			return fmt.Errorf("invalid token %v in database name template", token)
+		}
+	}
+	if !hasDBName {
+		return fmt.Errorf("project database name template must include token %v", DBNameToken)
+	}
+	return nil
+}
+
+// FormatTemplate formats the template.
+func FormatTemplate(template string, tokens map[string]string) (string, error) {
+	keys := getTemplateTokens(template)
+	for _, key := range keys {
+		if _, ok := tokens[key]; !ok {
+			return "", fmt.Errorf("token %q not found", key)
+		}
+		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	return template, nil
 }
 
 func getTemplateTokens(template string) []string {
