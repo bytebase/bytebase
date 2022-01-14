@@ -109,10 +109,10 @@
           type="datetime"
           clearable
           @update:value="
-            (newTimestampNs) => {
+            (newTimestampMiliSec) => {
               // n-date-picker would pass timestamp in milisecond.
               // We divide it by 1000 to get timestamp in second
-              const newTs = newTimestampNs / 1000;
+              const newTs = newTimestampMiliSec / 1000;
               // we show user the local time
               state.earliestAllowedTs = newTs;
               $emit('update-earliest-allowed-time', localToUTC(newTs));
