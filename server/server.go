@@ -135,8 +135,11 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
 
-		sqlExecutor := NewSchemaUpdateTaskExecutor(logger)
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), sqlExecutor)
+		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), schemaUpdateExecutor)
+
+		dataUpdateExecutor := NewDataUpdateTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseDataUpdate), dataUpdateExecutor)
 
 		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
