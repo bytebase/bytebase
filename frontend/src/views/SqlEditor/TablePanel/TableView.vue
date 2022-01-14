@@ -18,9 +18,9 @@
             <heroicons-outline:search class="h-5 w-5 text-gray-300" />
           </template>
         </NInput>
-        <span class="ml-2 whitespace-nowrap text-sm text-gray-500"
-          >{{ data.length }} rows</span
-        >
+        <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
+          `${data.length} ${t("sql-editor.rows")}`
+        }}</span>
       </div>
       <div class="flex justify-between items-center">
         <NDropdown
