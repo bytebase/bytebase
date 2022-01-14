@@ -12,6 +12,11 @@ const (
 	// DatabaseLabelSizeMax is the maximium size of database labels.
 	DatabaseLabelSizeMax = 4
 	labelLengthMax       = 63
+
+	// LocationLabelKey is the label key for location
+	LocationLabelKey = "bb.location"
+	// TenantLabelKey is the label key for tenant
+	TenantLabelKey = "bb.tenant"
 )
 
 // LabelKey is the available key for labels.
