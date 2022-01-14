@@ -158,6 +158,7 @@ common:
   share: 分享
   or: 或者
   export: 导出
+  tips: 提示信息
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -911,6 +912,16 @@ sql-editor:
   no-rows-found: 无数据
   download-as-csv: 下载为 CSV 格式
   download-as-json: 下载为 JSON 格式
+  only-select-allowed: 只允许执行 {select} 语句
+  want-to-change-schema: 如果您想要 {changeschema}
+  change-schema: 变更 Schema
+  go-to-alter-schema: 您可以点击 “{alterschema}” 按钮，提交一个工单
+  table-schema-placeholder: 选择一个表进行查看 Schema
+  notify-empty-statement: 请在编辑器中输入 SQL 语句
+  notify-multiple-statements: 检测到您输入了多条 SQL 语句。SQL 编辑器只支持执行第一条语句。您可以选择其他语句单独执行。
+  goto-alter-schema-hint: 请从编辑器顶部选择一个数据库连接
+  can-not-execute-query: 加载数据时无法执行查询
+  rows: 条记录
 label:
   error:
     key-necessary: 需要指定 Key

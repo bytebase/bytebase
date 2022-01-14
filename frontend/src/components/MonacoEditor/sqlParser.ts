@@ -6,7 +6,11 @@ type ParseResult = {
   error: Error | null;
 };
 
-const parseSQL = (sql: string): ParseResult => {
+export const parseSQL = (sql: string): ParseResult => {
+  if (sql === "") {
+    return { data: [], error: null };
+  }
+
   const parser = new Parser();
 
   try {
@@ -17,11 +21,12 @@ const parseSQL = (sql: string): ParseResult => {
   }
 };
 
-export const isSelectStatement = (sql: string) => {
-  const { data } = parseSQL(sql);
-
+export const isValidStatement = (data: ParseResult["data"]) => {
   // if parser returns the null AST. it's an invalid sql statement
-  if (data === null) return true;
+  return data !== null;
+};
+
+export const isSelectStatement = (data: ParseResult["data"]) => {
   // if the sql statement is an object, it's a single sql statement
   if (isObject(data) && !isArray(data)) {
     return data.type.toLowerCase() === "select";
@@ -30,6 +35,16 @@ export const isSelectStatement = (sql: string) => {
   if (isArray(data)) {
     return data.every((statement) => statement.type.toLowerCase() === "select");
   }
+};
+
+export const isMultipleStatements = (data: ParseResult["data"]) => {
+  // if the sql statement is an array and it's more than one statement
+  return isArray(data) && data.length > 1;
+};
+
+export const transformSQL = (data: AST | AST[], database = "MySQL") => {
+  const parser = new Parser();
+  return parser.sqlify(data, { database });
 };
 
 export default parseSQL;

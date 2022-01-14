@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -66,6 +66,7 @@ import {
   AnyTabInfo,
   EditorSelectorActions,
   SqlEditorState,
+  SqlEditorActions,
 } from "../../types";
 import { isDev } from "../../utils";
 
@@ -83,6 +84,10 @@ const { addTab, setActiveTab, removeTab, updateTab } =
 const { queryStatement } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "queryStatement",
 ]);
+const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setSqlEditorState"]
+);
 
 const enterTabIdx = ref(-1);
 
@@ -114,6 +119,17 @@ debouncedWatch(
   {
     deep: true,
     debounce: 333,
+  }
+);
+
+// initial tab state
+watch(
+  () => activeTab.value,
+  (tab) => {
+    setSqlEditorState({
+      queryStatement: tab.queries,
+      queryResult: null,
+    });
   }
 );
 </script>

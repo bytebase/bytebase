@@ -45,7 +45,7 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The returned matrix doesn't include deployment with no matched database.
-func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, name string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
+func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseName, dbNameTemplate string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
 	var pipeline [][]*api.Database
 	var deployments []*api.Deployment
 
@@ -75,7 +75,12 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, n
 		var matchedDatabaseList []int
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
+			labels := idToLabels[database.ID]
 			// The tenant database should match the database name.
+			name, err := formatDatabaseName(databaseName, dbNameTemplate, labels)
+			if err != nil {
+				continue
+			}
 			if database.Name != name {
 				continue
 			}
@@ -84,7 +89,6 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, n
 				continue
 			}
 
-			labels := idToLabels[database.ID]
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
 				matchedDatabaseList = append(matchedDatabaseList, database.ID)
 				idsSeen[database.ID] = true
@@ -103,4 +107,21 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, n
 	}
 
 	return deployments, pipeline, nil
+}
+
+func formatDatabaseName(databaseName, dbNameTemplate string, labels map[string]string) (string, error) {
+	if dbNameTemplate == "" {
+		return databaseName, nil
+	}
+	tokens := make(map[string]string)
+	tokens[api.DBNameToken] = databaseName
+	for k, v := range labels {
+		switch k {
+		case api.LocationLabelKey:
+			tokens[api.LocationToken] = v
+		case api.TenantLabelKey:
+			tokens[api.TenantToken] = v
+		}
+	}
+	return api.FormatTemplate(dbNameTemplate, tokens)
 }

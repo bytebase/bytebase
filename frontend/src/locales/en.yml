@@ -158,6 +158,7 @@ common:
   share: Share
   or: or
   export: Export
+  tips: Tips
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1042,6 +1043,19 @@ sql-editor:
   no-rows-found: No rows found
   download-as-csv: Download as CSV
   download-as-json: Download as JSON
+  only-select-allowed: Only {select} statements are allowed to execute.
+  want-to-change-schema: If you want to {changeschema}.
+  change-schema: change schema
+  go-to-alter-schema: You can click the {alterschema} button, and submit an issue.
+  table-schema-placeholder: Select a table to see its schema
+  notify-empty-statement: Please input your SQL statements in the editor
+  notify-multiple-statements: >-
+    Multiple SQL statements detected.
+    SQL Editor only executes the first statement.
+    You can select another statement and execute it individually.
+  goto-alter-schema-hint: Please select a database connection from the top of the editor
+  can-not-execute-query: Can not execute query when loading data.
+  rows: row | rows
 label:
   error:
     key-necessary: Key is required

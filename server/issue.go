@@ -579,8 +579,8 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 
 func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
 	var pipelineCreate *api.PipelineCreate
-	switch issueCreate.Type {
-	case api.IssueDatabaseCreate:
+	switch {
+	case issueCreate.Type == api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -594,12 +594,17 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		if err != nil {
 			return nil, err
 		}
-
-		// Validate the labels. Labels are set upon task completion.
-		if m.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Instance: instance} /* dummp database */, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
-			}
+		if instance == nil {
+			return nil, fmt.Errorf("instance ID not found %v", m.InstanceID)
+		}
+		// Find project
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		if project == nil {
+			err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		switch instance.Engine {
@@ -645,14 +650,17 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 		}
 
-		var schemaVersion, schema string
-		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		// Validate the labels. Labels are set upon task completion.
+		if m.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Name: m.DatabaseName, Instance: instance} /* dummp database */, project, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
+			}
 		}
+
+		var schemaVersion, schema string
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, issueCreate.ProjectID, m.DatabaseName)
+			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, m.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -735,8 +743,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				},
 			}
 		}
-	case api.IssueDatabaseSchemaUpdate:
-	case api.IssueDatabaseDataUpdate:
+	case issueCreate.Type == api.IssueDatabaseSchemaUpdate || issueCreate.Type == api.IssueDatabaseDataUpdate:
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -776,7 +783,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, databaseList, d.DatabaseName)
+			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, d.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -1069,7 +1076,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
@@ -1088,7 +1095,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dat
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, databaseList)
+	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, dbNameTemplate, databaseList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
@@ -1099,7 +1106,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dat
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, projectID int, databaseName string) (string, string, error) {
+func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, databaseName string) (string, string, error) {
 	// Find all databases in the project.
 	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
@@ -1108,7 +1115,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, databaseList, databaseName)
+	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, databaseName)
 	if err != nil {
 		return "", "", err
 	}
