@@ -11,6 +11,10 @@ import {
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
+import {
+  parseSQL,
+  transformSQL,
+} from "../../components/MonacoEditor/sqlParser";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -30,6 +34,7 @@ const state: () => SqlEditorState = () => ({
   selectedStatement: "",
   isExecuting: false,
   queryResult: null,
+  isShowExecutingHint: false,
 });
 
 const getters = {
@@ -86,7 +91,7 @@ const getters = {
   findProjectIdByDatabaseId:
     (state: SqlEditorState, getter: any) =>
     (databaseId: DatabaseId): ProjectId => {
-      let projectId = 0;
+      let projectId = 1;
       const databaseListByProjectId =
         getter.connectionInfo.databaseListByProjectId;
       for (const [id, databaseList] of databaseListByProjectId) {
@@ -106,6 +111,11 @@ const getters = {
   },
   isEmptyStatement(state: SqlEditorState) {
     return isEmpty(state.queryStatement);
+  },
+  parsedStatement(state: SqlEditorState) {
+    const sqlStatement = state.selectedStatement || state.queryStatement;
+    const { data } = parseSQL(sqlStatement);
+    return data !== null ? transformSQL(data) : sqlStatement;
   },
 };
 

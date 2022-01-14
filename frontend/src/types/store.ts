@@ -194,6 +194,7 @@ export interface SqlEditorState {
   selectedStatement: string;
   isExecuting: boolean;
   queryResult: Record<string, any>[] | null;
+  isShowExecutingHint: boolean;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
 export type SqlEditorActions = typeof sqlEditorStore.actions;

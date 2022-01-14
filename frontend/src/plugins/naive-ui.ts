@@ -1,6 +1,7 @@
 import type { App } from "vue";
 import {
   create,
+  NAlert,
   NButton,
   NButtonGroup,
   NCascader,
@@ -23,6 +24,7 @@ import {
 
 const naive = create({
   components: [
+    NAlert,
     NButton,
     NButtonGroup,
     NCascader,
