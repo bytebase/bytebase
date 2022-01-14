@@ -19,7 +19,7 @@
           </template>
         </NInput>
         <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
-          `${data.length} ${t("sql-editor.rows")}`
+          `${data.length} ${t("sql-editor.rows", data.length)}`
         }}</span>
       </div>
       <div class="flex justify-between items-center">
