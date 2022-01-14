@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <div class="task-list gap-1 p-1 md:grid md:grid-cols-2 lg:grid-cols-4">
+    <div class="task-list gap-2 p-2 md:grid md:grid-cols-2 lg:grid-cols-4">
       <div
         v-for="(task, j) in taskList"
         :key="j"
