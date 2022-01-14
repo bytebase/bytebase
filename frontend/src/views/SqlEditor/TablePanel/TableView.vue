@@ -5,18 +5,23 @@
   >
     <div
       v-show="queryResult !== null"
-      class="w-full flex justify-between items-center mb-2"
+      class="w-full flex flex-row justify-between items-center mb-2"
     >
-      <NInput
-        v-model:value="state.search"
-        class="max-w-xs"
-        type="text"
-        :placeholder="t('sql-editor.search-results')"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-        </template>
-      </NInput>
+      <div class="flex flex-row justify-start items-center mr-2">
+        <NInput
+          v-model:value="state.search"
+          class="max-w-xs"
+          type="text"
+          :placeholder="t('sql-editor.search-results')"
+        >
+          <template #prefix>
+            <heroicons-outline:search class="h-5 w-5 text-gray-300" />
+          </template>
+        </NInput>
+        <span class="ml-2 whitespace-nowrap text-sm text-gray-500"
+          >{{ data.length }} rows</span
+        >
+      </div>
       <div class="flex justify-between items-center">
         <NDropdown
           trigger="hover"
@@ -109,13 +114,13 @@ const data = computed(() => {
   return temp;
 });
 const notifyMessage = computed(() => {
-  if (!queryResult.value) {
+  if (queryResult.value === null) {
     return t("sql-editor.table-empty-placehoder");
   }
   if (isExecuting.value) {
     return t("sql-editor.loading-data");
   }
-  if (data.value.length === 0) {
+  if (queryResult.value.length === 0) {
     return t("sql-editor.no-rows-found");
   }
 
