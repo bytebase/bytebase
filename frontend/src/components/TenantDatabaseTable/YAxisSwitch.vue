@@ -3,7 +3,7 @@
     class="pl-1 py-1 relative rounded inline-flex items-center hover:bg-control-bg-hover cursor-pointer select-none"
     @click="switchValue"
   >
-    <span>{{ label }}</span>
+    <span>{{ hidePrefix(label) }}</span>
     <heroicons-solid:selector class="h-4 w-4 text-control-light" />
     <select
       v-if="labelList.length > 2"
@@ -12,7 +12,7 @@
       @change="(e: any) => $emit('update:label', e.target.value)"
     >
       <option v-for="opt in labelList" :key="opt.key" :value="opt.key">
-        {{ opt.key }}
+        {{ hidePrefix(opt.key) }}
       </option>
     </select>
   </div>
@@ -21,6 +21,7 @@
 <script lang="ts" setup>
 import { defineProps, defineEmits } from "vue";
 import { Label, LabelKeyType } from "../../types";
+import { hidePrefix } from "../../utils";
 
 const props = defineProps<{
   label: LabelKeyType;
