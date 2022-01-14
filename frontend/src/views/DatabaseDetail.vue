@@ -94,7 +94,7 @@
               {{ $t("common.labels") }}&nbsp;-&nbsp;
             </label>
             <DatabaseLabelsEditor
-              :labels="database.labels"
+              :label-list="database.labels"
               :allow-edit="allowAdmin"
               @save="updateLabels"
             />

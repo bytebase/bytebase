@@ -1,11 +1,11 @@
 <template>
   <div class="flex gap-2">
     <DatabaseLabel
-      v-for="(label, i) in labels"
+      v-for="(label, i) in labelList"
       :key="i"
       :label="label"
       :editable="isEditableLabel(label)"
-      :available-labels="availableLabels"
+      :available-label-list="availableLabelList"
       @remove="removeLabel(i)"
     />
     <template v-if="editable">
@@ -23,7 +23,7 @@
         <div class="text-red-600 whitespace-nowrap">
           {{
             $t("label.error.max-label-count-exceeded", {
-              count: MAX_DATABASE_LABELS,
+              count: MAX_DATABASE_LABEL_COUNT,
             })
           }}
         </div>
@@ -41,13 +41,13 @@ import { DatabaseLabel, Label } from "../../types";
 import { NPopover } from "naive-ui";
 import { isReservedLabel, isReservedDatabaseLabel } from "../../utils";
 
-const MAX_DATABASE_LABELS = 4;
+const MAX_DATABASE_LABEL_COUNT = 4;
 
 export default defineComponent({
   name: "DatabaseLabels",
   components: { NPopover },
   props: {
-    labels: {
+    labelList: {
       type: Array as PropType<DatabaseLabel[]>,
       default: () => [],
     },
@@ -59,7 +59,9 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
 
-    const allowAdd = computed(() => props.labels.length < MAX_DATABASE_LABELS);
+    const allowAdd = computed(
+      () => props.labelList.length < MAX_DATABASE_LABEL_COUNT
+    );
 
     const prepareLabelList = () => {
       // need not to fetchLabelList if not editable
@@ -72,7 +74,7 @@ export default defineComponent({
       () => store.getters["label/labelList"]() as Label[]
     );
 
-    const availableLabels = computed(() =>
+    const availableLabelList = computed(() =>
       labelList.value.filter((label) => !isReservedLabel(label))
     );
 
@@ -81,14 +83,14 @@ export default defineComponent({
 
       const key = labelList.value[0]?.key || "";
       const value = labelList.value[0]?.valueList[0] || "";
-      props.labels.push({
+      props.labelList.push({
         key,
         value,
       });
     };
 
     const removeLabel = (index: number) => {
-      props.labels.splice(index, 1);
+      props.labelList.splice(index, 1);
     };
 
     const isEditableLabel = (label: DatabaseLabel): boolean => {
@@ -102,8 +104,8 @@ export default defineComponent({
     };
 
     return {
-      MAX_DATABASE_LABELS,
-      availableLabels,
+      MAX_DATABASE_LABEL_COUNT,
+      availableLabelList,
       isEditableLabel,
       allowAdd,
       addLabel,

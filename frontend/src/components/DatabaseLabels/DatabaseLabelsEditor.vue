@@ -1,11 +1,11 @@
 <template>
   <div class="database-labels-editor flex items-center">
     <DatabaseLabels
-      :labels="state.labels"
+      :label-list="state.labelList"
       :editable="allowEdit && state.mode === 'EDIT'"
     />
     <div
-      v-if="state.mode === 'VIEW' && state.labels.length === 0"
+      v-if="state.mode === 'VIEW' && state.labelList.length === 0"
       class="text-sm text-control-placeholder"
     >
       {{ $t("label.no-label") }}
@@ -54,7 +54,7 @@ import { NPopover } from "naive-ui";
 
 type LocalState = {
   mode: "VIEW" | "EDIT";
-  labels: DatabaseLabel[];
+  labelList: DatabaseLabel[];
   error: string | undefined;
 };
 
@@ -62,7 +62,7 @@ export default defineComponent({
   name: "DatabaseLabelsEditor",
   components: { NPopover },
   props: {
-    labels: {
+    labelList: {
       type: Array as PropType<DatabaseLabel[]>,
       default: () => [],
     },
@@ -77,24 +77,24 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       mode: "VIEW",
-      labels: cloneDeep(props.labels),
+      labelList: cloneDeep(props.labelList),
       error: undefined,
     });
 
     watch(
-      () => props.labels,
-      (labels) => {
-        // state.labels are a local deep-copy of props.labels
-        // <DatabaseLabels /> will mutate state.labels directly
+      () => props.labelList,
+      (labelList) => {
+        // state.labelList are a local deep-copy of props.labelList
+        // <DatabaseLabels /> will mutate state.labelList directly
         // when save button clicked, we emit a event to notify the parent
         //   component to dispatch a real save action
-        state.labels = cloneDeep(labels);
+        state.labelList = cloneDeep(labelList);
         state.error = undefined;
       }
     );
 
     watch(
-      () => state.labels,
+      () => state.labelList,
       (labels) => {
         const error = validateLabels(labels);
         if (error) {
@@ -108,12 +108,12 @@ export default defineComponent({
 
     const cancel = () => {
       state.mode = "VIEW";
-      state.labels = cloneDeep(props.labels);
+      state.labelList = cloneDeep(props.labelList);
       state.error = undefined;
     };
     const save = () => {
       if (state.error) return;
-      emit("save", state.labels);
+      emit("save", state.labelList);
       state.mode = "VIEW";
     };
 

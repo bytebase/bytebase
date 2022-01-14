@@ -185,7 +185,7 @@
           <div>
             <DatabaseLabels
               :editable="false"
-              :labels="database.labels"
+              :label-list="database.labels"
               class="flex-col items-start"
             />
           </div>
@@ -492,15 +492,13 @@ export default defineComponent({
       return isDatabaseCreated.value ? "(created)" : "(pending create)";
     });
 
-    // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
-    // Will fix this in another branch.
     const clickDatabase = () => {
       // If the database has not been created yet, do nothing
-      if (props.database && props.database.value) {
+      if (props.database) {
         router.push({
           name: "workspace.database.detail",
           params: {
-            databaseSlug: databaseSlug(props.database.value),
+            databaseSlug: databaseSlug(props.database),
           },
         });
       } else {

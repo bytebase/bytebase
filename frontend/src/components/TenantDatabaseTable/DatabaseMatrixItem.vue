@@ -37,7 +37,7 @@
       >
         <div class="mb-2">{{ $t("common.labels") }}</div>
         <DatabaseLabels
-          :labels="database.labels"
+          :label-list="database.labels"
           :editable="false"
           class="flex-col items-start"
         />

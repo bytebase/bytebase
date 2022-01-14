@@ -4,7 +4,7 @@
   </slot>
 
   <BBTable
-    :data-source="filteredMatrices"
+    :data-source="filteredMatrixList"
     :show-header="true"
     :custom-header="true"
     :left-bordered="bordered"
@@ -24,10 +24,10 @@
         </BBTableHeaderCell>
 
         <BBTableHeaderCell
-          v-for="xValue in filteredXAxisValues"
+          v-for="xValue in filteredXAxisValueList"
           :key="xValue"
           :style="{
-            width: `${(100 - 1 / 12) / filteredXAxisValues.length - 1}%`,
+            width: `${(100 - 1 / 12) / filteredXAxisValueList.length - 1}%`,
           }"
           class="text-center"
         >
@@ -76,7 +76,7 @@ import {
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 import { groupBy } from "lodash-es";
 import { findDefaultGroupByLabel, getLabelValue } from "../../utils";
-import YAxisSwitch1 from "./YAxisSwitch.vue";
+import YAxisSwitch from "./YAxisSwitch.vue";
 
 type DatabaseMatrix = {
   labelValue: LabelValueType;
@@ -85,7 +85,7 @@ type DatabaseMatrix = {
 
 export default defineComponent({
   name: "TenantDatabaseMatrix",
-  components: { DatabaseMatrixItem, YAxisSwitch: YAxisSwitch1 },
+  components: { DatabaseMatrixItem, YAxisSwitch },
   props: {
     bordered: {
       default: true,
@@ -131,8 +131,8 @@ export default defineComponent({
     const yAxisLabel = ref<LabelKeyType>();
     const xAxisLabel = ref<LabelKeyType>("bb.environment");
 
-    const filteredXAxisValues = ref<LabelValueType[]>([]);
-    const filteredMatrices = ref<DatabaseMatrix[]>([]);
+    const filteredXAxisValueList = ref<LabelValueType[]>([]);
+    const filteredMatrixList = ref<DatabaseMatrix[]>([]);
 
     // find the default label key to firstBy (y-axis)
     watchEffect(() => {
@@ -144,7 +144,7 @@ export default defineComponent({
     });
 
     // pre-filtered y-axis values
-    const yAxisValues = computed((): string[] => {
+    const yAxisValueList = computed((): string[] => {
       const key = yAxisLabel.value;
       if (!key) {
         // y-axis is undefined
@@ -159,7 +159,7 @@ export default defineComponent({
     });
 
     // pre-filtered x-axis values
-    const xAxisValues = computed(() => {
+    const xAxisValueList = computed(() => {
       // order based on label.valueList
       // plus one more "<empty value>"
       const key = xAxisLabel.value;
@@ -169,14 +169,14 @@ export default defineComponent({
     });
 
     // first, group databases by `yAxisLabel` into some rows
-    const groupedRows = computed(() => {
+    const groupedRowList = computed(() => {
       const key = yAxisLabel.value;
       if (!key) {
         // y-axis is undefined
         return [];
       }
       const dict = groupBy(props.databaseList, (db) => getLabelValue(db, key));
-      return yAxisValues.value.map((labelValue) => {
+      return yAxisValueList.value.map((labelValue) => {
         const databaseList = dict[labelValue] || [];
         return {
           labelValue,
@@ -187,17 +187,20 @@ export default defineComponent({
 
     // then, group each row by `xAxisLabel` into some columns
     // now the `matrices` is pre-filtered (with empty rows or columns)
-    const matrices = computed((): DatabaseMatrix[] => {
+    const matrixList = computed((): DatabaseMatrix[] => {
       const key = xAxisLabel.value;
-      return groupedRows.value.map(({ labelValue: yValue, databaseList }) => {
-        const databaseMatrix: Database[][] = xAxisValues.value.map((xValue) =>
-          databaseList.filter((db) => getLabelValue(db, key) === xValue)
-        );
-        return {
-          labelValue: yValue,
-          databaseMatrix,
-        };
-      });
+      return groupedRowList.value.map(
+        ({ labelValue: yValue, databaseList }) => {
+          const databaseMatrix: Database[][] = xAxisValueList.value.map(
+            (xValue) =>
+              databaseList.filter((db) => getLabelValue(db, key) === xValue)
+          );
+          return {
+            labelValue: yValue,
+            databaseMatrix,
+          };
+        }
+      );
     });
 
     // now filter the axes and matrices
@@ -208,46 +211,46 @@ export default defineComponent({
     //   "bb:environment: Prod", we are then not able to judge whether there is
     //   no such an environment named "Prod" or "Prod" has no databases.
     watchEffect(() => {
-      filteredXAxisValues.value = [...xAxisValues.value];
+      filteredXAxisValueList.value = [...xAxisValueList.value];
       // if every row's "<empty value>" has no databases
       // we should hide the "<empty value>" col
-      const shouldClipLastCol = matrices.value.every(
+      const shouldClipLastCol = matrixList.value.every(
         (row) =>
           row.databaseMatrix.length > 0 &&
           row.databaseMatrix[row.databaseMatrix.length - 1].length === 0
       );
-      if (shouldClipLastCol) filteredXAxisValues.value.pop();
+      if (shouldClipLastCol) filteredXAxisValueList.value.pop();
 
-      filteredMatrices.value = [];
-      for (let i = 0; i < matrices.value.length; i++) {
+      filteredMatrixList.value = [];
+      for (let i = 0; i < matrixList.value.length; i++) {
         const row = {
-          labelValue: matrices.value[i].labelValue,
-          databaseMatrix: [...matrices.value[i].databaseMatrix],
+          labelValue: matrixList.value[i].labelValue,
+          databaseMatrix: [...matrixList.value[i].databaseMatrix],
         };
         if (shouldClipLastCol) {
           row.databaseMatrix.pop();
         }
-        filteredMatrices.value.push(row);
+        filteredMatrixList.value.push(row);
       }
       // if every col of "<empty value>" row is empty
       // we should hide the "<empty value>" row
       if (
-        filteredMatrices.value.length > 0 &&
-        filteredMatrices.value[
-          filteredMatrices.value.length - 1
+        filteredMatrixList.value.length > 0 &&
+        filteredMatrixList.value[
+          filteredMatrixList.value.length - 1
         ].databaseMatrix.every((item) => item.length === 0)
       ) {
-        filteredMatrices.value.pop();
+        filteredMatrixList.value.pop();
       }
     });
 
     return {
       selectableLabelList,
       yAxisLabel,
-      yAxisValues,
-      xAxisValues,
-      filteredXAxisValues,
-      filteredMatrices,
+      yAxisValueList,
+      xAxisValueList,
+      filteredXAxisValueList,
+      filteredMatrixList,
     };
   },
 });

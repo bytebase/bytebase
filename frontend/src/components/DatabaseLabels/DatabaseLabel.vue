@@ -51,7 +51,7 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
-    availableLabels: {
+    availableLabelList: {
       type: Array as PropType<Label[]>,
       default: () => [],
     },
@@ -59,11 +59,11 @@ export default defineComponent({
   emits: ["remove"],
   setup(props) {
     const keys = computed(() =>
-      props.availableLabels.map((label) => label.key)
+      props.availableLabelList.map((label) => label.key)
     );
     const values = computed(() => {
       if (!props.label.key) return [];
-      const labelDefinition = props.availableLabels.find(
+      const labelDefinition = props.availableLabelList.find(
         (l) => l.key === props.label.key
       );
       if (!labelDefinition) return [];

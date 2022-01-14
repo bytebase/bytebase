@@ -83,7 +83,7 @@
         </div>
         <div class="flex flex-col space-y-1">
           <DatabaseLabels
-            :labels="state.labels"
+            :label-list="state.labelList"
             :editable="true"
             class="flex-col items-start mt-1 gap-1"
           />
@@ -213,7 +213,7 @@ interface LocalState {
   projectId?: ProjectId;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
-  labels: DatabaseLabel[];
+  labelList: DatabaseLabel[];
   databaseName?: string;
   characterSet: string;
   collation: string;
@@ -286,7 +286,7 @@ export default defineComponent({
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
-      labels: [],
+      labelList: [],
       characterSet: "",
       collation: "",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
@@ -306,14 +306,14 @@ export default defineComponent({
     });
 
     const labelsError = computed((): string => {
-      const error = validateLabels(state.labels);
+      const error = validateLabels(state.labelList);
       if (error) return t(error);
       return "";
     });
 
     const invalidLabels = computed((): boolean => {
       if (!isTenantProject.value) return false;
-      if (state.labels.length === 0) return true;
+      if (state.labelList.length === 0) return true;
       return !!labelsError.value;
     });
 
@@ -423,27 +423,27 @@ export default defineComponent({
       }
       if (isTenantProject.value) {
         const context = newIssue.createContext as CreateDatabaseContext;
-        context.labels = JSON.stringify(state.labels);
+        context.labels = JSON.stringify(state.labelList);
       }
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
       });
     };
 
-    // update `state.labels` when selected Environment changed
+    // update `state.labelList` when selected Environment changed
     watchEffect(() => {
       const envId = state.environmentId;
-      const { labels } = state;
+      const { labelList } = state;
       const key = "bb.environment";
-      const index = labels.findIndex((label) => label.key === key);
+      const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
         const env = store.getters["environment/environmentById"](
           state.environmentId
         ) as Environment;
-        if (index >= 0) labels[index].value = env.name;
-        else labels.unshift({ key, value: env.name });
+        if (index >= 0) labelList[index].value = env.name;
+        else labelList.unshift({ key, value: env.name });
       } else {
-        if (index >= 0) labels.splice(index, 1);
+        if (index >= 0) labelList.splice(index, 1);
       }
     });
 
