@@ -70,6 +70,18 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+			} else if task.Type == api.TaskDatabaseDataUpdate {
+				payload := &api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
+				}
+				payload.Statement = *taskPatch.Statement
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
 			}
 		}
 
@@ -86,16 +98,35 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// create an activity and trigger task check for statement update
-		if updatedTask.Type == api.TaskDatabaseSchemaUpdate {
-			oldPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-			newPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-			if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
+		if updatedTask.Type == api.TaskDatabaseSchemaUpdate || updatedTask.Type == api.TaskDatabaseDataUpdate {
+			oldStatement := ""
+			newStatement := ""
+
+			if updatedTask.Type == api.TaskDatabaseSchemaUpdate {
+				oldPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+				newPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+				if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
+				}
+				if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
+				}
+				oldStatement = oldPayload.Statement
+				newStatement = newPayload.Statement
+			} else {
+				oldPayload := &api.TaskDatabaseDataUpdatePayload{}
+				newPayload := &api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
+				}
+				if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
+				}
+				oldStatement = oldPayload.Statement
+				newStatement = newPayload.Statement
 			}
-			if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
-			}
-			if oldPayload.Statement != newPayload.Statement {
+
+			if oldStatement != newStatement {
 				// create an activity
 				issueFind := &api.IssueFind{
 					PipelineID: &task.PipelineID,
@@ -111,8 +142,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 				payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 					TaskID:       updatedTask.ID,
-					OldStatement: oldPayload.Statement,
-					NewStatement: newPayload.Statement,
+					OldStatement: oldStatement,
+					NewStatement: newStatement,
 					TaskName:     task.Name,
 					IssueName:    issue.Name,
 				})

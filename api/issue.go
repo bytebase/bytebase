@@ -29,8 +29,10 @@ const (
 	IssueDatabaseCreate IssueType = "bb.issue.database.create"
 	// IssueDatabaseGrant is the issue type for granting databases.
 	IssueDatabaseGrant IssueType = "bb.issue.database.grant"
-	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas.
+	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
 	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
+	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
+	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
 )
