@@ -138,16 +138,22 @@ type ProjectPatch struct {
 }
 
 var (
-	dbNameToken                      = "{{DB_NAME}}"
+	// DBNameToken is the token for database name.
+	DBNameToken = "{{DB_NAME}}"
+	// LocationToken is the token for location.
+	LocationToken = "{{LOCATION}}"
+	// TenantToken is the token for tenant.
+	TenantToken = "{{TENANT}}"
+
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}": true,
-		dbNameToken:   true,
+		DBNameToken:   true,
 		"{{TYPE}}":    true,
 	}
 	allowedProjectDBNameTemplateTokens = map[string]bool{
-		dbNameToken:    true,
-		"{{LOCATION}}": true,
-		"{{TENANT}}":   true,
+		DBNameToken:   true,
+		LocationToken: true,
+		TenantToken:   true,
 	}
 )
 
@@ -196,7 +202,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 	// Must contain {{DB_NAME}}
 	hasDBName := false
 	for _, token := range tokens {
-		if token == dbNameToken {
+		if token == DBNameToken {
 			hasDBName = true
 		}
 		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
@@ -204,9 +210,21 @@ func ValidateProjectDBNameTemplate(template string) error {
 		}
 	}
 	if !hasDBName {
-		return fmt.Errorf("project database name template must include token %v", dbNameToken)
+		return fmt.Errorf("project database name template must include token %v", DBNameToken)
 	}
 	return nil
+}
+
+// FormatTemplate formats the template.
+func FormatTemplate(template string, tokens map[string]string) (string, error) {
+	keys := getTemplateTokens(template)
+	for _, key := range keys {
+		if _, ok := tokens[key]; !ok {
+			return "", fmt.Errorf("token %q not found", key)
+		}
+		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	return template, nil
 }
 
 func getTemplateTokens(template string) []string {
