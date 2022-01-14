@@ -1,103 +1,101 @@
 <template>
-  <div
-    class="w-full lg:grid divide-y lg:divide-y-0"
-    :class="`lg:grid-cols-${itemList.length}`"
-  >
-    <div
-      v-for="(item, i) in itemList"
-      :key="i"
-      class="stage-wrapper md:flex md:flex-col items-center justify-start"
-    >
-      <div class="stage-header" :class="stageClass(item.stage)">
-        <span class="pl-4 py-2 flex items-center text-sm font-medium">
-          <TaskStatusIcon
-            :create="create"
-            :active="isActiveStage(item.stage)"
-            :status="item.taskStatus"
-          />
-          <div
-            class="text cursor-pointer hover:underline hidden lg:ml-4 lg:flex lg:flex-col"
-            @click.prevent="clickItem(item)"
-          >
-            <span class="text-xs">
-              {{ item.stageName }}
-            </span>
-            <span class="text-sm">{{ item.taskName }}</span>
-          </div>
-          <div
-            class="text ml-4 cursor-pointer flex items-center space-x-2 lg:hidden"
-            @click.prevent="clickItem(item)"
-          >
-            <span class="text-sm min-w-32">{{ item.stageName }} </span>
-            <span class="text-sm flex-1">{{ item.taskName }}</span>
-          </div>
-          <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
-            <span class="tooltip whitespace-nowrap">Missing SQL statement</span>
-            <span
-              v-if="!item.valid"
-              class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
-            >
-              <span class="text-center font-normal" aria-hidden="true">!</span>
-            </span>
-          </div>
-        </span>
-
-        <!-- Arrow separator -->
-        <div
-          v-if="i < itemList.length - 1"
-          class="hidden lg:block absolute top-0 right-0 h-full w-5"
-          aria-hidden="true"
-        >
-          <svg
-            class="h-full w-full text-gray-300"
-            viewBox="0 0 22 80"
-            fill="none"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0 -2L20 40L0 82"
-              vector-effect="non-scaling-stroke"
-              stroke="currentcolor"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-      </div>
-
+  <div class="w-full">
+    <div class="lg:flex divide-y lg:divide-y-0 border-b">
       <div
-        class="task-list divide-y w-full lg:grid"
-        :class="`grid-rows-${item.taskList.length}`"
+        v-for="(item, i) in itemList"
+        :key="i"
+        class="stage-wrapper flex-1 md:flex md:flex-col items-center justify-start"
       >
-        <div v-for="(task, j) in item.taskList" :key="j" class="w-full">
-          <div
-            class="task px-3 py-1 cursor-pointer select-none w-full border border-transparent"
-            :class="taskClass(task)"
-            @click="
-              clickTask(item.stageId, task.name, create ? j + 1 : task.id)
-            "
-          >
-            <div class="flex items-center pb-1">
-              <TaskStatusIcon
-                :create="create"
-                :active="isActiveTask(task)"
-                :status="task.status"
-                class="transform scale-75"
-              />
-              <heroicons-solid:arrow-narrow-right
-                v-if="isActiveTask(task)"
-                class="name w-5 h-5"
-              />
-              <div class="name">
-                {{ j + 1 }} - {{ databaseForTask(task).name }}
-              </div>
+        <div class="stage-header" :class="stageClass(item.stage)">
+          <span class="pl-4 py-2 flex items-center text-sm font-medium">
+            <TaskStatusIcon
+              :create="create"
+              :active="isActiveStage(item.stage)"
+              :status="item.taskStatus"
+            />
+            <div
+              class="text cursor-pointer hover:underline hidden lg:ml-4 lg:flex lg:flex-col"
+              @click.prevent="clickItem(item)"
+            >
+              <span class="text-xs">
+                {{ item.stageName }}
+              </span>
+              <span class="text-sm">{{ item.taskName }}</span>
             </div>
-            <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
-              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
-              <span class="flex-1 ml-2">
-                {{ instanceName(databaseForTask(task).instance) }}
+            <div
+              class="text ml-4 cursor-pointer flex items-center space-x-2 lg:hidden"
+              @click.prevent="clickItem(item)"
+            >
+              <span class="text-sm min-w-32">{{ item.stageName }} </span>
+              <span class="text-sm flex-1">{{ item.taskName }}</span>
+            </div>
+            <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
+              <span class="tooltip whitespace-nowrap"
+                >Missing SQL statement</span
+              >
+              <span
+                v-if="!item.valid"
+                class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
+              >
+                <span class="text-center font-normal" aria-hidden="true"
+                  >!</span
+                >
               </span>
             </div>
+          </span>
+
+          <!-- Arrow separator -->
+          <div
+            v-if="i < itemList.length - 1"
+            class="hidden lg:block absolute top-0 right-0 h-full w-5"
+            aria-hidden="true"
+          >
+            <svg
+              class="h-full w-full text-gray-300"
+              viewBox="0 0 22 80"
+              fill="none"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0 -2L20 40L0 82"
+                vector-effect="non-scaling-stroke"
+                stroke="currentcolor"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-list gap-1 p-1 md:grid md:grid-cols-2 lg:grid-cols-4">
+      <div
+        v-for="(task, j) in taskList"
+        :key="j"
+        class="task px-2 py-1 cursor-pointer border rounded"
+        :class="taskClass(task)"
+        @click="clickTask(selectedStageId, task.name, create ? j + 1 : task.id)"
+      >
+        <div class="flex items-center pb-1">
+          <TaskStatusIcon
+            :create="create"
+            :active="isActiveTask(task)"
+            :status="task.status"
+            class="transform scale-75"
+          />
+          <heroicons-solid:arrow-narrow-right
+            v-if="isActiveTask(task)"
+            class="name w-5 h-5"
+          />
+          <div class="name">{{ j + 1 }} - {{ databaseForTask(task).name }}</div>
+        </div>
+        <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
+          <InstanceEngineIcon :instance="databaseForTask(task).instance" />
+          <span
+            class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
+          >
+            {{ instanceName(databaseForTask(task).instance) }}
+          </span>
         </div>
       </div>
     </div>
@@ -253,6 +251,18 @@ export default defineComponent({
       });
     });
 
+    const taskList = computed(() => {
+      return props.selectedStage.taskList;
+    });
+
+    const selectedStageId = computed(() => {
+      if (!props.create) {
+        return (props.selectedStage as Stage).id;
+      } else {
+        return props.pipeline.stageList.indexOf(props.selectedStage as any);
+      }
+    });
+
     const stageClass = (stage: Stage | StageCreate): string[] => {
       const classes: string[] = [];
       if (props.create) classes.push("create");
@@ -288,6 +298,8 @@ export default defineComponent({
       isActiveStage,
       isActiveTask,
       itemList,
+      taskList,
+      selectedStageId,
       activeTask,
       stageClass,
       taskClass,
@@ -301,7 +313,7 @@ export default defineComponent({
 
 <style scoped lang="postcss">
 .stage-header {
-  @apply cursor-default flex items-center justify-start w-full relative border-b;
+  @apply cursor-default flex items-center justify-start w-full relative;
 }
 
 .stage-header.selected .text {
@@ -328,34 +340,11 @@ export default defineComponent({
   @apply text-red-500;
 }
 
-@media (min-width: theme("screens.lg")) {
-  .stage-wrapper .task-list {
-    @apply -ml-5 mr-5;
-  }
-  .stage-wrapper:first-child .task-list {
-    width: calc(100% - theme("margin.5"));
-    @apply ml-0 mr-5;
-  }
-  .stage-wrapper:last-child .task-list {
-    width: calc(100% + theme("margin.5"));
-    @apply -ml-5 mr-0;
-  }
-  .stage-wrapper:not(:last-child) .task-list {
-    @apply border-r;
-  }
-}
-
-/* .task {
-  @apply border-gray-300 border rounded px-2 py-1 cursor-pointer select-none divide-y;
-} */
-/* .task {
-  @apply px-2 py-1 cursor-pointer select-none w-full border-2 border-transparent;
-} */
 .task.selected {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1;
+  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
 }
 .task.active .name {
   @apply font-bold;
