@@ -44,7 +44,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 	}
 
 	// EarliestAllowedTs is store in UTC+0000
-	if time.Now().UTC().Before(time.Unix(payload.EarliestAllowedTs, 0)) {
+	if time.Now().UTC().Before(time.Unix(payload.EarliestAllowedTs, 0).UTC()) {
 		return []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusError,
