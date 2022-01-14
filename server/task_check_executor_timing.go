@@ -50,7 +50,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 				Status:  api.TaskCheckStatusError,
 				Code:    common.TaskTimingNotAllowed,
 				Title:   "Not ready to run",
-				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
+				Content: fmt.Sprintf("Need to wait until the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).UTC().Format(dataFormat)),
 			},
 		}, nil
 	}
@@ -60,7 +60,7 @@ func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, ta
 			Status:  api.TaskCheckStatusSuccess,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: fmt.Sprintf("Passed the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).Format(dataFormat)),
+			Content: fmt.Sprintf("Passed the configured earliest running time: %s (UTC+0000)", time.Unix(payload.EarliestAllowedTs, 0).UTC().Format(dataFormat)),
 		},
 	}, nil
 }
