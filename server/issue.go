@@ -375,12 +375,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 					payload := api.TaskDatabaseSchemaUpdatePayload{}
 					payload.MigrationType = taskCreate.MigrationType
 					payload.Statement = taskCreate.Statement
-					if taskCreate.RollbackStatement != "" {
-						payload.RollbackStatement = taskCreate.RollbackStatement
-					}
-					if taskCreate.VCSPushEvent != nil {
-						payload.VCSPushEvent = taskCreate.VCSPushEvent
-					}
+					payload.RollbackStatement = taskCreate.RollbackStatement
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
 					bytes, err := json.Marshal(payload)
 					if err != nil {
 						return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
@@ -389,12 +385,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				} else if taskCreate.Type == api.TaskDatabaseDataUpdate {
 					payload := api.TaskDatabaseDataUpdatePayload{}
 					payload.Statement = taskCreate.Statement
-					if taskCreate.RollbackStatement != "" {
-						payload.RollbackStatement = taskCreate.RollbackStatement
-					}
-					if taskCreate.VCSPushEvent != nil {
-						payload.VCSPushEvent = taskCreate.VCSPushEvent
-					}
+					payload.RollbackStatement = taskCreate.RollbackStatement
+					payload.VCSPushEvent = taskCreate.VCSPushEvent
 					bytes, err := json.Marshal(payload)
 					if err != nil {
 						return nil, fmt.Errorf("failed to create data update task, unable to marshal payload %w", err)
@@ -767,7 +759,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
-			if m.MigrationType != db.Migrate || m.MigrationType != db.Data {
+			if m.MigrationType != db.Migrate {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
 			}
 			if len(m.UpdateSchemaDetailList) != 1 {
