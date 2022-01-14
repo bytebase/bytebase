@@ -27,6 +27,10 @@ export const isReservedDatabaseLabel = (
   return label.id === RESERVED_LABEL_ID;
 };
 
+export const hidePrefix = (key: LabelKeyType): LabelKeyType => {
+  return key.replace(/^bb\./, "");
+};
+
 export const getLabelValue = (
   db: Database,
   key: LabelKeyType

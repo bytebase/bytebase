@@ -5,6 +5,7 @@
       v-model:value="selector.key"
       :options="keys"
       :disabled="!editable"
+      :modifier="hidePrefix"
       class="select key"
     />
     <LabelSelect
@@ -37,6 +38,7 @@ import {
   LabelSelectorRequirement,
   OperatorType,
 } from "../../types";
+import { hidePrefix } from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
 
 const OPERATORS: OperatorType[] = ["In", "Exists"];
@@ -77,7 +79,7 @@ export default defineComponent({
     watch(() => props.selector.key, resetValues);
     watch(() => props.selector.operator, resetValues);
 
-    return { OPERATORS, keys, values };
+    return { OPERATORS, hidePrefix, keys, values };
   },
 });
 </script>

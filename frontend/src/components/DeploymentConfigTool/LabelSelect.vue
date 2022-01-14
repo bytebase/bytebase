@@ -8,7 +8,7 @@
               <template v-if="Array.isArray(state.value)">
                 <ResponsiveTags :tags="state.value" />
               </template>
-              <span v-else>{{ state.value }}</span>
+              <span v-else>{{ modifier(state.value) }}</span>
             </slot>
           </template>
           <template v-else>
@@ -62,7 +62,7 @@
                   @click="toggleSelection(item)"
                 >
                   <span class="flex-1">
-                    {{ item }}
+                    {{ modifier(item) }}
                   </span>
                   <span
                     class="ml-1"
@@ -123,6 +123,10 @@ export default defineComponent({
     multiple: {
       type: Boolean,
       default: false,
+    },
+    modifier: {
+      type: Function as PropType<(str: string) => string>,
+      default: (str: string) => str,
     },
   },
   emits: ["update:value"],
