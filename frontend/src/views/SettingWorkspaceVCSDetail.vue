@@ -147,11 +147,11 @@ import {
   VCS,
   VCSPatch,
   openWindowForOAuth,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
   OAuthConfig,
   redirectUrl,
   OAuthToken,
+  getOAuthEventName,
 } from "../types";
 
 interface LocalState {
@@ -210,7 +210,10 @@ export default {
         state.oAuthResultCallback!(undefined);
       }
 
-      window.removeEventListener(OAuthWindowEvent, eventListener);
+      window.removeEventListener(
+        getOAuthEventName("register_vcs"),
+        eventListener
+      );
     };
 
     const prepareRepositoryList = () => {
@@ -246,7 +249,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${vcs.value.instanceUrl}/oauth/authorize`,
           vcs.value.applicationId,
-          "register"
+          "register_vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -290,7 +293,11 @@ export default {
               });
             }
           };
-          window.addEventListener(OAuthWindowEvent, eventListener, false);
+          window.addEventListener(
+            getOAuthEventName("register"),
+            eventListener,
+            false
+          );
         }
       } else if (state.name != vcs.value.name) {
         const vcsPatch: VCSPatch = {

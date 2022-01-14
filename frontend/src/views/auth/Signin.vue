@@ -18,13 +18,7 @@
           @click.prevent="
             () => {
               state.activeAuthProvider = authProvider;
-              const window = openWindowForOAuth(
-                `${authProvider.instanceUrl}/${
-                  AuthProviderConfig[authProvider.type].apiPath
-                }`,
-                authProvider.applicationId,
-                'login'
-              );
+              trySigninWithOAuth();
             }
           "
         >
@@ -152,10 +146,10 @@ import {
   LoginInfo,
   OAuthConfig,
   OAuthToken,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   redirectUrl,
+  getOAuthEventName,
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -191,16 +185,7 @@ export default {
       }
 
       store.dispatch("auth/fetchProviderList");
-      window.addEventListener(OAuthWindowEvent, eventListener, false);
     });
-
-    const AuthProviderConfig = {
-      GITLAB_SELF_HOST: {
-        apiPath: "oauth/authorize",
-        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
-      },
-    };
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;
@@ -243,6 +228,7 @@ export default {
               router.push("/");
             });
         });
+      window.removeEventListener(getOAuthEventName("login"), eventListener);
     };
 
     const trySignin = () => {
@@ -258,13 +244,45 @@ export default {
       });
     };
 
+    const AuthProviderConfig = {
+      GITLAB_SELF_HOST: {
+        apiPath: "oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+    };
+
+    const trySigninWithOAuth = () => {
+      const authProvider = state.activeAuthProvider;
+
+      // the following 3 lines is for a lint error
+      if (authProvider.type == "BYTEBASE") {
+        return;
+      }
+
+      const newWindow = openWindowForOAuth(
+        `${authProvider.instanceUrl}/${
+          AuthProviderConfig[authProvider.type].apiPath
+        }`,
+        authProvider.applicationId,
+        "login"
+      );
+      if (newWindow) {
+        window.addEventListener(
+          getOAuthEventName("login"),
+          eventListener,
+          false
+        );
+      }
+    };
+
     return {
       state,
       allowSignin,
       authProviderList,
       AuthProviderConfig,
       trySignin,
-      openWindowForOAuth,
+      trySigninWithOAuth,
     };
   },
 };

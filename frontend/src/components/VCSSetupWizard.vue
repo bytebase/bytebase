@@ -1,5 +1,9 @@
 <template>
-  <BBAttention v-if="showAttention" :style="'WARN'" :description="attentionText" />
+  <BBAttention
+    v-if="showAttention"
+    :style="'WARN'"
+    :description="attentionText"
+  />
   <BBStepTab
     class="mt-4"
     :step-item-list="stepList"
@@ -37,10 +41,10 @@ import {
   VCS,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthWindowEvent,
   OAuthConfig,
   redirectUrl,
   OAuthToken,
+  getOAuthEventName,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
@@ -110,7 +114,7 @@ export default {
         state.oAuthResultCallback!(undefined);
       }
 
-      window.removeEventListener(OAuthWindowEvent, eventListener);
+      window.removeEventListener(getOAuthEventName("register"), eventListener);
     };
 
     const allowNext = computed((): boolean => {
@@ -151,7 +155,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${state.config.instanceUrl}/oauth/authorize`,
           state.config.applicationId,
-          "register"
+          "register_vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -183,7 +187,11 @@ export default {
               });
             }
           };
-          window.addEventListener(OAuthWindowEvent, eventListener, false);
+          window.addEventListener(
+            getOAuthEventName("register"),
+            eventListener,
+            false
+          );
         }
       } else {
         state.currentStep = newStep;

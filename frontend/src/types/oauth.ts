@@ -15,7 +15,22 @@ export type OAuthToken = {
 
 export const OAuthStateSessionKey = "oauthstate";
 
-export const OAuthWindowEvent = "oauthevent";
+type OAuthWindowEvent =
+  | "bb.oauth.event.login"
+  | "bb.oauth.event.register_vcs"
+  | "unknown";
+
+export const getOAuthEventName = (type: OAuthType): OAuthWindowEvent => {
+  switch (type) {
+    case "login":
+      return "bb.oauth.event.login";
+    case "register_vcs":
+      return "bb.oauth.event.register_vcs";
+    default:
+      return "unknown";
+  }
+};
+
 export type OAuthWindowEventPayload = {
   error: string;
   code: string;
@@ -25,7 +40,9 @@ export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
-type OAuthType = "login" | "register";
+// login: users try to login via oauth
+// register: users try to bind a vcs to her workspace
+export type OAuthType = "login" | "register_vcs";
 
 export function openWindowForOAuth(
   endpoint: string,

@@ -35,12 +35,12 @@
 
 <script lang="ts">
 import { useStore } from "vuex";
-import { reactive, computed, onUnmounted, PropType, watchEffect } from "vue";
+import { reactive, computed, PropType, watchEffect } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthConfig,
   OAuthToken,
-  OAuthWindowEvent,
+  getOAuthEventName,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   ProjectRepositoryConfig,
@@ -105,11 +105,11 @@ export default {
           title: payload.error,
         });
       }
+      window.removeEventListener(
+        getOAuthEventName("register_vcs"),
+        eventListener
+      );
     };
-
-    onUnmounted(() => {
-      window.removeEventListener(OAuthWindowEvent, eventListener);
-    });
 
     const isCurrentUserOwner = computed(() => {
       return isOwner(currentUser.value.role);
@@ -120,10 +120,14 @@ export default {
       const newWindow = openWindowForOAuth(
         `${vcs.instanceUrl}/oauth/authorize`,
         vcs.applicationId,
-        "register"
+        "register_vcs"
       );
       if (newWindow) {
-        window.addEventListener(OAuthWindowEvent, eventListener, false);
+        window.addEventListener(
+          getOAuthEventName("register_vcs"),
+          eventListener,
+          false
+        );
       }
     };
 

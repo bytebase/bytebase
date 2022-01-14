@@ -16,9 +16,10 @@
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
+  getOAuthEventName,
   OAuthStateSessionKey,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
+  OAuthType,
 } from "../types";
 
 interface LocalState {
@@ -40,7 +41,9 @@ export default {
       error: "",
       code: "",
     };
+
     const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
+    let eventType = "unknown";
     if (
       !expectedState ||
       expectedState != router.currentRoute.value.query.state
@@ -53,10 +56,13 @@ export default {
       state.message =
         "Successfully authorized. Redirecting back to the application...";
       payload.code = router.currentRoute.value.query.code as string;
+      eventType = expectedState.split("-")[0];
     }
 
     window.opener.dispatchEvent(
-      new CustomEvent(OAuthWindowEvent, { detail: payload })
+      new CustomEvent(getOAuthEventName(eventType as OAuthType), {
+        detail: payload,
+      })
     );
     window.close();
 
