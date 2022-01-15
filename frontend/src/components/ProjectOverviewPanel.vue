@@ -15,19 +15,43 @@
     </div>
 
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">
+      <div
+        class="text-lg font-medium leading-7 text-main flex items-center justify-between"
+      >
         {{ $t("common.database") }}
-      </p>
+        <div v-if="isTenantProject">
+          <label for="search" class="sr-only">Search</label>
+          <div class="relative rounded-md shadow-sm">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              aria-hidden="true"
+            >
+              <heroicons-solid:search class="mr-3 h-4 w-4 text-control" />
+            </div>
+            <input
+              v-model="state.databaseNameFilter"
+              type="text"
+              autocomplete="off"
+              name="search"
+              class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
+              :placeholder="$t('database.search-database-name')"
+            />
+          </div>
+        </div>
+      </div>
       <BBAttention
         v-if="project.id == DEFAULT_PROJECT_ID"
         :style="`INFO`"
         :title="$t('project.overview.info-slot-content')"
       />
-      <DatabaseTable
-        v-if="databaseList.length > 0"
-        :mode="'PROJECT'"
-        :database-list="databaseList"
-      />
+      <template v-if="databaseList.length > 0">
+        <TenantDatabaseTable
+          v-if="isTenantProject"
+          :database-list="databaseList"
+          :filter="state.databaseNameFilter"
+        />
+        <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />
+      </template>
       <div v-else class="text-center textinfolabel">
         <i18n-t keypath="project.overview.no-db-prompt" tag="p">
           <template #newDb>
@@ -72,10 +96,17 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, PropType } from "vue";
+import {
+  reactive,
+  watchEffect,
+  PropType,
+  computed,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
+import TenantDatabaseTable from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import {
   Activity,
@@ -92,13 +123,15 @@ interface LocalState {
   activityList: Activity[];
   progressIssueList: Issue[];
   closedIssueList: Issue[];
+  databaseNameFilter: string;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectOverviewPanel",
   components: {
     ActivityTable,
     DatabaseTable,
+    TenantDatabaseTable,
     IssueTable,
   },
   props: {
@@ -118,6 +151,7 @@ export default {
       activityList: [],
       progressIssueList: [],
       closedIssueList: [],
+      databaseNameFilter: "",
     });
 
     const prepareActivityList = () => {
@@ -156,10 +190,15 @@ export default {
 
     watchEffect(prepareIssueList);
 
+    const isTenantProject = computed((): boolean => {
+      return props.project.tenantMode === "TENANT";
+    });
+
     return {
       DEFAULT_PROJECT_ID,
       state,
+      isTenantProject,
     };
   },
-};
+});
 </script>

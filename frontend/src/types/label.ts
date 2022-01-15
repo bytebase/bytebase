@@ -21,3 +21,13 @@ export type Label = {
 export type LabelPatch = {
   valueList?: LabelValueType[];
 };
+
+export type DatabaseLabel = {
+  key: LabelKeyType;
+  value: LabelValueType;
+};
+
+export type AvailableLabel = {
+  key: LabelKeyType;
+  valueList: LabelValueType[];
+};
