@@ -79,7 +79,24 @@ VALUES
         1,
         1,
         "bb.tenant",
-        "shoes"
+        "tenant1"
+    );
+
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20013,
+        1,
+        1,
+        "bb.tenant",
+        "tenant2"
     );
 
 -- Database labels for database in tenant mode disabled project.
@@ -212,7 +229,7 @@ VALUES
         1,
         7025,
         "bb.tenant",
-        "bytebase"
+        "tenant1"
     );
 
 INSERT INTO
@@ -231,5 +248,5 @@ VALUES
         1,
         7026,
         "bb.tenant",
-        "shoes"
+        "tenant2"
     );
