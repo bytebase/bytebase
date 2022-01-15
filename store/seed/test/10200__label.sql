@@ -65,6 +65,23 @@ VALUES
         "bytebase"
     );
 
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20012,
+        1,
+        1,
+        "bb.tenant",
+        "shoes"
+    );
+
 -- Database labels for database in tenant mode disabled project.
 INSERT INTO
     db_label (
@@ -178,4 +195,41 @@ VALUES
         7024,
         "bb.tenant",
         "bytebase"
+    );
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20027,
+        1,
+        1,
+        7025,
+        "bb.tenant",
+        "bytebase"
+    );
+
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20028,
+        1,
+        1,
+        7026,
+        "bb.tenant",
+        "shoes"
     );
