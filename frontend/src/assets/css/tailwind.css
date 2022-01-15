@@ -201,3 +201,31 @@
 .tooltip-wrapper:hover .tooltip {
   @apply visible z-50;
 }
+
+.fade-enter-active,
+.fade-leave-active,
+.fade-fast-enter-active,
+.fade-fast-leave-active,
+.fade-slow-enter-active,
+.fade-slow-leave-active {
+  @apply transition-opacity ease-in-out duration-300;
+}
+
+.fade-fast-enter-active,
+.fade-fast-leave-active {
+  @apply duration-100;
+}
+
+.fade-slow-enter-active,
+.fade-slow-leave-active {
+  @apply duration-500;
+}
+
+.fade-enter-from,
+.fade-leave-to,
+.fade-fast-enter-from,
+.fade-fast-leave-to,
+.fade-slow-enter-from,
+.fade-slow-leave-to {
+  @apply opacity-0;
+}

@@ -15,8 +15,8 @@ export default defineComponent({
   name: "BBTableHeaderCell",
   props: {
     title: {
-      required: true,
       type: String,
+      default: "",
     },
     leftPadding: {
       type: Number,

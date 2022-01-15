@@ -9,6 +9,7 @@ import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
 import { Project } from "./project";
+import { DatabaseLabel } from "./label";
 
 // "OK" means we find the database with the same name.
 // "NOT_FOUND" means no matching database name found, this usually means someone changes the underlying db name without Bytebase knowledge.
@@ -36,6 +37,8 @@ export type Database = {
   name: string;
   characterSet: string;
   collation: string;
+  schemaVersion: string;
+  labels: DatabaseLabel[];
 };
 
 export type DatabaseCreate = {
@@ -48,9 +51,11 @@ export type DatabaseCreate = {
   characterSet: string;
   collation: string;
   issueId?: IssueId;
+  labels?: DatabaseLabel[];
 };
 
 export type DatabasePatch = {
   // Related fields
-  projectId: ProjectId;
+  projectId?: ProjectId;
+  labels?: DatabaseLabel[];
 };

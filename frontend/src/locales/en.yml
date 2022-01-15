@@ -94,6 +94,7 @@ common:
   snapshot: Snapshot
   status: Status
   stage: Stage
+  task: Task
   sql: SQL
   unassigned: Unassigned
   new: New
@@ -142,6 +143,7 @@ common:
   created: Created
   label: Label
   labels: Labels
+  mode: Mode
   roletype: Role Type
   readonly: readonly
   user: User
@@ -153,9 +155,11 @@ common:
   agents: Agents
   billings: Billings
   all: All
+  deployment-config: Deployment Config
   by: by
   ok: OK
   share: Share
+  others: Others
   or: or
   export: Export
   tips: Tips
@@ -198,6 +202,13 @@ task:
   ended: Ended
   view-migration: View migration
   view-migration-history: View migration history
+  status:
+    running: Running
+    failed: Failed
+    canceled: Canceled
+    success: Success
+    warn: Warning
+    error: Error
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
@@ -918,6 +929,9 @@ project:
     restore:
       title: Restore project
       btn-text: Restore this @.lower:{'common.project'}
+  mode:
+    standard: Standard
+    tenant: Tenant
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older
@@ -997,6 +1011,26 @@ archive:
   project-search-bar-placeholder: Search @.lower:{'common.project'} name
   instance-search-bar-placeholder: Search @.lower:{'common.instance'} name
   environment-search-bar-placeholder: Search @.lower:{'common.environment'} name
+deployment-config:
+  stage-n: Stage {n}
+  add-selector: Add selector
+  update-success: Successfully updated deployment config.
+  this-is-example-deployment-config: This is the deployment config example. You need to edit and save it.
+  n-databases: '{n} database | {n} databases'
+  selectors: Selectors
+  wont-be-deployed: Will not be deployed
+  add-stage: Add stage
+  name-placeholder: Stage name...
+  error:
+    at-least-one-stage: At least 1 stage
+    stage-name-required: Stage name is required
+    at-least-one-selector: At least 1 selector in each stage
+    env-in-selector-required: '"environment In" is required in each stage'
+    env-selector-must-has-one-value: '"environment In" must has exactly one value'
+    key-required: Key is required
+    values-required: Values are required
+  project-has-no-deployment-config: This project has no deployment config yet. Please {go} first.
+  go-and-config: Go and config
 datasource:
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source
@@ -1057,6 +1091,8 @@ sql-editor:
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
 label:
+  empty-label-value: <Empty Value>
+  no-label: No labels
   error:
     key-necessary: Key is required
     value-necessary: Value is required
@@ -1065,3 +1101,7 @@ label:
     max-length-exceeded: Length cannot exceed {len} characters
     max-label-count-exceeded: Cannot exceed {count} labels
     cannot-edit-reserved-label: Cannot edit reserved label "{key}"
+  placeholder:
+    select-key: Select key...
+    select-value: Select value...
+    select-values: Select values...
