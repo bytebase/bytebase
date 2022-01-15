@@ -8,7 +8,6 @@ import {
   MigrationHistoryId,
   Project,
   ProjectWebhook,
-  Task,
   VCS,
 } from "../types";
 import { IdType } from "../types/id";
@@ -52,8 +51,8 @@ export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
 }
 
-export function taskSlug(task: Task): string {
-  return [slug(task.name), task.id].join("-");
+export function taskSlug(name: string, id: number): string {
+  return [slug(name), id].join("-");
 }
 
 export function databaseSlug(database: Database): string {

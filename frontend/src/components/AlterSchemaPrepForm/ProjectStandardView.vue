@@ -1,7 +1,7 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
 
-  <div v-if="project?.workflowType === 'UI'" class="mt-2 textlabel">
+  <div v-if="project?.workflowType === 'UI'" class="my-2 textlabel -ml-1">
     <div class="radio-set-row">
       <div class="radio">
         <label class="label">

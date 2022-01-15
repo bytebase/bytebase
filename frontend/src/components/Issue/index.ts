@@ -1,3 +1,4 @@
+import IssueDetailLayout from "./IssueDetailLayout.vue";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
 import IssueStagePanel from "./IssueStagePanel.vue";
@@ -12,6 +13,7 @@ import TaskCheckBar from "./TaskCheckBar.vue";
 import IssueTable from "./IssueTable.vue";
 
 export {
+  IssueDetailLayout,
   IssueBanner,
   IssueHighlightPanel,
   IssueStagePanel,

@@ -10,3 +10,4 @@ export * from "./role";
 export * from "./slug";
 export * from "./util";
 export * from "./label";
+export * from "./deployment";

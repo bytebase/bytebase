@@ -17,6 +17,7 @@ import { Project, ProjectMember } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
+import { DeploymentConfig } from "./deployment";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -124,7 +125,8 @@ export type ResourceType =
   | "BOOKMARK"
   | "VCS"
   | "REPOSITORY"
-  | "ANOMALY";
+  | "ANOMALY"
+  | "DEPLOYMENT_CONFIG";
 
 export const unknown = (
   type: ResourceType
@@ -149,7 +151,8 @@ export const unknown = (
   | Bookmark
   | VCS
   | Repository
-  | Anomaly => {
+  | Anomaly
+  | DeploymentConfig => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -244,6 +247,7 @@ export const unknown = (
     id: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
     project: UNKNOWN_PROJECT,
+    labels: [],
     dataSourceList: [],
     anomalyList: [],
     creator: UNKNOWN_PRINCIPAL,
@@ -255,6 +259,7 @@ export const unknown = (
     collation: "",
     syncStatus: "NOT_FOUND",
     lastSuccessfulSyncTs: 0,
+    schemaVersion: "",
   };
 
   const UNKNOWN_DATA_SOURCE: DataSource = {
@@ -433,6 +438,18 @@ export const unknown = (
     },
   };
 
+  const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    project: UNKNOWN_PROJECT,
+    schedule: {
+      deployments: [],
+    },
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -476,6 +493,8 @@ export const unknown = (
       return UNKONWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
+    case "DEPLOYMENT_CONFIG":
+      return UNKNOWN_DEPLOYMENT_CONFIG;
   }
 };
 
@@ -503,7 +522,8 @@ export const empty = (
   | Bookmark
   | VCS
   | Repository
-  | Anomaly => {
+  | Anomaly
+  | DeploymentConfig => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -598,6 +618,7 @@ export const empty = (
     project: EMPTY_PROJECT,
     dataSourceList: [],
     anomalyList: [],
+    labels: [],
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
@@ -607,6 +628,7 @@ export const empty = (
     collation: "",
     syncStatus: "NOT_FOUND",
     lastSuccessfulSyncTs: 0,
+    schemaVersion: "",
   };
 
   const EMPTY_DATA_SOURCE: DataSource = {
@@ -785,6 +807,18 @@ export const empty = (
     },
   };
 
+  const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    project: EMPTY_PROJECT,
+    schedule: {
+      deployments: [],
+    },
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -828,5 +862,7 @@ export const empty = (
       return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
+    case "DEPLOYMENT_CONFIG":
+      return EMPTY_DEPLOYMENT_CONFIG;
   }
 };
