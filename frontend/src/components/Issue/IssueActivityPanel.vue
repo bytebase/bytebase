@@ -613,7 +613,7 @@ export default defineComponent({
               link = `/issue/${issueSlug(
                 props.issue.name,
                 props.issue.id
-              )}?task=${taskSlug(task)}`;
+              )}?task=${taskSlug(task.name, task.id)}`;
             }
             return {
               name: `${task.name} (${task.stage.name})`,

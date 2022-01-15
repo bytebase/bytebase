@@ -5,9 +5,9 @@
     </div>
   </template>
   <template v-else>
-    <div class="flex flex-row space-x-2">
-      <heroicons-outline:collection class="w-8 h-8 text-control -mt-1.5" />
-      <p class="textlabel">
+    <div class="flex flex-row space-x-2 align-top">
+      <heroicons-outline:collection class="w-4 h-4 text-control mt-0.5" />
+      <p class="textlabel flex-1">
         {{ $t("alter-schema.vcs-info") }}
       </p>
     </div>

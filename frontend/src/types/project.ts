@@ -39,6 +39,7 @@ export type ProjectCreate = {
   // Domain specific fields
   name: string;
   key: string;
+  tenantMode: ProjectTenantMode;
 };
 
 export type ProjectPatch = {

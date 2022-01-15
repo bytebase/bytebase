@@ -178,6 +178,25 @@ const actions = {
     return createdIssue;
   },
 
+  async validateIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
+    const data = (
+      await axios.post(`/api/issue`, {
+        data: {
+          type: "IssueCreate",
+          attributes: {
+            ...newIssue,
+            // Server expects payload as string, so we stringify first.
+            createContext: JSON.stringify(newIssue.createContext),
+            payload: JSON.stringify(newIssue.payload),
+            validateOnly: true,
+          },
+        },
+      })
+    ).data;
+    const createdIssue = convert(data.data, data.included, rootGetters);
+    return createdIssue;
+  },
+
   async patchIssue(
     { commit, dispatch, rootGetters }: any,
     {

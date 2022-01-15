@@ -3,8 +3,8 @@
     class="btn-select w-full disabled:cursor-not-allowed"
     :disabled="disabled"
     @change="
-      (e) => {
-        $emit('select-project-id', parseInt(e.target.value));
+      (e: any) => {
+        $emit('select-project-id', parseInt(e.target.value, 10));
       }
     "
   >
@@ -54,6 +54,7 @@
 import {
   computed,
   ComputedRef,
+  defineComponent,
   PropType,
   reactive,
   watch,
@@ -73,7 +74,12 @@ interface LocalState {
   selectedId: number;
 }
 
-export default {
+export enum Mode {
+  Standard = 1,
+  Tenant = 2,
+}
+
+export default defineComponent({
   name: "ProjectSelect",
   props: {
     selectedId: {
@@ -91,6 +97,10 @@ export default {
     includeDefaultProject: {
       default: false,
       type: Boolean,
+    },
+    mode: {
+      type: Number as PropType<Mode>,
+      default: Mode.Standard | Mode.Tenant,
     },
   },
   emits: ["select-project-id"],
@@ -118,14 +128,24 @@ export default {
     );
 
     const projectList = computed((): Project[] => {
-      const list = store.getters["project/projectListByUser"](
+      let list = store.getters["project/projectListByUser"](
         currentUser.value.id,
         ["NORMAL", "ARCHIVED"]
-      );
+      ) as Project[];
 
       if (props.includeDefaultProject) {
         list.unshift(store.getters["project/projectById"](DEFAULT_PROJECT_ID));
       }
+
+      list = list.filter((project) => {
+        if (project.tenantMode === "DISABLED" && props.mode & Mode.Standard) {
+          return true;
+        }
+        if (project.tenantMode === "TENANT" && props.mode & Mode.Tenant) {
+          return true;
+        }
+        return false;
+      });
 
       if (!hasAdminFeature.value || isDBAOrOwner(currentUser.value.role)) {
         return list;
@@ -175,5 +195,5 @@ export default {
       selectedIdNotInList,
     };
   },
-};
+});
 </script>
