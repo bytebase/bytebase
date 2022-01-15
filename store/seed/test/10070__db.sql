@@ -699,6 +699,62 @@ VALUES
         1624558090,
         '2021v1'
     );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        collation,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7025,
+        101,
+        101,
+        6001,
+        3007,
+        'db3_tenant1',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2022v0'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        collation,
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7026,
+        101,
+        101,
+        6002,
+        3007,
+        'db3_tenant2',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2022v0'
+    );
 
 -- Database for prod environment archived mysql instance 6099
 INSERT INTO

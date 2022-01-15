@@ -260,3 +260,56 @@ VALUES
         'DEVELOPER',
         103
     );
+
+
+-- Project 3007 membership
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        role,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3007,
+        'OWNER',
+        101
+    );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        role,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3007,
+        'DEVELOPER',
+        102
+    );
+
+INSERT INTO
+    project_member (
+        creator_id,
+        updater_id,
+        project_id,
+        role,
+        principal_id
+    )
+VALUES
+    (
+        101,
+        101,
+        3007,
+        'DEVELOPER',
+        103
+    );
