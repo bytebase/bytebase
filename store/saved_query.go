@@ -45,7 +45,7 @@ func (s *SavedQueryService) CreateSavedQuery(ctx context.Context, create *api.Sa
 	return savedQuery, nil
 }
 
-// CreateSavedQuery creates a new saved_query.
+// PatchSavedQuery updates an existing saved_query by ID.
 func (s *SavedQueryService) PatchSavedQuery(ctx context.Context, patch *api.SavedQueryPatch) (*api.SavedQuery, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

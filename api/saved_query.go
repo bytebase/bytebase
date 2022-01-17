@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-// SavedQuery is the API message for a saved query.
+// SavedQuery is the API message for a saved_query.
 type SavedQuery struct {
 	ID int `jsonapi:"primary,saved_query"`
 
@@ -22,7 +22,7 @@ type SavedQuery struct {
 	Statement string `jsonapi:"attr,statement"`
 }
 
-// SavedQueryCreate is the API message for creating a saved query.
+// SavedQueryCreate is the API message for creating a saved_query.
 type SavedQueryCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -33,7 +33,7 @@ type SavedQueryCreate struct {
 	Statement string `jsonapi:"attr,statement"`
 }
 
-// SavedQueryPatch is the API message for patching a saved query.
+// SavedQueryPatch is the API message for patching a saved_query.
 type SavedQueryPatch struct {
 	ID int
 
@@ -46,7 +46,7 @@ type SavedQueryPatch struct {
 	Statement *string `jsonapi:"attr,statement"`
 }
 
-// SavedQueryFind is the API message for finding saved queries.
+// SavedQueryFind is the API message for finding saved_queries.
 type SavedQueryFind struct {
 	ID *int
 
@@ -63,7 +63,7 @@ func (find *SavedQueryFind) String() string {
 	return string(str)
 }
 
-// SavedQueryDelete is the API message for deleting a saved query.
+// SavedQueryDelete is the API message for deleting a saved_query.
 type SavedQueryDelete struct {
 	ID int
 
@@ -72,7 +72,7 @@ type SavedQueryDelete struct {
 	DeleterID int
 }
 
-// SavedQueryService is the service for savedqueries.
+// SavedQueryService is the service for saved_query.
 type SavedQueryService interface {
 	CreateSavedQuery(ctx context.Context, create *SavedQueryCreate) (*SavedQuery, error)
 	PatchSavedQuery(ctx context.Context, patch *SavedQueryPatch) (*SavedQuery, error)
