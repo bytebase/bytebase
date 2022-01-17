@@ -279,8 +279,8 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
     role_provider TEXT NOT NULL DEFAULT "BYTEBASE",
-    -- role_provider_payload is determined by the type of role_provider
-    role_provider_payload TEXT NOT NULL DEFAULT,
+    -- payload is determined by the type of role_provider
+    payload TEXT NOT NULL DEFAULT,
     -- allowed roles are 'OWNER', 'DEVELOPER'.
     role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
