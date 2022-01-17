@@ -277,6 +277,8 @@ CREATE TABLE project_member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
+    role_provider TEXT NOT NULL,
     -- allowed roles are 'OWNER', 'DEVELOPER'.
     role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
