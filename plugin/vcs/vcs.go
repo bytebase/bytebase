@@ -79,6 +79,14 @@ type UserInfo struct {
 	State UserState `json:"state"`
 }
 
+// ProjectMember is the API message for project member info.
+type ProjectMember struct {
+	Email       string    `json:"email"`
+	Name        string    `json:"name"`
+	State       UserState `json:"state"`
+	AccessLevel int32     `json:"accessLevel"`
+}
+
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
@@ -88,6 +96,13 @@ type Provider interface {
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+
+	// Fetch all members of a given project
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	FetchProjectMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*ProjectMember, error)
 
 	// Commits a new file
 	//

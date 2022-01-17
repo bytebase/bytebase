@@ -176,6 +176,44 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return UserInfo, err
 }
 
+func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.ProjectMember, error) {
+	resp, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/repository/members/all", repositoryID),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch project members from GitLab instance %s", instanceURL))
+	} else if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("failed to read project membersfrom GitLab instance %s, status code: %d",
+			instanceURL,
+			resp.StatusCode,
+		)
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	projectMemberList := make([]*vcs.ProjectMember, 0)
+	if err := json.Unmarshal(b, &projectMemberList); err != nil {
+		return nil, err
+	}
+
+	return projectMemberList, nil
+}
+
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(fileCommit{
 		Branch:        fileCommitCreate.Branch,
