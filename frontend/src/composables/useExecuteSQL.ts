@@ -1,61 +1,86 @@
-import { ref } from "vue";
+import { reactive } from "vue";
 import { isEmpty } from "lodash-es";
 import { useStore } from "vuex";
-import { isSelectStatement } from "../components/MonacoEditor/sqlParser";
+import { useI18n } from "vue-i18n";
+
+import {
+  parseSQL,
+  transformSQL,
+  isSelectStatement,
+  isMultipleStatements,
+} from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
   const store = useStore();
-  const isLoadingData = ref(false);
+  const { t } = useI18n();
+  const state = reactive({
+    isLoadingData: false,
+  });
+
+  const notify = (type: string, title: string, description?: string) => {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: type,
+      title,
+      description,
+    });
+  };
 
   const execute = async () => {
+    if (state.isLoadingData) {
+      notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
+    }
+
     const queryStatement = store.state.sqlEditor.queryStatement;
     const selectedStatement = store.state.sqlEditor.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
 
+    const { data } = parseSQL(sqlStatement);
+
     if (isEmpty(sqlStatement)) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Please input your SQL codes in the editor",
+      notify("CRITICAL", t("sql-editor.notify-empty-statement"));
+      return;
+    }
+
+    if (data !== null && !isSelectStatement(data)) {
+      store.dispatch("sqlEditor/setSqlEditorState", {
+        isShowExecutingHint: true,
       });
       return;
     }
 
-    if (!isSelectStatement(sqlStatement)) {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Only SELECT statements are allowed",
-      });
-      return;
+    if (isMultipleStatements(data)) {
+      notify(
+        "INFO",
+        t("common.tips"),
+        t("sql-editor.notify-multiple-statements")
+      );
     }
+
     try {
-      isLoadingData.value = true;
+      state.isLoadingData = true;
+      store.dispatch("sqlEditor/setIsExecuting", true);
+      // remove the comment from the sql statement in front-end
+      const statement = data !== null ? transformSQL(data) : sqlStatement;
       const res = await store.dispatch("sqlEditor/executeQuery", {
-        statement: sqlStatement,
+        statement,
       });
-      isLoadingData.value = false;
+      state.isLoadingData = false;
+      store.dispatch("sqlEditor/setIsExecuting", false);
 
       if (res.error) {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "CRITICAL",
-          title: res.error,
-        });
+        notify("CRITICAL", res.error);
         return;
       }
     } catch (error) {
-      isLoadingData.value = false;
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: error,
-      });
+      state.isLoadingData = false;
+      store.dispatch("sqlEditor/setIsExecuting", false);
+      notify("CRITICAL", error as string);
     }
   };
 
   return {
-    isLoadingData,
+    state,
     execute,
   };
 };

@@ -4,6 +4,12 @@
   </div>
   <h1 class="px-6 pb-4 text-xl font-bold leading-6 text-main truncate">
     {{ project.name }}
+    <span
+      v-if="project.tenantMode === 'TENANT'"
+      class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
+    >
+      {{ $t("project.mode.tenant") }}
+    </span>
   </h1>
   <BBTabFilter
     class="px-3 pb-2 border-b border-block-border"
@@ -11,7 +17,7 @@
     :tab-item-list="tabItemList"
     :selected-index="state.selectedIndex"
     @select-index="
-      (index) => {
+      (index: number) => {
         selectTab(index);
       }
     "
@@ -28,13 +34,14 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, defineComponent, onMounted, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { Project } from "../types";
 
 const OVERVIEW_TAB = 0;
 const WEBHOOK_TAB = 4;
@@ -48,7 +55,7 @@ interface LocalState {
   selectedIndex: number;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectLayout",
   components: {
     ArchiveBanner,
@@ -60,6 +67,7 @@ export default {
     },
     projectWebhookSlug: {
       type: String,
+      default: undefined,
     },
   },
   setup(props) {
@@ -69,8 +77,14 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
+    const project = computed((): Project => {
+      return store.getters["project/projectById"](
+        idFromSlug(props.projectSlug)
+      );
+    });
+
     const projectTabItemList = computed((): ProjectTabItem[] => {
-      return [
+      const list: ProjectTabItem[] = [
         { name: t("common.overview"), hash: "overview" },
         { name: t("common.migration-history"), hash: "migration-history" },
         { name: t("common.activities"), hash: "activity" },
@@ -78,16 +92,21 @@ export default {
         { name: t("common.webhooks"), hash: "webhook" },
         { name: t("common.settings"), hash: "setting" },
       ];
+      // TODO: we can't put DeploymentConfig before Settings for now
+      // because BBTabFilter works on numeric index
+      // making indices dynamic needs a refactor
+      if (project.value.tenantMode === "TENANT") {
+        list.push({
+          name: t("common.deployment-config"),
+          hash: "deployment-config",
+        });
+      }
+
+      return list;
     });
 
     const state = reactive<LocalState>({
       selectedIndex: OVERVIEW_TAB,
-    });
-
-    const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
     });
 
     // Only the project owner can edit the project general info and configure version control.
@@ -168,5 +187,5 @@ export default {
       selectTab,
     };
   },
-};
+});
 </script>

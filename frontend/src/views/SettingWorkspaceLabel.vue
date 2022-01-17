@@ -10,7 +10,7 @@
       >
         <template #body="{ rowData: label }">
           <BBTableCell :left-padding="4" class="w-36 table-cell">
-            {{ label.key }}
+            {{ hidePrefix(label.key) }}
           </BBTableCell>
           <BBTableCell class="whitespace-nowrap">
             <div class="tags">
@@ -40,7 +40,7 @@
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { isDBAOrOwner } from "../utils";
+import { isDBAOrOwner, hidePrefix } from "../utils";
 import { Principal, Label, LabelPatch } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import { BBTable, BBTableCell } from "../bbkit";
@@ -117,6 +117,7 @@ export default defineComponent({
     return {
       COLUMN_LIST,
       labelList,
+      hidePrefix,
       allowEdit,
       allowRemove,
       addValue,

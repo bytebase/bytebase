@@ -1,4 +1,11 @@
-import { BackupId, DatabaseId, InstanceId, IssueId, PrincipalId, ProjectId } from "./id";
+import {
+  BackupId,
+  DatabaseId,
+  InstanceId,
+  IssueId,
+  PrincipalId,
+  ProjectId,
+} from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -27,6 +34,7 @@ export type CreateDatabaseContext = {
   collation: string;
   backupId: BackupId;
   backupName: string;
+  labels?: string; // JSON encoded
 };
 
 export type UpdateSchemaDetail = {
@@ -40,10 +48,10 @@ export type UpdateSchemaContext = {
   updateSchemaDetailList: UpdateSchemaDetail[];
 };
 
-export type EmptyContext = {
-};
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type EmptyContext = {};
 
-export type IssueCreateContext = 
+export type IssueCreateContext =
   | CreateDatabaseContext
   | UpdateSchemaContext
   | EmptyContext;
@@ -76,7 +84,7 @@ export type Issue = {
 export type IssueCreate = {
   // Related fields
   projectId: ProjectId;
-  pipeline: PipelineCreate;
+  pipeline?: PipelineCreate;
 
   // Domain specific fields
   name: string;

@@ -41,7 +41,7 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
-import { TabInfo, AnyTabInfo } from "./editorSelector";
+import { TabInfo } from "./editorSelector";
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
 import editorSelectorStore from "../store/modules/editorSelector";
@@ -192,7 +192,9 @@ export interface SqlEditorState {
   connectionContext: ConnectionContext;
   queryStatement: string;
   selectedStatement: string;
-  queryResult: Array<Record<any, any>>;
+  isExecuting: boolean;
+  queryResult: Record<string, any>[] | null;
+  isShowExecutingHint: boolean;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
 export type SqlEditorActions = typeof sqlEditorStore.actions;

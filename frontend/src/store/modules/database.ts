@@ -5,6 +5,7 @@ import {
   Database,
   DatabaseCreate,
   DatabaseId,
+  DatabaseLabel,
   DatabaseState,
   DataSource,
   empty,
@@ -74,6 +75,24 @@ function convert(
     }
   }
 
+  const labels: DatabaseLabel[] = [];
+  try {
+    const array = JSON.parse(database.attributes.labels as any);
+    if (Array.isArray(array)) {
+      array.forEach((item) => {
+        if (
+          item &&
+          typeof item["key"] === "string" &&
+          typeof item["value"] === "string"
+        ) {
+          labels.push(item);
+        }
+      });
+    }
+  } catch {
+    // nothing to catch
+  }
+
   // Only able to assign an empty data source list / anomaly list, otherwise would cause circular dependency.
   // This should be fine as e.g. we shouldn't access data source via dataSource.database.dataSourceList
   const databaseWPartial = {
@@ -85,10 +104,12 @@ function convert(
       | "dataSourceList"
       | "sourceBackup"
       | "anomalyList"
+      | "labels"
     >),
     id: parseInt(database.id),
     instance,
     project,
+    labels,
     dataSourceList: [],
     sourceBackup,
     anomalyList: [],
@@ -376,6 +397,35 @@ const actions = {
 
     return updatedDatabase;
   },
+
+  async patchDatabaseLabels(
+    { commit, rootGetters }: any,
+    {
+      databaseId,
+      labels,
+    }: {
+      databaseId: DatabaseId;
+      labels: DatabaseLabel[];
+    }
+  ) {
+    const data = (
+      await axios.patch(`/api/database/${databaseId}`, {
+        data: {
+          type: "databasePatch",
+          attributes: {
+            labels: JSON.stringify(labels),
+          },
+        },
+      })
+    ).data;
+    const updatedDatabase = convert(data.data, data.included, rootGetters);
+
+    commit("upsertDatabaseList", {
+      databaseList: [updatedDatabase],
+    });
+
+    return updatedDatabase;
+  },
 };
 
 const mutations = {
@@ -435,7 +485,7 @@ const mutations = {
             listByProject.push(database);
           }
         } else {
-          state.databaseListByProjectId.set(database.instance.id, [database]);
+          state.databaseListByProjectId.set(database.project.id, [database]);
         }
       }
     }

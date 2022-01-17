@@ -84,6 +84,7 @@ common:
   creator: 创建人
   version: 版本
   issue: 工单
+  issues: 工单
   duration: 时长
   created-at: 创建于
   updated-at: 更新于
@@ -93,6 +94,7 @@ common:
   snapshot: 快照
   status: 状态
   stage: 阶段
+  task: 任务
   sql: SQL
   unassigned: 未指派
   new: 创建
@@ -141,6 +143,7 @@ common:
   created: 已创建
   label: 标签
   labels: 标签
+  mode: 模式
   roletype: 角色类型
   readonly: 只读
   user: 用户
@@ -152,10 +155,14 @@ common:
   agents: Agents
   billings: 计费
   all: 全部
+  deployment-config: 部署配置
   by: 由
   ok: OK
   share: 分享
+  others: 其他
   or: 或者
+  export: 导出
+  tips: 提示信息
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -192,6 +199,13 @@ task:
   view-migration: 查看迁移
   view-migration-history: 查看迁移历史
   earliest-allowed-time-unset: 未设置
+  status:
+    running: 运行中
+    failed: 失败
+    canceled: 取消
+    success: 成功
+    warn: 警告
+    error: 错误
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
@@ -810,6 +824,9 @@ project:
     restore:
       title: 恢复项目
       btn-text: 恢复这个@:common.project
+  mode:
+    standard: 标准
+    tenant: 多租户
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早
@@ -863,6 +880,26 @@ archive:
   project-search-bar-placeholder: 搜索@.lower:{'common.project'}的名称
   instance-bar-placeholder: 搜索@.lower:{'common.instance'}的名称
   environment-bar-placeholder: 搜索@.lower:{'common.environment'}的名称
+deployment-config:
+  stage-n: 阶段 {n}
+  add-selector: 添加选择条件
+  update-success: 成功更新部署配置
+  this-is-example-deployment-config: 这是部署配置的样例，你需要在此基础上编辑并保存。
+  n-databases: '{n} 个数据库'
+  selectors: 选择条件
+  wont-be-deployed: 不会被部署
+  add-stage: 添加阶段
+  name-placeholder: 阶段名称…
+  error:
+    at-least-one-stage: 至少需要 1 个阶段
+    stage-name-required: 需要指定阶段名称
+    at-least-one-selector: 每个阶段至少需要 1 个选择条件
+    env-in-selector-required: 每个阶段都需要有 "environment In" 选择条件
+    env-selector-must-has-one-value: '"environment In" 必须有且只有 1 个值'
+    key-required: 需要指定 Key
+    values-required: 需要指定值
+  project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
+  go-and-config: 去配置
 datasource:
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源
@@ -901,11 +938,27 @@ sql-editor:
   self: SQL 编辑器
   select-connection: 请选择数据连接
   search-databases: 搜索数据库
+  search-results: 搜索结果
   loading-databases: 加载数据库信息...
   close-pane: 关闭面板
   loading-data: 加载数据中...
   table-empty-placehoder: 点击 ”运行“ 执行查询
+  no-rows-found: 无数据
+  download-as-csv: 下载为 CSV 格式
+  download-as-json: 下载为 JSON 格式
+  only-select-allowed: 只允许执行 {select} 语句
+  want-to-change-schema: 如果您想要 {changeschema}
+  change-schema: 变更 Schema
+  go-to-alter-schema: 您可以点击 “{alterschema}” 按钮，提交一个工单
+  table-schema-placeholder: 选择一个表进行查看 Schema
+  notify-empty-statement: 请在编辑器中输入 SQL 语句
+  notify-multiple-statements: 检测到您输入了多条 SQL 语句。SQL 编辑器只支持执行第一条语句。您可以选择其他语句单独执行。
+  goto-alter-schema-hint: 请从编辑器顶部选择一个数据库连接
+  can-not-execute-query: 加载数据时无法执行查询
+  rows: 条记录
 label:
+  empty-label-value: <空值>
+  no-label: 没有标签
   error:
     key-necessary: 需要指定 Key
     value-necessary: 需要指定值
@@ -914,3 +967,7 @@ label:
     max-length-exceeded: 长度不能超过 {len} 字符
     max-label-count-exceeded: 不能多于 {count} 个标签
     cannot-edit-reserved-label: 不能编辑预留标签 "{key}"
+  placeholder:
+    select-key: 选择 Key…
+    select-value: 选择值…
+    select-values: 选择值…

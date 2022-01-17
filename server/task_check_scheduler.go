@@ -248,10 +248,21 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 	}
 
-	if task.Type == api.TaskDatabaseSchemaUpdate {
-		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return nil, fmt.Errorf("invalid database schema update payload: %w", err)
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
+		statement := ""
+
+		if task.Type == api.TaskDatabaseSchemaUpdate {
+			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+				return nil, fmt.Errorf("invalid database schema update payload: %w", err)
+			}
+			statement = taskPayload.Statement
+		} else {
+			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+			}
+			statement = taskPayload.Statement
 		}
 
 		databaseFind := &api.DatabaseFind{
@@ -288,7 +299,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		// For now we only supported MySQL dialect syntax and compatibility check
 		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: taskPayload.Statement,
+				Statement: statement,
 				DbType:    database.Instance.Engine,
 				Charset:   database.CharacterSet,
 				Collation: database.Collation,

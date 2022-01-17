@@ -318,7 +318,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		return -1, "", err
 	}
 
-	startedTs := time.Now().Unix()
+	startedNs := time.Now().UnixNano()
 
 	// If we have already started migration, there will be a PENDING migration record. Upon returning,
 	// we will update that record to DONE or FAILED depending on whether error occurs.
@@ -332,7 +332,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 			}
 		}()
 
-		migrationDuration := time.Now().Unix() - startedTs
+		migrationDurationNs := time.Now().UnixNano() - startedNs
 		afterSqldb, tmpErr := driver.GetDbConnection(ctx, bytebaseDatabase)
 		if tmpErr != nil {
 			return
@@ -344,16 +344,16 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		defer afterTx.Rollback()
 
 		if resErr == nil {
-			// Upon success, update the migration history as 'DONE', execution_duration, updated schema.
+			// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsDoneQuery,
-				migrationDuration,
+				migrationDurationNs,
 				updatedSchema,
 				insertedID,
 			)
 		} else {
 			// Otherwise, update the migration history as 'FAILED', exeuction_duration
 			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsFailedQuery,
-				migrationDuration,
+				migrationDurationNs,
 				insertedID,
 			)
 		}
@@ -642,7 +642,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 			&history.Statement,
 			&history.Schema,
 			&history.SchemaPrev,
-			&history.ExecutionDuration,
+			&history.ExecutionDurationNs,
 			&history.IssueID,
 			&history.Payload,
 		); err != nil {

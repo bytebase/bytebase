@@ -3,7 +3,7 @@
     <div class="actions-left w-1/2">
       <NButton
         type="primary"
-        :disabled="isEmptyStatement"
+        :disabled="isEmptyStatement || executeState.isLoadingData"
         @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
@@ -72,7 +72,7 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
-const { execute } = useExecuteSQL();
+const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
   execute();

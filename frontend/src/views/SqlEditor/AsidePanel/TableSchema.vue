@@ -11,7 +11,7 @@
         <div class="action-edit flex items-center">
           <NTooltip trigger="hover">
             <template #trigger>
-              <NButton text @click="handleEditorSchema">
+              <NButton text @click="gotoAlterSchema">
                 <heroicons-outline:pencil-alt class="w-4 h-4" />
               </NButton>
             </template>
@@ -59,7 +59,7 @@
     </div>
   </div>
   <div v-else class="h-full flex justify-center items-center">
-    Select a table to see its schema
+    {{ $t("sql-editor.table-schema-placeholder") }}
   </div>
 </template>
 
@@ -98,7 +98,7 @@ const tableInfo = ref();
 const ctx = connectionContext.value;
 const router = useRouter();
 
-const handleEditorSchema = () => {
+const gotoAlterSchema = () => {
   const projectId = findProjectIdByDatabaseId.value(ctx.selectedDatabaseId);
   const databaseList =
     connectionInfo.value.databaseListByProjectId.get(projectId);

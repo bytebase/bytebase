@@ -2,11 +2,18 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
+	"go.uber.org/zap"
 )
 
 // TaskExecutor is the task executor.
@@ -25,4 +32,323 @@ type TaskExecutor interface {
 // Use the concatenation of current time and the task id to guarantee uniqueness in a monotonic increasing way.
 func defaultMigrationVersionFromTaskID(taskID int) string {
 	return strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(taskID)}, ".")
+}
+
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement string, vcsPushEvent *vcs.VCSPushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	if task.Database == nil {
+		msg := "missing database when updating schema"
+		if migrationType == db.Data {
+			msg = "missing database when updating data"
+		}
+		return true, nil, fmt.Errorf(msg)
+	}
+	databaseName := task.Database.Name
+
+	var repository *api.Repository
+	mi := &db.MigrationInfo{
+		ReleaseVersion: server.version,
+		Type:           migrationType,
+	}
+	if vcsPushEvent == nil {
+		mi.Engine = db.UI
+		creator, err := server.composePrincipalByID(ctx, task.CreatorID)
+		if err != nil {
+			// If somehow we unable to find the principal, we just emit the error since it's not
+			// critical enough to fail the entire operation.
+			l.Error("Failed to fetch creator for composing the migration info",
+				zap.Int("task_id", task.ID),
+				zap.Error(err),
+			)
+		} else {
+			mi.Creator = creator.Name
+		}
+		mi.Version = defaultMigrationVersionFromTaskID(task.ID)
+		mi.Database = databaseName
+		mi.Namespace = databaseName
+		mi.Description = task.Name
+	} else {
+		repositoryFind := &api.RepositoryFind{
+			ProjectID: &task.Database.ProjectID,
+		}
+		repository, err = server.RepositoryService.FindRepository(ctx, repositoryFind)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
+		}
+		if repository == nil {
+			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+		}
+
+		mi, err = db.ParseMigrationInfo(
+			vcsPushEvent.FileCommit.Added,
+			filepath.Join(vcsPushEvent.BaseDirectory, repository.FilePathTemplate),
+		)
+		// This should not happen normally as we already check this when creating the issue. Just in case.
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to start migration, error: %w", err)
+		}
+		mi.Creator = vcsPushEvent.FileCommit.AuthorName
+
+		miPayload := &db.MigrationInfoPayload{
+			VCSPushEvent: vcsPushEvent,
+		}
+		bytes, err := json.Marshal(miPayload)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to start migration, unable to marshal vcs push event payload %w", err)
+		}
+		mi.Payload = string(bytes)
+	}
+
+	issueFind := &api.IssueFind{
+		PipelineID: &task.PipelineID,
+	}
+	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// If somehow we unable to find the issue, we just emit the error since it's not
+		// critical enough to fail the entire operation.
+		l.Error("Failed to fetch containing issue for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	}
+
+	if issue == nil {
+		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		l.Error(err.Error(),
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	} else {
+		mi.IssueID = strconv.Itoa(issue.ID)
+	}
+
+	statement = strings.TrimSpace(statement)
+	// Only baseline can have empty sql statement, which indicates empty database.
+	if mi.Type != db.Baseline && statement == "" {
+		return true, nil, fmt.Errorf("empty statement")
+	}
+
+	if err := server.composeTaskRelationship(ctx, task); err != nil {
+		return true, nil, err
+	}
+
+	driver, err := getDatabaseDriver(ctx, task.Instance, databaseName, l)
+	if err != nil {
+		return true, nil, err
+	}
+	defer driver.Close(ctx)
+
+	l.Debug("Start sql migration...",
+		zap.String("instance", task.Instance.Name),
+		zap.String("database", databaseName),
+		zap.String("engine", mi.Engine.String()),
+		zap.String("type", mi.Type.String()),
+		zap.String("statement", statement),
+	)
+
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return true, nil, fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+	}
+	if setup {
+		return true, nil, common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+	}
+
+	migrationID, schema, err := driver.ExecuteMigration(ctx, mi, statement)
+	if err != nil {
+		return true, nil, err
+	}
+
+	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
+	if vcsPushEvent != nil && repository.SchemaPathTemplate != "" {
+		latestSchemaFile := filepath.Join(repository.BaseDirectory, repository.SchemaPathTemplate)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
+
+		repository.VCS, err = server.composeVCSByID(ctx, repository.VCSID)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+		}
+		if repository.VCS == nil {
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repository.VCSID)
+		}
+
+		// Writes back the latest schema file to the same branch as the push event.
+		// Ref format refs/heads/<<branch>>
+		refComponents := strings.Split(vcsPushEvent.Ref, "/")
+		branch := refComponents[len(refComponents)-1]
+
+		bytebaseURL := ""
+		if issue != nil {
+			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
+		}
+
+		commitID, err := writeBackLatestSchema(ctx, server, repository, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		if err != nil {
+			return true, nil, err
+		}
+
+		// Create file commit activity
+		{
+			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
+				TaskID:             task.ID,
+				VCSInstanceURL:     repository.VCS.InstanceURL,
+				RepositoryFullPath: vcsPushEvent.RepositoryFullPath,
+				Branch:             branch,
+				FilePath:           latestSchemaFile,
+				CommitID:           commitID,
+			})
+			if err != nil {
+				l.Error("Failed to marshal file commit activity after writing back the latest schema",
+					zap.Int("task_id", task.ID),
+					zap.String("repository", repository.WebURL),
+					zap.String("file_path", latestSchemaFile),
+					zap.Error(err),
+				)
+			}
+
+			containerID := task.PipelineID
+			if issue != nil {
+				containerID = issue.ID
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   task.CreatorID,
+				ContainerID: containerID,
+				Type:        api.ActivityPipelineTaskFileCommit,
+				Level:       api.ActivityInfo,
+				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
+					mi.Version,
+					mi.Database,
+				),
+				Payload: string(payload),
+			}
+
+			_, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			if err != nil {
+				l.Error("Failed to create file commit activity after writing back the latest schema",
+					zap.Int("task_id", task.ID),
+					zap.String("repository", repository.WebURL),
+					zap.String("file_path", latestSchemaFile),
+					zap.Error(err),
+				)
+			}
+		}
+	}
+
+	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
+	if mi.Type == db.Baseline {
+		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, databaseName)
+	}
+
+	return true, &api.TaskRunResultPayload{
+		Detail:      detail,
+		MigrationID: migrationID,
+		Version:     mi.Version,
+	}, nil
+}
+
+// Writes back the latest schema to the repository after migration
+// Returns the commit id on success.
+func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcs.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+	schemaFileMeta, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    server.refreshToken(ctx, repository.ID),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		latestSchemaFile,
+		branch,
+	)
+
+	createSchemaFile := false
+	verb := "Update"
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			createSchemaFile = true
+			verb = "Create"
+		} else {
+			return "", fmt.Errorf("failed to fetch latest schema: %w", err)
+		}
+	}
+
+	commitTitle := fmt.Sprintf("[Bytebase] %s latest schema for %q after migration %s", verb, mi.Database, mi.Version)
+	commitBody := "THIS COMMIT IS AUTO-GENERATED BY BTYEBASE"
+	if bytebaseURL != "" {
+		commitBody += "\n\n" + bytebaseURL
+	}
+	commitBody += "\n\n--------Original migration change--------\n\n"
+	commitBody += fmt.Sprintf("%s\n\n%s",
+		pushEvent.FileCommit.URL,
+		pushEvent.FileCommit.Message,
+	)
+
+	schemaFileCommit := vcs.FileCommitCreate{
+		Branch:        branch,
+		CommitMessage: fmt.Sprintf("%s\n\n%s", commitTitle, commitBody),
+		Content:       schema,
+	}
+	if createSchemaFile {
+		err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).CreateFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
+				RefreshToken: repository.RefreshToken,
+				Refresher:    server.refreshToken(ctx, repository.ID),
+			},
+			repository.VCS.InstanceURL,
+			repository.ExternalID,
+			latestSchemaFile,
+			schemaFileCommit,
+		)
+
+		if err != nil {
+			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+		}
+	} else {
+		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
+		err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).OverwriteFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
+				RefreshToken: repository.RefreshToken,
+				Refresher:    server.refreshToken(ctx, repository.ID),
+			},
+			repository.VCS.InstanceURL,
+			repository.ExternalID,
+			latestSchemaFile,
+			schemaFileCommit,
+		)
+		if err != nil {
+			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+		}
+	}
+
+	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
+	schemaFileMeta, err = vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    server.refreshToken(ctx, repository.ID),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		latestSchemaFile,
+		branch,
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch latest schema file %s after update: %w", latestSchemaFile, err)
+	}
+	return schemaFileMeta.LastCommitID, nil
 }

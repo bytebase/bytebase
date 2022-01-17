@@ -76,7 +76,7 @@
         }}
       </BBTableCell>
       <BBTableCell>
-        {{ secondsToString(history.executionDuration) }}
+        {{ nanosecondsToString(history.executionDurationNs) }}
       </BBTableCell>
       <BBTableCell>
         {{ humanizeTs(history.createdTs) }}
@@ -91,7 +91,7 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { Database, MigrationHistory } from "../types";
-import { databaseSlug, migrationHistorySlug, secondsToString } from "../utils";
+import { databaseSlug, migrationHistorySlug, nanosecondsToString } from "../utils";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
 import { useRouter } from "vue-router";
@@ -188,7 +188,7 @@ export default {
 
     return {
       columnList: columnListMap.get(props.mode),
-      secondsToString,
+      nanosecondsToString,
       clickHistory,
     };
   },

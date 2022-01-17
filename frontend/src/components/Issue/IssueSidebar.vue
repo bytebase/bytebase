@@ -81,7 +81,21 @@
         </div>
       </template>
 
-      <div>
+      <template v-if="showTaskSelect">
+        <h2 class="textlabel flex items-center col-span-1 col-start-1">
+          {{ $t("common.task") }}
+        </h2>
+        <div class="col-span-2">
+          <TaskSelect
+            :pipeline="issue.pipeline"
+            :stage="selectedStage"
+            :selected-id="task.id"
+            @select-task-id="(taskId) => $emit('select-task-id', taskId)"
+          />
+        </div>
+      </template>
+      
+    <div>
         <h2 class="textlabel flex items-center">
           <span class="mr-1">{{ $t("common.when") }}</span>
           <div class="tooltip-wrapper">
@@ -171,6 +185,21 @@
       >
         {{ environmentName(environment) }}
       </router-link>
+
+      <template v-if="isTenantProject && database">
+        <h2 class="textlabel flex items-start col-span-1 col-start-1">
+          {{ $t("common.labels") }}
+        </h2>
+        <div class="col-span-2">
+          <div>
+            <DatabaseLabels
+              :editable="false"
+              :label-list="database.labels"
+              class="flex-col items-start"
+            />
+          </div>
+        </div>
+      </template>
     </div>
     <div
       class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
@@ -238,9 +267,11 @@ import { NDatePicker } from "naive-ui";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import StageSelect from "./StageSelect.vue";
+import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
+import { DatabaseLabels } from "../DatabaseLabels";
 
 import { InputField } from "../../plugins";
 import {
@@ -276,6 +307,8 @@ export default defineComponent({
     PrincipalAvatar,
     MemberSelect,
     StageSelect,
+    TaskSelect,
+    DatabaseLabels,
     IssueStatusIcon,
     IssueSubscriberPanel,
     InstanceEngineIcon,
@@ -321,6 +354,7 @@ export default defineComponent({
     "remove-subscriber-id",
     "update-custom-field",
     "select-stage-id",
+    "select-task-id",
   ],
   setup(props, { emit }) {
     const store = useStore();
@@ -386,10 +420,20 @@ export default defineComponent({
       return (props.issue as Issue).project;
     });
 
+    const isTenantProject = computed((): boolean => {
+      return project.value.tenantMode === "TENANT";
+    });
+
     const showStageSelect = computed((): boolean => {
       return (
         !props.create && allTaskList((props.issue as Issue).pipeline).length > 1
       );
+    });
+
+    const showTaskSelect = computed((): boolean => {
+      if (props.create) return false;
+      const { taskList } = props.selectedStage;
+      return taskList.length > 1;
     });
 
     const showInstance = computed((): boolean => {
@@ -454,15 +498,13 @@ export default defineComponent({
       return isDatabaseCreated.value ? "(created)" : "(pending create)";
     });
 
-    // TODO: errors detected by Vetur below is related to https://github.com/bytebase/bytebase/issues/56
-    // Will fix this in another branch.
     const clickDatabase = () => {
       // If the database has not been created yet, do nothing
-      if (props.database && props.database.value) {
+      if (props.database) {
         router.push({
           name: "workspace.database.detail",
           params: {
-            databaseSlug: databaseSlug(props.database.value),
+            databaseSlug: databaseSlug(props.database),
           },
         });
       } else {
@@ -491,8 +533,10 @@ export default defineComponent({
       environment,
       databaseName,
       project,
+      isTenantProject,
       showInstance,
       showStageSelect,
+      showTaskSelect,
       allowEditAssignee,
       allowEditEarliestAllowedTime,
       allowEditCustomField,
