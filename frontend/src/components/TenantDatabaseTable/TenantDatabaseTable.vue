@@ -14,9 +14,10 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Database, Environment, Label } from "../../types";
+import { Database, Environment, Label, Project } from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
+import { parseDatabaseNameByTemplate } from "../../utils";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -43,6 +44,10 @@ export default defineComponent({
     },
     databaseList: {
       type: Object as PropType<Database[]>,
+      required: true,
+    },
+    project: {
+      type: Object as PropType<Project>,
       required: true,
     },
     filter: {
@@ -76,7 +81,21 @@ export default defineComponent({
     });
 
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
-      const dict = groupBy(filteredDatabaseList.value, "name");
+      if (props.project.dbNameTemplate) {
+        if (labelList.value.length === 0) return [];
+      }
+
+      const dict = groupBy(filteredDatabaseList.value, (db) => {
+        if (props.project.dbNameTemplate) {
+          return parseDatabaseNameByTemplate(
+            db.name,
+            props.project.dbNameTemplate,
+            labelList.value
+          );
+        } else {
+          return db.name;
+        }
+      });
       return Object.keys(dict).map((name) => ({
         name,
         databaseList: dict[name],

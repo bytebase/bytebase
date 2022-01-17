@@ -48,6 +48,7 @@
         <TenantDatabaseTable
           v-if="isTenantProject"
           :database-list="databaseList"
+          :project="project"
           :filter="state.databaseNameFilter"
         />
         <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />

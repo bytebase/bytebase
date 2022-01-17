@@ -19,8 +19,8 @@
             <template #databaseName>
               {{ state.databaseName }}
             </template>
-          </i18n-t></span
-        >
+          </i18n-t>
+        </span>
       </div>
 
       <div class="col-span-2 col-start-2 w-64">
@@ -205,6 +205,7 @@ import {
   DatabaseLabel,
   CreateDatabaseContext,
   Environment,
+  UNKNOWN_ID,
 } from "../types";
 import { isDBAOrOwner, issueSlug, validateLabels } from "../utils";
 import { useI18n } from "vue-i18n";
@@ -292,17 +293,25 @@ export default defineComponent({
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
+    const project = computed((): Project => {
+      if (!state.projectId) return unknown("PROJECT") as Project;
+      return store.getters["project/projectById"](state.projectId) as Project;
+    });
+
     const isReservedName = computed(() => {
       return state.databaseName?.toLowerCase() == "bytebase";
     });
 
     const isTenantProject = computed((): boolean => {
-      if (!state.projectId) return false;
-      const project = store.getters["project/projectById"](
-        state.projectId
-      ) as Project;
+      if (project.value.id === UNKNOWN_ID) return false;
 
-      return project.tenantMode === "TENANT";
+      return project.value.tenantMode === "TENANT";
+    });
+
+    const isDbNameTemplateMode = computed((): boolean => {
+      if (project.value.id === UNKNOWN_ID) return false;
+
+      return !!project.value.dbNameTemplate;
     });
 
     const labelsError = computed((): string => {
@@ -453,6 +462,7 @@ export default defineComponent({
       state,
       isReservedName,
       isTenantProject,
+      isDbNameTemplateMode,
       labelsError,
       allowCreate,
       allowEditProject,

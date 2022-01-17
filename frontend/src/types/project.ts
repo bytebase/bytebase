@@ -33,6 +33,7 @@ export type Project = {
   workflowType: ProjectWorkflowType;
   visibility: ProjectVisibility;
   tenantMode: ProjectTenantMode;
+  dbNameTemplate: string;
 };
 
 export type ProjectCreate = {
@@ -40,6 +41,7 @@ export type ProjectCreate = {
   name: string;
   key: string;
   tenantMode: ProjectTenantMode;
+  dbNameTemplate: string;
 };
 
 export type ProjectPatch = {

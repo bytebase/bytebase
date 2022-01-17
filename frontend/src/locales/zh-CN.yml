@@ -163,6 +163,7 @@ common:
   or: 或者
   export: 导出
   tips: 提示信息
+  template: 模板
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -755,12 +756,13 @@ project:
     name: '@:common.name'
     created-at: 创建于
   create-modal:
-    project-name: '@:common.project @:common.name'
+    project-name: "@:{'common.project'}@:{'common.name'}"
     key: '@:common.key'
-    key-hint: ( 请使用大写字母来命名您的项目 )
+    key-hint: （请使用大写字母来命名您的项目）
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
+    db-name-template-tips: （让您能够将一系列多租户数据库标记成相同的名称）
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
@@ -827,6 +829,7 @@ project:
   mode:
     standard: 标准
     tenant: 多租户
+  db-name-template: 数据库名称模板
 inbox:
   mark-all-as-read: 全部标记为已读
   view-older: 查看更早

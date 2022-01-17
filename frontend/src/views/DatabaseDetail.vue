@@ -95,7 +95,7 @@
             </label>
             <DatabaseLabelsEditor
               :label-list="database.labels"
-              :allow-edit="allowAdmin"
+              :allow-edit="allowEditDatabaseLabels"
               @save="updateLabels"
             />
           </div>
@@ -358,6 +358,14 @@ export default defineComponent({
       return false;
     });
 
+    const allowEditDatabaseLabels = computed((): boolean => {
+      // only allowed to edit database labels when allowAdmin
+      if (!allowAdmin.value) return false;
+
+      // not allowed to edit in db name template mode
+      return database.value.project.dbNameTemplate === "";
+    });
+
     const alterSchemaText = computed(() => {
       if (database.value.project.workflowType == "VCS") {
         return t("database.alter-schema-in-vcs");
@@ -483,6 +491,7 @@ export default defineComponent({
       allowChangeProject,
       allowAdmin,
       allowEdit,
+      allowEditDatabaseLabels,
       tabItemList,
       tryTransferProject,
       alterSchema,
