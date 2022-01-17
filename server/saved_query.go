@@ -69,11 +69,11 @@ func (s *Server) registerSavedQueryRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/savedquery/:savedQueryID", func(c echo.Context) error {
+	g.PATCH("/savedquery/:id", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("savedQueryID"))
+		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("savedQueryID"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
 		savedQueryPatch := &api.SavedQueryPatch{
@@ -103,11 +103,11 @@ func (s *Server) registerSavedQueryRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/savedquery/:savedQueryID", func(c echo.Context) error {
+	g.DELETE("/savedquery/:id", func(c echo.Context) error {
 		ctx := context.Background()
-		id, err := strconv.Atoi(c.Param("savedQueryID"))
+		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("savedQueryID"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
 		savedQueryDelete := &api.SavedQueryDelete{
