@@ -185,6 +185,9 @@ export default {
     });
 
     const eventListener = (event: Event) => {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
@@ -211,7 +214,7 @@ export default {
       }
 
       window.removeEventListener(
-        getOAuthEventName("register_vcs"),
+        getOAuthEventName("register-vcs"),
         eventListener
       );
     };
@@ -249,7 +252,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${vcs.value.instanceUrl}/oauth/authorize`,
           vcs.value.applicationId,
-          "register_vcs"
+          "register-vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -294,7 +297,7 @@ export default {
             }
           };
           window.addEventListener(
-            getOAuthEventName("register"),
+            getOAuthEventName("register-vcs"),
             eventListener,
             false
           );

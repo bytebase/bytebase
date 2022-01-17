@@ -20,6 +20,7 @@ import {
   OAuthStateSessionKey,
   OAuthWindowEventPayload,
   OAuthType,
+  unknown,
 } from "../types";
 
 interface LocalState {
@@ -43,7 +44,8 @@ export default {
     };
 
     const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
-    let eventType = "unknown";
+    let eventType = undefined;
+
     if (
       !expectedState ||
       expectedState != router.currentRoute.value.query.state
@@ -56,7 +58,7 @@ export default {
       state.message =
         "Successfully authorized. Redirecting back to the application...";
       payload.code = router.currentRoute.value.query.code as string;
-      eventType = expectedState.split("-")[0];
+      eventType = expectedState.split("&")[0];
     }
 
     window.opener.dispatchEvent(

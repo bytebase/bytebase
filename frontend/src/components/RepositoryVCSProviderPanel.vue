@@ -79,6 +79,9 @@ export default {
     });
 
     const eventListener = (event: Event) => {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         props.config.code = payload.code;
@@ -106,7 +109,7 @@ export default {
         });
       }
       window.removeEventListener(
-        getOAuthEventName("register_vcs"),
+        getOAuthEventName("link-vcs-repository"),
         eventListener
       );
     };
@@ -120,11 +123,11 @@ export default {
       const newWindow = openWindowForOAuth(
         `${vcs.instanceUrl}/oauth/authorize`,
         vcs.applicationId,
-        "register_vcs"
+        "link-vcs-repository"
       );
       if (newWindow) {
         window.addEventListener(
-          getOAuthEventName("register_vcs"),
+          getOAuthEventName("link-vcs-repository"),
           eventListener,
           false
         );
