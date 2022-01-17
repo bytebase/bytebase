@@ -40,7 +40,6 @@ import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthConfig,
   OAuthToken,
-  getOAuthEventName,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   ProjectRepositoryConfig,
@@ -108,10 +107,7 @@ export default {
           title: payload.error,
         });
       }
-      window.removeEventListener(
-        getOAuthEventName("link-vcs-repository"),
-        eventListener
-      );
+      window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
     };
 
     const isCurrentUserOwner = computed(() => {
@@ -123,11 +119,11 @@ export default {
       const newWindow = openWindowForOAuth(
         `${vcs.instanceUrl}/oauth/authorize`,
         vcs.applicationId,
-        "link-vcs-repository"
+        "bb.oauth.link-vcs-repository"
       );
       if (newWindow) {
         window.addEventListener(
-          getOAuthEventName("link-vcs-repository"),
+          "bb.oauth.link-vcs-repository",
           eventListener,
           false
         );

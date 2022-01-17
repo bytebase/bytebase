@@ -16,11 +16,9 @@
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
-  getOAuthEventName,
   OAuthStateSessionKey,
   OAuthWindowEventPayload,
   OAuthType,
-  unknown,
 } from "../types";
 
 interface LocalState {
@@ -58,11 +56,12 @@ export default {
       state.message =
         "Successfully authorized. Redirecting back to the application...";
       payload.code = router.currentRoute.value.query.code as string;
-      eventType = expectedState.split("&")[0];
+
+      eventType = expectedState.slice(0, expectedState.lastIndexOf("-"));
     }
 
     window.opener.dispatchEvent(
-      new CustomEvent(getOAuthEventName(eventType as OAuthType), {
+      new CustomEvent(eventType as OAuthType, {
         detail: payload,
       })
     );

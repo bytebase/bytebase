@@ -149,7 +149,6 @@ import {
   OAuthWindowEventPayload,
   openWindowForOAuth,
   redirectUrl,
-  getOAuthEventName,
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -228,7 +227,7 @@ export default {
               router.push("/");
             });
         });
-      window.removeEventListener(getOAuthEventName("login"), eventListener);
+      window.removeEventListener("bb.oauth.signin", eventListener);
     };
 
     const trySignin = () => {
@@ -265,14 +264,10 @@ export default {
           AuthProviderConfig[authProvider.type].apiPath
         }`,
         authProvider.applicationId,
-        "login"
+        "bb.oauth.signin"
       );
       if (newWindow) {
-        window.addEventListener(
-          getOAuthEventName("login"),
-          eventListener,
-          false
-        );
+        window.addEventListener("bb.oauth.signin", eventListener, false);
       }
     };
 

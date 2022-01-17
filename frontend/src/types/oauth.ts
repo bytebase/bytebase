@@ -17,25 +17,6 @@ export type OAuthToken = {
 
 export const OAuthStateSessionKey = "oauthstate";
 
-type OAuthWindowEvent =
-  | "bb.oauth.event.login"
-  | "bb.oauth.event.register-vcs"
-  | "bb.oauth.event.link-vcs-repository"
-  | "bb.oauth.event.unknown";
-
-export const getOAuthEventName = (type: OAuthType): OAuthWindowEvent => {
-  switch (type) {
-    case "login":
-      return "bb.oauth.event.login";
-    case "register-vcs":
-      return "bb.oauth.event.register-vcs";
-    case "link-vcs-repository":
-      return "bb.oauth.event.link-vcs-repository";
-    default:
-      return "bb.oauth.event.unknown";
-  }
-};
-
 /**
  * event listener for "bb.oauth.event.unknown"
  */
@@ -58,9 +39,14 @@ export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
-// login: users try to login via oauth
-// register: users try to bind a vcs to her workspace
-export type OAuthType = "login" | "register-vcs" | "link-vcs-repository";
+// signin: users try to login via oauth
+// register-vcs: users try to bind a vcs to her workspace
+// link-vcs-repository: users try to bind a vcs repo to her project
+export type OAuthType =
+  | "bb.oauth.signin"
+  | "bb.oauth.register-vcs"
+  | "bb.oauth.link-vcs-repository"
+  | "bb.oauth.unknown";
 
 export function openWindowForOAuth(
   endpoint: string,
@@ -68,7 +54,7 @@ export function openWindowForOAuth(
   type: OAuthType
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `${type}&${randomString(20)}`;
+  const stateQueryParameter = `${type}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   return window.open(

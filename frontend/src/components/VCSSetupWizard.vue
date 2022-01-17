@@ -44,7 +44,6 @@ import {
   OAuthConfig,
   redirectUrl,
   OAuthToken,
-  getOAuthEventName,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
@@ -117,10 +116,7 @@ export default {
         state.oAuthResultCallback!(undefined);
       }
 
-      window.removeEventListener(
-        getOAuthEventName("register-vcs"),
-        eventListener
-      );
+      window.removeEventListener("bb.oauth.register-vcs", eventListener);
     };
 
     const allowNext = computed((): boolean => {
@@ -161,7 +157,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${state.config.instanceUrl}/oauth/authorize`,
           state.config.applicationId,
-          "register-vcs"
+          "bb.oauth.register-vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -194,7 +190,7 @@ export default {
             }
           };
           window.addEventListener(
-            getOAuthEventName("register-vcs"),
+            "bb.oauth.register-vcs",
             eventListener,
             false
           );
