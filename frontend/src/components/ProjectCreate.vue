@@ -104,14 +104,7 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  reactive,
-  onMounted,
-  onUnmounted,
-  defineComponent,
-  watch,
-} from "vue";
+import { computed, reactive, defineComponent, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
@@ -151,7 +144,15 @@ export default defineComponent({
     });
 
     const allowCreate = computed(() => {
-      return !isEmpty(state.project?.name);
+      if (!isEmpty(state.project.name)) return false;
+
+      if (state.project.tenantMode === "TENANT" && state.enableDbNameTemplate) {
+        if (!state.project.dbNameTemplate) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
     watch(
@@ -164,6 +165,14 @@ export default defineComponent({
     );
 
     const create = () => {
+      if (
+        state.project.tenantMode !== "TENANT" ||
+        !state.enableDbNameTemplate
+      ) {
+        // clear up unnecessary fields
+        state.project.dbNameTemplate = "";
+      }
+
       store
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
