@@ -572,7 +572,7 @@ export const empty = (
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    dbNameTemplate: "dbNameTemplate",
+    dbNameTemplate: "",
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
