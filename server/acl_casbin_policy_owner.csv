@@ -86,3 +86,7 @@ p, OWNER, /setting, GET
 p, OWNER, /setting/{name}, PATCH
 p, OWNER, /label, GET
 p, OWNER, /label/{id}, PATCH
+p, OWNER, /savedquery, POST
+p, OWNER, /savedquery, GET
+p, OWNER, /savedquery/{id}, PATCH
+p, OWNER, /savedquery/{id}, DELETE_SELF
