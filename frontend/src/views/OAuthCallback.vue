@@ -60,11 +60,24 @@ export default {
       eventType = expectedState.slice(0, expectedState.lastIndexOf("-"));
     }
 
-    window.opener.dispatchEvent(
-      new CustomEvent(eventType as OAuthType, {
-        detail: payload,
-      })
-    );
+    switch (eventType as OAuthType) {
+      case "bb.oauth.signin":
+      case "bb.oauth.register-vcs":
+      case "bb.oauth.link-vcs-repository":
+        window.opener.dispatchEvent(
+          new CustomEvent(eventType as OAuthType, {
+            detail: payload,
+          })
+        );
+        break;
+      default:
+        window.opener.dispatchEvent(
+          new CustomEvent("bb.oauth.unknown", {
+            detail: payload,
+          })
+        );
+    }
+
     window.close();
 
     return {
