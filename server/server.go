@@ -64,6 +64,7 @@ type Server struct {
 	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
+	SavedQueryService       api.SavedQueryService
 
 	e *echo.Echo
 
@@ -236,6 +237,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
+	s.registerSavedQueryRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
