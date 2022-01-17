@@ -1,5 +1,5 @@
 <template>
-  <form class="px-4 py-2 space-y-6 divide-y divide-block-border">
+  <form class="w-144 px-4 py-2 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-1">
       <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
@@ -60,17 +60,25 @@
         </div>
       </div>
       <div v-if="state.project.tenantMode === 'TENANT'" class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label
+          class="text-lg leading-6 font-medium text-control select-none flex items-center"
+        >
           {{ $t("project.db-name-template") }}
-          <span class="ml-1 text-sm font-normal">
-            {{ $t("project.create-modal.db-name-template-tips") }}
-          </span>
+          <BBCheckbox
+            :value="state.enableDbNameTemplate"
+            class="ml-2"
+            @toggle="(on: boolean) => state.enableDbNameTemplate = on"
+          />
         </label>
+        <p class="mt-1 text-sm font-normal">
+          {{ $t("project.create-modal.db-name-template-tips") }}
+        </p>
         <BBTextField
+          v-if="state.enableDbNameTemplate"
           class="mt-4 w-full placeholder-gray-300"
-          :required="false"
-          :placeholder="'{{DB_NAME}}_{{TENANT}}'"
+          :required="true"
           :value="state.project.dbNameTemplate"
+          placeholder="{{DB_NAME}}_{{TENANT}}"
           @input="state.project.dbNameTemplate = $event.target.value"
         />
       </div>
@@ -102,6 +110,7 @@ import {
   onMounted,
   onUnmounted,
   defineComponent,
+  watch,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
@@ -109,9 +118,11 @@ import isEmpty from "lodash-es/isEmpty";
 import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useEventListener } from "@vueuse/core";
 
 interface LocalState {
   project: ProjectCreate;
+  enableDbNameTemplate: boolean;
 }
 
 export default defineComponent({
@@ -130,25 +141,27 @@ export default defineComponent({
         tenantMode: "DISABLED",
         dbNameTemplate: "",
       },
+      enableDbNameTemplate: false,
     });
 
-    const keyboardHandler = (e: KeyboardEvent) => {
+    useEventListener("keydown", (e) => {
       if (e.code == "Escape") {
         emit("dismiss");
       }
-    };
-
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
-
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
     });
 
     const allowCreate = computed(() => {
       return !isEmpty(state.project?.name);
     });
+
+    watch(
+      () => state.enableDbNameTemplate,
+      (on) => {
+        if (!on) {
+          state.project.dbNameTemplate = "";
+        }
+      }
+    );
 
     const create = () => {
       store
