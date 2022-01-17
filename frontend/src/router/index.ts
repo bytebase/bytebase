@@ -792,9 +792,10 @@ router.beforeEach((to, from, next) => {
     store.dispatch("router/setBackPath", from.fullPath);
   }
 
-  // for now, we may initiate a oauth-callback at to senarios:
-  // 1. users try to login via oauth.
-  // 2. users try to bind a vcs to her projects.
+  // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
+  // - Login via OAuth
+  // - Setup VCS provider
+  // - Setup GitOps workflow in a project
   if (to.name === "oauth-callback") {
     next();
   }
