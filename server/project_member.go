@@ -2,18 +2,163 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
+	// for now we only support sync project member from privately deployed GitLab
+	g.POST("/project/:projectID/sync/:roleProvider", func(c echo.Context) error {
+		ctx := context.Background()
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
+		}
+		roleProvider := api.ProjectRoleProvider(c.Param("roleProvider"))
+
+		switch roleProvider {
+		case api.ProjectRoleProviderGitlabSelfHost:
+			{
+				projectFind := &api.ProjectFind{ID: &projectID}
+				project, err := s.ProjectService.FindProject(ctx, projectFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
+				}
+				if project.WorkflowType == api.UIWorkflow {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s", project.WorkflowType))
+				}
+
+				repoFind := &api.RepositoryFind{ProjectID: &projectID}
+				repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Fail to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
+				}
+
+				vcsFind := &api.VCSFind{
+					ID: &repo.VCSID,
+				}
+				vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
+				}
+				if vcs == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
+				}
+
+				gitlabProjectMemberList, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchProjectMemberList(ctx,
+					common.OauthContext{
+						ClientID:     vcs.ApplicationID,
+						ClientSecret: vcs.Secret,
+						AccessToken:  repo.AccessToken,
+						RefreshToken: repo.RefreshToken,
+						Refresher:    s.refreshToken(ctx, repo.ID),
+					},
+					vcs.InstanceURL,
+					repo.ExternalID,
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL))
+				}
+
+				// create or patch project member
+				findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
+				bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member in bytebase: %d", projectID))
+				}
+
+				// check whether principal exists in our system. if not exist, create one.
+				for _, projectMember := range gitlabProjectMemberList {
+					findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
+					principal, err := s.PrincipalService.FindPrincipal(ctx, findPrincipal)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
+					}
+
+					if projectMember.State != vcsPlugin.UserStateActive && projectMember.MembershipState != vcsPlugin.UserStateActive {
+						continue
+					}
+
+					if principal == nil {
+						principal, err = TrySignup(ctx, s, &api.Signup{
+							Name:     projectMember.Name,
+							Email:    projectMember.Email,
+							Password: common.RandomString(20),
+						}, api.PrincipalAuthProviderGitlabSelfHost)
+
+						if err != nil {
+							return err
+						}
+					}
+
+					isProjectMemberExist := false
+					for _, bytebaseProjectMember := range bytebaseProjectMemberList {
+						if bytebaseProjectMember.PrincipalID == principal.ID {
+							payload, _ := json.Marshal(projectMember)
+							// try update status
+							patchProjectMember := &api.ProjectMemberPatch{
+								ID:           bytebaseProjectMember.ID,
+								RoleProvider: api.ProjectRoleProviderGitlabSelfHost,
+								Payload:      string(payload),
+							}
+							s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
+							isProjectMemberExist = true
+						}
+					}
+					if !isProjectMemberExist {
+						var role api.ProjectRole
+						switch projectMember.AccessLevel { // see https://docs.gitlab.com/ee/api/members.html
+						case 50 /* Owner */ :
+						case 40 /* Maintainer */ :
+							role = api.ProjectOwner
+						case 30 /* Developer */ :
+						case 20 /* Reporter */ :
+						case 10 /* Guest */ :
+						case 5 /* Minimal access */ :
+						case 0 /* No access */ :
+							role = api.ProjectDeveloper
+						}
+
+						payload, _ := json.Marshal(projectMember)
+						createProjectMember := &api.ProjectMemberCreate{
+							ProjectID:    projectID,
+							CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
+							RoleProvider: api.ProjectRoleProviderGitlabSelfHost,
+							Payload:      string(payload),
+							PrincipalID:  principal.ID,
+							Role:         role,
+						}
+						s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+					}
+
+				}
+
+			}
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync project member, invalid provider type: %s", roleProvider))
+		}
+
+		projectMemberList, err := s.composeProjectMemberListByProjectID(ctx, projectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, projectMemberList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sync projectMember response").SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/project/:projectID/member", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
