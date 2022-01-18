@@ -135,7 +135,9 @@ export default defineComponent({
     });
 
     // event listener for "bb.oauth.event.unknown"
-    // this event would be posted when an unknown state is returned by OAuth provider
+    // this event would be posted when an unknown state is returned by OAuth provider.
+    // Add it here so the notification is displayed on the main window. The OAuth callback window is short lived
+    // and would close before the notification has a chance to be displayed.
     window.addEventListener("bb.oauth.unknown", (event) => {
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
