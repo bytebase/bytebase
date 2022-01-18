@@ -22,6 +22,6 @@ jobs:
         with:
           push: true
           # Extract the version from the tag
-          tags: bytebase/bytebase:${GITHUB_REF##*/}
+          tags: bytebase/bytebase:${{ github.ref_name }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:" ${GITHUB_REF##*/} " " ${{ steps.docker_build.outputs.digest }}
+        run: echo "Successfully pushed bytebase/bytebase:${{ github.ref_name }} ${{ steps.docker_build.outputs.digest }}"
