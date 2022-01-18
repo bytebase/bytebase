@@ -95,6 +95,7 @@ import {
 import { useStore } from "vuex";
 import {
   Database,
+  DatabaseId,
   DeploymentConfig,
   Environment,
   Label,
@@ -105,9 +106,11 @@ import {
 import { NCollapse, NCollapseItem } from "naive-ui";
 import { groupBy } from "lodash-es";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
+import { getPipelineFromDeploymentSchedule } from "../../utils";
 
 export type State = {
   selectedDatabaseName: string | undefined;
+  deployingTenantDatabaseList: DatabaseId[];
 };
 
 const props = defineProps<{
@@ -170,6 +173,25 @@ watch(
   },
   { immediate: true }
 );
+
+watchEffect(() => {
+  if (!deployment.value) return;
+  const name = props.state.selectedDatabaseName;
+  if (!name) {
+    props.state.deployingTenantDatabaseList = [];
+  } else {
+    const databaseGroup = databaseListGroupByName.value.find(
+      (group) => group.name === name
+    );
+    const databaseList = databaseGroup?.list || [];
+    const stages = getPipelineFromDeploymentSchedule(
+      databaseList,
+      deployment.value.schedule
+    );
+    const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
+    props.state.deployingTenantDatabaseList = databaseIdList;
+  }
+});
 </script>
 
 <style scoped lang="postcss">

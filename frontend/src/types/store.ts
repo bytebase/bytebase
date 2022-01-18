@@ -1,5 +1,6 @@
 import {
   AuthProvider,
+  DeploymentConfig,
   EnvironmentId,
   MigrationHistoryId,
   Policy,
@@ -208,3 +209,7 @@ export interface EditorSelectorState {
 export type EditorSelectorGetters = typeof editorSelectorStore.getters;
 export type EditorSelectorActions = typeof editorSelectorStore.actions;
 export type EditorSelectorMutations = typeof editorSelectorStore.mutations;
+
+export interface DeploymentState {
+  deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
+}
