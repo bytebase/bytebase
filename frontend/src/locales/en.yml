@@ -1084,9 +1084,8 @@ sql-editor:
   table-schema-placeholder: Select a table to see its schema
   notify-empty-statement: Please input your SQL statements in the editor
   notify-multiple-statements: >-
-    Multiple SQL statements detected.
-    SQL Editor only executes the first statement.
-    You can select another statement and execute it individually.
+    Multiple SQL statements detected. SQL Editor only executes the first
+    statement. You can select another statement and execute it individually.
   goto-alter-schema-hint: Please select a database connection from the top of the editor
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
@@ -1105,3 +1104,5 @@ label:
     select-key: Select key...
     select-value: Select value...
     select-values: Select values...
+oauth:
+  unknown-event: Unexpeted event type, OAuth failed.

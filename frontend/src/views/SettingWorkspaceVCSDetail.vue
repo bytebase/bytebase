@@ -137,7 +137,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
@@ -147,7 +147,6 @@ import {
   VCS,
   VCSPatch,
   openWindowForOAuth,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
   OAuthConfig,
   redirectUrl,
@@ -184,6 +183,14 @@ export default {
       secret: "",
     });
 
+    onMounted(() => {
+      window.addEventListener("bb.oauth.register-vcs", eventListener, false);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.register-vcs", eventListener);
+    });
+
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
@@ -209,8 +216,6 @@ export default {
       } else {
         state.oAuthResultCallback!(undefined);
       }
-
-      window.removeEventListener(OAuthWindowEvent, eventListener);
     };
 
     const prepareRepositoryList = () => {
@@ -246,7 +251,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${vcs.value.instanceUrl}/oauth/authorize`,
           vcs.value.applicationId,
-          "register"
+          "bb.oauth.register-vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -290,7 +295,6 @@ export default {
               });
             }
           };
-          window.addEventListener(OAuthWindowEvent, eventListener, false);
         }
       } else if (state.name != vcs.value.name) {
         const vcsPatch: VCSPatch = {

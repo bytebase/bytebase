@@ -1,5 +1,9 @@
 <template>
-  <BBAttention v-if="showAttention" :style="'WARN'" :description="attentionText" />
+  <BBAttention
+    v-if="showAttention"
+    :style="'WARN'"
+    :description="attentionText"
+  />
   <BBStepTab
     class="mt-4"
     :step-item-list="stepList"
@@ -22,7 +26,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, onUnmounted, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
@@ -37,7 +41,6 @@ import {
   VCS,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthWindowEvent,
   OAuthConfig,
   redirectUrl,
   OAuthToken,
@@ -84,6 +87,14 @@ export default {
       currentStep: 0,
     });
 
+    onMounted(() => {
+      window.addEventListener("bb.oauth.register-vcs", eventListener, false);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.register-vcs", eventListener);
+    });
+
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
@@ -109,8 +120,6 @@ export default {
       } else {
         state.oAuthResultCallback!(undefined);
       }
-
-      window.removeEventListener(OAuthWindowEvent, eventListener);
     };
 
     const allowNext = computed((): boolean => {
@@ -151,7 +160,7 @@ export default {
         const newWindow = openWindowForOAuth(
           `${state.config.instanceUrl}/oauth/authorize`,
           state.config.applicationId,
-          "register"
+          "bb.oauth.register-vcs"
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
@@ -183,7 +192,6 @@ export default {
               });
             }
           };
-          window.addEventListener(OAuthWindowEvent, eventListener, false);
         }
       } else {
         state.currentStep = newStep;

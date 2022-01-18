@@ -11,6 +11,7 @@ import {
   EMPTY_ID,
   PrincipalType,
   RoleType,
+  AuthProviderType,
 } from "../../types";
 import { randomString } from "../../utils";
 
@@ -21,6 +22,7 @@ function convert(principal: ResourceObject): Principal {
     createdTs: principal.attributes.createdTs as number,
     updaterId: principal.attributes.updaterId as PrincipalId,
     updatedTs: principal.attributes.updatedTs as number,
+    authProvider: principal.attributes.authProvider as AuthProviderType,
     type: principal.attributes.type as PrincipalType,
     name: principal.attributes.name as string,
     email: principal.attributes.email as string,
