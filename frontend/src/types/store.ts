@@ -191,8 +191,8 @@ export interface LabelState {
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
-  queryHistory: QueryHistory[];
   shouldSetContent: boolean;
+  queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
   isExecuting: boolean;
   isShowExecutingHint: boolean;

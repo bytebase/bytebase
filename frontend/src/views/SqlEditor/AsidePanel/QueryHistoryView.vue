@@ -52,7 +52,7 @@
     </div>
 
     <div
-      v-show="isLoading && queryHistory.length === 0"
+      v-show="isLoading && queryHistoryList.length === 0"
       class="absolute w-full h-full flex justify-center items-center"
     >
       <BBSpin :title="$t('common.loading')" />
@@ -95,9 +95,9 @@ interface State {
 
 const { t } = useI18n();
 
-const { queryHistory, isFetchingQueryHistory: isLoading } =
+const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
-    "queryHistory",
+    "queryHistoryList",
     "isFetchingQueryHistory",
   ]);
 const { deleteQueryHistory, setShouldSetContent } =
@@ -118,8 +118,8 @@ const state = reactive<State>({
 
 const data = computed(() => {
   const temp =
-    queryHistory.value && queryHistory.value.length > 0
-      ? queryHistory.value.filter((history) => {
+    queryHistoryList.value && queryHistoryList.value.length > 0
+      ? queryHistoryList.value.filter((history) => {
           let t = false;
 
           if (history.statement.includes(state.search)) {
@@ -136,7 +136,7 @@ const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
   }
-  if (queryHistory.value.length === null) {
+  if (queryHistoryList.value.length === null) {
     return t("sql-editor.no-history-found");
   }
 
