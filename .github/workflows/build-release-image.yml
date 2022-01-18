@@ -18,10 +18,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
+        id: bytebase_build
         uses: docker/build-push-action@v2
         with:
           push: true
           # Extract the version from the tag
           tags: bytebase/bytebase:${{ github.ref_name }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:${{ github.ref_name }} ${{ steps.docker_build.outputs.digest }}"
+        run: echo "Successfully pushed bytebase/bytebase:${{ github.ref_name }} ${{ steps.bytebase_build.outputs.digest }}"
+      - name: Build and push bb CLI
+        id: bb_build
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.bb
+          push: true
+          tags: bytebase/bb:${{ github.ref_name }}
+      - name: Image digest
+        run: echo "Successfully pushed bytebase/bb:${{ github.ref_name }} ${{ steps.bb_build.outputs.digest }}"
