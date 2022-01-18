@@ -34,41 +34,48 @@
             </template>
           </i18n-t>
         </div>
-        <NCollapse
-          v-else
-          display-directive="if"
-          accordion
-          :expanded-names="state.selectedDatabaseName"
-          @update:expanded-names="
-            (names) => (state.selectedDatabaseName = names[0])
-          "
-        >
-          <NCollapseItem
-            v-for="{ name, list } in databaseListGroupByName"
-            :key="name"
-            :title="name"
-            :name="name"
+        <template v-else>
+          <YAxisRadioGroup
+            v-model:label="label"
+            :label-list="labelList"
+            class="text-sm pt-2 pb-1"
+          />
+          <NCollapse
+            display-directive="if"
+            accordion
+            :expanded-names="state.selectedDatabaseName"
+            @update:expanded-names="
+              (names) => (state.selectedDatabaseName = names[0])
+            "
           >
-            <template #header>
-              <span class="text-base">{{ name }}</span>
-              <span v-if="name === state.selectedDatabaseName">
-                <heroicons-outline:check class="w-5 h-5 ml-2 text-success" />
-              </span>
-            </template>
-            <template #header-extra>
-              <span class="text-control-placeholder">
-                {{ $t("deployment-config.n-databases", list.length) }}
-              </span>
-            </template>
+            <NCollapseItem
+              v-for="{ name, list } in databaseListGroupByName"
+              :key="name"
+              :title="name"
+              :name="name"
+            >
+              <template #header>
+                <span class="text-base">{{ name }}</span>
+                <span v-if="name === state.selectedDatabaseName">
+                  <heroicons-outline:check class="w-5 h-5 ml-2 text-success" />
+                </span>
+              </template>
+              <template #header-extra>
+                <span class="text-control-placeholder">
+                  {{ $t("deployment-config.n-databases", list.length) }}
+                </span>
+              </template>
 
-            <DeployDatabaseTable
-              :database-list="list"
-              :label-list="labelList"
-              :environment-list="environmentList"
-              :deployment="deployment!"
-            />
-          </NCollapseItem>
-        </NCollapse>
+              <DeployDatabaseTable
+                :database-list="list"
+                :label="label"
+                :label-list="labelList"
+                :environment-list="environmentList"
+                :deployment="deployment!"
+              />
+            </NCollapseItem>
+          </NCollapse>
+        </template>
       </template>
     </template>
   </div>
@@ -77,13 +84,21 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, defineProps, defineEmits, watchEffect, watch } from "vue";
+import {
+  computed,
+  defineProps,
+  defineEmits,
+  watchEffect,
+  watch,
+  ref,
+} from "vue";
 import { useStore } from "vuex";
 import {
   Database,
   DeploymentConfig,
   Environment,
   Label,
+  LabelKeyType,
   Project,
   UNKNOWN_ID,
 } from "../../types";
@@ -120,6 +135,7 @@ const fetchData = () => {
 
 watchEffect(fetchData);
 
+const label = ref<LabelKeyType>("bb.environment");
 const labelList = computed(() => store.getters["label/labelList"]() as Label[]);
 
 const deployment = computed(() => {

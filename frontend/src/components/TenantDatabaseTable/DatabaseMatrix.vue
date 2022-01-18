@@ -15,12 +15,8 @@
   >
     <template #header>
       <tr>
-        <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2">
-          <YAxisSwitch
-            v-if="yAxisLabel"
-            v-model:label="yAxisLabel"
-            :label-list="selectableLabelList"
-          />
+        <BBTableHeaderCell compact class="w-1/12 pl-4 pr-2 capitalize">
+          {{ hidePrefix(yAxisLabel) }}
         </BBTableHeaderCell>
 
         <BBTableHeaderCell
@@ -75,8 +71,7 @@ import {
 } from "../../types";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 import { groupBy } from "lodash-es";
-import { findDefaultGroupByLabel, getLabelValue } from "../../utils";
-import YAxisSwitch from "./YAxisSwitch.vue";
+import { hidePrefix, getLabelValue } from "../../utils";
 
 type DatabaseMatrix = {
   labelValue: LabelValueType;
@@ -85,7 +80,7 @@ type DatabaseMatrix = {
 
 export default defineComponent({
   name: "TenantDatabaseMatrix",
-  components: { DatabaseMatrixItem, YAxisSwitch },
+  components: { DatabaseMatrixItem },
   props: {
     bordered: {
       default: true,
@@ -115,37 +110,26 @@ export default defineComponent({
       type: Array as PropType<Label[]>,
       required: true,
     },
+    xAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
+    },
+    yAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
+    },
   },
   emits: ["select-database"],
   setup(props) {
-    // make "bb.environment" non-selectable because it was already specified to the x-axis
-    const selectableLabelList = computed(() => {
-      const excludes = new Set(["bb.environment"]);
-      return props.labelList.filter((label) => !excludes.has(label.key));
-    });
-
     /**
      * databases are grouped by `yAxisLabel` then by `xAxisLabel`
      * for now, `xAxisLabel` will always be 'bb.environment'
      */
-    const yAxisLabel = ref<LabelKeyType>();
-    const xAxisLabel = ref<LabelKeyType>("bb.environment");
-
     const filteredXAxisValueList = ref<LabelValueType[]>([]);
     const filteredMatrixList = ref<DatabaseMatrix[]>([]);
-
-    // find the default label key to firstBy (y-axis)
-    watchEffect(() => {
-      // "bb.environment" is excluded because it was specified to the x-axis
-      yAxisLabel.value = findDefaultGroupByLabel(
-        selectableLabelList.value,
-        props.databaseList
-      );
-    });
-
     // pre-filtered y-axis values
     const yAxisValueList = computed((): string[] => {
-      const key = yAxisLabel.value;
+      const key = props.yAxisLabel;
       if (!key) {
         // y-axis is undefined
         return [];
@@ -162,7 +146,7 @@ export default defineComponent({
     const xAxisValueList = computed(() => {
       // order based on label.valueList
       // plus one more "<empty value>"
-      const key = xAxisLabel.value;
+      const key = props.xAxisLabel;
       const label = props.labelList.find((label) => label.key === key);
       if (!label) return [];
       return [...label.valueList, ""];
@@ -170,7 +154,7 @@ export default defineComponent({
 
     // first, group databases by `yAxisLabel` into some rows
     const groupedRowList = computed(() => {
-      const key = yAxisLabel.value;
+      const key = props.yAxisLabel;
       if (!key) {
         // y-axis is undefined
         return [];
@@ -188,7 +172,7 @@ export default defineComponent({
     // then, group each row by `xAxisLabel` into some columns
     // now the `matrices` is pre-filtered (with empty rows or columns)
     const matrixList = computed((): DatabaseMatrix[] => {
-      const key = xAxisLabel.value;
+      const key = props.xAxisLabel;
       return groupedRowList.value.map(
         ({ labelValue: yValue, databaseList }) => {
           const databaseMatrix: Database[][] = xAxisValueList.value.map(
@@ -245,8 +229,7 @@ export default defineComponent({
     });
 
     return {
-      selectableLabelList,
-      yAxisLabel,
+      hidePrefix,
       yAxisValueList,
       xAxisValueList,
       filteredXAxisValueList,
