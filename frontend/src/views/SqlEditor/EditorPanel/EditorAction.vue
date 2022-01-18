@@ -38,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { CascaderOption } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
@@ -49,9 +49,9 @@ import {
 } from "vuex-composition-helpers";
 import {
   SqlEditorState,
-  SqlEditorGetters,
   SqlEditorActions,
   ConnectionContext,
+  EditorSelectorGetters,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import { isDev } from "../../../utils";
@@ -61,13 +61,17 @@ const { connectionTree, connectionContext } =
     "connectionTree",
     "connectionContext",
   ]);
-const { isEmptyStatement } = useNamespacedGetters<SqlEditorGetters>(
-  "sqlEditor",
-  ["isEmptyStatement", "connectionInfo"]
+const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
+  "editorSelector",
+  ["currentTab"]
 );
 const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setConnectionContext"]
+);
+
+const isEmptyStatement = computed(
+  () => !currentTab.value || currentTab.value.queryStatement === ""
 );
 
 const selectedConnection = ref();

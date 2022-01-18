@@ -11,10 +11,6 @@ import {
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import {
-  parseSQL,
-  transformSQL,
-} from "../../components/MonacoEditor/sqlParser";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -30,10 +26,7 @@ const state: () => SqlEditorState = () => ({
     selectedDatabaseId: 0,
     selectedTableName: "",
   },
-  queryStatement: "",
-  selectedStatement: "",
   isExecuting: false,
-  queryResult: null,
   isShowExecutingHint: false,
 });
 
@@ -109,14 +102,6 @@ const getters = {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
-  isEmptyStatement(state: SqlEditorState) {
-    return isEmpty(state.queryStatement);
-  },
-  parsedStatement(state: SqlEditorState) {
-    const sqlStatement = state.selectedStatement || state.queryStatement;
-    const { data } = parseSQL(sqlStatement);
-    return data !== null ? transformSQL(data) : sqlStatement;
-  },
 };
 
 const mutations = {
@@ -132,9 +117,6 @@ const mutations = {
   ) {
     state.connectionTree = payload;
   },
-  [types.SET_QUERY_RESULT](state: SqlEditorState, payload: Array<any>) {
-    state.queryResult = payload;
-  },
   [types.SET_CONNECTION_CONTEXT](
     state: SqlEditorState,
     payload: Partial<ConnectionContext>
@@ -149,7 +131,6 @@ const mutations = {
 type SqlEditorActionsMap = {
   setSqlEditorState: typeof mutations.SET_SQL_EDITOR_STATE;
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
-  setQueryResult: typeof mutations.SET_QUERY_RESULT;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
   setIsExecuting: typeof mutations.SET_IS_EXECUTING;
 };
@@ -158,27 +139,31 @@ const actions = {
   ...makeActions<SqlEditorActionsMap>({
     setSqlEditorState: types.SET_SQL_EDITOR_STATE,
     setConnectionTree: types.SET_CONNECTION_TREE,
-    setQueryResult: types.SET_QUERY_RESULT,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
     setIsExecuting: types.SET_IS_EXECUTING,
   }),
   async executeQuery(
-    { commit, dispatch, state }: any,
+    { dispatch, state, rootGetters }: any,
     payload: Partial<QueryInfo> = {}
   ) {
+    const currentTab = rootGetters["editorSelector/currentTab"];
     const res = await dispatch(
       "sql/query",
       {
         instanceId: state.connectionContext.instanceId,
         databaseName: state.connectionContext.databaseName,
-        statement: !isEmpty(state.selectedStatement)
-          ? state.selectedStatement
-          : state.queryStatement,
+        statement: currentTab.selectedStatement || currentTab.queryStatement,
         ...payload,
       },
       { root: true }
     );
-    commit(types.SET_QUERY_RESULT, res.data);
+    dispatch(
+      "editorSelector/updateActiveTab",
+      {
+        queryResult: res.data,
+      },
+      { root: true }
+    );
     return res;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
@@ -195,9 +180,6 @@ const actions = {
       { databaseId },
       { root: true }
     );
-    commit(types.SET_SQL_EDITOR_STATE, {
-      queryResult: null,
-    });
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
       instanceId,
