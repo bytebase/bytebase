@@ -137,8 +137,6 @@ export default defineComponent({
     // event listener for "bb.oauth.event.unknown"
     // this event would be posted when an unknown state is returned by OAuth provider
     window.addEventListener("bb.oauth.unknown", (event) => {
-      event.stopImmediatePropagation();
-      event.preventDefault();
       store.dispatch("notification/pushNotification", {
         module: "bytebase",
         style: "CRITICAL",

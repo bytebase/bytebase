@@ -26,7 +26,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, onUnmounted, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
@@ -87,10 +87,15 @@ export default {
       currentStep: 0,
     });
 
-    const eventListener = (event: Event) => {
-      event.stopImmediatePropagation();
-      event.preventDefault();
+    onMounted(() => {
+      window.addEventListener("bb.oauth.register-vcs", eventListener, false);
+    });
 
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.register-vcs", eventListener);
+    });
+
+    const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
@@ -115,8 +120,6 @@ export default {
       } else {
         state.oAuthResultCallback!(undefined);
       }
-
-      window.removeEventListener("bb.oauth.register-vcs", eventListener);
     };
 
     const allowNext = computed((): boolean => {
@@ -189,11 +192,6 @@ export default {
               });
             }
           };
-          window.addEventListener(
-            "bb.oauth.register-vcs",
-            eventListener,
-            false
-          );
         }
       } else {
         state.currentStep = newStep;

@@ -136,7 +136,7 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
@@ -183,7 +183,12 @@ export default {
         router.push({ name: "auth.signup", replace: true });
       }
 
+      window.addEventListener("bb.oauth.signin", eventListener, false);
       store.dispatch("auth/fetchProviderList");
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.signin", eventListener);
     });
 
     const allowSignin = computed(() => {
@@ -227,7 +232,6 @@ export default {
               router.push("/");
             });
         });
-      window.removeEventListener("bb.oauth.signin", eventListener);
     };
 
     const trySignin = () => {
@@ -259,16 +263,13 @@ export default {
         return;
       }
 
-      const newWindow = openWindowForOAuth(
+      openWindowForOAuth(
         `${authProvider.instanceUrl}/${
           AuthProviderConfig[authProvider.type].apiPath
         }`,
         authProvider.applicationId,
         "bb.oauth.signin"
       );
-      if (newWindow) {
-        window.addEventListener("bb.oauth.signin", eventListener, false);
-      }
     };
 
     return {

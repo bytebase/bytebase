@@ -35,7 +35,14 @@
 
 <script lang="ts">
 import { useStore } from "vuex";
-import { reactive, computed, PropType, watchEffect } from "vue";
+import {
+  reactive,
+  computed,
+  PropType,
+  watchEffect,
+  onUnmounted,
+  onMounted,
+} from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import {
   OAuthConfig,
@@ -73,14 +80,22 @@ export default {
 
     watchEffect(prepareVCSList);
 
+    onMounted(() => {
+      window.addEventListener(
+        "bb.oauth.link-vcs-repository",
+        eventListener,
+        false
+      );
+    });
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
+    });
+
     const vcsList = computed(() => {
       return store.getters["vcs/vcsList"]();
     });
 
     const eventListener = (event: Event) => {
-      event.stopImmediatePropagation();
-      event.preventDefault();
-
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         props.config.code = payload.code;
@@ -107,7 +122,6 @@ export default {
           title: payload.error,
         });
       }
-      window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
     };
 
     const isCurrentUserOwner = computed(() => {
@@ -116,18 +130,11 @@ export default {
 
     const selectVCS = (vcs: VCS) => {
       state.selectedVCS = vcs;
-      const newWindow = openWindowForOAuth(
+      openWindowForOAuth(
         `${vcs.instanceUrl}/oauth/authorize`,
         vcs.applicationId,
         "bb.oauth.link-vcs-repository"
       );
-      if (newWindow) {
-        window.addEventListener(
-          "bb.oauth.link-vcs-repository",
-          eventListener,
-          false
-        );
-      }
     };
 
     return {

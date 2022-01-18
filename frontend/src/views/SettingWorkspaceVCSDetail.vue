@@ -137,7 +137,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
@@ -183,10 +183,15 @@ export default {
       secret: "",
     });
 
-    const eventListener = (event: Event) => {
-      event.stopImmediatePropagation();
-      event.preventDefault();
+    onMounted(() => {
+      window.addEventListener("bb.oauth.register-vcs", eventListener, false);
+    });
 
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.register-vcs", eventListener);
+    });
+
+    const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
@@ -211,8 +216,6 @@ export default {
       } else {
         state.oAuthResultCallback!(undefined);
       }
-
-      window.removeEventListener("bb.oauth.register-vcs", eventListener);
     };
 
     const prepareRepositoryList = () => {
@@ -292,11 +295,6 @@ export default {
               });
             }
           };
-          window.addEventListener(
-            "bb.oauth.register-vcs",
-            eventListener,
-            false
-          );
         }
       } else if (state.name != vcs.value.name) {
         const vcsPatch: VCSPatch = {
