@@ -6,6 +6,7 @@
       :options="keys"
       :disabled="!editable"
       :modifier="hidePrefix"
+      :capitalize="true"
       class="select key"
     />
     <LabelSelect

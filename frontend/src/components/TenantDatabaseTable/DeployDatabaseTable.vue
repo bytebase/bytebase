@@ -8,7 +8,7 @@
     >
       <template #header>
         <tr>
-          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2">
+          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 capitalize">
             {{ hidePrefix(label) }}
           </BBTableHeaderCell>
 

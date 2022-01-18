@@ -5,13 +5,13 @@
     </slot>
 
     <label v-for="lbl in labelList" :key="lbl.key">
-      <span>
-        <input
-          type="radio"
-          :value="lbl.key"
-          :checked="lbl.key === label"
-          @change="onChange"
-        />
+      <input
+        type="radio"
+        :value="lbl.key"
+        :checked="lbl.key === label"
+        @change="onChange"
+      />
+      <span class="capitalize ml-1">
         {{ hidePrefix(lbl.key) }}
       </span>
     </label>

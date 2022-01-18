@@ -15,7 +15,7 @@
   >
     <template #header>
       <tr>
-        <BBTableHeaderCell compact class="w-1/12 pl-4 pr-2">
+        <BBTableHeaderCell compact class="w-1/12 pl-4 pr-2 capitalize">
           {{ hidePrefix(yAxisLabel) }}
         </BBTableHeaderCell>
 
