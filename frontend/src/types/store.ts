@@ -1,9 +1,11 @@
 import {
   AuthProvider,
+  DeploymentConfig,
   EnvironmentId,
   MigrationHistoryId,
   Policy,
   PolicyType,
+  QueryHistory,
   View,
 } from ".";
 import { Activity } from "./activity";
@@ -190,6 +192,9 @@ export interface LabelState {
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
+  shouldSetContent: boolean;
+  queryHistoryList: QueryHistory[];
+  isFetchingQueryHistory: boolean;
   isExecuting: boolean;
   isShowExecutingHint: boolean;
 }
@@ -204,3 +209,7 @@ export interface EditorSelectorState {
 export type EditorSelectorGetters = typeof editorSelectorStore.getters;
 export type EditorSelectorActions = typeof editorSelectorStore.actions;
 export type EditorSelectorMutations = typeof editorSelectorStore.mutations;
+
+export interface DeploymentState {
+  deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
+}

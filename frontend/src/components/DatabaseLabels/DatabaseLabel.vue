@@ -2,13 +2,14 @@
   <!-- eslint-disable vue/no-mutating-props -->
   <div class="database-label" :class="{ editable }">
     <div class="select key">
-      <span>{{ hidePrefix(label.key) }}</span>
+      <span class="capitalize">{{ hidePrefix(label.key) }}</span>
       <span v-if="editable" class="dropdown-icon">
         <heroicons-solid:selector class="h-4 w-4 text-control-light" />
       </span>
       <select v-if="editable" v-model="label.key">
         <option v-for="(key, i) in keys" :key="i" :value="key">
-          {{ hidePrefix(key) }}
+          <!-- not available to use <span class="capitalize"> here -->
+          {{ capitalize(hidePrefix(key)) }}
         </option>
       </select>
     </div>
@@ -36,6 +37,7 @@
 import { computed, defineComponent, PropType, watch } from "vue";
 import { DatabaseLabel, Label } from "../../types";
 import { hidePrefix } from "../../utils";
+import { capitalize } from "lodash-es";
 
 export default defineComponent({
   name: "DatabaseLabel",
@@ -84,6 +86,7 @@ export default defineComponent({
       keys,
       values,
       hidePrefix,
+      capitalize,
     };
   },
 });
