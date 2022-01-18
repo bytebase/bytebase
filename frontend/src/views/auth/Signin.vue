@@ -183,7 +183,6 @@ export default {
         router.push({ name: "auth.signup", replace: true });
       }
 
-      window.addEventListener("bb.oauth.signin", eventListener, false);
       store.dispatch("auth/fetchProviderList");
     });
 
