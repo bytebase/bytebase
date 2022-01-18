@@ -1,6 +1,7 @@
 import * as monaco from "monaco-editor";
 
-import { InstanceId, DatabaseId, TableId, ViewId } from "../types";
+import { InstanceId, DatabaseId, TableId, ViewId, ActivityId } from "../types";
+import { Principal } from "./principal";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -38,3 +39,23 @@ export type ConnectionContext = {
   selectedDatabaseId: number;
   selectedTableName: string;
 };
+
+export interface QueryHistory {
+  id: ActivityId;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updatedTs: number;
+  instanceId: number;
+
+  // Domain fields
+  statement: string;
+  durationNs: number;
+  instanceName: string;
+  databaseName: string;
+  error: string;
+
+  // Customerize fields
+  createdAt: string;
+}

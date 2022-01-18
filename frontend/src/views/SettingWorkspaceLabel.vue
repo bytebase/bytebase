@@ -10,6 +10,10 @@
       >
         <template #body="{ rowData: label }">
           <BBTableCell :left-padding="4" class="w-36 table-cell">
+            <!-- will not capitalize label.key here due to it may be editable in the future -->
+            <!-- capitalizing editable things may be confusing -->
+            <!-- capitalizing only bb.prefixed things makes it inconsistent with others -->
+            <!-- so just capitalize none of them -->
             {{ hidePrefix(label.key) }}
           </BBTableCell>
           <BBTableCell class="whitespace-nowrap">

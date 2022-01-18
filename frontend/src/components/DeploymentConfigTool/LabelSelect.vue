@@ -8,7 +8,9 @@
               <template v-if="Array.isArray(state.value)">
                 <ResponsiveTags :tags="state.value" />
               </template>
-              <span v-else>{{ modifier(state.value) }}</span>
+              <span v-else :class="{ capitalize }">
+                {{ modifier(state.value) }}
+              </span>
             </slot>
           </template>
           <template v-else>
@@ -61,7 +63,7 @@
                   class="flex items-center text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 px-3"
                   @click="toggleSelection(item)"
                 >
-                  <span class="flex-1">
+                  <span class="flex-1" :class="{ capitalize }">
                     {{ modifier(item) }}
                   </span>
                   <span
@@ -127,6 +129,10 @@ export default defineComponent({
     modifier: {
       type: Function as PropType<(str: string) => string>,
       default: (str: string) => str,
+    },
+    capitalize: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["update:value"],

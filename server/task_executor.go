@@ -173,9 +173,10 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 
 		// Writes back the latest schema file to the same branch as the push event.
-		// Ref format refs/heads/<<branch>>
-		refComponents := strings.Split(vcsPushEvent.Ref, "/")
-		branch := refComponents[len(refComponents)-1]
+		branch, err := vcs.Branch(vcsPushEvent.Ref)
+		if err != nil {
+			return true, nil, err
+		}
 
 		bytebaseURL := ""
 		if issue != nil {

@@ -38,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineEmits } from "vue";
+import { computed, defineEmits } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -48,7 +48,15 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import type { SqlEditorState, SqlEditorGetters } from "../../../types";
+import type {
+  SqlEditorState,
+  SqlEditorGetters,
+  EditorSelectorGetters,
+} from "../../../types";
+import {
+  parseSQL,
+  transformSQL,
+} from "../../../components/MonacoEditor/sqlParser";
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -58,14 +66,24 @@ const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
 
-const { findProjectIdByDatabaseId, parsedStatement } =
-  useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-    "findProjectIdByDatabaseId",
-    "parsedStatement",
-  ]);
+const { findProjectIdByDatabaseId } = useNamespacedGetters<SqlEditorGetters>(
+  "sqlEditor",
+  ["findProjectIdByDatabaseId"]
+);
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
+const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
+  "editorSelector",
+  ["currentTab"]
+);
+
+const parsedStatement = computed(() => {
+  const sqlStatement =
+    currentTab.value.selectedStatement || currentTab.value.queryStatement;
+  const { data } = parseSQL(sqlStatement);
+  return data !== null ? transformSQL(data) : sqlStatement;
+});
 
 const ctx = connectionContext.value;
 

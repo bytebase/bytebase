@@ -159,6 +159,7 @@ export default defineComponent({
       selectedDatabaseIdForEnvironment: new Map(),
       tenantProjectId: undefined,
       selectedDatabaseName: undefined,
+      deployingTenantDatabaseList: [],
     });
 
     const isTenantProject = computed((): boolean => {
@@ -232,7 +233,9 @@ export default defineComponent({
     const allowGenerateTenant = computed(() => {
       if (!state.selectedDatabaseName) return false;
 
-      // TODO: return false when database list filtered by deployment config is empty
+      // not allowed when database list filtered by deployment config is empty
+      // which means no database will be deployed
+      if (state.deployingTenantDatabaseList.length === 0) return false;
 
       return true;
     });

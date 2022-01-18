@@ -8,13 +8,11 @@ import {
   Database,
   DatabaseId,
   ProjectId,
+  QueryHistory,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import {
-  parseSQL,
-  transformSQL,
-} from "../../components/MonacoEditor/sqlParser";
+import dayjs from "dayjs";
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -30,10 +28,10 @@ const state: () => SqlEditorState = () => ({
     selectedDatabaseId: 0,
     selectedTableName: "",
   },
-  queryStatement: "",
-  selectedStatement: "",
+  shouldSetContent: false,
+  queryHistoryList: [],
+  isFetchingQueryHistory: false,
   isExecuting: false,
-  queryResult: null,
   isShowExecutingHint: false,
 });
 
@@ -109,14 +107,6 @@ const getters = {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
-  isEmptyStatement(state: SqlEditorState) {
-    return isEmpty(state.queryStatement);
-  },
-  parsedStatement(state: SqlEditorState) {
-    const sqlStatement = state.selectedStatement || state.queryStatement;
-    const { data } = parseSQL(sqlStatement);
-    return data !== null ? transformSQL(data) : sqlStatement;
-  },
 };
 
 const mutations = {
@@ -132,14 +122,26 @@ const mutations = {
   ) {
     state.connectionTree = payload;
   },
-  [types.SET_QUERY_RESULT](state: SqlEditorState, payload: Array<any>) {
-    state.queryResult = payload;
-  },
   [types.SET_CONNECTION_CONTEXT](
     state: SqlEditorState,
     payload: Partial<ConnectionContext>
   ) {
     Object.assign(state.connectionContext, payload);
+  },
+  [types.SET_SHOULD_SET_CONTENT](state: SqlEditorState, payload: boolean) {
+    state.shouldSetContent = payload;
+  },
+  [types.SET_QUERY_HISTORY_LIST](
+    state: SqlEditorState,
+    payload: QueryHistory[]
+  ) {
+    state.queryHistoryList = payload;
+  },
+  [types.SET_IS_FETCHING_QUERY_HISTORY](
+    state: SqlEditorState,
+    payload: boolean
+  ) {
+    state.isFetchingQueryHistory = payload;
   },
   [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
     state.isExecuting = payload;
@@ -149,8 +151,10 @@ const mutations = {
 type SqlEditorActionsMap = {
   setSqlEditorState: typeof mutations.SET_SQL_EDITOR_STATE;
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
-  setQueryResult: typeof mutations.SET_QUERY_RESULT;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
+  setShouldSetContent: typeof mutations.SET_SHOULD_SET_CONTENT;
+  setQueryHistoryList: typeof mutations.SET_QUERY_HISTORY_LIST;
+  setIsFetchingQueryHistory: typeof mutations.SET_IS_FETCHING_QUERY_HISTORY;
   setIsExecuting: typeof mutations.SET_IS_EXECUTING;
 };
 
@@ -158,27 +162,36 @@ const actions = {
   ...makeActions<SqlEditorActionsMap>({
     setSqlEditorState: types.SET_SQL_EDITOR_STATE,
     setConnectionTree: types.SET_CONNECTION_TREE,
-    setQueryResult: types.SET_QUERY_RESULT,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
+    setShouldSetContent: types.SET_SHOULD_SET_CONTENT,
+    setQueryHistory: types.SET_QUERY_HISTORY_LIST,
+    setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
     setIsExecuting: types.SET_IS_EXECUTING,
   }),
   async executeQuery(
-    { commit, dispatch, state }: any,
+    { dispatch, state, rootGetters }: any,
     payload: Partial<QueryInfo> = {}
   ) {
+    const currentTab = rootGetters["editorSelector/currentTab"];
     const res = await dispatch(
       "sql/query",
       {
         instanceId: state.connectionContext.instanceId,
         databaseName: state.connectionContext.databaseName,
-        statement: !isEmpty(state.selectedStatement)
-          ? state.selectedStatement
-          : state.queryStatement,
+        statement: currentTab.selectedStatement || currentTab.queryStatement,
         ...payload,
       },
       { root: true }
     );
-    commit(types.SET_QUERY_RESULT, res.data);
+
+    dispatch(
+      "editorSelector/updateActiveTab",
+      {
+        queryResult: res.data,
+      },
+      { root: true }
+    );
+    dispatch("sqlEditor/fetchQueryHistory", {}, { root: true });
     return res;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
@@ -195,9 +208,6 @@ const actions = {
       { databaseId },
       { root: true }
     );
-    commit(types.SET_SQL_EDITOR_STATE, {
-      queryResult: null,
-    });
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
       instanceId,
@@ -205,6 +215,47 @@ const actions = {
       databaseId,
       databaseName: databaseInfo.name,
     });
+  },
+  async fetchQueryHistory({ commit, dispatch, rootGetters }: any) {
+    commit(types.SET_IS_FETCHING_QUERY_HISTORY, true);
+    const currentUser = rootGetters["auth/currentUser"]();
+    const activityList = await dispatch(
+      "activity/fetchActivityListForQueryHistory",
+      currentUser.id,
+      {
+        root: true,
+      }
+    );
+    const queryHistoryList: QueryHistory[] = activityList.map(
+      (history: any) => {
+        return {
+          id: history.id,
+          creator: history.creator,
+          createdTs: history.createdTs,
+          updatedTs: history.updatedTs,
+          statement: history.payload.statement,
+          durationNs: history.payload.durationNs,
+          instanceName: history.payload.instanceName,
+          databaseName: history.payload.databaseName,
+          error: history.payload.error,
+          createdAt: dayjs(history.createdTs * 1000).format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+        };
+      }
+    );
+
+    commit(
+      types.SET_QUERY_HISTORY_LIST,
+      queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)
+    );
+    commit(types.SET_IS_FETCHING_QUERY_HISTORY, false);
+  },
+  async deleteQueryHistory({ dispatch }: any, id: number) {
+    await dispatch("activity/deleteActivityById", id, {
+      root: true,
+    });
+    dispatch("sqlEditor/fetchQueryHistory", {}, { root: true });
   },
 };
 
