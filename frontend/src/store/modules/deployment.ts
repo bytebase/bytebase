@@ -25,6 +25,13 @@ function convert(
   ).schedule;
   try {
     schedule = JSON.parse(deployment.attributes.payload as string);
+    schedule.deployments.forEach((deployment) => {
+      deployment.spec.selector.matchExpressions.forEach((rule) => {
+        if (!rule.values) {
+          rule.values = []; // empty values polyfill
+        }
+      });
+    });
   } catch {
     // nothing
   }
