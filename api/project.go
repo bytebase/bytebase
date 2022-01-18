@@ -140,15 +140,24 @@ type ProjectPatch struct {
 var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"
+	// EnvironemntToken is the token for environment.
+	EnvironemntToken = "{{ENV_NAME}}"
 	// LocationToken is the token for location.
 	LocationToken = "{{LOCATION}}"
 	// TenantToken is the token for tenant.
 	TenantToken = "{{TENANT}}"
 
+	// boolean indicates whether it's an required or optional token
 	repositoryFilePathTemplateTokens = map[string]bool{
-		"{{VERSION}}": true,
-		DBNameToken:   true,
-		"{{TYPE}}":    true,
+		"{{VERSION}}":     true,
+		DBNameToken:       true,
+		"{{TYPE}}":        true,
+		EnvironemntToken:  false,
+		"{{DESCRIPTION}}": false,
+	}
+	schemaPathTemplateTokens = map[string]bool{
+		DBNameToken:      true,
+		EnvironemntToken: false,
 	}
 	allowedProjectDBNameTemplateTokens = map[string]bool{
 		DBNameToken:   true,
@@ -165,9 +174,11 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
 		tokenMap[token] = true
 	}
 
-	for token := range repositoryFilePathTemplateTokens {
-		if _, ok := tokenMap[token]; !ok {
-			return fmt.Errorf("missing %s in file path template", token)
+	for token, required := range repositoryFilePathTemplateTokens {
+		if required {
+			if _, ok := tokenMap[token]; !ok {
+				return fmt.Errorf("missing %s in file path template", token)
+			}
 		}
 	}
 	for token := range tokenMap {
@@ -184,11 +195,22 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 		return nil
 	}
 	tokens := getTemplateTokens(schemaPathTemplate)
-	if len(tokens) != 1 {
-		return fmt.Errorf("invalid number of tokens %s", strings.Join(tokens, ","))
+	tokenMap := make(map[string]bool)
+	for _, token := range tokens {
+		tokenMap[token] = true
 	}
-	if tokens[0] != "{{DB_NAME}}" {
-		return fmt.Errorf("invalid token %s, only {{DB_NAME}} is supported in schema path template", tokens[0])
+
+	for token, required := range schemaPathTemplateTokens {
+		if required {
+			if _, ok := tokenMap[token]; !ok {
+				return fmt.Errorf("missing %s in schema path template", token)
+			}
+		}
+	}
+	for token := range tokenMap {
+		if _, ok := schemaPathTemplateTokens[token]; !ok {
+			return fmt.Errorf("unknown token %s in schema path template", token)
+		}
 	}
 	return nil
 }
