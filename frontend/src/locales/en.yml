@@ -163,6 +163,9 @@ common:
   or: or
   export: Export
   tips: Tips
+  delete: Delete
+  history: History
+  loading: Loading
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1089,6 +1092,10 @@ sql-editor:
   goto-alter-schema-hint: Please select a database connection from the top of the editor
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
+  no-history-found: No history found
+  search-history: Search History
+  hint-tips:
+    confirm-to-delete-this-history: Confirm to delete this history?
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

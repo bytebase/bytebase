@@ -1,7 +1,7 @@
 <template>
   <div class="aside-panel h-full">
-    <n-tabs type="segment" default-value="databases" class="h-full">
-      <n-tab-pane name="databases" :tab="$t('common.databases')">
+    <NTabs type="segment" default-value="databases" class="h-full">
+      <NTabPane name="databases" :tab="$t('common.databases')">
         <Splitpanes
           horizontal
           class="default-theme"
@@ -16,11 +16,14 @@
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
           </Pane>
         </Splitpanes>
-      </n-tab-pane>
-      <n-tab-pane v-if="isDev()" name="queries" tab="Queries">
+      </NTabPane>
+      <NTabPane v-if="isDev()" name="queries" tab="Queries">
         Queries Page
-      </n-tab-pane>
-    </n-tabs>
+      </NTabPane>
+      <NTabPane name="history" :tab="$t('common.history')">
+        <QueryHistoryView />
+      </NTabPane>
+    </NTabs>
   </div>
 </template>
 
@@ -32,6 +35,7 @@ import type { SqlEditorState } from "../../../types";
 import { isDev } from "../../../utils";
 import DatabaseTree from "./DatabaseTree.vue";
 import TableSchema from "./TableSchema.vue";
+import QueryHistoryView from "./QueryHistoryView.vue";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
