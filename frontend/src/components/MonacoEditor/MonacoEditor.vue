@@ -84,9 +84,8 @@ const init = async () => {
         // @ts-expect-error
         ?.getValueInRange(editorInstance.getSelection()) as string;
 
-      const queryStatement = selectedValue || typedValue;
-
-      emit("run-query", queryStatement);
+      const query = selectedValue || typedValue;
+      emit("run-query", query);
     },
   });
 

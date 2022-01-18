@@ -1,3 +1,5 @@
+import { t } from "../plugins/i18n";
+import { store } from "../store";
 import { randomString } from "../utils";
 
 export type OAuthConfig = {
@@ -15,7 +17,6 @@ export type OAuthToken = {
 
 export const OAuthStateSessionKey = "oauthstate";
 
-export const OAuthWindowEvent = "oauthevent";
 export type OAuthWindowEventPayload = {
   error: string;
   code: string;
@@ -25,7 +26,14 @@ export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
 
-type OAuthType = "login" | "register";
+// signin: users try to login via oauth
+// register-vcs: users try to bind a vcs to her workspace
+// link-vcs-repository: users try to bind a vcs repo to her project
+export type OAuthType =
+  | "bb.oauth.signin"
+  | "bb.oauth.register-vcs"
+  | "bb.oauth.link-vcs-repository"
+  | "bb.oauth.unknown";
 
 export function openWindowForOAuth(
   endpoint: string,

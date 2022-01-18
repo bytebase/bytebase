@@ -17,8 +17,8 @@ import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
   OAuthStateSessionKey,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
+  OAuthType,
 } from "../types";
 
 interface LocalState {
@@ -40,7 +40,10 @@ export default {
       error: "",
       code: "",
     };
+
     const expectedState = sessionStorage.getItem(OAuthStateSessionKey);
+    let eventType = undefined;
+
     if (
       !expectedState ||
       expectedState != router.currentRoute.value.query.state
@@ -53,11 +56,28 @@ export default {
       state.message =
         "Successfully authorized. Redirecting back to the application...";
       payload.code = router.currentRoute.value.query.code as string;
+
+      eventType = expectedState.slice(0, expectedState.lastIndexOf("-"));
     }
 
-    window.opener.dispatchEvent(
-      new CustomEvent(OAuthWindowEvent, { detail: payload })
-    );
+    switch (eventType as OAuthType) {
+      case "bb.oauth.signin":
+      case "bb.oauth.register-vcs":
+      case "bb.oauth.link-vcs-repository":
+        window.opener.dispatchEvent(
+          new CustomEvent(eventType as OAuthType, {
+            detail: payload,
+          })
+        );
+        break;
+      default:
+        window.opener.dispatchEvent(
+          new CustomEvent("bb.oauth.unknown", {
+            detail: payload,
+          })
+        );
+    }
+
     window.close();
 
     return {

@@ -10,35 +10,33 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { debounce } from "lodash-es";
-import {
-  useNamespacedActions,
-  useNamespacedState,
-} from "vuex-composition-helpers";
 
-import { SqlEditorActions, EditorSelectorState } from "../../../types";
+import { EditorSelectorActions, TabInfo } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+import { useStore } from "vuex";
+import { useNamespacedActions } from "vuex-composition-helpers";
 
-const { activeTab } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["activeTab"]
+const store = useStore();
+const activeTab = computed<TabInfo>(
+  () => store.getters["editorSelector/currentTab"]
 );
-const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setSqlEditorState"]
+const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
+  "editorSelector",
+  ["updateActiveTab"]
 );
 
 const { execute } = useExecuteSQL();
 
-const sqlCode = computed(() => activeTab.value.queries);
+const sqlCode = computed(() => activeTab.value.queryStatement);
 
 const handleChange = debounce((value: string) => {
-  setSqlEditorState({
+  updateActiveTab({
     queryStatement: value,
   });
 }, 300);
 
 const handleChangeSelection = debounce((value: string) => {
-  setSqlEditorState({
+  updateActiveTab({
     selectedStatement: value,
   });
 }, 300);

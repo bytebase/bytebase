@@ -191,10 +191,7 @@ export interface LabelState {
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
-  queryStatement: string;
-  selectedStatement: string;
   isExecuting: boolean;
-  queryResult: Record<string, any>[] | null;
   isShowExecutingHint: boolean;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
@@ -203,8 +200,7 @@ export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface EditorSelectorState {
   queryTabList: TabInfo[];
-  activeTab: TabInfo;
-  activeTabIdx: number;
+  activeTabId: string;
 }
 export type EditorSelectorGetters = typeof editorSelectorStore.getters;
 export type EditorSelectorActions = typeof editorSelectorStore.actions;

@@ -7,9 +7,9 @@
       </Pane>
       <Pane size="80">
         <template v-if="hasTabs">
-          <Splitpanes horizontal class="default-theme">
+          <Splitpanes :key="paneKey" horizontal class="default-theme">
             <Pane size="60">
-              <EditorPanel :key="paneKey" />
+              <EditorPanel />
             </Pane>
             <Pane size="40">
               <TablePanel />
