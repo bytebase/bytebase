@@ -180,14 +180,20 @@ watchEffect(() => {
   if (!name) {
     props.state.deployingTenantDatabaseList = [];
   } else {
+    // find the selected database list group by name
     const databaseGroup = databaseListGroupByName.value.find(
       (group) => group.name === name
     );
     const databaseList = databaseGroup?.list || [];
+
+    // calculate the deployment matching to preview the pipeline
     const stages = getPipelineFromDeploymentSchedule(
       databaseList,
       deployment.value.schedule
     );
+
+    // flatten all stages' database id list
+    // these databases are to be deployed
     const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
     props.state.deployingTenantDatabaseList = databaseIdList;
   }
