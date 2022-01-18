@@ -63,9 +63,13 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue";
 import { useResizeObserver } from "@vueuse/core";
-import { useNamespacedState } from "vuex-composition-helpers";
+import {
+  useNamespacedGetters,
+  useNamespacedState,
+} from "vuex-composition-helpers";
 
 import { useI18n } from "vue-i18n";
+import { EditorSelectorGetters, SqlEditorState } from "../../../types";
 
 interface State {
   search: string;
@@ -73,10 +77,16 @@ interface State {
 
 const { t } = useI18n();
 
-const { queryResult, isExecuting } = useNamespacedState<{
-  queryResult: Record<string, any>[] | null;
-  isExecuting: boolean;
-}>("sqlEditor", ["queryResult", "isExecuting"]);
+const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
+  "isExecuting",
+]);
+
+const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
+  "editorSelector",
+  ["currentTab"]
+);
+
+const queryResult = computed(() => currentTab.value.queryResult || []);
 
 const state = reactive<State>({
   search: "",
