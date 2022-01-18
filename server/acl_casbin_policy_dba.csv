@@ -12,6 +12,7 @@ p, DBA, /project/{id}/repository, PATCH
 p, DBA, /project/{id}/repository, DELETE
 p, DBA, /project/{id}/deployment, GET
 p, DBA, /project/{id}/deployment, PATCH
+p, DBA, /project/{projectID}/sync/{roleProvider}, POST
 p, DBA, /project/{projectID}/member, POST
 p, DBA, /project/{projectID}/member/{memberID}, PATCH
 p, DBA, /project/{projectID}/member/{memberID}, DELETE

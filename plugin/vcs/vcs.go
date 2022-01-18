@@ -86,8 +86,8 @@ type ProjectMember struct {
 	Email           string    `json:"email"`
 	Name            string    `json:"name"`
 	State           UserState `json:"state"`
-	MembershipState UserState `json:"membershipState"`
-	AccessLevel     int32     `json:"accessLevel"`
+	MembershipState UserState `json:"membership_state"`
+	AccessLevel     int32     `json:"access_level"`
 }
 
 // Provider is the interface for VCS provider.
