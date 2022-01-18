@@ -176,6 +176,9 @@ func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.PrincipalID; v != nil {
+		where, args = append(where, "principal_id = ?"), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
