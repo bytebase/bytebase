@@ -9,7 +9,7 @@
       <template #header>
         <tr>
           <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2">
-            <YAxisSwitch v-model:label="state.label" :label-list="labelList" />
+            {{ hidePrefix(label) }}
           </BBTableHeaderCell>
 
           <BBTableHeaderCell
@@ -101,21 +101,26 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
-import { computed, defineProps, reactive, withDefaults } from "vue";
+import { computed, defineProps, withDefaults } from "vue";
 import type {
   Database,
   DeploymentConfig,
   Environment,
   Label,
+  LabelKeyType,
 } from "../../types";
-import { getLabelValue, getPipelineFromDeploymentSchedule } from "../../utils";
+import {
+  hidePrefix,
+  getLabelValue,
+  getPipelineFromDeploymentSchedule,
+} from "../../utils";
 import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
-import YAxisSwitch from "./YAxisSwitch.vue";
 
 const props = withDefaults(
   defineProps<{
     databaseList: Database[];
+    label: LabelKeyType;
     labelList: Label[];
     environmentList: Environment[];
     deployment: DeploymentConfig;
@@ -128,14 +133,10 @@ const props = withDefaults(
   }
 );
 
-const state = reactive({
-  label: "bb.environment",
-});
-
 const yAxisValueList = computed(() => {
   // order based on label.valueList
   // plus one more "<empty value>"
-  const key = state.label;
+  const key = props.label;
   const label = props.labelList.find((label) => label.key === key);
   if (!label) return [];
   return [...label.valueList, ""];
@@ -147,7 +148,7 @@ const xAxisValueList = computed(() => {
 });
 
 const databaseGroupList = computed(() => {
-  const key = state.label;
+  const key = props.label;
   const dict = groupBy(props.databaseList, (db) => getLabelValue(db, key));
   const rows = yAxisValueList.value.map((labelValue) => {
     const databaseList = dict[labelValue] || [];
