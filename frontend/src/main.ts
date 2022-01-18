@@ -58,9 +58,9 @@ axios.interceptors.response.use(
     if (isDev() && response.config.url!.startsWith("/api")) {
       console.debug(
         response.config.method?.toUpperCase() +
-          " " +
-          response.config.url +
-          " response",
+        " " +
+        response.config.url +
+        " response",
         JSON.stringify(response.data, null, 2)
       );
     }
@@ -87,6 +87,8 @@ axios.interceptors.response.use(
           module: "bytebase",
           style: "CRITICAL",
           title: error.response.data.message,
+          // If server enables --debug, then the response will include the detailed error.
+          description: error.response.data.error ? error.response.data.error : undefined,
         });
       }
     } else if (error.code == "ECONNABORTED") {
