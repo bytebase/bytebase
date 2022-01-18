@@ -66,14 +66,14 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					repo.ExternalID,
 				)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL))
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
 				}
 
 				// create or patch project member
 				findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
 				bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member in bytebase: %d", projectID))
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member in bytebase: %d", projectID)).SetInternal(err)
 				}
 
 				// check whether principal exists in our system. if not exist, create one.
@@ -89,15 +89,16 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					}
 
 					if principal == nil {
-						principal, err = TrySignup(ctx, s, &api.Signup{
+						signupInfo := &api.Signup{
 							Name:     projectMember.Name,
 							Email:    projectMember.Email,
 							Password: common.RandomString(20),
-						}, api.PrincipalAuthProviderGitlabSelfHost)
-
-						if err != nil {
-							return err
 						}
+						createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
+						if httpErr != nil {
+							return httpErr
+						}
+						principal = createdPrincipal
 					}
 
 					isProjectMemberExist := false
@@ -110,21 +111,25 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 								RoleProvider: api.ProjectRoleProviderGitlabSelfHost,
 								Payload:      string(payload),
 							}
-							s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
+							_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
+							if err != nil {
+								return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync member from GitLab").SetInternal(err)
+							}
 							isProjectMemberExist = true
 						}
 					}
+
 					if !isProjectMemberExist {
 						var role api.ProjectRole
 						switch projectMember.AccessLevel { // see https://docs.gitlab.com/ee/api/members.html
-						case 50 /* Owner */ :
-						case 40 /* Maintainer */ :
+						case 50, /* Owner */
+							40 /* Maintainer */ :
 							role = api.ProjectOwner
-						case 30 /* Developer */ :
-						case 20 /* Reporter */ :
-						case 10 /* Guest */ :
-						case 5 /* Minimal access */ :
-						case 0 /* No access */ :
+						case 30, /* Developer */
+							20, /* Reporter */
+							10, /* Guest */
+							5,  /* Minimal access */
+							0 /* No access */ :
 							role = api.ProjectDeveloper
 						}
 
@@ -137,25 +142,18 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 							PrincipalID:  principal.ID,
 							Role:         role,
 						}
-						s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+						_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping project member from GitLab").SetInternal(err)
+						}
 					}
-
 				}
-
 			}
 		default:
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync project member, invalid provider type: %s", roleProvider))
 		}
 
-		projectMemberList, err := s.composeProjectMemberListByProjectID(ctx, projectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member").SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, projectMemberList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sync projectMember response").SetInternal(err)
-		}
 		return nil
 	})
 

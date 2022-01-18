@@ -179,7 +179,7 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.ProjectMember, error) {
 	resp, err := httpGet(
 		instanceURL,
-		fmt.Sprintf("projects/%s/repository/members/all", repositoryID),
+		fmt.Sprintf("projects/%s/members", repositoryID),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
@@ -206,7 +206,7 @@ func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx c
 		return nil, err
 	}
 
-	projectMemberList := make([]*vcs.ProjectMember, 0)
+	var projectMemberList []*vcs.ProjectMember
 	if err := json.Unmarshal(b, &projectMemberList); err != nil {
 		return nil, err
 	}

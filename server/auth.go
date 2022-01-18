@@ -123,7 +123,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						Name:     GitlabUserInfo.Name,
 					}
 					var httpError *echo.HTTPError
-					user, httpError = TrySignup(ctx, s, signup, api.PrincipalAuthProviderGitlabSelfHost)
+					user, httpError = TrySignup(ctx, s, signup, api.PrincipalAuthProviderGitlabSelfHost, api.SystemBotID)
 					if httpError != nil {
 						return httpError
 					}
@@ -175,7 +175,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request").SetInternal(err)
 		}
 
-		user, err := TrySignup(ctx, s, signup, api.PrincipalAuthProviderBytebase)
+		user, err := TrySignup(ctx, s, signup, api.PrincipalAuthProviderBytebase, api.SystemBotID)
 		if err != nil {
 			return err
 		}
@@ -192,14 +192,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 }
 
-func TrySignup(ctx context.Context, s *Server, signup *api.Signup, authProvider api.PrincipalAuthProvider) (*api.Principal, *echo.HTTPError) {
+func TrySignup(ctx context.Context, s *Server, signup *api.Signup, authProvider api.PrincipalAuthProvider, creatorId int) (*api.Principal, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
 	principalCreate := &api.PrincipalCreate{
-		CreatorID:    api.SystemBotID,
+		CreatorID:    creatorId,
 		Type:         api.EndUser,
 		AuthProvider: authProvider,
 		Name:         signup.Name,
@@ -229,7 +229,7 @@ func TrySignup(ctx context.Context, s *Server, signup *api.Signup, authProvider 
 		role = api.Owner
 	}
 	memberCreate := &api.MemberCreate{
-		CreatorID:   user.ID,
+		CreatorID:   creatorId,
 		Status:      api.Active,
 		Role:        role,
 		PrincipalID: user.ID,
