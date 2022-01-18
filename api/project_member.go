@@ -72,8 +72,7 @@ type ProjectMemberFind struct {
 	ID *int
 
 	// Related fields
-	ProjectID   *int
-	PrincipalID *int
+	ProjectID *int
 }
 
 func (find *ProjectMemberFind) String() string {
