@@ -44,8 +44,9 @@ type ProjectMember struct {
 	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	RoleProvider string `jsonapi:"attr,roleProvider"`
-	Role         string `jsonapi:"attr,role"`
+	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Payload      string              `jsonapi:"attr,payload"`
+	Role         string              `jsonapi:"attr,role"`
 	PrincipalID  int
 	Principal    *Principal `jsonapi:"relation,principal"`
 }
@@ -61,6 +62,7 @@ type ProjectMemberCreate struct {
 
 	// Domain specific fields
 	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Payload      string              `jsonapi:"attr,payload"`
 	Role         common.ProjectRole         `jsonapi:"attr,role"`
 	PrincipalID  int                 `jsonapi:"attr,principalId"`
 }
@@ -90,8 +92,9 @@ type ProjectMemberPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	RoleProvider string  `jsonapi:"attr,roleProvider"`
-	Role         *string `jsonapi:"attr,role"`
+	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Payload      string              `jsonapi:"attr,payload"`
+	Role         *string             `jsonapi:"attr,role"`
 }
 
 // ProjectMemberDelete is the API message for deleting a project member.
