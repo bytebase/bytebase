@@ -115,6 +115,7 @@ const prepareSqlEdtiorContext = async () => {
   store.dispatch("sqlEditor/setConnectionContext", {
     isLoadingTree: false,
   });
+  store.dispatch("sqlEditor/fetchQueryHistory");
 };
 
 onMounted(async () => {
