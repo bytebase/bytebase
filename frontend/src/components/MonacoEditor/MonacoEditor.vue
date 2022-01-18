@@ -13,11 +13,22 @@ import {
   defineProps,
   defineEmits,
   onUnmounted,
+  watch,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
-import { SqlDialect } from "../../types";
+import {
+  EditorSelectorGetters,
+  SqlDialect,
+  SqlEditorActions,
+  SqlEditorState,
+} from "../../types";
+import {
+  useNamespacedActions,
+  useNamespacedGetters,
+  useNamespacedState,
+} from "vuex-composition-helpers";
 
 const props = defineProps({
   value: {
@@ -41,12 +52,25 @@ const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
+const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
+  "shouldSetContent",
+]);
+const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
+  "editorSelector",
+  ["currentTab"]
+);
+const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setShouldSetContent"]
+);
+
 let editorInstance: Editor.IStandaloneCodeEditor;
 
 const {
   monaco,
   setPositionAtEndOfLine,
   formatContent,
+  setContent,
   completionItemProvider,
 } = await useMonaco(language.value);
 
@@ -129,4 +153,14 @@ onUnmounted(() => {
   completionItemProvider.dispose();
   editorInstance.dispose();
 });
+
+watch(
+  () => shouldSetContent.value,
+  () => {
+    if (shouldSetContent.value) {
+      setShouldSetContent(false);
+      setContent(editorInstance, currentTab.value.queryStatement);
+    }
+  }
+);
 </script>

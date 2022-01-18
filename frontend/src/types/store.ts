@@ -4,6 +4,7 @@ import {
   MigrationHistoryId,
   Policy,
   PolicyType,
+  QueryHistory,
   View,
 } from ".";
 import { Activity } from "./activity";
@@ -190,6 +191,9 @@ export interface LabelState {
 export interface SqlEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
+  queryHistory: QueryHistory[];
+  shouldSetContent: boolean;
+  isFetchingQueryHistory: boolean;
   isExecuting: boolean;
   isShowExecutingHint: boolean;
 }
