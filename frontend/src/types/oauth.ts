@@ -17,19 +17,6 @@ export type OAuthToken = {
 
 export const OAuthStateSessionKey = "oauthstate";
 
-/**
- * event listener for "bb.oauth.event.unknown"
- */
-window.addEventListener("bb.oauth.unknown", (event) => {
-  event.stopImmediatePropagation();
-  event.preventDefault();
-  store.dispatch("notification/pushNotification", {
-    module: "bytebase",
-    style: "CRITICAL",
-    title: t("oauth.unknown-event"),
-  });
-});
-
 export type OAuthWindowEventPayload = {
   error: string;
   code: string;

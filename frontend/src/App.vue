@@ -33,6 +33,7 @@ import BBModalStack from "./bbkit/BBModalStack.vue";
 
 import { NConfigProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
+import { t } from "./plugins/i18n";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -131,6 +132,18 @@ export default defineComponent({
         });
       }
       return true;
+    });
+
+    // event listener for "bb.oauth.event.unknown"
+    // this event would be posted when an unknown state is returned by OAuth provider
+    window.addEventListener("bb.oauth.unknown", (event) => {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("oauth.unknown-event"),
+      });
     });
 
     return {
