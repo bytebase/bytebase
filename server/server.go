@@ -98,6 +98,7 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
+	e.Debug = debug
 	e.HideBanner = true
 	e.HidePort = true
 
