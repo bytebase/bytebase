@@ -36,7 +36,7 @@
           </NDropdown>
         </div>
         <p
-          class="max-w-full mt-2 mb-1 text-sm font-mono cursor-pointer line-clamp-3 hover:bg-gray-300"
+          class="max-w-full mt-2 mb-1 text-sm break-words font-mono cursor-pointer line-clamp-3 hover:bg-gray-300"
           @click="handleQueryHistoryClick(history)"
         >
           {{ history.statement }}
