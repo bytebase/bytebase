@@ -2,14 +2,18 @@ name: build release image and push to docker hub
 
 on:
   push:
-    tags:
-      # Run on pushing version tag like `1.0.0`
-      - '*.*.*'
+    branches:
+      # Run on pushing branches like `pre_release_1.0.0`
+      - 'chore/pre_release_*.*.*'
 
 jobs:
   build-release-image:
     runs-on: ubuntu-latest
     steps:
+      - name: Extract version
+        # Extract version from branch name
+        # Example: branch name `pre_release_1.0.0` sets up env.BB_VERSION=1.0.0
+        run: echo "BB_VERSION=${GITHUB_REF_NAME#chore/pre_release_}" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -22,16 +26,15 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          # Extract the version from the tag
-          tags: bytebase/bytebase:${{ github.ref_name }}
+          tags: bytebase/bytebase:${{ env.BB_VERSION }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:${{ github.ref_name }} ${{ steps.bytebase_build.outputs.digest }}"
+        run: echo "Successfully pushed bytebase/bytebase:${{ env.BB_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"
       - name: Build and push bb CLI
         id: bb_build
         uses: docker/build-push-action@v2
         with:
           file: Dockerfile.bb
           push: true
-          tags: bytebase/bb:${{ github.ref_name }}
+          tags: bytebase/bb:${{ env.BB_VERSION }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bb:${{ github.ref_name }} ${{ steps.bb_build.outputs.digest }}"
+        run: echo "Successfully pushed bytebase/bb:${{ env.BB_VERSION }} ${{ steps.bb_build.outputs.digest }}"
