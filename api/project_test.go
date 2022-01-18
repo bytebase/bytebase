@@ -48,9 +48,13 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}.sql",
 			"",
 		}, {
-			"TwoTokens",
-			"{{DB_NAME}}_{{TYPE}}.sql",
+			"OK with optional tokens",
+			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
 			"",
+		}, {
+			"Missing {{VERSION}}",
+			"{{DB_NAME}}_{{TYPE}}.sql",
+			"missing {{VERSION}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNWON}}.sql",
@@ -65,7 +69,9 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 	for _, test := range tests {
 		err := ValidateRepositoryFilePathTemplate(test.template)
 		if err != nil {
-			if !strings.Contains(err.Error(), test.errPart) {
+			if test.errPart == "" {
+				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
+			} else if !strings.Contains(err.Error(), test.errPart) {
 				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
 			}
 		} else {
@@ -87,20 +93,22 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 			"{{DB_NAME}}_hello.sql",
 			"",
 		}, {
-			"TwoTokens",
-			"{{DB_NAME}}_{{TYPE}}.sql",
-			"invalid number of tokens",
+			"OK with optional tokens",
+			"{{ENV_NAME}}/{{DB_NAME}}.sql",
+			"",
 		}, {
-			"InvalidToken",
-			"{{TYPE}}_hello.sql",
-			"invalid token {{TYPE}}",
+			"UnknownToken",
+			"{{DB_NAME}}_{{TYPE}}.sql",
+			"unknown token {{TYPE}}",
 		},
 	}
 
 	for _, test := range tests {
 		err := ValidateRepositorySchemaPathTemplate(test.template)
 		if err != nil {
-			if !strings.Contains(err.Error(), test.errPart) {
+			if test.errPart == "" {
+				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
+			} else if !strings.Contains(err.Error(), test.errPart) {
 				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
 			}
 		} else {
