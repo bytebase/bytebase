@@ -7,6 +7,8 @@
       :database-list="dbGroup.databaseList"
       :environment-list="environmentList"
       :label-list="labelList"
+      :x-axis-label="xAxisLabel"
+      :y-axis-label="yAxisLabel"
     />
   </div>
 </template>
@@ -14,7 +16,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Database, Environment, Label } from "../../types";
+import { Database, Environment, Label, LabelKeyType } from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
 
@@ -41,13 +43,21 @@ export default defineComponent({
       default: false,
       type: Boolean,
     },
+    labelList: {
+      type: Array as PropType<Label[]>,
+      required: true,
+    },
     databaseList: {
       type: Object as PropType<Database[]>,
       required: true,
     },
-    filter: {
-      type: String,
-      default: "",
+    xAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
+    },
+    yAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
     },
   },
   emits: ["select-database"],
@@ -56,27 +66,15 @@ export default defineComponent({
 
     const prepareList = () => {
       store.dispatch("environment/fetchEnvironmentList");
-      store.dispatch("label/fetchLabelList");
     };
     watchEffect(prepareList);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
     const environmentList = computed(
       () => store.getters["environment/environmentList"]() as Environment[]
     );
 
-    const filteredDatabaseList = computed(() => {
-      if (!props.filter) return props.databaseList;
-
-      return props.databaseList.filter((database) =>
-        database.name.toLowerCase().includes(props.filter.toLowerCase())
-      );
-    });
-
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
-      const dict = groupBy(filteredDatabaseList.value, "name");
+      const dict = groupBy(props.databaseList, "name");
       return Object.keys(dict).map((name) => ({
         name,
         databaseList: dict[name],
@@ -84,7 +82,6 @@ export default defineComponent({
     });
 
     return {
-      labelList,
       environmentList,
       databaseListGroupByName,
     };
