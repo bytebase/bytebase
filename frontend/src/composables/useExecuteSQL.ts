@@ -31,8 +31,9 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const queryStatement = store.state.sqlEditor.queryStatement;
-    const selectedStatement = store.state.sqlEditor.selectedStatement;
+    const currentTab = store.getters["editorSelector/currentTab"];
+    const queryStatement = currentTab.queryStatement;
+    const selectedStatement = currentTab.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
 
     const { data } = parseSQL(sqlStatement);

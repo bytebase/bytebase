@@ -4,10 +4,10 @@
       v-for="tab in queryTabList"
       :key="tab.id"
       class="query-selector--tab"
-      :class="{ active: tab.id === activeTab.id }"
+      :class="{ active: tab.id === activeTabId }"
       @click="handleSelectTab(tab)"
-      @mouseover="enterTabIdx = tab.idx"
-      @mouseleave="enterTabIdx = -1"
+      @mouseover="enterTabId = tab.id"
+      @mouseleave="enterTabId = ''"
     >
       <span class="prefix">
         <carbon:code class="h-4 w-4" />
@@ -15,7 +15,7 @@
       <span class="label">
         {{ tab.label }}
       </span>
-      <template v-if="enterTabIdx === tab.idx && queryTabList.length > 1">
+      <template v-if="enterTabId === tab.id && queryTabList.length > 1">
         <span
           class="suffix close hover:bg-gray-200 rounded-sm"
           @click.prevent="handleRemoveTab(tab)"
@@ -29,7 +29,7 @@
             <carbon:dot-mark class="h-4 w-4" />
           </span>
         </template> -->
-        <template v-if="tab.id === activeTab.id && queryTabList.length > 1">
+        <template v-if="tab.id === activeTabId && queryTabList.length > 1">
           <span
             class="suffix close hover:bg-gray-200 rounded-sm"
             @click.prevent="handleRemoveTab(tab)"
@@ -53,50 +53,35 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { debouncedWatch } from "@vueuse/core";
 
 import {
   EditorSelectorState,
   TabInfo,
   AnyTabInfo,
   EditorSelectorActions,
-  SqlEditorState,
-  SqlEditorActions,
 } from "../../types";
 import { isDev } from "../../utils";
 
-const { queryTabList, activeTab } = useNamespacedState<EditorSelectorState>(
+const { activeTabId, queryTabList } = useNamespacedState<EditorSelectorState>(
   "editorSelector",
-  ["queryTabList", "activeTab"]
+  ["activeTabId", "queryTabList"]
 );
-const { addTab, setActiveTab, removeTab, updateTab } =
+const { addTab, removeTab, setActiveTabId } =
   useNamespacedActions<EditorSelectorActions>("editorSelector", [
     "addTab",
-    "setActiveTab",
     "removeTab",
-    "updateTab",
+    "setActiveTabId",
   ]);
-const { queryStatement } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "queryStatement",
-]);
-const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setSqlEditorState"]
-);
 
-const enterTabIdx = ref(-1);
-
-if (queryTabList.value.length === 0) {
-  addTab({});
-}
+const enterTabId = ref("");
 
 const handleSelectTab = (tab: TabInfo) => {
-  setActiveTab(tab);
+  setActiveTabId(tab.id);
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   addTab(tab);
@@ -104,34 +89,6 @@ const handleAddTab = (tab: AnyTabInfo) => {
 const handleRemoveTab = (tab: TabInfo) => {
   removeTab(tab);
 };
-
-debouncedWatch(
-  () => queryStatement.value,
-  (newVal, oldVal) => {
-    if (newVal !== oldVal && newVal !== "") {
-      updateTab({
-        ...activeTab.value,
-        queries: newVal,
-        isSaved: false,
-      });
-    }
-  },
-  {
-    deep: true,
-    debounce: 333,
-  }
-);
-
-// initial tab state
-watch(
-  () => activeTab.value,
-  (tab) => {
-    setSqlEditorState({
-      queryStatement: tab.queries,
-      queryResult: null,
-    });
-  }
-);
 </script>
 
 <style scoped>
