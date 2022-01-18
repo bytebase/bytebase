@@ -115,10 +115,12 @@ function convertPartial(
     }
   }
 
-  const instanceId = (task.relationships!.instance.data as ResourceIdentifier)
-    .id;
   let instance: Instance = empty("INSTANCE") as Instance;
-  instance.id = parseInt(instanceId);
+  if (task.relationships?.instance.data) {
+    const instanceId = (task.relationships.instance.data as ResourceIdentifier)
+      .id;
+    instance.id = parseInt(instanceId, 10);
+  }
 
   let database = undefined;
   for (const item of includedList || []) {

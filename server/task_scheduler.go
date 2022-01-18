@@ -244,8 +244,8 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		}
 	}
 
-	// only schema update task has required task check
-	if task.Type == api.TaskDatabaseSchemaUpdate {
+	// only schema update or data update task has required task check
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
 		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return nil, err

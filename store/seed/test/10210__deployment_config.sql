@@ -36,3 +36,23 @@ VALUES
         'regional-2',
         '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.location","operator":"In","values":["earth"]}]}}},{"name":"Integration Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
     );
+
+
+INSERT INTO
+    deployment_config (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        config
+    )
+VALUES
+    (
+        21003,
+        101,
+        101,
+        3007,
+        'db-pattern',
+        '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.tenant","operator":"In","values":["tenant1"]}]}}},{"name":"Integration Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
+    );

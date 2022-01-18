@@ -34,6 +34,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		databaseCreate.EnvironmentID = instance.EnvironmentID
+		project, err := s.composeProjectByID(ctx, databaseCreate.ProjectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
+		}
+		if project == nil {
+			err := fmt.Errorf("Project ID not found %v", databaseCreate.ProjectID)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		// Pre-validate database labels.
+		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummp database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
+				return err
+			}
+		}
 
 		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
@@ -49,7 +63,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -167,15 +181,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
 		}
 
+		targetProject := database.Project
 		if databasePatch.ProjectID != nil {
 			toProject, err := s.composeProjectByID(ctx, *databasePatch.ProjectID)
 			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project ID: %d", *databasePatch.ProjectID))
+			}
+			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *databasePatch.ProjectID))
 			}
+			targetProject = toProject
+
 			if toProject.TenantMode == api.TenantModeTenant {
 				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, *databasePatch.ProjectID, database.Name)
+				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, database.Name)
 				if err != nil {
 					return err
 				}
@@ -210,7 +230,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if databasePatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, databasePatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, targetProject, databasePatch.UpdaterID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -679,7 +699,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, updaterID int, validateOnly bool) error {
+func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
 		return err
@@ -699,6 +719,18 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
+	}
+
+	// Validate labels can match database name template on the project.
+	if project.DBNameTemplate != "" {
+		tokens := make(map[string]string)
+		for _, label := range labels {
+			tokens[label.Key] = tokens[label.Value]
+		}
+		if _, err := formatDatabaseName(database.Name, project.DBNameTemplate, tokens); err != nil {
+			err := fmt.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 	}
 
 	if !validateOnly {

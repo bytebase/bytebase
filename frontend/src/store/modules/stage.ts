@@ -17,11 +17,13 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Stage, "pipeline"> {
-  const environmentId = (
-    stage.relationships!.environment.data as ResourceIdentifier
-  ).id;
-  let environment: Environment = unknown("ENVIRONMENT") as Environment;
-  environment.id = parseInt(environmentId);
+  let environment = unknown("ENVIRONMENT") as Environment;
+  if (stage.relationships?.environment.data) {
+    const environmentId = (
+      stage.relationships.environment.data as ResourceIdentifier
+    ).id;
+    environment.id = parseInt(environmentId, 10);
+  }
 
   const taskList: Task[] = [];
   const taskIdList = stage.relationships!.task.data as ResourceIdentifier[];
