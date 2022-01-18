@@ -18,13 +18,7 @@
           @click.prevent="
             () => {
               state.activeAuthProvider = authProvider;
-              const window = openWindowForOAuth(
-                `${authProvider.instanceUrl}/${
-                  AuthProviderConfig[authProvider.type].apiPath
-                }`,
-                authProvider.applicationId,
-                'login'
-              );
+              trySigninWithOAuth();
             }
           "
         >
@@ -142,7 +136,7 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
@@ -152,7 +146,6 @@ import {
   LoginInfo,
   OAuthConfig,
   OAuthToken,
-  OAuthWindowEvent,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   redirectUrl,
@@ -191,16 +184,13 @@ export default {
       }
 
       store.dispatch("auth/fetchProviderList");
-      window.addEventListener(OAuthWindowEvent, eventListener, false);
+      
+      window.addEventListener("bb.oauth.signin", eventListener, false);
     });
 
-    const AuthProviderConfig = {
-      GITLAB_SELF_HOST: {
-        apiPath: "oauth/authorize",
-        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
-      },
-    };
+    onUnmounted(() => {
+      window.removeEventListener("bb.oauth.signin", eventListener);
+    });
 
     const allowSignin = computed(() => {
       return isValidEmail(state.email) && state.password;
@@ -258,13 +248,38 @@ export default {
       });
     };
 
+    const AuthProviderConfig = {
+      GITLAB_SELF_HOST: {
+        apiPath: "oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+    };
+
+    const trySigninWithOAuth = () => {
+      const authProvider = state.activeAuthProvider;
+
+      // the following 3 lines is for a lint error
+      if (authProvider.type == "BYTEBASE") {
+        return;
+      }
+
+      openWindowForOAuth(
+        `${authProvider.instanceUrl}/${
+          AuthProviderConfig[authProvider.type].apiPath
+        }`,
+        authProvider.applicationId,
+        "bb.oauth.signin"
+      );
+    };
+
     return {
       state,
       allowSignin,
       authProviderList,
       AuthProviderConfig,
       trySignin,
-      openWindowForOAuth,
+      trySigninWithOAuth,
     };
   },
 };
