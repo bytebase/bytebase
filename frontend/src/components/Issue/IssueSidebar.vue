@@ -94,17 +94,23 @@
           />
         </div>
       </template>
+      
+    <div>
+        <h2 class="textlabel flex items-center">
+          <span class="mr-1">{{ $t("common.when") }}</span>
+          <div class="tooltip-wrapper">
+            <span class="tooltip w-60">{{
+              $t("task.earliest-allowed-time-hint")
+            }}</span>
+            <!-- Heroicons name: outline/question-mark-circle -->
+            <heroicons-outline:question-mark-circle class="h-4 w-4" />
+          </div>
+        </h2>
+        <h2 class="text-gray-600 text-sm">
+          <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
+        </h2>
+      </div>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        <span class="mr-1">{{ $t("common.when") }}</span>
-        <div class="tooltip-wrapper">
-          <span class="tooltip w-60">{{
-            $t("task.earliest-allowed-time-hint")
-          }}</span>
-          <!-- Heroicons name: outline/question-mark-circle -->
-          <heroicons-outline:question-mark-circle class="h-4 w-4" />
-        </div>
-      </h2>
       <div class="col-span-2">
         <n-date-picker
           v-if="allowEditEarliestAllowedTime"
@@ -117,9 +123,12 @@
           type="datetime"
           clearable
           @update:value="
-            (newTimestampNs) => {
-              state.earliestAllowedTs = newTimestampNs / 1000;
-              $emit('update-earliest-allowed-time', newTimestampNs / 1000);
+            (newTimestampMiliSec) => {
+              // n-date-picker would pass timestamp in milisecond.
+              // We divide it by 1000 to get timestamp in second
+              const newTs = newTimestampMiliSec / 1000;
+              state.earliestAllowedTs = newTs;
+              $emit('update-earliest-allowed-time', newTs);
             }
           "
         />
@@ -353,17 +362,14 @@ export default defineComponent({
 
     const now = new Date();
     const state = reactive<LocalState>({
-      earliestAllowedTs: props.task.earliestAllowedTs
-        ? props.task.earliestAllowedTs
-        : null,
+      earliestAllowedTs: props.task.earliestAllowedTs,
     });
 
     watch(
       () => props.task,
       (cur) => {
-        state.earliestAllowedTs = cur.earliestAllowedTs
-          ? cur.earliestAllowedTs
-          : null;
+        // we show user local time
+        state.earliestAllowedTs = cur.earliestAllowedTs;
       }
     );
 
