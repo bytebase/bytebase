@@ -679,6 +679,15 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
 		}
 
+		taskStatus := api.TaskPendingApproval
+		policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, instance.EnvironmentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", instance.EnvironmentID, err)
+		}
+		if policy.Value == api.PipelineApprovalValueManualNever {
+			taskStatus = api.TaskPending
+		}
+
 		if m.BackupID != 0 || m.BackupName != "" {
 			restorePayload := api.TaskDatabaseRestorePayload{}
 			restorePayload.DatabaseName = m.DatabaseName
@@ -698,7 +707,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 							{
 								InstanceID:   m.InstanceID,
 								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-								Status:       api.TaskPendingApproval,
+								Status:       taskStatus,
 								Type:         api.TaskDatabaseCreate,
 								DatabaseName: payload.DatabaseName,
 								Payload:      string(bytes),
@@ -733,7 +742,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 							{
 								InstanceID:   m.InstanceID,
 								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-								Status:       api.TaskPendingApproval,
+								Status:       taskStatus,
 								Type:         api.TaskDatabaseCreate,
 								DatabaseName: payload.DatabaseName,
 								Payload:      string(bytes),
@@ -796,7 +805,15 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				for _, database := range stage {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
+					taskStatus := api.TaskPendingApproval
+					policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, environmentID)
+					if err != nil {
+						return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", environmentID, err)
+					}
+					if policy.Value == api.PipelineApprovalValueManualNever {
+						taskStatus = api.TaskPending
+					}
+					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
 					if err != nil {
 						return nil, err
 					}
@@ -834,7 +851,16 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 				}
 
-				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d)
+				taskStatus := api.TaskPendingApproval
+				policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", database.Instance.EnvironmentID, err)
+				}
+				if policy.Value == api.PipelineApprovalValueManualNever {
+					taskStatus = api.TaskPending
+				}
+
+				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
 				if err != nil {
 					return nil, err
 				}
@@ -882,7 +908,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
@@ -915,7 +941,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Name:              taskName,
 		InstanceID:        database.Instance.ID,
 		DatabaseID:        &database.ID,
-		Status:            api.TaskPendingApproval,
+		Status:            taskStatus,
 		Type:              taskType,
 		Statement:         d.Statement,
 		RollbackStatement: d.RollbackStatement,
