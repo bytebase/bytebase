@@ -7,6 +7,26 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+// ProjectRoleProvider is the role provider for a user in projects.
+type ProjectRoleProvider string
+
+const (
+	// ProjectRoleProviderBytebase is the role provider of a project.
+	ProjectRoleProviderBytebase ProjectRoleProvider = "BYTEBASE"
+	// ProjectRoleProviderGitlabSelfHost is the role provider of a project.
+	ProjectRoleProviderGitlabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
+)
+
+func (e ProjectRoleProvider) String() string {
+	switch e {
+	case ProjectRoleProviderBytebase:
+		return "BYTEBASE"
+	case ProjectRoleProviderGitlabSelfHost:
+		return "GITLAB_SELF_HOST"
+	}
+	return ""
+}
+
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
@@ -24,9 +44,10 @@ type ProjectMember struct {
 	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Role        string `jsonapi:"attr,role"`
-	PrincipalID int
-	Principal   *Principal `jsonapi:"relation,principal"`
+	RoleProvider string `jsonapi:"attr,roleProvider"`
+	Role         string `jsonapi:"attr,role"`
+	PrincipalID  int
+	Principal    *Principal `jsonapi:"relation,principal"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.
@@ -39,8 +60,9 @@ type ProjectMemberCreate struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role        common.ProjectRole `jsonapi:"attr,role"`
-	PrincipalID int                `jsonapi:"attr,principalId"`
+	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Role         common.ProjectRole         `jsonapi:"attr,role"`
+	PrincipalID  int                 `jsonapi:"attr,principalId"`
 }
 
 // ProjectMemberFind is the API message for finding project members.
@@ -69,7 +91,8 @@ type ProjectMemberPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Role *string `jsonapi:"attr,role"`
+	RoleProvider string  `jsonapi:"attr,roleProvider"`
+	Role         *string `jsonapi:"attr,role"`
 }
 
 // ProjectMemberDelete is the API message for deleting a project member.
