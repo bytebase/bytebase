@@ -113,6 +113,8 @@ function convertMember(
       projectMember.relationships!.principal.data,
       includedList
     ),
+    roleProvider: attrs.roleProvider,
+    payload: attrs.payload,
   };
 }
 
