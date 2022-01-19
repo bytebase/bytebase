@@ -18,7 +18,7 @@ import (
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	// for now we only support sync project member from privately deployed GitLab
-	g.POST("/project/:projectID/sync", func(c echo.Context) error {
+	g.POST("/project/:projectID/syncmember", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
@@ -63,13 +63,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			repo.ExternalID,
 		)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository member from VCS, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
 		}
 
 		findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
 		bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member in bytebase: %d", projectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository member in bytebase: %d", projectID)).SetInternal(err)
 		}
 
 		// check whether principal exists in our system.
@@ -84,8 +84,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			isPrincipalNewCreated := false
 			if principal == nil {
 				signupInfo := &api.Signup{
-					Name:     projectMember.Name,
-					Email:    projectMember.Email,
+					Name:  projectMember.Name,
+					Email: projectMember.Email,
+					// Principal created via this method would have not change to set their password,
+					// To prevent potential safe issue, we use random string to set up her password.
 					Password: common.RandomString(20),
 				}
 				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
@@ -101,19 +103,19 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				VCSRole: projectMember.VCSRole,
 				SyncTs:  time.Now().UTC().Unix(),
 			}
-			providerPayloadByted, _ := json.Marshal(providerPayload)
-			// If the principal is newly created, there should not have such a project member of this newly created principal
+			providerPayloadBytes, _ := json.Marshal(providerPayload)
+			// If the principal is newly created, there should not have such a repository member of this newly created principal
 			if !isPrincipalNewCreated {
 				for _, bytebaseProjectMember := range bytebaseProjectMemberList {
 					if bytebaseProjectMember.PrincipalID == principal.ID {
 						patchProjectMember := &api.ProjectMemberPatch{
 							ID:           bytebaseProjectMember.ID,
-							RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
-							Payload:      string(providerPayloadByted),
+							RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
+							Payload:      string(providerPayloadBytes),
 						}
 						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
 						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch exsting project member after syncing VCS membership info").SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch existing repository member after syncing VCS membership info").SetInternal(err)
 						}
 						isProjectMemberExist = true
 					}
@@ -126,12 +128,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
 					PrincipalID:  principal.ID,
 					Role:         projectMember.Role,
-					RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
-					Payload:      string(providerPayloadByted),
+					RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
+					Payload:      string(providerPayloadBytes),
 				}
 				_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping project member from GitLab").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping repository member from VCS").SetInternal(err)
 				}
 			}
 		}

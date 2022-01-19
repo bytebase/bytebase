@@ -83,11 +83,12 @@ type UserInfo struct {
 
 // ProjectMember is the API message for project member info.
 type RepositoryMember struct {
-	Email   string             `json:"email"`
-	Name    string             `json:"name"`
-	State   UserState          `json:"state"`
-	Role    common.ProjectRole `json:"role"`
-	VCSRole string             `json:"vcsRole"`
+	Email        string             `json:"email"`
+	Name         string             `json:"name"`
+	State        UserState          `json:"state"`
+	Role         common.ProjectRole `json:"role"`
+	VCSRole      string             `json:"vcsRole"`
+	RoleProvider Type               `json:"roleProvider"`
 }
 
 // Provider is the interface for VCS provider.
