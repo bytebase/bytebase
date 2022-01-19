@@ -26,6 +26,8 @@ const (
 	Postgres Type = "POSTGRES"
 	// Snowflake is the database type for SNOWFLAKE.
 	Snowflake Type = "SNOWFLAKE"
+	// SQLite is the database type for SQLite.
+	SQLite Type = "SQLITE"
 	// TiDB is the database type for TIDB.
 	TiDB Type = "TIDB"
 )
