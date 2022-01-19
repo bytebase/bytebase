@@ -1093,11 +1093,13 @@ sql-editor:
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
   no-history-found: No history found
+  no-saved-query-found: No saved query found
   search-history: Search History
   search-saved-queries: Search Saved Queries
   queries: Queries
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
+    confirm-to-delete-this-saved-query: Confirm to delete this saved query?
   please-input-the-tab-label: Please input the tab label!
 label:
   empty-label-value: <Empty Value>

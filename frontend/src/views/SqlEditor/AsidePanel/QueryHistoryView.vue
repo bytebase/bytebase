@@ -23,7 +23,7 @@
           <span class="text-xs text-gray-500">{{ history.createdAt }}</span>
           <NDropdown
             trigger="click"
-            :options="historyDropdownOptions"
+            :options="actionDropdownOptions"
             @select="(key: string) => handleActionBtnClick(key, history)"
             @clickoutside="handleActionBtnOutsideClick"
           >
@@ -150,7 +150,7 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const historyDropdownOptions = computed(() => [
+const actionDropdownOptions = computed(() => [
   {
     label: t("common.delete"),
     key: "delete",
