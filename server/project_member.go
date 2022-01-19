@@ -34,13 +34,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 				}
 				if project.WorkflowType == api.UIWorkflow {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s", project.WorkflowType))
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 				}
 
 				repoFind := &api.RepositoryFind{ProjectID: &projectID}
 				repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Fail to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
 				}
 
 				vcsFind := &api.VCSFind{
