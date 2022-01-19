@@ -119,6 +119,47 @@ type fileMeta struct {
 	LastCommitID string `json:"last_commit_id"`
 }
 
+type ProjectRole string
+
+const (
+	ProjectRoleOwner         ProjectRole = "Owner"
+	ProjectRoleMaintainer    ProjectRole = "Maintainer"
+	ProjectRoleDeveloper     ProjectRole = "Developer"
+	ProjectRoleReporter      ProjectRole = "Reporter"
+	ProjectRoleGuest         ProjectRole = "Guest"
+	ProjectRoleMinimalAccess ProjectRole = "MinimalAccess"
+	ProjectRoleNoAccess      ProjectRole = "NoAccess"
+)
+
+func (e ProjectRole) String() string {
+	switch e {
+	case ProjectRoleOwner:
+		return "Owner"
+	case ProjectRoleMaintainer:
+		return "Maintainer"
+	case ProjectRoleDeveloper:
+		return "Developer"
+	case ProjectRoleReporter:
+		return "Reporter"
+	case ProjectRoleGuest:
+		return "Guest"
+	case ProjectRoleMinimalAccess:
+		return "MinimalAccess"
+	case ProjectRoleNoAccess:
+		return "NoAccess"
+	}
+	return ""
+}
+
+// gitLabRepositoryMember is the API message for repository member
+type gitLabRepositoryMember struct {
+	Email           string        `json:"email"`
+	Name            string        `json:"name"`
+	State           vcs.UserState `json:"state"`
+	MembershipState vcs.UserState `json:"membership_state"`
+	AccessLevel     int32         `json:"access_level"`
+}
+
 func init() {
 	vcs.Register(vcs.GitLabSelfHost, newProvider)
 }
@@ -176,6 +217,28 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return UserInfo, err
 }
 
+func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
+	// see https://docs.gitlab.com/ee/api/members.html for the detailed role type at GitLab
+	switch accessLevel {
+	case 50 /* Owner */ :
+		return ProjectRoleOwner, common.ProjectOwner
+	case 40 /* Maintainer */ :
+		return ProjectRoleMaintainer, common.ProjectOwner
+	case 30 /* Developer */ :
+		return ProjectRoleDeveloper, common.ProjectDeveloper
+	case 20 /* Reporter */ :
+		return ProjectRoleReporter, common.ProjectDeveloper
+	case 10 /* Guest */ :
+		return ProjectRoleGuest, common.ProjectDeveloper
+	case 5 /* Minimal access */ :
+		return ProjectRoleMinimalAccess, common.ProjectDeveloper
+	case 0 /* No access */ :
+		return ProjectRoleNoAccess, common.ProjectDeveloper
+	}
+
+	return "", ""
+}
+
 func (provider *Provider) FetchActiveRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	resp, err := httpGet(
 		instanceURL,
@@ -206,16 +269,24 @@ func (provider *Provider) FetchActiveRepositoryMemberList(ctx context.Context, o
 		return nil, err
 	}
 
-	var repositoryMember []*vcs.RepositoryMember
-	if err := json.Unmarshal(b, &repositoryMember); err != nil {
+	var gitLabrepositoryMember []gitLabRepositoryMember
+	if err := json.Unmarshal(b, &gitLabrepositoryMember); err != nil {
 		return nil, err
 	}
 
 	// we only return active member (both state and membership_state is active)
 	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
-	for _, member := range repositoryMember {
-		if member.State == vcs.UserStateActive && member.MembershipState == vcs.UserStateActive {
-			activeRepositoryMember = append(activeRepositoryMember, member)
+	for _, gitLabMember := range gitLabrepositoryMember {
+		if gitLabMember.State == vcs.UserStateActive && gitLabMember.MembershipState == vcs.UserStateActive {
+			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
+			repositoryMember := &vcs.RepositoryMember{
+				Name:    gitLabMember.Name,
+				Email:   gitLabMember.Email,
+				Role:    bytebaseRole,
+				VCSRole: gitLabRole.String(),
+				State:   vcs.UserStateActive,
+			}
+			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
 		}
 	}
 

@@ -116,21 +116,14 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 
 			if !isProjectMemberExist {
-				var role api.ProjectRole
-				switch projectMember.AccessLevel { // see https://docs.gitlab.com/ee/api/members.html
-				case 50 /* Owner */, 40 /* Maintainer */ :
-					role = api.ProjectOwner
-				case 30 /* Developer */, 20 /* Reporter */, 10 /* Guest */, 5 /* Minimal access */, 0 /* No access */ :
-					role = api.ProjectDeveloper
-				}
 				payload, _ := json.Marshal(projectMember)
 				createProjectMember := &api.ProjectMemberCreate{
 					ProjectID:    projectID,
 					CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
+					PrincipalID:  principal.ID,
+					Role:         projectMember.Role,
 					RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
 					Payload:      string(payload),
-					PrincipalID:  principal.ID,
-					Role:         role,
 				}
 				_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
 				if err != nil {
