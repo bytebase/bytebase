@@ -257,7 +257,7 @@ const actions = {
     { dispatch }: any,
     { projectId }: { projectId: ProjectId }
   ) {
-    await axios.post(`/api/project/${projectId}/sync/GITLAB_SELF_HOST`);
+    await axios.post(`/api/project/${projectId}/sync`);
     const updatedProject = await dispatch("fetchProjectById", projectId);
 
     console.log(updatedProject);
