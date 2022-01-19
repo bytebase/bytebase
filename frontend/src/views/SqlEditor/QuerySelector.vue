@@ -147,10 +147,11 @@ const { addTab, removeTab, setActiveTabId, updateActiveTab } =
     "setActiveTabId",
     "updateActiveTab",
   ]);
-const { patchSavedQuery } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["patchSavedQuery"]
-);
+const { patchSavedQuery, checkSavedQueryExistById } =
+  useNamespacedActions<SqlEditorActions>("sqlEditor", [
+    "patchSavedQuery",
+    "checkSavedQueryExistById",
+  ]);
 
 const store = useStore();
 const { t } = useI18n();
@@ -240,8 +241,19 @@ const handleCancelInput = () => {
   });
 };
 
-const handleSelectTab = (tab: TabInfo) => {
+const handleSelectTab = async (tab: TabInfo) => {
   setActiveTabId(tab.id);
+
+  if (currentTab.value.currentQueryId) {
+    const exist = await checkSavedQueryExistById(
+      currentTab.value.currentQueryId
+    );
+    if (!exist) {
+      updateActiveTab({
+        currentQueryId: undefined,
+      });
+    }
+  }
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   addTab(tab);
