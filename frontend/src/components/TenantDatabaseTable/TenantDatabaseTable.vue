@@ -7,6 +7,8 @@
       :database-list="dbGroup.databaseList"
       :environment-list="environmentList"
       :label-list="labelList"
+      :x-axis-label="xAxisLabel"
+      :y-axis-label="yAxisLabel"
     />
   </div>
 </template>
@@ -14,7 +16,13 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Database, Environment, Label, Project } from "../../types";
+import {
+  Database,
+  Environment,
+  Label,
+  Project,
+  LabelKeyType,
+} from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
 import { parseDatabaseNameByTemplate } from "../../utils";
@@ -42,6 +50,10 @@ export default defineComponent({
       default: false,
       type: Boolean,
     },
+    labelList: {
+      type: Array as PropType<Label[]>,
+      required: true,
+    },
     databaseList: {
       type: Object as PropType<Database[]>,
       required: true,
@@ -50,9 +62,13 @@ export default defineComponent({
       type: Object as PropType<Project>,
       required: true,
     },
-    filter: {
-      type: String,
-      default: "",
+    xAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
+    },
+    yAxisLabel: {
+      type: String as PropType<LabelKeyType>,
+      required: true,
     },
   },
   emits: ["select-database"],
@@ -61,36 +77,24 @@ export default defineComponent({
 
     const prepareList = () => {
       store.dispatch("environment/fetchEnvironmentList");
-      store.dispatch("label/fetchLabelList");
     };
     watchEffect(prepareList);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
     const environmentList = computed(
       () => store.getters["environment/environmentList"]() as Environment[]
     );
 
-    const filteredDatabaseList = computed(() => {
-      if (!props.filter) return props.databaseList;
-
-      return props.databaseList.filter((database) =>
-        database.name.toLowerCase().includes(props.filter.toLowerCase())
-      );
-    });
-
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
       if (props.project.dbNameTemplate) {
-        if (labelList.value.length === 0) return [];
+        if (props.labelList.length === 0) return [];
       }
 
-      const dict = groupBy(filteredDatabaseList.value, (db) => {
+      const dict = groupBy(props.databaseList, (db) => {
         if (props.project.dbNameTemplate) {
           return parseDatabaseNameByTemplate(
             db.name,
             props.project.dbNameTemplate,
-            labelList.value
+            props.labelList
           );
         } else {
           return db.name;
@@ -103,7 +107,6 @@ export default defineComponent({
     });
 
     return {
-      labelList,
       environmentList,
       databaseListGroupByName,
     };

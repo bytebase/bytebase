@@ -164,6 +164,9 @@ common:
   export: 导出
   tips: 提示信息
   template: 模板
+  delete: 删除
+  history: 历史记录
+  loading: 加载中
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -959,6 +962,11 @@ sql-editor:
   goto-alter-schema-hint: 请从编辑器顶部选择一个数据库连接
   can-not-execute-query: 加载数据时无法执行查询
   rows: 条记录
+  no-history-found: 无历史记录
+  search-history: 搜索历史记录
+  hint-tips:
+    confirm-to-delete-this-history: 确定删除这条记录？
+  please-input-the-tab-label: 请输入标签页名称!
 label:
   empty-label-value: <空值>
   no-label: 没有标签
@@ -974,3 +982,5 @@ label:
     select-key: 选择 Key…
     select-value: 选择值…
     select-values: 选择值…
+oauth:
+  unknown-event: 未知的事件类型，认证失败

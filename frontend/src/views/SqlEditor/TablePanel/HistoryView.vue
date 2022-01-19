@@ -1,1 +1,0 @@
-<template>History View</template>

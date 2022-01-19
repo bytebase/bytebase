@@ -44,13 +44,28 @@
         :style="`INFO`"
         :title="$t('project.overview.info-slot-content')"
       />
+
+      <YAxisRadioGroup
+        v-if="isTenantProject && state.yAxisLabel"
+        v-model:label="state.yAxisLabel"
+        :label-list="selectableLabelList"
+        class="text-sm font-normal py-1"
+      />
+
       <template v-if="databaseList.length > 0">
-        <TenantDatabaseTable
-          v-if="isTenantProject"
-          :database-list="databaseList"
-          :project="project"
-          :filter="state.databaseNameFilter"
-        />
+        <template v-if="isTenantProject">
+          <TenantDatabaseTable
+            v-if="state.yAxisLabel"
+            :database-list="filteredDatabaseList"
+            :project="project"
+            :x-axis-label="state.xAxisLabel"
+            :y-axis-label="state.yAxisLabel"
+            :label-list="labelList"
+          />
+          <div v-else class="w-full h-40 flex justify-center items-center">
+            <NSpin />
+          </div>
+        </template>
         <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />
       </template>
       <div v-else class="text-center textinfolabel">
@@ -107,7 +122,7 @@ import {
 import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import TenantDatabaseTable from "./TenantDatabaseTable";
+import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import {
   Activity,
@@ -115,7 +130,11 @@ import {
   Issue,
   Project,
   DEFAULT_PROJECT_ID,
+  Label,
+  LabelKeyType,
 } from "../types";
+import { findDefaultGroupByLabel } from "../utils";
+import { NSpin } from "naive-ui";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -125,6 +144,8 @@ interface LocalState {
   progressIssueList: Issue[];
   closedIssueList: Issue[];
   databaseNameFilter: string;
+  xAxisLabel: LabelKeyType;
+  yAxisLabel: LabelKeyType | undefined;
 }
 
 export default defineComponent({
@@ -134,6 +155,8 @@ export default defineComponent({
     DatabaseTable,
     TenantDatabaseTable,
     IssueTable,
+    YAxisRadioGroup,
+    NSpin,
   },
   props: {
     project: {
@@ -153,6 +176,8 @@ export default defineComponent({
       progressIssueList: [],
       closedIssueList: [],
       databaseNameFilter: "",
+      xAxisLabel: "bb.environment",
+      yAxisLabel: undefined,
     });
 
     const prepareActivityList = () => {
@@ -165,8 +190,6 @@ export default defineComponent({
           state.activityList = list;
         });
     };
-
-    watchEffect(prepareActivityList);
 
     const prepareIssueList = () => {
       store
@@ -189,16 +212,56 @@ export default defineComponent({
         });
     };
 
-    watchEffect(prepareIssueList);
-
     const isTenantProject = computed((): boolean => {
       return props.project.tenantMode === "TENANT";
+    });
+
+    const prepareLabelList = () => {
+      if (!isTenantProject.value) return;
+      store.dispatch("label/fetchLabelList");
+    };
+
+    const prepare = () => {
+      prepareActivityList();
+      prepareIssueList();
+      prepareLabelList();
+    };
+
+    watchEffect(prepare);
+
+    const labelList = computed(
+      () => store.getters["label/labelList"]() as Label[]
+    );
+
+    const filteredDatabaseList = computed(() => {
+      const filter = state.databaseNameFilter.toLocaleLowerCase();
+      if (!filter) return props.databaseList;
+
+      return props.databaseList.filter((database) =>
+        database.name.toLowerCase().includes(filter)
+      );
+    });
+
+    // make "bb.environment" non-selectable because it was already specified to the x-axis
+    const selectableLabelList = computed(() => {
+      const excludes = new Set([state.xAxisLabel]);
+      return labelList.value.filter((label) => !excludes.has(label.key));
+    });
+
+    watchEffect(() => {
+      state.yAxisLabel = findDefaultGroupByLabel(
+        selectableLabelList.value,
+        filteredDatabaseList.value
+      );
     });
 
     return {
       DEFAULT_PROJECT_ID,
       state,
       isTenantProject,
+      filteredDatabaseList,
+      labelList,
+      selectableLabelList,
     };
   },
 });

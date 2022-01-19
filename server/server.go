@@ -64,6 +64,7 @@ type Server struct {
 	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
+	SavedQueryService       api.SavedQueryService
 
 	e *echo.Echo
 
@@ -97,6 +98,7 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
+	e.Debug = debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -236,6 +238,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
+	s.registerSavedQueryRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

@@ -12,7 +12,7 @@
               <EditorPanel :key="paneKey" />
             </Pane>
             <Pane size="40">
-              <TablePanel />
+              <TablePanel :key="paneKey" />
             </Pane>
           </Splitpanes>
         </template>

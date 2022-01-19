@@ -4,25 +4,32 @@ import { TabInfo, AnyTabInfo, EditorSelectorState } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
-const state: () => EditorSelectorState = () => ({
-  queryTabList: [],
-  activeTab: {
+const getDefaultTab = () => {
+  return {
     id: uuidv1(),
-    idx: 0,
     label: "Untitled Queries",
     isSaved: true,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-    queries: "",
-  },
-  activeTabIdx: 1,
-});
+    queryStatement: "",
+    selectedStatement: "",
+  };
+};
+
+const state: () => EditorSelectorState = () => {
+  const defaultTab = getDefaultTab();
+
+  return {
+    queryTabList: [defaultTab],
+    activeTabId: defaultTab.id,
+  };
+};
 
 const getters = {
   currentTab(state: EditorSelectorState) {
     const idx = state.queryTabList.findIndex(
-      (tab: TabInfo) => tab.idx === state.activeTabIdx
+      (tab: TabInfo) => tab.id === state.activeTabId
     );
-    return idx === -1 ? {} : state.queryTabList[idx];
+    return (idx === -1 ? {} : state.queryTabList[idx]) as TabInfo;
   },
   hasTabs(state: EditorSelectorState) {
     return state.queryTabList.length > 0;
@@ -48,6 +55,18 @@ const mutations = {
     );
     Object.assign(state.queryTabList[idx], payload);
   },
+  [types.UPDATE_ACTIVE_TAB](state: EditorSelectorState, payload: AnyTabInfo) {
+    const idx = state.queryTabList.findIndex(
+      (tab: TabInfo) => tab.id === state.activeTabId
+    );
+    Object.assign(state.queryTabList[idx], {
+      ...state.queryTabList[idx],
+      ...payload,
+    });
+  },
+  [types.SET_ACTIVE_TAB_ID](state: EditorSelectorState, payload: string) {
+    state.activeTabId = payload;
+  },
 };
 
 type ActionsMap = {
@@ -58,24 +77,18 @@ const actions = {
   ...makeActions<ActionsMap>({
     setEditorSelectorState: types.SET_EDITOR_SELECTOR_STATE,
   }),
-  addTab({ commit, state }: any, payload: AnyTabInfo) {
-    const id = uuidv1();
-    const idx =
-      state.queryTabList.length === 0
-        ? 0
-        : Math.max(...state.queryTabList.map((tab: TabInfo) => tab.idx)) + 1;
+  addTab({ commit }: any, payload: AnyTabInfo) {
     const newTab = {
-      id,
-      idx,
+      ...getDefaultTab(),
       label: payload.label ? payload.label : `Untitled Queries`,
       isSaved: true,
       savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-      queries: payload.queries || "",
+      queryStatement: payload.queryStatement || "",
+      selectedStatement: payload.selectedStatement || "",
     };
 
     commit(types.SET_EDITOR_SELECTOR_STATE, {
-      activeTab: newTab,
-      activeTabIdx: idx,
+      activeTabId: newTab.id,
     });
     commit(types.ADD_TAB, newTab);
   },
@@ -84,31 +97,14 @@ const actions = {
     const tabsLength = state.queryTabList.length;
 
     if (tabsLength > 0) {
-      dispatch("setActiveTab", state.queryTabList[tabsLength - 1]);
+      dispatch("setActiveTabId", state.queryTabList[tabsLength - 1].id);
     }
   },
-  updateTab({ commit, state }: any, payload: AnyTabInfo) {
-    const { idx } = payload;
-    const tab = state.queryTabList.find((tab: TabInfo) => tab.idx === idx);
-
-    if (tab) {
-      commit(types.SET_EDITOR_SELECTOR_STATE, {
-        activeTab: tab,
-        activeTabIdx: idx,
-      });
-      commit(types.UPDATE_TAB, payload);
-    }
+  updateActiveTab({ commit }: any, payload: AnyTabInfo) {
+    commit(types.UPDATE_ACTIVE_TAB, payload);
   },
-  setActiveTab({ commit, state }: any, payload: TabInfo) {
-    const { idx } = payload;
-    const tab = state.queryTabList.find((tab: TabInfo) => tab.idx === idx);
-
-    if (tab) {
-      commit(types.SET_EDITOR_SELECTOR_STATE, {
-        activeTab: tab,
-        activeTabIdx: idx,
-      });
-    }
+  setActiveTabId({ commit, state }: any, payload: string) {
+    commit(types.SET_ACTIVE_TAB_ID, payload);
   },
 };
 

@@ -34,41 +34,48 @@
             </template>
           </i18n-t>
         </div>
-        <NCollapse
-          v-else
-          display-directive="if"
-          accordion
-          :expanded-names="state.selectedDatabaseName"
-          @update:expanded-names="
-            (names) => (state.selectedDatabaseName = names[0])
-          "
-        >
-          <NCollapseItem
-            v-for="{ name, list } in databaseListGroupByName"
-            :key="name"
-            :title="name"
-            :name="name"
+        <template v-else>
+          <YAxisRadioGroup
+            v-model:label="label"
+            :label-list="labelList"
+            class="text-sm pt-2 pb-1"
+          />
+          <NCollapse
+            display-directive="if"
+            accordion
+            :expanded-names="state.selectedDatabaseName"
+            @update:expanded-names="
+              (names) => (state.selectedDatabaseName = names[0])
+            "
           >
-            <template #header>
-              <span class="text-base">{{ name }}</span>
-              <span v-if="name === state.selectedDatabaseName">
-                <heroicons-outline:check class="w-5 h-5 ml-2 text-success" />
-              </span>
-            </template>
-            <template #header-extra>
-              <span class="text-control-placeholder">
-                {{ $t("deployment-config.n-databases", list.length) }}
-              </span>
-            </template>
+            <NCollapseItem
+              v-for="{ name, list } in databaseListGroupByName"
+              :key="name"
+              :title="name"
+              :name="name"
+            >
+              <template #header>
+                <span class="text-base">{{ name }}</span>
+                <span v-if="name === state.selectedDatabaseName">
+                  <heroicons-outline:check class="w-5 h-5 ml-2 text-success" />
+                </span>
+              </template>
+              <template #header-extra>
+                <span class="text-control-placeholder">
+                  {{ $t("deployment-config.n-databases", list.length) }}
+                </span>
+              </template>
 
-            <DeployDatabaseTable
-              :database-list="list"
-              :label-list="labelList"
-              :environment-list="environmentList"
-              :deployment="deployment!"
-            />
-          </NCollapseItem>
-        </NCollapse>
+              <DeployDatabaseTable
+                :database-list="list"
+                :label="label"
+                :label-list="labelList"
+                :environment-list="environmentList"
+                :deployment="deployment!"
+              />
+            </NCollapseItem>
+          </NCollapse>
+        </template>
       </template>
     </template>
   </div>
@@ -77,13 +84,22 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, defineProps, defineEmits, watchEffect, watch } from "vue";
+import {
+  computed,
+  defineProps,
+  defineEmits,
+  watchEffect,
+  watch,
+  ref,
+} from "vue";
 import { useStore } from "vuex";
 import {
   Database,
+  DatabaseId,
   DeploymentConfig,
   Environment,
   Label,
+  LabelKeyType,
   Project,
   UNKNOWN_ID,
 } from "../../types";
@@ -91,9 +107,11 @@ import { NCollapse, NCollapseItem } from "naive-ui";
 import { groupBy } from "lodash-es";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { parseDatabaseNameByTemplate } from "../../utils";
+import { getPipelineFromDeploymentSchedule } from "../../utils";
 
 export type State = {
   selectedDatabaseName: string | undefined;
+  deployingTenantDatabaseList: DatabaseId[];
 };
 
 const props = defineProps<{
@@ -121,6 +139,7 @@ const fetchData = () => {
 
 watchEffect(fetchData);
 
+const label = ref<LabelKeyType>("bb.environment");
 const labelList = computed(() => store.getters["label/labelList"]() as Label[]);
 
 const deployment = computed(() => {
@@ -168,6 +187,31 @@ watch(
   },
   { immediate: true }
 );
+
+watchEffect(() => {
+  if (!deployment.value) return;
+  const name = props.state.selectedDatabaseName;
+  if (!name) {
+    props.state.deployingTenantDatabaseList = [];
+  } else {
+    // find the selected database list group by name
+    const databaseGroup = databaseListGroupByName.value.find(
+      (group) => group.name === name
+    );
+    const databaseList = databaseGroup?.list || [];
+
+    // calculate the deployment matching to preview the pipeline
+    const stages = getPipelineFromDeploymentSchedule(
+      databaseList,
+      deployment.value.schedule
+    );
+
+    // flatten all stages' database id list
+    // these databases are to be deployed
+    const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
+    props.state.deployingTenantDatabaseList = databaseIdList;
+  }
+});
 </script>
 
 <style scoped lang="postcss">

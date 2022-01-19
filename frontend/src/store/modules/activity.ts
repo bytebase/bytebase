@@ -101,6 +101,16 @@ const actions = {
     return activityList;
   },
 
+  async fetchActivityListForQueryHistory({ rootGetters }: any, userId: number) {
+    const queryList = ["type=bb.sql-editor.query", `user=${userId}`];
+    const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
+    const activityList = data.data.map((activity: ResourceObject) => {
+      return convert(activity, data.included, rootGetters);
+    });
+
+    return activityList;
+  },
+
   async createActivity(
     { dispatch, rootGetters }: any,
     newActivity: ActivityCreate
@@ -161,6 +171,10 @@ const actions = {
     if (activity.type.startsWith("bb.issue.")) {
       dispatch("fetchActivityListForIssue", activity.containerId);
     }
+  },
+
+  async deleteActivityById(_: any, id: number) {
+    await axios.delete(`/api/activity/${id}`);
   },
 };
 
