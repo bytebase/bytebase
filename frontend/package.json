@@ -39,7 +39,8 @@
     "vue-i18n": "^9.2.0-beta.20",
     "vue-router": "^4.0.8",
     "vuex": "^4.0.0",
-    "vuex-composition-helpers": "^2.0.1"
+    "vuex-composition-helpers": "^2.0.1",
+    "vuex-persistedstate": "^4.1.0"
   },
   "devDependencies": {
     "@iconify/json": "^1.1.432",
