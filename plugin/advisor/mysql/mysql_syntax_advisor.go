@@ -4,8 +4,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
-
-	"github.com/pingcap/parser"
 )
 
 var (
@@ -53,11 +51,4 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 		Title:   "Syntax OK",
 		Content: "OK"})
 	return advisorList, nil
-}
-
-// Wrapper for parser.New()
-func newParser() *parser.Parser {
-	p := parser.New()
-	p.EnableWindowFunc(true)
-	return p
 }
