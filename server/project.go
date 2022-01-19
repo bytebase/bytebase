@@ -46,7 +46,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		projectMember := &api.ProjectMemberCreate{
 			CreatorID:   projectCreate.CreatorID,
 			ProjectID:   project.ID,
-			Role:        api.ProjectOwner,
+			Role:        common.ProjectOwner,
 			PrincipalID: projectCreate.CreatorID,
 		}
 
