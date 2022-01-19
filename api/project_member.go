@@ -3,27 +3,9 @@ package api
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/common"
 )
-
-// ProjectRole is the role in projects.
-type ProjectRole string
-
-const (
-	// ProjectOwner is the owner of a project.
-	ProjectOwner ProjectRole = "OWNER"
-	// ProjectDeveloper is the developer of a project.
-	ProjectDeveloper ProjectRole = "DEVELOPER"
-)
-
-func (e ProjectRole) String() string {
-	switch e {
-	case ProjectOwner:
-		return "OWNER"
-	case ProjectDeveloper:
-		return "DEVELOPER"
-	}
-	return ""
-}
 
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
@@ -57,8 +39,8 @@ type ProjectMemberCreate struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role        ProjectRole `jsonapi:"attr,role"`
-	PrincipalID int         `jsonapi:"attr,principalId"`
+	Role        common.ProjectRole `jsonapi:"attr,role"`
+	PrincipalID int                `jsonapi:"attr,principalId"`
 }
 
 // ProjectMemberFind is the API message for finding project members.
