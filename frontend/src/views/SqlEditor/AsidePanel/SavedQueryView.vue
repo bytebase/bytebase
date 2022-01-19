@@ -43,7 +43,7 @@
           </div>
           <NDropdown
             trigger="click"
-            :options="historyDropdownOptions"
+            :options="actionDropdownOptions"
             @select="(key: string) => handleActionBtnClick(key, query)"
             @clickoutside="handleActionBtnOutsideClick"
           >
@@ -85,7 +85,7 @@
     @close="handleHintClose"
   >
     <DeleteHint
-      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-history')"
+      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-saved-query')"
       @close="handleHintClose"
       @confirm="handleDeleteSavedQuery"
     />
@@ -191,13 +191,13 @@ const notifyMessage = computed(() => {
     return "";
   }
   if (savedQueryList.value.length === null) {
-    return t("sql-editor.no-history-found");
+    return t("sql-editor.no-saved-query-found");
   }
 
   return "";
 });
 
-const historyDropdownOptions = computed(() => [
+const actionDropdownOptions = computed(() => [
   {
     label: t("common.delete"),
     key: "delete",
