@@ -39,7 +39,7 @@
               @keyup.enter="handleSavedQueryNameChanged"
               @keyup.esc="handleCancelEdit"
             />
-            <span v-else class="text-sm">{{ query.name }}</span>
+            <span v-else class="text-sm" v-html="query.formatedName"></span>
           </div>
           <NDropdown
             trigger="click"
@@ -59,9 +59,8 @@
         <p
           class="max-w-full text-gray-400 break-words font-mono truncate"
           style="font-size: 10px"
-        >
-          {{ query.statement }}
-        </p>
+          v-html="query.formatedStatement"
+        ></p>
       </div>
     </div>
 
@@ -109,6 +108,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
+import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -157,11 +157,14 @@ const state = reactive<State>({
 const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
-  const temp =
+  const tempData =
     savedQueryList.value && savedQueryList.value.length > 0
       ? savedQueryList.value.filter((savedQuery) => {
           let t = false;
 
+          if (savedQuery.name.includes(state.search)) {
+            t = true;
+          }
           if (savedQuery.statement.includes(state.search)) {
             t = true;
           }
@@ -169,7 +172,18 @@ const data = computed(() => {
           return t;
         })
       : [];
-  return temp;
+
+  return tempData.map((savedQuery) => {
+    return {
+      ...savedQuery,
+      formatedName: state.search
+        ? getHighlightHTMLByKeyWords(savedQuery.name, state.search)
+        : savedQuery.name,
+      formatedStatement: state.search
+        ? getHighlightHTMLByKeyWords(savedQuery.statement, state.search)
+        : savedQuery.statement,
+    };
+  });
 });
 
 const notifyMessage = computed(() => {

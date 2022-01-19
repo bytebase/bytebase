@@ -38,9 +38,8 @@
         </div>
         <p
           class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
-        >
-          {{ history.statement }}
-        </p>
+          v-html="history.formatedStatement"
+        ></p>
       </div>
     </div>
 
@@ -85,6 +84,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
+import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -116,7 +116,7 @@ const state = reactive<State>({
 });
 
 const data = computed(() => {
-  const temp =
+  const tempData =
     queryHistoryList.value && queryHistoryList.value.length > 0
       ? queryHistoryList.value.filter((history) => {
           let t = false;
@@ -128,7 +128,15 @@ const data = computed(() => {
           return t;
         })
       : [];
-  return temp;
+
+  return tempData.map((history) => {
+    return {
+      ...history,
+      formatedStatement: state.search
+        ? getHighlightHTMLByKeyWords(history.statement, state.search)
+        : history.statement,
+    };
+  });
 });
 
 const notifyMessage = computed(() => {
