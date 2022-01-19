@@ -22,11 +22,11 @@
         @update:value="handleConnectionChange"
       />
       <NButton
-        v-if="isDev()"
         secondary
         strong
         type="primary"
-        :disabled="isEmptyStatement"
+        :disabled="isEmptyStatement || currentTab.isSaved"
+        @click="handleSaveQueryBtnClick"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -52,6 +52,7 @@ import {
   SqlEditorActions,
   ConnectionContext,
   EditorSelectorGetters,
+  EditorSelectorActions,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import { isDev } from "../../../utils";
@@ -65,9 +66,15 @@ const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
   "editorSelector",
   ["currentTab"]
 );
-const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setConnectionContext"]
+const { createSavedQuery, setConnectionContext, patchSavedQuery } =
+  useNamespacedActions<SqlEditorActions>("sqlEditor", [
+    "createSavedQuery",
+    "setConnectionContext",
+    "patchSavedQuery",
+  ]);
+const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
+  "editorSelector",
+  ["updateActiveTab"]
 );
 
 const isEmptyStatement = computed(
@@ -127,6 +134,28 @@ const handleConnectionChange = (
       tableName: ctx.tableName,
     });
   }
+};
+
+const handleSaveQueryBtnClick = async () => {
+  const { queryStatement, label, currentQueryId } = currentTab.value;
+
+  if (currentQueryId) {
+    patchSavedQuery({
+      id: currentQueryId,
+      statement: queryStatement,
+    });
+  } else {
+    const newSavedQuery = await createSavedQuery({
+      name: label,
+      statement: queryStatement,
+    });
+    updateActiveTab({
+      currentQueryId: newSavedQuery.id,
+    });
+  }
+  updateActiveTab({
+    isSaved: true,
+  });
 };
 </script>
 
