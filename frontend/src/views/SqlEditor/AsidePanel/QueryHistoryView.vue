@@ -84,6 +84,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
+import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -132,10 +133,7 @@ const data = computed(() => {
     return {
       ...history,
       formatedStatement: state.search
-        ? history.statement.replaceAll(
-            state.search,
-            `<b class="text-accent">${state.search}</b>`
-          )
+        ? getHighlightHTMLByKeyWords(history.statement, state.search)
         : history.statement,
     };
   });
