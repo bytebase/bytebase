@@ -949,6 +949,8 @@ project:
     restore:
       title: Restore project
       btn-text: Restore this @.lower:{'common.project'}
+    sync-from-vcs: Sync from VCS
+    success-member-sync-prompt: Sync member from VCS Successed
   mode:
     standard: Standard
     tenant: Tenant

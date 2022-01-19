@@ -252,6 +252,18 @@ const actions = {
     return updatedProject;
   },
 
+  // sync member role from vcs
+  async syncMemberRoleFromGitLab(
+    { dispatch }: any,
+    { projectId }: { projectId: ProjectId }
+  ) {
+    await axios.post(`/api/project/${projectId}/sync/GITLAB_SELF_HOST`);
+    const updatedProject = await dispatch("fetchProjectById", projectId);
+
+    console.log(updatedProject);
+    return updatedProject;
+  },
+
   // Project Role Mapping
   // Returns existing member if the principalId has already been created.
   async createdMember(

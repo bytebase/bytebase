@@ -847,6 +847,8 @@ project:
     restore:
       title: 恢复项目
       btn-text: 恢复这个@:common.project
+    sync-from-vcs: 从 VCS 同步
+    success-member-sync-prompt: 从 VCS 同步成功
   mode:
     standard: 标准
     tenant: 多租户
