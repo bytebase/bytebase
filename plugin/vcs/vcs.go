@@ -103,7 +103,7 @@ type Provider interface {
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	FetchActiveRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
+	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
 
 	// Commits a new file
 	//

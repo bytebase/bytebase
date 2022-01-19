@@ -239,7 +239,7 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 	return "", ""
 }
 
-func (provider *Provider) FetchActiveRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
+func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	resp, err := httpGet(
 		instanceURL,
 		fmt.Sprintf("projects/%s/members", repositoryID),
