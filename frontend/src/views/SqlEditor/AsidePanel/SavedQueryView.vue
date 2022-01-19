@@ -264,14 +264,7 @@ const handleDeleteSavedQuery = () => {
 };
 
 const handleSavedQueryClick = (savedQuery: SavedQuery) => {
-  if (currentTab.value.currentQueryId === savedQuery.id) {
-    if (state.editingSavedQueryId !== savedQuery.id) {
-      updateActiveTab({
-        label: "Untitled Queries",
-        currentQueryId: undefined,
-      });
-    }
-  } else {
+  if (currentTab.value.currentQueryId !== savedQuery.id) {
     for (const tab of queryTabList.value) {
       if (tab.currentQueryId === savedQuery.id) {
         setActiveTabId(tab.id);

@@ -154,3 +154,15 @@ export function getStringCookie(name: string): string {
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
 }
+
+export async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error: unknown) {
+      console.warn("Copy to clipboard failed.", error);
+    }
+  } else {
+    console.warn("Copy to clipboard failed, methods not supports.");
+  }
+}

@@ -74,6 +74,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useStore } from "vuex";
 import {
   useNamespacedActions,
   useNamespacedState,
@@ -84,7 +85,10 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
-import { getHighlightHTMLByKeyWords } from "../../../utils";
+import {
+  copyTextToClipboard,
+  getHighlightHTMLByKeyWords,
+} from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -94,6 +98,7 @@ interface State {
 }
 
 const { t } = useI18n();
+const store = useStore();
 
 const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -152,6 +157,10 @@ const notifyMessage = computed(() => {
 
 const actionDropdownOptions = computed(() => [
   {
+    label: t("sql-editor.copy-code"),
+    key: "copy",
+  },
+  {
     label: t("common.delete"),
     key: "delete",
   },
@@ -162,6 +171,13 @@ const handleActionBtnClick = (key: string, history: QueryHistory) => {
 
   if (key === "delete") {
     state.isShowDeletingHint = true;
+  } else if (key === "copy") {
+    copyTextToClipboard(history.statement);
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-editor.notify.copy-code-succeed"),
+    });
   }
 };
 
