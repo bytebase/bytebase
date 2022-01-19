@@ -280,11 +280,12 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 		if gitLabMember.State == vcs.UserStateActive && gitLabMember.MembershipState == vcs.UserStateActive {
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
 			repositoryMember := &vcs.RepositoryMember{
-				Name:    gitLabMember.Name,
-				Email:   gitLabMember.Email,
-				Role:    bytebaseRole,
-				VCSRole: gitLabRole.String(),
-				State:   vcs.UserStateActive,
+				Name:         gitLabMember.Name,
+				Email:        gitLabMember.Email,
+				Role:         bytebaseRole,
+				VCSRole:      gitLabRole.String(),
+				State:        vcs.UserStateActive,
+				RoleProvider: vcs.GitLabSelfHost,
 			}
 			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
 		}
