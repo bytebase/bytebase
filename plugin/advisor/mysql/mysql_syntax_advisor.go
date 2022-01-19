@@ -23,7 +23,7 @@ type SyntaxAdvisor struct {
 
 // Check parses the given statement and checks for warnings and errors.
 func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
-	p := parser.New()
+	p := newParser()
 
 	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
 	if err != nil {
@@ -53,4 +53,11 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([
 		Title:   "Syntax OK",
 		Content: "OK"})
 	return advisorList, nil
+}
+
+// Wrapper for parser.New()
+func newParser() *parser.Parser {
+	p := parser.New()
+	p.EnableWindowFunc(true)
+	return p
 }

@@ -335,3 +335,21 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestMysql8WindowFunction(t *testing.T) {
+	tests := []test{
+		{
+			statement: "SELECT row_number() OVER ( ORDER BY id ), id FROM xxx;",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "Migration is backward compatible",
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
