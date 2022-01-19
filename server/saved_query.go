@@ -84,10 +84,10 @@ func (s *Server) registerSavedQueryRoutes(g *echo.Group) {
 
 		savedQuery, err := s.SavedQueryService.FindSavedQuery(ctx, savedQueryFind)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch saved query ID: %v", id)).SetInternal(err)
+		}
+		if savedQuery == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
 		}
 
 		if err := s.composeSavedQueryRelationship(ctx, savedQuery); err != nil {
@@ -148,9 +148,6 @@ func (s *Server) registerSavedQueryRoutes(g *echo.Group) {
 		}
 		err = s.SavedQueryService.DeleteSavedQuery(ctx, savedQueryDelete)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete saved query ID: %v", id)).SetInternal(err)
 		}
 
