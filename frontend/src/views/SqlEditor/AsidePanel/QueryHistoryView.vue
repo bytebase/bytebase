@@ -16,7 +16,8 @@
       <div
         v-for="history in data"
         :key="history.id"
-        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start"
+        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-100"
+        @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
           <span class="text-xs text-gray-500">{{ history.createdAt }}</span>
@@ -26,7 +27,7 @@
             @select="(key: string) => handleActionBtnClick(key, history)"
             @clickoutside="handleActionBtnOutsideClick"
           >
-            <NButton text>
+            <NButton text @click.stop>
               <template #icon>
                 <heroicons-outline:dots-horizontal
                   class="h-4 w-4 text-gray-500"
@@ -36,8 +37,7 @@
           </NDropdown>
         </div>
         <p
-          class="max-w-full mt-2 mb-1 text-sm break-words font-mono cursor-pointer line-clamp-3 hover:bg-gray-300"
-          @click="handleQueryHistoryClick(history)"
+          class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
         >
           {{ history.statement }}
         </p>
@@ -100,14 +100,13 @@ const { queryHistoryList, isFetchingQueryHistory: isLoading } =
     "queryHistoryList",
     "isFetchingQueryHistory",
   ]);
-const { deleteQueryHistory, setShouldSetContent } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "deleteQueryHistory",
-    "setShouldSetContent",
-  ]);
-const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
+const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["deleteQueryHistory"]
+);
+const { addTab } = useNamespacedActions<EditorSelectorActions>(
   "editorSelector",
-  ["updateActiveTab"]
+  ["addTab"]
 );
 
 const state = reactive<State>({
@@ -175,10 +174,9 @@ const handleDeleteHistory = () => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  updateActiveTab({
+  addTab({
     queryStatement: queryHistory.statement,
     selectedStatement: "",
   });
-  setShouldSetContent(true);
 };
 </script>
