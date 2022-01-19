@@ -87,7 +87,7 @@ type RepositoryMember struct {
 	Name    string             `json:"name"`
 	State   UserState          `json:"state"`
 	Role    common.ProjectRole `json:"role"`
-	VCSRole string             `json:"vcs_role"`
+	VCSRole string             `json:"vcsRole"`
 }
 
 // Provider is the interface for VCS provider.
