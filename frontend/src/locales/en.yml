@@ -1094,6 +1094,8 @@ sql-editor:
   rows: row | rows
   no-history-found: No history found
   search-history: Search History
+  search-saved-queries: Search Saved Queries
+  queries: Queries
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
   please-input-the-tab-label: Please input the tab label!
