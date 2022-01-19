@@ -100,14 +100,13 @@ const { queryHistoryList, isFetchingQueryHistory: isLoading } =
     "queryHistoryList",
     "isFetchingQueryHistory",
   ]);
-const { deleteQueryHistory, setShouldSetContent } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "deleteQueryHistory",
-    "setShouldSetContent",
-  ]);
-const { updateActiveTab, addTab } = useNamespacedActions<EditorSelectorActions>(
+const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["deleteQueryHistory"]
+);
+const { addTab } = useNamespacedActions<EditorSelectorActions>(
   "editorSelector",
-  ["updateActiveTab", "addTab"]
+  ["addTab"]
 );
 
 const state = reactive<State>({
