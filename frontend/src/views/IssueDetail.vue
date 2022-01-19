@@ -33,6 +33,7 @@ import {
   Database,
   Environment,
   TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseDataUpdatePayload,
   NORMAL_POLL_INTERVAL,
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
@@ -227,9 +228,9 @@ export default defineComponent({
           title =
             "INVALID STATE, please create rollback from the original issue.";
         } else {
-          if (rollbackIssue.type != "bb.issue.database.schema.update") {
+          if (rollbackIssue.type != "bb.issue.database.schema.update" && rollbackIssue.type != "bb.issue.database.data.update") {
             title =
-              "INVALID STATE, only support to rollback update schema issue.";
+              "INVALID STATE, only support to rollback update schema or change data issue.";
           } else if (
             rollbackIssue.status != "DONE" &&
             rollbackIssue.status != "CANCELED"
@@ -240,17 +241,25 @@ export default defineComponent({
             for (const stage of rollbackIssue.pipeline.stageList) {
               for (const task of stage.taskList) {
                 if (
-                  task.status == "DONE" &&
-                  task.type == "bb.task.database.schema.update" &&
-                  !isEmpty(
-                    (task.payload as TaskDatabaseSchemaUpdatePayload)
-                      .rollbackStatement
-                  )
-                ) {
-                  validState = true;
-                  break;
+                  task.status == "DONE") {
+                  if (task.type == "bb.task.database.schema.update" &&
+                    !isEmpty(
+                      (task.payload as TaskDatabaseSchemaUpdatePayload)
+                        .rollbackStatement
+                    )) {
+                    validState = true;
+                    break;
+                  } else if (task.type == "bb.task.database.data.update" &&
+                    !isEmpty(
+                      (task.payload as TaskDatabaseDataUpdatePayload)
+                        .rollbackStatement
+                    )) {
+                    validState = true;
+                    break;
+                  }
                 }
               }
+
               if (validState) {
                 break;
               }
@@ -277,14 +286,25 @@ export default defineComponent({
             const stage = rollbackIssue.pipeline.stageList[i];
             for (let j = stage.taskList.length - 1; j >= 0; j--) {
               const task = stage.taskList[j];
-              if (
-                task.status == "DONE" &&
-                task.type == "bb.task.database.schema.update" &&
-                !isEmpty(
-                  (task.payload as TaskDatabaseSchemaUpdatePayload)
-                    .rollbackStatement
-                )
-              ) {
+              let allowRollback = false
+
+              if (task.status == "DONE") {
+                if (task.type == "bb.task.database.schema.update" &&
+                  !isEmpty(
+                    (task.payload as TaskDatabaseSchemaUpdatePayload)
+                      .rollbackStatement
+                  )) {
+                  allowRollback = true
+                } else if (task.type == "bb.task.database.data.update" &&
+                  !isEmpty(
+                    (task.payload as TaskDatabaseDataUpdatePayload)
+                      .rollbackStatement
+                  )) {
+                  allowRollback = true
+                }
+              }
+
+              if (allowRollback) {
                 environmentList.push(stage.environment);
                 approvalPolicyList.push(
                   store.getters["policy/policyByEnvironmentIdAndType"](
@@ -450,7 +470,8 @@ export default defineComponent({
       // 2. Update the database schema, will do connection and syntax check.
       if (
         (issue.value.type == "bb.issue.database.create" ||
-          issue.value.type == "bb.issue.database.schema.update") &&
+          issue.value.type == "bb.issue.database.schema.update" ||
+          issue.value.type == "bb.issue.database.data.update") &&
         Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
       ) {
         interval = POST_CHANGE_POLL_INTERVAL;

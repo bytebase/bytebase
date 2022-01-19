@@ -12,16 +12,18 @@
         <p>
           <i18n-t keypath="sql-editor.want-to-change-schema">
             <template #changeschema>
-              <NButton text :href="docLink" type="primary" target="_blank">{{
+              <NButton text :href="docLink" type="primary" target="_blank">
+                {{
                 $t("sql-editor.change-schema")
-              }}</NButton>
+                }}
+              </NButton>
             </template>
           </i18n-t>
         </p>
         <p>
           <i18n-t keypath="sql-editor.go-to-alter-schema">
             <template #alterschema>
-              <strong>{{ $t("quick-action.alter-schema") }}</strong>
+              <strong>{{ $t("database.alter-schema") }}</strong>
             </template>
           </i18n-t>
         </p>
@@ -30,9 +32,11 @@
 
     <div class="execute-hint-content mt-4 flex justify-end space-x-2">
       <NButton @click="handleColse">{{ $t("common.close") }}</NButton>
-      <NButton type="primary" @click="gotoAlterSchema">{{
-        $t("quick-action.alter-schema")
-      }}</NButton>
+      <NButton type="primary" @click="gotoAlterSchema">
+        {{
+        $t("database.alter-schema")
+        }}
+      </NButton>
     </div>
   </div>
 </template>
