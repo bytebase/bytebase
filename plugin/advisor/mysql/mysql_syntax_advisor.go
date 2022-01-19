@@ -4,8 +4,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
-
-	"github.com/pingcap/parser"
 )
 
 var (
@@ -23,7 +21,7 @@ type SyntaxAdvisor struct {
 
 // Check parses the given statement and checks for warnings and errors.
 func (adv *SyntaxAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
-	p := parser.New()
+	p := newParser()
 
 	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
 	if err != nil {
