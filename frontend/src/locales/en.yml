@@ -379,20 +379,18 @@ issue:
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
-    below will navigate you to the corresponding Git repository to create schema
-    change.
+    below will navigate you to the corresponding Git repository to initiate the change process.
   vcs-info: >-
     indicates the project has enabled VCS based version control. Selecting
     database belonging to such project will navigate you to the corresponding
-    Git repository to create schema change.
+    Git repository to initiate the change process.
   alter-single-db: Alter single database
   alter-multiple-db: Alter multiple databases
   alter-multiple-db-info: >-
     For each environment, you can select a database to alter its schema or just
     skip that environment. This allows you to compose a single pipeline to
-    propagate schema changes across multiple environments.
+    propagate changes across multiple environments.
 quick-action:
-  alter-schema: Alter Schema
   create-db: Create database
   choose-db: Choose database
   new-db: New DB
@@ -672,7 +670,10 @@ database:
   database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
   transfer-project: Transfer Project
+  alter-schema: Alter Schema
   alter-schema-in-vcs: Alter Schema in VCS
+  change-data: Change Data
+  change-data-in-vcs: Change Data in VCS
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
   backup-name: Backup name
   create-backup: Create backup

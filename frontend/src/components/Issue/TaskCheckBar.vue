@@ -6,9 +6,7 @@
       class="btn-small py-0.5"
       :disabled="hasRunningTaskCheck"
       @click.prevent="runChecks"
-    >
-      {{ hasRunningTaskCheck ? $t("task.checking") : $t("task.run-task") }}
-    </button>
+    >{{ hasRunningTaskCheck ? $t("task.checking") : $t("task.run-task") }}</button>
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
       @select-task-check-run="
@@ -53,9 +51,7 @@
             type="button"
             class="btn-primary py-2 px-4"
             @click.prevent="dismissDialog"
-          >
-            {{ $t("common.close") }}
-          </button>
+          >{{ $t("common.close") }}</button>
         </div>
       </div>
     </BBModal>
@@ -130,7 +126,7 @@ export default defineComponent({
     const showRunCheckButton = computed((): boolean => {
       if (!props.allowRunTask) return false;
       return (
-        props.task.type == "bb.task.database.schema.update" &&
+        (props.task.type == "bb.task.database.schema.update" || props.task.type == "bb.task.database.data.update") &&
         (props.task.status == "PENDING" ||
           props.task.status == "PENDING_APPROVAL" ||
           props.task.status == "RUNNING" ||

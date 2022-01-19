@@ -18,6 +18,7 @@ export type TaskType =
   | "bb.task.general"
   | "bb.task.database.create"
   | "bb.task.database.schema.update"
+  | "bb.task.database.data.update"
   | "bb.task.database.restore";
 
 export type TaskStatus =
@@ -51,6 +52,12 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
+export type TaskDatabaseDataUpdatePayload = {
+  statement: string;
+  rollbackStatement: string;
+  pushEvent?: VCSPushEvent;
+};
+
 export type TaskDatabaseRestorePayload = {
   databaseName: string;
   backupId: BackupId;
@@ -60,6 +67,7 @@ export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
   | TaskDatabaseSchemaUpdatePayload
+  | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload;
 
