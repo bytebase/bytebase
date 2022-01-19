@@ -207,7 +207,7 @@ func patchSavedQuery(ctx context.Context, tx *Tx, patch *api.SavedQueryPatch) (*
 		return &savedQuery, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("saved_query ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("saved query ID not found: %d", patch.ID)}
 }
 
 func findSavedQueryList(ctx context.Context, tx *Tx, find *api.SavedQueryFind) (_ []*api.SavedQuery, err error) {
@@ -270,7 +270,7 @@ func deleteSavedQuery(ctx context.Context, tx *Tx, delete *api.SavedQueryDelete)
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("saved_query ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("saved query ID not found: %d", delete.ID)}
 	}
 
 	return nil
