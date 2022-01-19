@@ -25,7 +25,7 @@ func init() {
 	db.Register(db.SQLite, newDriver)
 }
 
-// Driver is the Snowflake driver.
+// Driver is the SQLite driver.
 type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
@@ -40,7 +40,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 	}
 }
 
-// Open opens a Snowflake driver.
+// Open opens a SQLite driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// TODO(spinningbot): implement it.
 	return nil, nil
