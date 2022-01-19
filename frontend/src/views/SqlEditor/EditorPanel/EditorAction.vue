@@ -66,12 +66,17 @@ const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
   "editorSelector",
   ["currentTab"]
 );
-const { createSavedQuery, setConnectionContext, patchSavedQuery } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "createSavedQuery",
-    "setConnectionContext",
-    "patchSavedQuery",
-  ]);
+const {
+  createSavedQuery,
+  setConnectionContext,
+  patchSavedQuery,
+  checkSavedQueryExistById,
+} = useNamespacedActions<SqlEditorActions>("sqlEditor", [
+  "createSavedQuery",
+  "setConnectionContext",
+  "patchSavedQuery",
+  "checkSavedQueryExistById",
+]);
 const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
   "editorSelector",
   ["updateActiveTab"]
@@ -138,10 +143,12 @@ const handleConnectionChange = (
 
 const handleSaveQueryBtnClick = async () => {
   const { queryStatement, label, currentQueryId } = currentTab.value;
+  const isQueryExist = await checkSavedQueryExistById(currentQueryId || -1);
 
-  if (currentQueryId) {
+  if (isQueryExist && currentQueryId) {
     patchSavedQuery({
       id: currentQueryId,
+      name: label,
       statement: queryStatement,
     });
   } else {
@@ -153,6 +160,7 @@ const handleSaveQueryBtnClick = async () => {
       currentQueryId: newSavedQuery.id,
     });
   }
+
   updateActiveTab({
     isSaved: true,
   });

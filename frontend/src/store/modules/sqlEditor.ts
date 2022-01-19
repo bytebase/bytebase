@@ -349,6 +349,14 @@ const actions = {
     await axios.delete(`/api/savedquery/${id}`);
     dispatch("fetchSavedQueryList");
   },
+  async checkSavedQueryExistById({ state }: any, id: number) {
+    for (const savedQuery of state.savedQueryList) {
+      if (savedQuery.id === id) {
+        return true;
+      }
+    }
+    return false;
+  },
 };
 
 export default {

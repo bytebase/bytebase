@@ -31,10 +31,11 @@ const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
   "editorSelector",
   ["updateActiveTab"]
 );
-const { createSavedQuery, patchSavedQuery } =
+const { createSavedQuery, patchSavedQuery, checkSavedQueryExistById } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
     "createSavedQuery",
     "patchSavedQuery",
+    "checkSavedQueryExistById",
   ]);
 
 const { execute } = useExecuteSQL();
@@ -56,10 +57,12 @@ const handleChangeSelection = debounce((value: string) => {
 
 const handleSave = async (statement: string) => {
   const { label, currentQueryId } = currentTab.value;
+  const isQueryExist = await checkSavedQueryExistById(currentQueryId || -1);
 
-  if (currentQueryId) {
+  if (isQueryExist && currentQueryId) {
     patchSavedQuery({
       id: currentQueryId,
+      name: label,
       statement,
     });
   } else {
@@ -71,6 +74,7 @@ const handleSave = async (statement: string) => {
       currentQueryId: newSavedQuery.id,
     });
   }
+
   updateActiveTab({
     isSaved: true,
   });
