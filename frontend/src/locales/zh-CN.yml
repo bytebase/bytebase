@@ -961,6 +961,8 @@ sql-editor:
   rows: 条记录
   no-history-found: 无历史记录
   search-history: 搜索历史记录
+  search-saved-queries: 搜索归档查询
+  queries: 归档查询
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
   please-input-the-tab-label: 请输入标签页名称!

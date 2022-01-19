@@ -46,6 +46,7 @@ const emit = defineEmits<{
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
   (e: "run-query", content: string): void;
+  (e: "save", content: string): void;
 }>();
 
 const editorRef = ref();
@@ -144,6 +145,11 @@ const init = async () => {
       endColumn: e.selection.endColumn,
     }) as string;
     emit("change-selection", selectedText);
+  });
+
+  editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+    const value = editorInstance.getValue();
+    emit("save", value);
   });
 };
 
