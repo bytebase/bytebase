@@ -26,7 +26,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		roleProvider := api.ProjectRoleProvider(c.Param("roleProvider"))
 
 		switch roleProvider {
-		case api.ProjectRoleProviderGitlabSelfHost:
+		case api.ProjectRoleProviderGitLabSelfHost:
 			{
 				projectFind := &api.ProjectFind{ID: &projectID}
 				project, err := s.ProjectService.FindProject(ctx, projectFind)
@@ -54,7 +54,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
 				}
 
-				gitlabProjectMemberList, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchProjectMemberList(ctx,
+				gitlabProjectMemberList, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryMemberList(ctx,
 					common.OauthContext{
 						ClientID:     vcs.ApplicationID,
 						ClientSecret: vcs.Secret,
@@ -108,7 +108,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 							// try update status
 							patchProjectMember := &api.ProjectMemberPatch{
 								ID:           bytebaseProjectMember.ID,
-								RoleProvider: api.ProjectRoleProviderGitlabSelfHost,
+								RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
 								Payload:      string(payload),
 							}
 							_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
@@ -137,7 +137,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						createProjectMember := &api.ProjectMemberCreate{
 							ProjectID:    projectID,
 							CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
-							RoleProvider: api.ProjectRoleProviderGitlabSelfHost,
+							RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
 							Payload:      string(payload),
 							PrincipalID:  principal.ID,
 							Role:         role,

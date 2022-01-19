@@ -176,7 +176,7 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return UserInfo, err
 }
 
-func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.ProjectMember, error) {
+func (provider *Provider) FetchRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	resp, err := httpGet(
 		instanceURL,
 		fmt.Sprintf("projects/%s/members", repositoryID),
@@ -193,9 +193,9 @@ func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx c
 	}
 
 	if resp.StatusCode == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch project members from GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
 	} else if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("failed to read project membersfrom GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
 			instanceURL,
 			resp.StatusCode,
 		)
@@ -206,12 +206,12 @@ func (provider *Provider) FetchProjectMemberList(ctx context.Context, oauthCtx c
 		return nil, err
 	}
 
-	var projectMemberList []*vcs.ProjectMember
-	if err := json.Unmarshal(b, &projectMemberList); err != nil {
+	var repositoryMember []*vcs.RepositoryMember
+	if err := json.Unmarshal(b, &repositoryMember); err != nil {
 		return nil, err
 	}
 
-	return projectMemberList, nil
+	return repositoryMember, nil
 }
 
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
