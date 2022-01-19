@@ -160,9 +160,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 		if idStr := c.Param("id"); idStr != "" {
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
-				msg := "SavedQuery ID is not a number: " + idStr
-				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Saved query ID is not a number: %s", idStr))
 			}
 			savedQueryFind := &api.SavedQueryFind{
 				ID: &id,
@@ -172,7 +170,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
 			if savedQuery == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("SavedQuery ID not found: %d", id))
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
 			}
 			return savedQuery.CreatorID == curPrincipalID, nil
 		}

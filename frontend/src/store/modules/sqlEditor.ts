@@ -210,7 +210,7 @@ const actions = {
       },
       { root: true }
     );
-    dispatch("fetchQueryHistory");
+    dispatch("fetchQueryHistoryList");
     return res;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
@@ -235,12 +235,13 @@ const actions = {
       databaseName: databaseInfo.name,
     });
   },
-  async fetchQueryHistory({ commit, dispatch, rootGetters }: any) {
+  async fetchQueryHistoryList({ commit, dispatch }: any) {
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, true);
-    const currentUser = rootGetters["auth/currentUser"]();
     const activityList = await dispatch(
       "activity/fetchActivityListForQueryHistory",
-      currentUser.id,
+      {
+        limit: 50,
+      },
       {
         root: true,
       }
@@ -274,7 +275,7 @@ const actions = {
     await dispatch("activity/deleteActivityById", id, {
       root: true,
     });
-    dispatch("fetchQueryHistory");
+    dispatch("fetchQueryHistoryList");
   },
   async createSavedQuery(
     { dispatch }: any,
@@ -291,14 +292,14 @@ const actions = {
         },
       })
     ).data.data;
-    dispatch("fetchSavedQueries");
+    dispatch("fetchSavedQueryList");
 
     return {
       ...(resData.attributes as Omit<SavedQuery, "id">),
       id: parseInt(resData.id),
     };
   },
-  async fetchSavedQueries({ commit, dispatch }: any) {
+  async fetchSavedQueryList({ commit, dispatch }: any) {
     commit(types.SET_IS_FETCHING_SAVED_QUERIES, true);
     const data = (await axios.get(`/api/savedquery`)).data;
     const savedQueryList: SavedQuery[] = data.data.map(
@@ -342,11 +343,11 @@ const actions = {
         attributes,
       },
     });
-    dispatch("fetchSavedQueries");
+    dispatch("fetchSavedQueryList");
   },
   async deleteSavedQuery({ dispatch }: any, id: number) {
     await axios.delete(`/api/savedquery/${id}`);
-    dispatch("fetchSavedQueries");
+    dispatch("fetchSavedQueryList");
   },
 };
 

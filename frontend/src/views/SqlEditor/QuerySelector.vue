@@ -40,7 +40,7 @@
                 class="rounded px-2 py-0 text-sm w-full absolute left-0 bottom-0"
                 @blur="(e: Event) => handleTryChangeLabel()"
                 @keyup.enter="(e: Event) => handleTryChangeLabel()"
-                @keyup.esc="(e: Event) => handleCancelInput()"
+                @keyup.esc="handleCancelInput"
               />
               <!-- this is a trick -->
               <span class="w-full h-full invisible line-camp-1">
@@ -127,6 +127,7 @@ import {
   EditorSelectorGetters,
   EditorSelectorState,
   EditorSelectorActions,
+  SqlEditorActions,
 } from "../../types";
 import { debounce } from "lodash-es";
 
@@ -146,6 +147,10 @@ const { addTab, removeTab, setActiveTabId, updateActiveTab } =
     "setActiveTabId",
     "updateActiveTab",
   ]);
+const { patchSavedQuery } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["patchSavedQuery"]
+);
 
 const store = useStore();
 const { t } = useI18n();
@@ -198,6 +203,12 @@ const handleTryChangeLabel = () => {
     updateActiveTab({
       label: labelState.currentLabelName,
     });
+    if (currentTab.value.currentQueryId) {
+      patchSavedQuery({
+        id: currentTab.value.currentQueryId,
+        name: labelState.currentLabelName,
+      });
+    }
     nextTick(() => {
       reComputedScrollWidth();
       scrollState.style = {
@@ -217,6 +228,12 @@ const handleCancelInput = () => {
   updateActiveTab({
     label: labelState.currentLabelName,
   });
+  if (currentTab.value.currentQueryId) {
+    patchSavedQuery({
+      id: currentTab.value.currentQueryId,
+      name: labelState.currentLabelName,
+    });
+  }
   nextTick(() => {
     labelState.isEditingLabel = false;
     reComputedScrollWidth();
