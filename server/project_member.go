@@ -113,7 +113,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						}
 						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
 						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync member from GitLab").SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch exsting project member after syncing VCS membership info").SetInternal(err)
 						}
 						isProjectMemberExist = true
 					}
