@@ -27,26 +27,37 @@
           </template>
         </template>
         <template v-else>
-          <NTabs v-model:value="state.tab" type="line">
-            <NTabPane :tab="$t('project.mode.standard')" name="standard">
-              <!-- a simple table -->
-              <DatabaseTable
-                mode="ALL_SHORT"
-                :bordered="true"
-                :custom-click="true"
-                :database-list="standardProjectDatabaseList"
-                @select-database="selectDatabase"
-              />
-            </NTabPane>
-            <NTabPane :tab="$t('project.mode.tenant')" name="tenant">
-              <CommonTenantView
-                :state="state"
-                :database-list="databaseList"
-                :environment-list="environmentList"
-                @dismiss="cancel"
-              />
-            </NTabPane>
-          </NTabs>
+          <template v-if="isAlterSchema">
+            <NTabs v-model:value="state.tab" type="line">
+              <NTabPane :tab="$t('project.mode.standard')" name="standard">
+                <!-- a simple table -->
+                <DatabaseTable
+                  mode="ALL_SHORT"
+                  :bordered="true"
+                  :custom-click="true"
+                  :database-list="standardProjectDatabaseList"
+                  @select-database="selectDatabase"
+                />
+              </NTabPane>
+              <NTabPane :tab="$t('project.mode.tenant')" name="tenant">
+                <CommonTenantView
+                  :state="state"
+                  :database-list="databaseList"
+                  :environment-list="environmentList"
+                  @dismiss="cancel"
+                />
+              </NTabPane>
+            </NTabs>
+          </template>
+          <template v-else>
+            <DatabaseTable
+              mode="ALL_SHORT"
+              :bordered="true"
+              :custom-click="true"
+              :database-list="standardProjectDatabaseList"
+              @select-database="selectDatabase"
+            />
+          </template>
         </template>
       </div>
     </div>
@@ -57,26 +68,20 @@
         type="button"
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
-      >
-        {{ $t("common.cancel") }}
-      </button>
+      >{{ $t("common.cancel") }}</button>
       <button
         v-if="state.alterType == 'MULTI_DB'"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateMultiDb"
         @click.prevent="generateMultDb"
-      >
-        {{ $t("common.next") }}
-      </button>
+      >{{ $t("common.next") }}</button>
 
       <button
         v-if="isTenantProject || (!projectId && state.tab === 'tenant')"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateTenant"
         @click.prevent="generateTenant"
-      >
-        {{ $t("common.next") }}
-      </button>
+      >{{ $t("common.next") }}</button>
     </div>
   </div>
 </template>
@@ -134,6 +139,9 @@ export default defineComponent({
       type: Number as PropType<ProjectId>,
       default: undefined,
     },
+    type: {
+      type: String as PropType<"bb.issue.database.schema.update" | "bb.issue.database.data.update">,
+    }
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
@@ -161,6 +169,11 @@ export default defineComponent({
       selectedDatabaseName: undefined,
       deployingTenantDatabaseList: [],
     });
+
+    // Returns true if alter schema, false if change data.
+    const isAlterSchema = computed((): boolean => {
+      return props.type === "bb.issue.database.schema.update"
+    })
 
     const isTenantProject = computed((): boolean => {
       return state.project?.tenantMode === "TENANT";
@@ -222,8 +235,8 @@ export default defineComponent({
           issueSlug: "new",
         },
         query: {
-          template: "bb.issue.database.schema.update",
-          name: `Alter schema`,
+          template: props.type,
+          name: isAlterSchema.value ? `Alter schema` : `Change data`,
           project: props.projectId,
           databaseList: databaseIdList.join(","),
         },
@@ -259,8 +272,8 @@ export default defineComponent({
             issueSlug: "new",
           },
           query: {
-            template: "bb.issue.database.schema.update",
-            name: `[${state.selectedDatabaseName}] Alter schema`,
+            template: props.type,
+            name: `[${state.selectedDatabaseName}] ${isAlterSchema.value ? `Alter schema` : `Change data`}`,
             project: project.id,
             databaseName: state.selectedDatabaseName,
             mode: "tenant",
@@ -285,8 +298,8 @@ export default defineComponent({
             issueSlug: "new",
           },
           query: {
-            template: "bb.issue.database.schema.update",
-            name: `[${database.name}] Alter schema`,
+            template: props.type,
+            name: `[${database.name}] ${isAlterSchema.value ? `Alter schema` : `Change data`}`,
             project: database.project.id,
             databaseList: database.id,
           },
@@ -321,6 +334,7 @@ export default defineComponent({
     return {
       wrapperClass,
       state,
+      isAlterSchema,
       isTenantProject,
       environmentList,
       databaseList,

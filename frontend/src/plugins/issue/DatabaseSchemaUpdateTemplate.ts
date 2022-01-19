@@ -35,6 +35,7 @@ const template: IssueTemplate = {
               ? ctx.rollbackStatementList[i]
               : "",
             migrationType: "MIGRATE",
+            earliestAllowedTs: 0,
           },
         ],
       });

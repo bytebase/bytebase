@@ -3,14 +3,8 @@
     <ol
       class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
     >
-      <li
-        v-for="(item, index) in itemList"
-        :key="index"
-        class="relative md:flex-1 md:flex"
-      >
-        <div
-          class="cursor-default group flex items-center justify-between w-full"
-        >
+      <li v-for="(item, index) in itemList" :key="index" class="relative md:flex-1 md:flex">
+        <div class="cursor-default group flex items-center justify-between w-full">
           <span class="pl-4 py-2 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
@@ -22,11 +16,7 @@
                   class="h-2 w-2 bg-info rounded-full"
                   aria-hidden="true"
                 ></span>
-                <span
-                  v-else
-                  class="h-1.5 w-1.5 bg-control rounded-full"
-                  aria-hidden="true"
-                ></span>
+                <span v-else class="h-1.5 w-1.5 bg-control rounded-full" aria-hidden="true"></span>
               </template>
               <template v-else-if="item.taskStatus === 'PENDING_APPROVAL'">
                 <heroicons-outline:user class="w-4 h-4" />
@@ -47,8 +37,7 @@
                 <span
                   class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
                   aria-hidden="true"
-                  >!</span
-                >
+                >!</span>
               </template>
             </div>
             <div
@@ -56,9 +45,7 @@
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
-              <span class="text-xs">
-                {{ item.stageName }}
-              </span>
+              <span class="text-xs">{{ item.stageName }}</span>
               <span class="text-sm">{{ item.taskName }}</span>
             </div>
             <div
@@ -66,7 +53,7 @@
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
-              <span class="col-span-1 text-sm w-32">{{ item.stageName }} </span>
+              <span class="col-span-1 text-sm w-32">{{ item.stageName }}</span>
               <span class="col-span-1 text-sm">{{ item.taskName }}</span>
             </div>
             <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
@@ -75,9 +62,7 @@
                 v-if="!item.valid"
                 class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
               >
-                <span class="text-center font-normal" aria-hidden="true"
-                  >!</span
-                >
+                <span class="text-center font-normal" aria-hidden="true">!</span>
               </span>
             </div>
           </span>
@@ -160,7 +145,8 @@ export default defineComponent({
           for (const task of stage.taskList) {
             if (
               task.type == "bb.task.database.create" ||
-              task.type == "bb.task.database.schema.update"
+              task.type == "bb.task.database.schema.update" ||
+              task.type == "bb.task.database.data.update"
             ) {
               if (isEmpty((task as TaskCreate).statement)) {
                 valid = false;
@@ -173,9 +159,8 @@ export default defineComponent({
           if (stage.taskList.length > 1) {
             for (let i = 0; i < stage.taskList.length; i++) {
               if ((stage.taskList[i] as Task).id == (activeTask as Task).id) {
-                taskName = `${activeTask.name} (${i + 1}/${
-                  stage.taskList.length
-                })`;
+                taskName = `${activeTask.name} (${i + 1}/${stage.taskList.length
+                  })`;
                 break;
               }
             }
@@ -223,7 +208,7 @@ export default defineComponent({
     const flowItemTextClass = (item: FlowItem) => {
       let textClass =
         !props.create &&
-        activeTask(props.pipeline as Pipeline).id === item.taskId
+          activeTask(props.pipeline as Pipeline).id === item.taskId
           ? "font-bold "
           : "font-normal ";
       // For create, since we don't have stage id yet, we just compare name instead.
