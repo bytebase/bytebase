@@ -8,7 +8,7 @@ const getDefaultTab = () => {
   return {
     id: uuidv1(),
     label: "Untitled Queries",
-    isSaved: true,
+    isSaved: false,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     queryStatement: "",
     selectedStatement: "",
@@ -81,7 +81,7 @@ const actions = {
     const newTab = {
       ...getDefaultTab(),
       label: payload.label ? payload.label : `Untitled Queries`,
-      isSaved: true,
+      isSaved: false,
       savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
       queryStatement: payload.queryStatement || "",
       selectedStatement: payload.selectedStatement || "",
