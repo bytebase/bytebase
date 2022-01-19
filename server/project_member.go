@@ -17,140 +17,126 @@ import (
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	// for now we only support sync project member from privately deployed GitLab
-	g.POST("/project/:projectID/sync/:roleProvider", func(c echo.Context) error {
+	g.POST("/project/:projectID/sync", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		roleProvider := api.ProjectRoleProvider(c.Param("roleProvider"))
 
-		switch roleProvider {
-		case api.ProjectRoleProviderGitLabSelfHost:
-			{
-				projectFind := &api.ProjectFind{ID: &projectID}
-				project, err := s.ProjectService.FindProject(ctx, projectFind)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
+		projectFind := &api.ProjectFind{ID: &projectID}
+		project, err := s.ProjectService.FindProject(ctx, projectFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
+		}
+		if project.WorkflowType == api.UIWorkflow {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+		}
+
+		repoFind := &api.RepositoryFind{ProjectID: &projectID}
+		repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
+		}
+
+		vcsFind := &api.VCSFind{
+			ID: &repo.VCSID,
+		}
+		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
+		}
+
+		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchActiveRepositoryMemberList(ctx,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.ID),
+			},
+			vcs.InstanceURL,
+			repo.ExternalID,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
+		}
+
+		findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
+		bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project member in bytebase: %d", projectID)).SetInternal(err)
+		}
+
+		// check whether principal exists in our system.
+		// If not exist, create one.
+		for _, projectMember := range vcsProjectMemberList {
+			findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
+			principal, err := s.PrincipalService.FindPrincipal(ctx, findPrincipal)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
+			}
+
+			isPrincipalNewCreated := false
+			if principal == nil {
+				signupInfo := &api.Signup{
+					Name:     projectMember.Name,
+					Email:    projectMember.Email,
+					Password: common.RandomString(20),
 				}
-				if project.WorkflowType == api.UIWorkflow {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
+				if httpErr != nil {
+					return httpErr
 				}
+				principal = createdPrincipal
+				isPrincipalNewCreated = true
+			}
 
-				repoFind := &api.RepositoryFind{ProjectID: &projectID}
-				repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
-				}
-
-				vcsFind := &api.VCSFind{
-					ID: &repo.VCSID,
-				}
-				vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
-				}
-				if vcs == nil {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
-				}
-
-				gitlabProjectMemberList, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryMemberList(ctx,
-					common.OauthContext{
-						ClientID:     vcs.ApplicationID,
-						ClientSecret: vcs.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    s.refreshToken(ctx, repo.ID),
-					},
-					vcs.InstanceURL,
-					repo.ExternalID,
-				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member from GitLab, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
-				}
-
-				// create or patch project member
-				findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
-				bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("fail to fetch project member in bytebase: %d", projectID)).SetInternal(err)
-				}
-
-				// check whether principal exists in our system. if not exist, create one.
-				for _, projectMember := range gitlabProjectMemberList {
-					findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
-					principal, err := s.PrincipalService.FindPrincipal(ctx, findPrincipal)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
-					}
-
-					if projectMember.State != vcsPlugin.UserStateActive && projectMember.MembershipState != vcsPlugin.UserStateActive {
-						continue
-					}
-
-					if principal == nil {
-						signupInfo := &api.Signup{
-							Name:     projectMember.Name,
-							Email:    projectMember.Email,
-							Password: common.RandomString(20),
-						}
-						createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
-						if httpErr != nil {
-							return httpErr
-						}
-						principal = createdPrincipal
-					}
-
-					isProjectMemberExist := false
-					for _, bytebaseProjectMember := range bytebaseProjectMemberList {
-						if bytebaseProjectMember.PrincipalID == principal.ID {
-							payload, _ := json.Marshal(projectMember)
-							// try update status
-							patchProjectMember := &api.ProjectMemberPatch{
-								ID:           bytebaseProjectMember.ID,
-								RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
-								Payload:      string(payload),
-							}
-							_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
-							if err != nil {
-								return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync member from GitLab").SetInternal(err)
-							}
-							isProjectMemberExist = true
-						}
-					}
-
-					if !isProjectMemberExist {
-						var role api.ProjectRole
-						switch projectMember.AccessLevel { // see https://docs.gitlab.com/ee/api/members.html
-						case 50, /* Owner */
-							40 /* Maintainer */ :
-							role = api.ProjectOwner
-						case 30, /* Developer */
-							20, /* Reporter */
-							10, /* Guest */
-							5,  /* Minimal access */
-							0 /* No access */ :
-							role = api.ProjectDeveloper
-						}
-
+			isProjectMemberExist := false
+			// If the principal is newly created, there should not have such a project member of this newly created principal
+			if !isPrincipalNewCreated {
+				for _, bytebaseProjectMember := range bytebaseProjectMemberList {
+					if bytebaseProjectMember.PrincipalID == principal.ID {
 						payload, _ := json.Marshal(projectMember)
-						createProjectMember := &api.ProjectMemberCreate{
-							ProjectID:    projectID,
-							CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
+						patchProjectMember := &api.ProjectMemberPatch{
+							ID:           bytebaseProjectMember.ID,
 							RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
 							Payload:      string(payload),
-							PrincipalID:  principal.ID,
-							Role:         role,
 						}
-						_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
 						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping project member from GitLab").SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync member from GitLab").SetInternal(err)
 						}
+						isProjectMemberExist = true
 					}
 				}
 			}
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync project member, invalid provider type: %s", roleProvider))
+
+			if !isProjectMemberExist {
+				var role api.ProjectRole
+				switch projectMember.AccessLevel { // see https://docs.gitlab.com/ee/api/members.html
+				case 50 /* Owner */, 40 /* Maintainer */ :
+					role = api.ProjectOwner
+				case 30 /* Developer */, 20 /* Reporter */, 10 /* Guest */, 5 /* Minimal access */, 0 /* No access */ :
+					role = api.ProjectDeveloper
+				}
+				payload, _ := json.Marshal(projectMember)
+				createProjectMember := &api.ProjectMemberCreate{
+					ProjectID:    projectID,
+					CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
+					RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
+					Payload:      string(payload),
+					PrincipalID:  principal.ID,
+					Role:         role,
+				}
+				_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping project member from GitLab").SetInternal(err)
+				}
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

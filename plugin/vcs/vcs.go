@@ -98,12 +98,12 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 
-	// Fetch all members of a given repository
+	// Fetch all Active members of a given repository ()
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	FetchRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
+	FetchActiveRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
 
 	// Commits a new file
 	//
