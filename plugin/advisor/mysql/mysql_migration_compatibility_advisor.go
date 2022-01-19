@@ -7,7 +7,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -26,7 +25,7 @@ type CompatibilityAdvisor struct {
 
 // Check checks schema backward compatibility.
 func (adv *CompatibilityAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
-	p := parser.New()
+	p := newParser()
 
 	root, _, err := p.Parse(statement, ctx.Charset, ctx.Collation)
 	if err != nil {
