@@ -27,6 +27,11 @@ func (e ProjectRoleProvider) String() string {
 	return ""
 }
 
+type ProjectRoleProviderPayload struct {
+	VCSRole string `json:"vcs_role"`
+	SyncTs  int64  `json:"sync_ts"`
+}
+
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
@@ -61,7 +66,7 @@ type ProjectMemberCreate struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role         common.ProjectRole         `jsonapi:"attr,role"`
+	Role         common.ProjectRole  `jsonapi:"attr,role"`
 	PrincipalID  int                 `jsonapi:"attr,principalId"`
 	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 	Payload      string              `jsonapi:"attr,payload"`

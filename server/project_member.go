@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -96,15 +97,19 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 
 			isProjectMemberExist := false
+			providerPayload := &api.ProjectRoleProviderPayload{
+				VCSRole: projectMember.VCSRole,
+				SyncTs:  time.Now().UTC().Unix(),
+			}
+			providerPayloadByted, _ := json.Marshal(providerPayload)
 			// If the principal is newly created, there should not have such a project member of this newly created principal
 			if !isPrincipalNewCreated {
 				for _, bytebaseProjectMember := range bytebaseProjectMemberList {
 					if bytebaseProjectMember.PrincipalID == principal.ID {
-						payload, _ := json.Marshal(projectMember)
 						patchProjectMember := &api.ProjectMemberPatch{
 							ID:           bytebaseProjectMember.ID,
 							RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
-							Payload:      string(payload),
+							Payload:      string(providerPayloadByted),
 						}
 						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
 						if err != nil {
@@ -116,14 +121,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 
 			if !isProjectMemberExist {
-				payload, _ := json.Marshal(projectMember)
 				createProjectMember := &api.ProjectMemberCreate{
 					ProjectID:    projectID,
 					CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
 					PrincipalID:  principal.ID,
 					Role:         projectMember.Role,
 					RoleProvider: api.ProjectRoleProviderGitLabSelfHost,
-					Payload:      string(payload),
+					Payload:      string(providerPayloadByted),
 				}
 				_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
 				if err != nil {
