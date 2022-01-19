@@ -173,7 +173,7 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return UserInfo, err
 }
 
-func (provider *Provider) FetchRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
+func (provider *Provider) FetchActiveRepositoryMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	resp, err := httpGet(
 		instanceURL,
 		fmt.Sprintf("projects/%s/members", repositoryID),
@@ -208,7 +208,15 @@ func (provider *Provider) FetchRepositoryMemberList(ctx context.Context, oauthCt
 		return nil, err
 	}
 
-	return repositoryMember, nil
+	// we only return active member (both state and membership_state is active)
+	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
+	for _, member := range repositoryMember {
+		if member.State == vcs.UserStateActive && member.MembershipState == vcs.UserStateActive {
+			activeRepositoryMember = append(activeRepositoryMember, member)
+		}
+	}
+
+	return activeRepositoryMember, nil
 }
 
 // CreateFile creates a file.
