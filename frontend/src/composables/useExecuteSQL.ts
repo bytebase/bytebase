@@ -36,6 +36,13 @@ const useExecuteSQL = () => {
     const selectedStatement = currentTab.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
 
+    const ctx = store.state.sqlEditor.connectionContext;
+
+    if (ctx.instanceId === 0 || ctx.databaseId === 0) {
+      notify("CRITICAL", t("sql-editor.select-connection"));
+      return;
+    }
+
     const { data } = parseSQL(sqlStatement);
 
     if (isEmpty(sqlStatement)) {
