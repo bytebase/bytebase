@@ -14,9 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:embed sqlite_migration_schema.sql
-var migrationSchema string
-
 var (
 	_ db.Driver = (*Driver)(nil)
 )
@@ -27,9 +24,7 @@ func init() {
 
 // Driver is the SQLite driver.
 type Driver struct {
-	l             *zap.Logger
-	connectionCtx db.ConnectionContext
-	dbType        db.Type
+	l *zap.Logger
 
 	db *sql.DB
 }
