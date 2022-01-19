@@ -5,26 +5,16 @@
       class="btn-primary px-4 py-2"
       :disabled="!allowCreate"
       @click.prevent="doCreate"
-    >
-      {{ $t("common.create") }}
-    </button>
+    >{{ $t("common.create") }}</button>
   </template>
   <template v-else>
-    <div
-      v-if="applicableTaskStatusTransitionList.length > 0"
-      class="flex space-x-2"
-    >
-      <template
-        v-for="(transition, index) in applicableTaskStatusTransitionList"
-        :key="index"
-      >
+    <div v-if="applicableTaskStatusTransitionList.length > 0" class="flex space-x-2">
+      <template v-for="(transition, index) in applicableTaskStatusTransitionList" :key="index">
         <button
           type="button"
           :class="transition.buttonClass"
           @click.prevent="tryStartTaskStatusTransition(transition)"
-        >
-          {{ $t(transition.buttonName) }}
-        </button>
+        >{{ $t(transition.buttonName) }}</button>
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
         <button
@@ -39,43 +29,32 @@
           <heroicons-solid:dots-vertical class="w-6 h-6" />
         </button>
         <BBContextMenu ref="menu" class="origin-top-right mt-10 w-42">
-          <template
-            v-for="(transition, index) in applicableIssueStatusTransitionList"
-            :key="index"
-          >
+          <template v-for="(transition, index) in applicableIssueStatusTransitionList" :key="index">
             <div
               class="menu-item"
               role="menuitem"
               @click.prevent="tryStartIssueStatusTransition(transition)"
-            >
-              {{ $t(transition.buttonName) }}
-            </div>
+            >{{ $t(transition.buttonName) }}</div>
           </template>
         </BBContextMenu>
       </template>
     </div>
     <template v-else>
-      <div
-        if="applicableIssueStatusTransitionList.length > 0"
-        class="flex space-x-2"
-      >
-        <template
-          v-for="(transition, index) in applicableIssueStatusTransitionList"
-          :key="index"
-        >
+      <div if="applicableIssueStatusTransitionList.length > 0" class="flex space-x-2">
+        <template v-for="(transition, index) in applicableIssueStatusTransitionList" :key="index">
           <button
             type="button"
             :class="transition.buttonClass"
             :disabled="!allowIssueStatusTransition(transition)"
             @click.prevent="tryStartIssueStatusTransition(transition)"
-          >
-            {{ $t(transition.buttonName) }}
-          </button>
+          >{{ $t(transition.buttonName) }}</button>
         </template>
         <template v-if="allowRollback">
-          <button type="button" class="btn-primary" @click.prevent="doRollback">
-            {{ $t("common.rollback") }}
-          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            @click.prevent="doRollback"
+          >{{ $t("common.rollback") }}</button>
         </template>
       </div>
     </template>
@@ -250,9 +229,8 @@ export default defineComponent({
           break;
         case "APPROVE":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.approve")} '${
-            task.name
-          }'?`;
+          updateStatusModalState.title = `${t("common.approve")} '${task.name
+            }'?`;
           break;
         case "RETRY":
           updateStatusModalState.style = "INFO";
@@ -260,9 +238,8 @@ export default defineComponent({
           break;
         case "CANCEL":
           updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.cancel")} '${
-            task.name
-          }'?`;
+          updateStatusModalState.title = `${t("common.cancel")} '${task.name
+            }'?`;
           break;
         case "SKIP":
           updateStatusModalState.style = "INFO";
@@ -407,13 +384,15 @@ export default defineComponent({
 
       if (
         newIssue.type == "bb.issue.database.create" ||
-        newIssue.type == "bb.issue.database.schema.update"
+        newIssue.type == "bb.issue.database.schema.update" ||
+        newIssue.type == "bb.issue.database.data.update"
       ) {
         for (const stage of newIssue.pipeline.stageList) {
           for (const task of stage.taskList) {
             if (
               task.type == "bb.task.database.create" ||
-              task.type == "bb.task.database.schema.update"
+              task.type == "bb.task.database.schema.update" ||
+              task.type == "bb.task.database.data.update"
             ) {
               if (isEmpty(task.statement)) {
                 return false;
