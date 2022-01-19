@@ -101,8 +101,20 @@ const actions = {
     return activityList;
   },
 
-  async fetchActivityListForQueryHistory({ rootGetters }: any, userId: number) {
-    const queryList = ["type=bb.sql-editor.query", `user=${userId}`];
+  async fetchActivityListForQueryHistory(
+    { rootGetters }: any,
+    {
+      limit,
+    }: {
+      limit: number;
+    }
+  ) {
+    const currentUser = rootGetters["auth/currentUser"]();
+    const queryList = [
+      "type=bb.sql-editor.query",
+      `user=${currentUser.id}`,
+      `limit=${limit}`,
+    ];
     const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
     const activityList = data.data.map((activity: ResourceObject) => {
       return convert(activity, data.included, rootGetters);
