@@ -6,6 +6,7 @@ import {
   Policy,
   PolicyType,
   QueryHistory,
+  SavedQuery,
   View,
 } from ".";
 import { Activity } from "./activity";
@@ -195,6 +196,8 @@ export interface SqlEditorState {
   shouldSetContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
+  savedQueryList: SavedQuery[];
+  isFetchingSavedQueries: boolean;
   isExecuting: boolean;
   isShowExecutingHint: boolean;
 }
