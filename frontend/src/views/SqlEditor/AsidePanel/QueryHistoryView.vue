@@ -38,9 +38,8 @@
         </div>
         <p
           class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
-        >
-          {{ history.statement }}
-        </p>
+          v-html="history.formatedStatement"
+        ></p>
       </div>
     </div>
 
@@ -116,7 +115,7 @@ const state = reactive<State>({
 });
 
 const data = computed(() => {
-  const temp =
+  const tempData =
     queryHistoryList.value && queryHistoryList.value.length > 0
       ? queryHistoryList.value.filter((history) => {
           let t = false;
@@ -128,7 +127,18 @@ const data = computed(() => {
           return t;
         })
       : [];
-  return temp;
+
+  return tempData.map((history) => {
+    return {
+      ...history,
+      formatedStatement: state.search
+        ? history.statement.replaceAll(
+            state.search,
+            `<b class="text-accent">${state.search}</b>`
+          )
+        : history.statement,
+    };
+  });
 });
 
 const notifyMessage = computed(() => {
