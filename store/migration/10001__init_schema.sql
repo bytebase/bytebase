@@ -12,8 +12,6 @@ CREATE TABLE principal (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     -- allowed types are 'END_USER', 'SYSTEM_BOT'.
     type TEXT NOT NULL,
-    -- allowed auth providers are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    auth_provider TEXT NOT NULL,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
