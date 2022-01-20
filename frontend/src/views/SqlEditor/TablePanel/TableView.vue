@@ -153,7 +153,9 @@ const handleExportBtnClick = (format: "csv" | "json") => {
 
   if (format === "csv") {
     let CSVContent = "";
-    CSVContent += columns.value.map((item) => String(item.key)).join(",");
+    CSVContent += columns.value
+      .map((item) => JSON.stringify(item.key))
+      .join(",");
     CSVContent += "\n";
 
     for (const d of data.value) {
@@ -161,8 +163,8 @@ const handleExportBtnClick = (format: "csv" | "json") => {
       for (const k in d) {
         temp.push(d[k]);
       }
-      CSVContent += temp.map((item) => String(item)).join(",");
-      CSVContent += "\n";
+      CSVContent += temp.map((item) => JSON.stringify(item)).join(",");
+      CSVContent += "\r\n";
     }
 
     rawText = CSVContent;
@@ -173,8 +175,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
   const link = document.createElement("a");
 
-  // TODO: file name should be the current query name
-  link.download = `${Date.now()}.${format}`;
+  link.download = `${currentTab.value.label}.${format}`;
   link.href = encodedUri;
   link.click();
 };
