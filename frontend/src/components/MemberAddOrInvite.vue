@@ -216,7 +216,6 @@ export default {
           // This could happen if another client has just created the principal
           // with this email.
           const newPrincipal: PrincipalCreate = {
-            authProvider: "BYTEBASE",
             name: user.email.split("@")[0],
             email: user.email,
           };
