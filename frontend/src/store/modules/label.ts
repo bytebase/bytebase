@@ -5,6 +5,7 @@ import {
   LabelState,
   LabelId,
   LabelPatch,
+  LabelValueType,
 } from "../../types";
 
 function convert(
@@ -12,8 +13,10 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Label {
+  const valueList = (label.attributes.valueList || []) as LabelValueType[];
   return {
-    ...(label.attributes as Omit<Label, "id">),
+    ...(label.attributes as Omit<Label, "valueList" | "id">),
+    valueList,
     id: parseInt(label.id, 10),
   };
 }
