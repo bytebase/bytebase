@@ -960,18 +960,18 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 	var stmt string
 	switch dbType {
 	case db.MySQL, db.TiDB:
-		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s", databaseName, characterSet, collation)
+		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, characterSet, collation)
 	case db.Postgres:
 		if collation == "" {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q", databaseName, characterSet)
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, characterSet)
 		} else {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q", databaseName, characterSet, collation)
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
 	case db.ClickHouse:
-		stmt = fmt.Sprintf("CREATE DATABASE `%s`", databaseName)
+		stmt = fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
 	case db.Snowflake:
 		databaseName = strings.ToUpper(databaseName)
-		stmt = fmt.Sprintf("CREATE DATABASE %s", databaseName)
+		stmt = fmt.Sprintf("CREATE DATABASE %s;", databaseName)
 	}
 
 	// Append schema.
