@@ -211,9 +211,9 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
-          title: t("version-control.setting.add-git-provider.add-success", [
-            vcs.name,
-          ]),
+          title: t("version-control.setting.add-git-provider.add-success", {
+            vcs: vcs.name,
+          }),
         });
       });
     };
