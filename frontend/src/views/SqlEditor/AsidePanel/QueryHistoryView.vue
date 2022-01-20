@@ -74,6 +74,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useClipboard } from "@vueuse/core";
 import { useStore } from "vuex";
 import {
   useNamespacedActions,
@@ -85,10 +86,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
-import {
-  copyTextToClipboard,
-  getHighlightHTMLByKeyWords,
-} from "../../../utils";
+import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -119,6 +117,9 @@ const state = reactive<State>({
   isShowDeletingHint: false,
   currentActionHistory: null,
 });
+
+const { copy: copyTextToClipboard, isSupported: isCopySupported } =
+  useClipboard();
 
 const data = computed(() => {
   const tempData =
@@ -155,16 +156,23 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const actionDropdownOptions = computed(() => [
-  {
-    label: t("sql-editor.copy-code"),
-    key: "copy",
-  },
-  {
+const actionDropdownOptions = computed(() => {
+  const options = [];
+
+  if (isCopySupported) {
+    options.push({
+      label: t("sql-editor.copy-code"),
+      key: "copy",
+    });
+  }
+
+  options.push({
     label: t("common.delete"),
     key: "delete",
-  },
-]);
+  });
+
+  return options;
+});
 
 const handleActionBtnClick = (key: string, history: QueryHistory) => {
   state.currentActionHistory = history;
