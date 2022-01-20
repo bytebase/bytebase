@@ -276,7 +276,8 @@ export default {
         store.dispatch("auth/signup", signupInfo).then(() => {
           router.push("/");
         });
-        // we need to update the server info after setting up a admin account
+        // we need to update the server info after setting up the first admin account so that the splash screen
+        // won't display the UI for registering the first admin account again.
         if (needAdminSetup.value) {
           store.dispatch("actuator/fetchInfo");
         }
