@@ -104,20 +104,20 @@
             {{ $t("common.role.developer") }}
           </div>
         </div>
-        <router-link to="/inbox" exact-active-class>
-          <span
-            v-if="inboxSummary.hasUnread"
-            class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
-          ></span>
-          <heroicons-outline:bell class="w-6 h-6" />
-        </router-link>
-        <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">
+        <router-link to="/sql-editor">
           <NTooltip>
             <template #trigger>
               <heroicons-outline:terminal class="w-6 h-6" />
             </template>
             {{ $t("sql-editor.self") }}
           </NTooltip>
+        </router-link>
+        <router-link to="/inbox" exact-active-class>
+          <span
+            v-if="inboxSummary.hasUnread"
+            class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
+          ></span>
+          <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
           <heroicons-outline:translate class="w-6 h-6" />
