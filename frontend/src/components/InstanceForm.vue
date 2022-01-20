@@ -442,7 +442,11 @@ export default {
     };
 
     const updateInstance = (field: string, value: string) => {
-      (state.instance as any)[field] = value;
+      let str = value;
+      if (field == "name" || field == "host" || field == "port" || field == "externalLink") {
+        str = value.trim()
+      }
+      (state.instance as any)[field] = str;
     };
 
     const cancel = () => {
