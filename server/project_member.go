@@ -75,6 +75,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		// check whether principal exists in our system.
 		// If not exist, create one.
 		for _, projectMember := range vcsProjectMemberList {
+			if vcs.Type != projectMember.RoleProvider {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
+			}
+
 			findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
 			principal, err := s.PrincipalService.FindPrincipal(ctx, findPrincipal)
 			if err != nil {
@@ -92,7 +96,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// if the principal uses external auth provider
 					Password: common.RandomString(20),
 				}
-				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
+				// for now we only support GITLAB_SELF_HOST
+				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProvider(projectMember.RoleProvider), c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
 				}
