@@ -3,7 +3,11 @@
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
         <router-link to="/" class="select-none" active-class exact-active-class>
-          <img class="h-12 w-auto" src="../assets/logo-full.svg" alt="Bytebase" />
+          <img
+            class="h-12 w-auto"
+            src="../assets/logo-full.svg"
+            alt="Bytebase"
+          />
         </router-link>
       </div>
       <div class="hidden sm:block">
@@ -12,34 +16,37 @@
             v-if="showDBAItem"
             to="/issue"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.issues") }}</router-link>
+            >{{ $t("common.issues") }}</router-link
+          >
 
           <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
-            {{
-              $t("common.projects")
-            }}
+            {{ $t("common.projects") }}
           </router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{ $t("common.databases") }}</router-link>
+          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
+            $t("common.databases")
+          }}</router-link>
 
-          <router-link
-            to="/instance"
-            class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.instances") }}</router-link>
+          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md">{{
+            $t("common.instances")
+          }}</router-link>
 
           <router-link
             to="/environment"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.environments") }}</router-link>
+            >{{ $t("common.environments") }}</router-link
+          >
           <router-link
             to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("common.settings") }}</router-link>
+            >{{ $t("common.settings") }}</router-link
+          >
           <router-link
             v-if="isDevFeatures"
             to="/sql-editor"
             class="bar-link px-2 py-2 rounded-md"
-          >{{ $t("sql-editor.self") }}</router-link>
+            >{{ $t("sql-editor.self") }}</router-link
+          >
         </div>
       </div>
     </div>
@@ -50,20 +57,22 @@
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">
-            {{
-              $t("setting.plan.self")
-            }}
+            {{ $t("setting.plan.self") }}
           </span>
           <div
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
-          >{{ $t("setting.plan.free") }}</div>
+          >
+            {{ $t("setting.plan.free") }}
+          </div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
-          >{{ $t("setting.plan.team") }}</div>
+          >
+            {{ $t("setting.plan.team") }}
+          </div>
           <!-- <div
             class="bar-link"
             :class="currentPlan == 2 ? 'underline' : ''"
@@ -77,25 +86,29 @@
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">
-            {{
-              $t("settings.profile.role")
-            }}
+            {{ $t("settings.profile.role") }}
           </span>
           <div
             class="bar-link"
             :class="currentUser.role == 'OWNER' ? 'underline' : ''"
             @click.prevent="switchToOwner"
-          >{{ $t("common.role.owner") }}</div>
+          >
+            {{ $t("common.role.owner") }}
+          </div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DBA' ? 'underline' : ''"
             @click.prevent="switchToDBA"
-          >{{ $t("common.role.dba") }}</div>
+          >
+            {{ $t("common.role.dba") }}
+          </div>
           <div
             class="bar-link"
             :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
             @click.prevent="switchToDeveloper"
-          >{{ $t("common.role.developer") }}</div>
+          >
+            {{ $t("common.role.developer") }}
+          </div>
         </div>
         <router-link to="/inbox" exact-active-class>
           <span
@@ -135,38 +148,37 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link v-if="showDBAItem" to="/issue" class="bar-link rounded-md block px-3 py-2">
-      {{
-        $t("common.issues")
-      }}
+    <router-link
+      v-if="showDBAItem"
+      to="/issue"
+      class="bar-link rounded-md block px-3 py-2"
+    >
+      {{ $t("common.issues") }}
     </router-link>
 
     <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
-      {{
-        $t("common.projects")
-      }}
+      {{ $t("common.projects") }}
     </router-link>
 
     <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
-      {{
-        $t("common.databases")
-      }}
+      {{ $t("common.databases") }}
     </router-link>
 
-    <router-link
-      to="/instance"
-      class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.instances") }}</router-link>
+    <router-link to="/instance" class="bar-link rounded-md block px-3 py-2">{{
+      $t("common.instances")
+    }}</router-link>
 
     <router-link
       to="/environment"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.environments") }}</router-link>
+      >{{ $t("common.environments") }}</router-link
+    >
 
     <router-link
       to="/setting/member"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.settings") }}</router-link>
+      >{{ $t("common.settings") }}</router-link
+    >
   </div>
 </template>
 
@@ -204,9 +216,7 @@ export default {
     const currentPlan = computed(() => store.getters["plan/currentPlan"]());
 
     const showDBAItem = computed((): boolean => {
-      return (
-        isDBAOrOwner(currentUser.value.role)
-      );
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const isDevFeatures = computed((): boolean => {
