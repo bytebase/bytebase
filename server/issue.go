@@ -971,7 +971,7 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
 		if schema != "" {
-			stmt = fmt.Sprintf("%s\n\\connect %s;\n%s", stmt, databaseName, schema)
+			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}
 	case db.ClickHouse:
 		stmt = fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
