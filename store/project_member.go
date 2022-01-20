@@ -245,7 +245,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`,
 		args...,
 	)
@@ -265,6 +265,8 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 			&projectMember.ProjectID,
 			&projectMember.Role,
 			&projectMember.PrincipalID,
+			&projectMember.RoleProvider,
+			&projectMember.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
