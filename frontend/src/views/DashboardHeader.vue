@@ -119,6 +119,14 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
+        <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">
+          <NTooltip>
+            <template #trigger>
+              <heroicons-outline:terminal class="w-6 h-6" />
+            </template>
+            {{ $t("sql-editor.self") }}
+          </NTooltip>
+        </router-link>
         <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
           <heroicons-outline:translate class="w-6 h-6" />
         </div>

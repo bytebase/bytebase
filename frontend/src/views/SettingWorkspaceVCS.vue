@@ -1,7 +1,10 @@
 <template>
   <div class="space-y-4">
     <div class="textinfolabel">
-      {{ $t('version-control.setting.description') }}
+      {{ $t("version-control.setting.description") }}
+      <span class="text-accent">{{
+        $t("version-control.setting.description-highlight")
+      }}</span>
     </div>
     <div class="flex items-center justify-end">
       <button
@@ -9,7 +12,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addVCSProvider"
       >
-        {{ $t('version-control.setting.add-git-provider.self') }}
+        {{ $t("version-control.setting.add-git-provider.self") }}
       </button>
     </div>
     <div class="pt-4 border-t">
