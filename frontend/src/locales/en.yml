@@ -593,7 +593,7 @@ auth:
     admin-account: admin account
     forget-password: Forgot your password?
     new-user: New to Bytebase?
-    third-party: You can reach to your Admin to enable third party login.
+    third-party: Reach your admin to enable GitLab Login
     gitlab: Login with GitLab
   password-forget:
     title: Forgot your password?
