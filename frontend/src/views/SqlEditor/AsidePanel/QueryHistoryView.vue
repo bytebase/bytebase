@@ -74,6 +74,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useClipboard } from "@vueuse/core";
+import { useStore } from "vuex";
 import {
   useNamespacedActions,
   useNamespacedState,
@@ -94,6 +96,7 @@ interface State {
 }
 
 const { t } = useI18n();
+const store = useStore();
 
 const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -114,6 +117,9 @@ const state = reactive<State>({
   isShowDeletingHint: false,
   currentActionHistory: null,
 });
+
+const { copy: copyTextToClipboard, isSupported: isCopySupported } =
+  useClipboard();
 
 const data = computed(() => {
   const tempData =
@@ -150,18 +156,36 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const actionDropdownOptions = computed(() => [
-  {
+const actionDropdownOptions = computed(() => {
+  const options = [];
+
+  if (isCopySupported) {
+    options.push({
+      label: t("sql-editor.copy-code"),
+      key: "copy",
+    });
+  }
+
+  options.push({
     label: t("common.delete"),
     key: "delete",
-  },
-]);
+  });
+
+  return options;
+});
 
 const handleActionBtnClick = (key: string, history: QueryHistory) => {
   state.currentActionHistory = history;
 
   if (key === "delete") {
     state.isShowDeletingHint = true;
+  } else if (key === "copy") {
+    copyTextToClipboard(history.statement);
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-editor.notify.copy-code-succeed"),
+    });
   }
 };
 
