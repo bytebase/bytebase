@@ -1,8 +1,27 @@
 <template>
-  <div>
-    <p class="text-lg font-medium leading-7 text-main">
+  <div class="content-center">
+    <span class="text-lg font-medium leading-7 text-main">
       {{ $t("project.settings.manage-member") }}
-    </p>
+    </span>
+
+    <span
+      :class="
+        allowSyncVCS
+          ? 'ml-4 text-sm select-none normal-link'
+          : 'ml-4 text-sm select-none cursor-not-allowed'
+      "
+      @click.prevent="
+        () => {
+          if (allowSyncVCS) {
+            syncFromVCS();
+          }
+        }
+      "
+    >
+      <heroicons-outline:refresh class="inline align-text-top" />
+      {{ $t("project.settings.sync-from-vcs") }}
+    </span>
+
     <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
@@ -63,16 +82,6 @@
             >
               <heroicons-outline:user-add class="mr-2 w-5 h-5" />
               {{ $t("project.settings.add-member") }}
-            </button>
-
-            <button
-              type="button"
-              class="btn-primary items-center"
-              :disabled="project.workflowType !== 'VCS'"
-              @click.prevent="syncFromVCS"
-            >
-              <heroicons-outline:refresh class="mr-2 w-5 h-5" />
-              {{ $t("project.settings.sync-from-vcs") }}
             </button>
           </div>
         </div>
@@ -135,6 +144,10 @@ export default defineComponent({
     const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
+
+    const allowSyncVCS = computed(() => {
+      return props.project.workflowType !== "VCS" && allowAddMember;
+    });
 
     const allowAddMember = computed(() => {
       if (props.project.id == DEFAULT_PROJECT_ID) {
@@ -233,6 +246,7 @@ export default defineComponent({
     return {
       state,
       hasRBACFeature,
+      allowSyncVCS,
       allowAddMember,
       validateMember,
       clearValidationError,
