@@ -6,18 +6,18 @@
       {{ $t("common.home") }}
     </router-link>
     <router-link
-      to="/anomaly-center"
-      class="outline-item group flex items-center px-2 py-2"
-    >
-      <heroicons-outline:shield-exclamation class="w-5 h-5 mr-2" />
-      {{ $t("anomaly-center") }}
-    </router-link>
-    <router-link
       to="/sql-editor"
       class="outline-item group flex items-center px-2 py-2"
     >
       <heroicons-outline:terminal class="w-5 h-5 mr-2" />
       {{ $t("sql-editor.self") }}
+    </router-link>
+    <router-link
+      to="/anomaly-center"
+      class="outline-item group flex items-center px-2 py-2"
+    >
+      <heroicons-outline:shield-exclamation class="w-5 h-5 mr-2" />
+      {{ $t("anomaly-center") }}
     </router-link>
     <div>
       <BookmarkListSidePanel />
