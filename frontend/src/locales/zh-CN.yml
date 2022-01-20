@@ -371,13 +371,12 @@ issue:
   stage-select:
     active: '{name}（活动中）'
 alter-schema:
-  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以创建 schema 变更。
-  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以创建 schema 变更。
+  vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。
+  vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。
   alter-single-db: 变更单个数据库
   alter-multiple-db: 变更多个数据库
-  alter-multiple-db-info: 针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把 schema 变更逐步作用到多个环境。
+  alter-multiple-db-info: 针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。
 quick-action:
-  alter-schema: 变更 Schema
   create-db: 创建数据库
   choose-db: 选择数据库
   new-db: 创建数据库
@@ -609,7 +608,10 @@ database:
   restored-from: 恢复于
   database-name-is-restored-from-another-database-backup: '{0}恢复于另一个数据库备份'
   transfer-project: 转移项目
-  alter-schema-in-vcs: 变更 Schema(VCS)
+  alter-schema: 变更 Schema
+  alter-schema-in-vcs: 变更 Schema (VCS)
+  change-data: 变更数据
+  change-data-in-vcs: 变更数据 (VCS)
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: 成功将'{0}'转移到项目'{1}'。
   database-backup: 数据库备份
   backup-name: 备份名称
@@ -960,12 +962,17 @@ sql-editor:
   can-not-execute-query: 加载数据时无法执行查询
   rows: 条记录
   no-history-found: 无历史记录
+  no-saved-query-found: 无归档查询语句
   search-history: 搜索历史记录
   search-saved-queries: 搜索归档查询
   queries: 归档查询
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
+    confirm-to-delete-this-saved-query: 确定删除这条查询语句?
   please-input-the-tab-label: 请输入标签页名称!
+  copy-code: 复制代码
+  notify:
+    copy-code-succeed: 代码复制成功
 label:
   empty-label-value: <空值>
   no-label: 没有标签

@@ -33,6 +33,7 @@ const template: IssueTemplate = {
             statement: "/* Establish baseline using current schema */",
             rollbackStatement: "",
             migrationType: "BASELINE",
+            earliestAllowedTs: 0,
           },
         ],
       });

@@ -4,6 +4,7 @@ import DatabaseCreateTemplate from "./DatabaseCreateTemplate";
 import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaBaselineTemplate from "./DatabaseSchemaBaselineTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
+import DatabaseDataUpdateTemplate from "./DatabaseDataUpdateTemplate";
 import DefaultTemplate from "./DefaultTemplate";
 
 type TemplateType = IssueType | "bb.issue.database.schema.baseline";
@@ -13,6 +14,7 @@ const allIssueTemplateList: IssueTemplate[] = [
   DatabaseCreateTemplate,
   DatabaseGrantTemplate,
   DatabaseSchemaUpdateTemplate,
+  DatabaseDataUpdateTemplate,
   DatabaseSchemaBaselineTemplate,
 ];
 
