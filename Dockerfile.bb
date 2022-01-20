@@ -8,7 +8,7 @@
 FROM golang:1.16.5-alpine3.13 as bb
 
 ARG VERSION="development"
-ARG GO_VERSION="unknown"
+ARG GO_VERSION="1.16.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
