@@ -86,8 +86,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
 					Email: projectMember.Email,
-					// Principal created via this method would have not change to set their password,
+					// Principal created via this method would have not chance to set their password,
 					// To prevent potential safe issue, we use random string to set up her password.
+					// This is another safety measure since we already disallow user login via password
+					// if the principal uses external auth provider
 					Password: common.RandomString(20),
 				}
 				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProviderGitlabSelfHost, c.Get(getPrincipalIDContextKey()).(int))
