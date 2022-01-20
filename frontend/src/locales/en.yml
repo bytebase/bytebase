@@ -290,6 +290,7 @@ settings:
       upgrade: Upgrade to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
+      role-provider: This role is mapped from {rawRole} provided by {roleProvider}
 activity:
   name: Name
   comment: Comment

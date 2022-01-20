@@ -68,7 +68,7 @@
             <button
               type="button"
               class="btn-primary items-center"
-              :disabled="project.workflowType === 'vcs'"
+              :disabled="project.workflowType !== 'VCS'"
               @click.prevent="syncFromVCS"
             >
               <heroicons-outline:refresh class="mr-2 w-5 h-5" />

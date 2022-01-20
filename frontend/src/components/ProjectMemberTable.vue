@@ -86,6 +86,21 @@
           <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
             member.updater.name
           }}</router-link>
+          <!-- we only show user's role provider if hers is not Bytebase -->
+          <div v-if="member.roleProvider !== 'BYTEBASE'">
+            <div class="tooltip-wrapper">
+              <span class="tooltip w-60">{{
+                $t("settings.members.tooltip.role-provider", {
+                  roleProvider: member.roleProvider,
+                  rawRole: member.payload.vcsRole,
+                })
+              }}</span>
+              <img
+                class="w-4 ml-1"
+                :src="RoleProviderConfig[member.roleProvider].iconPath"
+              />
+            </div>
+          </div>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -140,6 +155,13 @@ export default {
     );
 
     const state = reactive<LocalState>({});
+
+    const RoleProviderConfig = {
+      GITLAB_SELF_HOST: {
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("..//assets/gitlab-logo.svg", import.meta.url).href,
+      },
+    };
 
     const dataSource = computed(
       (): BBTableSectionDataSource<ProjectMember>[] => {
@@ -260,6 +282,7 @@ export default {
 
     return {
       state,
+      RoleProviderConfig,
       currentUser,
       hasRBACFeature,
       columnList,

@@ -284,6 +284,7 @@ settings:
       upgrade: 升级到付费方案来解锁角色管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
+      role-provider: 该角色同步自 {roleProvider} 的 {rawRole}
 activity:
   name: 名称
   comment: 评论
