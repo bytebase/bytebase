@@ -1071,7 +1071,7 @@ setting:
     value-placeholder: Label value...
 sql-editor:
   self: SQL Editor
-  select-connection: Select Connections
+  select-connection: Please select connections
   search-databases: Search Databases
   search-results: Search Results
   loading-databases: Loading Databases...
@@ -1105,6 +1105,7 @@ sql-editor:
   copy-code: Copy code
   notify:
     copy-code-succeed: Copy code succeed
+  view-all-tabs: View all Tabs
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
