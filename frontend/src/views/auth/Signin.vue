@@ -35,12 +35,8 @@
 
       <template v-if="authProviderList.length == 0">
         <n-button class="w-full h-10 mb-2" disabled>
-          <img
-            class="w-5 mr-1"
-            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
-          /><span class="text-center font-semibold align-middle">
-            {{ $t("auth.sign-in.third-party") }}
-          </span>
+          <img class="w-5 mr-1" :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath" />
+          <span class="text-center font-semibold align-middle">{{ $t("auth.sign-in.gitlab-oauth") }}</span>
         </n-button>
       </template>
     </div>
