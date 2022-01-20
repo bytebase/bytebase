@@ -132,10 +132,12 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 			updater_id,
 			project_id,
 			role,
-			principal_id
+			principal_id,
+			role_provider,
+			payload
 		)
 		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -160,6 +162,8 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 		&projectMember.ProjectID,
 		&projectMember.Role,
 		&projectMember.PrincipalID,
+		&projectMember.RoleProvider,
+		&projectMember.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -186,7 +190,9 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 		    updated_ts,
 			project_id,
 		    role,
-		    principal_id
+		    principal_id,
+			role_provider,
+			payload
 		FROM project_member
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -209,6 +215,8 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			&projectMember.ProjectID,
 			&projectMember.Role,
 			&projectMember.PrincipalID,
+			&projectMember.RoleProvider,
+			&projectMember.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
