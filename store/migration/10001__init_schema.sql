@@ -44,7 +44,6 @@ INSERT INTO
         creator_id,
         updater_id,
         type,
-        auth_provider,
         name,
         email,
         password_hash
@@ -55,7 +54,6 @@ VALUES
         1,
         1,
         'SYSTEM_BOT',
-        'BYTEBASE',
         'Bytebase',
         'support@bytebase.com',
         ''
