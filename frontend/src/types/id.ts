@@ -68,6 +68,8 @@ export type AnomalyId = IdType;
 export type CommandId = IdType;
 export type CommandRegisterId = IdType;
 
+export type SavedQueryId = IdType;
+
 // This references to the object id, which can be used as a container.
 // Currently, only issue can be used a container.
 // The type is used by Activity and Message

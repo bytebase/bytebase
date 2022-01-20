@@ -24,7 +24,7 @@
             <carbon:code class="h-4 w-4" />
           </span>
           <div
-            class="label max-w-5xl w-48 overflow-hidden whitespace-nowrap overflow-ellipsis"
+            class="label max-w-5xl w-48 truncate"
             @dblclick="handleEditLabel(tab)"
           >
             <div
@@ -40,10 +40,10 @@
                 class="rounded px-2 py-0 text-sm w-full absolute left-0 bottom-0"
                 @blur="(e: Event) => handleTryChangeLabel()"
                 @keyup.enter="(e: Event) => handleTryChangeLabel()"
-                @keyup.esc="(e: Event) => handleCancelInput()"
+                @keyup.esc="handleCancelChangeLabel"
               />
               <!-- this is a trick -->
-              <span class="w-full h-full invisible line-camp-1">
+              <span class="w-full h-full invisible">
                 Edit {{ labelState.currentLabelName }}
               </span>
             </div>
@@ -61,11 +61,13 @@
           </template>
           <template v-else>
             <template v-if="!tab.isSaved">
-              <span class="editing text-gray-400">
+              <span class="suffix editing text-gray-400">
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template v-if="tab.id === activeTabId && queryTabList.length > 1">
+            <template
+              v-else-if="tab.id === activeTabId && queryTabList.length > 1"
+            >
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -104,7 +106,7 @@
               <heroicons-solid:chevron-down class="h-4 w-4" />
             </button>
           </template>
-          View all Tabs
+          {{ $t("sql-editor.view-all-tabs") }}
         </NTooltip>
       </NPopselect>
     </div>
@@ -127,6 +129,7 @@ import {
   EditorSelectorGetters,
   EditorSelectorState,
   EditorSelectorActions,
+  SqlEditorActions,
 } from "../../types";
 import { debounce } from "lodash-es";
 
@@ -146,6 +149,11 @@ const { addTab, removeTab, setActiveTabId, updateActiveTab } =
     "setActiveTabId",
     "updateActiveTab",
   ]);
+const { patchSavedQuery, checkSavedQueryExistById } =
+  useNamespacedActions<SqlEditorActions>("sqlEditor", [
+    "patchSavedQuery",
+    "checkSavedQueryExistById",
+  ]);
 
 const store = useStore();
 const { t } = useI18n();
@@ -160,6 +168,7 @@ const labelState = reactive({
   editingTabId: "",
 });
 const labelInputRef = ref<HTMLInputElement>();
+
 const tabList = computed(() => {
   return queryTabList.value.map((tab: TabInfo) => {
     return {
@@ -198,6 +207,12 @@ const handleTryChangeLabel = () => {
     updateActiveTab({
       label: labelState.currentLabelName,
     });
+    if (currentTab.value.currentQueryId) {
+      patchSavedQuery({
+        id: currentTab.value.currentQueryId,
+        name: labelState.currentLabelName,
+      });
+    }
     nextTick(() => {
       reComputedScrollWidth();
       scrollState.style = {
@@ -212,19 +227,36 @@ const handleTryChangeLabel = () => {
     });
   }
 };
-const handleCancelInput = () => {
+const handleCancelChangeLabel = () => {
   labelState.currentLabelName = labelState.oldLabelName;
   updateActiveTab({
     label: labelState.currentLabelName,
   });
+  if (currentTab.value.currentQueryId) {
+    patchSavedQuery({
+      id: currentTab.value.currentQueryId,
+      name: labelState.currentLabelName,
+    });
+  }
   nextTick(() => {
     labelState.isEditingLabel = false;
     reComputedScrollWidth();
   });
 };
 
-const handleSelectTab = (tab: TabInfo) => {
+const handleSelectTab = async (tab: TabInfo) => {
   setActiveTabId(tab.id);
+
+  if (currentTab.value.currentQueryId) {
+    const exist = await checkSavedQueryExistById(
+      currentTab.value.currentQueryId
+    );
+    if (!exist) {
+      updateActiveTab({
+        currentQueryId: undefined,
+      });
+    }
+  }
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   addTab(tab);

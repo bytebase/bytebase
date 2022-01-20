@@ -45,7 +45,7 @@ export function bytesToString(size: number): string {
 
 export function nanosecondsToString(nanoseconds: number): string {
   // dayjs.duration() takes the length of time in milliseconds.
-  return dayjs.duration(nanoseconds/1000000).humanize();
+  return dayjs.duration(nanoseconds / 1000000).humanize();
 }
 
 export function timezoneString(zoneName: string, offset: number): string {
@@ -149,4 +149,8 @@ export function getStringCookie(name: string): string {
   }
 
   return "";
+}
+
+export function getHighlightHTMLByKeyWords(s: string, k: string) {
+  return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
 }

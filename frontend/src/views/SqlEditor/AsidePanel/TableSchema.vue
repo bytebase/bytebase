@@ -5,9 +5,7 @@
         <heroicons-outline:table class="h-4 w-4 mr-1" />
         <span class="font-semibold">{{ tableInfo.name }}</span>
       </div>
-      <div
-        class="table-schema--header-actions flex-1 flex justify-end space-x-2"
-      >
+      <div class="table-schema--header-actions flex-1 flex justify-end space-x-2">
         <div class="action-edit flex items-center">
           <NTooltip trigger="hover">
             <template #trigger>
@@ -15,7 +13,7 @@
                 <heroicons-outline:pencil-alt class="w-4 h-4" />
               </NButton>
             </template>
-            {{ $t("quick-action.alter-schema") }}
+            {{ $t("database.alter-schema") }}
           </NTooltip>
         </div>
         <div class="action-close flex items-center">
@@ -58,9 +56,10 @@
       </div>
     </div>
   </div>
-  <div v-else class="h-full flex justify-center items-center">
-    {{ $t("sql-editor.table-schema-placeholder") }}
-  </div>
+  <div
+    v-else
+    class="h-full flex justify-center items-center"
+  >{{ $t("sql-editor.table-schema-placeholder") }}</div>
 </template>
 
 <script lang="ts" setup>
