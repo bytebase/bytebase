@@ -961,22 +961,29 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 	switch dbType {
 	case db.MySQL, db.TiDB:
 		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, characterSet, collation)
+		if schema != "" {
+			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
+		}
 	case db.Postgres:
 		if collation == "" {
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, characterSet)
 		} else {
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
+		if schema != "" {
+			stmt = fmt.Sprintf("%s\n\\connect %s;\n%s", stmt, databaseName, schema)
+		}
 	case db.ClickHouse:
 		stmt = fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
+		if schema != "" {
+			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
+		}
 	case db.Snowflake:
 		databaseName = strings.ToUpper(databaseName)
 		stmt = fmt.Sprintf("CREATE DATABASE %s;", databaseName)
-	}
-
-	// Append schema.
-	if schema != "" {
-		stmt = fmt.Sprintf("%s\n%s", stmt, schema)
+		if schema != "" {
+			stmt = fmt.Sprintf("%s\nUSE DATABASE %s;\n%s", stmt, databaseName, schema)
+		}
 	}
 
 	return databaseName, stmt
