@@ -12,8 +12,6 @@ CREATE TABLE principal (
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     -- allowed types are 'END_USER', 'SYSTEM_BOT'.
     type TEXT NOT NULL,
-    -- allowed auth providers are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    auth_provider TEXT NOT NULL,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL
@@ -46,7 +44,6 @@ INSERT INTO
         creator_id,
         updater_id,
         type,
-        auth_provider,
         name,
         email,
         password_hash
@@ -57,7 +54,6 @@ VALUES
         1,
         1,
         'SYSTEM_BOT',
-        'BYTEBASE',
         'Bytebase',
         'support@bytebase.com',
         ''

@@ -184,7 +184,7 @@ export default {
       }
 
       store.dispatch("auth/fetchProviderList");
-      
+
       window.addEventListener("bb.oauth.signin", eventListener, false);
     });
 
