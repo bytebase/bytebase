@@ -99,7 +99,7 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 
-	// Fetch all active members of a given repository ()
+	// Fetch all active members of a given repository
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
