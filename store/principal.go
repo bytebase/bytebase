@@ -145,18 +145,16 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 			creator_id,
 			updater_id,
 			type,
-		    auth_provider,
 			name,
 			email,
 			password_hash
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, auth_provider, name, email, password_hash
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.Type,
-		create.AuthProvider,
 		create.Name,
 		create.Email,
 		create.PasswordHash,
@@ -176,7 +174,6 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 		&principal.UpdaterID,
 		&principal.UpdatedTs,
 		&principal.Type,
-		&principal.AuthProvider,
 		&principal.Name,
 		&principal.Email,
 		&principal.PasswordHash,
@@ -205,7 +202,6 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 		    updater_id,
 		    updated_ts,
 		    type,
-			auth_provider,
 		    name,
 		    email,
 			password_hash
@@ -229,7 +225,6 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 			&principal.UpdaterID,
 			&principal.UpdatedTs,
 			&principal.Type,
-			&principal.AuthProvider,
 			&principal.Name,
 			&principal.Email,
 			&principal.PasswordHash,
@@ -263,7 +258,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 		UPDATE principal
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, auth_provider, name, email, password_hash
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
 		args...,
 	)
@@ -281,7 +276,6 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 			&principal.UpdaterID,
 			&principal.UpdatedTs,
 			&principal.Type,
-			&principal.AuthProvider,
 			&principal.Name,
 			&principal.Email,
 			&principal.PasswordHash,

@@ -10,7 +10,6 @@ import {
   unknown,
   PrincipalId,
   AuthProvider,
-  VCSLoginInfo,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 
