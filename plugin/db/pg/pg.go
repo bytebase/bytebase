@@ -507,7 +507,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, useTransact
 	// We don't use transaction for creating databases in Postgres.
 	// https://github.com/bytebase/bytebase/issues/202
 	if !useTransaction {
-		if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+		f := func(stmt string) error {
+			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
+			if strings.HasPrefix(stmt, "\\connect ") {
+				parts := strings.Split(stmt, `"`)
+				if len(parts) != 3 {
+					return fmt.Errorf("invalid statement %q", stmt)
+				}
+				_, err := driver.GetDbConnection(ctx, parts[1])
+				return err
+			}
+			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+				return err
+			}
+			return nil
+		}
+		sc := bufio.NewScanner(strings.NewReader(statement))
+		if err := util.ApplyMultiStatements(sc, f); err != nil {
 			return err
 		}
 		return nil
