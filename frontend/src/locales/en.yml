@@ -167,6 +167,7 @@ common:
   delete: Delete
   history: History
   loading: Loading
+  from: from
   copy: Copy
   copied: Copied
   manage: Manage
