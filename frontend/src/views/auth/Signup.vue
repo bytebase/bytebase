@@ -276,6 +276,10 @@ export default {
         store.dispatch("auth/signup", signupInfo).then(() => {
           router.push("/");
         });
+        // we need to update the server info after setting up a admin account
+        if (needAdminSetup.value) {
+          store.dispatch("actuator/fetchInfo");
+        }
       }
     };
 
