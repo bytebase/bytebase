@@ -31,6 +31,11 @@
                 </span>
               </template>
             </i18n-t>
+            <a
+              href="https://docs.bytebase.com/install/docker#start-a-local-mysql-server-for-testing"
+              target="_blank"
+              class="normal-link"
+            >{{ $t("common.detailed-guide") }}</a>
           </template>
           <template v-else-if="instance.engine == 'CLICKHOUSE'">
             <i18n-t tag="p" keypath="instance.sentence.create-user-example.clickhouse.template">
@@ -109,7 +114,7 @@
               : ''
           "
           :value="instance.username"
-          @input="$emit('update-username', $event.target.value)"
+          @input="$emit('update-username', $event.target.value.trim())"
         />
       </div>
 
