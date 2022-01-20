@@ -41,12 +41,6 @@
             class="bar-link px-2 py-2 rounded-md"
             >{{ $t("common.settings") }}</router-link
           >
-          <router-link
-            v-if="isDevFeatures"
-            to="/sql-editor"
-            class="bar-link px-2 py-2 rounded-md"
-            >{{ $t("sql-editor.self") }}</router-link
-          >
         </div>
       </div>
     </div>
@@ -110,6 +104,14 @@
             {{ $t("common.role.developer") }}
           </div>
         </div>
+        <router-link to="/sql-editor">
+          <NTooltip>
+            <template #trigger>
+              <heroicons-outline:terminal class="w-6 h-6" />
+            </template>
+            {{ $t("sql-editor.self") }}
+          </NTooltip>
+        </router-link>
         <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
@@ -184,7 +186,7 @@
 
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -198,7 +200,7 @@ interface LocalState {
   showMobileMenu: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DashboardHeader",
   components: { ProfileDropdown },
   setup() {
@@ -371,5 +373,5 @@ export default {
       toggleLocales,
     };
   },
-};
+});
 </script>
