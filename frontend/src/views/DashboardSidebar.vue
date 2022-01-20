@@ -6,6 +6,13 @@
       {{ $t("common.home") }}
     </router-link>
     <router-link
+      to="/sql-editor"
+      class="outline-item group flex items-center px-2 py-2"
+    >
+      <heroicons-outline:terminal class="w-5 h-5 mr-2" />
+      {{ $t("sql-editor.self") }}
+    </router-link>
+    <router-link
       to="/anomaly-center"
       class="outline-item group flex items-center px-2 py-2"
     >
@@ -24,17 +31,8 @@
   </nav>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
 import ProjectListSidePanel from "../components/ProjectListSidePanel.vue";
 import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
-
-export default {
-  name: "DashboardSidebar",
-  components: {
-    BookmarkListSidePanel,
-    ProjectListSidePanel,
-    DatabaseListSidePanel,
-  },
-};
 </script>
