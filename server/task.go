@@ -541,10 +541,11 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", updatedTask.Name)
 		}
 
-		updatedTask, err = s.TaskScheduler.ScheduleIfNeeded(ctx, updatedTask)
+		scheduledTask, err := s.TaskScheduler.ScheduleIfNeeded(ctx, updatedTask)
 		if err != nil {
 			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
 		}
+		updatedTask = scheduledTask
 	}
 
 	// If create database task completes, then we will create a database entry immediately
