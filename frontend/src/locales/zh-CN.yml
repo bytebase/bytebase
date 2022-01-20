@@ -541,8 +541,8 @@ auth:
     title: 登录您的账号
     forget-password: 忘记密码?
     new-user: 第一次使用 Bytebase?
-    third-party: 您可联系管理员开启第三方认证登录
     gitlab: 通过 GitLab 登录
+    gitlab-oauth: 您可联系管理员开启 GitLab 登录
   password-forget:
     title: 忘记了您的密码？
     content: 请联系的您的 Bytebase 管理员重置密码
@@ -840,7 +840,8 @@ version-control:
     description: >-
       Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
       (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
-      中选取他们的 Git 仓库。 **配置VCS后，Bytebase 将自动开启通过 VCS 的第三方认证登录**
+      中选取他们的 Git 仓库。
+    description-highlight: 配置 VCS 后，Bytebase 将自动开启通过 VCS 的第三方认证登录
     add-git-provider:
       self: 添加 Git 提供方
       description: >-

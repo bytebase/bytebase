@@ -203,7 +203,6 @@ export default {
 
     const switchToOwner = () => {
       store.dispatch("auth/login", {
-        authProvider: "BYTEBASE",
         payload: {
           email: "demo@example.com",
           password: "1024",
@@ -213,7 +212,6 @@ export default {
 
     const switchToDBA = () => {
       store.dispatch("auth/login", {
-        authProvider: "BYTEBASE",
         payload: {
           email: "jerry@example.com",
           password: "aaa",
@@ -223,7 +221,6 @@ export default {
 
     const switchToDeveloper = () => {
       store.dispatch("auth/login", {
-        authProvider: "BYTEBASE",
         payload: {
           email: "tom@example.com",
           password: "aaa",
