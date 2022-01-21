@@ -1,0 +1,29 @@
+version: '3.7'
+
+services:
+  bb:
+    image: bytebase/bytebase:0.12.0
+    init: true
+    container_name: bytebase
+    restart: always
+    ports:
+      - 8080:8080
+    volumes:
+      - ~/.bytebase/data:/var/opt/bytebase
+    command:
+      [
+        "--data",
+        "/var/opt/bytebase",
+        "--host",
+        "http://localhost",
+        "--port",
+        "8080"
+      ]
+
+  mysql-db:
+    image: mysql
+    platform: linux/amd64
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 3306:3306
