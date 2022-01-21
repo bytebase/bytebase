@@ -45,7 +45,7 @@ const (
 
 	// ActivityProjectRepositoryPush is the type for pushing repositories.
 	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
-	// ActivityProjectDatabaseTransfer is the type for transfering databases.
+	// ActivityProjectDatabaseTransfer is the type for transferring databases.
 	ActivityProjectDatabaseTransfer ActivityType = "bb.project.database.transfer"
 	// ActivityProjectMemberCreate is the type for creating project members.
 	ActivityProjectMemberCreate ActivityType = "bb.project.member.create"

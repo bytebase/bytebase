@@ -19,7 +19,7 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
-// CompatibilityAdvisor is the advisor checking for schema backward compatability.
+// CompatibilityAdvisor is the advisor checking for schema backward compatibility.
 type CompatibilityAdvisor struct {
 }
 
