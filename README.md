@@ -34,9 +34,9 @@
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
 - [x] Classic UI based schema migraiton (SQL Review)
+- [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Backup and restore
-- [x] Built-in SQL Editor
 - [x] Anomaly center
 - [x] Environment policy
   - Approval policy
