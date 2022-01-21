@@ -8,8 +8,9 @@ services:
     restart: always
     ports:
       - 8080:8080
-    volumes:
-      - ~/.bytebase/data:/var/opt/bytebase
+    # # Uncomment the following lines to persist data
+    # volumes:
+    #   - ~/.bytebase/data:/var/opt/bytebase
     command:
       [
         "--data",
@@ -27,3 +28,5 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 3306:3306
+    volumes:
+      - ./initdb.d/mysql:/docker-entrypoint-initdb.d
