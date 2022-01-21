@@ -14,7 +14,7 @@ import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import { store } from "../store";
 import { Database, QuickActionType } from "../types";
-import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
+import { idFromSlug, isDBAOrOwner, isOwner, atou } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -777,6 +777,13 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("../views/SqlEditor/SqlEditor.vue"),
         props: true,
       },
+      {
+        path: "/sql-editor/:connectionSlug/:tabInfoSlug",
+        name: "sql-editor.share",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        props: true,
+      },
     ],
   },
 ];
@@ -944,6 +951,7 @@ router.beforeEach((to, from, next) => {
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
+  const tabInfoSlug = routerSlug.tabInfoSlug;
 
   if (principalId) {
     store
@@ -1139,6 +1147,13 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
+    if (tabInfoSlug) {
+      const currentTab = JSON.parse(atou(tabInfoSlug));
+      store.dispatch("editorSelector/setEditorSelectorState", {
+        queryTabList: [currentTab],
+        activeTabId: currentTab.id,
+      });
+    }
     const [instanceSlug, instanceId, databaseSlug, databaseId] =
       connectionSlug.split("_");
     store

@@ -163,7 +163,23 @@ const getters = {
       }
 
       {
+        // /sql-editor/:connectionSlug/:tabInfoSlug
+        // match this route first
+        const sqlEditorComponents = currentRoute.path.match(
+          "/sql-editor/([0-9a-zA-Z_-]+)/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined, undefined];
+
+        if (sqlEditorComponents[1] && sqlEditorComponents[2]) {
+          return {
+            connectionSlug: sqlEditorComponents[1],
+            tabInfoSlug: sqlEditorComponents[2],
+          };
+        }
+      }
+
+      {
         // /sql-editor/:connectionSlug
+        // match this route after /sql-editor/:connectionSlug/:tabInfoSlug
         const sqlEditorComponents = currentRoute.path.match(
           "/sql-editor/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];

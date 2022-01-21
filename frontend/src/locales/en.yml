@@ -166,6 +166,8 @@ common:
   delete: Delete
   history: History
   loading: Loading
+  copy: Copy
+  copied: Copied
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1105,6 +1107,10 @@ sql-editor:
   copy-code: Copy code
   notify:
     copy-code-succeed: Copy code succeed
+  copy-share-link: The share link was copied to Clipboard.
+  share-a-link: >-
+    Share the current tab as a link, any team member with data connection access
+    can view this query
   view-all-tabs: View all Tabs
 label:
   empty-label-value: <Empty Value>
