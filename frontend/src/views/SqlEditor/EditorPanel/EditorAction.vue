@@ -38,15 +38,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
-import { CascaderOption } from "naive-ui";
 import { cloneDeep } from "lodash-es";
-
+import { CascaderOption } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
+
 import {
   SqlEditorState,
   SqlEditorActions,

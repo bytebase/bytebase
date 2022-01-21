@@ -80,6 +80,7 @@ import {
   useNamespacedActions,
   useNamespacedState,
 } from "vuex-composition-helpers";
+
 import {
   EditorSelectorActions,
   QueryHistory,
