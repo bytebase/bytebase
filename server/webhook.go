@@ -258,7 +258,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	filteredDatabaseList := []*api.Database{}
 	if mi.Environment != "" {
 		for _, database := range databaseList {
-			// Environment name comparision is case insensitive
+			// Environment name comparison is case insensitive
 			if strings.EqualFold(database.Instance.Environment.Name, mi.Environment) {
 				filteredDatabaseList = append(filteredDatabaseList, database)
 			}
