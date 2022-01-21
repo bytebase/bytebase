@@ -36,6 +36,7 @@
 - [x] Classic UI based schema migraiton (SQL Review)
 - [x] Detailed migration history
 - [x] Backup and restore
+- [x] Built-in SQL Editor
 - [x] Anomaly center
 - [x] Environment policy
   - Approval policy
@@ -64,6 +65,10 @@
 <figcaption align = "center">Fig.3 - GitLab based schema migration (Database-as-code)</figcaption>
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
+
+<figcaption align = "center">Fig.4 - Built-in SQL Editor</figcaption>
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
 
 ## Installation
 
