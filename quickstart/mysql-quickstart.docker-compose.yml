@@ -29,4 +29,4 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./initdb.d/mysql:/docker-entrypoint-initdb.d
+      - ../store/test_schema/mysql:/docker-entrypoint-initdb.d
