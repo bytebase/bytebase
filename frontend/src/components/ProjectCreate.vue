@@ -144,7 +144,7 @@ export default defineComponent({
     });
 
     const allowCreate = computed(() => {
-      if (!isEmpty(state.project.name)) return false;
+      if (isEmpty(state.project.name)) return false;
 
       if (state.project.tenantMode === "TENANT" && state.enableDbNameTemplate) {
         if (!state.project.dbNameTemplate) {
