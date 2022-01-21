@@ -68,10 +68,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if user == nil {
 					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User not found: %s", login.Email))
 				}
-				// if user had already use third party method logged in, we will forbid she login via Bytebase
-				if user.AuthProvider != api.PrincipalAuthProviderBytebase {
-					return echo.NewHTTPError(http.StatusUnauthorized, "User has bond to Gitlab")
-				}
+
 				// Compare the stored hashed password, with the hashed version of the password that was received.
 				if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(login.Password)); err != nil {
 					// If the two passwords don't match, return a 401 status.
@@ -114,16 +111,15 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				// create a new user if not exist
 				if user == nil {
 					// if user login via gitlab at the first time, we will generate a random password.
-					// The random password is supposed to be not guessable.
-					// But even one can guess the password, she won't be allowed to login.
-					// If user signs up via 3rd party login like GitLab, we will disallow bytebase builtin password/email login unless user manually switch the login option later.
+					// The random password is supposed to be not guessable. If user wants to login
+					// via password, she needs to set the new password from the profile page.
 					signup := &api.Signup{
 						Email:    GitlabUserInfo.Email,
 						Password: common.RandomString(20),
 						Name:     GitlabUserInfo.Name,
 					}
 					var httpError *echo.HTTPError
-					user, httpError = trySignup(ctx, s, signup, api.PrincipalAuthProviderGitlabSelfHost)
+					user, httpError = trySignup(ctx, s, signup)
 					if httpError != nil {
 						return httpError
 					}
@@ -175,7 +171,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request").SetInternal(err)
 		}
 
-		user, err := trySignup(ctx, s, signup, api.PrincipalAuthProviderBytebase)
+		user, err := trySignup(ctx, s, signup)
 		if err != nil {
 			return err
 		}
@@ -192,7 +188,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 }
 
-func trySignup(ctx context.Context, s *Server, signup *api.Signup, authProvider api.PrincipalAuthProvider) (*api.Principal, *echo.HTTPError) {
+func trySignup(ctx context.Context, s *Server, signup *api.Signup) (*api.Principal, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
@@ -201,7 +197,6 @@ func trySignup(ctx context.Context, s *Server, signup *api.Signup, authProvider 
 	principalCreate := &api.PrincipalCreate{
 		CreatorID:    api.SystemBotID,
 		Type:         api.EndUser,
-		AuthProvider: authProvider,
 		Name:         signup.Name,
 		Email:        signup.Email,
 		PasswordHash: string(passwordHash),

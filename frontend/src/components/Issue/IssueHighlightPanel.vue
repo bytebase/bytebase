@@ -74,6 +74,7 @@ import IssueStatusIcon from "./IssueStatusIcon.vue";
 import { activeTask } from "../../utils";
 import {
   TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseDataUpdatePayload,
   Issue,
   VCSPushEvent,
 } from "../../types";
@@ -118,6 +119,10 @@ export default defineComponent({
       if (props.issue.type == "bb.issue.database.schema.update") {
         const payload = activeTask(props.issue.pipeline)
           .payload as TaskDatabaseSchemaUpdatePayload;
+        return payload?.pushEvent;
+      } else if (props.issue.type == "bb.issue.database.data.update") {
+        const payload = activeTask(props.issue.pipeline)
+          .payload as TaskDatabaseDataUpdatePayload;
         return payload?.pushEvent;
       }
       return undefined;

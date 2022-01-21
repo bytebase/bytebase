@@ -380,20 +380,18 @@ issue:
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
-    below will navigate you to the corresponding Git repository to create schema
-    change.
+    below will navigate you to the corresponding Git repository to initiate the change process.
   vcs-info: >-
     indicates the project has enabled VCS based version control. Selecting
     database belonging to such project will navigate you to the corresponding
-    Git repository to create schema change.
+    Git repository to initiate the change process.
   alter-single-db: Alter single database
   alter-multiple-db: Alter multiple databases
   alter-multiple-db-info: >-
     For each environment, you can select a database to alter its schema or just
     skip that environment. This allows you to compose a single pipeline to
-    propagate schema changes across multiple environments.
+    propagate changes across multiple environments.
 quick-action:
-  alter-schema: Alter Schema
   create-db: Create database
   choose-db: Choose database
   new-db: New DB
@@ -596,8 +594,8 @@ auth:
     admin-account: admin account
     forget-password: Forgot your password?
     new-user: New to Bytebase?
-    third-party: You can reach to your Admin to enable third party login.
     gitlab: Login with GitLab
+    gitlab-oauth: Reach to your Admin to enable GitLab login
   password-forget:
     title: Forgot your password?
     content: Please contact your Bytebase Admin to reset your password.
@@ -673,7 +671,10 @@ database:
   database-name-is-restored-from-another-database-backup: '{0} is restored from another database backup'
   database-backup: database backup
   transfer-project: Transfer Project
+  alter-schema: Alter Schema
   alter-schema-in-vcs: Alter Schema in VCS
+  change-data: Change Data
+  change-data-in-vcs: Change Data in VCS
   successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name: Successfully transferred '{0}' to project '{1}'.
   backup-name: Backup name
   create-backup: Create backup
@@ -949,8 +950,8 @@ version-control:
       scripts will automatically trigger the corresponding database change.
       Bytebase owners manage all the applicable VCSs here, so that project
       owners can link the projects with their Git repositories from these VCSs.
-      **Once configured, Bytebase will enable third party login via your
-      configured VCSs**
+    description-highlight: Once configured, Bytebase will enable third party login via your
+      configured VCSs
     add-git-provider:
       self: Add a Git provider
       description: >-
@@ -1073,7 +1074,7 @@ setting:
     value-placeholder: Label value...
 sql-editor:
   self: SQL Editor
-  select-connection: Select Connections
+  select-connection: Please select connections
   search-databases: Search Databases
   search-results: Search Results
   loading-databases: Loading Databases...
@@ -1096,10 +1097,18 @@ sql-editor:
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
   no-history-found: No history found
+  no-saved-query-found: No saved query found
   search-history: Search History
+  search-saved-queries: Search Saved Queries
+  queries: Queries
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
+    confirm-to-delete-this-saved-query: Confirm to delete this saved query?
   please-input-the-tab-label: Please input the tab label!
+  copy-code: Copy code
+  notify:
+    copy-code-succeed: Copy code succeed
+  view-all-tabs: View all Tabs
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

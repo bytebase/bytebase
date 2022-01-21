@@ -16,17 +16,18 @@
       <div
         v-for="history in data"
         :key="history.id"
-        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start"
+        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-100"
+        @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
           <span class="text-xs text-gray-500">{{ history.createdAt }}</span>
           <NDropdown
             trigger="click"
-            :options="historyDropdownOptions"
+            :options="actionDropdownOptions"
             @select="(key: string) => handleActionBtnClick(key, history)"
             @clickoutside="handleActionBtnOutsideClick"
           >
-            <NButton text>
+            <NButton text @click.stop>
               <template #icon>
                 <heroicons-outline:dots-horizontal
                   class="h-4 w-4 text-gray-500"
@@ -36,11 +37,9 @@
           </NDropdown>
         </div>
         <p
-          class="max-w-full mt-2 mb-1 text-sm break-words font-mono cursor-pointer line-clamp-3 hover:bg-gray-300"
-          @click="handleQueryHistoryClick(history)"
-        >
-          {{ history.statement }}
-        </p>
+          class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
+          v-html="history.formatedStatement"
+        ></p>
       </div>
     </div>
 
@@ -75,6 +74,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useClipboard } from "@vueuse/core";
+import { useStore } from "vuex";
 import {
   useNamespacedActions,
   useNamespacedState,
@@ -85,6 +86,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
 } from "../../../types";
+import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
 
 interface State {
@@ -94,20 +96,20 @@ interface State {
 }
 
 const { t } = useI18n();
+const store = useStore();
 
 const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
     "queryHistoryList",
     "isFetchingQueryHistory",
   ]);
-const { deleteQueryHistory, setShouldSetContent } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "deleteQueryHistory",
-    "setShouldSetContent",
-  ]);
-const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
+const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["deleteQueryHistory"]
+);
+const { addTab } = useNamespacedActions<EditorSelectorActions>(
   "editorSelector",
-  ["updateActiveTab"]
+  ["addTab"]
 );
 
 const state = reactive<State>({
@@ -116,8 +118,11 @@ const state = reactive<State>({
   currentActionHistory: null,
 });
 
+const { copy: copyTextToClipboard, isSupported: isCopySupported } =
+  useClipboard();
+
 const data = computed(() => {
-  const temp =
+  const tempData =
     queryHistoryList.value && queryHistoryList.value.length > 0
       ? queryHistoryList.value.filter((history) => {
           let t = false;
@@ -129,7 +134,15 @@ const data = computed(() => {
           return t;
         })
       : [];
-  return temp;
+
+  return tempData.map((history) => {
+    return {
+      ...history,
+      formatedStatement: state.search
+        ? getHighlightHTMLByKeyWords(history.statement, state.search)
+        : history.statement,
+    };
+  });
 });
 
 const notifyMessage = computed(() => {
@@ -143,18 +156,36 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const historyDropdownOptions = computed(() => [
-  {
+const actionDropdownOptions = computed(() => {
+  const options = [];
+
+  if (isCopySupported) {
+    options.push({
+      label: t("sql-editor.copy-code"),
+      key: "copy",
+    });
+  }
+
+  options.push({
     label: t("common.delete"),
     key: "delete",
-  },
-]);
+  });
+
+  return options;
+});
 
 const handleActionBtnClick = (key: string, history: QueryHistory) => {
   state.currentActionHistory = history;
 
   if (key === "delete") {
     state.isShowDeletingHint = true;
+  } else if (key === "copy") {
+    copyTextToClipboard(history.statement);
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-editor.notify.copy-code-succeed"),
+    });
   }
 };
 
@@ -175,10 +206,9 @@ const handleDeleteHistory = () => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  updateActiveTab({
+  addTab({
     queryStatement: queryHistory.statement,
     selectedStatement: "",
   });
-  setShouldSetContent(true);
 };
 </script>

@@ -2,9 +2,7 @@
   <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
-      <div
-        class="px-4 pb-4 space-y-2 md:space-y-0 md:flex md:items-center md:justify-between"
-      >
+      <div class="px-4 pb-4 space-y-2 md:space-y-0 md:flex md:items-center md:justify-between">
         <div class="flex-1 min-w-0">
           <!-- Summary -->
           <div class="flex items-center">
@@ -12,63 +10,47 @@
               <div class="flex items-center">
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
-                >
-                  {{ database.name }}
-                </h1>
+                >{{ database.name }}</h1>
               </div>
             </div>
           </div>
-          <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-          >
+          <dl class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap">
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
-              >
+              <span class="textlabel">{{ $t("common.environment") }}&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/environment/${environmentSlug(
                   database.instance.environment
                 )}`"
                 class="normal-link"
-                >{{
-                  environmentName(database.instance.environment)
-                }}</router-link
               >
+                {{
+                  environmentName(database.instance.environment)
+                }}
+              </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.instance") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <InstanceEngineIcon :instance="database.instance" />
-              <span class="ml-1 textlabel"
-                >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
-              >
+              <span class="ml-1 textlabel">{{ $t("common.instance") }}&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/instance/${instanceSlug(database.instance)}`"
                 class="normal-link"
-                >{{ instanceName(database.instance) }}</router-link
-              >
+              >{{ instanceName(database.instance) }}</router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.project") }}&nbsp;-&nbsp;</span
-              >
+              <span class="textlabel">{{ $t("common.project") }}&nbsp;-&nbsp;</span>
               <router-link
                 :to="`/project/${projectSlug(database.project)}`"
                 class="normal-link"
-                >{{ projectName(database.project) }}</router-link
-              >
+              >{{ projectName(database.project) }}</router-link>
             </dd>
             <template v-if="database.sourceBackup">
               <dt class="sr-only">{{ $t("db.parent") }}</dt>
               <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
-                <span class="textlabel">
-                  {{ $t("database.restored-from") }}
-                </span>
-                <router-link
-                  :to="`/db/${database.sourceBackup.databaseId}`"
-                  class="normal-link"
-                >
+                <span class="textlabel">{{ $t("database.restored-from") }}</span>
+                <router-link :to="`/db/${database.sourceBackup.databaseId}`" class="normal-link">
                   <!-- Do not display the name of the backup's database because that requires a fetch  -->
                   <span class="tooltip">
                     {{
@@ -90,9 +72,7 @@
             </dd>
           </dl>
           <div v-if="isTenantProject" class="flex items-center mt-2 h-7">
-            <label class="textlabel">
-              {{ $t("common.labels") }}&nbsp;-&nbsp;
-            </label>
+            <label class="textlabel">{{ $t("common.labels") }}&nbsp;-&nbsp;</label>
             <DatabaseLabelsEditor
               :label-list="database.labels"
               :allow-edit="allowEditDatabaseLabels"
@@ -108,16 +88,16 @@
             @click.prevent="tryTransferProject"
           >
             <span>{{ $t("database.transfer-project") }}</span>
-            <heroicons-outline:switch-horizontal
+            <heroicons-outline:switch-horizontal class="-mr-1 ml-2 h-5 w-5 text-control-light" />
+          </button>
+          <button v-if="allowEdit" type="button" class="btn-normal" @click.prevent="changeData">
+            <span>{{ changeDataText }}</span>
+            <heroicons-outline:external-link
+              v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <button
-            v-if="allowEdit"
-            type="button"
-            class="btn-normal"
-            @click.prevent="alterSchema"
-          >
+          <button v-if="allowEdit" type="button" class="btn-normal" @click.prevent="alterSchema">
             <span>{{ alterSchemaText }}</span>
             <heroicons-outline:external-link
               v-if="database.project.workflowType == 'VCS'"
@@ -156,20 +136,16 @@
           type="button"
           class="btn-normal py-2 px-4"
           @click.prevent="state.showModal = false"
-        >
-          {{ $t("common.cancel") }}
-        </button>
+        >{{ $t("common.cancel") }}</button>
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           :disabled="state.editingProjectId == database.project.id"
           @click.prevent="
-            updateProject(state.editingProjectId);
-            state.showModal = false;
+  updateProject(state.editingProjectId);
+state.showModal = false;
           "
-        >
-          {{ $t("common.transfer") }}
-        </button>
+        >{{ $t("common.transfer") }}</button>
       </div>
     </BBModal>
     <BBTabFilter
@@ -188,10 +164,7 @@
         <DatabaseOverviewPanel :database="database" />
       </template>
       <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
-        <DatabaseMigrationHistoryPanel
-          :database="database"
-          :allow-edit="allowEdit"
-        />
+        <DatabaseMigrationHistoryPanel :database="database" :allow-edit="allowEdit" />
       </template>
       <template v-if="state.selectedIndex == BACKUP_TAB">
         <DatabaseBackupPanel
@@ -370,7 +343,14 @@ export default defineComponent({
       if (database.value.project.workflowType == "VCS") {
         return t("database.alter-schema-in-vcs");
       }
-      return t("quick-action.alter-schema");
+      return t("database.alter-schema");
+    });
+
+    const changeDataText = computed(() => {
+      if (database.value.project.workflowType == "VCS") {
+        return t("database.change-data-in-vcs");
+      }
+      return t("database.change-data");
     });
 
     const tabItemList = computed((): BBTabFilterItem[] => {
@@ -394,6 +374,32 @@ export default defineComponent({
           query: {
             template: "bb.issue.database.schema.update",
             name: `[${database.value.name}] Alter schema`,
+            project: database.value.project.id,
+            databaseList: database.value.id,
+          },
+        });
+      } else if (database.value.project.workflowType == "VCS") {
+        store
+          .dispatch(
+            "repository/fetchRepositoryByProjectId",
+            database.value.project.id
+          )
+          .then((repository: Repository) => {
+            window.open(baseDirectoryWebUrl(repository), "_blank");
+          });
+      }
+    };
+
+    const changeData = () => {
+      if (database.value.project.workflowType == "UI") {
+        router.push({
+          name: "workspace.issue.detail",
+          params: {
+            issueSlug: "new",
+          },
+          query: {
+            template: "bb.issue.database.data.update",
+            name: `[${database.value.name}] Change data`,
             project: database.value.project.id,
             databaseList: database.value.id,
           },
@@ -495,7 +501,9 @@ export default defineComponent({
       tabItemList,
       tryTransferProject,
       alterSchema,
+      changeData,
       alterSchemaText,
+      changeDataText,
       updateProject,
       updateLabels,
       selectTab,
