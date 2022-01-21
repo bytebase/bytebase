@@ -23,7 +23,7 @@ const (
 	AnomalyDatabaseSchemaDrift AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
-// AnomalySeverity is the severity of anamoly.
+// AnomalySeverity is the severity of anomaly.
 type AnomalySeverity string
 
 const (
@@ -146,7 +146,7 @@ func (find *AnomalyFind) String() string {
 	return string(str)
 }
 
-// AnomalyArchive is the API message for archiving an anomoly.
+// AnomalyArchive is the API message for archiving an anomaly.
 type AnomalyArchive struct {
 	InstanceID *int
 	DatabaseID *int
