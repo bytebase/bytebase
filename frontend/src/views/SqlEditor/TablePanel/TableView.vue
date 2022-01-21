@@ -62,13 +62,13 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useResizeObserver } from "@vueuse/core";
 import {
   useNamespacedGetters,
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useI18n } from "vue-i18n";
 import { EditorSelectorGetters, SqlEditorState } from "../../../types";
 
 interface State {

@@ -9,19 +9,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { debounce } from "lodash-es";
+import { computed } from "vue";
+import {
+  useNamespacedActions,
+  useNamespacedGetters,
+} from "vuex-composition-helpers";
 
+import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import {
   EditorSelectorActions,
   EditorSelectorGetters,
   SqlEditorActions,
 } from "../../../types";
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import {
-  useNamespacedActions,
-  useNamespacedGetters,
-} from "vuex-composition-helpers";
 
 const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
   "editorSelector",
