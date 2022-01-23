@@ -97,7 +97,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Password: common.RandomString(20),
 				}
 				// for now we only support GITLAB_SELF_HOST
-				createdPrincipal, httpErr := TrySignup(ctx, s, signupInfo, api.PrincipalAuthProvider(projectMember.RoleProvider), c.Get(getPrincipalIDContextKey()).(int))
+				createdPrincipal, httpErr := trySignup(ctx, s, signupInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
 				}

@@ -259,7 +259,7 @@ const actions = {
     { dispatch }: any,
     { projectId }: { projectId: ProjectId }
   ) {
-    await axios.post(`/api/project/${projectId}/sync`);
+    await axios.post(`/api/project/${projectId}/syncmember`);
     const updatedProject = await dispatch("fetchProjectById", projectId);
 
     console.log(updatedProject);
