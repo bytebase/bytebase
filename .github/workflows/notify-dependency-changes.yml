@@ -1,10 +1,6 @@
 name: Change dependency needs admin approval
 
 on:
-  push:
-    paths:
-      - "frontend/package.json"
-      - "go.mod"
   pull_request:
     paths:
       - "frontend/package.json"
@@ -14,7 +10,8 @@ jobs:
   always-fail:
     runs-on: ubuntu-latest
     steps:
-      - name: Fail
-        run: |
-          echo "This PR requires admin approval"
-          exit 1
+      - name: request admin as reviewer
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEWERS: ${{ secrets.DEPENDENCY_REVIEWERS }}
+        run: gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
