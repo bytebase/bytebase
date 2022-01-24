@@ -7,12 +7,11 @@ on:
       - "go.mod"
 
 jobs:
-  always-fail:
+  request-dependency-reviewers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: request admin as reviewer
-        env:
+      - env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEWERS: ${{ secrets.DEPENDENCY_REVIEWERS }}
         run: |
