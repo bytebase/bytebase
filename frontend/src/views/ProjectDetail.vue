@@ -88,7 +88,6 @@ export default defineComponent({
     const hash = computed(() => route.hash.replace(/^#?/, ""));
 
     const project = computed(() => {
-      console.log("changed");
       return store.getters["project/projectById"](
         idFromSlug(props.projectSlug)
       );

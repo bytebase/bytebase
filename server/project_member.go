@@ -85,7 +85,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
 
-			isPrincipalNewCreated := false
+			isPrincipalNewlyCreated := false
 			if principal == nil {
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
@@ -102,7 +102,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					return httpErr
 				}
 				principal = createdPrincipal
-				isPrincipalNewCreated = true
+				isPrincipalNewlyCreated = true
 			}
 
 			isProjectMemberExist := false
@@ -112,13 +112,15 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 			providerPayloadBytes, _ := json.Marshal(providerPayload)
 			// If the principal is newly created, there should not have such a repository member of this newly created principal
-			if !isPrincipalNewCreated {
+			if !isPrincipalNewlyCreated {
 				for _, bytebaseProjectMember := range bytebaseProjectMemberList {
 					if bytebaseProjectMember.PrincipalID == principal.ID {
+						roleProvider := api.ProjectRoleProvider(projectMember.RoleProvider)
+						payload := string(providerPayloadBytes)
 						patchProjectMember := &api.ProjectMemberPatch{
 							ID:           bytebaseProjectMember.ID,
-							RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
-							Payload:      string(providerPayloadBytes),
+							RoleProvider: &roleProvider,
+							Payload:      &payload,
 						}
 						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
 						if err != nil {

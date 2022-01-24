@@ -237,6 +237,12 @@ func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMembe
 	if v := patch.Role; v != nil {
 		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
+	if v := patch.RoleProvider; v != nil {
+		set, args = append(set, "role_provider = ?"), append(args, api.Role(*v))
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, "payload = ?"), append(args, api.Role(*v))
+	}
 
 	args = append(args, patch.ID)
 
