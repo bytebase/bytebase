@@ -1,0 +1,19 @@
+name: Change dependency needs admin approval
+
+on:
+  pull_request:
+    paths:
+      - "frontend/package.json"
+      - "go.mod"
+
+jobs:
+  request-dependency-reviewers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEWERS: ${{ secrets.DEPENDENCY_REVIEWERS }}
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
+          gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
