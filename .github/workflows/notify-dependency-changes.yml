@@ -14,4 +14,6 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEWERS: ${{ secrets.DEPENDENCY_REVIEWERS }}
-        run: gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
+        run: |
+          gh auth login --with-token ${{ secrets.GITHUB_TOKEN }}
+          gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
