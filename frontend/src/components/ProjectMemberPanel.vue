@@ -231,7 +231,7 @@ export default defineComponent({
 
     const syncFromVCS = () => {
       store
-        .dispatch("project/syncMemberRoleFromGitLab", {
+        .dispatch("project/syncMemberRoleFromVCS", {
           projectId: props.project.id,
         })
         .then(() => {

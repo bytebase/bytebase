@@ -255,7 +255,7 @@ const actions = {
   },
 
   // sync member role from vcs
-  async syncMemberRoleFromGitLab(
+  async syncMemberRoleFromVCS(
     { dispatch }: any,
     { projectId }: { projectId: ProjectId }
   ) {
