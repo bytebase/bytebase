@@ -1,0 +1,20 @@
+name: Change dependency needs admin approval
+
+on:
+  push:
+    paths:
+      - "frontend/package.json"
+      - "go.mod"
+  pull_request:
+    paths:
+      - "frontend/package.json"
+      - "go.mod"
+
+jobs:
+  always-fail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail
+        run: |
+          echo "This PR requires admin approval"
+          exit 1
