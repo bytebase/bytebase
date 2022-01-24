@@ -10,6 +10,7 @@ jobs:
   always-fail:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: request admin as reviewer
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
