@@ -36,6 +36,7 @@ const (
 	ENTERPRISE
 )
 
+// String returns the string format of plan type.
 func (p PlanType) String() string {
 	switch p {
 	case FREE:

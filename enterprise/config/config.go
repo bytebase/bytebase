@@ -8,15 +8,15 @@ import (
 )
 
 type Config struct {
-	// The key we used to decrypt license
+	// PublicKey is the key we used to decrypt license.
 	PublicKey string
-	// JWT key version
+	// Version is the JWT key version.
 	Version string
-	// Should always be "bytebase"
+	// Issuer is the license issuer, it should always be "bytebase".
 	Issuer string
-	// Minimum instance count
+	// MinimumInstance is the minimum instance count in each plan.
 	MinimumInstance int
-	// File path to store license
+	// StorePath is the file path to store license.
 	StorePath string
 }
 
@@ -26,7 +26,7 @@ const (
 	minimumInstance = 5
 )
 
-// Create a new enterprise config instance
+// NewConfig will create a new enterprise config instance.
 func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 	l.Info("get project env", zap.String("env", mode))
 
