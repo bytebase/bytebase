@@ -14,8 +14,8 @@ import (
 )
 
 type licenseService struct {
-	l    *zap.Logger
-	conf *config.Conf
+	l      *zap.Logger
+	config *config.Config
 }
 
 var validPlans = []string{
@@ -24,14 +24,14 @@ var validPlans = []string{
 }
 
 func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*licenseService, error) {
-	conf, err := config.NewConf(l, dataDir, mode)
+	config, err := config.NewConf(l, dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &licenseService{
-		conf: conf,
-		l:    l,
+		config: config,
+		l:      l,
 	}, nil
 }
 
@@ -51,11 +51,11 @@ func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
 		}
 
 		kid, ok := token.Header["kid"].(string)
-		if !ok || kid != s.conf.Version {
-			return nil, fmt.Errorf("version '%v' is not valid. expect %s", token.Header["kid"], s.conf.Version)
+		if !ok || kid != s.config.Version {
+			return nil, fmt.Errorf("version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version)
 		}
 
-		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.conf.PubKey))
+		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
 		if err != nil {
 			return nil, err
 		}
@@ -89,13 +89,13 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	}
 
 	iss, ok := claims["iss"].(string)
-	if !ok || iss != s.conf.Iss {
-		return nil, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.conf.Iss, claims["iss"])
+	if !ok || iss != s.config.Issuer {
+		return nil, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"])
 	}
 
 	instance, ok := claims["instance"].(int)
-	if !ok || instance < s.conf.MinimumInstance {
-		return nil, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.conf.MinimumInstance)
+	if !ok || instance < s.config.MinimumInstance {
+		return nil, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance)
 	}
 
 	plan, ok := claims["plan"].(string)
@@ -113,23 +113,23 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 
 	return &enterpriseAPI.License{
 		InstanceCount: instance,
-		ExpiresAt:     exp,
+		ExpiresTs:     exp * 1000,
 		Plan:          plan,
 		Audience:      aud,
 	}, nil
 }
 
 func (s *licenseService) readLicense() (string, error) {
-	token, err := ioutil.ReadFile(s.conf.StorePath)
+	token, err := ioutil.ReadFile(s.config.StorePath)
 	if err != nil {
-		return "", fmt.Errorf("cannot read license from %s, error %w", s.conf.StorePath, err)
+		return "", fmt.Errorf("cannot read license from %s, error %w", s.config.StorePath, err)
 	}
 
 	return string(token), nil
 }
 
 func (s *licenseService) writeLicense(token string) error {
-	return ioutil.WriteFile(s.conf.StorePath, []byte(token), 0644)
+	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 
 func validPlanType(candidate string) error {
@@ -139,7 +139,7 @@ func validPlanType(candidate string) error {
 		}
 	}
 
-	return fmt.Errorf("plan '%s' is not valid, expect one of %s",
+	return fmt.Errorf("plan %q is not valid, expect one of %s",
 		candidate,
 		strings.Join(validPlans, ", "),
 	)

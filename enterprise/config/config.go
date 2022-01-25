@@ -7,21 +7,26 @@ import (
 	"go.uber.org/zap"
 )
 
-type Conf struct {
-	PubKey          string
-	Version         string
-	Iss             string
+type Config struct {
+	// The key we used to decrypt license
+	PublicKey string
+	// JWT key version
+	Version string
+	// Should always be "bytebase"
+	Issuer string
+	// Minimum instance count
 	MinimumInstance int
-	StorePath       string
+	// File path to store license
+	StorePath string
 }
 
 const (
 	keyID           = "v1"
-	iss             = "bytebase"
+	issuer          = "bytebase"
 	minimumInstance = 5
 )
 
-func NewConf(l *zap.Logger, dataDir string, mode string) (*Conf, error) {
+func NewConf(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 	l.Info("get project env", zap.String("env", mode))
 
 	licensePubKey, err := ioutil.ReadFile(fmt.Sprintf("enterprise/keys/%s.pub.pem", mode))
@@ -34,10 +39,10 @@ func NewConf(l *zap.Logger, dataDir string, mode string) (*Conf, error) {
 		storefile = fmt.Sprintf("license_%s", mode)
 	}
 
-	return &Conf{
-		PubKey:          string(licensePubKey),
+	return &Config{
+		PublicKey:       string(licensePubKey),
 		Version:         keyID,
-		Iss:             iss,
+		Issuer:          issuer,
 		MinimumInstance: minimumInstance,
 		StorePath:       fmt.Sprintf("file:%s/%s", dataDir, storefile),
 	}, nil
