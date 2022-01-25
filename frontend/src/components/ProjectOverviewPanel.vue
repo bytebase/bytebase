@@ -57,6 +57,7 @@
           <TenantDatabaseTable
             v-if="state.yAxisLabel"
             :database-list="filteredDatabaseList"
+            :project="project"
             :x-axis-label="state.xAxisLabel"
             :y-axis-label="state.yAxisLabel"
             :label-list="labelList"

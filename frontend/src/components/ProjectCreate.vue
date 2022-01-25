@@ -1,10 +1,10 @@
 <template>
-  <form class="px-4 py-2 space-y-6 divide-y divide-block-border">
+  <form class="w-144 px-4 py-2 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-1">
       <div class="col-span-1">
         <label for="name" class="text-lg leading-6 font-medium text-control">
-          {{ $t("project.create-modal.project-name")
-          }}<span class="text-red-600">*</span>
+          {{ $t("project.create-modal.project-name") }}
+          <span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-4 w-full"
@@ -18,9 +18,9 @@
         <label for="name" class="text-lg leading-6 font-medium text-control">
           {{ $t("project.create-modal.key") }}
           <span class="text-red-600">*</span>
-          <span class="text-sm font-normal">
-            {{ $t("project.create-modal.key-hint") }}</span
-          >
+          <span class="ml-1 text-sm font-normal">
+            {{ $t("project.create-modal.key-hint") }}
+          </span>
         </label>
         <BBTextField
           class="mt-4 w-full uppercase"
@@ -31,7 +31,8 @@
       </div>
       <div class="col-span-1">
         <div for="name" class="text-lg leading-6 font-medium text-control">
-          {{ $t("common.mode") }}<span class="text-red-600">*</span>
+          {{ $t("common.mode") }}
+          <span class="text-red-600">*</span>
         </div>
         <div class="mt-2 textlabel">
           <div class="radio-set-row">
@@ -58,6 +59,29 @@
           </div>
         </div>
       </div>
+      <div v-if="state.project.tenantMode === 'TENANT'" class="col-span-1">
+        <label
+          class="text-lg leading-6 font-medium text-control select-none flex items-center"
+        >
+          {{ $t("project.db-name-template") }}
+          <BBCheckbox
+            :value="state.enableDbNameTemplate"
+            class="ml-2"
+            @toggle="(on: boolean) => state.enableDbNameTemplate = on"
+          />
+        </label>
+        <p class="mt-1 text-sm font-normal">
+          {{ dbNameTemplateTips }}
+        </p>
+        <BBTextField
+          v-if="state.enableDbNameTemplate"
+          class="mt-4 w-full placeholder-gray-300"
+          :required="true"
+          :value="state.project.dbNameTemplate"
+          placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
+          @input="state.project.dbNameTemplate = $event.target.value"
+        />
+      </div>
     </div>
     <!-- Create button group -->
     <div class="pt-4 flex justify-end">
@@ -80,22 +104,18 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  reactive,
-  onMounted,
-  onUnmounted,
-  defineComponent,
-} from "vue";
+import { computed, reactive, defineComponent, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useEventListener } from "@vueuse/core";
 
 interface LocalState {
   project: ProjectCreate;
+  enableDbNameTemplate: boolean;
 }
 
 export default defineComponent({
@@ -112,28 +132,47 @@ export default defineComponent({
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
+        dbNameTemplate: "",
       },
+      enableDbNameTemplate: false,
     });
 
-    const keyboardHandler = (e: KeyboardEvent) => {
+    useEventListener("keydown", (e) => {
       if (e.code == "Escape") {
         emit("dismiss");
       }
-    };
-
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
-
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
     });
 
     const allowCreate = computed(() => {
-      return !isEmpty(state.project?.name);
+      if (isEmpty(state.project.name)) return false;
+
+      if (state.project.tenantMode === "TENANT" && state.enableDbNameTemplate) {
+        if (!state.project.dbNameTemplate) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
+    watch(
+      () => state.enableDbNameTemplate,
+      (on) => {
+        if (!on) {
+          state.project.dbNameTemplate = "";
+        }
+      }
+    );
+
     const create = () => {
+      if (
+        state.project.tenantMode !== "TENANT" ||
+        !state.enableDbNameTemplate
+      ) {
+        // clear up unnecessary fields
+        state.project.dbNameTemplate = "";
+      }
+
       store
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
@@ -159,11 +198,18 @@ export default defineComponent({
       emit("dismiss");
     };
 
+    const dbNameTemplateTips = computed(() =>
+      t("project.create-modal.db-name-template-tips", {
+        placeholder: "{{DB_NAME}}",
+      })
+    );
+
     return {
       state,
       allowCreate,
       cancel,
       create,
+      dbNameTemplateTips,
     };
   },
 });
