@@ -3,7 +3,10 @@ import {
   DeploymentSchedule,
   DeploymentSpec,
   Environment,
+  Label,
 } from "../types";
+import escapeStringRegexp from "escape-string-regexp";
+import { hidePrefix } from "./label";
 
 export const generateDefaultSchedule = (environmentList: Environment[]) => {
   const schedule: DeploymentSchedule = {
@@ -73,4 +76,33 @@ export const validateDeploymentSpec = (
     }
   }
   return undefined;
+};
+
+export const parseDatabaseNameByTemplate = (
+  name: string,
+  template: string,
+  labelList: Label[]
+) => {
+  let regexpString = template.replace("{{DB_NAME}}", "(?<name>.+?)");
+  /*
+    Rewrite the placeholder-based template to a big RegExp
+    e.g. template = "{{DB_NAME}}_{{TENANT}}"
+    bb.tenant has values (bytebase, tenant1, tenant2)
+    here regex will be /^(?<name>.+?)_(bytebase|tenant1|tenant2)$/
+  */
+  labelList.forEach((label) => {
+    const { key, valueList } = label;
+    const placeholder = `{{${hidePrefix(key).toUpperCase()}}}`;
+    // replace special chars in values
+    const escapedValueList = valueList.map((value) =>
+      escapeStringRegexp(value)
+    );
+    const regex = `(${escapedValueList.join("|")})`;
+    regexpString = regexpString.replace(placeholder, regex);
+  });
+  const regex = new RegExp(`^${regexpString}$`);
+  const match = name.match(regex);
+
+  // fallback to name it self when failed
+  return match?.groups?.name || name;
 };
