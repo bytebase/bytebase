@@ -1,0 +1,35 @@
+version: '3.7'
+
+services:
+  bb:
+    image: bytebase/bytebase:0.12.0
+    init: true
+    container_name: bytebase
+    restart: always
+    ports:
+      - 8080:8080
+    # # Uncomment the following lines to persist data
+    # volumes:
+    #   - ~/.bytebase/data:/var/opt/bytebase
+    command:
+      [
+        "--data",
+        "/var/opt/bytebase",
+        "--host",
+        "http://localhost",
+        "--port",
+        "8080"
+      ]
+
+  clickhouse-db:
+    image: yandex/clickhouse-server
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        hard: 262144
+        soft: 262144
+    ports:
+      - 9000:9000
+    volumes:
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - ../store/test_schema/clickhouse:/docker-entrypoint-initdb.d
