@@ -308,12 +308,6 @@ export default defineComponent({
       return project.value.tenantMode === "TENANT";
     });
 
-    const isDbNameTemplateMode = computed((): boolean => {
-      if (project.value.id === UNKNOWN_ID) return false;
-
-      return !!project.value.dbNameTemplate;
-    });
-
     const labelsError = computed((): string => {
       const error = validateLabels(state.labelList);
       if (error) return t(error);
@@ -462,7 +456,6 @@ export default defineComponent({
       state,
       isReservedName,
       isTenantProject,
-      isDbNameTemplateMode,
       labelsError,
       allowCreate,
       allowEditProject,
