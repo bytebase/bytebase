@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Config is the API message for exterprise config.
 type Config struct {
 	// PublicKey is the key we used to decrypt license.
 	PublicKey string
@@ -21,8 +22,11 @@ type Config struct {
 }
 
 const (
-	keyID           = "v1"
-	issuer          = "bytebase"
+	// keyID is the license key version.
+	keyID = "v1"
+	// issuer is the license issuer.
+	issuer = "bytebase"
+	// minimumInstance is the minimum instance count in subscribed plan.
 	minimumInstance = 5
 )
 

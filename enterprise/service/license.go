@@ -13,11 +13,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// licenseService is the service for exterprise license.
 type licenseService struct {
 	l      *zap.Logger
 	config *config.Config
 }
 
+// validPlans is a string array of valid plan types.
 var validPlans = []string{
 	api.TEAM.String(),
 	api.ENTERPRISE.String(),
