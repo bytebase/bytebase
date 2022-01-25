@@ -17,5 +17,9 @@
   "i18n-ally.sourceLanguage": "en",
   "i18n-ally.displayLanguage": "en",
   "i18n-ally.editor.preferEditor": true,
-  "i18n-ally.enabledFrameworks": ["vue"],
+  "i18n-ally.enabledFrameworks": [
+    "vue"
+  ],
+  "go.lintOnSave": "workspace",
+  "go.lintTool": "golint",
 }
