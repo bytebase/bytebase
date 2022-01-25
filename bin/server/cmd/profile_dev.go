@@ -23,6 +23,7 @@ func activeProfile(dataDir string, port int, isDemo bool) profile {
 	}
 }
 
+// GetTestProfile will return a profile for testing.
 func GetTestProfile(dataDir string) profile {
 	return profile{
 		mode:                 "dev",
