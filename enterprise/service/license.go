@@ -119,7 +119,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 
 	return &enterpriseAPI.License{
 		InstanceCount: instance,
-		ExpiresTs:     exp * 1000,
+		ExpiresTs:     exp,
 		Plan:          plan,
 		Audience:      aud,
 	}, nil
