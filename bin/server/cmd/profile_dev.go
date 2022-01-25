@@ -23,10 +23,10 @@ func activeProfile(dataDir string, port int, isDemo bool) profile {
 	}
 }
 
-func GetTestProfile(port int, dataDir string) profile {
+func GetTestProfile(dataDir string) profile {
 	return profile{
 		mode:                 "dev",
-		port:                 port,
+		port:                 1234,
 		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",
 		forceResetSeed:       true,

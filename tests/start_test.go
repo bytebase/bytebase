@@ -18,8 +18,7 @@ func TestServiceStart(t *testing.T) {
 		panic(fmt.Errorf("failed to create logger, %w", err))
 	}
 	defer logger.Sync()
-	port := 1234
-	profile := cmd.GetTestProfile(port, t.TempDir())
+	profile := cmd.GetTestProfile(t.TempDir())
 	m := cmd.NewMain(profile, logger)
 
 	errChan := make(chan error, 1)
