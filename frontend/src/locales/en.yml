@@ -858,7 +858,7 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
-    db-name-template-tips: Allow you to group databases with the same {{DB_NAME}} from different tenants.
+    db-name-template-tips: 'Allow you to group databases with the same {placeholder} from different tenants.'
   overview:
     view-all: View all
     view-all-closed: View all closed

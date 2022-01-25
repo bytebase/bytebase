@@ -767,7 +767,7 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
-    db-name-template-tips: 让您能够把属于不同租户但是有相同 {{DB_NAME}} 的数据库组在一起
+    db-name-template-tips: '让您能够把属于不同租户但是有相同 {placeholder} 的数据库组在一起'
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单

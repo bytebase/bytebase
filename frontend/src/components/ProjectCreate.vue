@@ -71,7 +71,11 @@
           />
         </label>
         <p class="mt-1 text-sm font-normal">
-          {{ $t("project.create-modal.db-name-template-tips") }}
+          {{
+            $t("project.create-modal.db-name-template-tips", {
+              placeholder: "\{\{DB_NAME\}\}",
+            })
+          }}
         </p>
         <BBTextField
           v-if="state.enableDbNameTemplate"
