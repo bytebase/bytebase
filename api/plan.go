@@ -36,6 +36,18 @@ const (
 	ENTERPRISE
 )
 
+func (p PlanType) String() string {
+	switch p {
+	case FREE:
+		return "FREE"
+	case TEAM:
+		return "TEAM"
+	case ENTERPRISE:
+		return "ENTERPRISE"
+	}
+	return ""
+}
+
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
 var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.admin":        {false, true, true},

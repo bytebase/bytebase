@@ -306,7 +306,7 @@ func (m *main) Run(ctx context.Context) error {
 
 	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
 
-	licenseService, err := enterprise.NewLicenseService(m.l, dataDir)
+	licenseService, err := enterprise.NewLicenseService(m.l, dataDir, m.profile.mode)
 	if err != nil {
 		return err
 	}

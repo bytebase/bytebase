@@ -29,11 +29,16 @@ func NewConf(l *zap.Logger, dataDir string, mode string) (*Conf, error) {
 		return nil, fmt.Errorf("cannot read license public key for env %s", mode)
 	}
 
+	storefile := "license"
+	if mode != "release" {
+		storefile = fmt.Sprintf("license_%s", mode)
+	}
+
 	return &Conf{
 		PubKey:          string(licensePubKey),
 		Version:         keyID,
 		Iss:             iss,
 		MinimumInstance: minimumInstance,
-		StorePath:       fmt.Sprintf("file:%s/license_%s", dataDir, mode),
+		StorePath:       fmt.Sprintf("file:%s/%s", dataDir, storefile),
 	}, nil
 }
