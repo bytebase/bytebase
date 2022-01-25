@@ -26,7 +26,8 @@ const (
 	minimumInstance = 5
 )
 
-func NewConf(l *zap.Logger, dataDir string, mode string) (*Config, error) {
+// Create a new enterprise config instance
+func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 	l.Info("get project env", zap.String("env", mode))
 
 	licensePubKey, err := ioutil.ReadFile(fmt.Sprintf("enterprise/keys/%s.pub.pem", mode))

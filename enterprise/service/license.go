@@ -23,8 +23,9 @@ var validPlans = []string{
 	api.ENTERPRISE.String(),
 }
 
+// Create a new enterprise license service
 func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*licenseService, error) {
-	config, err := config.NewConf(l, dataDir, mode)
+	config, err := config.NewConfig(l, dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +36,12 @@ func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*licenseServ
 	}, nil
 }
 
+// Store license into file
 func (s *licenseService) StoreLicense(tokenString string) error {
 	return s.writeLicense(tokenString)
 }
 
+// Valid and parse license from file
 func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
@@ -74,6 +77,7 @@ func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
 	return s.parseClaims(claims)
 }
 
+// Valid and parse JWT claims to license instance
 func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {

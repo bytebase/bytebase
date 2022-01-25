@@ -8,6 +8,8 @@ type License struct {
 }
 
 type LicenseService interface {
+	// Store license into file
 	StoreLicense(tokenString string) error
+	// Valid and parse license from file
 	ParseLicense() (*License, error)
 }
