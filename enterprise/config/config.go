@@ -1,11 +1,15 @@
 package config
 
 import (
+	"embed"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 
 	"go.uber.org/zap"
 )
+
+//go:embed keys
+var keysFS embed.FS
 
 // Config is the API message for exterprise config.
 type Config struct {
@@ -34,10 +38,12 @@ const (
 func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 	l.Info("get project env", zap.String("env", mode))
 
-	licensePubKey, err := ioutil.ReadFile(fmt.Sprintf("enterprise/keys/%s.pub.pem", mode))
+	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
+	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
 		return nil, fmt.Errorf("cannot read license public key for env %s", mode)
 	}
+	l.Info("load public pem", zap.String("file", filename))
 
 	storefile := "license"
 	if mode != "release" {
