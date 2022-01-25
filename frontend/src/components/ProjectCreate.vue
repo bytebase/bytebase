@@ -82,7 +82,7 @@
           class="mt-4 w-full placeholder-gray-300"
           :required="true"
           :value="state.project.dbNameTemplate"
-          placeholder="{{DB_NAME}}_{{TENANT}}"
+          placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
           @input="state.project.dbNameTemplate = $event.target.value"
         />
       </div>
