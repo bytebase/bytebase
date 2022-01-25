@@ -455,7 +455,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 	// Check backup missing
 	{
 		var backupMissingAnomalyPayload *api.AnomalyDatabaseBackupMissingPayload
-		// The anomaly fires if backup is enabled, however no succesful backup has been taken during the period.
+		// The anomaly fires if backup is enabled, however no successful backup has been taken during the period.
 		if backupSetting != nil && backupSetting.Enabled {
 			expectedSchedule := api.BackupPlanPolicyScheduleWeekly
 			backupMaxAge := time.Duration(7*24) * time.Hour

@@ -1,6 +1,6 @@
 <template>
   <div class="sqleditor--wrapper">
-    <QuerySelector />
+    <TabListContainer />
     <Splitpanes class="default-theme splitpanes-wrap">
       <Pane size="20" min-size="0" max-size="30">
         <AsidePanel />
@@ -29,7 +29,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import QuerySelector from "./QuerySelector.vue";
+import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
 

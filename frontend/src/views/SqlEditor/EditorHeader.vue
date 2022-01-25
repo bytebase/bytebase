@@ -95,9 +95,9 @@
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
+import { useStore } from "vuex";
 
 import ProfileDropdown from "../../components/ProfileDropdown.vue";
 import { InboxSummary, PlanType, UNKNOWN_ID } from "../../types";

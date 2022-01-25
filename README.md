@@ -34,6 +34,7 @@
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
 - [x] Classic UI based schema migraiton (SQL Review)
+- [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Backup and restore
 - [x] Anomaly center
@@ -64,6 +65,10 @@
 <figcaption align = "center">Fig.3 - GitLab based schema migration (Database-as-code)</figcaption>
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
+
+<figcaption align = "center">Fig.4 - Built-in SQL Editor</figcaption>
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
 
 ## Installation
 

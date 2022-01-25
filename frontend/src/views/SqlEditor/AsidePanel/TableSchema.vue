@@ -5,7 +5,9 @@
         <heroicons-outline:table class="h-4 w-4 mr-1" />
         <span class="font-semibold">{{ tableInfo.name }}</span>
       </div>
-      <div class="table-schema--header-actions flex-1 flex justify-end space-x-2">
+      <div
+        class="table-schema--header-actions flex-1 flex justify-end space-x-2"
+      >
         <div class="action-edit flex items-center">
           <NTooltip trigger="hover">
             <template #trigger>
@@ -56,20 +58,19 @@
       </div>
     </div>
   </div>
-  <div
-    v-else
-    class="h-full flex justify-center items-center"
-  >{{ $t("sql-editor.table-schema-placeholder") }}</div>
+  <div v-else class="h-full flex justify-center items-center">
+    {{ $t("sql-editor.table-schema-placeholder") }}
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch, defineEmits } from "vue";
+import { useRouter } from "vue-router";
 import {
   useNamespacedGetters,
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { useRouter } from "vue-router";
 
 import type {
   SqlEditorState,

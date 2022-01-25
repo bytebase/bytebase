@@ -1,19 +1,19 @@
 <template>
-  <div class="query-selector">
-    <!-- query tab list-->
+  <div class="tag-list-container">
+    <!-- tab list-->
     <div
-      class="query-selector-wrapper relative overflow-hidden"
+      class="tag-list-wrapper relative overflow-hidden"
       :class="{ 'is-scrolling': scrollState.isScrolling }"
     >
       <div
         ref="tablistRef"
-        class="query-selector-tablist"
+        class="tag-list-tablist"
         @wheel="handleScollTabList"
       >
         <div
           v-for="tab in queryTabList"
           :key="tab.id"
-          class="query-selector-tab"
+          class="tag-list-tab"
           :class="{ active: tab.id === activeTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
@@ -83,7 +83,7 @@
       </div>
     </div>
 
-    <div class="query-selector-add">
+    <div class="tag-list-add">
       <button
         class="p-1 hover:bg-gray-200 rounded-md"
         @click="handleAddTab({})"
@@ -91,7 +91,7 @@
         <heroicons-solid:plus class="h-4 w-4" />
       </button>
     </div>
-    <div class="query-selector-more">
+    <div class="tag-list-more">
       <NPopselect
         v-model:value="selectedTab"
         :options="tabList"
@@ -115,8 +115,8 @@
 
 <script lang="ts" setup>
 import { ref, watch, reactive, nextTick, computed } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { useStore } from "vuex";
 import {
   useNamespacedGetters,
   useNamespacedState,
@@ -303,37 +303,37 @@ watch(
 </script>
 
 <style scoped>
-.query-selector {
+.tag-list-container {
   height: var(--tab-height);
   @apply flex box-border;
   @apply text-gray-500 text-sm;
   @apply border-b;
 }
 
-.query-selector-tablist {
+.tag-list-tablist {
   @apply flex overflow-auto;
   max-width: calc(100vw - 112px);
   scrollbar-width: none; /* firefox */
   -ms-overflow-style: none; /* IE 10+ */
 }
 
-.query-selector-wrapper.is-scrolling::before {
+.tag-list-wrapper.is-scrolling::before {
   @apply absolute top-0 left-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.query-selector-wrapper.is-scrolling::after {
+.tag-list-wrapper.is-scrolling::after {
   @apply absolute top-0 right-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset -10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.query-selector-tablist::-webkit-scrollbar {
+.tag-list-tablist::-webkit-scrollbar {
   display: none; /* Chrome Safari */
 }
 
-.query-selector-tab {
+.tag-list-tab {
   @apply inline-flex place-items-center;
   @apply cursor-pointer box-border;
   @apply px-2 border-r;
@@ -343,33 +343,33 @@ watch(
   transition: transform 0.3s, -webkit-transform 0.3s;
 }
 
-.query-selector-tab.active {
+.tag-list-tab.active {
   @apply cursor-text relative;
   @apply bg-white;
   @apply text-accent;
 }
 
-.query-selector-tab .label {
+.tag-list-tab .label {
   @apply p-2;
 }
-.query-selector-tab .suffix {
+.tag-list-tab .suffix {
   @apply flex justify-center items-center h-4 w-4;
 }
 
-.query-selector-tab .suffix.close {
+.tag-list-tab .suffix.close {
   @apply cursor-pointer;
   @apply text-gray-500;
 }
 
-.query-selector-move-prev,
-.query-selector-move-next,
-.query-selector-add {
+.tag-list-move-prev,
+.tag-list-move-next,
+.tag-list-add {
   @apply flex items-center;
   @apply cursor-pointer;
   @apply p-2;
 }
 
-.query-selector-more {
+.tag-list-more {
   @apply flex items-center justify-end flex-1;
   @apply cursor-pointer;
   @apply p-2;

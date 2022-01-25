@@ -18,10 +18,10 @@
         </Splitpanes>
       </NTabPane>
       <NTabPane name="queries" :tab="$t('sql-editor.queries')">
-        <SavedQueryView />
+        <SavedQueryContainer />
       </NTabPane>
       <NTabPane name="history" :tab="$t('common.history')">
-        <QueryHistoryView />
+        <QueryHistoryContainer />
       </NTabPane>
     </NTabs>
   </div>
@@ -33,9 +33,9 @@ import { useNamespacedState } from "vuex-composition-helpers";
 
 import type { SqlEditorState } from "../../../types";
 import DatabaseTree from "./DatabaseTree.vue";
+import QueryHistoryContainer from "./QueryHistoryContainer.vue";
+import SavedQueryContainer from "./SavedQueryContainer.vue";
 import TableSchema from "./TableSchema.vue";
-import QueryHistoryView from "./QueryHistoryView.vue";
-import SavedQueryView from "./SavedQueryView.vue";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;

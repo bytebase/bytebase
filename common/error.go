@@ -58,7 +58,7 @@ type Error struct {
 	// Machine-readable error code.
 	Code Code
 
-	// Embeded error.
+	// Embedded error.
 	Err error
 }
 
