@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -17,7 +18,12 @@ type licenseService struct {
 }
 
 func NewLicenseService(l *zap.Logger, dataDir string) (*licenseService, error) {
-	conf, err := config.NewConf(dataDir)
+	mode := os.Getenv("MODE")
+	if mode == "" {
+		mode = "dev"
+	}
+
+	conf, err := config.NewConf(l, dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +51,7 @@ func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid != s.conf.Version {
-			return nil, fmt.Errorf("not valid version")
+			return nil, fmt.Errorf("not valid version. expect %s but found %v", s.conf.Version, token.Header["kid"])
 		}
 
 		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.conf.PubKey))
@@ -75,27 +81,27 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 
 	exp, ok := claims["exp"].(int64)
 	if !ok || exp <= time.Now().Unix()/1000 {
-		return nil, fmt.Errorf("not valid exp")
+		return nil, fmt.Errorf("not valid exp, found %v", claims["exp"])
 	}
 
 	iss, ok := claims["iss"].(string)
 	if !ok || iss != s.conf.Iss {
-		return nil, fmt.Errorf("not valid iss")
+		return nil, fmt.Errorf("not valid iss, expect %s but found %v", s.conf.Iss, claims["iss"])
 	}
 
 	instance, ok := claims["instance"].(int)
 	if !ok || instance < s.conf.MinimumInstance {
-		return nil, fmt.Errorf("not valid instance count")
+		return nil, fmt.Errorf("not valid instance count, minimum %d but found %v", s.conf.MinimumInstance, claims["instance"])
 	}
 
-	plan, ok := claims["plan"].(string)
-	if !ok || plan == "" {
-		return nil, fmt.Errorf("not valid plan")
+	plan, ok := claims["plan"].(enterpriseAPI.PlanType)
+	if !ok {
+		return nil, fmt.Errorf("not valid plan, found %v", claims["plan"])
 	}
 
 	aud, ok := claims["aud"].(string)
 	if !ok || aud == "" {
-		return nil, fmt.Errorf("not valid aud")
+		return nil, fmt.Errorf("not valid aud, found %v", claims["aud"])
 	}
 
 	return &enterpriseAPI.License{
@@ -109,7 +115,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 func (s *licenseService) readLicense() (string, error) {
 	token, err := ioutil.ReadFile(s.conf.StorePath)
 	if err != nil {
-		return "", fmt.Errorf("cannnot read token in %s", s.conf.StorePath)
+		return "", fmt.Errorf("cannot read license from %s, error %w", s.conf.StorePath, err)
 	}
 
 	return string(token), nil

@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
+
+	"go.uber.org/zap"
 )
 
 type Conf struct {
@@ -21,17 +21,12 @@ const (
 	minimumInstance = 5
 )
 
-func NewConf(dataDir string) (*Conf, error) {
-	profile := os.Getenv("MODE")
-	if profile == "" {
-		profile = "dev"
-	}
+func NewConf(l *zap.Logger, dataDir string, mode string) (*Conf, error) {
+	l.Info("get project env", zap.String("env", mode))
 
-	log.Printf("Get project env %s\n", profile)
-
-	licensePubKey, err := ioutil.ReadFile(fmt.Sprintf("enterprise/keys/%s.pub.pem", profile))
+	licensePubKey, err := ioutil.ReadFile(fmt.Sprintf("enterprise/keys/%s.pub.pem", mode))
 	if err != nil {
-		return nil, fmt.Errorf("cannnot read license public key for env %s", profile)
+		return nil, fmt.Errorf("cannot read license public key for env %s", mode)
 	}
 
 	return &Conf{
@@ -39,6 +34,6 @@ func NewConf(dataDir string) (*Conf, error) {
 		Version:         keyID,
 		Iss:             iss,
 		MinimumInstance: minimumInstance,
-		StorePath:       fmt.Sprintf("file:%s/license", dataDir),
+		StorePath:       fmt.Sprintf("file:%s/license_%s", dataDir, mode),
 	}, nil
 }
