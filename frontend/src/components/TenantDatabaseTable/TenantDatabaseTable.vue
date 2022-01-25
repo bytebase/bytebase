@@ -16,9 +16,16 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
 import { useStore } from "vuex";
-import { Database, Environment, Label, LabelKeyType } from "../../types";
+import {
+  Database,
+  Environment,
+  Label,
+  Project,
+  LabelKeyType,
+} from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
+import { parseDatabaseNameByTemplate } from "../../utils";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -51,6 +58,10 @@ export default defineComponent({
       type: Object as PropType<Database[]>,
       required: true,
     },
+    project: {
+      type: Object as PropType<Project>,
+      required: true,
+    },
     xAxisLabel: {
       type: String as PropType<LabelKeyType>,
       required: true,
@@ -74,7 +85,21 @@ export default defineComponent({
     );
 
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
-      const dict = groupBy(props.databaseList, "name");
+      if (props.project.dbNameTemplate) {
+        if (props.labelList.length === 0) return [];
+      }
+
+      const dict = groupBy(props.databaseList, (db) => {
+        if (props.project.dbNameTemplate) {
+          return parseDatabaseNameByTemplate(
+            db.name,
+            props.project.dbNameTemplate,
+            props.labelList
+          );
+        } else {
+          return db.name;
+        }
+      });
       return Object.keys(dict).map((name) => ({
         name,
         databaseList: dict[name],

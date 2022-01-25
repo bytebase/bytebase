@@ -203,6 +203,7 @@ export const unknown = (
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
+    dbNameTemplate: "",
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -572,6 +573,7 @@ export const empty = (
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
+    dbNameTemplate: "",
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
