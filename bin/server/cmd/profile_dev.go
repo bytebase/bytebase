@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-func activeProfile(dataDir string, isDemo bool) profile {
+func activeProfile(dataDir string, port int, isDemo bool) profile {
 	dsn := fmt.Sprintf("file:%s/bytebase_dev.db", dataDir)
 	if isDemo {
 		dsn = fmt.Sprintf("file:%s/bytebase_demo.db", dataDir)
 	}
 	return profile{
 		mode:                 "dev",
+		port:                 port,
 		dsn:                  dsn,
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
@@ -22,10 +23,11 @@ func activeProfile(dataDir string, isDemo bool) profile {
 	}
 }
 
-func GetTestProfile(dataDir string) profile {
+func GetTestProfile(port int, dataDir string) profile {
 	return profile{
 		mode:                 "dev",
-		dsn:                  fmt.Sprintf("file:%s/bytebase.db", dataDir),
+		port:                 port,
+		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
 		backupRunnerInterval: 10 * time.Second,

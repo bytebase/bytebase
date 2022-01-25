@@ -132,6 +132,8 @@ func init() {
 type profile struct {
 	// mode can be "release" or "dev"
 	mode string
+	// port is the binding port for server.
+	port int
 	// dsn points to where Bytebase stores its own data
 	dsn string
 	// seedDir points to where to populate the initial data.
@@ -210,7 +212,7 @@ func start() {
 		return
 	}
 
-	activeProfile := activeProfile(dataDir, demo)
+	activeProfile := activeProfile(dataDir, port, demo)
 	m := NewMain(activeProfile, logger)
 
 	// Setup signal handlers.
@@ -245,7 +247,7 @@ func start() {
 func NewMain(activeProfile profile, logger *zap.Logger) *Main {
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
-	fmt.Printf("server=%s:%d\n", host, port)
+	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
@@ -293,7 +295,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, port, frontendHost, frontendPort, m.profile.mode, dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
@@ -331,7 +333,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.server = s
 
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
 
 	if err := s.Run(); err != nil {
 		return err

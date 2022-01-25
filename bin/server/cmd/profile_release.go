@@ -1,3 +1,4 @@
+//go:build release
 // +build release
 
 package cmd
@@ -7,7 +8,7 @@ import (
 	"time"
 )
 
-func activeProfile(dataDir string, isDemo bool) profile {
+func activeProfile(dataDir string, port int, isDemo bool) profile {
 	dsn := fmt.Sprintf("file:%s/bytebase.db", dataDir)
 	seedDir := "seed/release"
 	forceResetSeed := false
@@ -18,6 +19,7 @@ func activeProfile(dataDir string, isDemo bool) profile {
 	}
 	return profile{
 		mode:                 "release",
+		port:                 port,
 		dsn:                  dsn,
 		seedDir:              seedDir,
 		forceResetSeed:       forceResetSeed,
