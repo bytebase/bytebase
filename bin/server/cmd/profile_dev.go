@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package cmd
@@ -15,6 +16,16 @@ func activeProfile(dataDir string, isDemo bool) profile {
 	return profile{
 		mode:                 "dev",
 		dsn:                  dsn,
+		seedDir:              "seed/test",
+		forceResetSeed:       true,
+		backupRunnerInterval: 10 * time.Second,
+	}
+}
+
+func GetTestProfile(dataDir string) profile {
+	return profile{
+		mode:                 "dev",
+		dsn:                  fmt.Sprintf("file:%s/bytebase.db", dataDir),
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
 		backupRunnerInterval: 10 * time.Second,

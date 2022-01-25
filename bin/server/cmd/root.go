@@ -17,6 +17,29 @@ import (
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+
+	// Import sqlite3 driver.
+	_ "github.com/mattn/go-sqlite3"
+
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
+	// Register mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// Register postgres driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
+	_ "github.com/lib/pq"
+
+	// Register snowflake driver.
+	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
+	// Register sqlite driver.
+	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register fake advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
+	// Register mysql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------
@@ -69,34 +92,10 @@ var (
 	demo     bool
 	debug    bool
 
-	logger *zap.Logger
-
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
 		Run: func(cmd *cobra.Command, args []string) {
-			logConfig := zap.NewProductionConfig()
-			// Always set encoding to "console" for now since we do not redirect to file.
-			logConfig.Encoding = "console"
-			// "console" encoding needs to use the corresponding development encoder config.
-			logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
-			if debug {
-				logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-			} else {
-				logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-			}
-			myLogger, err := logConfig.Build()
-			if err != nil {
-				panic(fmt.Errorf("failed to create logger. %w", err))
-			}
-			logger = myLogger
-			defer logger.Sync()
-
-			if err := preStart(); err != nil {
-				logger.Error(err.Error())
-				os.Exit(1)
-			}
-
 			if frontendHost == "" {
 				frontendHost = host
 			}
@@ -149,7 +148,7 @@ type config struct {
 	secret string
 }
 
-type main struct {
+type Main struct {
 	profile *profile
 
 	l *zap.Logger
@@ -159,11 +158,7 @@ type main struct {
 	db *store.DB
 }
 
-func preStart() error {
-	if !common.HasPrefixes(host, "http://", "https://") {
-		return fmt.Errorf("--host %s must start with http:// or https://", host)
-	}
-
+func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(dataDir) {
 		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + dataDir)
@@ -184,8 +179,39 @@ func preStart() error {
 	return nil
 }
 
+// GetLogger will return a logger.
+func GetLogger() (*zap.Logger, error) {
+	logConfig := zap.NewProductionConfig()
+	// Always set encoding to "console" for now since we do not redirect to file.
+	logConfig.Encoding = "console"
+	// "console" encoding needs to use the corresponding development encoder config.
+	logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+	if debug {
+		logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	} else {
+		logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	}
+	return logConfig.Build()
+}
+
 func start() {
-	m := newMain()
+	logger, err := GetLogger()
+	if err != nil {
+		panic(fmt.Errorf("failed to create logger, %w", err))
+	}
+	defer logger.Sync()
+
+	if !common.HasPrefixes(host, "http://", "https://") {
+		logger.Error(fmt.Sprintf("--host %s must start with http:// or https://", host))
+		return
+	}
+	if err := checkDataDir(); err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	activeProfile := activeProfile(dataDir, demo)
+	m := NewMain(activeProfile, logger)
 
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -216,9 +242,7 @@ func start() {
 	<-ctx.Done()
 }
 
-func newMain() *main {
-	activeProfile := activeProfile(dataDir, demo)
-
+func NewMain(activeProfile profile, logger *zap.Logger) *Main {
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, port)
@@ -230,7 +254,7 @@ func newMain() *main {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	return &main{
+	return &Main{
 		profile: &activeProfile,
 		l:       logger,
 	}
@@ -255,7 +279,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
-func (m *main) Run(ctx context.Context) error {
+func (m *Main) Run(ctx context.Context) error {
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
@@ -317,7 +341,7 @@ func (m *main) Run(ctx context.Context) error {
 }
 
 // Close gracefully stops the program.
-func (m *main) Close() error {
+func (m *Main) Close() error {
 	m.l.Info("Trying to stop Bytebase...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -335,4 +359,9 @@ func (m *main) Close() error {
 	}
 	m.l.Info("Bytebase stopped properly.")
 	return nil
+}
+
+// GetServer returns the server in main.
+func (m *Main) GetServer() *server.Server {
+	return m.server
 }
