@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	enterprise "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -304,6 +305,12 @@ func (m *main) Run(ctx context.Context) error {
 	s.SavedQueryService = store.NewSavedQueryService(m.l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+
+	licenseService, err := enterprise.NewLicenseService(m.l, dataDir)
+	if err != nil {
+		return err
+	}
+	s.LicenseService = licenseService
 
 	m.server = s
 

@@ -13,6 +13,7 @@ import (
 	_ "embed"
 
 	"github.com/bytebase/bytebase/api"
+	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -65,6 +66,7 @@ type Server struct {
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	SavedQueryService       api.SavedQueryService
+	LicenseService          enterprise.LicenseService
 
 	e *echo.Echo
 

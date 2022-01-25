@@ -37,6 +37,10 @@ func (s *Server) registerPlanRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.POST("/plan", func(c echo.Context) error {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to implement")
+	})
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
