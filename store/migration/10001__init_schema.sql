@@ -1395,9 +1395,27 @@ CREATE TABLE saved_query (
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
+    -- tab_id generate by front-end
+    tab_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
-    statement TEXT NOT NULL
+    statement TEXT NOT NULL,
+    -- allowed access_type are 'PRIVATE', 'READ', 'WRITE'.
+    access_type TEXT NOT NULL DEFAULT '',
+    -- access_token generate when users share the query into public.
+    access_token TEXT NOT NULL DEFAULT '',
+    -- public says whether the query can share in public with access_token, allowed public are 'NO', 'YES'.
+    public TEXT NOT NULL DEFAULT 'NO',
+    -- for sorting
+    last_opened_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    -- for sorting
+    last_ran_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    UNIQUE(creator_id, tab_id)
 );
+
+CREATE UNIQUE INDEX idx_saved_query_tab_id ON saved_query(tab_id);
 
 INSERT INTO
     sqlite_sequence (name, seq)
