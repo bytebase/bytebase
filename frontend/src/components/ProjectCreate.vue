@@ -71,11 +71,7 @@
           />
         </label>
         <p class="mt-1 text-sm font-normal">
-          {{
-            $t("project.create-modal.db-name-template-tips", {
-              placeholder: "\{\{DB_NAME\}\}",
-            })
-          }}
+          {{ dbNameTemplateTips }}
         </p>
         <BBTextField
           v-if="state.enableDbNameTemplate"
@@ -202,11 +198,18 @@ export default defineComponent({
       emit("dismiss");
     };
 
+    const dbNameTemplateTips = computed(() =>
+      t("project.create-modal.db-name-template-tips", {
+        placeholder: "{{DB_NAME}}",
+      })
+    );
+
     return {
       state,
       allowCreate,
       cancel,
       create,
+      dbNameTemplateTips,
     };
   },
 });
