@@ -95,7 +95,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 
 	instance, ok := claims["instance"].(int)
 	if !ok || instance < s.conf.MinimumInstance {
-		return nil, fmt.Errorf("instance '%v' is not valid, minimum instance count is %d", claims["instance"], s.conf.MinimumInstance)
+		return nil, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.conf.MinimumInstance)
 	}
 
 	plan, ok := claims["plan"].(string)
