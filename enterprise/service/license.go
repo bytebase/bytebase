@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// licenseService is the service for exterprise license.
+// licenseService is the service for enterprise license.
 type licenseService struct {
 	l      *zap.Logger
 	config *config.Config
@@ -90,7 +90,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	if !ok {
 		return nil, fmt.Errorf("exp is not valid, found '%v'", claims["exp"])
 	}
-	if exp <= time.Now().Unix()/1000 {
+	if exp <= time.Now().Unix() {
 		return nil, fmt.Errorf("license has expired at %v", time.Unix(exp, 0))
 	}
 

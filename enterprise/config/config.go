@@ -11,7 +11,7 @@ import (
 //go:embed keys
 var keysFS embed.FS
 
-// Config is the API message for exterprise config.
+// Config is the API message for enterprise config.
 type Config struct {
 	// PublicKey is the key we used to decrypt license.
 	PublicKey string

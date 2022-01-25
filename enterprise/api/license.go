@@ -1,6 +1,6 @@
 package api
 
-// License is the API message for exterprise license.
+// License is the API message for enterprise license.
 type License struct {
 	Audience      string `jsonapi:"attr,audience"`
 	InstanceCount int    `jsonapi:"attr,instanceCount"`
@@ -8,7 +8,7 @@ type License struct {
 	Plan          string `jsonapi:"attr,plan"`
 }
 
-// LicenseService is the service for exterprise license.
+// LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(tokenString string) error
