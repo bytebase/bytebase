@@ -288,3 +288,8 @@ func (server *Server) Shutdown(ctx context.Context) {
 		server.e.Logger.Fatal(err)
 	}
 }
+
+// GetEcho returns the echo server.
+func (server *Server) GetEcho() *echo.Echo {
+	return server.e
+}

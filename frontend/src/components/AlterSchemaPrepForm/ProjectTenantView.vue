@@ -106,6 +106,7 @@ import {
 import { NCollapse, NCollapseItem } from "naive-ui";
 import { groupBy } from "lodash-es";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
+import { parseDatabaseNameByTemplate } from "../../utils";
 import { getPipelineFromDeploymentSchedule } from "../../utils";
 
 export type State = {
@@ -153,7 +154,20 @@ const deployment = computed(() => {
 
 const databaseListGroupByName = computed(
   (): { name: string; list: Database[] }[] => {
-    const dict = groupBy(props.databaseList, "name");
+    if (!props.project) return [];
+    if (props.project.dbNameTemplate && labelList.value.length === 0) return [];
+
+    const dict = groupBy(props.databaseList, (db) => {
+      if (props.project!.dbNameTemplate) {
+        return parseDatabaseNameByTemplate(
+          db.name,
+          props.project!.dbNameTemplate,
+          labelList.value
+        );
+      } else {
+        return db.name;
+      }
+    });
     return Object.keys(dict).map((name) => ({
       name,
       list: dict[name],

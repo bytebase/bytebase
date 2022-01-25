@@ -163,6 +163,7 @@ common:
   or: or
   export: Export
   tips: Tips
+  template: Template
   delete: Delete
   history: History
   loading: Loading
@@ -857,6 +858,7 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
+    db-name-template-tips: 'Allow you to group databases with the same {placeholder} from different tenants.'
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -936,6 +938,7 @@ project:
   mode:
     standard: Standard
     tenant: Tenant
+  db-name-template: '@:common.database @:common.name @:common.template'
 inbox:
   mark-all-as-read: Mark all as read
   view-older: View older
