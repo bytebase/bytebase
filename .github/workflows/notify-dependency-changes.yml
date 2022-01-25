@@ -16,6 +16,6 @@ jobs:
       - uses: actions/checkout@v2
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.url }}
         run: |
-          gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
+          gh pr edit $PR_URL --add-reviewer $REVIEWERS
