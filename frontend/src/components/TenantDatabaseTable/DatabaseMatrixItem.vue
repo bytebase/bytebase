@@ -2,6 +2,13 @@
   <NPopover trigger="hover">
     <template #trigger>
       <div class="bb-database-matrix-item" @click="clickDatabase">
+        <div
+          v-if="database.project.dbNameTemplate"
+          class="whitespace-nowrap font-bold text-md"
+        >
+          <!-- display db name if project has tenant dbNameTemplate -->
+          {{ database.name }}
+        </div>
         <div class="sync-status whitespace-nowrap">
           <span class="tooltip-wrapper">
             <heroicons-solid:check

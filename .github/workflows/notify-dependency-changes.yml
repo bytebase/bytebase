@@ -1,10 +1,13 @@
 name: Change dependency needs admin approval
 
 on:
-  pull_request:
+  pull_request_target:
     paths:
       - "frontend/package.json"
       - "go.mod"
+
+env:
+  REVIEWERS: tianzhou,d-bytebase
 
 jobs:
   request-dependency-reviewers:
@@ -12,8 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REVIEWERS: ${{ secrets.DEPENDENCY_REVIEWERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token
-          gh pr edit $PR_NUMBER --add-reviewer $REVIEWERS
+          gh pr edit $PR_URL --add-reviewer $REVIEWERS

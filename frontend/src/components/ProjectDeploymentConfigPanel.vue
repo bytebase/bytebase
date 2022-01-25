@@ -1,5 +1,23 @@
 <template>
   <div class="max-w-3xl mx-auto">
+    <template v-if="project.dbNameTemplate">
+      <div class="text-lg font-medium leading-7 text-main">
+        {{ $t("project.db-name-template") }}
+      </div>
+      <div>
+        <input
+          disabled
+          type="text"
+          class="textfield w-full"
+          :value="project.dbNameTemplate"
+        />
+      </div>
+
+      <div class="text-lg font-medium leading-7 text-main mt-4">
+        {{ $t("common.deployment-config") }}
+      </div>
+    </template>
+
     <BBAttention
       v-if="deployment?.id === EMPTY_ID"
       :style="'WARN'"
