@@ -258,7 +258,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 func (server *Server) LoadLicense(licenseService enterprise.LicenseService) {
 	license, err := licenseService.LoadLicense()
 	if err != nil {
-		server.l.Warn("Cannot found valid license", zap.String("error", err.Error()))
+		server.l.Warn("Failed to load license", zap.String("error", err.Error()))
 	}
 
 	server.license = license
