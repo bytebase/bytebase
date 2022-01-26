@@ -82,6 +82,7 @@ type Server struct {
 	readonly     bool
 	demo         bool
 	plan         api.PlanType
+	license      *enterprise.License
 	dataDir      string
 }
 
@@ -241,6 +242,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
+	s.registerLicenseRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -250,6 +252,16 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
+}
+
+// SetLicense will get and parse valid license and set into application.
+func (server *Server) SetLicense(licenseService enterprise.LicenseService) {
+	license, err := licenseService.ParseLicense()
+	if err != nil {
+		server.l.Warn("Cannot found valid license", zap.String("error", err.Error()))
+	}
+
+	server.license = license
 }
 
 // Run will run the server.

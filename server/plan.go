@@ -40,5 +40,10 @@ func (s *Server) registerPlanRoutes(g *echo.Group) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	return api.FeatureMatrix[feature][s.plan]
+	plan := api.FREE
+	if s.license != nil {
+		plan = s.license.Plan
+	}
+
+	return api.FeatureMatrix[feature][plan]
 }

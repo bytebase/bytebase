@@ -3,8 +3,6 @@ package service
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -17,12 +15,6 @@ import (
 type licenseService struct {
 	l      *zap.Logger
 	config *config.Config
-}
-
-// validPlans is a string array of valid plan types.
-var validPlans = []string{
-	api.TEAM.String(),
-	api.ENTERPRISE.String(),
 }
 
 // NewLicenseService will create a new enterprise license service.
@@ -90,9 +82,6 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	if !ok {
 		return nil, fmt.Errorf("exp is not valid, found '%v'", claims["exp"])
 	}
-	if exp <= time.Now().Unix() {
-		return nil, fmt.Errorf("license has expired at %v", time.Unix(exp, 0))
-	}
 
 	iss, ok := claims["iss"].(string)
 	if !ok || iss != s.config.Issuer {
@@ -108,21 +97,24 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	if !ok {
 		return nil, fmt.Errorf("plan is not valid, found '%v'", claims["plan"])
 	}
-	if err := validPlanType(plan); err != nil {
-		return nil, err
-	}
 
 	aud, ok := claims["aud"].(string)
 	if !ok || aud == "" {
 		return nil, fmt.Errorf("aud is not valid, found '%v'", claims["aud"])
 	}
 
-	return &enterpriseAPI.License{
+	license := &enterpriseAPI.License{
 		InstanceCount: instance,
 		ExpiresTs:     exp,
-		Plan:          plan,
+		Plan:          convertPlanType(plan),
 		Audience:      aud,
-	}, nil
+	}
+
+	if err := license.Valid(); err != nil {
+		return nil, err
+	}
+
+	return license, nil
 }
 
 func (s *licenseService) readLicense() (string, error) {
@@ -135,18 +127,17 @@ func (s *licenseService) readLicense() (string, error) {
 }
 
 func (s *licenseService) writeLicense(token string) error {
+	s.l.Info("Write license to", zap.String("path", s.config.StorePath), zap.String("token", token))
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 
-func validPlanType(candidate string) error {
-	for _, plan := range validPlans {
-		if plan == candidate {
-			return nil
-		}
+func convertPlanType(candidate string) api.PlanType {
+	switch candidate {
+	case api.TEAM.String():
+		return api.TEAM
+	case api.ENTERPRISE.String():
+		return api.ENTERPRISE
+	default:
+		return api.FREE
 	}
-
-	return fmt.Errorf("plan %q is not valid, expect one of %s",
-		candidate,
-		strings.Join(validPlans, ", "),
-	)
 }
