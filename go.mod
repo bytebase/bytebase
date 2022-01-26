@@ -26,6 +26,7 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+
 )
 
 // tidb pulls in the old sqlite3 v2.0.1+incompatible which doesn't support the latest sqlite3 feature such as RETURNING.
