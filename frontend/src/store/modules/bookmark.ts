@@ -4,14 +4,27 @@ import {
   Bookmark,
   BookmarkCreate,
   BookmarkState,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
-function convert(bookmark: ResourceObject, rootGetters: any): Bookmark {
+function convert(
+  bookmark: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Bookmark {
+  const creatorId = (bookmark.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (bookmark.relationships!.updater.data as ResourceIdentifier)
+    .id;
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id">),
+    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
     id: parseInt(bookmark.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 
@@ -44,8 +57,8 @@ const actions = {
     // API only returns bookmark for the requesting user.
     // User info is retrieved from the context.
     const bookmarkList = (await axios.get(`/api/bookmark`)).data.data.map(
-      (bookmark: ResourceObject) => {
-        return convert(bookmark, rootGetters);
+      (bookmark: ResourceObject, includedList: ResourceObject[]) => {
+        return convert(bookmark, includedList, rootGetters);
       }
     );
     commit("setBookmarkListByPrincipalId", { userId, bookmarkList });
@@ -56,17 +69,15 @@ const actions = {
     { commit, rootGetters }: any,
     newBookmark: BookmarkCreate
   ) {
-    const createdBookmark = convert(
-      (
-        await axios.post(`/api/bookmark`, {
-          data: {
-            type: "bookmark",
-            attributes: newBookmark,
-          },
-        })
-      ).data.data,
-      rootGetters
-    );
+    const data = (
+      await axios.post(`/api/bookmark`, {
+        data: {
+          type: "bookmark",
+          attributes: newBookmark,
+        },
+      })
+    ).data;
+    const createdBookmark = convert(data.data, data.included, rootGetters);
 
     commit("appendBookmark", createdBookmark);
 

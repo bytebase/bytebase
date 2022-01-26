@@ -11,10 +11,7 @@
     />
     <div class="px-6 space-y-6">
       <InstanceForm :create="false" :instance="instance" />
-      <div
-        v-if="hasDataSourceFeature"
-        class="py-6 space-y-4 border-t divide-control-border"
-      >
+      <div v-if="hasDataSourceFeature" class="py-6 space-y-4 border-t divide-control-border">
         <DataSourceTable :instance="instance" />
       </div>
       <div v-else>
@@ -30,27 +27,20 @@
           />
           <div class="flex items-center space-x-4">
             <div>
-              <BBSpin
-                v-if="state.syncingSchema"
-                :title="$t('instance.syncing')"
-              />
+              <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
             </div>
             <button
               v-if="allowEdit"
               type="button"
               class="btn-normal"
               @click.prevent="syncSchema"
-            >
-              {{ $t("instance.sync-now") }}
-            </button>
+            >{{ $t("instance.sync-now") }}</button>
             <button
               v-if="instance.rowStatus == 'NORMAL'"
               type="button"
               class="btn-primary"
               @click.prevent="createDatabase"
-            >
-              {{ $t("instance.new-database") }}
-            </button>
+            >{{ $t("instance.new-database") }}</button>
           </div>
         </div>
         <DatabaseTable
@@ -117,8 +107,7 @@
       }
     "
     @cancel="state.showCreateMigrationSchemaModal = false"
-  >
-  </BBAlert>
+  ></BBAlert>
 
   <BBModal
     v-if="state.showCreateDatabaseModal"
@@ -244,7 +233,7 @@ export default {
           ) +
           (isDBAOrOwner(currentUser.value.role)
             ? " " +
-              t("instance.please-check-the-instance-connection-info-is-correct")
+            t("instance.please-check-the-instance-connection-info-is-correct")
             : " " + t("instance.please-contact-your-dba-to-configure-it"))
         );
       }
@@ -263,7 +252,7 @@ export default {
     });
 
     const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bb.data-source")
+      store.getters["plan/feature"]("bb.feature.data-source")
     );
 
     const databaseList = computed(() => {

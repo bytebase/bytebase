@@ -68,6 +68,17 @@ export const validateLabels = (labels: DatabaseLabel[]): string | undefined => {
   return undefined;
 };
 
+export const validateLabelsWithTemplate = (
+  labelList: DatabaseLabel[],
+  requiredLabelDict: Set<LabelKeyType>
+) => {
+  for (const key of requiredLabelDict.values()) {
+    const value = labelList.find((label) => label.key === key)?.value;
+    if (!value) return false;
+  }
+  return true;
+};
+
 export const findDefaultGroupByLabel = (
   labelList: Label[],
   databaseList: Database[]
@@ -161,4 +172,43 @@ const checkLabelExists = (
   rule: LabelSelectorRequirement
 ): boolean => {
   return db.labels.some((label) => label.key === rule.key);
+};
+
+export const parseLabelListInTemplate = (
+  template: string,
+  availableLabelList: Label[]
+): Label[] => {
+  const labelList: Label[] = [];
+
+  availableLabelList.forEach((label) => {
+    const placeholder = `{{${hidePrefix(label.key).toUpperCase()}}}`;
+    if (template.includes(placeholder)) {
+      labelList.push(label);
+    }
+  });
+
+  return labelList;
+};
+
+export const buildDatabaseNameByTemplateAndLabelList = (
+  template: string,
+  name: string,
+  labelList: DatabaseLabel[],
+  keepEmpty = false
+): string => {
+  let databaseName = template;
+  if (!!name || !keepEmpty) {
+    databaseName = databaseName.replace("{{DB_NAME}}", name);
+  }
+  for (let i = 0; i < labelList.length; i++) {
+    const { key, value } = labelList[i];
+    if (!value && keepEmpty) {
+      // keep the placeholder as-is
+      continue;
+    }
+    const placeholder = `{{${hidePrefix(key).toUpperCase()}}}`;
+    databaseName = databaseName.replace(placeholder, value);
+  }
+
+  return databaseName;
 };

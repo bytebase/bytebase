@@ -12,10 +12,35 @@ import {
   ProjectId,
   QueryHistory,
   SavedQuery,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
+import { getPrincipalFromIncludedList } from "./principal";
+
+function convertSavedQuery(
+  savedQuery: ResourceObject,
+  includedList: ResourceObject[]
+): SavedQuery {
+  const creatorId = (
+    savedQuery.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  const updaterId = (
+    savedQuery.relationships!.updater.data as ResourceIdentifier
+  ).id;
+
+  return {
+    ...(savedQuery.attributes as Omit<
+      SavedQuery,
+      "id" | "creator" | "updater"
+    >),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    id: parseInt(savedQuery.id),
+  };
+}
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -285,7 +310,7 @@ const actions = {
     { commit, state }: any,
     { name, statement }: { name: string; statement: string }
   ): Promise<SavedQuery> {
-    const resData = (
+    const data = (
       await axios.post(`/api/savedquery`, {
         data: {
           type: "createSavedQuery",
@@ -295,12 +320,8 @@ const actions = {
           },
         },
       })
-    ).data.data;
-
-    const newSavedQuery = {
-      ...(resData.attributes as Omit<SavedQuery, "id">),
-      id: parseInt(resData.id),
-    } as SavedQuery;
+    ).data;
+    const newSavedQuery = convertSavedQuery(data.data, data.included);
 
     commit(
       types.SET_SAVED_QUERY_LIST,
@@ -316,10 +337,7 @@ const actions = {
     const data = (await axios.get(`/api/savedquery`)).data;
     const savedQueryList: SavedQuery[] = data.data.map(
       (savedQuery: ResourceObject) => {
-        return {
-          ...(savedQuery.attributes as Omit<SavedQuery, "id">),
-          id: parseInt(savedQuery.id),
-        };
+        return convertSavedQuery(savedQuery, data.included);
       }
     );
 

@@ -7,8 +7,10 @@ import {
   unknown,
   PipelineId,
   Pipeline,
+  Principal,
   Environment,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 const state: () => StageState = () => ({});
 
@@ -52,9 +54,19 @@ function convertPartial(
     }
   }
 
+  const creatorId = (stage.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (stage.relationships!.updater.data as ResourceIdentifier)
+    .id;
+
   const result: Omit<Stage, "pipeline"> = {
-    ...(stage.attributes as Omit<Stage, "id" | "database" | "taskList">),
+    ...(stage.attributes as Omit<
+      Stage,
+      "id" | "database" | "taskList" | "creator" | "updater"
+    >),
     id: parseInt(stage.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     environment,
     taskList,
   };

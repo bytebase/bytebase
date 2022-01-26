@@ -2,8 +2,9 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import VueI18n from "@intlify/vite-plugin-vue-i18n";
-import ViteIcons, { ViteIconsResolver } from "vite-plugin-icons";
-import ViteComponents from "vite-plugin-components";
+import Icons from "unplugin-icons/vite";
+import IconsResolver from "unplugin-icons/resolver";
+import Components from "unplugin-vue-components/vite";
 
 const SERVER_PORT = process.env.PORT || 3000;
 const HTTPS_PORT = 443;
@@ -22,19 +23,16 @@ export default defineConfig(() => {
       VueI18n({
         include: [resolve(__dirname, "src/locales/**")],
       }),
-      ViteComponents({
+      Components({
         dirs: [r("src/components"), r("src/bbkit")],
-        // generate `components.d.ts` for ts support with Volar
-        globalComponentsDeclaration: true,
         // auto import icons
-        customComponentResolvers: [
-          // https://github.com/antfu/vite-plugin-icons
-          ViteIconsResolver({
-            componentPrefix: "",
+        resolvers: [
+          IconsResolver({
+            prefix: "",
           }),
         ],
       }),
-      ViteIcons(),
+      Icons(),
     ],
     optimizeDeps: {
       allowNodeBuiltins: ["postcss", "bytebase"],

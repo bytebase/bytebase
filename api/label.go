@@ -25,10 +25,10 @@ type LabelKey struct {
 
 	// Standard fields
 	CreatorID int
-	Creator   *Principal `jsonapi:"attr,creator"`
+	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
 	UpdaterID int
-	Updater   *Principal `jsonapi:"attr,updater"`
+	Updater   *Principal `jsonapi:"relation,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields

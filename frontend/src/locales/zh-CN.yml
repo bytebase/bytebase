@@ -401,6 +401,8 @@ quick-action:
 create-db:
   new-database-name: 新数据库名称
   reserved-db-error: '{databaseName} 是一个预留名称'
+  db-name-generated-by-template: 依据模板生成的数据库名称
+  select-label-value: '选择 {key}'
 db:
   encoding: 字符编码
   character-set: 字符集
