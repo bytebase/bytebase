@@ -16,4 +16,13 @@ func TestServiceStart(t *testing.T) {
 	if err := ctl.Login(); err != nil {
 		t.Fatal(err)
 	}
+
+	projects, err := ctl.getProjects()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Test seed should have more than one project.
+	if len(projects) <= 1 {
+		t.Errorf("unexpected number of projects %v", len(projects))
+	}
 }
