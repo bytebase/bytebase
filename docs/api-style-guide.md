@@ -48,6 +48,10 @@ We can look at the following example as an interesting case. helloID follows Go 
 1. Json property name: ``` helloId ```.
 1. Vue template name: ``` helloId ``` => ``` hello-id ```.
 
+# Misc
+
+1. Timestamps should be Unix timestamp (UTC timezone) in seconds whenever possible. The names should be in the format of `xxTs` such as `createdTs`. Timestamps that need precision should be nanoseconds, e.g. perf profiling. The names should be in the format of `xxNs`.
+
 # References
 
 1. [Google's AIP](https://google.aip.dev/)
