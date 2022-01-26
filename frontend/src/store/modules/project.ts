@@ -59,9 +59,6 @@ function convert(
 
   // sort the member list
   memberList.sort((a, b) => {
-    if (a.updatedTs !== b.updatedTs) {
-      return a.updatedTs - b.updatedTs;
-    }
     if (a.createdTs !== b.createdTs) {
       return a.createdTs - b.createdTs;
     }
