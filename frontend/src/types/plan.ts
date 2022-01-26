@@ -29,5 +29,5 @@ export interface Plan {
   // Plan desc and feature
   title: string;
   description: string;
-  features: { id: string; content?: string; type?: string }[];
+  features: { id: string; content?: string }[];
 }

@@ -82,7 +82,7 @@ export const TEAM_PLAN: Plan = {
   title: "Team",
   description: "A plan that scales with your rapidly growing business.",
   features: [
-    { id: "Instance", content: "5", type: "Counter" },
+    { id: "Instance", content: "5" },
     { id: "Schema change" },
     { id: "Migration history" },
     { id: "SQL Editor" },
