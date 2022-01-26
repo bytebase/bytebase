@@ -1,11 +1,27 @@
 import axios from "axios";
-import { ResourceObject, SettingState } from "../../types";
+import {
+  Principal,
+  ResourceIdentifier,
+  ResourceObject,
+  SettingState,
+} from "../../types";
 import { Setting, SettingName } from "../../types/setting";
+import { getPrincipalFromIncludedList } from "./principal";
 
-function convert(setting: ResourceObject, rootGetters: any): Setting {
+function convert(
+  setting: ResourceObject,
+  includedList: ResourceObject[],
+  rootGetters: any
+): Setting {
+  const creatorId = (setting.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (setting.relationships!.updater.data as ResourceIdentifier)
+    .id;
   return {
-    ...(setting.attributes as Omit<Setting, "id">),
+    ...(setting.attributes as Omit<Setting, "id" | "creator" | "updater">),
     id: parseInt(setting.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 
@@ -23,11 +39,10 @@ const getters = {
 
 const actions = {
   async fetchSetting({ commit, rootGetters }: any): Promise<Setting[]> {
-    const settingList = (await axios.get(`/api/setting`)).data.data.map(
-      (setting: ResourceObject) => {
-        return convert(setting, rootGetters);
-      }
-    );
+    const data = (await axios.get(`/api/setting`)).data;
+    const settingList = data.data.map((setting: ResourceObject) => {
+      return convert(setting, data.included, rootGetters);
+    });
     for (const setting of settingList) {
       commit("setSettingByName", { name: setting.name, setting });
     }
@@ -47,9 +62,9 @@ const actions = {
           },
         },
       })
-    ).data.data;
+    ).data;
 
-    const setting = convert(data, rootGetters);
+    const setting = convert(data.data, data.included, rootGetters);
 
     commit("setSettingByName", { name: setting.name, setting });
 

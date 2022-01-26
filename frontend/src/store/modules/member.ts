@@ -11,21 +11,37 @@ import {
   empty,
   EMPTY_ID,
   Principal,
+  ResourceIdentifier,
   RoleType,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   member: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
 ): Member {
-  const principal = member.attributes.principal as Principal;
+  const creatorId = (member.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (member.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  const principalId = (member.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  const principal = getPrincipalFromIncludedList(
+    principalId,
+    includedList
+  ) as Principal;
   principal.role = member.attributes.role as RoleType;
 
   return {
-    ...(member.attributes as Omit<Member, "id" | "principal">),
+    ...(member.attributes as Omit<
+      Member,
+      "id" | "principal" | "creator" | "updater"
+    >),
     id: parseInt(member.id),
-    principal,
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    principal: principal,
   };
 }
 
