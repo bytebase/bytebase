@@ -10,6 +10,7 @@ import {
   IssueStatus,
   IssueStatusPatch,
   Pipeline,
+  Principal,
   PrincipalId,
   Project,
   ProjectId,
@@ -17,6 +18,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   issue: ResourceObject,
@@ -49,10 +51,25 @@ function convert(
       pipeline = rootGetters["pipeline/convert"](item, includedList);
     }
   }
+  const creatorId = (issue.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (issue.relationships!.updater.data as ResourceIdentifier)
+    .id;
+  const assigneeId = (issue.relationships!.assignee.data as ResourceIdentifier)
+    .id;
 
   return {
-    ...(issue.attributes as Omit<Issue, "id" | "project">),
+    ...(issue.attributes as Omit<
+      Issue,
+      "id" | "project" | "creator" | "updater" | "assignee"
+    >),
     id: parseInt(issue.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    assignee: getPrincipalFromIncludedList(
+      assigneeId,
+      includedList
+    ) as Principal,
     project,
     pipeline,
   };

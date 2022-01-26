@@ -3,11 +3,13 @@ import {
   Environment,
   EnvironmentId,
   PolicyState,
+  Principal,
   ResourceIdentifier,
   ResourceObject,
   unknown,
 } from "../../types";
 import { Policy, PolicyType, PolicyUpsert } from "../../types/policy";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   policy: ResourceObject,
@@ -29,10 +31,19 @@ function convert(
       environment = rootGetters["environment/convert"](item, includedList);
     }
   }
+  const creatorId = (policy.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (policy.relationships!.updater.data as ResourceIdentifier)
+    .id;
 
   return {
-    ...(policy.attributes as Omit<Policy, "id" | "environment" | "payload">),
+    ...(policy.attributes as Omit<
+      Policy,
+      "id" | "environment" | "payload" | "creator" | "updater"
+    >),
     id: parseInt(policy.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };

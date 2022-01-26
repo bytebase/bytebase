@@ -3,18 +3,27 @@ import {
   PrincipalId,
   IssueSubscriber,
   IssueSubscriberState,
+  ResourceIdentifier,
   ResourceObject,
   Principal,
   IssueId,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   issueSubscriber: ResourceObject,
+  includedList: ResourceObject[],
   rootGetters: any
 ): IssueSubscriber {
+  const subscriberId = (
+    issueSubscriber.relationships!.subscriber.data as ResourceIdentifier
+  ).id;
   return {
     issueId: issueSubscriber.attributes.issueId as IssueId,
-    subscriber: issueSubscriber.attributes.subscriber as Principal,
+    subscriber: getPrincipalFromIncludedList(
+      subscriberId,
+      includedList
+    ) as Principal,
   };
 }
 
@@ -35,10 +44,9 @@ const actions = {
     { commit, rootGetters }: any,
     issueId: IssueId
   ) {
-    const subscriberList = (
-      await axios.get(`/api/issue/${issueId}/subscriber`)
-    ).data.data.map((issueSubscriber: ResourceObject) => {
-      return convert(issueSubscriber, rootGetters);
+    const data = (await axios.get(`/api/issue/${issueId}/subscriber`)).data;
+    const subscriberList = data.data.map((issueSubscriber: ResourceObject) => {
+      return convert(issueSubscriber, data.included, rootGetters);
     });
     commit("setSubscriberListByIssueId", {
       issueId,
@@ -57,17 +65,19 @@ const actions = {
       subscriberId: PrincipalId;
     }
   ) {
-    const createdIssueSubscriber = convert(
-      (
-        await axios.post(`/api/issue/${issueId}/subscriber`, {
-          data: {
-            type: "issueSubscriber",
-            attributes: {
-              subscriberId,
-            },
+    const data = (
+      await axios.post(`/api/issue/${issueId}/subscriber`, {
+        data: {
+          type: "issueSubscriber",
+          attributes: {
+            subscriberId,
           },
-        })
-      ).data.data,
+        },
+      })
+    ).data;
+    const createdIssueSubscriber = convert(
+      data.data,
+      data.included,
       rootGetters
     );
 

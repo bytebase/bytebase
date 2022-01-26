@@ -6,7 +6,10 @@ import {
   LabelId,
   LabelPatch,
   LabelValueType,
+  Principal,
+  ResourceIdentifier,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   label: ResourceObject,
@@ -15,7 +18,10 @@ function convert(
 ): Label {
   const valueList = (label.attributes.valueList || []) as LabelValueType[];
   return {
-    ...(label.attributes as Omit<Label, "valueList" | "id">),
+    ...(label.attributes as Omit<
+      Label,
+      "valueList" | "id" | "creator" | "updater"
+    >),
     valueList,
     id: parseInt(label.id, 10),
   };
