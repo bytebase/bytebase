@@ -1391,29 +1391,13 @@ END;
 -- saved_query table stores the saved queries for the user
 CREATE TABLE saved_query (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
-    database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    statement TEXT NOT NULL,
-    -- allowed visibilities are 'PRIVATE', 'PROJECT', 'PUBLIC'.
-    visibility TEXT NOT NULL DEFAULT 'PRIVATE',
-    -- for sorting
-    last_opened_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    -- for sorting
-    last_ran_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now'))
+    statement TEXT NOT NULL
 );
-
-CREATE INDEX idx_saved_query_creator_id ON saved_query(creator_id);
-
-CREATE INDEX idx_saved_query_instance_id_row_status ON saved_query(instance_id, row_status);
-
-CREATE INDEX idx_saved_query_database_id_row_status ON saved_query(database_id, row_status);
 
 INSERT INTO
     sqlite_sequence (name, seq)
@@ -1426,6 +1410,47 @@ UPDATE
     ON `saved_query` FOR EACH ROW BEGIN
 UPDATE
     `saved_query`
+SET
+    updated_ts = (strftime('%s', 'now'))
+WHERE
+    rowid = old.rowid;
+
+END;
+
+-- sheet table stores the query for the user
+CREATE TABLE sheet (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- allowed row status are 'NORMAL', 'ARCHIVED'.
+    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    database_id INTEGER NULL REFERENCES db (id),
+    name TEXT NOT NULL,
+    statement TEXT NOT NULL,
+    -- allowed visibilities are 'PRIVATE', 'PROJECT', 'PUBLIC'.
+    visibility TEXT NOT NULL DEFAULT 'PRIVATE'
+);
+
+CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
+
+CREATE INDEX idx_sheet_instance_id_row_status ON sheet(instance_id, row_status);
+
+CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
+
+INSERT INTO
+    sqlite_sequence (name, seq)
+VALUES
+    ('sheet', 100);
+
+CREATE TRIGGER IF NOT EXISTS `trigger_update_sheet_modification_time`
+AFTER
+UPDATE
+    ON `sheet` FOR EACH ROW BEGIN
+UPDATE
+    `sheet`
 SET
     updated_ts = (strftime('%s', 'now'))
 WHERE
