@@ -17,7 +17,7 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 		seedDir = "seed/test"
 		forceResetSeed = true
 	}
-	return profile{
+	return Profile{
 		mode:                 "release",
 		port:                 port,
 		dsn:                  dsn,
