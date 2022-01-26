@@ -259,6 +259,13 @@ func (server *Server) LoadLicense(licenseService enterprise.LicenseService) {
 	license, err := licenseService.LoadLicense()
 	if err != nil {
 		server.l.Warn("Failed to load license", zap.String("error", err.Error()))
+	} else {
+		server.l.Info(
+			"Load valid license",
+			zap.String("plan", license.Plan.String()),
+			zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+			zap.Int("instanceCount", license.InstanceCount),
+		)
 	}
 
 	server.license = license

@@ -2,16 +2,15 @@ package api
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
 )
 
 // validPlans is a string array of valid plan types.
-var validPlans = []string{
-	api.TEAM.String(),
-	api.ENTERPRISE.String(),
+var validPlans = []api.PlanType{
+	api.TEAM,
+	api.ENTERPRISE,
 }
 
 // License is the API message for enterprise license.
@@ -24,8 +23,9 @@ type License struct {
 
 // Valid will check if license expired or has correct plan type.
 func (l *License) Valid() error {
-	if l.ExpiresTs <= time.Now().Unix() {
-		return fmt.Errorf("license has expired at %v", time.Unix(l.ExpiresTs, 0))
+	expireTime := time.Unix(l.ExpiresTs, 0)
+	if expireTime.Before(time.Now()) {
+		return fmt.Errorf("license has expired at %v", expireTime)
 	}
 
 	if err := l.validPlanType(); err != nil {
@@ -37,14 +37,15 @@ func (l *License) Valid() error {
 
 func (l *License) validPlanType() error {
 	for _, plan := range validPlans {
-		if plan == l.Plan.String() {
+		if plan == l.Plan {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("plan %q is not valid, expect one of %s",
+	return fmt.Errorf("plan %q is not valid, expect %s or %s",
 		l.Plan.String(),
-		strings.Join(validPlans, ", "),
+		api.TEAM.String(),
+		api.ENTERPRISE.String(),
 	)
 }
 

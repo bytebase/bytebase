@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -120,14 +119,6 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, err
 	}
 
-	s.l.Info(
-		"parse license succeed",
-		zap.String("plan", license.Plan.String()),
-		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-		zap.String("audience", license.Audience),
-		zap.Int("instanceCount", license.InstanceCount),
-	)
-
 	return license, nil
 }
 
@@ -150,6 +141,8 @@ func convertPlanType(candidate string) (api.PlanType, error) {
 		return api.TEAM, nil
 	case api.ENTERPRISE.String():
 		return api.ENTERPRISE, nil
+	case api.FREE.String():
+		return api.FREE, nil
 	default:
 		return api.FREE, fmt.Errorf("cannot conver plan type %q", candidate)
 	}
