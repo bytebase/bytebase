@@ -35,7 +35,7 @@ func (s *licenseService) StoreLicense(tokenString string) error {
 	return s.writeLicense(tokenString)
 }
 
-// LoadLicense will valid and parse license from file.
+// LoadLicense will load license from file and validate it.
 func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
