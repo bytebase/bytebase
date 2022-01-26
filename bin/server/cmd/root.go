@@ -342,7 +342,6 @@ func (m *Main) Run(ctx context.Context) error {
 		return err
 	}
 	s.LicenseService = licenseService
-	s.LoadLicense(licenseService)
 
 	m.server = s
 

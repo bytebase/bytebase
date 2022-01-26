@@ -2,21 +2,25 @@ package server
 
 import (
 	"net/http"
+	"time"
 
+	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
-		if s.license == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription")
+		license, err := s.loadLicense()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
 		}
 		subscription := &enterpriseAPI.Subscription{
-			Plan:          s.license.Plan,
-			ExpiresTs:     s.license.ExpiresTs,
-			InstanceCount: s.license.InstanceCount,
+			Plan:          license.Plan,
+			ExpiresTs:     license.ExpiresTs,
+			InstanceCount: license.InstanceCount,
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -36,15 +40,14 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		// Refresh license in memory
-		s.LoadLicense(s.LicenseService)
-		if s.license == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription")
+		license, err := s.loadLicense()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
 		}
 		subscription := &enterpriseAPI.Subscription{
-			Plan:          s.license.Plan,
-			ExpiresTs:     s.license.ExpiresTs,
-			InstanceCount: s.license.InstanceCount,
+			Plan:          license.Plan,
+			ExpiresTs:     license.ExpiresTs,
+			InstanceCount: license.InstanceCount,
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -53,4 +56,22 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+// loadLicense will get and parse valid license from file.
+func (server *Server) loadLicense() (*enterprise.License, error) {
+	license, err := server.LicenseService.LoadLicense()
+	if err != nil {
+		server.l.Warn("Failed to load license", zap.String("error", err.Error()))
+		return nil, err
+	}
+
+	server.l.Info(
+		"Load valid license",
+		zap.String("plan", license.Plan.String()),
+		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+		zap.Int("instanceCount", license.InstanceCount),
+	)
+
+	return license, nil
 }

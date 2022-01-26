@@ -82,7 +82,6 @@ type Server struct {
 	readonly     bool
 	demo         bool
 	plan         api.PlanType
-	license      *enterprise.License
 	dataDir      string
 }
 
@@ -252,22 +251,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
-}
-
-// LoadLicense will get and parse valid license and set into application.
-func (server *Server) LoadLicense(licenseService enterprise.LicenseService) {
-	license, err := licenseService.LoadLicense()
-	if err != nil {
-		server.l.Warn("Failed to load license", zap.String("error", err.Error()))
-	} else {
-		server.l.Info(
-			"Load valid license",
-			zap.String("plan", license.Plan.String()),
-			zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-			zap.Int("instanceCount", license.InstanceCount),
-		)
-		server.license = license
-	}
 }
 
 // Run will run the server.
