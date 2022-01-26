@@ -3,11 +3,15 @@ package tests
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
+	"github.com/google/jsonapi"
 )
 
 var (
@@ -108,4 +112,40 @@ func (ctl *controller) Login() error {
 	ctl.cookie = cookie
 
 	return nil
+}
+
+// get sends a GET client request.
+func (ctl *controller) get(shortURL string) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", rootURL, shortURL)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new GET request(%q), error %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a GET request(%q), error %w", url, err)
+	}
+	return resp.Body, nil
+}
+
+func (ctl *controller) getProjects() ([]*api.Project, error) {
+	body, err := ctl.get("/project")
+	if err != nil {
+		return nil, err
+	}
+
+	var projects []*api.Project
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Project)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get project response, error %w", err)
+	}
+	for _, p := range ps {
+		project, ok := p.(*api.Project)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert project")
+		}
+		projects = append(projects, project)
+	}
+	return projects, nil
 }
