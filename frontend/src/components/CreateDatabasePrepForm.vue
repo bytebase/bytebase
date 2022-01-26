@@ -328,7 +328,7 @@ export default defineComponent({
         project.value.dbNameTemplate,
         state.databaseName,
         state.labelList,
-        true
+        true // keepEmpty: true to keep non-selected values as original placeholders
       );
     });
 
