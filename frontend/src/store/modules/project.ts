@@ -59,7 +59,7 @@ function convert(
 
   // sort the member list
   memberList.sort((a, b) => {
-    // We use auto incremental id. A smaller id suggest this member is created earlier.
+    // We use auto incremental id. A smaller id suggests this member is created at a earlier time.
     return a.id - b.id;
   });
 
