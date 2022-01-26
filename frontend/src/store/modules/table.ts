@@ -2,12 +2,14 @@ import axios from "axios";
 import {
   Database,
   DatabaseId,
+  Principal,
   ResourceIdentifier,
   ResourceObject,
   Table,
   TableState,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   table: ResourceObject,
@@ -24,9 +26,18 @@ function convert(
       break;
     }
   }
+  const creatorId = (table.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (table.relationships!.updater.data as ResourceIdentifier)
+    .id;
   return {
-    ...(table.attributes as Omit<Table, "id" | "database">),
+    ...(table.attributes as Omit<
+      Table,
+      "id" | "database" | "creator" | "updater"
+    >),
     id: parseInt(table.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     database,
   };
 }

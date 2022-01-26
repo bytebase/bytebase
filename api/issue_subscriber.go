@@ -7,7 +7,7 @@ type IssueSubscriber struct {
 	// Domain specific fields
 	IssueID      int `jsonapi:"attr,issueId"`
 	SubscriberID int
-	Subscriber   *Principal `jsonapi:"attr,subscriber"`
+	Subscriber   *Principal `jsonapi:"relation,subscriber"`
 }
 
 // IssueSubscriberCreate is the API message for creating an issue subscriber.

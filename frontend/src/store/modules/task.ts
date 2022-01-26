@@ -19,6 +19,7 @@ import {
   TaskStatusPatch,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 const state: () => TaskState = () => ({});
 
@@ -34,9 +35,18 @@ function convertTaskRun(
     ? JSON.parse((taskRun.attributes.payload as string) || "{}")
     : {};
 
+  const creatorId = (taskRun.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (taskRun.relationships!.updater.data as ResourceIdentifier)
+    .id;
   return {
-    ...(taskRun.attributes as Omit<TaskRun, "id" | "result" | "payload">),
+    ...(taskRun.attributes as Omit<
+      TaskRun,
+      "id" | "result" | "payload" | "creator" | "updater"
+    >),
     id: parseInt(taskRun.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     result,
     payload,
   };
@@ -55,12 +65,20 @@ function convertTaskCheckRun(
     ? JSON.parse((taskCheckRun.attributes.payload as string) || "{}")
     : {};
 
+  const creatorId = (
+    taskCheckRun.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  const updaterId = (
+    taskCheckRun.relationships!.updater.data as ResourceIdentifier
+  ).id;
   return {
     ...(taskCheckRun.attributes as Omit<
       TaskCheckRun,
-      "id" | "result" | "payload"
+      "id" | "result" | "payload" | "creator" | "updater"
     >),
     id: parseInt(taskCheckRun.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     result,
     payload,
   };
@@ -71,8 +89,8 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Task, "pipeline" | "stage"> {
-  const creator = task.attributes.creator as Principal;
-  const updater = task.attributes.updater as Principal;
+  const creatorId = (task.relationships!.creator.data as ResourceIdentifier).id;
+  const updaterId = (task.relationships!.updater.data as ResourceIdentifier).id;
   const payload = task.attributes.payload
     ? JSON.parse((task.attributes.payload as string) || "{}")
     : {};
@@ -154,8 +172,8 @@ function convertPartial(
       | "stage"
     >),
     id: parseInt(task.id),
-    creator,
-    updater,
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     payload,
     instance,
     database,

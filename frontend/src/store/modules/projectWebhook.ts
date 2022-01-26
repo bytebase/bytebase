@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  Principal,
   ProjectId,
   ProjectWebhook,
   ProjectWebhookCreate,
@@ -7,18 +8,31 @@ import {
   ProjectWebhookPatch,
   ProjectWebhookState,
   ProjectWebhookTestResult,
+  ResourceIdentifier,
   ResourceObject,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   projectWebhook: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
 ): ProjectWebhook {
+  const creatorId = (
+    projectWebhook.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  const updaterId = (
+    projectWebhook.relationships!.updater.data as ResourceIdentifier
+  ).id;
   return {
-    ...(projectWebhook.attributes as Omit<ProjectWebhook, "id">),
+    ...(projectWebhook.attributes as Omit<
+      ProjectWebhook,
+      "id" | "creator" | "updater"
+    >),
     id: parseInt(projectWebhook.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 

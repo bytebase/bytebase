@@ -4,17 +4,24 @@ import {
   VCS,
   VCSCreate,
   VCSState,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
   unknown,
   VCSPatch,
   empty,
   EMPTY_ID,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
-function convert(vcs: ResourceObject): VCS {
+function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
+  const creatorId = (vcs.relationships!.creator.data as ResourceIdentifier).id;
+  const updaterId = (vcs.relationships!.updater.data as ResourceIdentifier).id;
   return {
-    ...(vcs.attributes as Omit<VCS, "id">),
+    ...(vcs.attributes as Omit<VCS, "id" | "creator" | "updater">),
     id: parseInt(vcs.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 
@@ -25,9 +32,15 @@ const state: () => VCSState = () => ({
 
 const getters = {
   convert:
-    (state: VCSState, getters: any, rootState: any, rootGetters: any) =>
-    (vcs: ResourceObject): VCS => {
-      return convert(vcs);
+    (
+      state: VCSState,
+      getters: any,
+      includedList: any,
+      rootState: any,
+      rootGetters: any
+    ) =>
+    (vcs: ResourceObject, includedList: ResourceObject[]): VCS => {
+      return convert(vcs, includedList);
     },
 
   vcsList: (state: VCSState) => (): VCS[] => {
@@ -55,7 +68,7 @@ const actions = {
     const data = (await axios.get(path)).data;
     const vcsList = data.data
       .map((vcs: ResourceObject) => {
-        return convert(vcs);
+        return convert(vcs, data.included);
       })
       .sort((a: VCS, b: VCS) => {
         return b.createdTs - a.createdTs;
@@ -68,7 +81,7 @@ const actions = {
 
   async fetchVCSById({ commit }: any, vcsId: VCSId) {
     const data = (await axios.get(`/api/vcs/${vcsId}`)).data;
-    const vcs = convert(data.data);
+    const vcs = convert(data.data, data.included);
 
     commit("setVCSById", {
       vcsId,
@@ -86,7 +99,7 @@ const actions = {
         },
       })
     ).data;
-    const createdVCS = convert(data.data);
+    const createdVCS = convert(data.data, data.included);
 
     commit("setVCSById", {
       vcsId: createdVCS.id,
@@ -114,7 +127,7 @@ const actions = {
         },
       })
     ).data;
-    const updatedVCS = convert(data.data);
+    const updatedVCS = convert(data.data, data.included);
 
     commit("setVCSById", {
       vcsId: updatedVCS.id,
