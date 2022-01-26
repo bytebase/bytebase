@@ -130,7 +130,9 @@ func init() {
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
-type profile struct {
+
+// Profile is the configuration to start main server.
+type Profile struct {
 	// mode can be "release" or "dev"
 	mode string
 	// port is the binding port for server.
@@ -151,8 +153,9 @@ type config struct {
 	secret string
 }
 
+// Main is the main server for Bytebase.
 type Main struct {
-	profile *profile
+	profile *Profile
 
 	l *zap.Logger
 
@@ -245,7 +248,8 @@ func start() {
 	<-ctx.Done()
 }
 
-func NewMain(activeProfile profile, logger *zap.Logger) *Main {
+// NewMain creates a main server based on profile.
+func NewMain(activeProfile Profile, logger *zap.Logger) *Main {
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -282,6 +286,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
+// Run will run the main server.
 func (m *Main) Run(ctx context.Context) error {
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
