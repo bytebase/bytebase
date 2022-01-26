@@ -140,7 +140,7 @@ export const ENTERPRISE_PLAN: Plan = {
 };
 
 const state: () => PlanState = () => ({
-  plan: PlanType.FREE,
+  plan: PlanType.TEAM,
 });
 
 const getters = {
