@@ -53,6 +53,6 @@ func (l *License) validPlanType() error {
 type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(tokenString string) error
-	// LoadLicense will valid and parse license from file.
+	// LoadLicense will load license from file and validate it.
 	LoadLicense() (*License, error)
 }
