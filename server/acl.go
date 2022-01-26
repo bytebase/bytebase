@@ -67,7 +67,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		role := member.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
-		if !s.feature("bb.admin") {
+		if !s.feature("bb.feature.rbac") {
 			role = api.Owner
 		}
 		// Performs the ACL check.
