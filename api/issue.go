@@ -66,10 +66,10 @@ type Issue struct {
 
 	// Standard fields
 	CreatorID int
-	Creator   *Principal `jsonapi:"attr,creator"`
+	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
 	UpdaterID int
-	Updater   *Principal `jsonapi:"attr,updater"`
+	Updater   *Principal `jsonapi:"relation,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
@@ -84,7 +84,7 @@ type Issue struct {
 	Type             IssueType   `jsonapi:"attr,type"`
 	Description      string      `jsonapi:"attr,description"`
 	AssigneeID       int         `jsonapi:"attr,assigneeId"`
-	Assignee         *Principal  `jsonapi:"attr,assignee"`
+	Assignee         *Principal  `jsonapi:"relation,assignee"`
 	SubscriberIDList []int       `jsonapi:"attr,subscriberIdList"`
 	Payload          string      `jsonapi:"attr,payload"`
 }

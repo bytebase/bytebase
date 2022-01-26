@@ -13,6 +13,7 @@ import {
   EnvironmentId,
   Instance,
   InstanceId,
+  Principal,
   PrincipalId,
   Project,
   ProjectId,
@@ -20,6 +21,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   database: ResourceObject,
@@ -93,6 +95,11 @@ function convert(
     // nothing to catch
   }
 
+  const creatorId = (database.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (database.relationships!.updater.data as ResourceIdentifier)
+    .id;
+
   // Only able to assign an empty data source list / anomaly list, otherwise would cause circular dependency.
   // This should be fine as e.g. we shouldn't access data source via dataSource.database.dataSourceList
   const databaseWPartial = {
@@ -105,8 +112,12 @@ function convert(
       | "sourceBackup"
       | "anomalyList"
       | "labels"
+      | "creator"
+      | "updater"
     >),
     id: parseInt(database.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     instance,
     project,
     labels,

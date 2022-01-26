@@ -7,18 +7,27 @@ import {
   BackupSettingUpsert,
   BackupState,
   DatabaseId,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   backup: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
 ): Backup {
+  const creatorId = (backup.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (backup.relationships!.updater.data as ResourceIdentifier)
+    .id;
   return {
-    ...(backup.attributes as Omit<Backup, "id">),
+    ...(backup.attributes as Omit<Backup, "id" | "creator" | "updater">),
     id: parseInt(backup.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 
@@ -27,9 +36,28 @@ function convertBackupSetting(
   includedList: ResourceObject[],
   rootGetters: any
 ): BackupSetting {
+  let creator = null;
+  let updater = null;
+  if (backupSetting.relationships!.creator.data != null) {
+    const creatorId = (
+      backupSetting.relationships!.creator.data as ResourceIdentifier
+    ).id;
+    creator = getPrincipalFromIncludedList(creatorId, includedList);
+  }
+  if (backupSetting.relationships!.creator.data != null) {
+    const updaterId = (
+      backupSetting.relationships!.updater.data as ResourceIdentifier
+    ).id;
+    updater = getPrincipalFromIncludedList(updaterId, includedList);
+  }
   return {
-    ...(backupSetting.attributes as Omit<BackupSetting, "id">),
+    ...(backupSetting.attributes as Omit<
+      BackupSetting,
+      "id" | "creator" | "updater"
+    >),
     id: parseInt(backupSetting.id),
+    creator: creator as Principal,
+    updater: updater as Principal,
   };
 }
 

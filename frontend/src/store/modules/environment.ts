@@ -7,19 +7,33 @@ import {
   EnvironmentId,
   EnvironmentPatch,
   EnvironmentState,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
   RowStatus,
   unknown,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   environment: ResourceObject,
   includedList: ResourceObject[],
   rootGetters: any
 ): Environment {
+  const creatorId = (
+    environment.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  const updaterId = (
+    environment.relationships!.updater.data as ResourceIdentifier
+  ).id;
   return {
-    ...(environment.attributes as Omit<Environment, "id">),
+    ...(environment.attributes as Omit<
+      Environment,
+      "id" | "creator" | "updater"
+    >),
     id: parseInt(environment.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
   };
 }
 
