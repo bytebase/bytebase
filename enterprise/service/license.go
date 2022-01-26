@@ -127,7 +127,6 @@ func (s *licenseService) readLicense() (string, error) {
 }
 
 func (s *licenseService) writeLicense(token string) error {
-	s.l.Info("Write license to", zap.String("path", s.config.StorePath), zap.String("token", token))
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 

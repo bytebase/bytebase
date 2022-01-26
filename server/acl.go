@@ -26,8 +26,8 @@ func getRoleContextKey() string {
 func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := context.Background()
-		// Skips auth, actuator, plan, license
-		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan", "/api/license") {
+		// Skips auth, actuator, plan
+		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
 			return next(c)
 		}
 

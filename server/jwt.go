@@ -166,8 +166,8 @@ func removeUserCookie(c echo.Context) {
 // will try to generate new access token and refresh token.
 func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Skips auth, actuator, plan, license
-		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan", "/api/license") {
+		// Skips auth, actuator, plan
+		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
 			return next(c)
 		}
 
