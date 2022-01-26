@@ -75,3 +75,4 @@ p, DEVELOPER, /savedquery, GET
 p, DEVELOPER, /savedquery/{id}, GET
 p, DEVELOPER, /savedquery/{id}, PATCH_SELF
 p, DEVELOPER, /savedquery/{id}, DELETE_SELF
+p, DEVELOPER, /subscription, GET

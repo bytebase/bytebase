@@ -55,6 +55,6 @@ func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 		Version:         keyID,
 		Issuer:          issuer,
 		MinimumInstance: minimumInstance,
-		StorePath:       fmt.Sprintf("file:%s/%s", dataDir, storefile),
+		StorePath:       fmt.Sprintf("%s/%s", dataDir, storefile),
 	}, nil
 }
