@@ -2,10 +2,24 @@ import axios from "axios";
 import { Plan, FeatureType, PlanPatch, PlanState, PlanType } from "../../types";
 
 // A map from the a particular feature to the respective enablement of a particular plan
+// Make sure this is consistent with the matrix in plan.go
+//
+// TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
+// so that it can be shared between frontend/backend. 
 const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
-  ["bb.admin", [false, true, true]],
-  ["bb.dba-workflow", [false, false, true]],
-  ["bb.data-source", [false, false, false]],
+  // Change Workflow
+  ["bb.feature.backward-compatibility", [false, true, true]],
+  ["bb.feature.schema-drift", [false, true, true]],
+  ["bb.feature.task-schedule-time", [false, true, true]],
+  ["bb.feature.multi-tenancy", [false, true, true]],
+  ["bb.feature.dba-workflow", [false, false, true]],
+  ["bb.feature.data-source", [false, false, false]],
+  // Policy Control
+  ["bb.feature.approval-policy", [false, true, true]],
+  ["bb.feature.backup-policy", [false, true, true]],
+  // Admin & Security
+  ["bb.feature.rbac", [false, true, true]],
+  ["bb.feature.3rd-party-login", [false, true, true]],
 ]);
 
 export const FEATURE_SECTIONS = [
@@ -150,9 +164,9 @@ const getters = {
 
   feature:
     (state: PlanState, getters: any) =>
-    (type: FeatureType): boolean => {
-      return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
-    },
+      (type: FeatureType): boolean => {
+        return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
+      },
 };
 
 const actions = {
