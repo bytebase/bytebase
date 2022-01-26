@@ -28,6 +28,21 @@ function convert(principal: ResourceObject): Principal {
   };
 }
 
+export function getPrincipalFromIncludedList(
+  id: string,
+  includedList: ResourceObject[]
+): Principal | null {
+  for (const item of includedList || []) {
+    if (item.type != "principal") {
+      continue;
+    }
+    if (item.id == id) {
+      return convert(item);
+    }
+  }
+  return null;
+}
+
 const state: () => PrincipalState = () => ({
   principalList: [],
 });
