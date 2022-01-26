@@ -3,8 +3,6 @@ package service
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -17,12 +15,6 @@ import (
 type licenseService struct {
 	l      *zap.Logger
 	config *config.Config
-}
-
-// validPlans is a string array of valid plan types.
-var validPlans = []string{
-	api.TEAM.String(),
-	api.ENTERPRISE.String(),
 }
 
 // NewLicenseService will create a new enterprise license service.
@@ -43,8 +35,8 @@ func (s *licenseService) StoreLicense(tokenString string) error {
 	return s.writeLicense(tokenString)
 }
 
-// ParseLicense will valid and parse license from file.
-func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
+// LoadLicense will load license from file and validate it.
+func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
 		return nil, err
@@ -90,9 +82,6 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	if !ok {
 		return nil, fmt.Errorf("exp is not valid, found '%v'", claims["exp"])
 	}
-	if exp <= time.Now().Unix() {
-		return nil, fmt.Errorf("license has expired at %v", time.Unix(exp, 0))
-	}
 
 	iss, ok := claims["iss"].(string)
 	if !ok || iss != s.config.Issuer {
@@ -108,8 +97,10 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	if !ok {
 		return nil, fmt.Errorf("plan is not valid, found '%v'", claims["plan"])
 	}
-	if err := validPlanType(plan); err != nil {
-		return nil, err
+
+	planType, err := convertPlanType(plan)
+	if err != nil {
+		return nil, fmt.Errorf("plan type %q is not valid", planType)
 	}
 
 	aud, ok := claims["aud"].(string)
@@ -117,12 +108,18 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, fmt.Errorf("aud is not valid, found '%v'", claims["aud"])
 	}
 
-	return &enterpriseAPI.License{
+	license := &enterpriseAPI.License{
 		InstanceCount: instance,
 		ExpiresTs:     exp,
-		Plan:          plan,
+		Plan:          planType,
 		Audience:      aud,
-	}, nil
+	}
+
+	if err := license.Valid(); err != nil {
+		return nil, err
+	}
+
+	return license, nil
 }
 
 func (s *licenseService) readLicense() (string, error) {
@@ -138,15 +135,15 @@ func (s *licenseService) writeLicense(token string) error {
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 
-func validPlanType(candidate string) error {
-	for _, plan := range validPlans {
-		if plan == candidate {
-			return nil
-		}
+func convertPlanType(candidate string) (api.PlanType, error) {
+	switch candidate {
+	case api.TEAM.String():
+		return api.TEAM, nil
+	case api.ENTERPRISE.String():
+		return api.ENTERPRISE, nil
+	case api.FREE.String():
+		return api.FREE, nil
+	default:
+		return api.FREE, fmt.Errorf("cannot conver plan type %q", candidate)
 	}
-
-	return fmt.Errorf("plan %q is not valid, expect one of %s",
-		candidate,
-		strings.Join(validPlans, ", "),
-	)
 }
