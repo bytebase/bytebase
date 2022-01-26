@@ -1401,9 +1401,7 @@ CREATE TABLE saved_query (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    -- allowed access_type are 'READ', 'WRITE'.
-    access_type TEXT NOT NULL DEFAULT '',
-    -- allowed visibility are 'PRIVATE', 'TEAM', 'PUBLIC'.
+    -- allowed visibilities are 'PRIVATE', 'PROJECT', 'PUBLIC'.
     visibility TEXT NOT NULL DEFAULT 'PRIVATE',
     -- for sorting
     last_opened_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
