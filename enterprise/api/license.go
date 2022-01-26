@@ -48,11 +48,6 @@ func (l *License) validPlanType() error {
 	)
 }
 
-// LicensePatch is the API message for upload a enterprise license.
-type LicensePatch struct {
-	Token string `jsonapi:"attr,token"`
-}
-
 // LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
