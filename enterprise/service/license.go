@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -35,8 +36,8 @@ func (s *licenseService) StoreLicense(tokenString string) error {
 	return s.writeLicense(tokenString)
 }
 
-// ParseLicense will valid and parse license from file.
-func (s *licenseService) ParseLicense() (*enterpriseAPI.License, error) {
+// LoadLicense will valid and parse license from file.
+func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
 		return nil, err
@@ -98,6 +99,11 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, fmt.Errorf("plan is not valid, found '%v'", claims["plan"])
 	}
 
+	planType, err := convertPlanType(plan)
+	if err != nil {
+		return nil, fmt.Errorf("plan type %q is not valid", planType)
+	}
+
 	aud, ok := claims["aud"].(string)
 	if !ok || aud == "" {
 		return nil, fmt.Errorf("aud is not valid, found '%v'", claims["aud"])
@@ -106,13 +112,21 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	license := &enterpriseAPI.License{
 		InstanceCount: instance,
 		ExpiresTs:     exp,
-		Plan:          convertPlanType(plan),
+		Plan:          planType,
 		Audience:      aud,
 	}
 
 	if err := license.Valid(); err != nil {
 		return nil, err
 	}
+
+	s.l.Info(
+		"parse license succeed",
+		zap.String("plan", license.Plan.String()),
+		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+		zap.String("audience", license.Audience),
+		zap.Int("instanceCount", license.InstanceCount),
+	)
 
 	return license, nil
 }
@@ -130,13 +144,13 @@ func (s *licenseService) writeLicense(token string) error {
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 
-func convertPlanType(candidate string) api.PlanType {
+func convertPlanType(candidate string) (api.PlanType, error) {
 	switch candidate {
 	case api.TEAM.String():
-		return api.TEAM
+		return api.TEAM, nil
 	case api.ENTERPRISE.String():
-		return api.ENTERPRISE
+		return api.ENTERPRISE, nil
 	default:
-		return api.FREE
+		return api.FREE, fmt.Errorf("cannot conver plan type %q", candidate)
 	}
 }

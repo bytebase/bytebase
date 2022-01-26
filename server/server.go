@@ -254,9 +254,9 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	return s
 }
 
-// SetLicense will get and parse valid license and set into application.
-func (server *Server) SetLicense(licenseService enterprise.LicenseService) {
-	license, err := licenseService.ParseLicense()
+// LoadLicense will get and parse valid license and set into application.
+func (server *Server) LoadLicense(licenseService enterprise.LicenseService) {
+	license, err := licenseService.LoadLicense()
 	if err != nil {
 		server.l.Warn("Cannot found valid license", zap.String("error", err.Error()))
 	}

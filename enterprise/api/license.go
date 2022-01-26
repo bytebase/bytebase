@@ -57,6 +57,6 @@ type LicensePatch struct {
 type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(tokenString string) error
-	// ParseLicense will valid and parse license from file.
-	ParseLicense() (*License, error)
+	// LoadLicense will valid and parse license from file.
+	LoadLicense() (*License, error)
 }

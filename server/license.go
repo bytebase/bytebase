@@ -10,7 +10,7 @@ import (
 
 func (s *Server) registerLicenseRoutes(g *echo.Group) {
 	g.GET("/license", func(c echo.Context) error {
-		license, err := s.LicenseService.ParseLicense()
+		license, err := s.LicenseService.LoadLicense()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot find valid license").SetInternal(err)
 		}
@@ -34,7 +34,7 @@ func (s *Server) registerLicenseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		license, err := s.LicenseService.ParseLicense()
+		license, err := s.LicenseService.LoadLicense()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot find valid license").SetInternal(err)
 		}
