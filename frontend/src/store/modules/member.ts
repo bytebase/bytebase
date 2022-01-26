@@ -70,9 +70,7 @@ const actions = {
 
     // sort the member list
     memberList.sort((a: Member, b: Member) => {
-      if (a.createdTs !== b.createdTs) {
-        return a.createdTs - b.createdTs;
-      }
+      // We use auto incremental id. A smaller id suggest this member is created earlier.
       return a.id - b.id;
     });
 
