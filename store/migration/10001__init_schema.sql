@@ -1408,10 +1408,10 @@ CREATE TABLE saved_query (
     -- for sorting
     last_opened_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
     -- for sorting
-    last_ran_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
+    last_ran_at BIGINT NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
-CREATE INDEX idx_issue_creator_id ON issue(creator_id);
+CREATE INDEX idx_saved_query_creator_id ON issue(creator_id);
 
 CREATE INDEX idx_saved_query_instance_id_row_status ON saved_query(instance_id, row_status);
 
