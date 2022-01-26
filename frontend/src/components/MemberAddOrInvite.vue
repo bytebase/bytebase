@@ -6,9 +6,7 @@
         :key="index"
         class="flex justify-between py-0.5 select-none"
       >
-        <p id="add_or_invite_members_helper" class="sr-only">
-          {{ $t("settings.members.helper") }}
-        </p>
+        <p id="add_or_invite_members_helper" class="sr-only">{{ $t("settings.members.helper") }}</p>
         <div class="flex flex-row space-x-4">
           <div class="flex-grow">
             <input
@@ -26,9 +24,7 @@
               v-if="state.errorList[index]"
               id="email-error"
               class="mt-2 text-sm text-error"
-            >
-              {{ state.errorList[index] }}
-            </p>
+            >{{ state.errorList[index] }}</p>
           </div>
           <div v-if="hasAdminFeature" class="sm:hidden w-36">
             <RoleSelect
@@ -54,7 +50,7 @@
                 class="btn"
                 value="OWNER"
               />
-              <label class="label"> {{ $t("common.role.owner") }} </label>
+              <label class="label">{{ $t("common.role.owner") }}</label>
             </div>
             <div class="radio">
               <input
@@ -65,7 +61,7 @@
                 class="btn"
                 value="DBA"
               />
-              <label class="label"> {{ $t("common.role.dba") }} </label>
+              <label class="label">{{ $t("common.role.dba") }}</label>
             </div>
             <div class="radio">
               <input
@@ -76,7 +72,7 @@
                 class="btn"
                 value="DEVELOPER"
               />
-              <label class="label"> {{ $t("common.role.developer") }} </label>
+              <label class="label">{{ $t("common.role.developer") }}</label>
             </div>
           </div>
         </div>
@@ -85,9 +81,11 @@
 
     <div class="flex justify-between">
       <span class="flex items-center">
-        <button type="button" class="btn-secondary" @click.prevent="addUser">
-          {{ $t("settings.members.add-more") }}
-        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          @click.prevent="addUser"
+        >{{ $t("settings.members.add-more") }}</button>
       </span>
 
       <button
@@ -141,7 +139,7 @@ export default {
     });
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bb.admin")
+      store.getters["plan/feature"]("bb.feature.rbac")
     );
 
     const state = reactive<LocalState>({

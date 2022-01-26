@@ -1,15 +1,11 @@
 <template>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">
-      {{ $t("project.settings.manage-member") }}
-    </p>
+    <p class="text-lg font-medium leading-7 text-main">{{ $t("project.settings.manage-member") }}</p>
     <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
         <div class="space-y-2">
-          <div
-            class="flex flex-row justify-between py-0.5 select-none space-x-4"
-          >
+          <div class="flex flex-row justify-between py-0.5 select-none space-x-4">
             <div class="w-64">
               <!-- eslint-disable vue/attribute-hyphenation -->
               <MemberSelect
@@ -38,7 +34,8 @@
                     class="btn"
                     value="OWNER"
                   />
-                 {{ $t("common.role.owner") }} </label>
+                  {{ $t("common.role.owner") }}
+                </label>
               </div>
               <div class="radio">
                 <label class="label">
@@ -50,7 +47,8 @@
                     class="btn"
                     value="DEVELOPER"
                   />
-                 {{ $t("common.role.developer") }} </label>
+                  {{ $t("common.role.developer") }}
+                </label>
               </div>
             </div>
             <button
@@ -66,9 +64,7 @@
         </div>
 
         <div id="state-error" class="flex justify-start">
-          <span v-if="state.error" class="text-sm text-error">
-            {{ state.error }}
-          </span>
+          <span v-if="state.error" class="text-sm text-error">{{ state.error }}</span>
         </div>
       </div>
     </div>
@@ -121,7 +117,7 @@ export default {
     });
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bb.admin")
+      store.getters["plan/feature"]("bb.feature.rbac")
     );
 
     const allowAddMember = computed(() => {
