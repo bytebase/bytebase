@@ -3,18 +3,17 @@
     <div v-if="anomalySectionList.length > 0">
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
         {{ $t("common.anomalies") }}
-        <span class="ml-2 textinfolabel items-center flex">{{
-          $t(
-            "database.the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes"
-          )
-        }}</span>
+        <span class="ml-2 textinfolabel items-center flex">
+          {{
+            $t(
+              "database.the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes"
+            )
+          }}
+        </span>
       </div>
       <AnomalyTable :anomaly-section-list="anomalySectionList" />
     </div>
-    <div
-      v-else
-      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
-    >
+    <div v-else class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
       {{ $t("database.no-anomalies-detected") }}
       <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
     </div>
@@ -35,67 +34,43 @@
                 : $t("db.character-set")
             }}
           </dt>
-          <dd class="mt-1 text-sm text-main">
-            {{ database.characterSet }}
-          </dd>
+          <dd class="mt-1 text-sm text-main">{{ database.characterSet }}</dd>
         </div>
 
         <div class="col-span-1">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("db.collation") }}
-          </dt>
-          <dd class="mt-1 text-sm text-main">
-            {{ database.collation }}
-          </dd>
+          <dt class="text-sm font-medium text-control-light">{{ $t("db.collation") }}</dt>
+          <dd class="mt-1 text-sm text-main">{{ database.collation }}</dd>
         </div>
       </template>
 
       <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("database.sync-status") }}
-        </dt>
+        <dt class="text-sm font-medium text-control-light">{{ $t("database.sync-status") }}</dt>
         <dd class="mt-1 text-sm text-main">
           <span>{{ database.syncStatus }}</span>
         </dd>
       </div>
 
       <div class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("database.last-successful-sync") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.lastSuccessfulSyncTs) }}
-        </dd>
+        <dt class="text-sm font-medium text-control-light">{{ $t("database.last-successful-sync") }}</dt>
+        <dd class="mt-1 text-sm text-main">{{ humanizeTs(database.lastSuccessfulSyncTs) }}</dd>
       </div>
 
       <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.created-at") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.createdTs) }}
-        </dd>
+        <dt class="text-sm font-medium text-control-light">{{ $t("common.created-at") }}</dt>
+        <dd class="mt-1 text-sm text-main">{{ humanizeTs(database.createdTs) }}</dd>
       </div>
 
       <div class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.updated-at") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.updatedTs) }}
-        </dd>
+        <dt class="text-sm font-medium text-control-light">{{ $t("common.updated-at") }}</dt>
+        <dd class="mt-1 text-sm text-main">{{ humanizeTs(database.updatedTs) }}</dd>
       </div>
     </dl>
 
     <div class="pt-6">
-      <div class="text-lg leading-6 font-medium text-main mb-4">
-        {{ $t("db.tables") }}
-      </div>
+      <div class="text-lg leading-6 font-medium text-main mb-4">{{ $t("db.tables") }}</div>
       <TableTable :table-list="tableList" />
 
-      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
-        {{ $t("db.views") }}
-      </div>
+      <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">{{ $t("db.views") }}</div>
       <ViewTable :view-list="viewList" />
     </div>
 
@@ -113,42 +88,29 @@
         :key="index"
       >
         <div v-if="item.list.length" class="pt-6">
-          <div
-            v-if="hasDataSourceFeature"
-            class="text-lg leading-6 font-medium text-main mb-4"
-          >
+          <div v-if="hasDataSourceFeature" class="text-lg leading-6 font-medium text-main mb-4">
             <span v-data-source-type>{{ item.type }}</span>
           </div>
           <div class="space-y-4">
             <div v-for="(ds, dsIndex) of item.list" :key="dsIndex">
               <div v-if="hasDataSourceFeature" class="relative mb-2">
-                <div
-                  class="absolute inset-0 flex items-center"
-                  aria-hidden="true"
-                >
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
                   <div class="w-full border-t border-gray-300"></div>
                 </div>
                 <div class="relative flex justify-start">
                   <router-link
                     :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(ds)}`"
                     class="pr-3 bg-white font-medium normal-link"
-                  >
-                    {{ ds.name }}
-                  </router-link>
+                  >{{ ds.name }}</router-link>
                 </div>
               </div>
-              <div
-                v-if="allowChangeDataSource"
-                class="flex justify-end space-x-3"
-              >
+              <div v-if="allowChangeDataSource" class="flex justify-end space-x-3">
                 <template v-if="isEditingDataSource(ds)">
                   <button
                     type="button"
                     class="btn-normal"
                     @click.prevent="cancelEditDataSource"
-                  >
-                    {{ $t("common.cancel") }}
-                  </button>
+                  >{{ $t("common.cancel") }}</button>
                   <button
                     type="button"
                     class="btn-normal"
@@ -156,22 +118,14 @@
                     @click.prevent="saveEditDataSource"
                   >
                     <!-- Heroicon name: solid/save -->
-                    <heroicons-solid:save
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
+                    <heroicons-solid:save class="-ml-1 mr-2 h-5 w-5 text-control-light" />
                     <span>{{ $t("common.save") }}</span>
                   </button>
                 </template>
                 <template v-else>
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    @click.prevent="editDataSource(ds)"
-                  >
+                  <button type="button" class="btn-normal" @click.prevent="editDataSource(ds)">
                     <!-- Heroicon name: solid/pencil -->
-                    <heroicons-solid:pencil
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
+                    <heroicons-solid:pencil class="-ml-1 mr-2 h-5 w-5 text-control-light" />
                     <span>{{ $t("common.edit") }}</span>
                   </button>
                 </template>
@@ -257,7 +211,7 @@ export default {
     );
 
     const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bb.data-source")
+      store.getters["plan/feature"]("bb.feature.data-source")
     );
 
     const tableList = computed(() => {
