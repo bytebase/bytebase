@@ -1,389 +1,177 @@
 <template>
-  <div class="sm:flex sm:flex-col sm:align-center">
-    <div
-      class="relative self-center mt-6 bg-gray-100 rounded-lg p-0.5 flex sm:mt-8"
-    >
-      <button
-        type="button"
-        class="relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
-        :class="state.isMonthly ? '' : 'bg-white border-gray-200 shadow-sm'"
-        @click.prevent="state.isMonthly = false"
-      >
-        Yearly billing
-      </button>
-      <button
-        type="button"
-        class="ml-0.5 relative w-1/2 rounded-md py-2 text-sm font-medium text-gray-700 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-transparent focus:z-10 sm:w-auto sm:px-8"
-        :class="state.isMonthly ? 'bg-white border-gray-200 shadow-sm' : ''"
-        @click.prevent="state.isMonthly = true"
-      >
-        Monthly billing
-      </button>
-    </div>
-  </div>
-  <div class="mt-12 grid grid-cols-3 gap-6">
-    <div
-      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
-    >
-      <div class="px-6 pt-6 pb-4">
-        <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
-          Free
-        </h2>
-        <a
-          href="#"
-          class="mt-8 block w-full border border-accent rounded-md py-4 text-2xl font-semibold text-accent text-center hover:bg-accent hover:text-white"
-          >Deploy</a
-        >
-        <div class="mt-6 flex justify-center flex-row">
-          <span class="text-4xl font-extrabold text-gray-900">$0</span>
-          <div class="ml-2 flex flex-col">
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per user</span
-            >
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per month</span
-            >
-          </div>
-        </div>
-        <div class="mt-8 text-sm text-center">Community support</div>
-      </div>
-      <div class="pt-6 pb-8 px-6">
-        <h3 class="text-xs font-medium text-gray-900 tracking-wide uppercase">
-          What's included
-        </h3>
-        <ul class="mt-6 space-y-4">
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main whitespace-nowrap"
-              >100 issues (excluding archived)</span
-            >
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited members</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited environments</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited instances</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited data sources</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Slack integration</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">DBA and Owner roles</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">SSO</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Custom branding</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Audit log</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Roadmap sharing</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <div
-      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
-    >
-      <div class="px-6 pt-6 pb-4">
-        <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
-          Standard
-          <span
-            class="ml-1 align-top inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+  <div class="hidden md:block">
+    <table id="plans" class="w-full h-px table-fixed mb-16">
+      <caption class="sr-only">
+        Pricing plan comparison
+      </caption>
+      <thead>
+        <tr>
+          <th
+            class="py-8 px-6 text-sm font-medium text-gray-900 text-left align-top"
+            scope="row"
+          ></th>
+          <td
+            v-for="plan in plans"
+            :key="plan.type"
+            class="h-full py-8 px-6 align-top"
           >
-            Beta
-          </span>
-        </h2>
-        <a
-          href="#"
-          class="mt-8 block w-full border border-green-500 rounded-md py-4 text-2xl font-semibold text-white text-center bg-green-500 hover:bg-green-600 hover:border-green-600 hover:text-white whitespace-nowrap"
-          >Buy now</a
-        >
-        <div class="mt-6 flex justify-center flex-row">
-          <span class="text-4xl font-medium text-gray-900 line-through">{{
-            state.isMonthly ? "$16" : "$12"
-          }}</span>
-          <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$12" : "$9"
-          }}</span>
-          <div class="ml-2 flex flex-col">
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per user</span
+            <div class="flex-1">
+              <img :src="plan.image" class="hidden lg:block p-5" />
+              <h3 class="text-2xl font-semibold text-gray-900">
+                {{ plan.title }}
+              </h3>
+              <p class="text-gray-500 mb-10">{{ plan.description }}</p>
+
+              <p class="mt-4 flex items-baseline text-gray-900">
+                <span class="text-4xl font-extrabold tracking-tight">
+                  {{ plan.price }}
+                </span>
+              </p>
+
+              <button
+                type="button"
+                :class="[
+                  plan.highlight
+                    ? 'border-green-500  text-white  bg-green-500 hover:bg-green-600 hover:border-green-600'
+                    : 'border-accent text-accent hover:bg-accent',
+                  'mt-8 block w-full border rounded-md py-2 lg:py-4 text-sm lg:text-xl font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
+                ]"
+              >
+                {{ plan.buttonText }}
+              </button>
+            </div>
+          </td>
+        </tr>
+      </thead>
+      <tbody class="border-t border-gray-200 divide-y divide-gray-200">
+        <template v-for="section in sections" :key="section.id">
+          <tr>
+            <th
+              class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
+              colspan="4"
+              scope="colgroup"
             >
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per month</span
+              {{ section.id }}
+            </th>
+          </tr>
+          <tr
+            v-for="feature in section.features"
+            :key="feature"
+            class="hover:bg-gray-50"
+          >
+            <th
+              class="py-5 px-6 text-sm font-normal text-gray-500 text-left"
+              scope="row"
             >
-          </div>
-        </div>
-
-        <div class="mt-8 text-sm text-center">Priority support</div>
-      </div>
-      <div class="pt-6 pb-8 px-6">
-        <h3 class="text-xs font-medium text-gray-900 tracking-wide uppercase">
-          What's included
-        </h3>
-        <ul class="mt-6 space-y-4">
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited issues</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited members</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited environments</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited instances </span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited data sources</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Slack integration</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">DBA and Owner roles</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">SSO</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Custom branding</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Audit log</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <span class="ml-8 text-sm text-gray-500">Roadmap sharing</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <div
-      class="border border-gray-200 rounded-lg shadow-sm divide-y divide-block-border"
-    >
-      <div class="px-6 pt-6 pb-4">
-        <h2 class="text-4xl text-center leading-6 font-bold text-gray-900">
-          Premium
-        </h2>
-        <div
-          class="mt-8 block w-full border border-gray-800 rounded-md py-4 text-2xl font-semibold text-gray-800 text-center whitespace-nowrap"
-        >
-          Coming soon
-        </div>
-        <div class="mt-6 flex justify-center flex-row">
-          <span class="ml-1 text-4xl font-extrabold text-gray-900">{{
-            state.isMonthly ? "$48" : "$36"
-          }}</span>
-          <div class="ml-2 flex flex-col">
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per user</span
+              {{ feature }}
+            </th>
+            <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
+              <template v-if="getFeature(plan, feature)">
+                <span
+                  v-if="getFeature(plan, feature)?.content"
+                  class="block text-sm text-gray-700"
+                  >{{ getFeature(plan, feature)?.content }}</span
+                >
+                <heroicons-solid:check v-else class="w-5 h-5 text-green-500" />
+              </template>
+              <template v-else>
+                <heroicons-solid:minus class="w-5 h-5 text-gray-500" />
+              </template>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+      <tfoot>
+        <tr class="border-t border-gray-200">
+          <th class="sr-only" scope="row">Choose your plan</th>
+          <td v-for="plan in plans" :key="plan.type" class="pt-5 px-6">
+            <a
+              v-if="!plan.isFreePlan"
+              href="https://hub.bytebase.com"
+              target="_blank"
+              class="block w-full py-4 bg-gray-800 border border-gray-800 rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-gray-900"
             >
-            <span class="text-sm font-medium text-gray-500 whitespace-nowrap"
-              >per month</span
-            >
-          </div>
-        </div>
-
-        <div class="mt-8 text-sm text-center">Priority support</div>
-      </div>
-      <div class="pt-6 pb-8 px-6">
-        <h3 class="text-xs font-medium text-gray-900 tracking-wide uppercase">
-          What's included
-        </h3>
-        <ul class="mt-6 space-y-4">
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited issues </span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited members</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited environments</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited instances</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Unlimited data sources</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Slack integration</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">DBA and Owner roles</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">SSO</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Custom branding</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Audit log</span>
-          </li>
-
-          <li class="flex space-x-3">
-            <!-- Heroicon name: solid/check -->
-            <heroicons-solid:check
-              class="flex-shrink-0 h-5 w-5 text-green-500"
-            />
-            <span class="text-sm text-main">Roadmap sharing</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+              Buy {{ plan.title }} Plan
+            </a>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
+import { reactive, computed, PropType } from "vue";
+import { Plan, License, PlanType } from "../types";
+import {
+  FEATURE_SECTIONS,
+  FREE_PLAN,
+  TEAM_PLAN,
+  ENTERPRISE_PLAN,
+} from "../store/modules/plan";
 
 interface LocalState {
   isMonthly: boolean;
 }
 
+interface LocalPlan extends Plan {
+  image: string;
+  price: string;
+  buttonText: string;
+  highlight: boolean;
+  isFreePlan: boolean;
+}
+
 export default {
   name: "PricingTable",
-  props: {},
-  setup() {
+  props: {
+    license: {
+      required: false,
+      default: undefined,
+      type: Object as PropType<License>,
+    },
+  },
+  setup(props) {
     const state = reactive<LocalState>({
       isMonthly: false,
     });
 
+    const plans = computed((): LocalPlan[] => {
+      return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
+        ...plan,
+        image: new URL(
+          `../assets/plan-${plan.title.toLowerCase()}.png`,
+          import.meta.url
+        ).href,
+        price:
+          plan.type === PlanType.ENTERPRISE
+            ? "Contact us"
+            : `$${plan.unitPrice}/year`,
+        buttonText: getButtonText(plan),
+        highlight: plan.type === PlanType.TEAM,
+        isFreePlan: plan.type === PlanType.FREE,
+      }));
+    });
+
+    const getFeature = (plan: Plan, feature: string) => {
+      return plan.features.find((f) => f.id === feature);
+    };
+
+    const getButtonText = (plan: Plan): string => {
+      if (plan.type === PlanType.FREE) return "Deploy";
+      if (plan.type === PlanType.ENTERPRISE) return "Contact us";
+      if (plan.type === props.license?.plan) return "Current plan";
+      if (plan.trialDays && plan.trialPrice) {
+        return `Start trial with $${plan.trialPrice} for ${plan.trialDays} days`;
+      }
+      return "Subscribe now";
+    };
+
     return {
       state,
+      plans,
+      sections: FEATURE_SECTIONS,
+      getFeature,
     };
   },
 };

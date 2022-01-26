@@ -17,3 +17,17 @@ export enum PlanType {
 export type PlanPatch = {
   type: PlanType;
 };
+
+export interface Plan {
+  // Plan meta data
+  type: PlanType;
+  trialDays: number;
+  unitPrice: number;
+  trialPrice: number;
+  freeInstanceCount: number;
+  pricePerInstancePerMonth: number;
+  // Plan desc and feature
+  title: string;
+  description: string;
+  features: { id: string; content?: string }[];
+}
