@@ -85,3 +85,5 @@ p, DBA, /savedquery, GET
 p, DBA, /savedquery/{id}, GET
 p, DBA, /savedquery/{id}, PATCH_SELF
 p, DBA, /savedquery/{id}, DELETE_SELF
+p, DBA, /subscription, GET
+p, DBA, /subscription, PATCH
