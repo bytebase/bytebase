@@ -10,9 +10,13 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
-		subscription, err := s.loadSubscription()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
+		if s.license == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription")
+		}
+		subscription := &enterpriseAPI.Subscription{
+			Plan:          s.license.Plan,
+			ExpiresTs:     s.license.ExpiresTs,
+			InstanceCount: s.license.InstanceCount,
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -32,9 +36,15 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		subscription, err := s.loadSubscription()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
+		// Refresh license in memory
+		s.LoadLicense(s.LicenseService)
+		if s.license == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription")
+		}
+		subscription := &enterpriseAPI.Subscription{
+			Plan:          s.license.Plan,
+			ExpiresTs:     s.license.ExpiresTs,
+			InstanceCount: s.license.InstanceCount,
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -43,20 +53,4 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) loadSubscription() (*enterpriseAPI.Subscription, error) {
-	license, err := s.LicenseService.LoadLicense()
-	if err != nil {
-		return nil, err
-	}
-
-	s.license = license
-	subscription := &enterpriseAPI.Subscription{
-		Plan:          license.Plan,
-		ExpiresTs:     license.ExpiresTs,
-		InstanceCount: license.InstanceCount,
-	}
-
-	return subscription, nil
 }

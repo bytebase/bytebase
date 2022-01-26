@@ -266,9 +266,8 @@ func (server *Server) LoadLicense(licenseService enterprise.LicenseService) {
 			zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
 			zap.Int("instanceCount", license.InstanceCount),
 		)
+		server.license = license
 	}
-
-	server.license = license
 }
 
 // Run will run the server.
