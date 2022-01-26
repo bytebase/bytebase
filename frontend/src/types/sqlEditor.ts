@@ -72,6 +72,7 @@ export interface SavedQuery {
   // Standard fields
   creator: Principal;
   createdTs: number;
+  updater: Principal;
   updatedTs: number;
 
   // Domain fields
