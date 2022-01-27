@@ -58,9 +58,9 @@ axios.interceptors.response.use(
     if (isDev() && response.config.url!.startsWith("/api")) {
       console.debug(
         response.config.method?.toUpperCase() +
-        " " +
-        response.config.url +
-        " response",
+          " " +
+          response.config.url +
+          " response",
         JSON.stringify(response.data, null, 2)
       );
     }
@@ -88,7 +88,9 @@ axios.interceptors.response.use(
           style: "CRITICAL",
           title: error.response.data.message,
           // If server enables --debug, then the response will include the detailed error.
-          description: error.response.data.error ? error.response.data.error : undefined,
+          description: error.response.data.error
+            ? error.response.data.error
+            : undefined,
         });
       }
     } else if (error.code == "ECONNABORTED") {
@@ -112,7 +114,7 @@ axios.interceptors.response.use(
 // We use finally because we always want to mount the app regardless of the error.
 Promise.all([
   store.dispatch("actuator/fetchInfo"),
-  store.dispatch("plan/fetchCurrentPlan"),
+  store.dispatch("subscription/fetchSubscription"),
   store.dispatch("auth/restoreUser"),
 ]).finally(() => {
   const app = createApp(App);
