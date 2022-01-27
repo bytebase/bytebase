@@ -37,4 +37,4 @@ export * from "./label";
 export * from "./deployment";
 export * from "./sqlEditor";
 export * from "./editorSelector";
-export * from "./license";
+export * from "./subscription";
