@@ -102,7 +102,7 @@
 
 <script lang="ts">
 import { reactive, computed, PropType } from "vue";
-import { Plan, License, PlanType } from "../types";
+import { Plan, Subscription, PlanType } from "../types";
 import {
   FEATURE_SECTIONS,
   FREE_PLAN,
@@ -125,10 +125,10 @@ interface LocalPlan extends Plan {
 export default {
   name: "PricingTable",
   props: {
-    license: {
+    subscription: {
       required: false,
       default: undefined,
-      type: Object as PropType<License>,
+      type: Object as PropType<Subscription>,
     },
   },
   setup(props) {
@@ -160,7 +160,7 @@ export default {
     const getButtonText = (plan: Plan): string => {
       if (plan.type === PlanType.FREE) return "Deploy";
       if (plan.type === PlanType.ENTERPRISE) return "Contact us";
-      if (plan.type === props.license?.plan) return "Current plan";
+      if (plan.type === props.subscription?.plan) return "Current plan";
       if (plan.trialDays && plan.trialPrice) {
         return `Start trial with $${plan.trialPrice} for ${plan.trialDays} days`;
       }
