@@ -17,7 +17,10 @@
       />
       <button
         type="button"
-        class="btn-primary inline-flex justify-center ml-auto mt-3"
+        :class="[
+          disabled ? 'cursor-not-allowed' : '',
+          'btn-primary inline-flex justify-center ml-auto mt-3',
+        ]"
         target="_blank"
         href="https://hub.bytebase.com"
         @click="uploadLicense"
