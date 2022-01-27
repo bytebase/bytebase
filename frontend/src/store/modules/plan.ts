@@ -5,8 +5,8 @@ import { Plan, FeatureType, PlanPatch, PlanState, PlanType } from "../../types";
 // Make sure this is consistent with the matrix in plan.go
 //
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
-// so that it can be shared between frontend/backend. 
-const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
+// so that it can be shared between frontend/backend.
+export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Change Workflow
   ["bb.feature.backward-compatibility", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
@@ -164,9 +164,9 @@ const getters = {
 
   feature:
     (state: PlanState, getters: any) =>
-      (type: FeatureType): boolean => {
-        return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
-      },
+    (type: FeatureType): boolean => {
+      return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
+    },
 };
 
 const actions = {
