@@ -45,28 +45,28 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 		}
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid != s.config.Version {
-			return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version))
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version))
 		}
 
 		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
 		if err != nil {
-			return nil, common.Errorf(common.LicenseInvalid, err)
+			return nil, common.Errorf(common.Invalid, err)
 		}
 
 		return key, nil
 	})
 	if err != nil {
-		return nil, common.Errorf(common.LicenseInvalid, err)
+		return nil, common.Errorf(common.Invalid, err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("invalid token"))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid token"))
 	}
 
 	return s.parseClaims(claims)
@@ -76,37 +76,37 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
-		return nil, common.Errorf(common.LicenseInvalid, err)
+		return nil, common.Errorf(common.Invalid, err)
 	}
 
 	exp, ok := claims["exp"].(int64)
 	if !ok {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
 	}
 
 	iss, ok := claims["iss"].(string)
 	if !ok || iss != s.config.Issuer {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
 	}
 
 	instance, ok := claims["instance"].(int)
 	if !ok || instance < s.config.MinimumInstance {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance))
 	}
 
 	plan, ok := claims["plan"].(string)
 	if !ok {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("plan is not valid, found '%v'", claims["plan"]))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan is not valid, found '%v'", claims["plan"]))
 	}
 
 	planType, err := convertPlanType(plan)
 	if err != nil {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("plan type %q is not valid", planType))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan type %q is not valid", planType))
 	}
 
 	aud, ok := claims["aud"].(string)
 	if !ok || aud == "" {
-		return nil, common.Errorf(common.LicenseInvalid, fmt.Errorf("aud is not valid, found '%v'", claims["aud"]))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("aud is not valid, found '%v'", claims["aud"]))
 	}
 
 	license := &enterpriseAPI.License{
@@ -117,7 +117,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	}
 
 	if err := license.Valid(); err != nil {
-		return nil, common.Errorf(common.LicenseInvalid, err)
+		return nil, common.Errorf(common.Invalid, err)
 	}
 
 	return license, nil
@@ -127,7 +127,7 @@ func (s *licenseService) readLicense() (string, error) {
 	token, err := ioutil.ReadFile(s.config.StorePath)
 	if err != nil {
 		return "", common.Errorf(
-			common.LicenseNotFound,
+			common.NotFound,
 			fmt.Errorf("cannot read license from %s, error %w", s.config.StorePath, err),
 		)
 	}

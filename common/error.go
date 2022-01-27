@@ -45,10 +45,6 @@ const (
 	CompatibilityAddCheck      Code = 10009
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
-
-	// 20001 subscription error code
-	LicenseNotFound Code = 20001
-	LicenseInvalid  Code = 20002
 )
 
 // Error represents an application-specific error. Application errors can be

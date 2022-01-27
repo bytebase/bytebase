@@ -72,10 +72,10 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 func (server *Server) loadLicense() (*enterprise.License, error) {
 	license, err := server.LicenseService.LoadLicense()
 	if err != nil {
-		if common.ErrorCode(err) == common.LicenseInvalid {
-			server.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
-		} else {
+		if common.ErrorCode(err) == common.NotFound {
 			server.l.Debug("Failed to find license", zap.String("error", err.Error()))
+		} else {
+			server.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
 		}
 		return nil, err
 	}
