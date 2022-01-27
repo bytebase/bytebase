@@ -453,6 +453,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
+	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
 	if err := s.composeTaskRelationship(ctx, task); err != nil {
 		return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
 	}
