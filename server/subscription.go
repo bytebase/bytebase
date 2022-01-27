@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
@@ -18,7 +19,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
 			ExpiresTs:     -1,
-			InstanceCount: 1,
+			InstanceCount: 5,
 		}
 
 		license, err := s.loadLicense()
@@ -71,7 +72,11 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 func (server *Server) loadLicense() (*enterprise.License, error) {
 	license, err := server.LicenseService.LoadLicense()
 	if err != nil {
-		server.l.Debug("Failed to load license", zap.String("error", err.Error()))
+		if common.ErrorCode(err) == common.LicenseInvalid {
+			server.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
+		} else {
+			server.l.Debug("Failed to find license", zap.String("error", err.Error()))
+		}
 		return nil, err
 	}
 
