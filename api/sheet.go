@@ -5,6 +5,30 @@ import (
 	"encoding/json"
 )
 
+// SheetVisibility is the visibility of a sheet.
+type SheetVisibility string
+
+const (
+	// Private is the sheet visibility for PRIVATE.
+	PrivateSheet SheetVisibility = "PRIVATE"
+	// Project is the sheet visibility for PROJECT.
+	ProjectSheet SheetVisibility = "PROJECT"
+	// Public is the sheet visibility for PUBLIC.
+	PublicSheet SheetVisibility = "PUBLIC"
+)
+
+func (v SheetVisibility) String() string {
+	switch v {
+	case PrivateSheet:
+		return "PRIVATE"
+	case ProjectSheet:
+		return "PROJECT"
+	case PublicSheet:
+		return "PUBLIC"
+	}
+	return ""
+}
+
 // Sheet is the API message for a sheet.
 type Sheet struct {
 	ID int `jsonapi:"primary,sheet"`
@@ -24,7 +48,7 @@ type Sheet struct {
 	// Domain specific fields
 	Name      string `jsonapi:"attr,name"`
 	Statement string `jsonapi:"attr,statement"`
-	Visibility string `jsonapi:"attr,visibility"`
+	Visibility SheetVisibility `jsonapi:"attr,visibility"`
 }
 
 // SheetCreate is the API message for creating a sheet.
@@ -40,7 +64,7 @@ type SheetCreate struct {
 	// Domain specific fields
 	Name      string `jsonapi:"attr,name"`
 	Statement string `jsonapi:"attr,statement"`
-	Visibility string `jsonapi:"attr,visibility"`
+	Visibility SheetVisibility `jsonapi:"attr,visibility"`
 }
 
 // SheetPatch is the API message for patching a sheet.
@@ -58,7 +82,7 @@ type SheetPatch struct {
 	// Domain specific fields
 	Name      *string `jsonapi:"attr,name"`
 	Statement *string `jsonapi:"attr,statement"`
-	Visibility *string `jsonapi:"attr,visibility"`
+	Visibility *SheetVisibility `jsonapi:"attr,visibility"`
 }
 
 // SheetFind is the API message for finding sheets.
@@ -74,7 +98,7 @@ type SheetFind struct {
 	DatabaseID *int
 
 	// Domain fields
-	Visibility *string
+	Visibility *SheetVisibility
 
 	// Only applicable if InstanceID is specified, if true, then we only return instanceId (database_id is NULL)
 	InstanceOnly bool

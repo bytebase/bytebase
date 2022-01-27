@@ -72,7 +72,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.DatabaseID = &databaseID
 		}
 
-		if visibility := c.QueryParam("visibility"); visibility != "" {
+		if visibility := api.SheetVisibility(c.QueryParam("visibiliy")); visibility != "" {
 			sheetFind.Visibility = &visibility
 		}
 
@@ -101,10 +101,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		sheetFind := &api.SheetFind{
 			ID:        &id,
-			CreatorID: &creatorID,
 		}
 
 		sheet, err := s.SheetService.FindSheet(ctx, sheetFind)
