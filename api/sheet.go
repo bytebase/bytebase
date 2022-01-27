@@ -19,7 +19,6 @@ type Sheet struct {
 
 	// Related fields
 	InstanceID int `jsonapi:"attr,instanceId"`
-	// Instance anomaly doesn't have databaseID
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
