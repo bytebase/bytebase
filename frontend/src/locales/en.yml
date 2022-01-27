@@ -1129,3 +1129,9 @@ label:
     select-values: Select values...
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
+subscription:
+  description: You can upload your bytebase license to unlock team/enterprise features.
+  description-highlight: Purchase a license
+  sensitive-placeholder: Paste your license here - write only
+  upload-license: Upload license
+  plan-compare: Compare features between different plans
