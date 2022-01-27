@@ -12,7 +12,7 @@ const state: () => SubscriptionState = () => ({
 });
 
 const getters = {
-  license: (state: SubscriptionState) => (): Subscription | undefined => {
+  subscription: (state: SubscriptionState) => (): Subscription | undefined => {
     return state.subscription;
   },
 
