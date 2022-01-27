@@ -2,6 +2,49 @@
   <div class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
       <div class="col-span-2 col-start-2 w-64">
+        <label for="project" class="textlabel">
+          {{ $t("common.project") }} <span style="color: red">*</span>
+        </label>
+        <ProjectSelect
+          id="project"
+          class="mt-1"
+          name="project"
+          :disabled="!allowEditProject"
+          :selected-id="state.projectId"
+          @select-project-id="selectProject"
+        />
+      </div>
+
+      <!-- Providing a preview of generated database name in template mode -->
+      <div v-if="isDbNameTemplateMode" class="col-span-2 col-start-2 w-64">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.generated-database-name") }}
+          <NTooltip trigger="hover" placement="top">
+            <template #trigger>
+              <heroicons-outline:question-mark-circle
+                class="w-4 h-4 inline-block"
+              />
+            </template>
+            <div class="whitespace-nowrap">
+              {{
+                $t("create-db.db-name-generated-by-template", {
+                  template: project.dbNameTemplate,
+                })
+              }}
+            </div>
+          </NTooltip>
+        </label>
+        <input
+          id="name"
+          disabled
+          name="name"
+          type="text"
+          class="textfield mt-1 w-full"
+          :value="generatedDatabaseName"
+        />
+      </div>
+
+      <div class="col-span-2 col-start-2 w-64">
         <label for="name" class="textlabel">
           {{ $t("create-db.new-database-name") }}
           <span class="text-red-600">*</span>
@@ -23,21 +66,6 @@
         </span>
       </div>
 
-      <!-- Providing a preview of generated database name in template mode -->
-      <div v-if="isDbNameTemplateMode" class="col-span-2 col-start-2 w-64">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.db-name-generated-by-template") }}
-        </label>
-        <input
-          id="name"
-          disabled
-          name="name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :value="generatedDatabaseName"
-        />
-      </div>
-
       <!-- Providing more dropdowns for labels as if they are normal props of DB -->
       <DatabaseLabelForm
         v-if="isTenantProject"
@@ -47,22 +75,8 @@
       />
 
       <div class="col-span-2 col-start-2 w-64">
-        <label for="project" class="textlabel">
-          {{ $t("common.projects") }} <span style="color: red">*</span>
-        </label>
-        <ProjectSelect
-          id="project"
-          class="mt-1"
-          name="project"
-          :disabled="!allowEditProject"
-          :selected-id="state.projectId"
-          @select-project-id="selectProject"
-        />
-      </div>
-
-      <div class="col-span-2 col-start-2 w-64">
         <label for="environment" class="textlabel">
-          {{ $t("common.environments") }} <span style="color: red">*</span>
+          {{ $t("common.environment") }} <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
           id="environment"
@@ -81,7 +95,7 @@
             :instance="selectedInstance"
           />
           <label for="instance" class="textlabel">
-            {{ $t("common.instances") }} <span class="text-red-600">*</span>
+            {{ $t("common.instance") }} <span class="text-red-600">*</span>
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
@@ -188,6 +202,7 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
+import { NTooltip } from "naive-ui";
 import { DatabaseLabelForm } from "./CreateDatabasePrepForm/";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -232,6 +247,7 @@ interface LocalState {
 export default defineComponent({
   name: "CreateDatabasePrepForm",
   components: {
+    NTooltip,
     InstanceSelect,
     EnvironmentSelect,
     ProjectSelect,
