@@ -3,9 +3,9 @@ import {
   Subscription,
   FeatureType,
   PlanType,
+  FEATURE_MATRIX,
   SubscriptionState,
 } from "../../types";
-import { FEATURE_MATRIX } from "./plan";
 
 const state: () => SubscriptionState = () => ({
   subscription: undefined,

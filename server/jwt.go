@@ -171,6 +171,12 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			return next(c)
 		}
 
+		method := c.Request().Method
+		// Skip GET /subscription request
+		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
+			return next(c)
+		}
+
 		cookie, err := c.Cookie(accessTokenCookieName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Missing access token")
