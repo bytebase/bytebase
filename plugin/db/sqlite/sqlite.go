@@ -53,8 +53,9 @@ func newDriver(config db.DriverConfig) db.Driver {
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
-	// We assume each instance to have a default.db database.
-	if _, err := driver.GetDbConnection(ctx, "default"); err != nil {
+
+	// If config.Database is empty, we will get a connection to in-memory database.
+	if _, err := driver.GetDbConnection(ctx, config.Database); err != nil {
 		return nil, err
 	}
 	driver.connectionCtx = connCtx
@@ -75,6 +76,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetDbConnection gets a database connection.
+// If database is empty, we will get a connect to in-memory database.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
@@ -83,6 +85,9 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 	}
 
 	dns := path.Join(driver.dir, fmt.Sprintf("%s.db", database))
+	if database == "" {
+		dns = ":memory:"
+	}
 	db, err := sql.Open("sqlite3", dns)
 	if err != nil {
 		return nil, err
