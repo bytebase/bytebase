@@ -35,18 +35,34 @@ function convertTaskRun(
     ? JSON.parse((taskRun.attributes.payload as string) || "{}")
     : {};
 
-  const creatorId = (taskRun.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (taskRun.relationships!.updater.data as ResourceIdentifier)
-    .id;
+  let creator = null;
+  if (taskRun.relationships!.creator.data) {
+    const creatorId = (
+      taskRun.relationships!.creator.data as ResourceIdentifier
+    ).id;
+    creator = getPrincipalFromIncludedList(
+      creatorId,
+      includedList
+    ) as Principal;
+  }
+  let updater = null;
+  if (taskRun.relationships!.updater.data) {
+    const updaterId = (
+      taskRun.relationships!.updater.data as ResourceIdentifier
+    ).id;
+    updater = getPrincipalFromIncludedList(
+      updaterId,
+      includedList
+    ) as Principal;
+  }
   return {
     ...(taskRun.attributes as Omit<
       TaskRun,
       "id" | "result" | "payload" | "creator" | "updater"
     >),
     id: parseInt(taskRun.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: creator as Principal,
+    updater: updater as Principal,
     result,
     payload,
   };
@@ -65,20 +81,35 @@ function convertTaskCheckRun(
     ? JSON.parse((taskCheckRun.attributes.payload as string) || "{}")
     : {};
 
-  const creatorId = (
-    taskCheckRun.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    taskCheckRun.relationships!.updater.data as ResourceIdentifier
-  ).id;
+  let creator = null;
+  if (taskCheckRun.relationships!.creator.data) {
+    const creatorId = (
+      taskCheckRun.relationships!.creator.data as ResourceIdentifier
+    ).id;
+    creator = getPrincipalFromIncludedList(
+      creatorId,
+      includedList
+    ) as Principal;
+  }
+  let updater = null;
+  if (taskCheckRun.relationships!.updater.data) {
+    const updaterId = (
+      taskCheckRun.relationships!.updater.data as ResourceIdentifier
+    ).id;
+    updater = getPrincipalFromIncludedList(
+      updaterId,
+      includedList
+    ) as Principal;
+  }
+
   return {
     ...(taskCheckRun.attributes as Omit<
       TaskCheckRun,
       "id" | "result" | "payload" | "creator" | "updater"
     >),
     id: parseInt(taskCheckRun.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: creator as Principal,
+    updater: updater as Principal,
     result,
     payload,
   };
@@ -89,8 +120,24 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Task, "pipeline" | "stage"> {
-  const creatorId = (task.relationships!.creator.data as ResourceIdentifier).id;
-  const updaterId = (task.relationships!.updater.data as ResourceIdentifier).id;
+  let creator = null;
+  if (task.relationships!.creator.data) {
+    const creatorId = (task.relationships!.creator.data as ResourceIdentifier)
+      .id;
+    creator = getPrincipalFromIncludedList(
+      creatorId,
+      includedList
+    ) as Principal;
+  }
+  let updater = null;
+  if (task.relationships!.updater.data) {
+    const updaterId = (task.relationships!.updater.data as ResourceIdentifier)
+      .id;
+    updater = getPrincipalFromIncludedList(
+      updaterId,
+      includedList
+    ) as Principal;
+  }
   const payload = task.attributes.payload
     ? JSON.parse((task.attributes.payload as string) || "{}")
     : {};
@@ -172,8 +219,8 @@ function convertPartial(
       | "stage"
     >),
     id: parseInt(task.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: creator as Principal,
+    updater: updater as Principal,
     payload,
     instance,
     database,
