@@ -139,7 +139,7 @@ export default {
     });
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bb.feature.rbac")
+      store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
     const state = reactive<LocalState>({

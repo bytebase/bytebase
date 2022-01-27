@@ -252,7 +252,7 @@ export default {
     });
 
     const hasDataSourceFeature = computed(() =>
-      store.getters["plan/feature"]("bb.feature.data-source")
+      store.getters["subscription/feature"]("bb.feature.data-source")
     );
 
     const databaseList = computed(() => {
