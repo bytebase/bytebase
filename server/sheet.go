@@ -59,7 +59,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if instanceIDStr := c.QueryParams().Get("instanceId"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.QueryParam("instanceId"))).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.QueryParam("instanceId"))).SetInternal(err)
 			}
 			sheetFind.InstanceID = &instanceID
 		}
