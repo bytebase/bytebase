@@ -4,7 +4,11 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"path"
+	"strings"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -14,7 +18,16 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:embed sqlite_migration_schema.sql
+var migrationSchema string
+
 var (
+	bytebaseDatabase     = "bytebase"
+	excludedDatabaseList = map[string]bool{
+		// Skip our internal "bytebase" database
+		bytebaseDatabase: true,
+	}
+
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -24,9 +37,10 @@ func init() {
 
 // Driver is the SQLite driver.
 type Driver struct {
-	l *zap.Logger
-
-	db *sql.DB
+	dir           string
+	db            *sql.DB
+	connectionCtx db.ConnectionContext
+	l             *zap.Logger
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -37,13 +51,23 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a SQLite driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil
+	// Host is the directory (instance) containing all SQLite databases.
+	driver.dir = config.Host
+
+	// If config.Database is empty, we will get a connection to in-memory database.
+	if _, err := driver.GetDbConnection(ctx, config.Database); err != nil {
+		return nil, err
+	}
+	driver.connectionCtx = connCtx
+	return driver, nil
 }
 
 // Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
-	return driver.db.Close()
+	if driver.db != nil {
+		return driver.db.Close()
+	}
+	return nil
 }
 
 // Ping pings the database.
@@ -52,20 +76,83 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetDbConnection gets a database connection.
+// If database is empty, we will get a connect to in-memory database.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
-	return driver.db, nil
+	if driver.db != nil {
+		if err := driver.db.Close(); err != nil {
+			return nil, err
+		}
+	}
+
+	dns := path.Join(driver.dir, fmt.Sprintf("%s.db", database))
+	if database == "" {
+		dns = ":memory:"
+	}
+	db, err := sql.Open("sqlite3", dns)
+	if err != nil {
+		return nil, err
+	}
+	driver.db = db
+	return db, nil
 }
 
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
-	// TODO(spinningbot): implement it.
-	return "", nil
+	var version string
+	row := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();")
+	if err := row.Scan(&version); err != nil {
+		return "", err
+	}
+	return version, nil
 }
 
 // SyncSchema synces the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil, nil
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var schemaList []*db.Schema
+	for _, dbName := range databases {
+		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+
+		var schema db.Schema
+		schema.Name = dbName
+		// TODO(d-bytebase): retrieve database schema such as tables and indices.
+		schemaList = append(schemaList, &schema)
+	}
+	return nil, schemaList, nil
+}
+
+func (driver *Driver) getDatabases() ([]string, error) {
+	files, err := ioutil.ReadDir(driver.dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory %q, error %w", driver.dir, err)
+	}
+	var databases []string
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".db") {
+			continue
+		}
+		databases = append(databases, strings.TrimRight(file.Name(), ".db"))
+	}
+	return databases, nil
+}
+
+func (driver *Driver) hasBytebaseDatabase() (bool, error) {
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return false, err
+	}
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Execute executes a SQL statement.
@@ -94,26 +181,143 @@ func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([
 
 // NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	// TODO(spinningbot): implement it.
-	return false, nil
+	exist, err := driver.hasBytebaseDatabase()
+	if err != nil {
+		return false, err
+	}
+	if !exist {
+		return true, nil
+	}
+	if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+		return false, err
+	}
+
+	const query = `
+		SELECT
+		    1
+		FROM sqlite_master
+		WHERE type='table' AND name = 'bytebase_migration_history'
+	`
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
-	// TODO(spinningbot): implement it.
+	setup, err := driver.NeedsSetupMigration(ctx)
+	if err != nil {
+		return nil
+	}
+
+	if setup {
+		driver.l.Info("Bytebase migration schema not found, creating schema...",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+
+		if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+			driver.l.Error("Failed to switch to bytebase database.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return fmt.Errorf("failed to switch to bytebase database error: %v", err)
+		}
+
+		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+			driver.l.Error("Failed to initialize migration schema.",
+				zap.Error(err),
+				zap.String("environment", driver.connectionCtx.EnvironmentName),
+				zap.String("database", driver.connectionCtx.InstanceName),
+			)
+			return util.FormatErrorWithQuery(err, migrationSchema)
+		}
+		driver.l.Info("Successfully created migration schema.",
+			zap.String("environment", driver.connectionCtx.EnvironmentName),
+			zap.String("database", driver.connectionCtx.InstanceName),
+		)
+	}
+
 	return nil
 }
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	// TODO(spinningbot): implement it.
-	return 0, "", nil
+	insertHistoryQuery := `
+	INSERT INTO bytebase_migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		schema,
+		schema_prev,
+		execution_duration_ns,
+		issue_id,
+		payload
+	)
+	VALUES (?, strftime('%s', 'now'), ?, strftime('%s', 'now'), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	updateHistoryAsDoneQuery := `
+	UPDATE
+		bytebase_migration_history
+	SET
+		status = 'DONE',
+		execution_duration_ns = ?,
+		schema = ?
+	WHERE id = ?
+	`
+
+	updateHistoryAsFailedQuery := `
+	UPDATE
+		bytebase_migration_history
+	SET
+		status = 'FAILED',
+		execution_duration_ns = ?
+	WHERE id = ?
+	`
+
+	args := util.MigrationExecutionArgs{
+		InsertHistoryQuery:         insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
+		TablePrefix:                "",
+	}
+	return util.ExecuteMigration(ctx, driver.l, db.SQLite, driver, m, statement, args)
 }
 
 // FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	// TODO(spinningbot): implement it.
-	return nil, nil
+	baseQuery := `
+	SELECT
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		schema,
+		schema_prev,
+		execution_duration_ns,
+		issue_id,
+		payload
+		FROM bytebase_migration_history `
+	return util.FindMigrationHistoryList(ctx, db.Postgres, driver, find, baseQuery)
 }
 
 // Dump dumps the database.
