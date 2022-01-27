@@ -1,10 +1,14 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -114,23 +118,54 @@ func (ctl *controller) Login() error {
 	return nil
 }
 
+// provisionSQLiteInstance provisions a SQLite instance (a directory).
+func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
+	p := path.Join(rootDir, name)
+	if err := os.MkdirAll(p, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to make directory %q, error %w", p, err)
+	}
+
+	return p, nil
+}
+
 // get sends a GET client request.
-func (ctl *controller) get(shortURL string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", rootURL, shortURL)
-	req, err := http.NewRequest("GET", url, nil)
+func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
+	gURL := fmt.Sprintf("%s%s", rootURL, shortURL)
+	req, err := http.NewRequest("GET", gURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new GET request(%q), error %w", url, err)
+		return nil, fmt.Errorf("fail to create a new GET request(%q), error %w", gURL, err)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
+	q := url.Values{}
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a GET request(%q), error %w", url, err)
+		return nil, fmt.Errorf("fail to send a GET request(%q), error %w", gURL, err)
 	}
 	return resp.Body, nil
 }
 
+// post sends a POST client request.
+func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", rootURL, shortURL)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new POST request(%q), error %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a POST request(%q), error %w", url, err)
+	}
+	return resp.Body, nil
+}
+
+// getProjects gets the projects.
 func (ctl *controller) getProjects() ([]*api.Project, error) {
-	body, err := ctl.get("/project")
+	body, err := ctl.get("/project", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +183,71 @@ func (ctl *controller) getProjects() ([]*api.Project, error) {
 		projects = append(projects, project)
 	}
 	return projects, nil
+}
+
+// getProjects gets the environments.
+func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
+	body, err := ctl.get("/environment", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var environments []*api.Environment
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Environment)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get environment response, error %w", err)
+	}
+	for _, p := range ps {
+		environment, ok := p.(*api.Environment)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert environment")
+		}
+		environments = append(environments, environment)
+	}
+	return environments, nil
+}
+
+// getDatabases gets the databases.
+func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Database, error) {
+	params := make(map[string]string)
+	if databaseFind.InstanceID != nil {
+		params["instance"] = fmt.Sprintf("%d", *databaseFind.InstanceID)
+	}
+	body, err := ctl.get("/database", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var databases []*api.Database
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Database)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get database response, error %w", err)
+	}
+	for _, p := range ps {
+		database, ok := p.(*api.Database)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert database")
+		}
+		databases = append(databases, database)
+	}
+	return databases, nil
+}
+
+// addInstance adds an instance.
+func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Instance, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &instanceCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal instance create, error %w", err)
+	}
+
+	body, err := ctl.post("/instance", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	instance := new(api.Instance)
+	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal post instance response, error %w", err)
+	}
+	return instance, nil
 }
