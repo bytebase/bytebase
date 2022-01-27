@@ -243,7 +243,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
-	s.registerSheetRoutes((apiGroup))
+	s.registerSheetRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
