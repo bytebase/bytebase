@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -155,6 +156,7 @@ func createSheet(ctx context.Context, tx *Tx, create *api.SheetCreate) (*api.She
 
 	row.Next()
 	var sheet api.Sheet
+	databaseID := sql.NullInt32{}
 	if err := row.Scan(
 		&sheet.ID,
 		&sheet.CreatorID,
@@ -162,7 +164,7 @@ func createSheet(ctx context.Context, tx *Tx, create *api.SheetCreate) (*api.She
 		&sheet.UpdaterID,
 		&sheet.UpdatedTs,
 		&sheet.InstanceID,
-		&sheet.DatabaseID,
+		&databaseID,
 		&sheet.Name,
 		&sheet.Statement,
 		&sheet.Visibility,
@@ -204,6 +206,7 @@ func patchSheet(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*api.Sheet,
 
 	if row.Next() {
 		var sheet api.Sheet
+		databaseID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheet.ID,
 			&sheet.CreatorID,
@@ -211,7 +214,7 @@ func patchSheet(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*api.Sheet,
 			&sheet.UpdaterID,
 			&sheet.UpdatedTs,
 			&sheet.InstanceID,
-			&sheet.DatabaseID,
+			&databaseID,
 			&sheet.Name,
 			&sheet.Statement,
 			&sheet.Visibility,
@@ -280,6 +283,7 @@ func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.S
 	list := make([]*api.Sheet, 0)
 	for rows.Next() {
 		var sheet api.Sheet
+		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
 			&sheet.ID,
 			&sheet.CreatorID,
@@ -287,7 +291,7 @@ func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.S
 			&sheet.UpdaterID,
 			&sheet.UpdatedTs,
 			&sheet.InstanceID,
-			&sheet.DatabaseID,
+			&databaseID,
 			&sheet.Name,
 			&sheet.Statement,
 			&sheet.Visibility,
