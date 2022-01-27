@@ -70,8 +70,6 @@ export default {
 
       try {
         await store.dispatch("subscription/patchSubscription", state.license);
-      } catch (e) {
-        console.error(e);
       } finally {
         state.loading = false;
       }
