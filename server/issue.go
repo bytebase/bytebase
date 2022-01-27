@@ -449,6 +449,14 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return issue, nil
 	}
 
+	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
+		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+	}
+	// We need to re-compose the issue relationship since schedule next task to run may change the issue internal fields.
+	if err := s.composeIssueRelationship(ctx, issue); err != nil {
+		return nil, err
+	}
+
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Name,
 	}
@@ -506,10 +514,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
 		}
-	}
-
-	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
-		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 
 	for _, subscriberID := range issueCreate.SubscriberIDList {
