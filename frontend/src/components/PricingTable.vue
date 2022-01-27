@@ -102,13 +102,15 @@
 
 <script lang="ts">
 import { reactive, computed, PropType } from "vue";
-import { Plan, Subscription, PlanType } from "../types";
 import {
+  Plan,
+  Subscription,
+  PlanType,
   FEATURE_SECTIONS,
   FREE_PLAN,
   TEAM_PLAN,
   ENTERPRISE_PLAN,
-} from "../store/modules/plan";
+} from "../types";
 
 interface LocalState {
   isMonthly: boolean;
