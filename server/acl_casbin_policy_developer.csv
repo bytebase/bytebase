@@ -79,5 +79,5 @@ p, DEVELOPER, /subscription, GET
 p, DEVELOPER, /sheet, POST
 p, DEVELOPER, /sheet, GET
 p, DEVELOPER, /sheet/{id}, GET
-p, DEVELOPER, /sheet/{id}, PATCH_SELF
+p, DEVELOPER, /sheet/{id}, PATCH
 p, DEVELOPER, /sheet/{id}, DELETE_SELF

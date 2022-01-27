@@ -96,5 +96,5 @@ p, OWNER, /subscription, PATCH
 p, OWNER, /sheet, POST
 p, OWNER, /sheet, GET
 p, OWNER, /sheet/{id}, GET
-p, OWNER, /sheet/{id}, PATCH_SELF
+p, OWNER, /sheet/{id}, PATCH
 p, OWNER, /sheet/{id}, DELETE_SELF
