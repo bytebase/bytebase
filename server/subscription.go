@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
@@ -13,14 +14,22 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
+		subscription := &enterpriseAPI.Subscription{
+			Plan: api.FREE,
+			// -1 means not expire, just for free plan
+			ExpiresTs:     -1,
+			InstanceCount: 1,
+		}
+
 		license, err := s.loadLicense()
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
-		}
-		subscription := &enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			InstanceCount: license.InstanceCount,
+			s.l.Error("Failed to get valid license for subscription", zap.String("error", err.Error()))
+		} else {
+			subscription = &enterpriseAPI.Subscription{
+				Plan:          license.Plan,
+				ExpiresTs:     license.ExpiresTs,
+				InstanceCount: license.InstanceCount,
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -62,7 +71,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 func (server *Server) loadLicense() (*enterprise.License, error) {
 	license, err := server.LicenseService.LoadLicense()
 	if err != nil {
-		server.l.Warn("Failed to load license", zap.String("error", err.Error()))
+		server.l.Debug("Failed to load license", zap.String("error", err.Error()))
 		return nil, err
 	}
 
