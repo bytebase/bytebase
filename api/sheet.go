@@ -9,11 +9,11 @@ import (
 type SheetVisibility string
 
 const (
-	// Private is the sheet visibility for PRIVATE. Private is for OWNER Only
+	// Private is the sheet visibility for PRIVATE. Private is for OWNER Only.
 	PrivateSheet SheetVisibility = "PRIVATE"
 	// Project is the sheet visibility for PROJECT. Project is for OWNER and Collaborator, OWNER can read/write, and DEVELOPER can only read.
 	ProjectSheet SheetVisibility = "PROJECT"
-	// Public is the sheet visibility for PUBLIC. Public is for all
+	// Public is the sheet visibility for PUBLIC. Public is for anyone, But only can read.
 	PublicSheet SheetVisibility = "PUBLIC"
 )
 
