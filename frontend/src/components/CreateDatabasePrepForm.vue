@@ -66,12 +66,13 @@
         </span>
       </div>
 
-      <!-- Providing more dropdowns for labels as if they are normal props of DB -->
+      <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
       <DatabaseLabelForm
         v-if="isTenantProject"
         ref="labelForm"
         :project="project"
         :label-list="state.labelList"
+        filter="required"
       />
 
       <div class="col-span-2 col-start-2 w-64">
@@ -111,6 +112,15 @@
           />
         </div>
       </div>
+
+      <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
+      <DatabaseLabelForm
+        v-if="isTenantProject"
+        ref="labelForm"
+        :project="project"
+        :label-list="state.labelList"
+        filter="optional"
+      />
 
       <template
         v-if="
