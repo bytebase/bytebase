@@ -1,6 +1,6 @@
 <template>
   <div
-    v-for="item in formItemList"
+    v-for="item in filteredFormItemList"
     :key="item.label.key"
     class="col-span-2 col-start-2 w-64"
   >
@@ -49,6 +49,7 @@ import {
 const props = defineProps<{
   project: Project;
   labelList: DatabaseLabel[];
+  filter: "required" | "optional";
 }>();
 
 const store = useStore();
@@ -93,6 +94,14 @@ const formItemList = computed((): { label: Label; required: boolean }[] => {
     };
   });
 });
+
+const filteredFormItemList = computed(
+  (): { label: Label; required: boolean }[] => {
+    return formItemList.value.filter((item) =>
+      props.filter === "required" ? item.required : !item.required
+    );
+  }
+);
 
 const getLabelPlaceholder = (key: LabelKeyType): string => {
   // provide "Select Tenant" if Tenant is optional
