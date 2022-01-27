@@ -998,3 +998,9 @@ label:
     select-values: 选择值…
 oauth:
   unknown-event: 未知的事件类型，认证失败
+subscription:
+  description: 你可以在这里上传你的 bytebase 证书来解锁团队版/企业版功能。
+  description-highlight: 购买证书
+  sensitive-placeholder: 粘贴你的证书 - 仅写入
+  upload-license: 上传证书
+  plan-compare: 比较不同版本的功能，寻找适合你的方案
