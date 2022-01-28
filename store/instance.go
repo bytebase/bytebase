@@ -115,19 +115,12 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 	}
 	defer tx.Rollback()
 
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
-	}
+	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT COUNT(*)
 		FROM instance as count
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+where,
 		args...,
 	)
 	if err != nil {
@@ -265,14 +258,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 }
 
 func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
-	}
+	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -290,7 +276,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			host,
 			port
 		FROM instance
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+where,
 		args...,
 	)
 	if err != nil {
@@ -392,4 +378,17 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
+}
+
+func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+
+	return strings.Join(where, " AND "), args
 }

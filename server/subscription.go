@@ -15,23 +15,7 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
-		subscription := &enterpriseAPI.Subscription{
-			Plan: api.FREE,
-			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: 5,
-		}
-
-		license, err := s.loadLicense()
-		if err != nil {
-			s.l.Error("Failed to get valid license for subscription", zap.String("error", err.Error()))
-		} else {
-			subscription = &enterpriseAPI.Subscription{
-				Plan:          license.Plan,
-				ExpiresTs:     license.ExpiresTs,
-				InstanceCount: license.InstanceCount,
-			}
-		}
+		subscription := s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
@@ -66,6 +50,27 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+// loadLicense will load current subscription by license.
+// Return subscription with free plan if no license found.
+func (server *Server) loadSubscription() *enterprise.Subscription {
+	subscription := &enterpriseAPI.Subscription{
+		Plan: api.TEAM,
+		// -1 means not expire, just for free plan
+		ExpiresTs:     -1,
+		InstanceCount: 5,
+	}
+	license, _ := server.loadLicense()
+	if license != nil {
+		subscription = &enterpriseAPI.Subscription{
+			Plan:          license.Plan,
+			ExpiresTs:     license.ExpiresTs,
+			InstanceCount: license.InstanceCount,
+		}
+	}
+
+	return subscription
 }
 
 // loadLicense will get and parse valid license from file.
