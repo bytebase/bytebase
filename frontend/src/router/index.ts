@@ -861,7 +861,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name === "workspace.instance") {
+  if (to.path.startsWith("/instance")) {
     if (
       !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
       isDBAOrOwner(currentUser.role)

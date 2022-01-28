@@ -27,7 +27,7 @@
             $t("common.databases")
           }}</router-link>
 
-          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md">{{
+          <router-link v-if="showInstance" to="/instance" class="bar-link px-2 py-2 rounded-md">{{
             $t("common.instances")
           }}</router-link>
 
@@ -166,7 +166,7 @@
       {{ $t("common.databases") }}
     </router-link>
 
-    <router-link to="/instance" class="bar-link rounded-md block px-3 py-2">{{
+    <router-link v-if="showInstance" to="/instance" class="bar-link rounded-md block px-3 py-2">{{
       $t("common.instances")
     }}</router-link>
 
@@ -222,6 +222,10 @@ export default defineComponent({
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
     });
+
+    const showInstance = computed((): boolean => {
+      return showDBAItem.value || !store.getters["subscription/feature"]("bb.feature.dba-workflow")
+    })
 
     const isDevFeatures = computed((): boolean => {
       return isDev();
@@ -366,6 +370,7 @@ export default defineComponent({
       currentUser,
       currentPlan,
       showDBAItem,
+      showInstance,
       isDevFeatures,
       inboxSummary,
       switchToOwner,
