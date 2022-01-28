@@ -13,9 +13,27 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// dbaFlowMiddleware is a feature guard for bb.feature.dba-workflow
+func dbaFlowMiddleware(server *Server, next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		role := c.Get(getRoleContextKey()).(api.Role)
+		if role == api.Developer && server.feature(api.FeatureDBAWorkflow) {
+			return echo.NewHTTPError(http.StatusForbidden, "Developer has not access to instance")
+		}
+
+		return next(c)
+	}
+}
+
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
+	apiGroup := g.Group("/instance")
+
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return dbaFlowMiddleware(s, next)
+	})
+
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
-	g.POST("/instance", func(c echo.Context) error {
+	apiGroup.POST("", func(c echo.Context) error {
 		ctx := context.Background()
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
@@ -54,7 +72,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance", func(c echo.Context) error {
+	apiGroup.GET("", func(c echo.Context) error {
 		ctx := context.Background()
 		instanceFind := &api.InstanceFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
@@ -79,7 +97,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID", func(c echo.Context) error {
+	apiGroup.GET("/:instanceID", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -101,7 +119,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/instance/:instanceID", func(c echo.Context) error {
+	apiGroup.PATCH("/:instanceID", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -191,7 +209,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID/user", func(c echo.Context) error {
+	apiGroup.GET("/:instanceID/user", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -213,7 +231,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
+	apiGroup.POST("/:instanceID/migration", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -260,7 +278,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID/migration/status", func(c echo.Context) error {
+	apiGroup.GET("/:instanceID/migration/status", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -300,7 +318,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID/migration/history/:historyID", func(c echo.Context) error {
+	apiGroup.GET("/:instanceID/migration/history/:historyID", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
@@ -361,7 +379,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID/migration/history", func(c echo.Context) error {
+	apiGroup.GET("/:instanceID/migration/history", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
