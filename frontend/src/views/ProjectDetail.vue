@@ -1,43 +1,43 @@
 <template>
-  <template v-if="selectedTab == OVERVIEW_TAB">
+  <template v-if="hash === 'overview'">
     <ProjectOverviewPanel
       id="overview"
       :project="project"
       :database-list="databaseList"
     />
   </template>
-  <template v-if="selectedTab == MIGRATION_HISTORY_TAB">
+  <template v-if="hash === 'migration-history'">
     <ProjectMigrationHistoryPanel
       id="migration-history"
       :project="project"
       :database-list="databaseList"
     />
   </template>
-  <template v-if="selectedTab == ACTIVITY_TAB">
+  <template v-if="hash === 'activity'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
-  <template v-else-if="selectedTab == VERSION_CONTROL_TAB">
+  <template v-else-if="hash === 'version-control'">
     <ProjectVersionControlPanel
       id="version-control"
       :project="project"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-else-if="selectedTab == PROJECT_HOOK_TAB">
+  <template v-else-if="hash === 'webhook'">
     <ProjectWebhookPanel
       id="webhook"
       :project="project"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-else-if="selectedTab == SETTING_TAB">
+  <template v-else-if="hash === 'setting'">
     <ProjectSettingPanel
       id="setting"
       :project="project"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-else-if="selectedTab == DEPLOYMENT_CONFIG_TAB">
+  <template v-else-if="hash === 'deployment-config'">
     <ProjectDeploymentConfigPanel
       id="deployment-config"
       :project="project"
@@ -58,14 +58,7 @@ import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import { cloneDeep } from "lodash-es";
-
-const OVERVIEW_TAB = 0;
-const MIGRATION_HISTORY_TAB = 1;
-const ACTIVITY_TAB = 2;
-const VERSION_CONTROL_TAB = 3;
-const PROJECT_HOOK_TAB = 4;
-const SETTING_TAB = 5;
-const DEPLOYMENT_CONFIG_TAB = 6;
+import { useRoute } from "vue-router";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -83,10 +76,6 @@ export default defineComponent({
       required: true,
       type: String,
     },
-    selectedTab: {
-      required: true,
-      type: Number,
-    },
     allowEdit: {
       required: true,
       type: Boolean,
@@ -94,6 +83,9 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const route = useRoute();
+
+    const hash = computed(() => route.hash.replace(/^#?/, ""));
 
     const project = computed(() => {
       return store.getters["project/projectById"](
@@ -119,13 +111,7 @@ export default defineComponent({
     });
 
     return {
-      OVERVIEW_TAB,
-      MIGRATION_HISTORY_TAB,
-      ACTIVITY_TAB,
-      VERSION_CONTROL_TAB,
-      PROJECT_HOOK_TAB,
-      SETTING_TAB,
-      DEPLOYMENT_CONFIG_TAB,
+      hash,
       project,
       databaseList,
     };

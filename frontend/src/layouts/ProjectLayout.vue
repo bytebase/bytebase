@@ -27,7 +27,6 @@
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"
-      :selected-tab="state.selectedIndex"
       :allow-edit="allowEdit"
     />
   </div>
