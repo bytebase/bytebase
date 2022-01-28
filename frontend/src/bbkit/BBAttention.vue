@@ -46,44 +46,38 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, PropType } from "vue";
+<script lang="ts" setup>
+import { computed, defineProps, withDefaults, defineEmits } from "vue";
 import { BBAttentionStyle } from "./types";
 
-export default {
-  name: "BBAttention",
-  props: {
-    style: {
-      type: String as PropType<BBAttentionStyle>,
-      default: "INFO",
-    },
-    title: {
-      default: "bbkit.attention.default",
-      type: String,
-    },
-    description: {
-      default: "",
-      type: String,
-    },
-    actionText: {
-      default: "",
-      type: String,
-    },
-  },
-  emits: ["click-action"],
-  setup(props) {
-    const color = computed(() => {
-      switch (props.style) {
-        case "INFO":
-          return "blue";
-        case "WARN":
-          return "yellow";
-        case "CRITICAL":
-          return "red";
-      }
-    });
+const props = withDefaults(
+  defineProps<{
+    style?: BBAttentionStyle;
+    title?: string;
+    description?: string;
+    actionText?: string;
+  }>(),
+  {
+    style: "INFO",
+    title: "bbkit.attention.default",
+    description: "",
+    actionText: "",
+  }
+);
 
-    return { color };
-  },
-};
+defineEmits<{
+  (event: "click-action"): void;
+}>();
+
+// eslint-disable-next-line vue/return-in-computed-property
+const color = computed(() => {
+  switch (props.style) {
+    case "INFO":
+      return "blue";
+    case "WARN":
+      return "yellow";
+    case "CRITICAL":
+      return "red";
+  }
+});
 </script>
