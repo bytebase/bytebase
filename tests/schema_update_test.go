@@ -88,7 +88,7 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to construct issue create context payload, error: %w", err))
 	}
-	_, err = ctl.createIssue(api.IssueCreate{
+	issue, err := ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
 		Name:        fmt.Sprintf("create database %q", databaseName),
 		Type:        api.IssueDatabaseCreate,
@@ -99,5 +99,8 @@ func TestSchemaUpdate(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to create issue, error: %w", err))
+	}
+	if err := ctl.approveIssue(issue); err != nil {
+		t.Fatal(fmt.Errorf("failed to approve issue %v, error: %w", issue.ID, err))
 	}
 }
