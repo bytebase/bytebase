@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -78,9 +79,14 @@ func TestSchemaUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	createContext, err := getDatabaseCreateIssueCreateContext(instance1.ID, databaseName)
+	m := &api.CreateDatabaseContext{
+		InstanceID:   instance1.ID,
+		DatabaseName: databaseName,
+		Labels:       "",
+	}
+	createContext, err := json.Marshal(m)
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to get create database create context, error: %w", err))
+		t.Fatal(fmt.Errorf("failed to construct issue create context payload, error: %w", err))
 	}
 	_, err = ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
@@ -89,7 +95,7 @@ func TestSchemaUpdate(t *testing.T) {
 		Description: fmt.Sprintf("This creates a database %q.", databaseName),
 		// Assign to self.
 		AssigneeID:    project.Creator.ID,
-		CreateContext: createContext,
+		CreateContext: string(createContext),
 	})
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to create issue, error: %w", err))

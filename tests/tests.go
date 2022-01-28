@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -303,18 +302,4 @@ func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, err
 		return nil, fmt.Errorf("fail to unmarshal post issue response, error: %w", err)
 	}
 	return issue, nil
-}
-
-// getDatabaseCreateIssueCreateContext gets a create context for create database issue.
-func getDatabaseCreateIssueCreateContext(instanceID int, databaseName string) (string, error) {
-	m := &api.CreateDatabaseContext{
-		InstanceID:   instanceID,
-		DatabaseName: databaseName,
-		Labels:       "",
-	}
-	createContext, err := json.Marshal(m)
-	if err != nil {
-		return "", fmt.Errorf("failed to construct issue create context payload, error: %w", err)
-	}
-	return string(createContext), nil
 }
