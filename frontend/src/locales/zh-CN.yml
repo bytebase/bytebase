@@ -1011,3 +1011,6 @@ subscription:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间
       desc: 「设定任务执行时间」可以将任务设定在特定时间执行
+    bb-feature-instance-count:
+      title: 实例数量限制
+      desc: 您已达最大实例数量限制，请付费升级来解锁更多实例额度。

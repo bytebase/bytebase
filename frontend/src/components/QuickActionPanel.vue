@@ -1,5 +1,7 @@
 <template>
-  <div class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0">
+  <div
+    class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0"
+  >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction == 'quickaction.bb.instance.create'"
@@ -8,9 +10,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-base font-normal text-main tracking-tight"
-        >{{ $t("quick-action.add-instance") }}</h3>
+        <h3 class="mt-1 text-base font-normal text-main tracking-tight">
+          {{ $t("quick-action.add-instance") }}
+        </h3>
       </div>
 
       <div
@@ -22,7 +24,9 @@
         </router-link>
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
-        >{{ $t("quick-action.manage-user") }}</h3>
+        >
+          {{ $t("quick-action.manage-user") }}
+        </h3>
       </div>
 
       <div
@@ -34,7 +38,9 @@
         </button>
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
-        >{{ $t("common.query") }}</h3>
+        >
+          {{ $t("common.query") }}
+        </h3>
       </div>
 
       <div
@@ -46,7 +52,9 @@
         </button>
         <h3
           class="mt-1 text-center text-base font-normal text-main tracking-tight"
-        >{{ $t("quick-action.edit-data") }}</h3>
+        >
+          {{ $t("quick-action.edit-data") }}
+        </h3>
       </div>
 
       <div
@@ -58,7 +66,9 @@
         </button>
         <h3
           class="mt-1 text-base text-center font-normal text-main tracking-tight"
-        >{{ $t("quick-action.new-db") }}</h3>
+        >
+          {{ $t("quick-action.new-db") }}
+        </h3>
       </div>
 
       <div
@@ -70,7 +80,9 @@
         </button>
         <h3
           class="mt-1 text-base text-center font-normal text-main tracking-tight"
-        >{{ $t("quick-action.request-db") }}</h3>
+        >
+          {{ $t("quick-action.request-db") }}
+        </h3>
       </div>
 
       <div
@@ -80,9 +92,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="alterSchema">
           <heroicons-outline:pencil-alt class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("database.alter-schema") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("database.alter-schema") }}
+        </h3>
       </div>
 
       <div
@@ -92,9 +104,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="changeData">
           <heroicons-outline:pencil class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("database.change-data") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("database.change-data") }}
+        </h3>
       </div>
 
       <div
@@ -104,9 +116,9 @@
         <router-link to="/issue/new" class="btn-icon-primary p-3">
           <heroicons-outline:hand class="w-6 h-6" />
         </router-link>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("quick-action.troubleshoot") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.troubleshoot") }}
+        </h3>
       </div>
 
       <div
@@ -116,17 +128,24 @@
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">{{ $t("environment.create") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("environment.create") }}
+        </h3>
       </div>
 
       <div
         v-if="quickAction == 'quickaction.bb.environment.reorder'"
         class="flex flex-col items-center w-28"
       >
-        <button class="btn-icon-primary p-3" @click.prevent="reorderEnvironment">
+        <button
+          class="btn-icon-primary p-3"
+          @click.prevent="reorderEnvironment"
+        >
           <heroicons-outline:selector class="transform rotate-90 w-6 h-6" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">{{ $t("common.reorder") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("common.reorder") }}
+        </h3>
       </div>
 
       <div
@@ -136,9 +155,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
           <heroicons-outline:template class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("quick-action.new-project") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.new-project") }}
+        </h3>
       </div>
 
       <div
@@ -148,9 +167,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="goDefaultProject">
           <heroicons-outline:cube class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("quick-action.default-project") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.default-project") }}
+        </h3>
       </div>
 
       <div
@@ -160,9 +179,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
           <heroicons-outline:chevron-double-down class="w-6 h-6" />
         </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main"
-        >{{ $t("quick-action.transfer-in-db") }}</h3>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.transfer-in-db") }}
+        </h3>
       </div>
     </template>
   </div>
@@ -175,7 +194,9 @@
     <template v-if="state.quickActionType == 'quickaction.bb.project.create'">
       <ProjectCreate @dismiss="state.showModal = false" />
     </template>
-    <template v-else-if="state.quickActionType == 'quickaction.bb.instance.create'">
+    <template
+      v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
+    >
       <InstanceForm :create="true" @dismiss="state.showModal = false" />
     </template>
     <template
@@ -191,9 +212,7 @@
       />
     </template>
     <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bb.database.data.update'
-      "
+      v-else-if="state.quickActionType == 'quickaction.bb.database.data.update'"
     >
       <!-- eslint-disable vue/attribute-hyphenation -->
       <AlterSchemaPrepForm
@@ -202,11 +221,18 @@
         @dismiss="state.showModal = false"
       />
     </template>
-    <template v-else-if="state.quickActionType == 'quickaction.bb.database.create'">
+    <template
+      v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
+    >
       <!-- eslint-disable vue/attribute-hyphenation -->
-      <CreateDatabasePrepForm :projectId="projectId" @dismiss="state.showModal = false" />
+      <CreateDatabasePrepForm
+        :projectId="projectId"
+        @dismiss="state.showModal = false"
+      />
     </template>
-    <template v-else-if="state.quickActionType == 'quickaction.bb.database.request'">
+    <template
+      v-else-if="state.quickActionType == 'quickaction.bb.database.request'"
+    >
       <RequestDatabasePrepForm @dismiss="state.showModal = false" />
     </template>
     <template
@@ -215,9 +241,17 @@
       "
     >
       <!-- eslint-disable vue/attribute-hyphenation -->
-      <TransferDatabaseForm :projectId="projectId" @dismiss="state.showModal = false" />
+      <TransferDatabaseForm
+        :projectId="projectId"
+        @dismiss="state.showModal = false"
+      />
     </template>
   </BBModal>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -234,9 +268,11 @@ import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
+import { Subscription } from "../types";
 
 interface LocalState {
   showModal: boolean;
+  showFeatureModal: boolean;
   modalTitle: string;
   modalSubtitle: string;
   quickActionType: QuickActionType;
@@ -265,6 +301,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showModal: false,
+      showFeatureModal: false,
       modalTitle: "",
       modalSubtitle: "",
       quickActionType: "quickaction.bb.instance.create",
@@ -302,6 +339,13 @@ export default defineComponent({
     };
 
     const createInstance = () => {
+      const subscription: Subscription =
+        store.getters["subscription/subscription"]();
+      const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+      if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+        state.showFeatureModal = true;
+        return;
+      }
       state.modalTitle = t("quick-action.create-instance");
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.instance.create";
