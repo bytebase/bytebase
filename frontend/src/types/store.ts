@@ -8,6 +8,7 @@ import {
   QueryHistory,
   SavedQuery,
   View,
+  Sheet,
 } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
@@ -48,6 +49,7 @@ import { TabInfo } from "./editorSelector";
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
 import editorSelectorStore from "../store/modules/editorSelector";
+import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -216,3 +218,10 @@ export type EditorSelectorMutations = typeof editorSelectorStore.mutations;
 export interface DeploymentState {
   deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
 }
+
+export interface SheetState {
+  sheetList: Sheet[];
+}
+export type SheetGetters = typeof sheetStore.getters;
+export type SheetActions = typeof sheetStore.actions;
+export type SheetMutations = typeof sheetStore.mutations;
