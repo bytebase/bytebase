@@ -990,6 +990,9 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\nUSE DATABASE %s;\n%s", stmt, databaseName, schema)
 		}
+	case db.SQLite:
+		// This is a fake CREATA DATABASE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
+		stmt = fmt.Sprintf("CREATE DATABASE '%s';", databaseName)
 	}
 
 	return databaseName, stmt
