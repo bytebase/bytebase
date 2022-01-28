@@ -341,7 +341,10 @@ export default defineComponent({
     const createInstance = () => {
       const subscription: Subscription | undefined =
         store.getters["subscription/subscription"]();
-      const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+      const instanceList = store.getters["instance/instanceList"]([
+        "NORMAL",
+        "ARCHIVED",
+      ]);
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
         state.showFeatureModal = true;
         return;

@@ -17,10 +17,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := context.Background()
-		status := api.Normal
-		count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
-			RowStatus: &status,
-		})
+		count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{})
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
