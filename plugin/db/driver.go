@@ -256,24 +256,26 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	for _, placeholder := range placeholderList {
 		index := myRegex.SubexpIndex(placeholder)
 		if index >= 0 {
-			if placeholder == "ENV_NAME" {
+			switch placeholder {
+			case "ENV_NAME":
 				mi.Environment = matchList[index]
-			} else if placeholder == "VERSION" {
+			case "VERSION":
 				mi.Version = matchList[index]
-			} else if placeholder == "DB_NAME" {
+			case "DB_NAME":
 				mi.Namespace = matchList[index]
 				mi.Database = matchList[index]
-			} else if placeholder == "TYPE" {
-				if matchList[index] == "baseline" {
+			case "TYPE":
+				switch matchList[index] {
+				case "baseline":
 					mi.Type = Baseline
-				} else if matchList[index] == "data" {
+				case "data":
 					mi.Type = Data
-				} else if matchList[index] == "migrate" {
+				case "migrate":
 					mi.Type = Migrate
-				} else {
+				default:
 					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline', 'migrate' or 'data'", filePath, matchList[index])
 				}
-			} else if placeholder == "DESCRIPTION" {
+			case "DESCRIPTION":
 				mi.Description = matchList[index]
 			}
 		}
@@ -287,11 +289,12 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 
 	if mi.Description == "" {
-		if mi.Type == Baseline {
+		switch mi.Type {
+		case Baseline:
 			mi.Description = fmt.Sprintf("Create %s baseline", mi.Database)
-		} else if mi.Type == Data {
+		case Data:
 			mi.Description = fmt.Sprintf("Create %s data change", mi.Database)
-		} else {
+		default:
 			mi.Description = fmt.Sprintf("Create %s schema migration", mi.Database)
 		}
 	} else {
