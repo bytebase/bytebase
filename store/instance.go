@@ -108,6 +108,46 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	return list, nil
 }
 
+func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT COUNT(*)
+		FROM instance as count
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		if err := rows.Scan(&count); err != nil {
+			return 0, FormatError(err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, FormatError(err)
+	}
+
+	return count, nil
+}
+
 // FindInstance retrieves a single instance based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.Instance, error) {

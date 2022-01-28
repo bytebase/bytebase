@@ -17,6 +17,18 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := context.Background()
+		status := api.Normal
+		count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
+			RowStatus: &status,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
+		}
+		license, _ := s.loadLicense()
+		if license != nil && count >= license.InstanceCount {
+			return echo.NewHTTPError(http.StatusForbidden, fmt.Errorf("You have reach the maximum instance count %d.", license.InstanceCount))
+		}
+
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
