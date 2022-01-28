@@ -327,7 +327,7 @@ export const unknown = (
     type: "bb.issue.general",
     description: "",
     assignee: UNKNOWN_PRINCIPAL,
-    subscriberIdList: [],
+    subscriberList: [],
     payload: {},
   };
 
@@ -697,7 +697,7 @@ export const empty = (
     type: "bb.issue.general",
     description: "",
     assignee: EMPTY_PRINCIPAL,
-    subscriberIdList: [],
+    subscriberList: [],
     payload: {},
   };
 
