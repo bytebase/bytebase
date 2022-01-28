@@ -177,6 +177,28 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 	return resp.Body, nil
 }
 
+// patch sends a PATCH client request.
+func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", rootURL, shortURL)
+	req, err := http.NewRequest("PATCH", url, body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new PATCH request(%q), error: %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a PATCH request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
 // getProjects gets the projects.
 func (ctl *controller) getProjects() ([]*api.Project, error) {
 	body, err := ctl.get("/project", nil)
@@ -302,4 +324,43 @@ func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, err
 		return nil, fmt.Errorf("fail to unmarshal post issue response, error: %w", err)
 	}
 	return issue, nil
+}
+
+// patchTaskStatus patches the status of a task in the pipeline stage.
+func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &taskStatusPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal patchTaskStatus, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskStatusPatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	task := new(api.Task)
+	if err = jsonapi.UnmarshalPayload(body, task); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal patchTaskStatus response, error: %w", err)
+	}
+	return task, nil
+}
+
+// approveIssue approves all tasks in the issues till the pipeline is done.
+func (ctl *controller) approveIssue(issue *api.Issue) error {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				if _, err := ctl.patchTaskStatus(
+					api.TaskStatusPatch{
+						ID:     task.ID,
+						Status: api.TaskPending,
+					},
+					issue.Pipeline.ID); err != nil {
+
+					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
+				}
+			}
+		}
+	}
+	return nil
 }
