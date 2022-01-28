@@ -1,10 +1,5 @@
 import axios from "axios";
-import {
-  Principal,
-  ResourceIdentifier,
-  ResourceObject,
-  SettingState,
-} from "../../types";
+import { ResourceObject, SettingState } from "../../types";
 import { Setting, SettingName } from "../../types/setting";
 import { getPrincipalFromIncludedList } from "./principal";
 
@@ -13,15 +8,17 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Setting {
-  const creatorId = (setting.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (setting.relationships!.updater.data as ResourceIdentifier)
-    .id;
   return {
     ...(setting.attributes as Omit<Setting, "id" | "creator" | "updater">),
     id: parseInt(setting.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      setting.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      setting.relationships!.updater.data,
+      includedList
+    ),
   };
 }
 

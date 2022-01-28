@@ -12,8 +12,6 @@ import {
   ProjectId,
   QueryHistory,
   SavedQuery,
-  Principal,
-  ResourceIdentifier,
   ResourceObject,
 } from "../../types";
 import * as types from "../mutation-types";
@@ -24,20 +22,19 @@ function convertSavedQuery(
   savedQuery: ResourceObject,
   includedList: ResourceObject[]
 ): SavedQuery {
-  const creatorId = (
-    savedQuery.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    savedQuery.relationships!.updater.data as ResourceIdentifier
-  ).id;
-
   return {
     ...(savedQuery.attributes as Omit<
       SavedQuery,
       "id" | "creator" | "updater"
     >),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      savedQuery.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      savedQuery.relationships!.updater.data,
+      includedList
+    ),
     id: parseInt(savedQuery.id),
   };
 }

@@ -6,10 +6,8 @@ import {
   ActivityPatch,
   ActivityState,
   IssueId,
-  Principal,
   PrincipalId,
   ProjectId,
-  ResourceIdentifier,
   ResourceObject,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -22,15 +20,16 @@ function convert(
   const payload = activity.attributes.payload
     ? JSON.parse((activity.attributes.payload as string) || "{}")
     : {};
-  const creatorId = (activity.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (activity.relationships!.updater.data as ResourceIdentifier)
-    .id;
-
   return {
     ...(activity.attributes as Omit<Activity, "id" | "creator" | "updater">),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      activity.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      activity.relationships!.updater.data,
+      includedList
+    ),
     id: parseInt(activity.id),
     payload,
   };

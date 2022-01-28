@@ -2,7 +2,6 @@ import axios from "axios";
 import {
   Database,
   DatabaseId,
-  Principal,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -26,16 +25,21 @@ function convert(
       break;
     }
   }
-  const creatorId = (view.relationships!.creator.data as ResourceIdentifier).id;
-  const updaterId = (view.relationships!.updater.data as ResourceIdentifier).id;
+
   return {
     ...(view.attributes as Omit<
       View,
       "id" | "database" | "creator" | "updater"
     >),
     id: parseInt(view.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      view.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      view.relationships!.updater.data,
+      includedList
+    ),
     database,
   };
 }

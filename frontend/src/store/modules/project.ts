@@ -3,7 +3,6 @@ import {
   empty,
   EMPTY_ID,
   MemberId,
-  Principal,
   PrincipalId,
   Project,
   ProjectCreate,
@@ -29,10 +28,6 @@ function convert(
     Project,
     "id" | "memberList" | "creator" | "updater"
   >;
-  const creatorId = (project.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (project.relationships!.creator.data as ResourceIdentifier)
-    .id;
   // Only able to assign an empty member list, otherwise would cause circular dependency.
   // This should be fine as we shouldn't access member via member.project.memberList
   const projectWithoutMemberList: Project = {
@@ -40,8 +35,14 @@ function convert(
     rowStatus: attrs.rowStatus,
     name: attrs.name,
     key: attrs.key,
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      project.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      project.relationships!.updater.data,
+      includedList
+    ),
     createdTs: attrs.createdTs,
     updatedTs: attrs.updatedTs,
     memberList: [],
@@ -80,16 +81,6 @@ function convertMember(
   includedList: ResourceObject[],
   rootGetters: any
 ): ProjectMember {
-  const creatorId = (
-    projectMember.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    projectMember.relationships!.updater.data as ResourceIdentifier
-  ).id;
-  const principalId = (
-    projectMember.relationships!.principal.data as ResourceIdentifier
-  ).id;
-
   const attrs = projectMember.attributes as Omit<
     ProjectMember,
     "id" | "project"
@@ -98,15 +89,21 @@ function convertMember(
   return {
     id: parseInt(projectMember.id),
     project: unknown("PROJECT") as Project,
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      projectMember.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      projectMember.relationships!.updater.data,
+      includedList
+    ),
     createdTs: attrs.createdTs,
     updatedTs: attrs.updatedTs,
     role: attrs.role,
     principal: getPrincipalFromIncludedList(
-      principalId,
+      projectMember.relationships!.principal.data,
       includedList
-    ) as Principal,
+    ),
   };
 }
 

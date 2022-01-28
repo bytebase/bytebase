@@ -10,6 +10,7 @@ import {
   empty,
   EMPTY_ID,
   PrincipalType,
+  ResourceIdentifier,
   RoleType,
 } from "../../types";
 import { randomString } from "../../utils";
@@ -29,18 +30,24 @@ function convert(principal: ResourceObject): Principal {
 }
 
 export function getPrincipalFromIncludedList(
-  id: string,
+  data:
+    | ResourceIdentifier<ResourceObject>
+    | ResourceIdentifier<ResourceObject>[]
+    | undefined,
   includedList: ResourceObject[]
-): Principal | null {
+): Principal {
+  if (data == null) {
+    return empty("PRINCIPAL") as Principal;
+  }
   for (const item of includedList || []) {
     if (item.type != "principal") {
       continue;
     }
-    if (item.id == id) {
+    if (item.id == (data as ResourceIdentifier).id) {
       return convert(item);
     }
   }
-  return null;
+  return empty("PRINCIPAL") as Principal;
 }
 
 const state: () => PrincipalState = () => ({

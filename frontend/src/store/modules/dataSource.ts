@@ -6,7 +6,6 @@ import {
   DataSourceMember,
   DataSourceMemberCreate,
   DataSourceState,
-  Principal,
   PrincipalId,
   ResourceObject,
   ResourceIdentifier,
@@ -40,12 +39,6 @@ function convert(
       };
     }
   );
-  const creatorId = (
-    dataSource.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    dataSource.relationships!.updater.data as ResourceIdentifier
-  ).id;
 
   let instance: Instance = unknown("INSTANCE") as Instance;
   for (const item of includedList || []) {
@@ -69,8 +62,14 @@ function convert(
       "id" | "instanceId" | "database" | "memberList" | "creator" | "updater"
     >),
     id: parseInt(dataSource.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      dataSource.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      dataSource.relationships!.updater.data,
+      includedList
+    ),
     instance,
     database,
     memberList,

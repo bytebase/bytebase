@@ -1,10 +1,4 @@
-import {
-  Anomaly,
-  AnomalyState,
-  Principal,
-  ResourceIdentifier,
-  ResourceObject,
-} from "../../types";
+import { Anomaly, AnomalyState, ResourceObject } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
@@ -12,17 +6,19 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Anomaly {
-  const creatorId = (anomaly.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (anomaly.relationships!.updater.data as ResourceIdentifier)
-    .id;
   return {
     ...(anomaly.attributes as Omit<
       Anomaly,
       "id" | "payload" | "creator" | "updater"
     >),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      anomaly.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      anomaly.relationships!.updater.data,
+      includedList
+    ),
     id: parseInt(anomaly.id),
     payload: JSON.parse((anomaly.attributes.payload as string) || "{}"),
   };

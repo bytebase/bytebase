@@ -10,7 +10,6 @@ import {
   IssueStatus,
   IssueStatusPatch,
   Pipeline,
-  Principal,
   PrincipalId,
   Project,
   ProjectId,
@@ -51,12 +50,6 @@ function convert(
       pipeline = rootGetters["pipeline/convert"](item, includedList);
     }
   }
-  const creatorId = (issue.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (issue.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  const assigneeId = (issue.relationships!.assignee.data as ResourceIdentifier)
-    .id;
 
   return {
     ...(issue.attributes as Omit<
@@ -64,12 +57,18 @@ function convert(
       "id" | "project" | "creator" | "updater" | "assignee"
     >),
     id: parseInt(issue.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
-    assignee: getPrincipalFromIncludedList(
-      assigneeId,
+    creator: getPrincipalFromIncludedList(
+      issue.relationships!.creator.data,
       includedList
-    ) as Principal,
+    ),
+    updater: getPrincipalFromIncludedList(
+      issue.relationships!.updater.data,
+      includedList
+    ),
+    assignee: getPrincipalFromIncludedList(
+      issue.relationships!.assignee.data,
+      includedList
+    ),
     project,
     pipeline,
   };
