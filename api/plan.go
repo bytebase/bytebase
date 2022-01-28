@@ -157,15 +157,13 @@ func (e FeatureType) AccessErrorMessage() string {
 
 // minimumSupportedPlan will find the minimum plan which support the target feature.
 func (e FeatureType) minimumSupportedPlan() PlanType {
-	index := 0
 	for i, enabled := range FeatureMatrix[e] {
 		if enabled {
-			index = i
-			break
+			return PlanType(i)
 		}
 	}
 
-	return PlanType(index)
+	return ENTERPRISE
 }
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
