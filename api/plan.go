@@ -1,5 +1,7 @@
 package api
 
+import "fmt"
+
 // PlanType is the type for a plan.
 type PlanType int
 
@@ -118,6 +120,50 @@ func (e FeatureType) String() string {
 		return "bb.feature.3rd-party-login"
 	}
 	return ""
+}
+
+// Name returns a readable name of the feature
+func (e FeatureType) Name() string {
+	switch e {
+	case FeatureBackwardCompatibilty:
+		return "Backward compatibility"
+	case FeatureSchemaDrift:
+		return "Schema drift"
+	case FeatureTaskScheduleTime:
+		return "Task schedule time"
+	case FeatureMultiTenancy:
+		return "Multi-tenancy"
+	case FeatureDBAWorkflow:
+		return "DBA workflow"
+	case FeatureDataSource:
+		return "Data source"
+	case FeatureApprovalPolicy:
+		return "Approval policy"
+	case FeatureBackupPolicy:
+		return "Backup policy"
+	case FeatureRBAC:
+		return "RBAC"
+	case Feature3rdPartyLogin:
+		return "3rd party login"
+	}
+	return ""
+}
+
+// AccessErrorMessage returns a error message with feature name and minimum supported plan.
+func (e FeatureType) AccessErrorMessage() string {
+	plan := e.minimumSupportedPlan()
+	return fmt.Sprintf("%s is a %s feature, please upgrade to access it.", e.Name(), plan.String())
+}
+
+// minimumSupportedPlan will find the minimum plan which support the target feature.
+func (e FeatureType) minimumSupportedPlan() PlanType {
+	for i, enabled := range FeatureMatrix[e] {
+		if enabled {
+			return PlanType(i)
+		}
+	}
+
+	return ENTERPRISE
 }
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
