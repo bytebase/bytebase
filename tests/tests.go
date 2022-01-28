@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,7 +35,7 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string) error {
 	// start main server.
 	logger, err := cmd.GetLogger()
 	if err != nil {
-		return fmt.Errorf("failed to get logger, error %w", err)
+		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
 	profile := cmd.GetTestProfile(dataDir)
@@ -43,12 +44,12 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string) error {
 	errChan := make(chan error, 1)
 	go func() {
 		if err := ctl.main.Run(ctx); err != nil {
-			errChan <- fmt.Errorf("failed to run main server, error %w", err)
+			errChan <- fmt.Errorf("failed to run main server, error: %w", err)
 		}
 	}()
 
 	if err := waitForServerStart(ctl.main, errChan); err != nil {
-		return fmt.Errorf("failed to wait for server to start, error %w", err)
+		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
 
 	// initialize controller clients.
@@ -122,7 +123,7 @@ func (ctl *controller) Login() error {
 func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to make directory %q, error %w", p, err)
+		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)
 	}
 
 	return p, nil
@@ -133,7 +134,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	gURL := fmt.Sprintf("%s%s", rootURL, shortURL)
 	req, err := http.NewRequest("GET", gURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new GET request(%q), error %w", gURL, err)
+		return nil, fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	q := url.Values{}
@@ -143,7 +144,14 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	req.URL.RawQuery = q.Encode()
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a GET request(%q), error %w", gURL, err)
+		return nil, fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -153,12 +161,19 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 	url := fmt.Sprintf("%s%s", rootURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new POST request(%q), error %w", url, err)
+		return nil, fmt.Errorf("fail to create a new POST request(%q), error: %w", url, err)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a POST request(%q), error %w", url, err)
+		return nil, fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -173,7 +188,7 @@ func (ctl *controller) getProjects() ([]*api.Project, error) {
 	var projects []*api.Project
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Project)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get project response, error %w", err)
+		return nil, fmt.Errorf("fail to unmarshal get project response, error: %w", err)
 	}
 	for _, p := range ps {
 		project, ok := p.(*api.Project)
@@ -183,6 +198,25 @@ func (ctl *controller) getProjects() ([]*api.Project, error) {
 		projects = append(projects, project)
 	}
 	return projects, nil
+}
+
+// createProject creates an project.
+func (ctl *controller) createProject(projectCreate api.ProjectCreate) (*api.Project, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &projectCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal project create, error: %w", err)
+	}
+
+	body, err := ctl.post("/project", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	project := new(api.Project)
+	if err = jsonapi.UnmarshalPayload(body, project); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal post project response, error: %w", err)
+	}
+	return project, nil
 }
 
 // getProjects gets the environments.
@@ -237,7 +271,7 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Instance, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &instanceCreate); err != nil {
-		return nil, fmt.Errorf("failed to marshal instance create, error %w", err)
+		return nil, fmt.Errorf("failed to marshal instance create, error: %w", err)
 	}
 
 	body, err := ctl.post("/instance", buf)
@@ -247,7 +281,40 @@ func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Inst
 
 	instance := new(api.Instance)
 	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal post instance response, error %w", err)
+		return nil, fmt.Errorf("fail to unmarshal post instance response, error: %w", err)
 	}
 	return instance, nil
+}
+
+// createIssue creates an issue.
+func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &issueCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal issue create, error: %w", err)
+	}
+
+	body, err := ctl.post("/issue", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal post issue response, error: %w", err)
+	}
+	return issue, nil
+}
+
+// getDatabaseCreateIssueCreateContext gets a create context for create database issue.
+func getDatabaseCreateIssueCreateContext(instanceID int, databaseName string) (string, error) {
+	m := &api.CreateDatabaseContext{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+		Labels:       "",
+	}
+	createContext, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("failed to construct issue create context payload, error: %w", err)
+	}
+	return string(createContext), nil
 }
