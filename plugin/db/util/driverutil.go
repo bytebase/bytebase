@@ -367,8 +367,9 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 3 - Executing migration
 	// Branch migration type always has empty sql.
-	// Baseline migration type could also has empty sql when the database is newly created.
-	if statement != "" {
+	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
+	// https://github.com/bytebase/bytebase/issues/394
+	if statement != "" && (m.Type != db.Baseline || m.CreateDatabase) {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
 			_, err := driver.GetDbConnection(ctx, m.Database)
