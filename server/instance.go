@@ -16,7 +16,14 @@ import (
 // dbaFlowMiddleware is a feature guard for bb.feature.dba-workflow
 func dbaFlowMiddleware(server *Server, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		// GET operation is probably needed since Bytebase needs to fetch instance data on behalf of the end user to perform the UI.
+		if c.Request().Method == "GET" {
+			return next(c)
+		}
+
 		role := c.Get(getRoleContextKey()).(api.Role)
+
+		// without rbac feature, every role is considered Owner
 		if server.feature(api.FeatureRBAC) && role == api.Developer && server.feature(api.FeatureDBAWorkflow) {
 			return echo.NewHTTPError(http.StatusForbidden, "Developer has no access to instance")
 		}
