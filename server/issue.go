@@ -359,6 +359,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			}
 
 			for _, taskCreate := range stageCreate.TaskList {
+				if taskCreate.EarliestAllowedTs != 0 && !s.feature(api.FeatureTaskScheduleTime) {
+					return nil, fmt.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
+				}
 				taskCreate.CreatorID = creatorID
 				taskCreate.PipelineID = createdPipeline.ID
 				taskCreate.StageID = createdStage.ID
@@ -762,6 +765,13 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
+		}
+		if !s.feature(api.FeatureTaskScheduleTime) {
+			for _, detail := range m.UpdateSchemaDetailList {
+				if detail.EarliestAllowedTs != 0 {
+					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+				}
+			}
 		}
 		pc := &api.PipelineCreate{}
 		switch m.MigrationType {
