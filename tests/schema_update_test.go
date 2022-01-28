@@ -29,7 +29,7 @@ func TestSchemaUpdate(t *testing.T) {
 		Key:  "TestSchemaUpdate",
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to create project, error: %w", err))
+		t.Fatalf("failed to create project, error: %v", err)
 	}
 
 	// Provision an instance.
@@ -63,30 +63,38 @@ func TestSchemaUpdate(t *testing.T) {
 		Host:          instance1Dir,
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to add instance, error: %w", err))
+		t.Fatalf("failed to add instance, error: %v", err)
 	}
 
-	// Expecting no database.
+	// Expecting project to have no database.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &project.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to get databases, error: %v", err)
+	}
+	if len(databases) != 0 {
+		t.Fatalf("invalid number of databases %v in project %v, expecting no database", project.ID, len(databases))
+	}
+	// Expecting instance to have no database.
+	databases, err = ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance1.ID,
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to get databases, error: %w", err))
+		t.Fatalf("failed to get databases, error: %v", err)
 	}
 	if len(databases) != 0 {
-		t.Fatal(fmt.Errorf("invalid number of databases %v, expecting no database", len(databases)))
+		t.Fatalf("invalid number of databases %v in instance %v, expecting no database", instance1.ID, len(databases))
 	}
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	m := &api.CreateDatabaseContext{
+	createContext, err := json.Marshal(&api.CreateDatabaseContext{
 		InstanceID:   instance1.ID,
 		DatabaseName: databaseName,
-		Labels:       "",
-	}
-	createContext, err := json.Marshal(m)
+	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to construct issue create context payload, error: %w", err))
+		t.Fatal(fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err))
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
@@ -98,9 +106,71 @@ func TestSchemaUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to create issue, error: %w", err))
+		t.Fatalf("failed to create database creation issue, error: %v", err)
 	}
-	if err := ctl.approveIssue(issue); err != nil {
-		t.Fatal(fmt.Errorf("failed to approve issue %v, error: %w", issue.ID, err))
+
+	if status, _ := getPipelineStatus(issue); status != pipelinePendingApproval {
+		t.Fatalf("issue %v pipeline %v is supposed to be pending manual approval.", issue.ID, issue.Pipeline.ID)
+	}
+
+	pipelineStatus, err := ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if pipelineStatus != pipelineDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status pipelineDone got %v", issue.ID, issue.Pipeline.ID, pipelineStatus)
+	}
+
+	// Expecting project to have 1 database.
+	databases, err = ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &project.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to get databases, error: %v", err)
+	}
+	if len(databases) != 1 {
+		t.Fatalf("invalid number of databases %v in project %v, expecting one database", project.ID, len(databases))
+	}
+	database := databases[0]
+	if database.Instance.ID != instance1.ID {
+		t.Fatalf("expect database %v name %q to be in instance %v, got %v", database.ID, database.Name, instance1.ID, database.Instance.ID)
+	}
+
+	migrationStatement := `
+	CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL
+	);`
+	// Create an issue that updates database schema.
+	createContext, err = json.Marshal(&api.UpdateSchemaContext{
+		MigrationType: db.Migrate,
+		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+			{
+				DatabaseID: database.ID,
+				Statement:  migrationStatement,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to construct schema update issue CreateContext payload, error: %v", err)
+	}
+	issue, err = ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("update schema for database %q", databaseName),
+		Type:        api.IssueDatabaseSchemaUpdate,
+		Description: fmt.Sprintf("This updates the schema of database %q.", databaseName),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	if err != nil {
+		t.Fatalf("failed to create schema update issue, error: %v", err)
+	}
+	pipelineStatus, err = ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if pipelineStatus != pipelineDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status pipelineDone got %v", issue.ID, issue.Pipeline.ID, pipelineStatus)
 	}
 }
