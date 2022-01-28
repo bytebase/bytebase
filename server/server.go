@@ -67,6 +67,7 @@ type Server struct {
 	DeploymentConfigService api.DeploymentConfigService
 	SavedQueryService       api.SavedQueryService
 	LicenseService          enterprise.LicenseService
+	SheetService          	api.SheetService
 
 	e *echo.Echo
 
@@ -242,6 +243,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
+	s.registerSheetRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

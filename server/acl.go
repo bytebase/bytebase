@@ -179,6 +179,24 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 			return savedQuery.CreatorID == curPrincipalID, nil
 		}
+	} else if strings.HasPrefix(c.Path(), "/api/sheet") {
+		if idStr := c.Param("id"); idStr != "" {
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Sheet ID is not a number: %s", idStr))
+			}
+			sheetFind := &api.SheetFind{
+				ID: &id,
+			}
+			sheet, err := s.SheetService.FindSheet(ctx, sheetFind)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			if sheet == nil {
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", id))
+			}
+			return sheet.CreatorID == curPrincipalID, nil
+		}
 	}
 	return false, nil
 }
