@@ -11,7 +11,7 @@ type SheetVisibility string
 const (
 	// Private is the sheet visibility for PRIVATE. Private is for OWNER Only.
 	PrivateSheet SheetVisibility = "PRIVATE"
-	// Project is the sheet visibility for PROJECT. Project is for OWNER and Collaborator, OWNER can read/write, and DEVELOPER can only read.
+	// Project is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
 	ProjectSheet SheetVisibility = "PROJECT"
 	// Public is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
 	PublicSheet SheetVisibility = "PUBLIC"
