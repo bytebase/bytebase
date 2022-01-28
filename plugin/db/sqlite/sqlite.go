@@ -157,6 +157,23 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
+	// This is a fake CREATA DATABASE statement. Engine driver will recognize it and establish a connect to create the database.
+	if strings.HasPrefix(statement, "CREATE DATABASE ") {
+		parts := strings.Split(statement, `'`)
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid statement %q", statement)
+		}
+		db, err := driver.GetDbConnection(ctx, parts[1])
+		if err != nil {
+			return err
+		}
+		// We need to query to persist the database file.
+		if _, err := db.Query("SELECT 1;"); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -288,7 +305,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		InsertHistoryQuery:         insertHistoryQuery,
 		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
 		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "",
+		TablePrefix:                "bytebase_",
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.SQLite, driver, m, statement, args)
 }
