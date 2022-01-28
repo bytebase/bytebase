@@ -67,7 +67,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 
 		role := member.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
-		if !s.feature("bb.admin") {
+		if !s.feature("bb.feature.rbac") {
 			role = api.Owner
 		}
 		// Performs the ACL check.
@@ -173,6 +173,24 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
 			}
 			return savedQuery.CreatorID == curPrincipalID, nil
+		}
+	} else if strings.HasPrefix(c.Path(), "/api/sheet") {
+		if idStr := c.Param("id"); idStr != "" {
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Sheet ID is not a number: %s", idStr))
+			}
+			sheetFind := &api.SheetFind{
+				ID: &id,
+			}
+			sheet, err := s.SheetService.FindSheet(ctx, sheetFind)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
+			}
+			if sheet == nil {
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", id))
+			}
+			return sheet.CreatorID == curPrincipalID, nil
 		}
 	}
 	return false, nil

@@ -2,6 +2,49 @@
   <div class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
       <div class="col-span-2 col-start-2 w-64">
+        <label for="project" class="textlabel">
+          {{ $t("common.project") }} <span style="color: red">*</span>
+        </label>
+        <ProjectSelect
+          id="project"
+          class="mt-1"
+          name="project"
+          :disabled="!allowEditProject"
+          :selected-id="state.projectId"
+          @select-project-id="selectProject"
+        />
+      </div>
+
+      <!-- Providing a preview of generated database name in template mode -->
+      <div v-if="isDbNameTemplateMode" class="col-span-2 col-start-2 w-64">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.generated-database-name") }}
+          <NTooltip trigger="hover" placement="top">
+            <template #trigger>
+              <heroicons-outline:question-mark-circle
+                class="w-4 h-4 inline-block"
+              />
+            </template>
+            <div class="whitespace-nowrap">
+              {{
+                $t("create-db.db-name-generated-by-template", {
+                  template: project.dbNameTemplate,
+                })
+              }}
+            </div>
+          </NTooltip>
+        </label>
+        <input
+          id="name"
+          disabled
+          name="name"
+          type="text"
+          class="textfield mt-1 w-full"
+          :value="generatedDatabaseName"
+        />
+      </div>
+
+      <div class="col-span-2 col-start-2 w-64">
         <label for="name" class="textlabel">
           {{ $t("create-db.new-database-name") }}
           <span class="text-red-600">*</span>
@@ -19,27 +62,22 @@
             <template #databaseName>
               {{ state.databaseName }}
             </template>
-          </i18n-t></span
-        >
+          </i18n-t>
+        </span>
       </div>
 
-      <div class="col-span-2 col-start-2 w-64">
-        <label for="project" class="textlabel">
-          {{ $t("common.projects") }} <span style="color: red">*</span>
-        </label>
-        <ProjectSelect
-          id="project"
-          class="mt-1"
-          name="project"
-          :disabled="!allowEditProject"
-          :selected-id="state.projectId"
-          @select-project-id="selectProject"
-        />
-      </div>
+      <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
+      <DatabaseLabelForm
+        v-if="isTenantProject"
+        ref="labelForm"
+        :project="project"
+        :label-list="state.labelList"
+        filter="required"
+      />
 
       <div class="col-span-2 col-start-2 w-64">
         <label for="environment" class="textlabel">
-          {{ $t("common.environments") }} <span style="color: red">*</span>
+          {{ $t("common.environment") }} <span style="color: red">*</span>
         </label>
         <EnvironmentSelect
           id="environment"
@@ -58,7 +96,7 @@
             :instance="selectedInstance"
           />
           <label for="instance" class="textlabel">
-            {{ $t("common.instances") }} <span class="text-red-600">*</span>
+            {{ $t("common.instance") }} <span class="text-red-600">*</span>
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
@@ -75,23 +113,14 @@
         </div>
       </div>
 
-      <div v-if="isTenantProject" class="col-span-2 col-start-2 w-64">
-        <div class="flex flex-row items-center space-x-1">
-          <label for="instance" class="textlabel">
-            {{ $t("common.labels") }} <span class="text-red-600">*</span>
-          </label>
-        </div>
-        <div class="flex flex-col space-y-1">
-          <DatabaseLabels
-            :label-list="state.labelList"
-            :editable="true"
-            class="flex-col items-start mt-1 gap-1"
-          />
-          <div v-if="labelsError.length > 0" class="text-red-600">
-            {{ labelsError }}
-          </div>
-        </div>
-      </div>
+      <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
+      <DatabaseLabelForm
+        v-if="isTenantProject"
+        ref="labelForm"
+        :project="project"
+        :label-list="state.labelList"
+        filter="optional"
+      />
 
       <template
         v-if="
@@ -175,21 +204,21 @@
 import {
   computed,
   reactive,
-  onMounted,
-  onUnmounted,
   PropType,
   watchEffect,
   defineComponent,
+  ref,
 } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import isEmpty from "lodash-es/isEmpty";
+import { isEmpty } from "lodash-es";
+import { NTooltip } from "naive-ui";
+import { DatabaseLabelForm } from "./CreateDatabasePrepForm/";
 import InstanceSelect from "../components/InstanceSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import DatabaseLabels from "./DatabaseLabels";
 import {
   EnvironmentId,
   InstanceId,
@@ -205,16 +234,21 @@ import {
   DatabaseLabel,
   CreateDatabaseContext,
   Environment,
+  UNKNOWN_ID,
 } from "../types";
-import { isDBAOrOwner, issueSlug, validateLabels } from "../utils";
-import { useI18n } from "vue-i18n";
+import {
+  buildDatabaseNameByTemplateAndLabelList,
+  isDBAOrOwner,
+  issueSlug,
+} from "../utils";
+import { useEventListener } from "@vueuse/core";
 
 interface LocalState {
   projectId?: ProjectId;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
   labelList: DatabaseLabel[];
-  databaseName?: string;
+  databaseName: string;
   characterSet: string;
   collation: string;
   assigneeId?: PrincipalId;
@@ -223,12 +257,13 @@ interface LocalState {
 export default defineComponent({
   name: "CreateDatabasePrepForm",
   components: {
+    NTooltip,
     InstanceSelect,
     EnvironmentSelect,
     ProjectSelect,
     MemberSelect,
     InstanceEngineIcon,
-    DatabaseLabels,
+    DatabaseLabelForm,
   },
   props: {
     projectId: {
@@ -251,24 +286,15 @@ export default defineComponent({
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const keyboardHandler = (e: KeyboardEvent) => {
+    useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {
         cancel();
       }
-    };
-
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
-
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
     });
 
     // Refresh the instance list
@@ -283,6 +309,7 @@ export default defineComponent({
     });
 
     const state = reactive<LocalState>({
+      databaseName: "",
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
@@ -292,36 +319,55 @@ export default defineComponent({
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
     });
 
+    const project = computed((): Project => {
+      if (!state.projectId) return unknown("PROJECT") as Project;
+      return store.getters["project/projectById"](state.projectId) as Project;
+    });
+
     const isReservedName = computed(() => {
-      return state.databaseName?.toLowerCase() == "bytebase";
+      return state.databaseName.toLowerCase() == "bytebase";
     });
 
     const isTenantProject = computed((): boolean => {
-      if (!state.projectId) return false;
-      const project = store.getters["project/projectById"](
-        state.projectId
-      ) as Project;
+      if (project.value.id === UNKNOWN_ID) return false;
 
-      return project.tenantMode === "TENANT";
+      return project.value.tenantMode === "TENANT";
     });
 
-    const labelsError = computed((): string => {
-      const error = validateLabels(state.labelList);
-      if (error) return t(error);
-      return "";
+    // reference to <DatabaseLabelForm /> to call validate()
+    const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
+
+    const isDbNameTemplateMode = computed((): boolean => {
+      if (project.value.id === UNKNOWN_ID) return false;
+
+      // true if dbNameTemplate is not empty
+      return !!project.value.dbNameTemplate;
     });
 
-    const invalidLabels = computed((): boolean => {
-      if (!isTenantProject.value) return false;
-      if (state.labelList.length === 0) return true;
-      return !!labelsError.value;
+    const generatedDatabaseName = computed((): string => {
+      if (!isDbNameTemplateMode.value) {
+        // don't modify anything if we are not in template mode
+        return state.databaseName;
+      }
+
+      return buildDatabaseNameByTemplateAndLabelList(
+        project.value.dbNameTemplate,
+        state.databaseName,
+        state.labelList,
+        true // keepEmpty: true to keep non-selected values as original placeholders
+      );
     });
 
     const allowCreate = computed(() => {
+      // If we are not in template mode, none of labels are required
+      // So we just treat this case as 'yes, valid'
+      const isLabelValid = isDbNameTemplateMode.value
+        ? labelForm.value?.validate()
+        : true;
       return (
         !isEmpty(state.databaseName) &&
         !isReservedName.value &&
-        !invalidLabels.value &&
+        isLabelValid &&
         state.projectId &&
         state.environmentId &&
         state.instanceId &&
@@ -372,11 +418,16 @@ export default defineComponent({
 
     const create = async () => {
       var newIssue: IssueCreate;
+
+      const databaseName = isDbNameTemplateMode.value
+        ? generatedDatabaseName.value
+        : state.databaseName;
+
       if (props.backup) {
         newIssue = {
-          name: `Create database '${state.databaseName}' from backup '${props.backup.name}'`,
+          name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
           type: "bb.issue.database.create",
-          description: `Creating database '${state.databaseName}' from backup '${props.backup.name}'`,
+          description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
           assigneeId: state.assigneeId!,
           projectId: state.projectId!,
           pipeline: {
@@ -385,7 +436,7 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName: state.databaseName,
+            databaseName,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -399,7 +450,7 @@ export default defineComponent({
         };
       } else {
         newIssue = {
-          name: `Create database '${state.databaseName}'`,
+          name: `Create database '${databaseName}'`,
           type: "bb.issue.database.create",
           description: "",
           assigneeId: state.assigneeId!,
@@ -410,7 +461,7 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName: state.databaseName,
+            databaseName,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -423,7 +474,9 @@ export default defineComponent({
       }
       if (isTenantProject.value) {
         const context = newIssue.createContext as CreateDatabaseContext;
-        context.labels = JSON.stringify(state.labelList);
+        // Do not submit non-selected optional labels
+        const labelList = state.labelList.filter((label) => !!label.value);
+        context.labels = JSON.stringify(labelList);
       }
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
@@ -452,8 +505,11 @@ export default defineComponent({
       defaultCollation,
       state,
       isReservedName,
+      project,
       isTenantProject,
-      labelsError,
+      isDbNameTemplateMode,
+      generatedDatabaseName,
+      labelForm,
       allowCreate,
       allowEditProject,
       allowEditEnvironment,

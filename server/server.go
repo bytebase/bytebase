@@ -13,6 +13,7 @@ import (
 	_ "embed"
 
 	"github.com/bytebase/bytebase/api"
+	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -65,6 +66,8 @@ type Server struct {
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	SavedQueryService       api.SavedQueryService
+	LicenseService          enterprise.LicenseService
+	SheetService          	api.SheetService
 
 	e *echo.Echo
 
@@ -239,6 +242,8 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
+	s.registerSubscriptionRoutes(apiGroup)
+	s.registerSheetRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -285,4 +290,9 @@ func (server *Server) Shutdown(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)
 	}
+}
+
+// GetEcho returns the echo server.
+func (server *Server) GetEcho() *echo.Echo {
+	return server.e
 }

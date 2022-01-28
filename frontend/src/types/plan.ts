@@ -1,12 +1,18 @@
+// Check api/plan.go to understand what each feature means.
 export type FeatureType =
-  // Support Owner and DBA role at the workspace level
-  | "bb.admin"
-  // Support DBA workflow, including
-  // 1. Developers can't create database directly, they need to do this via a request db issue.
-  // 2. Allow developers to submit troubleshooting ticket.
-  | "bb.dba-workflow"
-  // Support defining extra data source for a database and exposing the related data source UI.
-  | "bb.data-source";
+  // Change Workflow
+  | "bb.feature.backward-compatibility"
+  | "bb.feature.schema-drift"
+  | "bb.feature.task-schedule-time"
+  | "bb.feature.multi-tenancy"
+  | "bb.feature.dba-workflow"
+  | "bb.feature.data-source"
+  // Policy Control
+  | "bb.feature.approval-policy"
+  | "bb.feature.backup-policy"
+  // Admin & Security
+  | "bb.feature.rbac"
+  | "bb.feature.3rd-party-login";
 
 export enum PlanType {
   FREE = 0,
@@ -17,3 +23,17 @@ export enum PlanType {
 export type PlanPatch = {
   type: PlanType;
 };
+
+export interface Plan {
+  // Plan meta data
+  type: PlanType;
+  trialDays: number;
+  unitPrice: number;
+  trialPrice: number;
+  freeInstanceCount: number;
+  pricePerInstancePerMonth: number;
+  // Plan desc and feature
+  title: string;
+  description: string;
+  features: { id: string; content?: string }[];
+}

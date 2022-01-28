@@ -12,10 +12,35 @@ import {
   ProjectId,
   QueryHistory,
   SavedQuery,
+  Principal,
+  ResourceIdentifier,
   ResourceObject,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
+import { getPrincipalFromIncludedList } from "./principal";
+
+function convertSavedQuery(
+  savedQuery: ResourceObject,
+  includedList: ResourceObject[]
+): SavedQuery {
+  const creatorId = (
+    savedQuery.relationships!.creator.data as ResourceIdentifier
+  ).id;
+  const updaterId = (
+    savedQuery.relationships!.updater.data as ResourceIdentifier
+  ).id;
+
+  return {
+    ...(savedQuery.attributes as Omit<
+      SavedQuery,
+      "id" | "creator" | "updater"
+    >),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    id: parseInt(savedQuery.id),
+  };
+}
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -31,13 +56,14 @@ const state: () => SqlEditorState = () => ({
     selectedDatabaseId: 0,
     selectedTableName: "",
   },
+  isExecuting: false,
+  isShowExecutingHint: false,
   shouldSetContent: false,
+  // Related data and status
   queryHistoryList: [],
   isFetchingQueryHistory: false,
   savedQueryList: [],
   isFetchingSavedQueries: false,
-  isExecuting: false,
-  isShowExecutingHint: false,
 });
 
 const getters = {
@@ -136,6 +162,9 @@ const mutations = {
   [types.SET_SHOULD_SET_CONTENT](state: SqlEditorState, payload: boolean) {
     state.shouldSetContent = payload;
   },
+  [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
+    state.isExecuting = payload;
+  },
   [types.SET_QUERY_HISTORY_LIST](
     state: SqlEditorState,
     payload: QueryHistory[]
@@ -157,10 +186,6 @@ const mutations = {
   ) {
     state.isFetchingSavedQueries = payload;
   },
-
-  [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
-    state.isExecuting = payload;
-  },
 };
 
 type SqlEditorActionsMap = {
@@ -168,11 +193,11 @@ type SqlEditorActionsMap = {
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
   setShouldSetContent: typeof mutations.SET_SHOULD_SET_CONTENT;
+  setIsExecuting: typeof mutations.SET_IS_EXECUTING;
   setQueryHistoryList: typeof mutations.SET_QUERY_HISTORY_LIST;
   setIsFetchingQueryHistory: typeof mutations.SET_IS_FETCHING_QUERY_HISTORY;
   setSavedQueryList: typeof mutations.SET_SAVED_QUERY_LIST;
   setIsFetchingSavedQueries: typeof mutations.SET_IS_FETCHING_SAVED_QUERIES;
-  setIsExecuting: typeof mutations.SET_IS_EXECUTING;
 };
 
 const actions = {
@@ -181,11 +206,11 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
     setShouldSetContent: types.SET_SHOULD_SET_CONTENT,
+    setIsExecuting: types.SET_IS_EXECUTING,
     setQueryHistoryList: types.SET_QUERY_HISTORY_LIST,
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
     setSavedQueryList: types.SET_SAVED_QUERY_LIST,
     setIsFetchingSavedQueries: types.SET_IS_FETCHING_SAVED_QUERIES,
-    setIsExecuting: types.SET_IS_EXECUTING,
   }),
   async executeQuery(
     { dispatch, state, rootGetters }: any,
@@ -271,17 +296,21 @@ const actions = {
     );
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, false);
   },
-  async deleteQueryHistory({ dispatch }: any, id: number) {
+  async deleteQueryHistory({ commit, dispatch, state }: any, id: number) {
     await dispatch("activity/deleteActivityById", id, {
       root: true,
     });
-    dispatch("fetchQueryHistoryList");
+
+    commit(
+      types.SET_QUERY_HISTORY_LIST,
+      state.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
+    );
   },
   async createSavedQuery(
-    { dispatch }: any,
+    { commit, state }: any,
     { name, statement }: { name: string; statement: string }
   ): Promise<SavedQuery> {
-    const resData = (
+    const data = (
       await axios.post(`/api/savedquery`, {
         data: {
           type: "createSavedQuery",
@@ -291,23 +320,24 @@ const actions = {
           },
         },
       })
-    ).data.data;
-    dispatch("fetchSavedQueryList");
+    ).data;
+    const newSavedQuery = convertSavedQuery(data.data, data.included);
 
-    return {
-      ...(resData.attributes as Omit<SavedQuery, "id">),
-      id: parseInt(resData.id),
-    };
+    commit(
+      types.SET_SAVED_QUERY_LIST,
+      (state.savedQueryList as SavedQuery[])
+        .concat(newSavedQuery)
+        .sort((a, b) => b.createdTs - a.createdTs)
+    );
+
+    return newSavedQuery;
   },
-  async fetchSavedQueryList({ commit, dispatch }: any) {
+  async fetchSavedQueryList({ commit }: any) {
     commit(types.SET_IS_FETCHING_SAVED_QUERIES, true);
     const data = (await axios.get(`/api/savedquery`)).data;
     const savedQueryList: SavedQuery[] = data.data.map(
       (savedQuery: ResourceObject) => {
-        return {
-          ...(savedQuery.attributes as Omit<SavedQuery, "id">),
-          id: parseInt(savedQuery.id),
-        };
+        return convertSavedQuery(savedQuery, data.included);
       }
     );
 
@@ -345,9 +375,12 @@ const actions = {
     });
     dispatch("fetchSavedQueryList");
   },
-  async deleteSavedQuery({ dispatch }: any, id: number) {
+  async deleteSavedQuery({ commit, state }: any, id: number) {
     await axios.delete(`/api/savedquery/${id}`);
-    dispatch("fetchSavedQueryList");
+    commit(
+      types.SET_SAVED_QUERY_LIST,
+      state.savedQueryList.filter((t: SavedQuery) => t.id !== id)
+    );
   },
   async checkSavedQueryExistById({ state }: any, id: number) {
     for (const savedQuery of state.savedQueryList) {

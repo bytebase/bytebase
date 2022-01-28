@@ -1,10 +1,12 @@
 import {
   ResourceIdentifier,
   ResourceObject,
+  Principal,
   Pipeline,
   PipelineState,
   Stage,
 } from "../../types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 const state: () => PipelineState = () => ({});
 
@@ -30,10 +32,19 @@ function convert(
       }
     }
   }
+  const creatorId = (pipeline.relationships!.creator.data as ResourceIdentifier)
+    .id;
+  const updaterId = (pipeline.relationships!.updater.data as ResourceIdentifier)
+    .id;
 
   const result: Pipeline = {
-    ...(pipeline.attributes as Omit<Pipeline, "id" | "stageList">),
+    ...(pipeline.attributes as Omit<
+      Pipeline,
+      "id" | "stageList" | "creator" | "updater"
+    >),
     id: parseInt(pipeline.id),
+    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
+    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
     stageList,
   };
 

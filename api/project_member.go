@@ -13,10 +13,10 @@ type ProjectMember struct {
 
 	// Standard fields
 	CreatorID int
-	Creator   *Principal `jsonapi:"attr,creator"`
+	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
 	UpdaterID int
-	Updater   *Principal `jsonapi:"attr,updater"`
+	Updater   *Principal `jsonapi:"relation,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
@@ -26,7 +26,7 @@ type ProjectMember struct {
 	// Domain specific fields
 	Role        string `jsonapi:"attr,role"`
 	PrincipalID int
-	Principal   *Principal `jsonapi:"attr,principal"`
+	Principal   *Principal `jsonapi:"relation,principal"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.

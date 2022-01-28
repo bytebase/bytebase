@@ -48,17 +48,17 @@ type Member struct {
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
-	Creator   *Principal `jsonapi:"attr,creator"`
+	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
 	UpdaterID int
-	Updater   *Principal `jsonapi:"attr,updater"`
+	Updater   *Principal `jsonapi:"relation,updater"`
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
 	Status      MemberStatus `jsonapi:"attr,status"`
 	Role        Role         `jsonapi:"attr,role"`
 	PrincipalID int
-	Principal   *Principal `jsonapi:"attr,principal"`
+	Principal   *Principal `jsonapi:"relation,principal"`
 }
 
 // MemberCreate is the API message for creating a member.

@@ -8,34 +8,15 @@
     :row-clickable="false"
   >
     <template #header>
-      <BBTableHeaderCell
-        :left-padding="4"
-        class="w-auto table-cell"
-        :title="columnList[0].title"
-      />
+      <BBTableHeaderCell :left-padding="4" class="w-auto table-cell" :title="columnList[0].title" />
       <template v-if="hasAdminFeature">
-        <BBTableHeaderCell
-          class="w-8 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-72 table-cell"
-          :title="columnList[2].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[3].title"
-        />
+        <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-72 table-cell" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-auto table-cell" :title="columnList[3].title" />
       </template>
       <template v-else>
-        <BBTableHeaderCell
-          class="w-72 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[2].title"
-        />
+        <BBTableHeaderCell class="w-72 table-cell" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-auto table-cell" :title="columnList[2].title" />
       </template>
     </template>
     <template #body="{ rowData: member }">
@@ -44,12 +25,8 @@
           <template v-if="'INVITED' == member.principal.status">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
-            >
-              {{ $t("settings.members.invited") }}
-            </span>
-            <span class="textlabel">
-              {{ member.principal.email }}
-            </span>
+            >{{ $t("settings.members.invited") }}</span>
+            <span class="textlabel">{{ member.principal.email }}</span>
           </template>
           <template v-else>
             <PrincipalAvatar :principal="member.principal" />
@@ -58,18 +35,13 @@
                 <router-link
                   :to="`/u/${member.principal.id}`"
                   class="normal-link"
-                  >{{ member.principal.name }}
-                </router-link>
+                >{{ member.principal.name }}</router-link>
                 <span
                   v-if="currentUser.id == member.principal.id"
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                >
-                  {{ $t("common.you") }}
-                </span>
+                >{{ $t("common.you") }}</span>
               </div>
-              <span class="textlabel">
-                {{ member.principal.email }}
-              </span>
+              <span class="textlabel">{{ member.principal.email }}</span>
             </div>
           </template>
         </div>
@@ -87,13 +59,9 @@
       </BBTableCell>
       <BBTableCell class="table-cell">
         <div class="flex flex-row items-center space-x-1">
-          <span>
-            {{ humanizeTs(member.updatedTs) }}
-          </span>
+          <span>{{ humanizeTs(member.updatedTs) }}</span>
           <span>{{ $t('common.by') }}</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link"
-            >{{ member.updater.name }}
-          </router-link>
+          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{ member.updater.name }}</router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -144,7 +112,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bb.admin")
+      store.getters["plan/feature"]("bb.feature.rbac")
     );
 
     const state = reactive<LocalState>({});

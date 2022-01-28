@@ -75,3 +75,9 @@ p, DEVELOPER, /savedquery, GET
 p, DEVELOPER, /savedquery/{id}, GET
 p, DEVELOPER, /savedquery/{id}, PATCH_SELF
 p, DEVELOPER, /savedquery/{id}, DELETE_SELF
+p, DEVELOPER, /subscription, GET
+p, DEVELOPER, /sheet, POST
+p, DEVELOPER, /sheet, GET
+p, DEVELOPER, /sheet/{id}, GET
+p, DEVELOPER, /sheet/{id}, PATCH
+p, DEVELOPER, /sheet/{id}, DELETE_SELF

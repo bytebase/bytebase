@@ -39,7 +39,7 @@ export default {
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const hasAdminFeature = computed(() =>
-      store.getters["plan/feature"]("bb.admin")
+      store.getters["plan/feature"]("bb.feature.rbac")
     );
 
     const prepareMemberList = () => {
