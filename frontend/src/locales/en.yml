@@ -1144,4 +1144,4 @@ subscription:
       desc: Set task schedule time allows you to set a specific time to run your tasks.
     bb-feature-instance-count:
       title: Instance count limit
-      desc: You have reach the maximum instance count limit. Please upgrade to unlock more instance quota.
+      desc: You have reach the maximum instance count limit. Please upgrade to get more instance quota.
