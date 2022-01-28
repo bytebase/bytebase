@@ -117,73 +117,54 @@
   </div>
 </template>
 
-<script lang="ts">
-import { onMounted, onUnmounted, PropType } from "vue";
+<script lang="ts" setup>
+import { useEventListener } from "@vueuse/core";
+import { defineProps, withDefaults, defineEmits, computed } from "vue";
 import { BBAlertStyle } from "./types";
 
-export default {
-  name: "BBAlert",
-  props: {
-    style: {
-      type: String as PropType<BBAlertStyle>,
-      default: "INFO",
-    },
-    title: {
-      required: true,
-      type: String,
-    },
-    description: {
-      type: String,
-      default: "",
-    },
-    okText: {
-      type: String,
-      default: "bbkit.common.ok",
-    },
-    cancelText: {
-      type: String,
-      default: "bbkit.common.cancel",
-    },
-    inProgress: {
-      type: Boolean,
-      default: false,
-    },
-    // Any payload pass through to "ok" and "cancel" events
-    payload: {},
-  },
-  emits: ["ok", "cancel"],
-  setup(props, { emit }) {
-    const cancel = () => {
-      emit("cancel", props.payload);
-    };
+type Payload = string | number | boolean | any;
 
-    const escHandler = (e: KeyboardEvent) => {
-      if (!props.inProgress && e.code == "Escape") {
-        cancel();
-      }
-    };
+const props = withDefaults(
+  defineProps<{
+    style?: BBAlertStyle;
+    title: string;
+    description?: string;
+    okText?: string;
+    cancelText?: string;
+    inProgress?: boolean;
+    payload?: Payload; // Any payload pass through to "ok" and "cancel" events
+  }>(),
+  {
+    style: "INFO",
+    description: "",
+    okText: "bbkit.common.ok",
+    cancelText: "bbkit.common.cancel",
+    inProgress: false,
+    payload: undefined,
+  }
+);
 
-    onMounted(() => {
-      document.addEventListener("keydown", escHandler);
-    });
+const emit = defineEmits<{
+  (event: "ok", payload: Payload): void;
+  (event: "cancel", payload: Payload): void;
+}>();
 
-    onUnmounted(() => {
-      document.removeEventListener("keydown", escHandler);
-    });
-
-    const buttonStyleMap: Record<string, string> = {
-      INFO: "btn-primary",
-      SUCCESS: "btn-success",
-      WARN: "btn-primary",
-      CRITICAL: "btn-danger",
-    };
-
-    const okButtonStyle = buttonStyleMap[props.style];
-
-    return {
-      okButtonStyle,
-      cancel,
-    };
-  },
+const cancel = () => {
+  emit("cancel", props.payload);
 };
+
+useEventListener(document, "keydown", (e) => {
+  if (!props.inProgress && e.code == "Escape") {
+    cancel();
+  }
+});
+
+const buttonStyleMap: Record<string, string> = {
+  INFO: "btn-primary",
+  SUCCESS: "btn-success",
+  WARN: "btn-primary",
+  CRITICAL: "btn-danger",
+};
+
+const okButtonStyle = computed(() => buttonStyleMap[props.style]);
 </script>

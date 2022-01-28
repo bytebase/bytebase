@@ -11,9 +11,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, PropType } from "vue";
-
+<script lang="ts" setup>
+import { computed, defineProps, withDefaults } from "vue";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
 
@@ -50,77 +49,64 @@ const fontStyleClassMap: Map<BBAvatarSizeType, string> = new Map([
   ["HUGE", "3rem"], // text-5xl
 ]);
 
-export default {
-  name: "BBAvatar",
-  props: {
-    username: {
-      type: String,
-      default: "",
-    },
-    size: {
-      type: String as PropType<BBAvatarSizeType>,
-      default: "NORMAL",
-    },
-    rounded: {
-      type: Boolean,
-      default: true,
-    },
-    backgroundColor: {
-      type: String,
-    },
-  },
-  setup(props) {
-    const initials = computed(() => {
-      if (props.username == "?") {
-        return "?";
+const props = withDefaults(
+  defineProps<{
+    username?: string;
+    size: BBAvatarSizeType;
+    rounded?: boolean;
+    backgroundColor?: string;
+  }>(),
+  {
+    username: "",
+    size: "NORMAL",
+    rounded: true,
+    backgroundColor: "",
+  }
+);
+
+const initials = computed(() => {
+  if (props.username == "?") {
+    return "?";
+  }
+
+  let parts = props.username.split(/[ -]/);
+  let initials = "";
+  for (var i = 0; i < parts.length; i++) {
+    for (var j = 0; j < parts[i].length; j++) {
+      // Skip non-alphabet leading letters
+      if (/[a-zA-Z0-9]/.test(parts[i].charAt(j))) {
+        initials += parts[i].charAt(j);
+        break;
       }
+    }
+  }
+  if (initials.length <= 2) {
+    return initials.toUpperCase();
+  }
+  // If there are more than 2 initials, we will pick the first and last initial.
+  // Displaying > 2 letters in a circle doesn't look good.
+  return (initials[0] + initials[initials.length - 1]).toUpperCase();
+});
 
-      let parts = props.username.split(/[ -]/);
-      let initials = "";
-      for (var i = 0; i < parts.length; i++) {
-        for (var j = 0; j < parts[i].length; j++) {
-          // Skip non-alphabet leading letters
-          if (/[a-zA-Z0-9]/.test(parts[i].charAt(j))) {
-            initials += parts[i].charAt(j);
-            break;
-          }
-        }
-      }
-      if (initials.length <= 2) {
-        return initials.toUpperCase();
-      }
-      // If there are more than 2 initials, we will pick the first and last initial.
-      // Displaying > 2 letters in a circle doesn't look good.
-      return (initials[0] + initials[initials.length - 1]).toUpperCase();
-    });
+const backgroundColor = computed(() => {
+  return (
+    props.backgroundColor ||
+    BACKGROUND_COLOR_LIST[
+      (hashCode(props.username) & 0xfffffff) % BACKGROUND_COLOR_LIST.length
+    ]
+  );
+});
 
-    const backgroundColor = computed(() => {
-      return (
-        props.backgroundColor ||
-        BACKGROUND_COLOR_LIST[
-          (hashCode(props.username) & 0xfffffff) % BACKGROUND_COLOR_LIST.length
-        ]
-      );
-    });
+const style = computed(() => {
+  return {
+    borderRadius: props.rounded ? "50%" : 0,
+    backgroundColor: backgroundColor.value,
+    color: "white",
+    "font-size": fontStyleClassMap.get(props.size),
+  };
+});
 
-    const style = computed(() => {
-      return {
-        borderRadius: props.rounded ? "50%" : 0,
-        backgroundColor: backgroundColor.value,
-        color: "white",
-        "font-size": fontStyleClassMap.get(props.size),
-      };
-    });
-
-    const textClass = computed(() => {
-      return sizeClassMap.get(props.size);
-    });
-
-    return {
-      initials,
-      textClass,
-      style,
-    };
-  },
-};
+const textClass = computed(() => {
+  return sizeClassMap.get(props.size);
+});
 </script>

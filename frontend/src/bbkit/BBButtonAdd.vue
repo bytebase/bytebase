@@ -7,10 +7,10 @@
   </button>
 </template>
 
-<script lang="ts">
-export default {
-  name: "BBButtonAdd",
-  props: {},
-  emits: ["add"],
-};
+<script lang="ts" setup>
+import { defineEmits } from "vue";
+
+defineEmits<{
+  (event: "add"): void;
+}>();
 </script>
