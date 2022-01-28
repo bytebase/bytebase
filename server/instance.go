@@ -22,14 +22,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			RowStatus: &status,
 		})
 
-		fmt.Printf("instance count is %d\n", count)
-
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 		}
 		subscription := s.loadSubscription()
 		if count >= subscription.InstanceCount {
-			return echo.NewHTTPError(http.StatusForbidden, fmt.Errorf("You have reach the maximum instance count %d.", subscription.InstanceCount))
+			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reach the maximum instance count %d.", subscription.InstanceCount))
 		}
 
 		instanceCreate := &api.InstanceCreate{}
