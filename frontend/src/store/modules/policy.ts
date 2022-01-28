@@ -3,7 +3,6 @@ import {
   Environment,
   EnvironmentId,
   PolicyState,
-  Principal,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -31,10 +30,6 @@ function convert(
       environment = rootGetters["environment/convert"](item, includedList);
     }
   }
-  const creatorId = (policy.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (policy.relationships!.updater.data as ResourceIdentifier)
-    .id;
 
   return {
     ...(policy.attributes as Omit<
@@ -42,8 +37,14 @@ function convert(
       "id" | "environment" | "payload" | "creator" | "updater"
     >),
     id: parseInt(policy.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      policy.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      policy.relationships!.updater.data,
+      includedList
+    ),
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };

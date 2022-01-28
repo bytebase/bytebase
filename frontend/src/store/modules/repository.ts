@@ -1,6 +1,5 @@
 import axios from "axios";
 import {
-  Principal,
   Project,
   ProjectId,
   Repository,
@@ -38,12 +37,6 @@ function convert(
       project = rootGetters["project/convert"](item, includedList);
     }
   }
-  const creatorId = (
-    repository.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    repository.relationships!.updater.data as ResourceIdentifier
-  ).id;
 
   return {
     ...(repository.attributes as Omit<
@@ -51,8 +44,14 @@ function convert(
       "id" | "vcs" | "project" | "creator" | "updater"
     >),
     id: parseInt(repository.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      repository.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      repository.relationships!.updater.data,
+      includedList
+    ),
     vcs,
     project,
   };

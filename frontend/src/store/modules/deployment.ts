@@ -8,8 +8,6 @@ import {
   empty,
   unknown,
   UNKNOWN_ID,
-  Principal,
-  ResourceIdentifier,
   DeploymentConfigPatch,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -39,20 +37,20 @@ function convert(
     // nothing
   }
 
-  const creatorId = (
-    deployment.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    deployment.relationships!.updater.data as ResourceIdentifier
-  ).id;
   return {
     ...(deployment.attributes as Omit<
       DeploymentConfig,
       "id" | "schedule" | "creator" | "updater"
     >),
     id: parseInt(deployment.id, 10),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      deployment.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      deployment.relationships!.updater.data,
+      includedList
+    ),
     schedule,
   };
 }
