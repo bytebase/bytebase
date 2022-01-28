@@ -4,8 +4,6 @@ import {
   Bookmark,
   BookmarkCreate,
   BookmarkState,
-  Principal,
-  ResourceIdentifier,
   ResourceObject,
   unknown,
 } from "../../types";
@@ -16,15 +14,17 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Bookmark {
-  const creatorId = (bookmark.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (bookmark.relationships!.updater.data as ResourceIdentifier)
-    .id;
   return {
     ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
     id: parseInt(bookmark.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      bookmark.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      bookmark.relationships!.updater.data,
+      includedList
+    ),
   };
 }
 

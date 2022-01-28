@@ -6,10 +6,7 @@ import {
   LabelId,
   LabelPatch,
   LabelValueType,
-  Principal,
-  ResourceIdentifier,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   label: ResourceObject,

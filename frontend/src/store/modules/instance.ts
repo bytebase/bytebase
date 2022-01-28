@@ -14,7 +14,6 @@ import {
   INSTANCE_OPERATION_TIMEOUT,
   MigrationHistory,
   MigrationHistoryId,
-  Principal,
   ResourceIdentifier,
   ResourceObject,
   RowStatus,
@@ -44,18 +43,20 @@ function convert(
     anomalyList.push(anomaly);
   }
 
-  const creatorId = (instance.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (instance.relationships!.updater.data as ResourceIdentifier)
-    .id;
   const instancePartial = {
     ...(instance.attributes as Omit<
       Instance,
       "id" | "environment" | "anomalyList" | "creator" | "updater"
     >),
     id: parseInt(instance.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      instance.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      instance.relationships!.updater.data,
+      includedList
+    ),
     environment,
     anomalyList: [],
   };
