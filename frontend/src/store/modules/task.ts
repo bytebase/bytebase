@@ -5,7 +5,6 @@ import {
   IssueId,
   Pipeline,
   PipelineId,
-  Principal,
   ResourceIdentifier,
   ResourceObject,
   Stage,
@@ -35,18 +34,20 @@ function convertTaskRun(
     ? JSON.parse((taskRun.attributes.payload as string) || "{}")
     : {};
 
-  const creatorId = (taskRun.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (taskRun.relationships!.updater.data as ResourceIdentifier)
-    .id;
   return {
     ...(taskRun.attributes as Omit<
       TaskRun,
       "id" | "result" | "payload" | "creator" | "updater"
     >),
     id: parseInt(taskRun.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      taskRun.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      taskRun.relationships!.updater.data,
+      includedList
+    ),
     result,
     payload,
   };
@@ -65,20 +66,20 @@ function convertTaskCheckRun(
     ? JSON.parse((taskCheckRun.attributes.payload as string) || "{}")
     : {};
 
-  const creatorId = (
-    taskCheckRun.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    taskCheckRun.relationships!.updater.data as ResourceIdentifier
-  ).id;
   return {
     ...(taskCheckRun.attributes as Omit<
       TaskCheckRun,
       "id" | "result" | "payload" | "creator" | "updater"
     >),
     id: parseInt(taskCheckRun.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      taskCheckRun.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      taskCheckRun.relationships!.updater.data,
+      includedList
+    ),
     result,
     payload,
   };
@@ -89,8 +90,6 @@ function convertPartial(
   includedList: ResourceObject[],
   rootGetters: any
 ): Omit<Task, "pipeline" | "stage"> {
-  const creatorId = (task.relationships!.creator.data as ResourceIdentifier).id;
-  const updaterId = (task.relationships!.updater.data as ResourceIdentifier).id;
   const payload = task.attributes.payload
     ? JSON.parse((task.attributes.payload as string) || "{}")
     : {};
@@ -172,8 +171,14 @@ function convertPartial(
       | "stage"
     >),
     id: parseInt(task.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      task.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      task.relationships!.updater.data,
+      includedList
+    ),
     payload,
     instance,
     database,

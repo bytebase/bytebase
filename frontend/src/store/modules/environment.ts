@@ -7,8 +7,6 @@ import {
   EnvironmentId,
   EnvironmentPatch,
   EnvironmentState,
-  Principal,
-  ResourceIdentifier,
   ResourceObject,
   RowStatus,
   unknown,
@@ -20,20 +18,20 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Environment {
-  const creatorId = (
-    environment.relationships!.creator.data as ResourceIdentifier
-  ).id;
-  const updaterId = (
-    environment.relationships!.updater.data as ResourceIdentifier
-  ).id;
   return {
     ...(environment.attributes as Omit<
       Environment,
       "id" | "creator" | "updater"
     >),
     id: parseInt(environment.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      environment.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      environment.relationships!.updater.data,
+      includedList
+    ),
   };
 }
 

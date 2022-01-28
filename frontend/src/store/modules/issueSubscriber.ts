@@ -3,9 +3,7 @@ import {
   PrincipalId,
   IssueSubscriber,
   IssueSubscriberState,
-  ResourceIdentifier,
   ResourceObject,
-  Principal,
   IssueId,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -15,15 +13,12 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): IssueSubscriber {
-  const subscriberId = (
-    issueSubscriber.relationships!.subscriber.data as ResourceIdentifier
-  ).id;
   return {
     issueId: issueSubscriber.attributes.issueId as IssueId,
     subscriber: getPrincipalFromIncludedList(
-      subscriberId,
+      issueSubscriber.relationships!.subscriber.data,
       includedList
-    ) as Principal,
+    ),
   };
 }
 

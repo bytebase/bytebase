@@ -1,7 +1,6 @@
 import {
   ResourceIdentifier,
   ResourceObject,
-  Principal,
   Pipeline,
   PipelineState,
   Stage,
@@ -32,10 +31,6 @@ function convert(
       }
     }
   }
-  const creatorId = (pipeline.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (pipeline.relationships!.updater.data as ResourceIdentifier)
-    .id;
 
   const result: Pipeline = {
     ...(pipeline.attributes as Omit<
@@ -43,8 +38,14 @@ function convert(
       "id" | "stageList" | "creator" | "updater"
     >),
     id: parseInt(pipeline.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      pipeline.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      pipeline.relationships!.updater.data,
+      includedList
+    ),
     stageList,
   };
 
