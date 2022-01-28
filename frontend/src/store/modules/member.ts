@@ -25,8 +25,9 @@ function convert(
     .id;
   const updaterId = (member.relationships!.updater.data as ResourceIdentifier)
     .id;
-  const principalId = (member.relationships!.updater.data as ResourceIdentifier)
-    .id;
+  const principalId = (
+    member.relationships!.principal.data as ResourceIdentifier
+  ).id;
   const principal = getPrincipalFromIncludedList(
     principalId,
     includedList
