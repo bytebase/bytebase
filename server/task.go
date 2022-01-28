@@ -43,7 +43,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
-			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Access denied for feature %s", api.FeatureTaskScheduleTime))
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
 		taskFind := &api.TaskFind{
