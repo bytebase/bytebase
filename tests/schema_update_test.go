@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -22,7 +23,16 @@ func TestSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// provision an instance.
+	// Create a project.
+	project, err := ctl.createProject(api.ProjectCreate{
+		Name: "Test Project",
+		Key:  "TestSchemaUpdate",
+	})
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to create project, error: %w", err))
+	}
+
+	// Provision an instance.
 	instanceDir := t.TempDir()
 	instance1Name := "testInstance1"
 	instance1Dir, err := ctl.provisionSQLiteInstance(instanceDir, instance1Name)
@@ -53,7 +63,7 @@ func TestSchemaUpdate(t *testing.T) {
 		Host:          instance1Dir,
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to add instance, error %w", err))
+		t.Fatal(fmt.Errorf("failed to add instance, error: %w", err))
 	}
 
 	// Expecting no database.
@@ -61,9 +71,33 @@ func TestSchemaUpdate(t *testing.T) {
 		InstanceID: &instance1.ID,
 	})
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to get databases, error %w", err))
+		t.Fatal(fmt.Errorf("failed to get databases, error: %w", err))
 	}
 	if len(databases) != 0 {
 		t.Fatal(fmt.Errorf("invalid number of databases %v, expecting no database", len(databases)))
+	}
+
+	// Create an issue that creates a database.
+	databaseName := "testSchemaUpdate"
+	m := &api.CreateDatabaseContext{
+		InstanceID:   instance1.ID,
+		DatabaseName: databaseName,
+		Labels:       "",
+	}
+	createContext, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to construct issue create context payload, error: %w", err))
+	}
+	_, err = ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("create database %q", databaseName),
+		Type:        api.IssueDatabaseCreate,
+		Description: fmt.Sprintf("This creates a database %q.", databaseName),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to create issue, error: %w", err))
 	}
 }
