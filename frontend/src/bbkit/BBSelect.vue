@@ -86,7 +86,7 @@ interface LocalState {
   selectedItem: any;
 }
 
-type ItemType = any;
+type ItemType = number | string | any;
 
 export default defineComponent({
   name: "BBSelect",
