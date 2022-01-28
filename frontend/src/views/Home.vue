@@ -118,7 +118,10 @@ export default {
               } else if (issue.creator.id === currentUser.value.id) {
                 state.createdList.push(issue);
               } else if (
-                issue.subscriberIdList.includes(currentUser.value.id)
+                issue.subscriberList &&
+                issue.subscriberList
+                  .map((subscriber) => subscriber.id)
+                  .includes(currentUser.value)
               ) {
                 state.subscribeList.push(issue);
               }
@@ -137,7 +140,10 @@ export default {
               if (
                 issue.creator.id === currentUser.value.id ||
                 issue.assignee?.id === currentUser.value.id ||
-                issue.subscriberIdList.includes(currentUser.value.id)
+                (issue.subscriberList &&
+                  issue.subscriberList
+                    .map((subscriber) => subscriber.id)
+                    .includes(currentUser.value.id))
               ) {
                 state.closedList.push(issue);
               }

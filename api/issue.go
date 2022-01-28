@@ -79,14 +79,14 @@ type Issue struct {
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
-	Name             string      `jsonapi:"attr,name"`
-	Status           IssueStatus `jsonapi:"attr,status"`
-	Type             IssueType   `jsonapi:"attr,type"`
-	Description      string      `jsonapi:"attr,description"`
-	AssigneeID       int         `jsonapi:"attr,assigneeId"`
-	Assignee         *Principal  `jsonapi:"relation,assignee"`
-	SubscriberIDList []int       `jsonapi:"attr,subscriberIdList"`
-	Payload          string      `jsonapi:"attr,payload"`
+	Name           string       `jsonapi:"attr,name"`
+	Status         IssueStatus  `jsonapi:"attr,status"`
+	Type           IssueType    `jsonapi:"attr,type"`
+	Description    string       `jsonapi:"attr,description"`
+	AssigneeID     int          `jsonapi:"attr,assigneeId"`
+	Assignee       *Principal   `jsonapi:"relation,assignee"`
+	SubscriberList []*Principal `jsonapi:"relation,subscriberList"`
+	Payload        string       `jsonapi:"attr,payload"`
 }
 
 // IssueCreate is the API message for creating an issue.
