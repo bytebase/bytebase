@@ -17,8 +17,8 @@ import (
 func dbaFlowMiddleware(server *Server, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		role := c.Get(getRoleContextKey()).(api.Role)
-		if role == api.Developer && server.feature(api.FeatureDBAWorkflow) {
-			return echo.NewHTTPError(http.StatusForbidden, "Developer has not access to instance")
+		if server.feature(api.FeatureRBAC) && role == api.Developer && server.feature(api.FeatureDBAWorkflow) {
+			return echo.NewHTTPError(http.StatusForbidden, "Developer has no access to instance")
 		}
 
 		return next(c)
