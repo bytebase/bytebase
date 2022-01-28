@@ -10,6 +10,7 @@ import {
   IssueStatus,
   IssueStatusPatch,
   Pipeline,
+  Principal,
   PrincipalId,
   Project,
   ProjectId,
@@ -51,10 +52,20 @@ function convert(
     }
   }
 
+  const subscriberList = [] as Principal[];
+  if (issue.relationships!.subscriberList.data) {
+    for (const subscriberData of issue.relationships!.subscriberList
+      .data as ResourceIdentifier[]) {
+      subscriberList.push(
+        getPrincipalFromIncludedList(subscriberData, includedList)
+      );
+    }
+  }
+
   return {
     ...(issue.attributes as Omit<
       Issue,
-      "id" | "project" | "creator" | "updater" | "assignee"
+      "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
     >),
     id: parseInt(issue.id),
     creator: getPrincipalFromIncludedList(
@@ -71,6 +82,7 @@ function convert(
     ),
     project,
     pipeline,
+    subscriberList: subscriberList,
   };
 }
 

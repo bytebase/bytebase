@@ -78,7 +78,7 @@ export type Issue = {
   type: IssueType;
   description: string;
   assignee: Principal;
-  subscriberIdList: PrincipalId[];
+  subscriberList: Principal[];
   payload: IssuePayload;
 };
 
