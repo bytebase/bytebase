@@ -484,6 +484,8 @@ func (p *QueryParams) QueryString() string {
 		return mysqlQuery(p.Names)
 	case Postgres:
 		return pgQuery(p.Names)
+	case SQLite:
+		return mysqlQuery(p.Names)
 	}
 	return ""
 }
