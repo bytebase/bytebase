@@ -1004,3 +1004,10 @@ subscription:
   sensitive-placeholder: 粘贴您的证书 - 仅写入
   upload-license: 上传证书
   plan-compare: 比较不同版本的功能，寻找适合您的方案
+  disabled-feature: 这是一个订阅版高级功能
+  trial: 您可以以 $7 的价格试用 7 天
+  trial-comment: 仅首次付费可以试用，可随时退款。
+  features:
+    bb-feature-task-schedule-time:
+      title: 设定任务执行时间
+      desc: 「设定任务执行时间」可以将任务设定在特定时间执行

@@ -42,6 +42,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
 		}
 
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+
 		taskFind := &api.TaskFind{
 			ID: &taskID,
 		}
