@@ -42,6 +42,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
 		}
 
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Access denied for feature %s", api.FeatureTaskScheduleTime))
+		}
+
 		taskFind := &api.TaskFind{
 			ID: &taskID,
 		}
