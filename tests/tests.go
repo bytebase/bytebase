@@ -20,9 +20,11 @@ import (
 )
 
 var (
-	port    = 1234
-	rootURL = fmt.Sprintf("http://localhost:%d/api", port)
-	gitPort = 1235
+	port      = 1234
+	rootURL   = fmt.Sprintf("http://localhost:%d/api", port)
+	gitPort   = 1235
+	gitURL    = fmt.Sprintf("http://localhost:%d", gitPort)
+	gitAPIURL = fmt.Sprintf("%s/api/v4", gitURL)
 )
 
 type controller struct {
@@ -500,4 +502,42 @@ func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet,
 		return nil, fmt.Errorf("fail to unmarshal sqlResultSet response, error: %w", err)
 	}
 	return sqlResultSet, nil
+}
+
+// createVCS creates a VCS.
+func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &vcsCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal vcsCreate, error: %w", err)
+	}
+
+	body, err := ctl.post("/vcs", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	vcs := new(api.VCS)
+	if err = jsonapi.UnmarshalPayload(body, vcs); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal vcs response, error: %w", err)
+	}
+	return vcs, nil
+}
+
+// createRepository creates a repository.
+func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (*api.Repository, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &repositoryCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal repositoryCreate, error: %w", err)
+	}
+
+	body, err := ctl.post(fmt.Sprintf("/project/%d/repository", repositoryCreate.ProjectID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	repository := new(api.Repository)
+	if err = jsonapi.UnmarshalPayload(body, repository); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal repository response, error: %w", err)
+	}
+	return repository, nil
 }
