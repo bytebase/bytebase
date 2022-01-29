@@ -109,16 +109,16 @@ func TestSchemaUpdate(t *testing.T) {
 		t.Fatalf("failed to create database creation issue, error: %v", err)
 	}
 
-	if status, _ := getPipelineStatus(issue); status != pipelinePendingApproval {
+	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
 		t.Fatalf("issue %v pipeline %v is supposed to be pending manual approval.", issue.ID, issue.Pipeline.ID)
 	}
 
-	pipelineStatus, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
 		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
 	}
-	if pipelineStatus != pipelineDone {
-		t.Fatalf("issue %v pipeline %v is expected to finish with status pipelineDone got %v", issue.ID, issue.Pipeline.ID, pipelineStatus)
+	if status != api.TaskDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
 	}
 
 	// Expecting project to have 1 database.
@@ -166,11 +166,11 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create schema update issue, error: %v", err)
 	}
-	pipelineStatus, err = ctl.waitIssuePipeline(issue.ID)
+	status, err = ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
 		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
 	}
-	if pipelineStatus != pipelineDone {
-		t.Fatalf("issue %v pipeline %v is expected to finish with status pipelineDone got %v", issue.ID, issue.Pipeline.ID, pipelineStatus)
+	if status != api.TaskDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
 	}
 }

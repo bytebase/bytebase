@@ -362,8 +362,8 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-// approveIssueNextNext approves the next pending approval task.
-func (ctl *controller) approveIssueNextNext(issue *api.Issue) error {
+// approveIssueNext approves the next pending approval task.
+func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
@@ -383,63 +383,53 @@ func (ctl *controller) approveIssueNextNext(issue *api.Issue) error {
 	return nil
 }
 
-type pipelineStatus string
-
-const (
-	pipelineRunning         pipelineStatus = "PIPELINE_RUNNING"
-	pipelineDone            pipelineStatus = "PIPELINE_DONE"
-	pipelinePendingApproval pipelineStatus = "PIPELINE_PENDING_APPROVAL"
-	pipelineFailed          pipelineStatus = "PIPELINE_FAILED"
-	pipelineCanceled        pipelineStatus = "PIPELINE_CANCELED"
-)
-
-// getPipelineStatus gets pipeline status.
-func getPipelineStatus(issue *api.Issue) (pipelineStatus, error) {
+// getAggregatedTaskStatus gets pipeline status.
+func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 	running := false
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			switch task.Status {
 			case api.TaskPendingApproval:
-				return pipelinePendingApproval, nil
+				return api.TaskPendingApproval, nil
 			case api.TaskFailed:
-				return pipelineFailed, fmt.Errorf("pipeline task %v failed payload %q", task.ID, task.Payload)
+				return api.TaskFailed, fmt.Errorf("pipeline task %v failed payload %q", task.ID, task.Payload)
 			case api.TaskCanceled:
-				return pipelineCanceled, nil
+				return api.TaskCanceled, nil
 			case api.TaskRunning:
 				running = true
 			}
 		}
 	}
 	if running {
-		return pipelineRunning, nil
+		return api.TaskRunning, nil
 	}
-	return pipelineDone, nil
+	return api.TaskDone, nil
 }
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipeline(id int) (pipelineStatus, error) {
+func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
 		if err != nil {
-			return pipelineFailed, err
+			return api.TaskFailed, err
 		}
 
-		status, err := getPipelineStatus(issue)
+		status, err := getAggregatedTaskStatus(issue)
 		if err != nil {
 			return status, err
 		}
 		switch status {
-		case pipelinePendingApproval:
-			if err := ctl.approveIssueNextNext(issue); err != nil {
-				return pipelineFailed, err
+		case api.TaskPendingApproval:
+			if err := ctl.approveIssueNext(issue); err != nil {
+				return api.TaskFailed, err
 			}
-		case pipelineRunning:
+		case api.TaskRunning:
 		default:
 			return status, err
 		}
 	}
-	return pipelineDone, nil
+	return api.TaskDone, nil
 }
