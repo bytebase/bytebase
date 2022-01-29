@@ -1011,3 +1011,6 @@ subscription:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间
       desc: 「设定任务执行时间」可以将任务设定在特定时间执行
+    bb-feature-multi-tenancy:
+      title: 多租户
+      desc: 「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。

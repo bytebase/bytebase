@@ -669,6 +669,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		var schemaVersion, schema string
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
+			if !s.feature(api.FeatureMultiTenancy) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
 			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, m.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -791,6 +794,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
+			if !s.feature(api.FeatureMultiTenancy) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
 			if m.MigrationType != db.Migrate {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
 			}
