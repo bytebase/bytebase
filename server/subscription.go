@@ -68,6 +68,11 @@ func (server *Server) loadSubscription() *enterprise.Subscription {
 			ExpiresTs:     license.ExpiresTs,
 			InstanceCount: license.InstanceCount,
 		}
+	} else {
+		// increase instance quota for dev environment.
+		if server.mode == "dev" {
+			subscription.InstanceCount = subscription.InstanceCount * 2
+		}
 	}
 
 	return subscription
