@@ -1,5 +1,40 @@
 <template>
   <div class="flex flex-col">
+    <div class="m-5 p-2 rounded bg-yellow-300" v-if="remainingInstanceCount <= 3">
+      <i18n-t keypath="subscription.features.bb-feature-instance-count.remaining" v-if="remainingInstanceCount > 0">
+        <template v-slot:total>
+          <span class="text-accent">{{ instanceQuota }}</span>
+        </template>
+        <template v-slot:count>
+          <span class="text-accent">{{ remainingInstanceCount }}</span>
+        </template>
+        <template v-slot:upgrade>
+          <router-link
+            to="/setting/subscription"
+            class="normal-link"
+          >
+            {{ $t("subscription.upgrade")}}
+          </router-link>
+        </template>
+      </i18n-t>
+      <i18n-t v-else keypath="subscription.features.bb-feature-instance-count.runoutof">
+        <template v-slot:total>
+          <span class="text-accent">{{ instanceQuota }}</span>
+        </template>
+      </i18n-t>
+      <span class="pl-1">
+        <i18n-t keypath="subscription.features.bb-feature-instance-count.upgrade">
+          <template v-slot:upgrade>
+            <router-link
+              to="/setting/subscription"
+              class="normal-link"
+            >
+              {{ $t("subscription.upgrade")}}
+            </router-link>
+          </template>
+        </i18n-t>
+      </span>
+    </div>
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
@@ -38,7 +73,7 @@ import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
-import { Environment, Instance } from "../types";
+import { Environment, Subscription, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 
@@ -141,6 +176,17 @@ export default {
       });
     };
 
+    const instanceQuota = computed((): number => {
+      const subscription: Subscription | undefined =
+        store.getters["subscription/subscription"]();
+      return subscription?.instanceCount ?? 5
+    })
+
+    const remainingInstanceCount = computed((): number => {
+      const instanceList: Instance[] = store.getters["instance/instanceList"](["NORMAL"]);
+      return Math.max(0, instanceQuota.value - instanceList.length)
+    })
+
     return {
       searchField,
       state,
@@ -149,6 +195,8 @@ export default {
       selectEnvironment,
       changeSearchText,
       doDismissGuide,
+      instanceQuota,
+      remainingInstanceCount,
     };
   },
 };
