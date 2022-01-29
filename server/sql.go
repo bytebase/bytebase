@@ -131,7 +131,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return nil, err
 			}
-			defer driver.Close(ctx)
 
 			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit)
 			if err != nil {
