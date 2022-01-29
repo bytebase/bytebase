@@ -52,6 +52,12 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	})
 }
 
+// feature will check if user has access to a specific feature.
+func (s *Server) feature(feature api.FeatureType) bool {
+	subscription := s.loadSubscription()
+	return api.FeatureMatrix[feature][subscription.Plan]
+}
+
 // loadLicense will load current subscription by license.
 // Return subscription with free plan if no license found.
 func (server *Server) loadSubscription() *enterprise.Subscription {
@@ -69,9 +75,9 @@ func (server *Server) loadSubscription() *enterprise.Subscription {
 			InstanceCount: license.InstanceCount,
 		}
 	} else {
-		// increase instance quota for dev environment.
+		// change instance quota for dev environment.
 		if server.mode == "dev" {
-			subscription.InstanceCount = subscription.InstanceCount * 2
+			subscription.InstanceCount = 9999
 		}
 	}
 
@@ -93,6 +99,7 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 	server.l.Info(
 		"Load valid license",
 		zap.String("plan", license.Plan.String()),
+		zap.Int64("expiresTs", license.ExpiresTs),
 		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
 		zap.Int("instanceCount", license.InstanceCount),
 	)
