@@ -1142,3 +1142,6 @@ subscription:
     bb.feature.task-schedule-time:
       name: Set task schedule time
       desc: Set task schedule time allows you to set a specific time to run your tasks.
+    bb-feature-multi-tenancy:
+      title: Multi-tenancy
+      desc: Intelligent database management for tenants using identical schemas.
