@@ -23,9 +23,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if sheetCreate.Name == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
 		}
-		if sheetCreate.Statement == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing statement")
-		}
 
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
