@@ -123,7 +123,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
-			// So we need to check the existed instance count with NORMAL status for quota limitation.
+			// So we need to check the current instance count with NORMAL status for quota limitation.
 			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
 				if err := s.instanceCountGuard(ctx); err != nil {
 					return err
