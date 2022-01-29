@@ -28,8 +28,8 @@ var (
 		bytebaseDatabase: true,
 	}
 
-	_ db.Driver   = (*Driver)(nil)
-	_ util.Driver = (*Driver)(nil)
+	_ db.Driver                      = (*Driver)(nil)
+	_ util.MigrationExecutableDriver = (*Driver)(nil)
 )
 
 func init() {
@@ -263,8 +263,9 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// RecordPendingMigrationHistory adapts Driver to util.MigrationExecutableDriver.
 func (*Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
-	return util.StandardRecordPendingMigrationHistory(ctx, l, tx, m, statement, sequence, prevSchema)
+	return util.RecordPendingMigrationHistory(ctx, l, tx, m, statement, sequence, prevSchema)
 }
 
 // ExecuteMigration will execute the migration.

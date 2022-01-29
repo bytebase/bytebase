@@ -27,8 +27,8 @@ var (
 		"system": true,
 	}
 
-	_ db.Driver   = (*Driver)(nil)
-	_ util.Driver = (*Driver)(nil)
+	_ db.Driver                      = (*Driver)(nil)
+	_ util.MigrationExecutableDriver = (*Driver)(nil)
 )
 
 func init() {
@@ -435,6 +435,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// RecordPendingMigrationHistory adapts Driver to util.MigrationExecutableDriver.
 func (driver *Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
 	const (
 		maxIDQuery         = "SELECT MAX(id)+1 FROM bytebase.migration_history"

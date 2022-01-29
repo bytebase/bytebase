@@ -109,20 +109,8 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 	return true, nil
 }
 
-// MigrationExecutionArgs includes the arguments for ExecuteMigration().
-type MigrationExecutionArgs struct {
-	InsertHistoryQuery         string
-	UpdateHistoryAsDoneQuery   string
-	UpdateHistoryAsFailedQuery string
-	TablePrefix                string
-}
-
-type Driver interface {
-	db.Driver
-	RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error)
-}
-
-func StandardRecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+// RecordPendingMigrationHistory is a helper function to implement MigrationExecutableDriver.RecordPendingMigrationHistory() for MySQL.
+func RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
 	const insertHistoryQuery = `
 	INSERT INTO bytebase.migration_history (
 		created_by,
@@ -174,9 +162,23 @@ func StandardRecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, t
 	return insertedID, nil
 }
 
+// MigrationExecutionArgs includes the arguments for ExecuteMigration().
+type MigrationExecutionArgs struct {
+	InsertHistoryQuery         string
+	UpdateHistoryAsDoneQuery   string
+	UpdateHistoryAsFailedQuery string
+	TablePrefix                string
+}
+
+// MigrationExecutableDriver is an adapter for db.Driver and db.util.ExecuteMigration.
+type MigrationExecutableDriver interface {
+	db.Driver
+	RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error)
+}
+
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver MigrationExecutableDriver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
