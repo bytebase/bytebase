@@ -108,6 +108,36 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	return list, nil
 }
 
+func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	where, args := findInstanceQuery(find)
+
+	row, err := tx.QueryContext(ctx, `
+		SELECT COUNT(*)
+		FROM instance
+		WHERE `+where,
+		args...,
+	)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer row.Close()
+
+	count := 0
+	if row.Next() {
+		if err := row.Scan(&count); err != nil {
+			return 0, FormatError(err)
+		}
+	}
+
+	return count, nil
+}
+
 // FindInstance retrieves a single instance based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.Instance, error) {
@@ -225,14 +255,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 }
 
 func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
-	}
+	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -250,7 +273,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 			host,
 			port
 		FROM instance
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+where,
 		args...,
 	)
 	if err != nil {
@@ -352,4 +375,17 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
+}
+
+func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, "id = ?"), append(args, *v)
+	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, "row_status = ?"), append(args, *v)
+	}
+
+	return strings.Join(where, " AND "), args
 }

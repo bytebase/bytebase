@@ -157,5 +157,6 @@ type InstanceService interface {
 	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)
 	FindInstanceList(ctx context.Context, find *InstanceFind) ([]*Instance, error)
 	FindInstance(ctx context.Context, find *InstanceFind) (*Instance, error)
+	CountInstance(ctx context.Context, find *InstanceFind) (int, error)
 	PatchInstance(ctx context.Context, patch *InstancePatch) (*Instance, error)
 }
