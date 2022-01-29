@@ -131,6 +131,11 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -152,6 +157,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { Subscription } from "../types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -163,6 +169,7 @@ interface LocalState {
   creatingMigrationSchema: boolean;
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
+  showFeatureModal: boolean;
 }
 
 export default {
@@ -194,6 +201,7 @@ export default {
       creatingMigrationSchema: false,
       showCreateDatabaseModal: false,
       syncingSchema: false,
+      showFeatureModal: false,
     });
 
     const instance = computed((): Instance => {
@@ -337,6 +345,13 @@ export default {
     };
 
     const doRestore = () => {
+      const subscription: Subscription | undefined =
+        store.getters["subscription/subscription"]();
+      const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+      if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
+        state.showFeatureModal = true;
+        return;
+      }
       store
         .dispatch("instance/patchInstance", {
           instanceId: instance.value.id,
