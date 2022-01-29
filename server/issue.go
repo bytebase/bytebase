@@ -791,6 +791,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
+			if s.feature(api.FeatureMultiTenancy) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
 			if m.MigrationType != db.Migrate {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
 			}
