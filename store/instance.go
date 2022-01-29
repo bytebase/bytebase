@@ -117,25 +117,22 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 
 	where, args := findInstanceQuery(find)
 
-	rows, err := tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		SELECT COUNT(*)
-		FROM instance as count
+		FROM instance
 		WHERE `+where,
 		args...,
 	)
 	if err != nil {
 		return 0, FormatError(err)
 	}
-	defer rows.Close()
+	defer row.Close()
 
 	count := 0
-	for rows.Next() {
-		if err := rows.Scan(&count); err != nil {
+	if row.Next() {
+		if err := row.Scan(&count); err != nil {
 			return 0, FormatError(err)
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return 0, FormatError(err)
 	}
 
 	return count, nil
