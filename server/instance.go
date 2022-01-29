@@ -17,14 +17,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := context.Background()
-		count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{})
-
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
-		}
-		subscription := s.loadSubscription()
-		if count >= subscription.InstanceCount {
-			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reach the maximum instance count %d.", subscription.InstanceCount))
+		if err := s.instanceCountGuard(ctx); err != nil {
+			return err
 		}
 
 		instanceCreate := &api.InstanceCreate{}
@@ -128,6 +122,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
+			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
+				if err := s.instanceCountGuard(ctx); err != nil {
+					return err
+				}
+			}
 			instance, err = s.InstanceService.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
@@ -537,4 +536,21 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 		}
 	}
 	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceID)}
+}
+
+func (s *Server) instanceCountGuard(ctx context.Context) error {
+	status := api.Normal
+	count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
+		RowStatus: &status,
+	})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
+	}
+	subscription := s.loadSubscription()
+	if count >= subscription.InstanceCount {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reach the maximum instance count %d.", subscription.InstanceCount))
+	}
+
+	return nil
 }
