@@ -8,15 +8,15 @@
       :key="index"
     >
       <!--
-    Notification panel, show/hide based on alert state.
+        Notification panel, show/hide based on alert state.
 
-    Entering: "transform ease-out duration-300 transition"
-      From: "translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-      To: "translate-y-0 opacity-100 sm:translate-x-0"
-    Leaving: "transition ease-in duration-100"
-      From: "opacity-100"
-      To: "opacity-0"
-  -->
+        Entering: "transform ease-out duration-300 transition"
+          From: "translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+          To: "translate-y-0 opacity-100 sm:translate-x-0"
+        Leaving: "transition ease-in duration-100"
+          From: "opacity-100"
+          To: "opacity-0"
+      -->
       <transition
         enter-active-class="transform ease-out duration-300 transition"
         enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
@@ -26,31 +26,30 @@
         leave-to-class="opacity-0"
       >
         <div
-          class="
-            max-w-sm
-            w-full
-            bg-white
-            shadow-lg
-            rounded-lg
-            pointer-events-auto
-            ring-1 ring-black ring-opacity-5
-            overflow-hidden
-          "
+          class="max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
         >
           <div class="p-4">
             <div class="flex items-start">
               <div class="flex-shrink-0">
                 <template v-if="notification.style == 'SUCCESS'">
-                  <heroicons-outline:check-circle class="h-6 w-6 text-success" />
+                  <heroicons-outline:check-circle
+                    class="h-6 w-6 text-success"
+                  />
                 </template>
                 <template v-else-if="notification.style == 'WARN'">
-                  <heroicons-outline:exclamation class="h-6 w-6 text-yellow-600" />
+                  <heroicons-outline:exclamation
+                    class="h-6 w-6 text-yellow-600"
+                  />
                 </template>
                 <template v-else-if="notification.style == 'CRITICAL'">
-                  <heroicons-outline:exclamation-circle class="h-6 w-6 text-red-600" />
+                  <heroicons-outline:exclamation-circle
+                    class="h-6 w-6 text-red-600"
+                  />
                 </template>
                 <template v-else>
-                  <heroicons-outline:information-circle class="w-6 h-6 text-blue-600" />
+                  <heroicons-outline:information-circle
+                    class="w-6 h-6 text-blue-600"
+                  />
                 </template>
               </div>
               <div class="ml-3 w-0 flex-1 pt-0.5">
@@ -64,36 +63,13 @@
                 </p>
                 <div v-if="notification.link" class="mt-2">
                   <button
-                    class="
-                      bg-white
-                      rounded-md
-                      text-sm
-                      font-medium
-                      text-accent
-                      hover:text-accent-hover
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-offset-2
-                      focus:ring-accent
-                    "
+                    class="bg-white rounded-md text-sm font-medium text-accent hover:text-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                     @click.prevent="viewLink(notification.link)"
                   >
                     {{ notification.linkTitle }}
                   </button>
                   <button
-                    class="
-                      ml-6
-                      bg-white
-                      rounded-md
-                      text-sm
-                      font-medium
-                      text-gray-700
-                      hover:text-gray-500
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-offset-2
-                      focus:ring-accent
-                    "
+                    class="ml-6 bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                     @click.prevent="$emit('close', notification)"
                   >
                     Dismiss
@@ -102,14 +78,7 @@
               </div>
               <div class="ml-4 flex-shrink-0 flex">
                 <button
-                  class="
-                    bg-white
-                    rounded-md
-                    inline-flex
-                    text-gray-400
-                    hover:text-gray-500
-                    focus:outline-none
-                  "
+                  class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
                   @click.prevent="$emit('close', notification)"
                 >
                   <span class="sr-only">Close</span>
@@ -125,8 +94,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { PropType } from "vue";
+<script lang="ts" setup>
+import { defineProps, defineEmits, withDefaults, computed } from "vue";
 import { useRouter } from "vue-router";
 import { BBNotificationPlacement, BBNotificationItem } from "./types";
 
@@ -150,31 +119,25 @@ const placementClassMap: Map<BBNotificationPlacement, string> = new Map([
   ],
 ]);
 
-export default {
-  name: "BBNotification",
-  props: {
-    notificationList: {
-      required: true,
-      type: Object as PropType<BBNotificationItem[]>,
-    },
-    placement: {
-      type: String as PropType<BBNotificationPlacement>,
-      default: "TOP_RIGHT",
-    },
-  },
-  emits: ["close"],
-  setup(props, { emit }) {
-    const router = useRouter();
+const props = withDefaults(
+  defineProps<{
+    notificationList: BBNotificationItem[];
+    placement?: BBNotificationPlacement;
+  }>(),
+  {
+    placement: "TOP_RIGHT",
+  }
+);
 
-    const viewLink = (link: string) => {
-      router.push(link);
-      emit("close");
-    };
+const emit = defineEmits<{
+  (event: "close", notification?: BBNotificationItem): void;
+}>();
 
-    return {
-      placementClass: placementClassMap.get(props.placement),
-      viewLink,
-    };
-  },
+const router = useRouter();
+
+const viewLink = (link: string) => {
+  router.push(link);
+  emit("close");
 };
+const placementClass = computed(() => placementClassMap.get(props.placement));
 </script>
