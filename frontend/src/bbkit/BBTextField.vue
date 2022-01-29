@@ -20,9 +20,18 @@
   />
 </template>
 
-<script lang="ts">
-import { nextTick, onMounted, reactive, ref, watch } from "vue";
-import isEmpty from "lodash-es/isEmpty";
+<script lang="ts" setup>
+import {
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+  defineProps,
+  defineEmits,
+  withDefaults,
+} from "vue";
+import { isEmpty } from "lodash-es";
 
 interface LocalState {
   text: string;
@@ -30,92 +39,77 @@ interface LocalState {
   hasError: boolean;
 }
 
-export default {
-  name: "BBTextField",
-  props: {
-    required: {
-      default: false,
-      type: Boolean,
-    },
-    value: {
-      default: "",
-      type: String,
-    },
-    placeholder: {
-      type: String,
-    },
-    disabled: {
-      default: false,
-      type: Boolean,
-    },
-    bordered: {
-      default: true,
-      type: Boolean,
-    },
-    focusOnMount: {
-      default: false,
-      type: Boolean,
-    },
-  },
-  emits: ["end-editing", "input"],
-  setup(props, { emit }) {
-    const inputField = ref();
+const props = withDefaults(
+  defineProps<{
+    required?: boolean;
+    value?: string;
+    placeholder?: string;
+    disabled?: boolean;
+    bordered?: boolean;
+    focusOnMount?: boolean;
+  }>(),
+  {
+    required: false,
+    value: "",
+    placeholder: "",
+    disabled: false,
+    bordered: true,
+    focusOnMount: false,
+  }
+);
 
-    const state = reactive<LocalState>({
-      text: props.value,
-      originalText: "",
-      hasError: false,
-    });
+const emit = defineEmits<{
+  (event: "end-editing", value: string): void;
+  (event: "input", e: Event): void;
+}>();
 
-    onMounted(() => {
-      if (props.focusOnMount) {
+const inputField = ref();
+
+const state = reactive<LocalState>({
+  text: props.value,
+  originalText: "",
+  hasError: false,
+});
+
+onMounted(() => {
+  if (props.focusOnMount) {
+    inputField.value.focus();
+    inputField.value.select();
+  }
+});
+
+watch(
+  () => props.value,
+  (cur) => {
+    state.text = cur;
+  }
+);
+
+const onFocus = () => {
+  state.originalText = state.text;
+};
+
+const onBlur = () => {
+  if (props.required && isEmpty(state.text.trim())) {
+    state.hasError = true;
+    nextTick(() => {
+      state.text = state.originalText;
+      if (inputField.value) {
+        // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
         inputField.value.focus();
-        inputField.value.select();
+        nextTick(() => {
+          inputField.value.select();
+        });
       }
     });
+  } else {
+    state.hasError = false;
+    emit("end-editing", state.text);
+  }
+};
 
-    watch(
-      () => props.value,
-      (cur) => {
-        state.text = cur;
-      }
-    );
-
-    const onFocus = () => {
-      state.originalText = state.text;
-    };
-
-    const onBlur = () => {
-      if (props.required && isEmpty(state.text.trim())) {
-        state.hasError = true;
-        nextTick(() => {
-          state.text = state.originalText;
-          if (inputField.value) {
-            // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
-            inputField.value.focus();
-            nextTick(() => {
-              inputField.value.select();
-            });
-          }
-        });
-      } else {
-        state.hasError = false;
-        emit("end-editing", state.text);
-      }
-    };
-
-    const onInput = (e: any) => {
-      state.hasError = false;
-      emit("input", e);
-    };
-
-    return {
-      inputField,
-      state,
-      onFocus,
-      onBlur,
-      onInput,
-    };
-  },
+const onInput = (e: Event) => {
+  state.hasError = false;
+  emit("input", e);
 };
 </script>
