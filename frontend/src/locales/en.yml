@@ -1138,6 +1138,7 @@ subscription:
   disabled-feature: This is a premium feature in subscription plan
   trial: You can start a trial with $7 for 7 days.
   trial-comment: Only enabled for the first payment. You can cancel the subscription at any time.
+  upgrade: Upgrade subscription
   features:
     bb-feature-task-schedule-time:
       name: Set task schedule time
@@ -1145,3 +1146,6 @@ subscription:
     bb-feature-instance-count:
       title: Instance count limit
       desc: You have reach the maximum instance count limit. Please upgrade to get more instance quota.
+      remaining: You only have {count} instance remaining quota.
+      runoutof: You have run out of your instance quota.
+      upgrade: '{upgrade} to get more instance quota.'

@@ -1007,6 +1007,7 @@ subscription:
   disabled-feature: 这是一个订阅版高级功能
   trial: 您可以以 $7 的价格试用 7 天
   trial-comment: 仅首次付费可以试用，可随时退款。
+  upgrade: 升级订阅
   features:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间
@@ -1014,3 +1015,6 @@ subscription:
     bb-feature-instance-count:
       title: 实例数量限制
       desc: 您已达最大实例数量限制，请付费升级来获取更多实例额度。
+      remaining: 仅剩 {count} 个实例额度。
+      runoutof: 已无剩余实例额度。
+      upgrade: '{upgrade}来获取更多实例额度。'
