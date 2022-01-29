@@ -170,6 +170,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				// Create schema update issue.
 				var createContext string
 				if repository.Project.TenantMode == api.TenantModeTenant {
+					if !s.feature(api.FeatureMultiTenancy) {
+						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+					}
 					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
 				} else {
 					createContext, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
