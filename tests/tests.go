@@ -397,6 +397,8 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 				return api.TaskCanceled, nil
 			case api.TaskRunning:
 				running = true
+			case api.TaskPending:
+				running = true
 			}
 		}
 	}
@@ -426,10 +428,35 @@ func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 			if err := ctl.approveIssueNext(issue); err != nil {
 				return api.TaskFailed, err
 			}
-		case api.TaskRunning:
-		default:
+		case api.TaskFailed:
 			return status, err
+		case api.TaskDone:
+			return status, err
+		case api.TaskCanceled:
+			return status, err
+		case api.TaskPending:
+		case api.TaskRunning:
+			// no-op, keep waiting
 		}
 	}
 	return api.TaskDone, nil
+}
+
+// executeSQL executes a SQL query on the database.
+func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
+		return nil, fmt.Errorf("failed to marshal sqlExecute, error: %w", err)
+	}
+
+	body, err := ctl.post("/sql/execute", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlResultSet := new(api.SQLResultSet)
+	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal sqlResultSet response, error: %w", err)
+	}
+	return sqlResultSet, nil
 }

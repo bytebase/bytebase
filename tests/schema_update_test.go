@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/kr/pretty"
 )
 
 func TestSchemaUpdate(t *testing.T) {
@@ -172,5 +173,23 @@ func TestSchemaUpdate(t *testing.T) {
 	}
 	if status != api.TaskDone {
 		t.Fatalf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
+	}
+
+	// Query schema.
+	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
+		InstanceID:   instance1.ID,
+		DatabaseName: databaseName,
+		Statement:    "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';",
+		Readonly:     true,
+	})
+	if err != nil {
+		t.Fatalf("failed to execute SQL, error: %v", err)
+	}
+	if sqlResultSet.Error != "" {
+		t.Fatalf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	wantResult := `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	if sqlResultSet.Data != wantResult {
+		t.Fatalf("want SQL result %q, got %q, diff %q", wantResult, sqlResultSet.Data, pretty.Diff(wantResult, sqlResultSet.Data))
 	}
 }
