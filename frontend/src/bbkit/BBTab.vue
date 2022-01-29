@@ -6,17 +6,7 @@
         :id="item.id"
         :key="index"
         :href="`#${item.id}`"
-        class="
-          select-none
-          cursor-pointer
-          flex
-          justify-between
-          py-2
-          px-1
-          font-medium
-          border-b-2 border-transparent
-          whitespace-nowrap
-        "
+        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent whitespace-nowrap"
         :class="tabClass(index == selectedIndex)"
         @click.self="selectTabIndex(index)"
         @mouseenter="state.hoverIndex = index"
@@ -29,13 +19,7 @@
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
           type="button"
-          class="
-            text-control
-            hover:text-control-hover
-            focus:outline-none
-            focus-visible:ring-2
-            focus:ring-accent
-          "
+          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
           @click.prevent="
             () => {
               selectTabIndex(index);
@@ -54,13 +38,7 @@
               (reorderModel == 'HOVER' && state.hoverIndex == index))
           "
           type="button"
-          class="
-            text-control
-            hover:text-control-hover
-            focus:outline-none
-            focus-visible:ring-2
-            focus:ring-accent
-          "
+          class="text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
           @click.prevent="
             () => {
               selectTabIndex(index);
@@ -75,16 +53,7 @@
       <button
         v-if="allowCreate"
         type="button"
-        class="
-          flex
-          justify-center
-          py-2
-          text-control
-          hover:text-control-hover
-          focus:outline-none
-          focus-visible:ring-2
-          focus:ring-accent
-        "
+        class="flex justify-center py-2 text-control hover:text-control-hover focus:outline-none focus-visible:ring-2 focus:ring-accent"
         :class="addTabClass()"
         @click.prevent="$emit('create')"
       >
@@ -95,68 +64,54 @@
   <slot />
 </template>
 
-<script lang="ts">
-import { reactive, PropType } from "vue";
+<script lang="ts" setup>
+import { reactive, defineProps, defineEmits, withDefaults } from "vue";
 import { BBTabItem } from "./types";
 
-export default {
-  name: "BBTab",
-  props: {
-    tabItemList: {
-      required: true,
-      type: Object as PropType<BBTabItem[]>,
-    },
-    selectedIndex: {
-      required: true,
-      type: Number,
-    },
-    allowCreate: {
-      default: false,
-      type: Boolean,
-    },
-    reorderModel: {
-      default: "NEVER",
-      type: String as PropType<"NEVER" | "HOVER" | "ALWAYS">,
-    },
-  },
-  emits: ["create", "reorder-index", "select-index"],
-  setup(props, { emit }) {
-    const state = reactive({
-      hoverIndex: -1,
-    });
+export type ReorderModel = "NEVER" | "HOVER" | "ALWAYS";
 
-    const tabClass = (selected: boolean) => {
-      const width =
-        "w-1/" + (props.tabItemList.length + (props.allowCreate ? 1 : 0));
-      if (selected) {
-        return width + " text-control-hover border-accent";
-      }
-      return (
-        width +
-        " text-control hover:text-control-hover hover:border-control-border"
-      );
-    };
+const props = withDefaults(
+  defineProps<{
+    tabItemList: BBTabItem[];
+    selectedIndex: number;
+    allowCreate?: boolean;
+    reorderModel?: ReorderModel;
+  }>(),
+  {
+    allowCreate: false,
+    reorderModel: "NEVER",
+  }
+);
 
-    const addTabClass = () => {
-      if (props.tabItemList.length == 0) {
-        return "w-1/6 ";
-      }
-      return "w-1/12";
-    };
+const emit = defineEmits<{
+  (event: "create"): void;
+  (event: "reorder-index", from: number, to: number): void;
+  (event: "select-index", index: number): void;
+}>();
 
-    const selectTabIndex = (index: number) => {
-      emit("select-index", index);
-    };
+const state = reactive({
+  hoverIndex: -1,
+});
 
-    return {
-      tabClass,
-      addTabClass,
-      selectTabIndex,
-      state,
-    };
-  },
-  data: function () {
-    return {};
-  },
+const tabClass = (selected: boolean) => {
+  const width =
+    "w-1/" + (props.tabItemList.length + (props.allowCreate ? 1 : 0));
+  if (selected) {
+    return width + " text-control-hover border-accent";
+  }
+  return (
+    width + " text-control hover:text-control-hover hover:border-control-border"
+  );
+};
+
+const addTabClass = () => {
+  if (props.tabItemList.length == 0) {
+    return "w-1/6 ";
+  }
+  return "w-1/12";
+};
+
+const selectTabIndex = (index: number) => {
+  emit("select-index", index);
 };
 </script>

@@ -10,35 +10,14 @@
     <template v-if="allowCollapse && state.hoverTitle">
       <svg
         v-if="collapseState"
-        class="
-          mr-2
-          h-4
-          w-4
-          transform
-          group-hover:text-gray-400
-          group-focus:text-gray-400
-          transition-colors
-          ease-in-out
-          duration-150
-        "
+        class="mr-2 h-4 w-4 transform group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
       </svg>
       <svg
         v-else
-        class="
-          mr-2
-          h-4
-          w-4
-          transform
-          rotate-90
-          group-hover:text-gray-400
-          group-focus:text-gray-400
-          transition-colors
-          ease-in-out
-          duration-150
-        "
+        class="mr-2 h-4 w-4 transform rotate-90 group-hover:text-gray-400 group-focus:text-gray-400 transition-colors ease-in-out duration-150"
         viewBox="0 0 20 20"
       >
         <path d="M6 6L14 10L6 14V6Z" fill="currentColor" />
@@ -81,95 +60,83 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import {
+  computed,
+  reactive,
+  defineProps,
+  defineEmits,
+  withDefaults,
+} from "vue";
+import { useStore } from "vuex";
+import { BBOutlineItem } from "./types";
+
 interface LocalState {
   hoverIndex: number;
   hoverTitle: boolean;
   collapseState: boolean;
 }
 
-import { computed, reactive, PropType } from "vue";
-import { useStore } from "vuex";
-import { BBOutlineItem } from "./types";
-
-export default {
-  name: "BBOutline",
-  props: {
+const props = withDefaults(
+  defineProps<{
     // Used for storing the collapse state.
     // Empty id means not to store collapse state.
-    id: {
-      default: "",
-      type: String,
-    },
-    title: {
-      required: true,
-      type: String,
-    },
-    itemList: {
-      required: true,
-      type: Object as PropType<BBOutlineItem[]>,
-    },
-    allowDelete: {
-      default: false,
-      type: Boolean,
-    },
-    allowCollapse: {
-      default: false,
-      type: Boolean,
-    },
-    level: {
-      default: 0,
-      type: Number,
-    },
-  },
-  emits: ["delete-index"],
-  setup(props) {
-    const store = useStore();
+    id?: string;
+    title: string;
+    itemList: BBOutlineItem[];
+    allowDelete?: boolean;
+    allowCollapse?: boolean;
+    level?: number;
+  }>(),
+  {
+    id: "",
+    allowDelete: false,
+    allowCollapse: false,
+    level: 0,
+  }
+);
 
-    const state = reactive<LocalState>({
-      hoverIndex: -1,
-      hoverTitle: false,
-      collapseState: true,
-    });
+defineEmits<{
+  (event: "delete-index", index: number): void;
+}>();
 
-    const collapseState = computed(() => {
-      if (props.id) {
-        return store.getters["uistate/collapseStateByKey"](props.id);
-      }
-      return state.collapseState;
-    });
+const store = useStore();
 
-    const toggleCollapse = () => {
-      if (props.allowCollapse) {
-        if (props.id) {
-          const newState = !collapseState.value;
-          store.dispatch("uistate/savecollapseStateByKey", {
-            key: props.id,
-            collapse: newState,
-          });
-        } else {
-          state.collapseState = !state.collapseState;
-        }
-      }
-    };
+const state = reactive<LocalState>({
+  hoverIndex: -1,
+  hoverTitle: false,
+  collapseState: true,
+});
 
-    const dynamicItemClass = () => {
-      let list = [];
-      if (props.level == 0) {
-        list.push("toplevel");
-      }
-      if (props.allowCollapse) {
-        list.push("collapsible");
-      }
-      return list.join(" ");
-    };
+const collapseState = computed(() => {
+  if (props.id) {
+    return store.getters["uistate/collapseStateByKey"](props.id);
+  }
+  return state.collapseState;
+});
 
-    return {
-      state,
-      collapseState,
-      dynamicItemClass,
-      toggleCollapse,
-    };
-  },
+const toggleCollapse = () => {
+  if (props.allowCollapse) {
+    if (props.id) {
+      const newState = !collapseState.value;
+      store.dispatch("uistate/savecollapseStateByKey", {
+        key: props.id,
+        collapse: newState,
+      });
+    } else {
+      state.collapseState = !state.collapseState;
+    }
+  }
+};
+
+const dynamicItemClass = () => {
+  let list = [];
+  if (props.level == 0) {
+    list.push("toplevel");
+  }
+  if (props.allowCollapse) {
+    list.push("collapsible");
+  }
+  return list.join(" ");
 };
 </script>

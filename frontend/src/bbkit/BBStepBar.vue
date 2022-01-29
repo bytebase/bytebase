@@ -48,15 +48,7 @@
           </template>
           <template v-else-if="step.status == `FAILED`">
             <span
-              class="
-                h-2.5
-                w-2.5
-                rounded-full
-                text-center
-                pb-6
-                font-medium
-                text-base
-              "
+              class="h-2.5 w-2.5 rounded-full text-center pb-6 font-medium text-base"
               aria-hidden="true"
               >!</span
             >
@@ -73,46 +65,38 @@
   </nav>
 </template>
 
-<script lang="ts">
-import { PropType } from "vue";
+<script lang="ts" setup>
+import { defineProps, defineEmits } from "vue";
 import { BBStep, BBStepStatus } from "./types";
 
-export default {
-  name: "BBStepBar",
-  props: {
-    stepList: {
-      required: true,
-      type: Array as PropType<BBStep[]>,
-    },
-  },
-  emits: ["click-step"],
-  setup() {
-    const stepClass = (status: BBStepStatus) => {
-      switch (status) {
-        case "PENDING":
-          return "bg-white border-2 border-control hover:border-control-hover";
-        case "PENDING_ACTIVE":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
-        case "PENDING_APPROVAL":
-          return "bg-white border-2 border-control hover:border-control-hover";
-        case "PENDING_APPROVAL_ACTIVE":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
-        case "RUNNING":
-          return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
-        case "DONE":
-          return "bg-success hover:bg-success-hover text-white";
-        case "FAILED":
-          return "bg-error hover:bg-error-hover text-white";
-        case "CANCELED":
-          return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
-        case "SKIPPED":
-          return "bg-white border-2 text-gray-300 border-gray-300 hover:text-gray-400 hover:border-gray-400";
-      }
-    };
+defineProps<{
+  stepList: BBStep[];
+}>();
 
-    return {
-      stepClass,
-    };
-  },
+defineEmits<{
+  (event: "click-step", step: BBStep): void;
+}>();
+
+const stepClass = (status: BBStepStatus) => {
+  switch (status) {
+    case "PENDING":
+      return "bg-white border-2 border-control hover:border-control-hover";
+    case "PENDING_ACTIVE":
+      return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+    case "PENDING_APPROVAL":
+      return "bg-white border-2 border-control hover:border-control-hover";
+    case "PENDING_APPROVAL_ACTIVE":
+      return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+    case "RUNNING":
+      return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
+    case "DONE":
+      return "bg-success hover:bg-success-hover text-white";
+    case "FAILED":
+      return "bg-error hover:bg-error-hover text-white";
+    case "CANCELED":
+      return "bg-white border-2 text-gray-400 border-gray-400 hover:text-gray-500 hover:border-gray-500";
+    case "SKIPPED":
+      return "bg-white border-2 text-gray-300 border-gray-300 hover:text-gray-400 hover:border-gray-400";
+  }
 };
 </script>
