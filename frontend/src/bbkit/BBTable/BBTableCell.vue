@@ -4,33 +4,29 @@
   </td>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
+<script lang="ts" setup>
+import { withDefaults, defineProps, computed } from "vue";
 
-export default defineComponent({
-  name: "BBTableCell",
-  props: {
-    leftPadding: {
-      type: Number,
-      default: 2,
-    },
-    rightPadding: {
-      type: Number,
-      default: 2,
-    },
-    compact: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup(props) {
-    const classNames: string[] = [];
-    if (!props.compact) {
-      classNames.push(`pl-${props.leftPadding}`);
-      classNames.push(`pr-${props.rightPadding}`);
-      classNames.push("py-2");
-    }
-    return { classNames };
-  },
+const props = withDefaults(
+  defineProps<{
+    leftPadding?: number;
+    rightPadding?: number;
+    compact?: boolean;
+  }>(),
+  {
+    leftPadding: 2,
+    rightPadding: 2,
+    compact: false,
+  }
+);
+
+const classNames = computed((): string[] => {
+  const classNames: string[] = [];
+  if (!props.compact) {
+    classNames.push(`pl-${props.leftPadding}`);
+    classNames.push(`pr-${props.rightPadding}`);
+    classNames.push("py-2");
+  }
+  return classNames;
 });
 </script>

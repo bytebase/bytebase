@@ -92,8 +92,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { PropType, reactive } from "vue";
+<script lang="ts" setup>
+import { reactive, defineProps, defineEmits, withDefaults } from "vue";
 import { BBStepTabItem } from "./types";
 
 interface LocalState {
@@ -101,55 +101,51 @@ interface LocalState {
   currentStep: number;
 }
 
-export default {
-  name: "BBStepTab",
-  props: {
-    stepItemList: {
-      required: true,
-      type: Object as PropType<BBStepTabItem[]>,
-    },
-    allowNext: {
-      default: true,
-      type: Boolean,
-    },
-    finishTitle: {
-      default: "bbkit.common.finish",
-      type: String,
-    },
-  },
-  // For try-change-step and try-finish listener, it needs to call the callback if it determines we can change the step.
-  emits: ["try-change-step", "try-finish", "cancel"],
-  setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      done: false,
-      currentStep: 0,
-    });
+withDefaults(
+  defineProps<{
+    stepItemList: BBStepTabItem[];
+    allowNext?: boolean;
+    finishTitle?: string;
+  }>(),
+  {
+    allowNext: true,
+    finishTitle: "bbkit.common.finish",
+  }
+);
 
-    const changeStep = (step: number) => {
-      const changeStepCallback = () => {
-        state.done = false;
-        state.currentStep = step;
-      };
-      emit("try-change-step", state.currentStep, step, changeStepCallback);
-    };
+// For try-change-step and try-finish listener, it needs to call the callback if it determines we can change the step.
+const emit = defineEmits<{
+  (
+    event: "try-change-step",
+    from: number,
+    to: number,
+    allowChangeCallback: () => void
+  ): void;
+  (event: "try-finish", finishCallback: () => void): void;
+  (event: "cancel"): void;
+}>();
 
-    const finish = () => {
-      const finishCallback = () => {
-        state.done = true;
-      };
-      emit("try-finish", finishCallback);
-    };
+const state = reactive<LocalState>({
+  done: false,
+  currentStep: 0,
+});
 
-    const cancel = () => {
-      emit("cancel");
-    };
+const changeStep = (step: number) => {
+  const changeStepCallback = () => {
+    state.done = false;
+    state.currentStep = step;
+  };
+  emit("try-change-step", state.currentStep, step, changeStepCallback);
+};
 
-    return {
-      state,
-      changeStep,
-      finish,
-      cancel,
-    };
-  },
+const finish = () => {
+  const finishCallback = () => {
+    state.done = true;
+  };
+  emit("try-finish", finishCallback);
+};
+
+const cancel = () => {
+  emit("cancel");
 };
 </script>
