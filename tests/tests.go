@@ -268,6 +268,9 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	if databaseFind.InstanceID != nil {
 		params["instance"] = fmt.Sprintf("%d", *databaseFind.InstanceID)
 	}
+	if databaseFind.ProjectID != nil {
+		params["project"] = fmt.Sprintf("%d", *databaseFind.ProjectID)
+	}
 	body, err := ctl.get("/database", params)
 	if err != nil {
 		return nil, err
@@ -326,6 +329,20 @@ func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, err
 	return issue, nil
 }
 
+// getIssue gets the issue with given ID.
+func (ctl *controller) getIssue(id int) (*api.Issue, error) {
+	body, err := ctl.get(fmt.Sprintf("/issue/%d", id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+	}
+	return issue, nil
+}
+
 // patchTaskStatus patches the status of a task in the pipeline stage.
 func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
@@ -345,8 +362,8 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-// approveIssue approves all tasks in the issues till the pipeline is done.
-func (ctl *controller) approveIssue(issue *api.Issue) error {
+// approveIssueNext approves the next pending approval task.
+func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
@@ -359,8 +376,60 @@ func (ctl *controller) approveIssue(issue *api.Issue) error {
 
 					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
 				}
+				return nil
 			}
 		}
 	}
 	return nil
+}
+
+// getAggregatedTaskStatus gets pipeline status.
+func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
+	running := false
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			switch task.Status {
+			case api.TaskPendingApproval:
+				return api.TaskPendingApproval, nil
+			case api.TaskFailed:
+				return api.TaskFailed, fmt.Errorf("pipeline task %v failed payload %q", task.ID, task.Payload)
+			case api.TaskCanceled:
+				return api.TaskCanceled, nil
+			case api.TaskRunning:
+				running = true
+			}
+		}
+	}
+	if running {
+		return api.TaskRunning, nil
+	}
+	return api.TaskDone, nil
+}
+
+// waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.getIssue(id)
+		if err != nil {
+			return api.TaskFailed, err
+		}
+
+		status, err := getAggregatedTaskStatus(issue)
+		if err != nil {
+			return status, err
+		}
+		switch status {
+		case api.TaskPendingApproval:
+			if err := ctl.approveIssueNext(issue); err != nil {
+				return api.TaskFailed, err
+			}
+		case api.TaskRunning:
+		default:
+			return status, err
+		}
+	}
+	return api.TaskDone, nil
 }
