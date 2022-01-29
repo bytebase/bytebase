@@ -15,6 +15,8 @@
       >
         <n-button
           class="w-full h-10 mb-2"
+          :class="isDemo ? 'tooltip-wrapper' : ''"
+          :disabled="isDemo"
           @click.prevent="
             () => {
               state.activeAuthProvider = authProvider;
@@ -30,13 +32,21 @@
               ? $t("auth.sign-in.gitlab")
               : authProvider.name
           }}</span>
+          <span v-if="isDemo" class="tooltip">
+            {{ $t("auth.sign-in.gitlab-demo") }}
+          </span>
         </n-button>
       </template>
 
       <template v-if="authProviderList.length == 0">
         <n-button class="w-full h-10 mb-2" disabled>
-          <img class="w-5 mr-1" :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath" />
-          <span class="text-center font-semibold align-middle">{{ $t("auth.sign-in.gitlab-oauth") }}</span>
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
+          />
+          <span class="text-center font-semibold align-middle">{{
+            $t("auth.sign-in.gitlab-oauth")
+          }}</span>
         </n-button>
       </template>
     </div>
@@ -118,12 +128,19 @@
 
     <div class="mt-6 relative">
       <div class="relative flex justify-center text-sm">
-        <span class="pl-2 bg-white text-control">
-          {{ $t("auth.sign-in.new-user") }}
-        </span>
-        <router-link to="/auth/signup" class="accent-link bg-white px-2">
-          {{ $t("common.sign-up") }}
-        </router-link>
+        <template v-if="isDemo">
+          <span class="pl-2 bg-white text-accent">
+            {{ $t("auth.sign-in.demo-note") }}
+          </span>
+        </template>
+        <template v-else>
+          <span class="pl-2 bg-white text-control">
+            {{ $t("auth.sign-in.new-user") }}
+          </span>
+          <router-link to="/auth/signup" class="accent-link bg-white px-2">
+            {{ $t("common.sign-up") }}
+          </router-link>
+        </template>
       </div>
     </div>
   </div>
@@ -168,10 +185,11 @@ export default {
       activeAuthProvider: EmptyAuthProvider,
     });
 
+    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+
     onMounted(() => {
-      const demo = store.getters["actuator/isDemo"]();
-      state.email = isDev() || demo ? "demo@example.com" : "";
-      state.password = isDev() || demo ? "1024" : "";
+      state.email = isDev() || isDemo.value ? "demo@example.com" : "";
+      state.password = isDev() || isDemo.value ? "1024" : "";
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
@@ -271,6 +289,7 @@ export default {
 
     return {
       state,
+      isDemo,
       allowSignin,
       authProviderList,
       AuthProviderConfig,

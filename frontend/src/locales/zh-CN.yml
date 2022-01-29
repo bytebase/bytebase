@@ -545,7 +545,9 @@ auth:
     title: 登录您的账号
     forget-password: 忘记密码?
     new-user: 第一次使用 Bytebase?
+    demo-note: 请使用 demo 账号登录
     gitlab: 通过 GitLab 登录
+    gitlab-demo: 演示模式不支持 GitLab 登录
     gitlab-oauth: 您可联系管理员开启 GitLab 登录
   password-forget:
     title: 忘记了您的密码？
