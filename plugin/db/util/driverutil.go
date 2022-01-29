@@ -401,8 +401,8 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	return resultSet, nil
 }
 
-// StandardQueryString is a helper function to implement Driver.QueryString() for MySQL.
-func StandardQueryString(p *db.QueryParams) string {
+// QueryString is a helper function to implement Driver.QueryString() for MySQL.
+func QueryString(p *db.QueryParams) string {
 	params := p.Names
 	if len(params) == 0 {
 		return ""

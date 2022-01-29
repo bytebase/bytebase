@@ -199,7 +199,7 @@ func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([
 
 // QueryString returns the query where clause string for the query parameters.
 func (*Driver) QueryString(p *db.QueryParams) string {
-	return util.StandardQueryString(p)
+	return util.QueryString(p)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
