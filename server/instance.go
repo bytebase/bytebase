@@ -122,6 +122,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
+			// Users can switch instance status from ARCHIVED to NORMAL.
+			// So we need to check the existed instance count with NORMAL status for quota limitation.
 			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
 				if err := s.instanceCountGuard(ctx); err != nil {
 					return err
@@ -538,6 +540,8 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceID)}
 }
 
+// instanceCountGuard is a feature guard for instance count.
+// We only count instances with NORMAL status cause users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
 	status := api.Normal
 	count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
