@@ -541,7 +541,7 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 }
 
 // instanceCountGuard is a feature guard for instance count.
-// We only count instances with NORMAL status cause users cannot make any operations for ARCHIVED one.
+// We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
 	status := api.Normal
 	count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
