@@ -27,7 +27,8 @@ var (
 		"system": true,
 	}
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver   = (*Driver)(nil)
+	_ util.Driver = (*Driver)(nil)
 )
 
 func init() {
@@ -432,6 +433,78 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (driver *Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+	const (
+		maxIDQuery         = "SELECT MAX(id)+1 FROM bytebase.migration_history"
+		insertHistoryQuery = `
+	INSERT INTO bytebase.migration_history (
+		id,
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration_ns,
+		issue_id,
+		payload
+	)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+	)
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(
+			&insertedID,
+		); err != nil {
+			return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	// Clickhouse sql driver doesn't support taking now() as prepared value.
+	now := time.Now().Unix()
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		insertedID,
+		m.Creator,
+		now,
+		m.Creator,
+		now,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		"PENDING",
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		0,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
 }
 
 // ExecuteMigration will execute the migration.

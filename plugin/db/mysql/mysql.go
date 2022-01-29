@@ -34,7 +34,8 @@ var (
 	baseTableType        = "BASE TABLE"
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver   = (*Driver)(nil)
+	_ util.Driver = (*Driver)(nil)
 )
 
 func init() {
@@ -592,6 +593,10 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (*Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+	return util.StandardRecordPendingMigrationHistory(ctx, l, tx, m, statement, sequence, prevSchema)
 }
 
 // ExecuteMigration will execute the migration.

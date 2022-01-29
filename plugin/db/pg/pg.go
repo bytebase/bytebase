@@ -185,7 +185,8 @@ var (
 	bytebaseDatabase           = "bytebase"
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver   = (*Driver)(nil)
+	_ util.Driver = (*Driver)(nil)
 )
 
 func init() {
@@ -665,6 +666,50 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (driver *Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+	const insertHistoryQuery = `
+	INSERT INTO migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + `"schema",` + `
+		schema_prev,
+		execution_duration_ns,
+		issue_id,
+		payload
+	)
+	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
+	RETURNING id
+`
+	tx.QueryRowContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	).Scan(&insertedID)
+	return insertedID, nil
 }
 
 // ExecuteMigration will execute the migration.

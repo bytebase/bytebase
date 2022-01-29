@@ -28,7 +28,8 @@ var (
 	sysAdminRole     = "SYSADMIN"
 	accountAdminRole = "ACCOUNTADMIN"
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver   = (*Driver)(nil)
+	_ util.Driver = (*Driver)(nil)
 )
 
 func init() {
@@ -584,6 +585,77 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (driver *Driver) RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+	const (
+		maxIDQuery         = "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
+		insertHistoryQuery = `
+		INSERT INTO bytebase.public.migration_history (
+			created_by,
+			created_ts,
+			updated_by,
+			updated_ts,
+			release_version,
+			namespace,
+			sequence,
+			engine,
+			type,
+			status,
+			version,
+			description,
+			statement,
+			schema,
+			schema_prev,
+			execution_duration_ns,
+			issue_id,
+			payload
+		)
+		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	)
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	var id sql.NullInt64
+	for rows.Next() {
+		if err := rows.Scan(
+			&id,
+		); err != nil {
+			return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return -1, util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	if id.Valid {
+		insertedID = id.Int64
+	} else {
+		insertedID = 1
+	}
+
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
 }
 
 // ExecuteMigration will execute the migration.

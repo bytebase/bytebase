@@ -117,9 +117,66 @@ type MigrationExecutionArgs struct {
 	TablePrefix                string
 }
 
+type Driver interface {
+	db.Driver
+	RecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error)
+}
+
+func StandardRecordPendingMigrationHistory(ctx context.Context, l *zap.Logger, tx *sql.Tx, m *db.MigrationInfo, statement string, sequence int, prevSchema string) (insertedID int64, err error) {
+	const insertHistoryQuery = `
+	INSERT INTO bytebase.migration_history (
+		created_by,
+		created_ts,
+		updated_by,
+		updated_ts,
+		release_version,
+		namespace,
+		sequence,
+		engine,
+		type,
+		status,
+		version,
+		description,
+		statement,
+		` + "`schema`," + `
+		schema_prev,
+		execution_duration_ns,
+		issue_id,
+		payload
+	)
+	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+`
+	res, err := tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+
+	if err != nil {
+		return -1, FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+
+	insertedID, err = res.LastInsertId()
+	if err != nil {
+		return -1, FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
+}
+
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -182,136 +239,9 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	insertedID := int64(-1)
-	if dbType == db.Postgres {
-		tx.QueryRowContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		).Scan(&insertedID)
-	} else if dbType == db.ClickHouse {
-		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
-		rows, err := tx.QueryContext(ctx, maxIDQuery)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			if err := rows.Scan(
-				&insertedID,
-			); err != nil {
-				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		// Clickhouse sql driver doesn't support taking now() as prepared value.
-		now := time.Now().Unix()
-		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
-			insertedID,
-			m.Creator,
-			now,
-			m.Creator,
-			now,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			"PENDING",
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			0,
-			m.IssueID,
-			m.Payload,
-		)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-	} else if dbType == db.Snowflake {
-		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
-		rows, err := tx.QueryContext(ctx, maxIDQuery)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		defer rows.Close()
-		var id sql.NullInt64
-		for rows.Next() {
-			if err := rows.Scan(
-				&id,
-			); err != nil {
-				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		if id.Valid {
-			insertedID = id.Int64
-		} else {
-			insertedID = 1
-		}
-
-		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-	} else {
-		res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		)
-
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-
-		insertedID, err = res.LastInsertId()
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
+	insertedID, err := driver.RecordPendingMigrationHistory(ctx, l, tx, m, statement, sequence, prevSchemaBuf.String())
+	if err != nil {
+		return -1, "", err
 	}
 
 	if err := tx.Commit(); err != nil {
