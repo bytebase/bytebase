@@ -40,47 +40,34 @@
   </BBAlert>
 </template>
 
-<script lang="ts">
-import { PropType, reactive } from "vue";
+<script lang="ts" setup>
+import { reactive, defineProps, withDefaults, defineEmits } from "vue";
 import { BBButtonConfirmStyle } from "./types";
 
-export default {
-  name: "BBButtonConfirm",
-  props: {
-    style: {
-      default: "DELETE",
-      type: String as PropType<BBButtonConfirmStyle>,
-    },
-    buttonText: {
-      default: "",
-      type: String,
-    },
-    requireConfirm: {
-      default: false,
-      type: Boolean,
-    },
-    okText: {
-      default: "Delete",
-      type: String,
-    },
-    confirmTitle: {
-      default: "Are you sure to delete?",
-      type: String,
-    },
-    confirmDescription: {
-      default: "You cannot undo this action",
-      type: String,
-    },
-  },
-  emits: ["confirm"],
-  setup() {
-    const state = reactive({
-      showModal: false,
-    });
+withDefaults(
+  defineProps<{
+    style?: BBButtonConfirmStyle;
+    buttonText?: string;
+    requireConfirm?: boolean;
+    okText?: string;
+    confirmTitle?: string;
+    confirmDescription?: string;
+  }>(),
+  {
+    style: "DELETE",
+    buttonText: "",
+    requireConfirm: false,
+    okText: "Delete",
+    confirmTitle: "Are you sure to delete?",
+    confirmDescription: "You cannot undo this action",
+  }
+);
 
-    return {
-      state,
-    };
-  },
-};
+defineEmits<{
+  (event: "confirm"): void;
+}>();
+
+const state = reactive({
+  showModal: false,
+});
 </script>

@@ -4,8 +4,6 @@ import {
   VCS,
   VCSCreate,
   VCSState,
-  Principal,
-  ResourceIdentifier,
   ResourceObject,
   unknown,
   VCSPatch,
@@ -15,13 +13,17 @@ import {
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
-  const creatorId = (vcs.relationships!.creator.data as ResourceIdentifier).id;
-  const updaterId = (vcs.relationships!.updater.data as ResourceIdentifier).id;
   return {
     ...(vcs.attributes as Omit<VCS, "id" | "creator" | "updater">),
     id: parseInt(vcs.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      vcs.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      vcs.relationships!.updater.data,
+      includedList
+    ),
   };
 }
 

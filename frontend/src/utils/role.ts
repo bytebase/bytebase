@@ -9,12 +9,12 @@ export function registerStoreWithRoleUtil(theStore: Store<any>) {
 
 // Returns true if admin feature is NOT supported or the principal is OWNER
 export function isOwner(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bb.feature.rbac") || role == "OWNER";
+  return !store.getters["subscription/feature"]("bb.feature.rbac") || role == "OWNER";
 }
 
 // Returns true if admin feature is NOT supported or the principal is DBA
 export function isDBA(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bb.feature.rbac") || role == "DBA";
+  return !store.getters["subscription/feature"]("bb.feature.rbac") || role == "DBA";
 }
 
 export function isDBAOrOwner(role: RoleType): boolean {
@@ -23,7 +23,7 @@ export function isDBAOrOwner(role: RoleType): boolean {
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
 export function isDeveloper(role: RoleType): boolean {
-  return !store.getters["plan/feature"]("bb.feature.rbac") || role == "DEVELOPER";
+  return !store.getters["subscription/feature"]("bb.feature.rbac") || role == "DEVELOPER";
 }
 
 export function roleName(role: RoleType): string {
@@ -39,11 +39,11 @@ export function roleName(role: RoleType): string {
 
 // Project Role
 export function isProjectOwner(role: ProjectRoleType): boolean {
-  return !store.getters["plan/feature"]("bb.feature.rbac") || role == "OWNER";
+  return !store.getters["subscription/feature"]("bb.feature.rbac") || role == "OWNER";
 }
 
 export function isProjectDeveloper(role: ProjectRoleType): boolean {
-  return !store.getters["plan/feature"]("bb.feature.rbac") || role == "DEVELOPER";
+  return !store.getters["subscription/feature"]("bb.feature.rbac") || role == "DEVELOPER";
 }
 
 export function projectRoleName(role: ProjectRoleType): string {

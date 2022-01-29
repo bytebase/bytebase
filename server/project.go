@@ -488,6 +488,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set deployment configuration").SetInternal(err)
 		}
+		if err := s.composeDeploymentConfigRelationship(ctx, deploymentConfig); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose deployment configuration relationship").SetInternal(err)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
@@ -521,6 +524,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// We should return empty deployment config when it doesn't exist.
 		if deploymentConfig == nil {
 			deploymentConfig = &api.DeploymentConfig{}
+		} else {
+			if err := s.composeDeploymentConfigRelationship(ctx, deploymentConfig); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose deployment configuration relationship").SetInternal(err)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -568,6 +575,23 @@ func (s *Server) composeProjectRelationship(ctx context.Context, project *api.Pr
 		return err
 	}
 
+	return nil
+}
+
+func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploymentConfig *api.DeploymentConfig) error {
+	var err error
+	deploymentConfig.Creator, err = s.composePrincipalByID(ctx, deploymentConfig.CreatorID)
+	if err != nil {
+		return err
+	}
+	deploymentConfig.Updater, err = s.composePrincipalByID(ctx, deploymentConfig.UpdaterID)
+	if err != nil {
+		return err
+	}
+	deploymentConfig.Project, err = s.composeProjectByID(ctx, deploymentConfig.ProjectID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

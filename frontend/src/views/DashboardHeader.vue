@@ -215,7 +215,9 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const currentPlan = computed(() => store.getters["plan/currentPlan"]());
+    const currentPlan = computed(() =>
+      store.getters["subscription/currentPlan"]()
+    );
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -268,16 +270,18 @@ export default defineComponent({
       });
     };
 
+    // TODO: Do we still need this?
+    // Maybe we need to change the UX, redirect user to subscription page?
     const switchToFree = () => {
-      store.dispatch("plan/changePlan", PlanType.FREE);
+      store.dispatch("subscription/changePlan", PlanType.FREE);
     };
 
     const switchToTeam = () => {
-      store.dispatch("plan/changePlan", PlanType.TEAM);
+      store.dispatch("subscription/changePlan", PlanType.TEAM);
     };
 
     const switchToEnterprise = () => {
-      store.dispatch("plan/changePlan", PlanType.ENTERPRISE);
+      store.dispatch("subscription/changePlan", PlanType.ENTERPRISE);
     };
 
     const kbarActions = computed(() => [

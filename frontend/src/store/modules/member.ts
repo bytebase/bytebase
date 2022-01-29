@@ -10,8 +10,6 @@ import {
   unknown,
   empty,
   EMPTY_ID,
-  Principal,
-  ResourceIdentifier,
   RoleType,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -21,16 +19,10 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): Member {
-  const creatorId = (member.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (member.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  const principalId = (member.relationships!.updater.data as ResourceIdentifier)
-    .id;
   const principal = getPrincipalFromIncludedList(
-    principalId,
+    member.relationships!.principal.data,
     includedList
-  ) as Principal;
+  );
   principal.role = member.attributes.role as RoleType;
 
   return {
@@ -39,8 +31,14 @@ function convert(
       "id" | "principal" | "creator" | "updater"
     >),
     id: parseInt(member.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
+    creator: getPrincipalFromIncludedList(
+      member.relationships!.creator.data,
+      includedList
+    ),
+    updater: getPrincipalFromIncludedList(
+      member.relationships!.updater.data,
+      includedList
+    ),
     principal: principal,
   };
 }

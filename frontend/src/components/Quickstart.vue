@@ -112,7 +112,7 @@ export default defineComponent({
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
-        allowDeveloper: !store.getters["plan/feature"]("bb.feature.dba-workflow"),
+        allowDeveloper: !store.getters["subscription/feature"]("bb.feature.dba-workflow"),
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.visit");
         }),

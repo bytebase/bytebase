@@ -298,10 +298,11 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-
-	issue.SubscriberIDList = []int{}
-	for _, subscriber := range list {
-		issue.SubscriberIDList = append(issue.SubscriberIDList, subscriber.SubscriberID)
+	for _, issueSubscriber := range list {
+		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
+		}
+		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
 	}
 
 	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
@@ -358,6 +359,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			}
 
 			for _, taskCreate := range stageCreate.TaskList {
+				if taskCreate.EarliestAllowedTs != 0 && !s.feature(api.FeatureTaskScheduleTime) {
+					return nil, fmt.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
+				}
 				taskCreate.CreatorID = creatorID
 				taskCreate.PipelineID = createdPipeline.ID
 				taskCreate.StageID = createdStage.ID
@@ -417,19 +421,18 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	var issue *api.Issue
 	if issueCreate.ValidateOnly {
 		issue = &api.Issue{
-			CreatorID:        creatorID,
-			CreatedTs:        time.Now().Unix(),
-			UpdaterID:        creatorID,
-			UpdatedTs:        time.Now().Unix(),
-			ProjectID:        issueCreate.ProjectID,
-			Name:             issueCreate.Name,
-			Status:           api.IssueOpen,
-			Type:             issueCreate.Type,
-			Description:      issueCreate.Description,
-			AssigneeID:       issueCreate.AssigneeID,
-			SubscriberIDList: issueCreate.SubscriberIDList,
-			PipelineID:       pipeline.ID,
-			Pipeline:         pipeline,
+			CreatorID:   creatorID,
+			CreatedTs:   time.Now().Unix(),
+			UpdaterID:   creatorID,
+			UpdatedTs:   time.Now().Unix(),
+			ProjectID:   issueCreate.ProjectID,
+			Name:        issueCreate.Name,
+			Status:      api.IssueOpen,
+			Type:        issueCreate.Type,
+			Description: issueCreate.Description,
+			AssigneeID:  issueCreate.AssigneeID,
+			PipelineID:  pipeline.ID,
+			Pipeline:    pipeline,
 		}
 	} else {
 		issueCreate.CreatorID = creatorID
@@ -439,6 +442,17 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			return nil, fmt.Errorf("failed to create issue. Error %w", err)
 		}
 		issue = issueCreated
+		// Create issue subscribers.
+		for _, subscriberID := range issueCreate.SubscriberIDList {
+			subscriberCreate := &api.IssueSubscriberCreate{
+				IssueID:      issue.ID,
+				SubscriberID: subscriberID,
+			}
+			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
+			}
+		}
 	}
 	if err := s.composeIssueRelationship(ctx, issue); err != nil {
 		return nil, err
@@ -447,6 +461,15 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	// Return early if this is a validate only request.
 	if issueCreate.ValidateOnly {
 		return issue, nil
+	}
+
+	task, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+	}
+	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
+	if err := s.composeTaskRelationship(ctx, task); err != nil {
+		return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -507,22 +530,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
 		}
 	}
-
-	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
-		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
-	}
-
-	for _, subscriberID := range issueCreate.SubscriberIDList {
-		subscriberCreate := &api.IssueSubscriberCreate{
-			IssueID:      issue.ID,
-			SubscriberID: subscriberID,
-		}
-		_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-		}
-	}
-
 	return issue, nil
 }
 
@@ -638,6 +645,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 			// Snowflake needs to use upper case of DatabaseName.
 			m.DatabaseName = strings.ToUpper(m.DatabaseName)
+		case db.SQLite:
+			// no-op.
 		default:
 			if m.CharacterSet == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
@@ -756,6 +765,13 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
+		}
+		if !s.feature(api.FeatureTaskScheduleTime) {
+			for _, detail := range m.UpdateSchemaDetailList {
+				if detail.EarliestAllowedTs != 0 {
+					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+				}
+			}
 		}
 		pc := &api.PipelineCreate{}
 		switch m.MigrationType {
@@ -984,6 +1000,9 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\nUSE DATABASE %s;\n%s", stmt, databaseName, schema)
 		}
+	case db.SQLite:
+		// This is a fake CREATA DATABASE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
+		stmt = fmt.Sprintf("CREATE DATABASE '%s';", databaseName)
 	}
 
 	return databaseName, stmt
@@ -1093,15 +1112,15 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 	}
 
-	for _, subscriberID := range issue.SubscriberIDList {
-		if subscriberID != api.SystemBotID && subscriberID != issue.CreatorID && subscriberID != issue.AssigneeID {
+	for _, subscriber := range issue.SubscriberList {
+		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
 			inboxCreate := &api.InboxCreate{
-				ReceiverID: subscriberID,
+				ReceiverID: subscriber.ID,
 				ActivityID: activityID,
 			}
 			_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
 			if err != nil {
-				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriberID, err)
+				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriber.ID, err)
 			}
 		}
 	}

@@ -51,27 +51,38 @@ function convert(
       pipeline = rootGetters["pipeline/convert"](item, includedList);
     }
   }
-  const creatorId = (issue.relationships!.creator.data as ResourceIdentifier)
-    .id;
-  const updaterId = (issue.relationships!.updater.data as ResourceIdentifier)
-    .id;
-  const assigneeId = (issue.relationships!.assignee.data as ResourceIdentifier)
-    .id;
+
+  const subscriberList = [] as Principal[];
+  if (issue.relationships!.subscriberList.data) {
+    for (const subscriberData of issue.relationships!.subscriberList
+      .data as ResourceIdentifier[]) {
+      subscriberList.push(
+        getPrincipalFromIncludedList(subscriberData, includedList)
+      );
+    }
+  }
 
   return {
     ...(issue.attributes as Omit<
       Issue,
-      "id" | "project" | "creator" | "updater" | "assignee"
+      "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
     >),
     id: parseInt(issue.id),
-    creator: getPrincipalFromIncludedList(creatorId, includedList) as Principal,
-    updater: getPrincipalFromIncludedList(updaterId, includedList) as Principal,
-    assignee: getPrincipalFromIncludedList(
-      assigneeId,
+    creator: getPrincipalFromIncludedList(
+      issue.relationships!.creator.data,
       includedList
-    ) as Principal,
+    ),
+    updater: getPrincipalFromIncludedList(
+      issue.relationships!.updater.data,
+      includedList
+    ),
+    assignee: getPrincipalFromIncludedList(
+      issue.relationships!.assignee.data,
+      includedList
+    ),
     project,
     pipeline,
+    subscriberList: subscriberList,
   };
 }
 

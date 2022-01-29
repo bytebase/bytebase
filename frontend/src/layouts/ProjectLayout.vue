@@ -27,14 +27,13 @@
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"
-      :selected-tab="state.selectedIndex"
       :allow-edit="allowEdit"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, reactive, watch } from "vue";
+import { computed, defineComponent, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
@@ -42,9 +41,6 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project } from "../types";
-
-const OVERVIEW_TAB = 0;
-const WEBHOOK_TAB = 4;
 
 type ProjectTabItem = {
   name: string;
@@ -83,30 +79,52 @@ export default defineComponent({
       );
     });
 
+    const isTenantProject = computed((): boolean => {
+      return project.value.tenantMode === "TENANT";
+    });
+
     const projectTabItemList = computed((): ProjectTabItem[] => {
-      const list: ProjectTabItem[] = [
+      const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
-        { name: t("common.migration-history"), hash: "migration-history" },
+
+        isTenantProject.value
+          ? null // Hide "Migration History" tab for tenant projects
+          : { name: t("common.migration-history"), hash: "migration-history" },
+
         { name: t("common.activities"), hash: "activity" },
         { name: t("common.version-control"), hash: "version-control" },
         { name: t("common.webhooks"), hash: "webhook" },
+
+        isTenantProject.value
+          ? {
+              name: t("common.deployment-config"),
+              hash: "deployment-config",
+            }
+          : null, // Show "Deployment Config" only for tenant projects
+
         { name: t("common.settings"), hash: "setting" },
       ];
-      // TODO: we can't put DeploymentConfig before Settings for now
-      // because BBTabFilter works on numeric index
-      // making indices dynamic needs a refactor
-      if (project.value.tenantMode === "TENANT") {
-        list.push({
-          name: t("common.deployment-config"),
-          hash: "deployment-config",
-        });
-      }
+      const filteredList = list.filter(
+        (item) => item !== null
+      ) as ProjectTabItem[];
 
-      return list;
+      return filteredList;
     });
 
+    const findTabIndexByHash = (hash: string) => {
+      hash = hash.replace(/^#?/g, "");
+      const index = projectTabItemList.value.findIndex(
+        (item) => item.hash === hash
+      );
+      if (index >= 0) {
+        return index;
+      }
+      // otherwise fallback to the first tab
+      return 0;
+    };
+
     const state = reactive<LocalState>({
-      selectedIndex: OVERVIEW_TAB,
+      selectedIndex: findTabIndexByHash(router.currentRoute.value.hash),
     });
 
     // Only the project owner can edit the project general info and configure version control.
@@ -138,38 +156,17 @@ export default defineComponent({
     });
 
     const selectProjectTabOnHash = () => {
-      if (router.currentRoute.value.name == "workspace.project.detail") {
-        if (router.currentRoute.value.hash) {
-          for (let i = 0; i < projectTabItemList.value.length; i++) {
-            if (
-              projectTabItemList.value[i].hash ==
-              router.currentRoute.value.hash.slice(1)
-            ) {
-              selectTab(i);
-              break;
-            }
-          }
-        } else {
-          selectTab(OVERVIEW_TAB);
-        }
+      const { name, hash } = router.currentRoute.value;
+      if (name == "workspace.project.detail") {
+        const index = findTabIndexByHash(hash);
+        selectTab(index);
       } else if (
-        router.currentRoute.value.name == "workspace.project.hook.create" ||
-        router.currentRoute.value.name == "workspace.project.hook.detail"
+        name == "workspace.project.hook.create" ||
+        name == "workspace.project.hook.detail"
       ) {
-        state.selectedIndex = WEBHOOK_TAB;
+        state.selectedIndex = findTabIndexByHash("webhook");
       }
     };
-
-    onMounted(() => {
-      selectProjectTabOnHash();
-    });
-
-    watch(
-      () => router.currentRoute.value.hash,
-      () => {
-        selectProjectTabOnHash();
-      }
-    );
 
     const selectTab = (index: number) => {
       state.selectedIndex = index;
@@ -178,6 +175,16 @@ export default defineComponent({
         hash: "#" + projectTabItemList.value[index].hash,
       });
     };
+
+    watch(
+      () => router.currentRoute.value.hash,
+      () => {
+        selectProjectTabOnHash();
+      },
+      {
+        immediate: true,
+      }
+    );
 
     return {
       state,

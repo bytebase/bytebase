@@ -3,15 +3,7 @@
     <div class="flex items-center h-5">
       <input
         type="checkbox"
-        class="
-          h-4
-          w-4
-          text-accent
-          rounded
-          disabled:cursor-not-allowed
-          border-control-border
-          focus:ring-accent
-        "
+        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
         :disabled="disabled"
         :checked="value"
         @input="
@@ -39,39 +31,33 @@
   </div>
 </template>
 
-<script lang="ts">
-import { ref, watch } from "vue";
+<script lang="ts" setup>
+import { ref, watch, defineProps, withDefaults, defineEmits } from "vue";
 
-export default {
-  name: "BBCheckbox",
-  props: {
-    title: {
-      default: "",
-      type: String,
-    },
-    label: {
-      default: "",
-      type: String,
-    },
-    value: {
-      default: true,
-      type: Boolean,
-    },
-    disabled: {
-      default: false,
-      type: Boolean,
-    },
-  },
-  emits: ["toggle"],
-  setup(props) {
-    const on = ref(props.value);
-    watch(
-      () => props.value,
-      (cur) => {
-        on.value = cur;
-      }
-    );
-    return { on };
-  },
-};
+const props = withDefaults(
+  defineProps<{
+    title?: string;
+    label?: string;
+    value?: boolean;
+    disabled?: boolean;
+  }>(),
+  {
+    title: "",
+    label: "",
+    value: true,
+    disabled: false,
+  }
+);
+
+defineEmits<{
+  (event: "toggle", on: boolean): void;
+}>();
+
+const on = ref(props.value);
+watch(
+  () => props.value,
+  (cur) => {
+    on.value = cur;
+  }
+);
 </script>

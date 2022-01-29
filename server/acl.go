@@ -32,6 +32,11 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		}
 
 		method := c.Request().Method
+		// Skip GET /subscription request
+		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
+			return next(c)
+		}
+
 		if readonly && method != "GET" {
 			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
 		}

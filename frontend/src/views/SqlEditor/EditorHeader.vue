@@ -116,11 +116,11 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const currentPlan = computed(() => store.getters["plan/currentPlan"]());
+    const currentPlan = computed(() => store.getters["subscription/currentPlan"]());
 
     const showDBAItem = computed((): boolean => {
       return (
-        !store.getters["plan/feature"]("bb.feature.dba-workflow") ||
+        !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
         isDBAOrOwner(currentUser.value.role)
       );
     });

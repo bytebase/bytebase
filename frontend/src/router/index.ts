@@ -93,7 +93,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: () => {
                 const ownerList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -113,7 +113,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.user.manage",
                   ];
                 const dbaList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -131,7 +131,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.project.create",
                   ];
                 const developerList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -568,7 +568,7 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.database"),
               quickActionListByRole: () => {
                 const ownerList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -582,7 +582,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.database.create",
                   ];
                 const dbaList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -596,7 +596,7 @@ const routes: Array<RouteRecordRaw> = [
                     "quickaction.bb.database.create",
                   ];
                 const developerList: QuickActionType[] = store.getters[
-                  "plan/feature"
+                  "subscription/feature"
                 ]("bb.feature.dba-workflow")
                   ? [
                     "quickaction.bb.database.schema.update",
@@ -870,7 +870,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !store.getters["plan/feature"]("bb.feature.dba-workflow") ||
+      !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
       isDBAOrOwner(currentUser.role)
     ) {
       next();
@@ -885,7 +885,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
-      !store.getters["plan/feature"]("bb.feature.data-source") ||
+      !store.getters["subscription/feature"]("bb.feature.data-source") ||
       !isDBAOrOwner(currentUser.role)
     ) {
       next({
