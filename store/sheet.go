@@ -172,6 +172,11 @@ func createSheet(ctx context.Context, tx *Tx, create *api.SheetCreate) (*api.She
 		return nil, FormatError(err)
 	}
 
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		sheet.DatabaseID = &value
+	}
+
 	return &sheet, nil
 }
 
@@ -220,6 +225,11 @@ func patchSheet(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*api.Sheet,
 			&sheet.Visibility,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+
+		if databaseID.Valid {
+			value := int(databaseID.Int32)
+			sheet.DatabaseID = &value
 		}
 
 		return &sheet, nil
@@ -297,6 +307,11 @@ func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.S
 			&sheet.Visibility,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+
+		if databaseID.Valid {
+			value := int(databaseID.Int32)
+			sheet.DatabaseID = &value
 		}
 
 		list = append(list, &sheet)

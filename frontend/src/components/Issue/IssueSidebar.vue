@@ -94,8 +94,8 @@
           />
         </div>
       </template>
-      
-    <div>
+
+      <div>
         <h2 class="textlabel flex items-center">
           <span class="mr-1">{{ $t("common.when") }}</span>
           <div class="tooltip-wrapper">
@@ -122,15 +122,7 @@
           class="w-full"
           type="datetime"
           clearable
-          @update:value="
-            (newTimestampMiliSec) => {
-              // n-date-picker would pass timestamp in milisecond.
-              // We divide it by 1000 to get timestamp in second
-              const newTs = newTimestampMiliSec / 1000;
-              state.earliestAllowedTs = newTs;
-              $emit('update-earliest-allowed-time', newTs);
-            }
-          "
+          @update:value="updateEarliestAllowedTs"
         />
         <span v-else class="textfield col-span-2">
           {{
@@ -256,6 +248,11 @@
         (subscriberId) => $emit('remove-subscriber-id', subscriberId)
       "
     />
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      :feature="'bb.feature.task-schedule-time'"
+      @cancel="state.showFeatureModal = false"
+    />
   </aside>
 </template>
 
@@ -272,6 +269,7 @@ import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import { DatabaseLabels } from "../DatabaseLabels";
+import FeatureModal from "../FeatureModal.vue";
 
 import { InputField } from "../../plugins";
 import {
@@ -298,6 +296,7 @@ dayjs.extend(isSameOrAfter);
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
   earliestAllowedTs: number | null;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -312,6 +311,7 @@ export default defineComponent({
     IssueStatusIcon,
     IssueSubscriberPanel,
     InstanceEngineIcon,
+    FeatureModal,
   },
   props: {
     issue: {
@@ -363,6 +363,7 @@ export default defineComponent({
     const now = new Date();
     const state = reactive<LocalState>({
       earliestAllowedTs: props.task.earliestAllowedTs,
+      showFeatureModal: false,
     });
 
     watch(
@@ -526,6 +527,21 @@ export default defineComponent({
 
     const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
+    const updateEarliestAllowedTs = (newTimestampMiliSec: number) => {
+      if (
+        !store.getters["subscription/feature"]("bb.feature.task-schedule-time")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
+
+      // n-date-picker would pass timestamp in milisecond.
+      // We divide it by 1000 to get timestamp in second
+      const newTs = newTimestampMiliSec / 1000;
+      state.earliestAllowedTs = newTs;
+      emit("update-earliest-allowed-time", newTs);
+    };
+
     return {
       EMPTY_ID,
       state,
@@ -545,6 +561,7 @@ export default defineComponent({
       showDatabaseCreationLabel,
       clickDatabase,
       isDayPassed,
+      updateEarliestAllowedTs,
     };
   },
 });
