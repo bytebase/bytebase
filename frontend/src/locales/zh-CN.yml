@@ -1015,8 +1015,8 @@ subscription:
     bb-feature-instance-count:
       title: 实例数量限制
       desc: 您已达最大实例数量限制，请付费升级来获取更多实例额度。
-      remaining: 仅剩 {count} 个实例额度。
-      runoutof: 已无剩余实例额度。
+      remaining: 当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。
+      runoutof: 已用尽全部 {total} 个实例额度。
       upgrade: '{upgrade}来获取更多实例额度。'
     bb-feature-multi-tenancy:
       title: 多租户

@@ -1146,8 +1146,8 @@ subscription:
     bb-feature-instance-count:
       title: Instance count limit
       desc: You have reach the maximum instance count limit. Please upgrade to get more instance quota.
-      remaining: You only have {count} instance remaining quota.
-      runoutof: You have run out of your instance quota.
+      remaining: Your total instance quota is {total}, only have {count} instance remained.
+      runoutof: Your have run out of your {total} instance quota.
       upgrade: '{upgrade} to get more instance quota.'
     bb-feature-multi-tenancy:
       title: Multi-tenancy
