@@ -25,7 +25,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
-		if projectCreate.TenantMode == api.TenantModeTenant && s.feature(api.FeatureMultiTenancy) {
+		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)

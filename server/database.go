@@ -42,7 +42,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			err := fmt.Errorf("Project ID not found %v", databaseCreate.ProjectID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		if project.TenantMode == api.TenantModeTenant && s.feature(api.FeatureMultiTenancy) {
+		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		// Pre-validate database labels.

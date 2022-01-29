@@ -101,6 +101,11 @@
       </button>
     </div>
   </form>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -115,6 +120,7 @@ import { useEventListener } from "@vueuse/core";
 
 interface LocalState {
   project: ProjectCreate;
+  showFeatureModal: boolean;
   enableDbNameTemplate: boolean;
 }
 
@@ -134,6 +140,7 @@ export default defineComponent({
         tenantMode: "DISABLED",
         dbNameTemplate: "",
       },
+      showFeatureModal: false,
       enableDbNameTemplate: false,
     });
 
@@ -171,6 +178,13 @@ export default defineComponent({
       ) {
         // clear up unnecessary fields
         state.project.dbNameTemplate = "";
+      }
+      if (
+        state.project.tenantMode == "TENANT" &&
+        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+      ) {
+        state.showFeatureModal = true;
+        return;
       }
 
       store
