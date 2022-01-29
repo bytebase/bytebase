@@ -546,6 +546,11 @@ func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([
 	return util.Query(ctx, driver.l, driver.db, statement, limit)
 }
 
+// QueryString returns the query where clause string for the query parameters.
+func (*Driver) QueryString(p *db.QueryParams) string {
+	return util.StandardQueryString(p)
+}
+
 // NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	const query = `
@@ -666,7 +671,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.migration_history `
-	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, driver, find, baseQuery)
 }
 
 // Dump and restore

@@ -375,6 +375,9 @@ type Driver interface {
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
 
+	// QueryString returns the query where clause string for the query parameters.
+	QueryString(*QueryParams) string
+
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
 	NeedsSetupMigration(ctx context.Context) (bool, error)
@@ -433,59 +436,12 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 
 // QueryParams is a list of query parameters for prepared query.
 type QueryParams struct {
-	DatabaseType Type
-	Names        []string
-	Params       []interface{}
+	Names  []string
+	Params []interface{}
 }
 
 // AddParam adds a parameter to QueryParams.
 func (p *QueryParams) AddParam(name string, param interface{}) {
 	p.Names = append(p.Names, name)
 	p.Params = append(p.Params, param)
-}
-
-// QueryString returns the query where clause string for the query parameters.
-func (p *QueryParams) QueryString() string {
-	mysqlQuery := func(params []string) string {
-		if len(params) == 0 {
-			return ""
-		}
-		for i, param := range params {
-			if !strings.Contains(param, "?") {
-				params[i] = param + " = ?"
-			}
-		}
-		return fmt.Sprintf("WHERE %s ", strings.Join(params, " AND "))
-	}
-	pgQuery := func(params []string) string {
-		if len(params) == 0 {
-			return ""
-		}
-		parts := make([]string, 0, len(params))
-		for i, param := range params {
-			idx := fmt.Sprintf("$%d", i+1)
-			if strings.Contains(param, "?") {
-				param = strings.ReplaceAll(param, "?", idx)
-			} else {
-				param = param + "=" + idx
-			}
-			parts = append(parts, param)
-		}
-		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
-	}
-	switch p.DatabaseType {
-	case MySQL:
-		return mysqlQuery(p.Names)
-	case TiDB:
-		return mysqlQuery(p.Names)
-	case ClickHouse:
-		return mysqlQuery(p.Names)
-	case Snowflake:
-		return mysqlQuery(p.Names)
-	case Postgres:
-		return pgQuery(p.Names)
-	case SQLite:
-		return mysqlQuery(p.Names)
-	}
-	return ""
 }

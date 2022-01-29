@@ -551,6 +551,25 @@ func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([
 	return util.Query(ctx, driver.l, driver.db, statement, limit)
 }
 
+// QueryString returns the query where clause string for the query parameters.
+func (*Driver) QueryString(p *db.QueryParams) string {
+	params := p.Names
+	if len(params) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(params))
+	for i, param := range params {
+		idx := fmt.Sprintf("$%d", i+1)
+		if strings.Contains(param, "?") {
+			param = strings.ReplaceAll(param, "?", idx)
+		} else {
+			param = param + "=" + idx
+		}
+		parts = append(parts, param)
+	}
+	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+}
+
 // NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	exist, err := driver.hasBytebaseDatabase(ctx)
@@ -726,7 +745,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM migration_history `
-	return util.FindMigrationHistoryList(ctx, db.Postgres, driver, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, driver, find, baseQuery)
 }
 
 // Dump and restore

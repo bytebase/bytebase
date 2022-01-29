@@ -140,7 +140,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	duplicate, err := checkDuplicateVersion(ctx, driver, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
 		return -1, "", err
 	}
@@ -149,7 +149,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	version, err := checkOutofOrderVersion(ctx, driver, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
 	if err != nil {
 		return -1, "", err
 	}
@@ -161,7 +161,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, args.TablePrefix)
+		hasBaseline, err := findBaseline(ctx, driver, tx, m.Namespace, args.TablePrefix)
 		if err != nil {
 			return -1, "", err
 		}
@@ -173,7 +173,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// VCS based SQL migration requires existing baselining
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
-	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, args.TablePrefix)
+	sequence, err := findNextSequence(ctx, driver, tx, m.Namespace, requireBaseline, args.TablePrefix)
 	if err != nil {
 		return -1, "", err
 	}
@@ -471,14 +471,28 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	return resultSet, nil
 }
 
-func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
+// StandardQueryString is a helper function to implement Driver.QueryString() for MySQL.
+func StandardQueryString(p *db.QueryParams) string {
+	params := p.Names
+	if len(params) == 0 {
+		return ""
+	}
+	for i, param := range params {
+		if !strings.Contains(param, "?") {
+			params[i] = param + " = ?"
+		}
+	}
+	return fmt.Sprintf("WHERE %s ", strings.Join(params, " AND "))
+}
+
+func findBaseline(ctx context.Context, driver db.Driver, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
+	var queryParams db.QueryParams
 	queryParams.AddParam("namespace", namespace)
 	queryParams.AddParam("type", "BASELINE")
 	query := `
 		SELECT 1 FROM ` +
 		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
+		driver.QueryString(&queryParams)
 	row, err := tx.QueryContext(ctx, query,
 		queryParams.Params...,
 	)
@@ -495,15 +509,15 @@ func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, ta
 	return true, nil
 }
 
-func checkDuplicateVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (bool, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
+func checkDuplicateVersion(ctx context.Context, driver db.Driver, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (bool, error) {
+	var queryParams db.QueryParams
 	queryParams.AddParam("namespace", namespace)
 	queryParams.AddParam("engine", engine.String())
 	queryParams.AddParam("version", version)
 	query := `
 		SELECT 1 FROM ` +
 		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
+		driver.QueryString(&queryParams)
 	row, err := tx.QueryContext(ctx, query,
 		queryParams.Params...,
 	)
@@ -519,15 +533,15 @@ func checkDuplicateVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, name
 	return false, nil
 }
 
-func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (*string, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
+func checkOutofOrderVersion(ctx context.Context, driver db.Driver, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (*string, error) {
+	var queryParams db.QueryParams
 	queryParams.AddParam("namespace", namespace)
 	queryParams.AddParam("engine", engine.String())
 	queryParams.AddParam("version > ?", version)
 	query := `
 		SELECT MIN(version) FROM ` +
 		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
+		driver.QueryString(&queryParams)
 	row, err := tx.QueryContext(ctx, query,
 		queryParams.Params...,
 	)
@@ -550,14 +564,14 @@ func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, nam
 	return nil, nil
 }
 
-func findNextSequence(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, requireBaseline bool, tablePrefix string) (int, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
+func findNextSequence(ctx context.Context, driver db.Driver, tx *sql.Tx, namespace string, requireBaseline bool, tablePrefix string) (int, error) {
+	var queryParams db.QueryParams
 	queryParams.AddParam("namespace", namespace)
 
 	query := `
 		SELECT MAX(sequence) + 1 FROM ` +
 		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
+		driver.QueryString(&queryParams)
 	row, err := tx.QueryContext(ctx, query,
 		queryParams.Params...,
 	)
@@ -587,7 +601,7 @@ func findNextSequence(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return nil, err
@@ -598,7 +612,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 	}
 	defer tx.Rollback()
 
-	queryParams := &db.QueryParams{DatabaseType: dbType}
+	var queryParams db.QueryParams
 	if v := find.ID; v != nil {
 		queryParams.AddParam("id", *v)
 	}
@@ -610,7 +624,7 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 	}
 
 	var query = baseQuery +
-		queryParams.QueryString() +
+		driver.QueryString(&queryParams) +
 		`ORDER BY created_ts DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
