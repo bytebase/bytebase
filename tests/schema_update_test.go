@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/kr/pretty"
 )
 
@@ -191,5 +192,66 @@ func TestSchemaUpdate(t *testing.T) {
 	wantResult := `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
 	if sqlResultSet.Data != wantResult {
 		t.Fatalf("want SQL result %q, got %q, diff %q", wantResult, sqlResultSet.Data, pretty.Diff(wantResult, sqlResultSet.Data))
+	}
+}
+
+func TestVCSSchemaUpdate(t *testing.T) {
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	if err := ctl.StartMain(ctx, dataDir); err != nil {
+		t.Fatal(err)
+	}
+	defer ctl.Close()
+
+	if err := ctl.Login(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a VCS.
+	applicationID := "testApplicationID"
+	applicationSecret := "testApplicationSecret"
+	vcs, err := ctl.createVCS(api.VCSCreate{
+		Name:          "TestVCS",
+		Type:          vcs.GitLabSelfHost,
+		InstanceURL:   gitURL,
+		APIURL:        gitAPIURL,
+		ApplicationID: applicationID,
+		Secret:        applicationSecret,
+	})
+	if err != nil {
+		t.Fatalf("failed to create VCS, error: %v", err)
+	}
+
+	// Create a project.
+	project, err := ctl.createProject(api.ProjectCreate{
+		Name: "Test VCS Project",
+		Key:  "TestVCSSchemaUpdate",
+	})
+	if err != nil {
+		t.Fatalf("failed to create project, error: %v", err)
+	}
+	// Create a repository.
+	repositoryPath := "test/schemaUpdate"
+	accessToken := "accessToken1"
+	refreshToken := "refreshToken1"
+	externalID := "121"
+	_, err = ctl.createRepository(api.RepositoryCreate{
+		VCSID:              vcs.ID,
+		ProjectID:          project.ID,
+		Name:               "Test Repository",
+		FullPath:           repositoryPath,
+		WebURL:             fmt.Sprintf("%s/%s", gitURL, repositoryPath),
+		BranchFilter:       "master",
+		BaseDirectory:      "bbtest",
+		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+		ExternalID:         externalID,
+		AccessToken:        accessToken,
+		ExpiresTs:          0,
+		RefreshToken:       refreshToken,
+	})
+	if err != nil {
+		t.Fatalf("failed to create repository, error: %v", err)
 	}
 }
