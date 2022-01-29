@@ -8,6 +8,11 @@
   <div v-else class="w-full h-full flex justify-center items-center">
     <NSpin />
   </div>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -57,6 +62,7 @@ interface LocalState {
   newIssue?: IssueCreate;
   // Timer tracking the issue poller, we need this to cancel the outstanding one when needed.
   pollIssueTimer?: ReturnType<typeof setTimeout>;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -116,6 +122,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       create: props.issueSlug.toLowerCase() == "new",
       newIssue: undefined,
+      showFeatureModal: false,
     });
 
     const issue = computed((): Issue | IssueCreate => {
@@ -182,13 +189,7 @@ export default defineComponent({
       return issueCreate;
     };
 
-    const maybeBuildTenantDeployIssue = async (): Promise<
-      IssueCreate | false
-    > => {
-      if (route.query.mode !== "tenant") {
-        return false;
-      }
-
+    const findProject = async (): Promise<Project> => {
       const projectId = route.query.project
         ? parseInt(route.query.project as string)
         : UNKNOWN_ID;
@@ -196,6 +197,18 @@ export default defineComponent({
       if (projectId !== UNKNOWN_ID) {
         project = await store.dispatch("project/fetchProjectById", projectId);
       }
+
+      return project
+    }
+
+    const maybeBuildTenantDeployIssue = async (): Promise<
+      IssueCreate | false
+    > => {
+      if (route.query.mode !== "tenant") {
+        return false;
+      }
+
+      const project = await findProject()
       const issueType = route.query.template as IssueType;
       if (
         project.tenantMode === "TENANT" &&
@@ -506,6 +519,21 @@ export default defineComponent({
         }
       }
     );
+
+    watch(
+      () => state.newIssue,
+      async (issue) => {
+        if (issue?.type === "bb.issue.database.schema.update") {
+          const project = await findProject()
+          if (
+            project.tenantMode === "TENANT" &&
+            !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+          ) {
+            state.showFeatureModal = true;
+          }
+        }
+      }
+    )
 
     const onStatusChanged = (eager: boolean) => {
       pollIssue(eager ? POST_CHANGE_POLL_INTERVAL : NORMAL_POLL_INTERVAL);

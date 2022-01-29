@@ -1149,3 +1149,6 @@ subscription:
       remaining: You only have {count} instance remaining quota.
       runoutof: You have run out of your instance quota.
       upgrade: '{upgrade} to get more instance quota.'
+    bb-feature-multi-tenancy:
+      title: Multi-tenancy
+      desc: Intelligent database management for tenants using identical schemas.
