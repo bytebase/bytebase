@@ -2,6 +2,10 @@
 <a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
 </p>
 
+<p align="center" >
+<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
+</p>
+
 <p align="center">
   <a href="https://demo.bytebase.com" target="_blank">Live Demo</a> •
   <a href="#installation">Install</a> •
@@ -139,9 +143,9 @@ working on the code:
 
 1. Pull source.
 
-    ```bash
-    git clone https://github.com/bytebase/bytebase
-    ```
+   ```bash
+   git clone https://github.com/bytebase/bytebase
+   ```
 
 1. Set up pre-commit hooks.
 
@@ -155,20 +159,21 @@ working on the code:
 
 1. Start backend using air (with live reload).
 
-    ```bash
-    air -c scripts/.air.toml
-    ```
+   ```bash
+   air -c scripts/.air.toml
+   ```
 
-    Change the open file limit if you encounter "error: too many open files".
-    ```
-    ulimit -n 10240
-    ```
+   Change the open file limit if you encounter "error: too many open files".
+
+   ```
+   ulimit -n 10240
+   ```
 
 1. Start frontend (with live reload).
 
-    ```bash
-    cd frontend && yarn && yarn dev
-    ```
+   ```bash
+   cd frontend && yarn && yarn dev
+   ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
 
