@@ -79,13 +79,18 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, common.Errorf(common.Invalid, err)
 	}
 
+	expiresTs := int64(-1)
 	exp, ok := claims["exp"].(float64)
 	if !ok {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
+		if s.config.Mode != "dev" {
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
+		}
+	} else {
+		expiresTs = int64(exp)
 	}
 
-	iss, ok := claims["iss"].(string)
-	if !ok || iss != s.config.Issuer {
+	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
+	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
 	}
 
@@ -111,7 +116,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 
 	license := &enterpriseAPI.License{
 		InstanceCount: int(instance),
-		ExpiresTs:     int64(exp),
+		ExpiresTs:     expiresTs,
 		Plan:          planType,
 		Audience:      aud,
 	}

@@ -126,12 +126,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		secret:       secret,
 		readonly:     readonly,
 		demo:         demo,
-		subscription: &enterprise.Subscription{
-			Plan:          api.FREE,
-			ExpiresTs:     -1,
-			InstanceCount: 5,
-		},
-		dataDir: dataDir,
+		dataDir:      dataDir,
 	}
 
 	if !readonly {
@@ -243,7 +238,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)

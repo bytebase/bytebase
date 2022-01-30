@@ -61,21 +61,10 @@ const actions = {
   },
 
   // TODO: this is a mock function, should remove this before GA
-  async changePlan({ commit }: any, newPlan: PlanType) {
-    const planPatch: PlanPatch = {
-      type: newPlan,
-    };
-    const data = (
-      await axios.patch(`/api/plan`, {
-        data: {
-          type: "planPatch",
-          attributes: planPatch,
-        },
-      })
-    ).data.data;
-
-    const subscription = data.attributes;
-    commit("setSubscription", subscription);
+  async changePlan({ dispatch }: any, newPlan: PlanType) {
+    const license =
+      newPlan == PlanType.FREE ? "" : import.meta.env.VITE_LICENSE;
+    dispatch("patchSubscription", license);
   },
 };
 
