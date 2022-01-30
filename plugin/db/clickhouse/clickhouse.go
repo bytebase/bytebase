@@ -495,14 +495,62 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		WHERE namespace = ?
 	`
 
+	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
+		var insertedID int64
+		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
+		rows, err := tx.QueryContext(ctx, maxIDQuery)
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			if err := rows.Scan(
+				&insertedID,
+			); err != nil {
+				return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+		// Clickhouse sql driver doesn't support taking now() as prepared value.
+		now := time.Now().Unix()
+		_, err = tx.ExecContext(ctx, insertHistoryQuery,
+			insertedID,
+			m.Creator,
+			now,
+			m.Creator,
+			now,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			"PENDING",
+			m.Version,
+			m.Description,
+			statement,
+			prevSchema,
+			prevSchema,
+			0,
+			m.IssueID,
+			m.Payload,
+		)
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		}
+
+		return insertedID, nil
+	}
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:          insertHistoryQuery,
 		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
 		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
 		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
 		FindBaselineQuery:           findBaselineQuery,
 		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
 		FindNextSequenceQuery:       findNextSequenceQuery,
+		InsertPendingHistoryFunc:    insertPendingFunc,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
 }
