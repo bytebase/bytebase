@@ -89,3 +89,7 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 
 	return license, nil
 }
+
+func (s *Server) feature(feature api.FeatureType) bool {
+	return api.FeatureMatrix[feature][s.subscription.Plan]
+}
