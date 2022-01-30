@@ -608,7 +608,8 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			payload
 		)
 		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
-`
+	`
+
 	updateHistoryAsDoneQuery := `
 		UPDATE
 			bytebase.public.migration_history
@@ -628,11 +629,34 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		WHERE id = ?
 	`
 
+	checkDuplicateVersionQuery := `
+		SELECT 1 FROM bytebase.public.migration_history
+		WHERE namespace = ? AND engine = ? AND version = ?
+	`
+
+	findBaselineQuery := `
+		SELECT 1 FROM bytebase.public.migration_history
+		WHERE namespace = ? AND type = 'BASELINE'
+	`
+
+	checkOutofOrderVersionQuery := `
+		SELECT MIN(version) FROM bytebase.public.migration_history
+		WHERE namespace = ? AND engine = ? AND version > ?
+	`
+
+	findNextSequenceQuery := `
+		SELECT MAX(sequence) + 1 FROM bytebase.public.migration_history
+		WHERE namespace = ?
+	`
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "bytebase.public.",
+		InsertHistoryQuery:          insertHistoryQuery,
+		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
+		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
+		FindBaselineQuery:           findBaselineQuery,
+		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
+		FindNextSequenceQuery:       findNextSequenceQuery,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
 }
@@ -661,7 +685,23 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.public.migration_history `
-	return util.FindMigrationHistoryList(ctx, db.Snowflake, driver, find, baseQuery)
+	paramNames, params := []string{}, []interface{}{}
+	if v := find.ID; v != nil {
+		paramNames, params = append(paramNames, "id"), append(params, *v)
+	}
+	if v := find.Database; v != nil {
+		paramNames, params = append(paramNames, "namespace"), append(params, *v)
+	}
+	if v := find.Version; v != nil {
+		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	var query = baseQuery +
+		db.FormatParamNameInQuestionMark(paramNames) +
+		`ORDER BY created_ts DESC`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
 }
 
 // Dump and restore
