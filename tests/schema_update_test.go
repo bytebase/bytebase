@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/kr/pretty"
 )
 
@@ -231,11 +232,15 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create project, error: %v", err)
 	}
+
 	// Create a repository.
 	repositoryPath := "test/schemaUpdate"
 	accessToken := "accessToken1"
 	refreshToken := "refreshToken1"
-	externalID := "121"
+	gitlabProjectID := 121
+	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
+	// create a gitlab project.
+	ctl.gitlab.CreateProject(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
@@ -246,12 +251,23 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
-		ExternalID:         externalID,
+		ExternalID:         gitlabProjectIDStr,
 		AccessToken:        accessToken,
 		ExpiresTs:          0,
 		RefreshToken:       refreshToken,
 	})
 	if err != nil {
 		t.Fatalf("failed to create repository, error: %v", err)
+	}
+
+	// Simulate Git commits.
+	pushEvent := &gitlab.WebhookPushEvent{
+		ObjectKind: gitlab.WebhookPush,
+		Project: gitlab.WebhookProject{
+			ID: gitlabProjectID,
+		},
+	}
+	if err := ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent); err != nil {
+		t.Fatalf("failed to send commits to gitlab project %q, error %v", gitlabProjectID, err)
 	}
 }
