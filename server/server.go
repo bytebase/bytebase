@@ -82,7 +82,7 @@ type Server struct {
 	secret       string
 	readonly     bool
 	demo         bool
-	plan         api.PlanType
+	subscription *enterprise.Subscription
 	dataDir      string
 }
 
@@ -126,8 +126,12 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		secret:       secret,
 		readonly:     readonly,
 		demo:         demo,
-		plan:         api.TEAM,
-		dataDir:      dataDir,
+		subscription: &enterprise.Subscription{
+			Plan:          api.FREE,
+			ExpiresTs:     -1,
+			InstanceCount: 5,
+		},
+		dataDir: dataDir,
 	}
 
 	if !readonly {
@@ -239,6 +243,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
+	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
@@ -252,6 +257,10 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
+}
+
+func (server *Server) InitSubscription() {
+	server.subscription = server.loadSubscription()
 }
 
 // Run will run the server.

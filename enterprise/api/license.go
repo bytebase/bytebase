@@ -23,10 +23,8 @@ type License struct {
 
 // Valid will check if license expired or has correct plan type.
 func (l *License) Valid() error {
-	if l.ExpiresTs != -1 {
-		if expireTime := time.Unix(l.ExpiresTs, 0); expireTime.Before(time.Now()) {
-			return fmt.Errorf("license has expired at %v", expireTime)
-		}
+	if expireTime := time.Unix(l.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return fmt.Errorf("license has expired at %v", expireTime)
 	}
 
 	if err := l.validPlanType(); err != nil {

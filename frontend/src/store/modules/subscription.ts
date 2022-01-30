@@ -3,6 +3,7 @@ import {
   Subscription,
   FeatureType,
   PlanType,
+  PlanPatch,
   FEATURE_MATRIX,
   SubscriptionState,
 } from "../../types";
@@ -61,12 +62,19 @@ const actions = {
 
   // TODO: this is a mock function, should remove this before GA
   async changePlan({ commit }: any, newPlan: PlanType) {
-    const subscription: Subscription = {
-      instanceCount: 5,
-      plan: newPlan,
-      expiresTs: new Date().getTime() / 1000 + 24 * 60 * 60,
+    const planPatch: PlanPatch = {
+      type: newPlan,
     };
-    console.debug(`set subscription: ${JSON.stringify(subscription)}`);
+    const data = (
+      await axios.patch(`/api/plan`, {
+        data: {
+          type: "planPatch",
+          attributes: planPatch,
+        },
+      })
+    ).data.data;
+
+    const subscription = data.attributes;
     commit("setSubscription", subscription);
   },
 };

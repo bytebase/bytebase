@@ -23,7 +23,6 @@ type Config struct {
 	MinimumInstance int
 	// StorePath is the file path to store license.
 	StorePath string
-	Mode      string
 }
 
 const (
@@ -57,6 +56,5 @@ func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 		Issuer:          issuer,
 		MinimumInstance: minimumInstance,
 		StorePath:       fmt.Sprintf("%s/%s", dataDir, storefile),
-		Mode:            mode,
 	}, nil
 }

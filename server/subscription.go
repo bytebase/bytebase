@@ -15,10 +15,8 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
-		subscription := s.loadSubscription()
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -34,35 +32,21 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		license, err := s.loadLicense()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
-		}
-		subscription := &enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			InstanceCount: license.InstanceCount,
-		}
+		s.subscription = s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
 	})
 }
 
-// feature will check if user has access to a specific feature.
-func (s *Server) feature(feature api.FeatureType) bool {
-	subscription := s.loadSubscription()
-	return api.FeatureMatrix[feature][subscription.Plan]
-}
-
 // loadLicense will load current subscription by license.
 // Return subscription with free plan if no license found.
 func (server *Server) loadSubscription() *enterprise.Subscription {
 	subscription := &enterpriseAPI.Subscription{
-		Plan: api.TEAM,
+		Plan: api.FREE,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
 		InstanceCount: 5,
@@ -74,11 +58,11 @@ func (server *Server) loadSubscription() *enterprise.Subscription {
 			ExpiresTs:     license.ExpiresTs,
 			InstanceCount: license.InstanceCount,
 		}
-	} else {
-		// change instance quota for dev environment.
-		if server.mode == "dev" {
-			subscription.InstanceCount = 9999
-		}
+	}
+
+	// change instance quota for dev environment.
+	if server.mode == "dev" {
+		subscription.InstanceCount = 9999
 	}
 
 	return subscription
@@ -99,7 +83,6 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 	server.l.Info(
 		"Load valid license",
 		zap.String("plan", license.Plan.String()),
-		zap.Int64("expiresTs", license.ExpiresTs),
 		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
 		zap.Int("instanceCount", license.InstanceCount),
 	)
