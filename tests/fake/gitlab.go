@@ -20,7 +20,7 @@ type GitLab struct {
 	client *http.Client
 
 	nextWebhookID int
-	projectHooks  map[string]*gitlab.WebhookPost
+	projectHooks  map[string][]*gitlab.WebhookPost
 }
 
 // NewGitLab creates a fake GitLab.
@@ -35,7 +35,7 @@ func NewGitLab(port int) *GitLab {
 		Echo:          e,
 		client:        &http.Client{},
 		nextWebhookID: 20210113,
-		projectHooks:  map[string]*gitlab.WebhookPost{},
+		projectHooks:  map[string][]*gitlab.WebhookPost{},
 	}
 
 	// Routes
@@ -75,7 +75,7 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	if _, ok := gl.projectHooks[gitlabProjectID]; !ok {
 		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
 	}
-	gl.projectHooks[gitlabProjectID] = webhookPost
+	gl.projectHooks[gitlabProjectID] = append(gl.projectHooks[gitlabProjectID], webhookPost)
 
 	if err := json.NewEncoder(c.Response().Writer).Encode(&gitlab.WebhookInfo{
 		ID: gl.nextWebhookID,
@@ -89,34 +89,36 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 
 // SendCommits sends comments to webhooks.
 func (gl *GitLab) SendCommits(gitlabProjectID string, webhookPushEvent *gitlab.WebhookPushEvent) error {
-	webhookPost, ok := gl.projectHooks[gitlabProjectID]
+	webhookPosts, ok := gl.projectHooks[gitlabProjectID]
 	if !ok {
 		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
 	}
 
-	// Send post request.
-	buf, err := json.Marshal(webhookPushEvent)
-	if err != nil {
-		return fmt.Errorf("failed to marshal webhookPushEvent, error %w", err)
-	}
-	req, err := http.NewRequest("POST", webhookPost.URL, strings.NewReader(string(buf)))
-	if err != nil {
-		return fmt.Errorf("fail to create a new POST request(%q), error: %w", webhookPost.URL, err)
-	}
-	req.Header.Set("X-Gitlab-Token", webhookPost.SecretToken)
-	resp, err := gl.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("fail to send a POST request(%q), error: %w", webhookPost.URL, err)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read http response body, error: %w", err)
-	}
+	for _, webhookPost := range webhookPosts {
+		// Send post request.
+		buf, err := json.Marshal(webhookPushEvent)
+		if err != nil {
+			return fmt.Errorf("failed to marshal webhookPushEvent, error %w", err)
+		}
+		req, err := http.NewRequest("POST", webhookPost.URL, strings.NewReader(string(buf)))
+		if err != nil {
+			return fmt.Errorf("fail to create a new POST request(%q), error: %w", webhookPost.URL, err)
+		}
+		req.Header.Set("X-Gitlab-Token", webhookPost.SecretToken)
+		resp, err := gl.client.Do(req)
+		if err != nil {
+			return fmt.Errorf("fail to send a POST request(%q), error: %w", webhookPost.URL, err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read http response body, error: %w", err)
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		}
+		gl.Echo.Logger.Infof("SendCommits response body %s\n", body)
 	}
-	gl.Echo.Logger.Infof("SendCommits response body %s\n", body)
 
 	return nil
 }
