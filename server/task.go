@@ -612,7 +612,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		}
 		updatedTask, err = s.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
 		if err != nil {
-			return nil, fmt.Errorf("failed to sync task %v(%v) database_id: %w", task.ID, task.Name, err)
+			return nil, fmt.Errorf("failed to sync task %s(%v) for database %s(%v). Error: %w", task.Name, task.ID, database.Name, database.ID, err)
 		}
 
 		err = s.composeDatabaseRelationship(ctx, database)
