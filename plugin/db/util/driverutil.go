@@ -111,10 +111,14 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 
 // MigrationExecutionArgs includes the arguments for ExecuteMigration().
 type MigrationExecutionArgs struct {
-	InsertHistoryQuery         string
-	UpdateHistoryAsDoneQuery   string
-	UpdateHistoryAsFailedQuery string
-	TablePrefix                string
+	UpdateHistoryAsDoneQuery      string
+	UpdateHistoryAsFailedQuery    string
+	CheckDuplicateVersionQuery    string
+	FindBaselineQuery             string
+	CheckOutofOrderVersionQuery   string
+	FindNextSequenceQuery         string
+	FindMigrationHistoryListQuery string
+	InsertPendingHistoryFunc      func(tx *sql.Tx, sequence int, prevSchema string) (int64, error)
 }
 
 // ExecuteMigration will execute the database migration.
@@ -140,7 +144,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	duplicate, err := checkDuplicateVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	duplicate, err := checkDuplicateVersion(ctx, args.CheckDuplicateVersionQuery, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return -1, "", err
 	}
@@ -149,7 +153,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, dbType, tx, m.Namespace, m.Engine, m.Version, args.TablePrefix)
+	version, err := checkOutofOrderVersion(ctx, args.CheckOutofOrderVersionQuery, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return -1, "", err
 	}
@@ -161,7 +165,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		hasBaseline, err := findBaseline(ctx, dbType, tx, m.Namespace, args.TablePrefix)
+		hasBaseline, err := findBaseline(ctx, args.FindBaselineQuery, tx, m.Namespace)
 		if err != nil {
 			return -1, "", err
 		}
@@ -173,7 +177,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// VCS based SQL migration requires existing baselining
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
-	sequence, err := findNextSequence(ctx, dbType, tx, m.Namespace, requireBaseline, args.TablePrefix)
+	sequence, err := findNextSequence(ctx, args.FindNextSequenceQuery, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return -1, "", err
 	}
@@ -182,136 +186,9 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	insertedID := int64(-1)
-	if dbType == db.Postgres {
-		tx.QueryRowContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		).Scan(&insertedID)
-	} else if dbType == db.ClickHouse {
-		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
-		rows, err := tx.QueryContext(ctx, maxIDQuery)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			if err := rows.Scan(
-				&insertedID,
-			); err != nil {
-				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		// Clickhouse sql driver doesn't support taking now() as prepared value.
-		now := time.Now().Unix()
-		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
-			insertedID,
-			m.Creator,
-			now,
-			m.Creator,
-			now,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			"PENDING",
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			0,
-			m.IssueID,
-			m.Payload,
-		)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-	} else if dbType == db.Snowflake {
-		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
-		rows, err := tx.QueryContext(ctx, maxIDQuery)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		defer rows.Close()
-		var id sql.NullInt64
-		for rows.Next() {
-			if err := rows.Scan(
-				&id,
-			); err != nil {
-				return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return -1, "", FormatErrorWithQuery(err, maxIDQuery)
-		}
-		if id.Valid {
-			insertedID = id.Int64
-		} else {
-			insertedID = 1
-		}
-
-		_, err = tx.ExecContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		)
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-	} else {
-		res, err := tx.ExecContext(ctx, args.InsertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchemaBuf.String(),
-			prevSchemaBuf.String(),
-			m.IssueID,
-			m.Payload,
-		)
-
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
-
-		insertedID, err = res.LastInsertId()
-		if err != nil {
-			return -1, "", FormatErrorWithQuery(err, args.InsertHistoryQuery)
-		}
+	insertedID, err := args.InsertPendingHistoryFunc(tx, sequence, prevSchemaBuf.String())
+	if err != nil {
+		return -1, "", err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -471,20 +348,12 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	return resultSet, nil
 }
 
-func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, tablePrefix string) (bool, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
-	queryParams.AddParam("namespace", namespace)
-	queryParams.AddParam("type", "BASELINE")
-	query := `
-		SELECT 1 FROM ` +
-		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
-	row, err := tx.QueryContext(ctx, query,
-		queryParams.Params...,
+func findBaseline(ctx context.Context, findBaselineQuery string, tx *sql.Tx, namespace string) (bool, error) {
+	row, err := tx.QueryContext(ctx, findBaselineQuery,
+		namespace,
 	)
-
 	if err != nil {
-		return false, FormatErrorWithQuery(err, query)
+		return false, FormatErrorWithQuery(err, findBaselineQuery)
 	}
 	defer row.Close()
 
@@ -495,21 +364,12 @@ func findBaseline(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace, ta
 	return true, nil
 }
 
-func checkDuplicateVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (bool, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
-	queryParams.AddParam("namespace", namespace)
-	queryParams.AddParam("engine", engine.String())
-	queryParams.AddParam("version", version)
-	query := `
-		SELECT 1 FROM ` +
-		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
-	row, err := tx.QueryContext(ctx, query,
-		queryParams.Params...,
+func checkDuplicateVersion(ctx context.Context, checkDuplicateVersionQuery string, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
+	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
+		namespace, engine.String(), version,
 	)
-
 	if err != nil {
-		return false, FormatErrorWithQuery(err, query)
+		return false, FormatErrorWithQuery(err, checkDuplicateVersionQuery)
 	}
 	defer row.Close()
 
@@ -519,21 +379,12 @@ func checkDuplicateVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, name
 	return false, nil
 }
 
-func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, engine db.MigrationEngine, version, tablePrefix string) (*string, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
-	queryParams.AddParam("namespace", namespace)
-	queryParams.AddParam("engine", engine.String())
-	queryParams.AddParam("version > ?", version)
-	query := `
-		SELECT MIN(version) FROM ` +
-		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
-	row, err := tx.QueryContext(ctx, query,
-		queryParams.Params...,
+func checkOutofOrderVersion(ctx context.Context, checkOutofOrderVersionQuery string, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (*string, error) {
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, engine.String(), version,
 	)
-
 	if err != nil {
-		return nil, FormatErrorWithQuery(err, query)
+		return nil, FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
 	}
 	defer row.Close()
 
@@ -550,20 +401,12 @@ func checkOutofOrderVersion(ctx context.Context, dbType db.Type, tx *sql.Tx, nam
 	return nil, nil
 }
 
-func findNextSequence(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace string, requireBaseline bool, tablePrefix string) (int, error) {
-	queryParams := &db.QueryParams{DatabaseType: dbType}
-	queryParams.AddParam("namespace", namespace)
-
-	query := `
-		SELECT MAX(sequence) + 1 FROM ` +
-		tablePrefix + `migration_history ` +
-		queryParams.QueryString()
-	row, err := tx.QueryContext(ctx, query,
-		queryParams.Params...,
+func findNextSequence(ctx context.Context, findNextSequenceQuery string, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
+	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
+		namespace,
 	)
-
 	if err != nil {
-		return -1, FormatErrorWithQuery(err, query)
+		return -1, FormatErrorWithQuery(err, findNextSequenceQuery)
 	}
 	defer row.Close()
 
@@ -587,7 +430,7 @@ func findNextSequence(ctx context.Context, dbType db.Type, tx *sql.Tx, namespace
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return nil, err
@@ -598,27 +441,9 @@ func FindMigrationHistoryList(ctx context.Context, dbType db.Type, driver db.Dri
 	}
 	defer tx.Rollback()
 
-	queryParams := &db.QueryParams{DatabaseType: dbType}
-	if v := find.ID; v != nil {
-		queryParams.AddParam("id", *v)
-	}
-	if v := find.Database; v != nil {
-		queryParams.AddParam("namespace", *v)
-	}
-	if v := find.Version; v != nil {
-		queryParams.AddParam("version", *v)
-	}
-
-	var query = baseQuery +
-		queryParams.QueryString() +
-		`ORDER BY created_ts DESC`
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, query, queryParams.Params...)
+	rows, err := tx.QueryContext(ctx, findMigrationHistoryListQuery, queryParams...)
 	if err != nil {
-		return nil, FormatErrorWithQuery(err, query)
+		return nil, FormatErrorWithQuery(err, findMigrationHistoryListQuery)
 	}
 	defer rows.Close()
 
