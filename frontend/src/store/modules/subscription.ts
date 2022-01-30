@@ -62,7 +62,7 @@ const actions = {
   // TODO: this is a mock function, should remove this before GA
   async changePlan({ dispatch }: any, newPlan: PlanType) {
     const license =
-      newPlan == PlanType.FREE ? "" : import.meta.env.VITE_LICENSE;
+      newPlan == PlanType.FREE ? "" : import.meta.env.BB_DEV_LICENSE;
     dispatch("patchSubscription", license);
   },
 };

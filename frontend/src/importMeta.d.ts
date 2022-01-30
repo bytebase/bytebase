@@ -67,5 +67,5 @@ interface ImportMetaEnv {
   DEV: boolean;
   PROD: boolean;
   SSR: boolean;
-  VITE_LICENSE: string;
+  BB_DEV_LICENSE: string;
 }
