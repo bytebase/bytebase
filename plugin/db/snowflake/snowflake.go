@@ -649,14 +649,61 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		WHERE namespace = ?
 	`
 
+	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
+		var insertedID int64
+		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
+		rows, err := tx.QueryContext(ctx, maxIDQuery)
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+		defer rows.Close()
+		var id sql.NullInt64
+		for rows.Next() {
+			if err := rows.Scan(
+				&id,
+			); err != nil {
+				return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+		if id.Valid {
+			insertedID = id.Int64
+		} else {
+			insertedID = 1
+		}
+
+		_, err = tx.ExecContext(ctx, insertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchema,
+			prevSchema,
+			m.IssueID,
+			m.Payload,
+		)
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		}
+		return insertedID, nil
+	}
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:          insertHistoryQuery,
 		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
 		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
 		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
 		FindBaselineQuery:           findBaselineQuery,
 		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
 		FindNextSequenceQuery:       findNextSequenceQuery,
+		InsertPendingHistoryFunc:    insertPendingFunc,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
 }
