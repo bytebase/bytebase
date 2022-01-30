@@ -120,6 +120,44 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
+	// After the database creation statement executed rightly,
+	// insert its information to our database.
+	databaseCreate := &api.DatabaseCreate{
+		CreatorID:     api.SystemBotID,
+		ProjectID:     payload.ProjectID,
+		InstanceID:    task.InstanceID,
+		EnvironmentID: instance.EnvironmentID,
+		Name:          payload.DatabaseName,
+		CharacterSet:  payload.CharacterSet,
+		Collation:     payload.Collation,
+		Labels:        &payload.Labels,
+		SchemaVersion: payload.SchemaVersion,
+	}
+	database, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
+	if err == nil {
+		// Update task database_id with the created database id
+		taskDatabaseIDPatch := &api.TaskPatch{
+			ID:         task.ID,
+			UpdaterID:  api.SystemBotID,
+			DatabaseID: &database.ID,
+		}
+		if _, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
+			exec.l.Error("Failed to sync task for database",
+				zap.String("task_name", task.Name),
+				zap.Int("task_id", task.ID),
+				zap.String("database_name", database.Name),
+				zap.Int("database_id", database.ID),
+				zap.Error(err),
+			)
+		}
+	} else {
+		exec.l.Error("Failed to record database after creating database",
+			zap.String("database_name", payload.DatabaseName),
+			zap.Int("instance_id", task.InstanceID),
+			zap.Error(err),
+		)
+	}
+
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
 		MigrationID: migrationID,

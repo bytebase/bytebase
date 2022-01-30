@@ -558,8 +558,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
 	//    sync will place the synced db into the default project.
 	// 2. Allow user to see the created database right away.
-	if (updatedTask.Type == api.TaskDatabaseCreate) &&
-		updatedTask.Status == api.TaskDone {
+	if updatedTask.Type == api.TaskDatabaseCreate && updatedTask.Status == api.TaskDone {
 		payload := &api.TaskDatabaseCreatePayload{}
 		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
 			return nil, fmt.Errorf("invalid create database task payload: %w", err)
@@ -574,6 +573,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		if instance == nil {
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
+
 		project, err := s.composeProjectByID(ctx, payload.ProjectID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
@@ -582,37 +582,15 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
 		}
 
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     taskStatusPatch.UpdaterID,
-			ProjectID:     payload.ProjectID,
-			InstanceID:    task.InstanceID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          payload.DatabaseName,
-			CharacterSet:  payload.CharacterSet,
-			Collation:     payload.Collation,
-			Labels:        &payload.Labels,
-			SchemaVersion: payload.SchemaVersion,
+		databaseFind := &api.DatabaseFind{
+			ID: task.DatabaseID,
 		}
-		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+		database, err := s.composeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
-			// Just emits an error instead of failing, since we have another periodic job to sync db info.
-			// Though the db will be assigned to the default project instead of the desired project in that case.
-			s.l.Error("failed to record database after creating database",
-				zap.String("database_name", payload.DatabaseName),
-				zap.Int("project_id", payload.ProjectID),
-				zap.Int("instance_id", task.InstanceID),
-				zap.Error(err),
-			)
+			return nil, fmt.Errorf("failed to find database: %v", task.DatabaseID)
 		}
-		// Sync task.database_id with the created database.ID
-		taskDatabaseIDPatch := &api.TaskPatch{
-			ID:         task.ID,
-			UpdaterID:  api.SystemBotID,
-			DatabaseID: &database.ID,
-		}
-		updatedTask, err = s.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
-		if err != nil {
-			return nil, fmt.Errorf("failed to sync task %s(%v) for database %s(%v). Error: %w", task.Name, task.ID, database.Name, database.ID, err)
+		if database == nil {
+			return nil, fmt.Errorf("database ID not found %v", task.DatabaseID)
 		}
 
 		err = s.composeDatabaseRelationship(ctx, database)
@@ -626,8 +604,8 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		}
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
-		if err == nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
+		if err == nil && database.Labels != "" {
+			if err := s.setDatabaseLabels(ctx, database.Labels, database, project, database.CreatorID, false /* validateOnly */); err != nil {
 				s.l.Error("failed to record database labels after creating database",
 					zap.String("database_name", payload.DatabaseName),
 					zap.Int("project_id", payload.ProjectID),

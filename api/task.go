@@ -133,7 +133,7 @@ type Task struct {
 	StageID    int `jsonapi:"attr,stageId"`
 	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
-	// Tasks like creating database may not have database.
+	// The un-done tasks may not have database.
 	DatabaseID       *int
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
