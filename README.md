@@ -3,7 +3,7 @@
 </p>
 
 <p align="center" >
-<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" />
+<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
 </p>
 
 <p align="center">
