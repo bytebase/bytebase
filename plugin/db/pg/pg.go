@@ -714,14 +714,35 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		WHERE namespace = $1
 	`
 
+	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
+		var insertedID int64
+		tx.QueryRowContext(ctx, insertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchema,
+			prevSchema,
+			m.IssueID,
+			m.Payload,
+		).Scan(&insertedID)
+		return insertedID, nil
+	}
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:          insertHistoryQuery,
 		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
 		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
 		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
 		FindBaselineQuery:           findBaselineQuery,
 		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
 		FindNextSequenceQuery:       findNextSequenceQuery,
+		InsertPendingHistoryFunc:    insertPendingFunc,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
 }

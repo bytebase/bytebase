@@ -322,14 +322,42 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		WHERE namespace = ?
 	`
 
+	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
+		res, err := tx.ExecContext(ctx, insertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchema,
+			prevSchema,
+			m.IssueID,
+			m.Payload,
+		)
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		}
+
+		insertedID, err := res.LastInsertId()
+		if err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		}
+		return insertedID, nil
+	}
+
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:          insertHistoryQuery,
 		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
 		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
 		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
 		FindBaselineQuery:           findBaselineQuery,
 		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
 		FindNextSequenceQuery:       findNextSequenceQuery,
+		InsertPendingHistoryFunc:    insertPendingFunc,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.SQLite, driver, m, statement, args)
 }
