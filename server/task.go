@@ -604,6 +604,17 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				zap.Error(err),
 			)
 		}
+		// Sync task.database_id with the created database.ID
+		taskDatabaseIDPatch := &api.TaskPatch{
+			ID:         task.ID,
+			UpdaterID:  api.SystemBotID,
+			DatabaseID: &database.ID,
+		}
+		updatedTask, err = s.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sync task %v(%v) database_id: %w", task.ID, task.Name, err)
+		}
+
 		err = s.composeDatabaseRelationship(ctx, database)
 		if err != nil {
 			s.l.Error("failed to compose database relationship after creating database",

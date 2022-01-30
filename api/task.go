@@ -207,6 +207,7 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
+	DatabaseID        *int
 	Statement         *string `jsonapi:"attr,statement"`
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
