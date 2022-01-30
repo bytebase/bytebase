@@ -134,28 +134,41 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		SchemaVersion: payload.SchemaVersion,
 	}
 	database, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
-	if err == nil {
-		// Update task database_id with the created database id
-		taskDatabaseIDPatch := &api.TaskPatch{
-			ID:         task.ID,
-			UpdaterID:  api.SystemBotID,
-			DatabaseID: &database.ID,
+	if err != nil {
+		return true, nil, err
+	}
+
+	// Update task database_id with the created database id
+	taskDatabaseIDPatch := &api.TaskPatch{
+		ID:         task.ID,
+		UpdaterID:  api.SystemBotID,
+		DatabaseID: &database.ID,
+	}
+	_, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
+	if err != nil {
+		return true, nil, err
+	}
+
+	if database.Labels != "" {
+		// Compose database relationship for setting database labels.
+		err = server.composeDatabaseRelationship(ctx, database)
+		if err != nil {
+			return true, nil, err
 		}
-		if _, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
-			exec.l.Error("Failed to sync task for database",
-				zap.String("task_name", task.Name),
-				zap.Int("task_id", task.ID),
-				zap.String("database_name", database.Name),
-				zap.Int("database_id", database.ID),
-				zap.Error(err),
-			)
+
+		project, err := server.composeProjectByID(ctx, payload.ProjectID)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
 		}
-	} else {
-		exec.l.Error("Failed to record database after creating database",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", task.InstanceID),
-			zap.Error(err),
-		)
+		if project == nil {
+			return true, nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
+		}
+
+		// Set database labels, except bb.environment is immutable and must match instance environment.
+		err = server.setDatabaseLabels(ctx, database.Labels, database, project, database.CreatorID, false)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
+		}
 	}
 
 	return true, &api.TaskRunResultPayload{

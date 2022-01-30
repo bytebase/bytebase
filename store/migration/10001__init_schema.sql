@@ -829,7 +829,7 @@ CREATE TABLE task (
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     stage_id INTEGER NOT NULL REFERENCES stage (id),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    -- could be empty when the task status is not 'DONE'
+    -- Could be empty for creating database task when the task isn't yet completed successfully.
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
     -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
