@@ -82,7 +82,6 @@ type Server struct {
 	secret       string
 	readonly     bool
 	demo         bool
-	subscription *enterprise.Subscription
 	dataDir      string
 }
 
@@ -251,10 +250,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
-}
-
-func (server *Server) InitSubscription() {
-	server.subscription = server.loadSubscription()
 }
 
 // Run will run the server.

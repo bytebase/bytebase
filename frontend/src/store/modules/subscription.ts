@@ -3,7 +3,6 @@ import {
   Subscription,
   FeatureType,
   PlanType,
-  PlanPatch,
   FEATURE_MATRIX,
   SubscriptionState,
 } from "../../types";

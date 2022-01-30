@@ -551,8 +551,9 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	if count >= s.subscription.InstanceCount {
-		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", s.subscription.InstanceCount))
+	subscription := s.loadSubscription()
+	if count >= subscription.InstanceCount {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
 
 	return nil

@@ -15,8 +15,10 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
+		subscription := s.loadSubscription()
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -32,10 +34,10 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		s.subscription = s.loadSubscription()
+		subscription := s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -91,5 +93,6 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	return api.FeatureMatrix[feature][s.subscription.Plan]
+	subscription := s.loadSubscription()
+	return api.FeatureMatrix[feature][subscription.Plan]
 }
