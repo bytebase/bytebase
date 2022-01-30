@@ -120,8 +120,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
-	// After the database creation statement executed rightly,
-	// insert its information to our database.
+	// If the database creation statement executed successfully,
+	// then we will create a database entry immediately
+	// instead of waiting for the next schema sync cycle to sync over this newly created database.
+	// This is for 2 reasons:
+	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
+	// sync will place the synced db into the default project.
+	// 2. Allow user to see the created database right away.
 	databaseCreate := &api.DatabaseCreate{
 		CreatorID:     api.SystemBotID,
 		ProjectID:     payload.ProjectID,
@@ -138,7 +143,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
-	// Update task database_id with the created database id
+	// After the task related database entry created successfully,
+	// we need to update task's database_id with the newly created database immediately.
+	// Here is the main reason:
+	// The task database_id represents its related database entry both for creating and patching,
+	// so we should sync its value right here when the related database entry created.
 	taskDatabaseIDPatch := &api.TaskPatch{
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
