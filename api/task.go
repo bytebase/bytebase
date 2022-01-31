@@ -133,7 +133,7 @@ type Task struct {
 	StageID    int `jsonapi:"attr,stageId"`
 	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
-	// Tasks like creating database may not have database.
+	// Could be empty for creating database task when the task isn't yet completed successfully.
 	DatabaseID       *int
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
@@ -207,6 +207,7 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
+	DatabaseID        *int
 	Statement         *string `jsonapi:"attr,statement"`
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
