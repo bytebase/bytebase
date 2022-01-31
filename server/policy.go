@@ -13,14 +13,37 @@ import (
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
 // return nil if user has access.
-func (s *Server) hasAccessToUpdatePolicy(pType api.PolicyType) error {
-	if pType == api.PolicyTypeBackupPlan && !s.feature(api.FeatureBackupPolicy) {
-		return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
+func (s *Server) hasAccessToUpdatePolicy(policyUpsert *api.PolicyUpsert) error {
+	defaultPolicy, err := api.GetDefaultPolicy(policyUpsert.Type)
+	if err != nil {
+		return err
 	}
-	if pType == api.PolicyTypePipelineApproval && !s.feature(api.FeatureApprovalPolicy) {
-		return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
+	switch policyUpsert.Type {
+	case api.PolicyTypePipelineApproval:
+		policy, err := api.UnmarshalPipelineApprovalPolicy(policyUpsert.Payload)
+		if err != nil {
+			return err
+		}
+		policyStr, err := policy.String()
+		if err != nil {
+			return err
+		}
+		if policyStr != defaultPolicy && !s.feature(api.FeatureApprovalPolicy) {
+			return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
+		}
+	case api.PolicyTypeBackupPlan:
+		policy, err := api.UnmarshalBackupPlanPolicy(policyUpsert.Payload)
+		if err != nil {
+			return err
+		}
+		policyStr, err := policy.String()
+		if err != nil {
+			return err
+		}
+		if policyStr != defaultPolicy && !s.feature(api.FeatureBackupPolicy) {
+			return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
+		}
 	}
-
 	return nil
 }
 
@@ -40,13 +63,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicy(pType, ""); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
 		}
-		if err := s.hasAccessToUpdatePolicy(pType); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err)
-		}
 
 		policyUpsert.EnvironmentID = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if err := s.hasAccessToUpdatePolicy(policyUpsert); err != nil {
+			return echo.NewHTTPError(http.StatusForbidden, err)
+		}
 
 		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
