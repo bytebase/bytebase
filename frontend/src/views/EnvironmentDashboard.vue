@@ -69,9 +69,9 @@
   </BBAlert>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
+    v-if="state.missingRequiredFeature != null"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = null"
   />
 </template>
 
@@ -82,7 +82,13 @@ import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentCreate, Policy, PolicyUpsert } from "../types";
+import {
+  Environment,
+  EnvironmentCreate,
+  Policy,
+  PolicyUpsert,
+  FeatureType,
+} from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -109,7 +115,7 @@ interface LocalState {
   showCreateModal: boolean;
   reorder: boolean;
   showGuide: boolean;
-  showFeatureModal: boolean;
+  missingRequiredFeature: FeatureType | null;
 }
 
 export default {
@@ -129,7 +135,7 @@ export default {
       showCreateModal: false,
       reorder: false,
       showGuide: false,
-      showFeatureModal: false,
+      missingRequiredFeature: null,
     });
 
     const selectEnvironmentOnHash = () => {
@@ -229,12 +235,16 @@ export default {
       backupPolicy: Policy
     ) => {
       if (
-        !store.getters["subscription/feature"]("bb.feature.approval-policy") ||
-        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+        !store.getters["subscription/feature"]("bb.feature.approval-policy")
       ) {
-        state.showFeatureModal = true;
+        state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
+      if (!store.getters["subscription/feature"]("bb.feature.backup-policy")) {
+        state.missingRequiredFeature = "bb.feature.backup-policy";
+        return;
+      }
+
       store
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((environment: Environment) => {

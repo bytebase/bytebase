@@ -13,9 +13,9 @@
     @update-policy="updatePolicy"
   />
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
+    v-if="state.missingRequiredFeature != null"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = null"
   />
 </template>
 
@@ -30,6 +30,7 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
+  FeatureType,
 } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -38,7 +39,7 @@ interface LocalState {
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
   backupPolicy?: Policy;
-  showFeatureModal: boolean;
+  missingRequiredFeature: FeatureType | null;
 }
 
 export default {
@@ -62,7 +63,7 @@ export default {
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
-      showFeatureModal: false,
+      missingRequiredFeature: null,
     });
 
     const preparePolicy = () => {
@@ -135,14 +136,17 @@ export default {
       policy: Policy
     ) => {
       if (
-        (type === "bb.policy.pipeline-approval" &&
-          !store.getters["subscription/feature"](
-            "bb.feature.approval-policy"
-          )) ||
-        (type === "bb.policy.backup-plan" &&
-          !store.getters["subscription/feature"]("bb.feature.backup-policy"))
+        type === "bb.policy.pipeline-approval" &&
+        !store.getters["subscription/feature"]("bb.feature.approval-policy")
       ) {
-        state.showFeatureModal = true;
+        state.missingRequiredFeature = "bb.feature.approval-policy";
+        return;
+      }
+      if (
+        type === "bb.policy.backup-plan" &&
+        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
       store
