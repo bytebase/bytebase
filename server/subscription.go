@@ -6,7 +6,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -46,7 +45,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 // loadLicense will load current subscription by license.
 // Return subscription with free plan if no license found.
-func (server *Server) loadSubscription() *enterprise.Subscription {
+func (server *Server) loadSubscription() *enterpriseAPI.Subscription {
 	subscription := &enterpriseAPI.Subscription{
 		Plan: api.FREE,
 		// -1 means not expire, just for free plan
@@ -62,16 +61,11 @@ func (server *Server) loadSubscription() *enterprise.Subscription {
 		}
 	}
 
-	// change instance quota for dev environment.
-	if server.mode == "dev" {
-		subscription.InstanceCount = 9999
-	}
-
 	return subscription
 }
 
 // loadLicense will get and parse valid license from file.
-func (server *Server) loadLicense() (*enterprise.License, error) {
+func (server *Server) loadLicense() (*enterpriseAPI.License, error) {
 	license, err := server.LicenseService.LoadLicense()
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {

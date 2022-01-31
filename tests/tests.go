@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/tests/fake"
 	"github.com/google/jsonapi"
 )
@@ -332,6 +333,20 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 		databases = append(databases, database)
 	}
 	return databases, nil
+}
+
+func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, patch); err != nil {
+		return fmt.Errorf("failed to marshal instance create, error: %w", err)
+	}
+
+	_, err := ctl.post("/instance", buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // addInstance adds an instance.
