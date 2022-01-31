@@ -333,6 +333,9 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*api.Task, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
+	if v := patch.DatabaseID; v != nil {
+		set, args = append(set, "database_id = ?"), append(args, *v)
+	}
 	if v := patch.Payload; v != nil {
 		set, args = append(set, "payload = ?"), append(args, *v)
 	}
