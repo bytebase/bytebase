@@ -59,5 +59,6 @@ export default defineConfig(() => {
       global: true,
       environment: "node",
     },
+    envPrefix: "BB_",
   };
 });

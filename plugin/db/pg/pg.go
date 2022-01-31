@@ -673,31 +673,76 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	)
 	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
 	RETURNING id
-`
+	`
+
 	updateHistoryAsDoneQuery := `
 	UPDATE
 		migration_history
 	SET
-    status = 'DONE',
-	  execution_duration_ns = $1,
+		status = 'DONE',
+		execution_duration_ns = $1,
 		"schema" = $2
 	WHERE id = $3
-`
+	`
 
 	updateHistoryAsFailedQuery := `
 	UPDATE
 		migration_history
 	SET
-    status = 'FAILED',
-	  execution_duration_ns = $1
+		status = 'FAILED',
+		execution_duration_ns = $1
 	WHERE id = $2
-`
+	`
+
+	checkDuplicateVersionQuery := `
+		SELECT 1 FROM migration_history
+		WHERE namespace = $1 AND engine = $2 AND version = $3
+	`
+
+	findBaselineQuery := `
+		SELECT 1 FROM migration_history
+		WHERE namespace = $1 AND type = 'BASELINE'
+	`
+
+	checkOutofOrderVersionQuery := `
+		SELECT MIN(version) FROM migration_history
+		WHERE namespace = $1 AND engine = $2 AND version > $3
+	`
+
+	findNextSequenceQuery := `
+		SELECT MAX(sequence) + 1 FROM migration_history
+		WHERE namespace = $1
+	`
+
+	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
+		var insertedID int64
+		tx.QueryRowContext(ctx, insertHistoryQuery,
+			m.Creator,
+			m.Creator,
+			m.ReleaseVersion,
+			m.Namespace,
+			sequence,
+			m.Engine,
+			m.Type,
+			m.Version,
+			m.Description,
+			statement,
+			prevSchema,
+			prevSchema,
+			m.IssueID,
+			m.Payload,
+		).Scan(&insertedID)
+		return insertedID, nil
+	}
 
 	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "",
+		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
+		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
+		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
+		FindBaselineQuery:           findBaselineQuery,
+		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
+		FindNextSequenceQuery:       findNextSequenceQuery,
+		InsertPendingHistoryFunc:    insertPendingFunc,
 	}
 	return util.ExecuteMigration(ctx, driver.l, db.Postgres, driver, m, statement, args)
 }
@@ -726,7 +771,36 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM migration_history `
-	return util.FindMigrationHistoryList(ctx, db.Postgres, driver, find, baseQuery)
+	paramNames, params := []string{}, []interface{}{}
+	if v := find.ID; v != nil {
+		paramNames, params = append(paramNames, "id"), append(params, *v)
+	}
+	if v := find.Database; v != nil {
+		paramNames, params = append(paramNames, "namespace"), append(params, *v)
+	}
+	if v := find.Version; v != nil {
+		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	var query = baseQuery +
+		formatParams(paramNames) +
+		`ORDER BY created_ts DESC`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+}
+
+func formatParams(paramNames []string) string {
+	if len(paramNames) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(paramNames))
+	for i, param := range paramNames {
+		idx := fmt.Sprintf("$%d", i+1)
+		param = param + "=" + idx
+		parts = append(parts, param)
+	}
+	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
 // Dump and restore

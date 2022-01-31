@@ -46,8 +46,8 @@ func (e WebhookType) String() string {
 	return "UNKNOWN"
 }
 
-// webhookInfo is the API message for webhook info.
-type webhookInfo struct {
+// WebhookInfo is the API message for webhook info.
+type WebhookInfo struct {
 	ID int `json:"id"`
 }
 
@@ -351,7 +351,7 @@ func (provider *Provider) CreateWebhook(ctx context.Context, oauthCtx common.Oau
 		return "", fmt.Errorf(reason)
 	}
 
-	webhookInfo := &webhookInfo{}
+	webhookInfo := &WebhookInfo{}
 	if err := json.NewDecoder(resp.Body).Decode(webhookInfo); err != nil {
 		return "", fmt.Errorf("failed to unmarshal create webhook response for repository %s from GitLab instance %s: %w", repositoryID, instanceURL, err)
 	}

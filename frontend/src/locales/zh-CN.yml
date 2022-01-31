@@ -1027,3 +1027,6 @@ subscription:
     bb-feature-backup-policy:
       title: 备份策略
       desc: 「备份策略」可以根据指定的周期自动备份数据库
+    bb-feature-backward-compatibility:
+      title: 向后兼容
+      remind: MySQL 和 TiDB 支持向后兼容的 schema 迁移，可以通过{upgrade}来开启该功能。

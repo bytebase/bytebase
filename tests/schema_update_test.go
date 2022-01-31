@@ -2,14 +2,22 @@ package tests
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/kr/pretty"
 )
+
+//go:embed fake
+var fakeFS embed.FS
 
 func TestSchemaUpdate(t *testing.T) {
 	ctx := context.Background()
@@ -21,6 +29,17 @@ func TestSchemaUpdate(t *testing.T) {
 	defer ctl.Close()
 
 	if err := ctl.Login(); err != nil {
+		t.Fatal(err)
+	}
+
+	license, err := fs.ReadFile(fakeFS, "fake/license")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+		License: string(license),
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -191,5 +210,81 @@ func TestSchemaUpdate(t *testing.T) {
 	wantResult := `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
 	if sqlResultSet.Data != wantResult {
 		t.Fatalf("want SQL result %q, got %q, diff %q", wantResult, sqlResultSet.Data, pretty.Diff(wantResult, sqlResultSet.Data))
+	}
+}
+
+func TestVCSSchemaUpdate(t *testing.T) {
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	if err := ctl.StartMain(ctx, dataDir); err != nil {
+		t.Fatal(err)
+	}
+	defer ctl.Close()
+
+	if err := ctl.Login(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a VCS.
+	applicationID := "testApplicationID"
+	applicationSecret := "testApplicationSecret"
+	vcs, err := ctl.createVCS(api.VCSCreate{
+		Name:          "TestVCS",
+		Type:          vcs.GitLabSelfHost,
+		InstanceURL:   gitURL,
+		APIURL:        gitAPIURL,
+		ApplicationID: applicationID,
+		Secret:        applicationSecret,
+	})
+	if err != nil {
+		t.Fatalf("failed to create VCS, error: %v", err)
+	}
+
+	// Create a project.
+	project, err := ctl.createProject(api.ProjectCreate{
+		Name: "Test VCS Project",
+		Key:  "TestVCSSchemaUpdate",
+	})
+	if err != nil {
+		t.Fatalf("failed to create project, error: %v", err)
+	}
+
+	// Create a repository.
+	repositoryPath := "test/schemaUpdate"
+	accessToken := "accessToken1"
+	refreshToken := "refreshToken1"
+	gitlabProjectID := 121
+	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
+	// create a gitlab project.
+	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	_, err = ctl.createRepository(api.RepositoryCreate{
+		VCSID:              vcs.ID,
+		ProjectID:          project.ID,
+		Name:               "Test Repository",
+		FullPath:           repositoryPath,
+		WebURL:             fmt.Sprintf("%s/%s", gitURL, repositoryPath),
+		BranchFilter:       "master",
+		BaseDirectory:      "bbtest",
+		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+		ExternalID:         gitlabProjectIDStr,
+		AccessToken:        accessToken,
+		ExpiresTs:          0,
+		RefreshToken:       refreshToken,
+	})
+	if err != nil {
+		t.Fatalf("failed to create repository, error: %v", err)
+	}
+
+	// Simulate Git commits.
+	pushEvent := &gitlab.WebhookPushEvent{
+		ObjectKind: gitlab.WebhookPush,
+		Project: gitlab.WebhookProject{
+			ID: gitlabProjectID,
+		},
+	}
+	if err := ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent); err != nil {
+		t.Fatalf("failed to send commits to gitlab project %q, error %v", gitlabProjectID, err)
 	}
 }

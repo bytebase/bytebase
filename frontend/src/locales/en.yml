@@ -1158,3 +1158,6 @@ subscription:
     bb-feature-backup-policy:
       title: Backup policy
       desc: Backup policy will auto-backup your database based on the schedule.
+    bb-feature-backward-compatibility:
+      title: Backward compatibility
+      remind: MySQL and TiDB support schema change with backward compatibility. {upgrade} to open this feature.
