@@ -282,12 +282,14 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 				return task, nil
 			}
 
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
-			if err != nil {
-				return nil, err
-			}
-			if !pass {
-				return task, nil
+			if s.server.feature(api.FeatureBackwardCompatibilty) {
+				pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
+				if err != nil {
+					return nil, err
+				}
+				if !pass {
+					return task, nil
+				}
 			}
 		}
 	}
