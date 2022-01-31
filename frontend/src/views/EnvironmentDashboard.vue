@@ -69,9 +69,9 @@
   </BBAlert>
 
   <FeatureModal
-    v-if="state.missingRequiredFeature != null"
+    v-if="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
-    @cancel="state.missingRequiredFeature = null"
+    @cancel="state.missingRequiredFeature = undefined"
   />
 </template>
 
@@ -87,7 +87,6 @@ import {
   EnvironmentCreate,
   Policy,
   PolicyUpsert,
-  FeatureType,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
 } from "../types";
@@ -117,7 +116,9 @@ interface LocalState {
   showCreateModal: boolean;
   reorder: boolean;
   showGuide: boolean;
-  missingRequiredFeature: FeatureType | null;
+  missingRequiredFeature?:
+    | "bb.feature.approval-policy"
+    | "bb.feature.backup-policy";
 }
 
 export default {
@@ -137,7 +138,6 @@ export default {
       showCreateModal: false,
       reorder: false,
       showGuide: false,
-      missingRequiredFeature: null,
     });
 
     const selectEnvironmentOnHash = () => {

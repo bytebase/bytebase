@@ -13,9 +13,9 @@
     @update-policy="updatePolicy"
   />
   <FeatureModal
-    v-if="state.missingRequiredFeature != null"
+    v-if="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
-    @cancel="state.missingRequiredFeature = null"
+    @cancel="state.missingRequiredFeature = undefined"
   />
 </template>
 
@@ -41,7 +41,9 @@ interface LocalState {
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
   backupPolicy?: Policy;
-  missingRequiredFeature: FeatureType | null;
+  missingRequiredFeature?:
+    | "bb.feature.approval-policy"
+    | "bb.feature.backup-policy";
 }
 
 export default {
@@ -65,7 +67,6 @@ export default {
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
-      missingRequiredFeature: null,
     });
 
     const preparePolicy = () => {
