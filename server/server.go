@@ -67,7 +67,7 @@ type Server struct {
 	DeploymentConfigService api.DeploymentConfigService
 	SavedQueryService       api.SavedQueryService
 	LicenseService          enterprise.LicenseService
-	SheetService          	api.SheetService
+	SheetService            api.SheetService
 
 	e *echo.Echo
 
@@ -82,7 +82,6 @@ type Server struct {
 	secret       string
 	readonly     bool
 	demo         bool
-	plan         api.PlanType
 	dataDir      string
 }
 
@@ -126,7 +125,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		secret:       secret,
 		readonly:     readonly,
 		demo:         demo,
-		plan:         api.TEAM,
 		dataDir:      dataDir,
 	}
 
@@ -239,7 +237,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
