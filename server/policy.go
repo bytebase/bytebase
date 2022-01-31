@@ -11,6 +11,26 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// hasAccessToUpdatePolicy checks if user can access to policy control feature.
+// return nil if user has access.
+func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
+	defaultPolicy, err := api.GetDefaultPolicy(policyUpsert.Type)
+	if err != nil {
+		return err
+	}
+	switch policyUpsert.Type {
+	case api.PolicyTypePipelineApproval:
+		if policyUpsert.Payload != defaultPolicy && !s.feature(api.FeatureApprovalPolicy) {
+			return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
+		}
+	case api.PolicyTypeBackupPlan:
+		if policyUpsert.Payload != defaultPolicy && !s.feature(api.FeatureBackupPolicy) {
+			return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
+		}
+	}
+	return nil
+}
+
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	g.PATCH("/policy/environment/:environmentID", func(c echo.Context) error {
 		ctx := context.Background()
@@ -27,9 +47,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicy(pType, ""); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
 		}
+
 		policyUpsert.EnvironmentID = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
+			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+		}
 
 		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {

@@ -1021,6 +1021,12 @@ subscription:
     bb-feature-multi-tenancy:
       title: 多租户
       desc: 「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。
+    bb-feature-approval-policy:
+      title: 审批策略
+      desc: 「审批策略」可以控制数据库 schema 的变更是否需要手动审批
+    bb-feature-backup-policy:
+      title: 备份策略
+      desc: 「备份策略」可以根据指定的周期自动备份数据库
     bb-feature-backward-compatibility:
       title: 向后兼容
       remind: MySQL 和 TiDB 支持向后兼容的 schema 迁移，可以通过{upgrade}来开启该功能。
