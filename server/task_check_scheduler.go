@@ -318,15 +318,17 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				return nil, err
 			}
 
-			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementCompatibility,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			})
-			if err != nil {
-				return nil, err
+			if s.server.feature(api.FeatureBackwardCompatibilty) {
+				_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					CreatorID:               creatorID,
+					TaskID:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementCompatibility,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+				})
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 

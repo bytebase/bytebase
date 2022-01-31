@@ -23,6 +23,24 @@
       </IssueHighlightPanel>
     </div>
 
+    <!-- Remind banner for bb.feature.backward-compatibility -->
+    <div
+      v-if="
+        !hasBackwardCompatibilityFeature && supportBackwardCompatibilityFeature
+      "
+      class="m-5 mt-0 p-2 rounded bg-yellow-300 text-gray-600"
+    >
+      <i18n-t
+        keypath="subscription.features.bb-feature-backward-compatibility.remind"
+      >
+        <template #upgrade>
+          <router-link to="/setting/subscription" class="normal-link">
+            {{ $t("subscription.upgrade") }}
+          </router-link>
+        </template>
+      </i18n-t>
+    </div>
+
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
       <template v-if="isTenantDeployMode">
@@ -1048,6 +1066,17 @@ export default defineComponent({
       document.getElementById("issue-detail-top")!.scrollIntoView();
     });
 
+    const hasBackwardCompatibilityFeature = computed((): boolean => {
+      return store.getters["subscription/feature"](
+        "bb.feature.backward-compatibility"
+      );
+    });
+
+    const supportBackwardCompatibilityFeature = computed((): boolean => {
+      const engine = database.value?.instance.engine;
+      return engine === "MYSQL" || engine === "TIDB";
+    });
+
     return {
       database,
       instance,
@@ -1096,6 +1125,8 @@ export default defineComponent({
       showIssueTaskStatementPanel,
       showIssueTaskRollbackStatementPanel,
       showIssueTaskStatementApply,
+      hasBackwardCompatibilityFeature,
+      supportBackwardCompatibilityFeature,
     };
   },
 });
