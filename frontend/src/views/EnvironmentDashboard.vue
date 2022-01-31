@@ -88,6 +88,8 @@ import {
   Policy,
   PolicyUpsert,
   FeatureType,
+  DefaultApporvalPolicy,
+  DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
 
@@ -98,14 +100,14 @@ const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
   payload: {
-    value: "MANUAL_APPROVAL_ALWAYS",
+    value: DefaultApporvalPolicy,
   },
 };
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
   payload: {
-    schedule: "UNSET",
+    schedule: DefaultSchedulePolicy,
   },
 };
 
@@ -235,14 +237,14 @@ export default {
       backupPolicy: Policy
     ) => {
       if (
-        approvalPolicy.payload.value !== "MANUAL_APPROVAL_ALWAYS" &&
+        approvalPolicy.payload.value !== DefaultApporvalPolicy &&
         !store.getters["subscription/feature"]("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
       if (
-        backupPolicy.payload.schedule !== "UNSET" &&
+        backupPolicy.payload.schedule !== DefaultSchedulePolicy &&
         !store.getters["subscription/feature"]("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";

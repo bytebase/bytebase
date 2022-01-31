@@ -31,6 +31,8 @@ import {
   Policy,
   PolicyType,
   FeatureType,
+  DefaultApporvalPolicy,
+  DefaultSchedulePolicy,
 } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -137,7 +139,7 @@ export default {
     ) => {
       if (
         type === "bb.policy.pipeline-approval" &&
-        policy.payload.value !== "MANUAL_APPROVAL_ALWAYS" &&
+        policy.payload.value !== DefaultApporvalPolicy &&
         !store.getters["subscription/feature"]("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
@@ -145,7 +147,7 @@ export default {
       }
       if (
         type === "bb.policy.backup-plan" &&
-        policy.payload.schedule !== "UNSET" &&
+        policy.payload.schedule !== DefaultSchedulePolicy &&
         !store.getters["subscription/feature"]("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
