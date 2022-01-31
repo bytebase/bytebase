@@ -20,27 +20,11 @@ func (s *Server) hasAccessToUpdatePolicy(policyUpsert *api.PolicyUpsert) error {
 	}
 	switch policyUpsert.Type {
 	case api.PolicyTypePipelineApproval:
-		policy, err := api.UnmarshalPipelineApprovalPolicy(policyUpsert.Payload)
-		if err != nil {
-			return err
-		}
-		policyStr, err := policy.String()
-		if err != nil {
-			return err
-		}
-		if policyStr != defaultPolicy && !s.feature(api.FeatureApprovalPolicy) {
+		if policyUpsert.Payload != defaultPolicy && !s.feature(api.FeatureApprovalPolicy) {
 			return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeBackupPlan:
-		policy, err := api.UnmarshalBackupPlanPolicy(policyUpsert.Payload)
-		if err != nil {
-			return err
-		}
-		policyStr, err := policy.String()
-		if err != nil {
-			return err
-		}
-		if policyStr != defaultPolicy && !s.feature(api.FeatureBackupPolicy) {
+		if policyUpsert.Payload != defaultPolicy && !s.feature(api.FeatureBackupPolicy) {
 			return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
 		}
 	}
