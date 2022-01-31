@@ -18,7 +18,7 @@
             class="btn-normal py-2 px-4"
             @click.prevent="discardReorder"
           >
-            {{ $t('common.cancel') }}
+            {{ $t("common.cancel") }}
           </button>
           <button
             type="submit"
@@ -26,7 +26,7 @@
             :disabled="!orderChanged"
             @click.prevent="doReorder"
           >
-            {{ $t('common.apply') }}
+            {{ $t("common.apply") }}
           </button>
         </div>
         <EnvironmentDetail
@@ -67,6 +67,12 @@
     @cancel="state.showGuide = false"
   >
   </BBAlert>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -103,6 +109,7 @@ interface LocalState {
   showCreateModal: boolean;
   reorder: boolean;
   showGuide: boolean;
+  showFeatureModal: boolean;
 }
 
 export default {
@@ -122,6 +129,7 @@ export default {
       showCreateModal: false,
       reorder: false,
       showGuide: false,
+      showFeatureModal: false,
     });
 
     const selectEnvironmentOnHash = () => {
@@ -220,6 +228,13 @@ export default {
       approvalPolicy: Policy,
       backupPolicy: Policy
     ) => {
+      if (
+        !store.getters["subscription/feature"]("bb.feature.approval-policy") ||
+        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
       store
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((environment: Environment) => {

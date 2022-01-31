@@ -12,6 +12,11 @@
     @restore="doRestore"
     @update-policy="updatePolicy"
   />
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -33,6 +38,7 @@ interface LocalState {
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
   backupPolicy?: Policy;
+  showFeatureModal: boolean;
 }
 
 export default {
@@ -56,6 +62,7 @@ export default {
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
+      showFeatureModal: false,
     });
 
     const preparePolicy = () => {
@@ -127,6 +134,17 @@ export default {
       type: PolicyType,
       policy: Policy
     ) => {
+      if (
+        (type === "bb.policy.pipeline-approval" &&
+          !store.getters["subscription/feature"](
+            "bb.feature.approval-policy"
+          )) ||
+        (type === "bb.policy.backup-plan" &&
+          !store.getters["subscription/feature"]("bb.feature.backup-policy"))
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
       store
         .dispatch("policy/upsertPolicyByEnvironmentAndType", {
           environmentId,

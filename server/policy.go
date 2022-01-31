@@ -15,10 +15,10 @@ import (
 // return nil if user has access.
 func (s *Server) hasAccessToUpdatePolicy(pType api.PolicyType) error {
 	if pType == api.PolicyTypeBackupPlan && !s.feature(api.FeatureBackupPolicy) {
-		return fmt.Errorf("Access denied for feature %s", api.FeatureBackupPolicy)
+		return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
 	}
 	if pType == api.PolicyTypePipelineApproval && !s.feature(api.FeatureApprovalPolicy) {
-		return fmt.Errorf("Access denied for feature %s", api.FeatureApprovalPolicy)
+		return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
 	}
 
 	return nil
