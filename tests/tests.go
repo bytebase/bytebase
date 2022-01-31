@@ -338,10 +338,10 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, patch); err != nil {
-		return fmt.Errorf("failed to marshal instance create, error: %w", err)
+		return fmt.Errorf("failed to marshal subscription patch, error: %w", err)
 	}
 
-	_, err := ctl.post("/instance", buf)
+	_, err := ctl.post("/subscription", buf)
 	if err != nil {
 		return err
 	}
