@@ -341,7 +341,7 @@ func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error 
 		return fmt.Errorf("failed to marshal subscription patch, error: %w", err)
 	}
 
-	_, err := ctl.post("/subscription", buf)
+	_, err := ctl.patch("/subscription", buf)
 	if err != nil {
 		return err
 	}
