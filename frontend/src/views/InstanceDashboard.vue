@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="m-5 p-2 rounded bg-yellow-300" v-if="remainingInstanceCount <= 3">
+    <div class="m-5 p-2 rounded bg-yellow-300 text-gray-600" v-if="remainingInstanceCount <= 3">
       <i18n-t keypath="subscription.features.bb-feature-instance-count.remaining" v-if="remainingInstanceCount > 0">
         <template v-slot:total>
           <span class="text-accent">{{ instanceQuota }}</span>
