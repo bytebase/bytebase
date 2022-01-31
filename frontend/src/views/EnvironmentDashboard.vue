@@ -18,7 +18,7 @@
             class="btn-normal py-2 px-4"
             @click.prevent="discardReorder"
           >
-            {{ $t('common.cancel') }}
+            {{ $t("common.cancel") }}
           </button>
           <button
             type="submit"
@@ -26,7 +26,7 @@
             :disabled="!orderChanged"
             @click.prevent="doReorder"
           >
-            {{ $t('common.apply') }}
+            {{ $t("common.apply") }}
           </button>
         </div>
         <EnvironmentDetail
@@ -67,6 +67,12 @@
     @cancel="state.showGuide = false"
   >
   </BBAlert>
+
+  <FeatureModal
+    v-if="state.missingRequiredFeature != undefined"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = undefined"
+  />
 </template>
 
 <script lang="ts">
@@ -76,7 +82,14 @@ import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { Environment, EnvironmentCreate, Policy, PolicyUpsert } from "../types";
+import {
+  Environment,
+  EnvironmentCreate,
+  Policy,
+  PolicyUpsert,
+  DefaultApporvalPolicy,
+  DefaultSchedulePolicy,
+} from "../types";
 import { BBTabItem } from "../bbkit/types";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -86,14 +99,14 @@ const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
   payload: {
-    value: "MANUAL_APPROVAL_ALWAYS",
+    value: DefaultApporvalPolicy,
   },
 };
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
   payload: {
-    schedule: "UNSET",
+    schedule: DefaultSchedulePolicy,
   },
 };
 
@@ -103,6 +116,9 @@ interface LocalState {
   showCreateModal: boolean;
   reorder: boolean;
   showGuide: boolean;
+  missingRequiredFeature?:
+    | "bb.feature.approval-policy"
+    | "bb.feature.backup-policy";
 }
 
 export default {
@@ -220,6 +236,21 @@ export default {
       approvalPolicy: Policy,
       backupPolicy: Policy
     ) => {
+      if (
+        approvalPolicy.payload.value !== DefaultApporvalPolicy &&
+        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.approval-policy";
+        return;
+      }
+      if (
+        backupPolicy.payload.schedule !== DefaultSchedulePolicy &&
+        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.backup-policy";
+        return;
+      }
+
       store
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((environment: Environment) => {
