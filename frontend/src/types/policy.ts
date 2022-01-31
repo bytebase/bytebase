@@ -12,11 +12,16 @@ export type PipelineApporvalPolicyPayload = {
   value: PipelineApprovalPolicyValue;
 };
 
+export const DefaultApporvalPolicy: PipelineApprovalPolicyValue =
+  "MANUAL_APPROVAL_ALWAYS";
+
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
 export type PolicyBackupPlanPolicyPayload = {
   schedule: BackupPlanPolicySchedule;
 };
+
+export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
 export type PolicyPayload =
   | PipelineApporvalPolicyPayload

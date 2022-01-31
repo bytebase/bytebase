@@ -6,7 +6,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -34,15 +33,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}
 
-		license, err := s.loadLicense()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
-		}
-		subscription := &enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			InstanceCount: license.InstanceCount,
-		}
+		subscription := s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
@@ -54,9 +45,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 // loadLicense will load current subscription by license.
 // Return subscription with free plan if no license found.
-func (server *Server) loadSubscription() *enterprise.Subscription {
+func (server *Server) loadSubscription() *enterpriseAPI.Subscription {
 	subscription := &enterpriseAPI.Subscription{
-		Plan: api.TEAM,
+		Plan: api.FREE,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
 		InstanceCount: 5,
@@ -68,18 +59,13 @@ func (server *Server) loadSubscription() *enterprise.Subscription {
 			ExpiresTs:     license.ExpiresTs,
 			InstanceCount: license.InstanceCount,
 		}
-	} else {
-		// increase instance quota for dev environment.
-		if server.mode == "dev" {
-			subscription.InstanceCount = subscription.InstanceCount * 2
-		}
 	}
 
 	return subscription
 }
 
 // loadLicense will get and parse valid license from file.
-func (server *Server) loadLicense() (*enterprise.License, error) {
+func (server *Server) loadLicense() (*enterpriseAPI.License, error) {
 	license, err := server.LicenseService.LoadLicense()
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
@@ -98,4 +84,9 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 	)
 
 	return license, nil
+}
+
+func (s *Server) feature(feature api.FeatureType) bool {
+	subscription := s.loadSubscription()
+	return api.FeatureMatrix[feature][subscription.Plan]
 }

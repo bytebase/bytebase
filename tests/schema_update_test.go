@@ -2,16 +2,22 @@ package tests
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/kr/pretty"
 )
+
+//go:embed fake
+var fakeFS embed.FS
 
 func TestSchemaUpdate(t *testing.T) {
 	ctx := context.Background()
@@ -23,6 +29,17 @@ func TestSchemaUpdate(t *testing.T) {
 	defer ctl.Close()
 
 	if err := ctl.Login(); err != nil {
+		t.Fatal(err)
+	}
+
+	license, err := fs.ReadFile(fakeFS, "fake/license")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+		License: string(license),
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
