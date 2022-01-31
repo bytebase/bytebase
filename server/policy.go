@@ -13,7 +13,7 @@ import (
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
 // return nil if user has access.
-func (s *Server) hasAccessToUpdatePolicy(policyUpsert *api.PolicyUpsert) error {
+func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 	defaultPolicy, err := api.GetDefaultPolicy(policyUpsert.Type)
 	if err != nil {
 		return err
@@ -52,8 +52,8 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := s.hasAccessToUpdatePolicy(policyUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err)
+		if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
+			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
 
 		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
