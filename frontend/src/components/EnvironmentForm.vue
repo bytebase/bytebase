@@ -3,7 +3,7 @@
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
-          {{ $t('common.environments') }} <span class="text-red-600">*</span>
+          {{ $t("common.environments") }} <span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-2 w-full"
@@ -14,9 +14,9 @@
         />
       </div>
       <div class="col-span-1">
-        <label class="textlabel"> {{ $t('policy.approval.name') }} </label>
+        <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
         <div class="mt-1 textinfolabel">
-          {{ $t('policy.approval.info') }}
+          {{ $t("policy.approval.info") }}
         </div>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
@@ -25,18 +25,14 @@
               name="manual-approval-always"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="MANUAL_APPROVAL_ALWAYS"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t('policy.approval.manual') }}</div>
+              <div class="textlabel">{{ $t("policy.approval.manual") }}</div>
               <div class="mt-1 textinfolabel">
-                {{ $t('policy.approval.manual-info') }}
+                {{ $t("policy.approval.manual-info") }}
               </div>
             </div>
           </div>
@@ -46,43 +42,37 @@
               name="manual-approval-never"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="MANUAL_APPROVAL_NEVER"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t('policy.approval.auto') }}</div>
+              <div class="textlabel">{{ $t("policy.approval.auto") }}</div>
               <div class="mt-1 textinfolabel">
-                {{ $t('policy.approval.auto-info') }}
+                {{ $t("policy.approval.auto-info") }}
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-span-1">
-        <label class="textlabel"> {{ $t('policy.backup.name') }} </label>
+        <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
               v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="UNSET"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t('policy.backup.not-enforced') }}</div>
+              <div class="textlabel">
+                {{ $t("policy.backup.not-enforced") }}
+              </div>
               <div class="mt-1 textinfolabel">
-                {{ $t('policy.backup.not-enforced-info') }}
+                {{ $t("policy.backup.not-enforced-info") }}
               </div>
             </div>
           </div>
@@ -91,18 +81,14 @@
               v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="DAILY"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t('policy.backup.daily') }}</div>
+              <div class="textlabel">{{ $t("policy.backup.daily") }}</div>
               <div class="mt-1 textinfolabel">
-                {{ $t('policy.backup.daily-info') }}
+                {{ $t("policy.backup.daily-info") }}
               </div>
             </div>
           </div>
@@ -111,18 +97,14 @@
               v-model="state.backupPolicy.payload.schedule"
               tabindex="-1"
               type="radio"
-              class="
-                text-accent
-                disabled:text-accent-disabled
-                focus:ring-accent
-              "
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
               value="WEEKLY"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t('policy.backup.weekly') }}</div>
+              <div class="textlabel">{{ $t("policy.backup.weekly") }}</div>
               <div class="mt-1 textinfolabel">
-                {{ $t('policy.backup.weekly-info') }}
+                {{ $t("policy.backup.weekly-info") }}
               </div>
             </div>
           </div>
@@ -136,7 +118,7 @@
         class="btn-normal py-2 px-4"
         @click.prevent="$emit('cancel')"
       >
-        {{ $t('common.cancel') }}
+        {{ $t("common.cancel") }}
       </button>
       <button
         type="submit"
@@ -144,7 +126,7 @@
         :disabled="!allowCreate"
         @click.prevent="createEnvironment"
       >
-        {{ $t('common.create') }}
+        {{ $t("common.create") }}
       </button>
     </div>
     <!-- Update button group -->
@@ -155,7 +137,9 @@
           :style="'ARCHIVE'"
           :button-text="$t('environment.archive')"
           :ok-text="$t('common.archive')"
-          :confirm-title="$t('environment.archive') + ` '${state.environment.name}'?`"
+          :confirm-title="
+            $t('environment.archive') + ` '${state.environment.name}'?`
+          "
           :confirm-description="$t('environment.archive-info')"
           :require-confirm="true"
           @confirm="archiveEnvironment"
@@ -167,7 +151,9 @@
           :style="'RESTORE'"
           :button-text="$t('environment.restore')"
           :ok-text="$t('common.restore')"
-          :confirm-title="$t('environment.restore') + ` '${state.environment.name}'?`"
+          :confirm-title="
+            $t('environment.restore') + ` '${state.environment.name}'?`
+          "
           :confirm-description="''"
           :require-confirm="true"
           @confirm="restoreEnvironment"
@@ -181,7 +167,7 @@
           :disabled="!valueChanged"
           @click.prevent="revertEnvironment"
         >
-          {{ $t('common.revert') }}
+          {{ $t("common.revert") }}
         </button>
         <button
           type="submit"
@@ -189,7 +175,7 @@
           :disabled="!valueChanged"
           @click.prevent="updateEnvironment"
         >
-          {{ $t('common.update') }}
+          {{ $t("common.update") }}
         </button>
       </div>
     </div>
@@ -321,7 +307,7 @@ export default {
         emit("update", patchedEnvironment);
       }
 
-      if (state.approvalPolicy != props.approvalPolicy) {
+      if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
         emit(
           "update-policy",
           (state.environment as Environment).id,
@@ -330,7 +316,7 @@ export default {
         );
       }
 
-      if (state.backupPolicy != props.backupPolicy) {
+      if (!isEqual(props.backupPolicy, state.backupPolicy)) {
         emit(
           "update-policy",
           (state.environment as Environment).id,
