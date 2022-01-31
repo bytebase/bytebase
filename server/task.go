@@ -195,20 +195,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-						CreatorID:               api.SystemBotID,
-						TaskID:                  task.ID,
-						Type:                    api.TaskCheckDatabaseStatementCompatibility,
-						Payload:                 string(payload),
-						SkipIfAlreadyTerminated: false,
-					})
-					if err != nil {
-						// It's OK if we failed to trigger a check, just emit an error log
-						s.l.Error("Failed to trigger compatibility check after changing task statement",
-							zap.Int("task_id", task.ID),
-							zap.String("task_name", task.Name),
-							zap.Error(err),
-						)
+					if s.feature(api.FeatureBackwardCompatibilty) {
+						_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+							CreatorID:               api.SystemBotID,
+							TaskID:                  task.ID,
+							Type:                    api.TaskCheckDatabaseStatementCompatibility,
+							Payload:                 string(payload),
+							SkipIfAlreadyTerminated: false,
+						})
+						if err != nil {
+							// It's OK if we failed to trigger a check, just emit an error log
+							s.l.Error("Failed to trigger compatibility check after changing task statement",
+								zap.Int("task_id", task.ID),
+								zap.String("task_name", task.Name),
+								zap.Error(err),
+							)
+						}
 					}
 				}
 			}
