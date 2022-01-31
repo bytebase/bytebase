@@ -235,12 +235,16 @@ export default {
       backupPolicy: Policy
     ) => {
       if (
+        approvalPolicy.payload.value !== "MANUAL_APPROVAL_ALWAYS" &&
         !store.getters["subscription/feature"]("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
-      if (!store.getters["subscription/feature"]("bb.feature.backup-policy")) {
+      if (
+        backupPolicy.payload.schedule !== "UNSET" &&
+        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+      ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
