@@ -1,13 +1,9 @@
 <template>
   <div class="flex flex-col">
-    <BBAttention
+    <FeatureAttention
       v-if="remainingInstanceCount <= 3"
-      class="m-5"
-      :style="`WARN`"
-      :title="$t('subscription.features.bb-feature-instance-count.title')"
+      feature="bb.feature.instance-count"
       :description="instanceCountAttention"
-      :action-text="$t('subscription.upgrade')"
-      @click-action="$router.push('/setting/subscription')"
     />
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
