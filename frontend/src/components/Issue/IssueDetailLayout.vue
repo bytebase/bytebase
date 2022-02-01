@@ -28,7 +28,7 @@
       v-if="
         !hasBackwardCompatibilityFeature && supportBackwardCompatibilityFeature
       "
-      custom-class="mt-0"
+      custom-class="m-5 mt-0"
       feature="bb.feature.backward-compatibility"
       :description="
         $t('subscription.features.bb-feature-backward-compatibility.desc')

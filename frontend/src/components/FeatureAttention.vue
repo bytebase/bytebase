@@ -1,6 +1,6 @@
 <template>
   <BBAttention
-    :class="['m-5', customClass]"
+    :class="customClass"
     :style="`WARN`"
     :title="$t(titleKey)"
     :description="description"
