@@ -5,7 +5,17 @@
       :title="$t('anomaly.attention-title')"
       :description="$t('anomaly.attention-desc')"
     />
-    <!-- This example requires Tailwind CSS v2.0+ -->
+
+    <BBAttention
+      v-if="!hasSchemaDriftFeature"
+      :style="`WARN`"
+      class="mt-5"
+      :title="$t('subscription.features.bb-feature-schema-drift.title')"
+      :description="$t('subscription.features.bb-feature-schema-drift.desc')"
+      :action-text="$t('subscription.upgrade')"
+      @click-action="$router.push('/setting/subscription')"
+    />
+
     <div class="mt-4 space-y-4">
       <div
         v-for="(item, i) in [
@@ -370,6 +380,10 @@ export default {
       state.searchText = searchText;
     };
 
+    const hasSchemaDriftFeature = computed((): boolean => {
+      return store.getters["subscription/feature"]("bb.feature.schema-drift");
+    });
+
     return {
       DATABASE_TAB,
       INSTANCE_TAB,
@@ -380,6 +394,7 @@ export default {
       instanceAnomalySummaryList,
       tabItemList,
       changeSearchText,
+      hasSchemaDriftFeature,
     };
   },
 };
