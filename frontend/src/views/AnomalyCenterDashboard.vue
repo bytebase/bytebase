@@ -6,14 +6,11 @@
       :description="$t('anomaly.attention-desc')"
     />
 
-    <BBAttention
+    <FeatureAttention
       v-if="!hasSchemaDriftFeature"
-      :style="`WARN`"
-      class="mt-5"
-      :title="$t('subscription.features.bb-feature-schema-drift.title')"
+      custom-class="mt-5"
+      feature="bb.feature.schema-drift"
       :description="$t('subscription.features.bb-feature-schema-drift.desc')"
-      :action-text="$t('subscription.upgrade')"
-      @click-action="$router.push('/setting/subscription')"
     />
 
     <div class="mt-4 space-y-4">
