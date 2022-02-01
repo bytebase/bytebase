@@ -1161,3 +1161,6 @@ subscription:
     bb-feature-backward-compatibility:
       title: Backward compatibility
       desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
+    bb-feature-rbac:
+      title: Role management
+      desc: Role management can assign different permissions to different roles. @:{'subscription.upgrade'} to open this feature.

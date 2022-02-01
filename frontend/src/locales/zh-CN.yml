@@ -1030,3 +1030,6 @@ subscription:
     bb-feature-backward-compatibility:
       title: 向后兼容
       desc: MySQL 和 TiDB 支持向后兼容的 schema 迁移，可以通过@:{'subscription.upgrade'}来开启该功能。
+    bb-feature-rbac:
+      title: 角色管理
+      desc: 「角色管理」将不同角色赋予不同权限，可以通过@:{'subscription.upgrade'}来开启该功能。

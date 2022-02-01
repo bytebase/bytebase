@@ -2,6 +2,12 @@
   <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
     <MemberAddOrInvite />
   </div>
+  <FeatureAttention
+      v-if="!hasAdminFeature"
+      custom-class="my-5"
+      feature="bb.feature.rbac"
+      :description="$t('subscription.features.bb-feature-rbac.desc')"
+  />
   <div>
     <div class="flex flex-row space-x-2">
       <p class="text-lg font-medium leading-7 text-main">{{ $t("settings.members.active") }}</p>
@@ -77,6 +83,7 @@ export default {
       inactiveMemberList,
       allowAddOrInvite,
       showUpgradeInfo,
+      hasAdminFeature,
     };
   },
 };
