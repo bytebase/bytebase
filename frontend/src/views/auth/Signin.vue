@@ -33,15 +33,20 @@
               : authProvider.name
           }}</span>
           <span v-if="!has3rdPartyLoginFeature" class="tooltip">
-            {{ $t('subscription.features.bb-feature-3rd-party-login.login') }}
+            {{ $t("subscription.features.bb-feature-3rd-party-login.login") }}
           </span>
         </n-button>
       </template>
 
       <template v-if="authProviderList.length == 0">
         <n-button class="w-full h-10 mb-2" disabled>
-          <img class="w-5 mr-1" :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath" />
-          <span class="text-center font-semibold align-middle">{{ $t("auth.sign-in.gitlab-oauth") }}</span>
+          <img
+            class="w-5 mr-1"
+            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
+          />
+          <span class="text-center font-semibold align-middle">{{
+            $t("auth.sign-in.gitlab-oauth")
+          }}</span>
         </n-button>
       </template>
     </div>
