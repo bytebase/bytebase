@@ -4,7 +4,8 @@
       v-if="remainingInstanceCount <= 3"
       class="m-5"
       :style="`WARN`"
-      :title="instanceCountAttention"
+      :title="$t('subscription.features.bb-feature-instance-count.title')"
+      :description="instanceCountAttention"
       :action-text="$t('subscription.upgrade')"
       @click-action="$router.push('/setting/subscription')"
     />

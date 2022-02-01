@@ -31,7 +31,10 @@
       class="m-5 mt-0"
       :style="`WARN`"
       :title="
-        $t('subscription.features.bb-feature-backward-compatibility.remind')
+        $t('subscription.features.bb-feature-backward-compatibility.title')
+      "
+      :description="
+        $t('subscription.features.bb-feature-backward-compatibility.desc')
       "
       :action-text="$t('subscription.upgrade')"
       @click-action="$router.push('/setting/subscription')"

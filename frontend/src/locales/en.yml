@@ -1160,4 +1160,4 @@ subscription:
       desc: Backup policy will auto-backup your database based on the schedule.
     bb-feature-backward-compatibility:
       title: Backward compatibility
-      remind: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
+      desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
