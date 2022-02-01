@@ -15,6 +15,8 @@
       >
         <n-button
           class="w-full h-10 mb-2"
+          :class="'tooltip-wrapper'"
+          :disabled="!has3rdPartyLoginFeature"
           @click.prevent="
             () => {
               state.activeAuthProvider = authProvider;
@@ -30,6 +32,9 @@
               ? $t("auth.sign-in.gitlab")
               : authProvider.name
           }}</span>
+          <span v-if="!has3rdPartyLoginFeature" class="tooltip">
+            {{ $t('subscription.features.bb-feature-3rd-party-login.login') }}
+          </span>
         </n-button>
       </template>
 
@@ -269,6 +274,12 @@ export default {
       );
     };
 
+    const has3rdPartyLoginFeature = computed((): boolean => {
+      return store.getters["subscription/feature"](
+        "bb.feature.3rd-party-login"
+      );
+    });
+
     return {
       state,
       allowSignin,
@@ -276,6 +287,7 @@ export default {
       AuthProviderConfig,
       trySignin,
       trySigninWithOAuth,
+      has3rdPartyLoginFeature,
     };
   },
 };
