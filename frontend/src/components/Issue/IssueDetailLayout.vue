@@ -24,22 +24,16 @@
     </div>
 
     <!-- Remind banner for bb.feature.backward-compatibility -->
-    <div
+    <FeatureAttention
       v-if="
         !hasBackwardCompatibilityFeature && supportBackwardCompatibilityFeature
       "
-      class="m-5 mt-0 p-2 rounded bg-yellow-300 text-gray-600"
-    >
-      <i18n-t
-        keypath="subscription.features.bb-feature-backward-compatibility.remind"
-      >
-        <template #upgrade>
-          <router-link to="/setting/subscription" class="normal-link">
-            {{ $t("subscription.upgrade") }}
-          </router-link>
-        </template>
-      </i18n-t>
-    </div>
+      custom-class="m-5 mt-0"
+      feature="bb.feature.backward-compatibility"
+      :description="
+        $t('subscription.features.bb-feature-backward-compatibility.desc')
+      "
+    />
 
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
