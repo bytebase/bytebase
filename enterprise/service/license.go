@@ -42,6 +42,9 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	if err != nil {
 		return nil, err
 	}
+	if tokenString == "" {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("cannot find license"))
+	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
