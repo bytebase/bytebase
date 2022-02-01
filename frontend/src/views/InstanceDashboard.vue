@@ -1,40 +1,11 @@
 <template>
   <div class="flex flex-col">
-    <div class="m-5 p-2 rounded bg-yellow-300 text-gray-600" v-if="remainingInstanceCount <= 3">
-      <i18n-t keypath="subscription.features.bb-feature-instance-count.remaining" v-if="remainingInstanceCount > 0">
-        <template v-slot:total>
-          <span class="text-accent">{{ instanceQuota }}</span>
-        </template>
-        <template v-slot:count>
-          <span class="text-accent">{{ remainingInstanceCount }}</span>
-        </template>
-        <template v-slot:upgrade>
-          <router-link
-            to="/setting/subscription"
-            class="normal-link"
-          >
-            {{ $t("subscription.upgrade")}}
-          </router-link>
-        </template>
-      </i18n-t>
-      <i18n-t v-else keypath="subscription.features.bb-feature-instance-count.runoutof">
-        <template v-slot:total>
-          <span class="text-accent">{{ instanceQuota }}</span>
-        </template>
-      </i18n-t>
-      <span class="pl-1">
-        <i18n-t keypath="subscription.features.bb-feature-instance-count.upgrade">
-          <template v-slot:upgrade>
-            <router-link
-              to="/setting/subscription"
-              class="normal-link"
-            >
-              {{ $t("subscription.upgrade")}}
-            </router-link>
-          </template>
-        </i18n-t>
-      </span>
-    </div>
+    <FeatureAttention
+      custom-class="m-5"
+      v-if="remainingInstanceCount <= 3"
+      feature="bb.feature.instance-count"
+      :description="instanceCountAttention"
+    />
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
@@ -76,6 +47,7 @@ import { useStore } from "vuex";
 import { Environment, Subscription, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;
@@ -94,6 +66,7 @@ export default {
 
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"](["NORMAL"]);
@@ -179,13 +152,37 @@ export default {
     const instanceQuota = computed((): number => {
       const subscription: Subscription | undefined =
         store.getters["subscription/subscription"]();
-      return subscription?.instanceCount ?? 5
-    })
+      return subscription?.instanceCount ?? 5;
+    });
 
     const remainingInstanceCount = computed((): number => {
-      const instanceList: Instance[] = store.getters["instance/instanceList"](["NORMAL"]);
-      return Math.max(0, instanceQuota.value - instanceList.length)
-    })
+      const instanceList: Instance[] = store.getters["instance/instanceList"]([
+        "NORMAL",
+      ]);
+      return Math.max(0, instanceQuota.value - instanceList.length);
+    });
+
+    const instanceCountAttention = computed((): string => {
+      const upgrade = t(
+        "subscription.features.bb-feature-instance-count.upgrade"
+      );
+      let status = "";
+      if (remainingInstanceCount.value > 0) {
+        status = t(
+          "subscription.features.bb-feature-instance-count.remaining",
+          {
+            total: instanceQuota.value,
+            count: remainingInstanceCount.value,
+          }
+        );
+      } else {
+        status = t("subscription.features.bb-feature-instance-count.runoutof", {
+          total: instanceQuota.value,
+        });
+      }
+
+      return `${status} ${upgrade}`;
+    });
 
     return {
       searchField,
@@ -195,8 +192,8 @@ export default {
       selectEnvironment,
       changeSearchText,
       doDismissGuide,
-      instanceQuota,
       remainingInstanceCount,
+      instanceCountAttention,
     };
   },
 };
