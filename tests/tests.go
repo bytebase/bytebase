@@ -401,6 +401,58 @@ func (ctl *controller) getIssue(id int) (*api.Issue, error) {
 	return issue, nil
 }
 
+// getIssue gets the issue with given ID.
+func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) {
+	params := make(map[string]string)
+	if issueFind.ProjectID != nil {
+		params["project"] = fmt.Sprintf("%d", *issueFind.ProjectID)
+	}
+	if issueFind.StatusList != nil && len(*issueFind.StatusList) > 0 {
+		var sl []string
+		for _, status := range *issueFind.StatusList {
+			sl = append(sl, string(status))
+		}
+		params["status"] = strings.Join(sl, ",")
+	}
+	body, err := ctl.get("/issue", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var issues []*api.Issue
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Issue)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+	}
+	for _, p := range ps {
+		issue, ok := p.(*api.Issue)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert issue")
+		}
+		issues = append(issues, issue)
+	}
+	return issues, nil
+}
+
+// patchIssue patches the issue with given ID.
+func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (*api.Issue, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &issueStatusPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal issue status patch, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/issue/%d/status", issueStatusPatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal patch issue status patch response, error: %w", err)
+	}
+	return issue, nil
+}
+
 // patchTaskStatus patches the status of a task in the pipeline stage.
 func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
@@ -450,7 +502,11 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 			case api.TaskPendingApproval:
 				return api.TaskPendingApproval, nil
 			case api.TaskFailed:
-				return api.TaskFailed, fmt.Errorf("pipeline task %v failed payload %q", task.ID, task.Payload)
+				var runs []string
+				for _, run := range task.TaskRunList {
+					runs = append(runs, fmt.Sprintf("%+v", run))
+				}
+				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
 			case api.TaskCanceled:
 				return api.TaskCanceled, nil
 			case api.TaskRunning:
