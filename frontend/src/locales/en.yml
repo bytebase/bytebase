@@ -1131,6 +1131,9 @@ oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
   description: You can upload your bytebase license to unlock team/enterprise features.
+  current: Current plan
+  instance-count: Instance count
+  expires-at: Expires at
   description-highlight: Purchase a license
   sensitive-placeholder: Paste your license here - write only
   upload-license: Upload license
