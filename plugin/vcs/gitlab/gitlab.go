@@ -581,7 +581,7 @@ func refreshToken(instanceURL string, oldToken *string, oauthContext oauthContex
 	if err != nil {
 		return fmt.Errorf("failed to read body from refresh token POST %v (%w)", url, err)
 	}
-	// We should not call getOAuthErrorDetails used to determine token refreshing inside the function of refreshing token.
+	// We should not call getOAuthErrorDetails becuase We shouldn't determine oauth error inside the function of refreshing oauth token.
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to fetch refresh token, response code %v body %s", resp.StatusCode, body)
