@@ -364,7 +364,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	file1 := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
 	pushEvent := &gitlab.WebhookPushEvent{
 		ObjectKind: gitlab.WebhookPush,
-		Ref:        "refs/heads/foo",
+		Ref:        "refs/heads/feature/foo",
 		Project: gitlab.WebhookProject{
 			ID: gitlabProjectID,
 		},
