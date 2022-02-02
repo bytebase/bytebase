@@ -17,8 +17,7 @@ const getters = {
   },
 
   currentPlan: (state: SubscriptionState) => (): PlanType => {
-    // TODO: this is used for align with current logic - TEAM plan is default plan
-    return state.subscription?.plan ?? PlanType.TEAM;
+    return state.subscription?.plan ?? PlanType.FREE;
   },
 
   feature:
