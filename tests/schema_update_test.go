@@ -278,7 +278,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		Name:               "Test Repository",
 		FullPath:           repositoryPath,
 		WebURL:             fmt.Sprintf("%s/%s", gitURL, repositoryPath),
-		BranchFilter:       "foo",
+		BranchFilter:       "feature/foo",
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
