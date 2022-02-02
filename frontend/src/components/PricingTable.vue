@@ -36,7 +36,7 @@
               >
                 <div>
                   Instances<br />
-                  $29/instance/month
+                  ${{ instancePricePerMonth }}/instance/month
                 </div>
                 <Counter
                   class="ml-auto"
@@ -145,6 +145,7 @@ interface LocalPlan extends Plan {
 }
 
 const minimumInstanceCount = 5;
+const instancePricePerMonth = 29;
 
 export default {
   name: "PricingTable",
@@ -168,7 +169,11 @@ export default {
     );
 
     const instancePricePerYear = computed((): number => {
-      return (state.instanceCount - minimumInstanceCount) * 29 * 12;
+      return (
+        (state.instanceCount - minimumInstanceCount) *
+        instancePricePerMonth *
+        12
+      );
     });
 
     const getPlanPrice = (plan: Plan): number => {
@@ -230,6 +235,7 @@ export default {
       getFeature,
       onButtonClick,
       minimumInstanceCount,
+      instancePricePerMonth,
       isAvailableToPurchase,
     };
   },
