@@ -2,7 +2,6 @@ package vcs
 
 import (
 	"context"
-	"io"
 	"sync"
 
 	"github.com/bytebase/bytebase/common"
@@ -108,7 +107,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// commitID: the specific version to be read
-	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (io.ReadCloser, error)
+	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (string, error)
 	// Reads the file metadata. Returns the file meta on success.
 	//
 	// Similar to ReadFile except it specifies a branch instead of a commitID.
