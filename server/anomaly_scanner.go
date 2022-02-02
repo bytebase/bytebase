@@ -278,7 +278,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	}
 
 	// Check schema drift
-	{
+	if s.server.feature(api.FeatureSchemaDrift) {
 		setup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
 			s.l.Debug("Failed to check anomaly",
