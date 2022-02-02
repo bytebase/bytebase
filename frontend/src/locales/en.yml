@@ -1161,3 +1161,6 @@ subscription:
     bb-feature-backward-compatibility:
       title: Backward compatibility
       desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
+    bb-feature-schema-drift:
+      title: Schema drift
+      desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
