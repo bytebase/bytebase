@@ -201,9 +201,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				}
 				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate)
+				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, database.Labels)
 				if err != nil {
-					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, err)
+					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, database.Labels, err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, baseDatabaseName)
 				if err != nil {
@@ -737,9 +737,9 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		for _, label := range labels {
 			tokens[label.Key] = tokens[label.Value]
 		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate)
+		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
 		if err != nil {
-			return fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", database.Name, project.DBNameTemplate, err)
+			return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, project.DBNameTemplate, labelsJSON, err)
 		}
 		if _, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
 			err := fmt.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)

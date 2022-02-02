@@ -672,9 +672,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if !s.feature(api.FeatureMultiTenancy) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
-			baseDatabaseName, err := api.GetBaseDatabaseName(m.DatabaseName, project.DBNameTemplate)
+			baseDatabaseName, err := api.GetBaseDatabaseName(m.DatabaseName, project.DBNameTemplate, m.Labels)
 			if err != nil {
-				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", m.DatabaseName, project.DBNameTemplate, err)
+				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", m.DatabaseName, project.DBNameTemplate, m.Labels, err)
 			}
 			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
 			if err != nil {
@@ -818,7 +818,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			baseDatabaseName, err := api.GetBaseDatabaseName(d.DatabaseName, project.DBNameTemplate)
+			baseDatabaseName := d.DatabaseName
 			if err != nil {
 				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
 			}

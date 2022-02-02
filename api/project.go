@@ -249,8 +249,16 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 	return template, nil
 }
 
-// GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate.
-func GetBaseDatabaseName(databaseName, dbNameTemplate string) (string, error) {
+// GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
+func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
+	var labels []*DatabaseLabel
+	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+		return "", err
+	}
+	labelMap := map[string]string{}
+	for _, label := range labels {
+		labelMap[label.Key] = label.Value
+	}
 	return "", nil
 }
 
