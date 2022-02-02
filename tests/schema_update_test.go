@@ -40,6 +40,7 @@ func TestSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Switch plan to increase instance limit.
 	license, err := fs.ReadFile(fakeFS, "fake/license")
 	if err != nil {
 		t.Fatal(err)
@@ -227,6 +228,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Switch plan to increase instance limit.
 	license, err := fs.ReadFile(fakeFS, "fake/license")
 	if err != nil {
 		t.Fatal(err)
@@ -276,7 +278,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		Name:               "Test Repository",
 		FullPath:           repositoryPath,
 		WebURL:             fmt.Sprintf("%s/%s", gitURL, repositoryPath),
-		BranchFilter:       "master",
+		BranchFilter:       "foo",
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
@@ -362,7 +364,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	file1 := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
 	pushEvent := &gitlab.WebhookPushEvent{
 		ObjectKind: gitlab.WebhookPush,
-		Ref:        "refs/heads/master",
+		Ref:        "refs/heads/foo",
 		Project: gitlab.WebhookProject{
 			ID: gitlabProjectID,
 		},
