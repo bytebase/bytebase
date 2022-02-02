@@ -23,19 +23,38 @@
               <p class="text-gray-500 mb-10">{{ plan.description }}</p>
 
               <p class="mt-4 flex items-baseline text-gray-900">
-                <span class="text-4xl font-extrabold tracking-tight">
+                <span class="text-4xl">
                   {{ plan.price }}
                 </span>
               </p>
+
+              <div
+                :class="[
+                  isAvailableToPurchase(plan) ? '' : 'opacity-0 disabled',
+                  'flex justify-center items-center mt-5',
+                ]"
+              >
+                <div>
+                  Instances<br />
+                  ${{ instancePricePerMonth }}/instance/month
+                </div>
+                <Counter
+                  class="ml-auto"
+                  :count="state.instanceCount"
+                  :minimum="minimumInstanceCount"
+                  @on-change="(val) => (state.instanceCount = val)"
+                />
+              </div>
 
               <button
                 type="button"
                 :class="[
                   plan.highlight
-                    ? 'border-green-500  text-white  bg-green-500 hover:bg-green-600 hover:border-green-600'
+                    ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
                     : 'border-accent text-accent hover:bg-accent',
                   'mt-8 block w-full border rounded-md py-2 lg:py-4 text-sm lg:text-xl font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
                 ]"
+                @click="onButtonClick(plan)"
               >
                 {{ plan.buttonText }}
               </button>
@@ -101,7 +120,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, PropType } from "vue";
+import { reactive, computed, watch, PropType } from "vue";
 import {
   Plan,
   Subscription,
@@ -114,6 +133,7 @@ import {
 
 interface LocalState {
   isMonthly: boolean;
+  instanceCount: number;
 }
 
 interface LocalPlan extends Plan {
@@ -123,6 +143,9 @@ interface LocalPlan extends Plan {
   highlight: boolean;
   isFreePlan: boolean;
 }
+
+const minimumInstanceCount = 5;
+const instancePricePerMonth = 29;
 
 export default {
   name: "PricingTable",
@@ -136,7 +159,27 @@ export default {
   setup(props) {
     const state = reactive<LocalState>({
       isMonthly: false,
+      instanceCount: props.subscription?.instanceCount ?? minimumInstanceCount,
     });
+
+    watch(
+      () => props.subscription,
+      (val) =>
+        (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
+    );
+
+    const instancePricePerYear = computed((): number => {
+      return (
+        (state.instanceCount - minimumInstanceCount) *
+        instancePricePerMonth *
+        12
+      );
+    });
+
+    const getPlanPrice = (plan: Plan): number => {
+      if (plan.type !== PlanType.TEAM) return plan.unitPrice;
+      return plan.unitPrice + instancePricePerYear.value;
+    };
 
     const plans = computed((): LocalPlan[] => {
       return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
@@ -148,7 +191,7 @@ export default {
         price:
           plan.type === PlanType.ENTERPRISE
             ? "Contact us"
-            : `$${plan.unitPrice}/year`,
+            : `$${getPlanPrice(plan)}/year`,
         buttonText: getButtonText(plan),
         highlight: plan.type === PlanType.TEAM,
         isFreePlan: plan.type === PlanType.FREE,
@@ -169,11 +212,31 @@ export default {
       return "Subscribe now";
     };
 
+    const onButtonClick = (plan: Plan) => {
+      if (plan.type === PlanType.TEAM) {
+        window.open("https://hub.bytebase.com/", "__blank");
+      } else if (plan.type === PlanType.ENTERPRISE) {
+        window.open(
+          "mailto:support@bytebase.com?subject=Request for enterprise plan"
+        );
+      } else {
+        window.open("https://docs.bytebase.com/", "__blank");
+      }
+    };
+
+    const isAvailableToPurchase = (plan: Plan): boolean => {
+      return plan.type === PlanType.TEAM;
+    };
+
     return {
       state,
       plans,
       sections: FEATURE_SECTIONS,
       getFeature,
+      onButtonClick,
+      minimumInstanceCount,
+      instancePricePerMonth,
+      isAvailableToPurchase,
     };
   },
 };

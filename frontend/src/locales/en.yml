@@ -954,7 +954,7 @@ version-control:
       Bytebase owners manage all the applicable VCSs here, so that project
       owners can link the projects with their Git repositories from these VCSs.
     description-highlight: Once configured, Bytebase will enable third party login via your
-      configured VCSs
+      configured VCSs under paid subscription.
     add-git-provider:
       self: Add a Git provider
       description: >-
@@ -1131,6 +1131,9 @@ oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
   description: You can upload your bytebase license to unlock team/enterprise features.
+  current: Current plan
+  instance-count: Instance count
+  expires-at: Expires at
   description-highlight: Purchase a license
   sensitive-placeholder: Paste your license here - write only
   upload-license: Upload license
@@ -1161,3 +1164,10 @@ subscription:
     bb-feature-backward-compatibility:
       title: Backward compatibility
       desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
+    bb-feature-3rd-party-login:
+      title: 3rd-party login
+      desc: Bytebase auto-support 3rd-party login based on your VCS configuration. @:{'subscription.upgrade'} to open this feature.
+      login: "@:{'subscription.upgrade'} to open this feature"
+    bb-feature-schema-drift:
+      title: Schema drift
+      desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
