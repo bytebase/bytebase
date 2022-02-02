@@ -212,24 +212,22 @@ func TestGetBaseDatabaseName(t *testing.T) {
 		want         string
 		errPart      string
 	}{
-		/*
-			{
-				"tenant_label_success",
-				"db1_tenant123",
-				"{{DB_NAME}}_{{TENANT}}",
-				"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-				"db1",
-				"",
-			},
-			{
-				"tenant_location_label_success",
-				"us-central1...db你好_tenant123",
-				"{{LOCATION}}...{{DB_NAME}}_{{TENANT}}",
-				"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-				"db你好",
-				"",
-			},
-		*/
+		{
+			"tenant_label_success",
+			"db1_tenant123",
+			"{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"tenant_location_label_success",
+			"us-central1...db你好_tenant123",
+			"{{LOCATION}}...{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db你好",
+			"",
+		},
 		{
 			"tenant_label_fail",
 			"db1_tenant123",
