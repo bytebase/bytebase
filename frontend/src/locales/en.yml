@@ -1165,3 +1165,6 @@ subscription:
       title: 3rd-party login
       desc: Bytebase auto-support 3rd-party login based on your VCS configuration. @:{'subscription.upgrade'} to open this feature.
       login: "@:{'subscription.upgrade'} to open this feature"
+    bb-feature-schema-drift:
+      title: Schema drift
+      desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
