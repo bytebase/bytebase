@@ -112,7 +112,7 @@ export default {
     const expiresAt = computed((): string => {
       const expiresTs = subscription.value?.expiresTs ?? 0;
       if (expiresTs <= 0) {
-        return "/";
+        return "n/a";
       }
       return dayjs(expiresTs * 1000).format("YYYY-MM-DD");
     });
