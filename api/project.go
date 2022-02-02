@@ -257,9 +257,28 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	}
 	labelMap := map[string]string{}
 	for _, label := range labels {
-		labelMap[label.Key] = label.Value
+		switch label.Key {
+		case LocationLabelKey:
+			labelMap[LocationToken] = label.Value
+		case TenantLabelKey:
+			labelMap[TenantToken] = label.Value
+		}
 	}
-	return "", nil
+	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
+
+	expr, err := FormatTemplate(dbNameTemplate, labelMap)
+	if err != nil {
+		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
+	}
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return "", fmt.Errorf("regexp %q compiled failure, error: %v", expr, err)
+	}
+	names := re.FindStringSubmatch(databaseName)
+	if len(names) != 2 || names[1] == "" {
+		return "", fmt.Errorf("failed to find base database name from %q submatches %v", databaseName, names)
+	}
+	return names[1], nil
 }
 
 func getTemplateTokens(template string) []string {
