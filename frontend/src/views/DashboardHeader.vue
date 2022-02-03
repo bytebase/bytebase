@@ -51,21 +51,21 @@
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">
-            {{ $t("setting.plan.self") }}
+            {{ $t("subscription.plan.title") }}
           </span>
           <div
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
           >
-            {{ $t("setting.plan.free") }}
+            {{ $t("subscription.plan.free.title") }}
           </div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
           >
-            {{ $t("setting.plan.team") }}
+            {{ $t("subscription.plan.team.title") }}
           </div>
         </div>
         <div
