@@ -1211,7 +1211,7 @@ subscription:
     title: Plan
     free:
       title: Free
-      desc: The essentials to provide your best work for clients.
+      desc: Personal project or small team, no DBA
     team:
       title: Team
       desc: A plan that scales with your rapidly growing business.
