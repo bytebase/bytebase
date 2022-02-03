@@ -20,7 +20,7 @@
               <h3 class="text-2xl font-semibold text-gray-900">
                 {{ $t(`subscription.plan.${plan.title}.title`) }}
               </h3>
-              <p class="text-gray-500 mb-10">
+              <p class="text-gray-500 mb-10 h-12">
                 {{ $t(`subscription.plan.${plan.title}.desc`) }}
               </p>
 
