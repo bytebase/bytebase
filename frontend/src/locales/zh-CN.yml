@@ -1070,7 +1070,7 @@ subscription:
         gitops-workflow: GitOps 工作流
         sql-review-commenting: SQL 审核中的批注
         im-integration: IM 集成
-        inbox-notification: 通知
+        inbox-notification: 站内信通知
     admin-and-security:
       title: 管理与安全
       features:
