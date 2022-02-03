@@ -1061,7 +1061,7 @@ subscription:
         anomaly-detection: 异常检测
         anomaly-detection-basic: 基础
         anomaly-detection-advanced: 进阶 (例如 Schema 偏差检测)
-        review-and-backup-policy: 审查和备份策略
+        review-and-backup-policy: 审核和备份策略
         tenancy: 多地区/多租户
     collaboration:
       title: 团队合作
