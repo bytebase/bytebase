@@ -1214,7 +1214,7 @@ subscription:
       desc: Personal project or small team, no DBA
     team:
       title: Team
-      desc: A plan that scales with your rapidly growing business.
+      desc: Medium size team, has dedicated DBA or TL with management needs
     enterprise:
       title: Enterprise
       desc: Dedicated support and infrastructure for your company.
