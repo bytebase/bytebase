@@ -1075,7 +1075,7 @@ subscription:
       title: 管理与安全
       features:
         activity-log: 活动日志
-        rbac: 权限管理
+        rbac: RBAC 权限管理
   plan:
     title: 版本
     free:
