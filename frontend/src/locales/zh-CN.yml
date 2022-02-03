@@ -1086,4 +1086,4 @@ subscription:
       desc: 中型团队，有专职 DBA 或者 TL 有管控需求
     enterprise:
       title: 企业版
-      desc: 应对多区域/多租户场景
+      desc: 大型组织，有专属 DBA 团队
