@@ -1083,7 +1083,7 @@ subscription:
       desc: 专为小型团队量身打造
     team:
       title: 团队版
-      desc: 扩大规模，提升工作效率
+      desc: 中型团队，有专职 DBA 或者 TL 有管控需求
     enterprise:
       title: 企业版
       desc: 应对多区域/多租户场景
