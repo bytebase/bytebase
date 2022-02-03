@@ -75,7 +75,7 @@ func TestTenantSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Add an instance.
+	// Add the provisioned instances.
 	var stagingInstances []*api.Instance
 	var prodInstances []*api.Instance
 	for i, stagingInstanceDir := range stagingInstanceDirs {
