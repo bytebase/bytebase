@@ -97,7 +97,7 @@ func TestSchemaUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	if err := ctl.createDatabase(project, instance, databaseName); err != nil {
+	if err := ctl.createDatabase(project, instance, databaseName, nil /* labelMap */); err != nil {
 		t.Fatal(err)
 	}
 
@@ -255,7 +255,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testVCSSchemaUpdate"
-	if err := ctl.createDatabase(project, instance, databaseName); err != nil {
+	if err := ctl.createDatabase(project, instance, databaseName, nil /* labelMap */); err != nil {
 		t.Fatal(err)
 	}
 
