@@ -121,11 +121,11 @@ export default {
       const plan = store.getters["subscription/currentPlan"]();
       switch (plan) {
         case PlanType.TEAM:
-          return t("setting.plan.team");
+          return t("subscription.plan.team.title");
         case PlanType.ENTERPRISE:
-          return t("setting.plan.enterprise");
+          return t("subscription.plan.enterprise.title");
         default:
-          return t("setting.plan.free");
+          return t("subscription.plan.free.title");
       }
     });
 

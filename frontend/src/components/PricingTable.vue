@@ -18,9 +18,11 @@
             <div class="flex-1">
               <img :src="plan.image" class="hidden lg:block p-5" />
               <h3 class="text-2xl font-semibold text-gray-900">
-                {{ plan.title }}
+                {{ $t(`subscription.plan.${plan.title}.title`) }}
               </h3>
-              <p class="text-gray-500 mb-10">{{ plan.description }}</p>
+              <p class="text-gray-500 mb-10">
+                {{ $t(`subscription.plan.${plan.title}.desc`) }}
+              </p>
 
               <p class="mt-4 flex items-baseline text-gray-900">
                 <span class="text-4xl">
@@ -35,8 +37,17 @@
                 ]"
               >
                 <div>
-                  Instances<br />
-                  ${{ instancePricePerMonth }}/instance/month
+                  {{
+                    $t(
+                      "subscription.feature-sections.database-management.features.instance-count"
+                    )
+                  }}
+                  <br />
+                  {{
+                    $t("subscription.instance-price", {
+                      price: instancePricePerMonth,
+                    })
+                  }}
                 </div>
                 <Counter
                   class="ml-auto"
@@ -70,7 +81,7 @@
               colspan="4"
               scope="colgroup"
             >
-              {{ section.id }}
+              {{ $t(`subscription.feature-sections.${section.id}.title`) }}
             </th>
           </tr>
           <tr
@@ -82,14 +93,18 @@
               class="py-5 px-6 text-sm font-normal text-gray-500 text-left"
               scope="row"
             >
-              {{ feature }}
+              {{
+                $t(
+                  `subscription.feature-sections.${section.id}.features.${feature}`
+                )
+              }}
             </th>
             <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
               <template v-if="getFeature(plan, feature)">
                 <span
                   v-if="getFeature(plan, feature)?.content"
                   class="block text-sm text-gray-700"
-                  >{{ getFeature(plan, feature)?.content }}</span
+                  >{{ $t(getFeature(plan, feature)?.content) }}</span
                 >
                 <heroicons-solid:check v-else class="w-5 h-5 text-green-500" />
               </template>
@@ -110,7 +125,11 @@
               target="_blank"
               class="block w-full py-4 bg-gray-800 border border-gray-800 rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-gray-900"
             >
-              Buy {{ plan.title }} Plan
+              {{
+                $t("subscription.buy", {
+                  plan: $t(`subscription.plan.${plan.title}.title`),
+                })
+              }}
             </a>
           </td>
         </tr>
@@ -130,6 +149,7 @@ import {
   TEAM_PLAN,
   ENTERPRISE_PLAN,
 } from "../types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   isMonthly: boolean;
@@ -157,6 +177,7 @@ export default {
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const state = reactive<LocalState>({
       isMonthly: false,
       instanceCount: props.subscription?.instanceCount ?? minimumInstanceCount,
@@ -190,8 +211,8 @@ export default {
         ).href,
         price:
           plan.type === PlanType.ENTERPRISE
-            ? "Contact us"
-            : `$${getPlanPrice(plan)}/year`,
+            ? t("subscription.contact-us")
+            : t("subscription.price", { price: getPlanPrice(plan) }),
         buttonText: getButtonText(plan),
         highlight: plan.type === PlanType.TEAM,
         isFreePlan: plan.type === PlanType.FREE,
@@ -203,13 +224,18 @@ export default {
     };
 
     const getButtonText = (plan: Plan): string => {
-      if (plan.type === PlanType.FREE) return "Deploy";
-      if (plan.type === PlanType.ENTERPRISE) return "Contact us";
-      if (plan.type === props.subscription?.plan) return "Current plan";
+      if (plan.type === PlanType.FREE) return t("subscription.deploy");
+      if (plan.type === PlanType.ENTERPRISE)
+        return t("subscription.contact-us");
+      if (plan.type === props.subscription?.plan)
+        return t("subscription.current-plan");
       if (plan.trialDays && plan.trialPrice) {
-        return `Start trial with $${plan.trialPrice} for ${plan.trialDays} days`;
+        return t("subscription.start-trial", {
+          price: plan.trialPrice,
+          days: plan.trialDays,
+        });
       }
-      return "Subscribe now";
+      return t("subscription.subscribe");
     };
 
     const onButtonClick = (plan: Plan) => {

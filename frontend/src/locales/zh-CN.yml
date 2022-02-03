@@ -937,11 +937,6 @@ datasource:
   connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
   jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC 无法连接到 socket {0} '
 setting:
-  plan:
-    self: 版本
-    free: 免费版
-    team: 团队版
-    enterprise: 企业版
   label:
     key: Key
     values: 值
@@ -1011,6 +1006,14 @@ subscription:
   trial: 您可以以 $7 的价格试用 7 天
   trial-comment: 仅首次付费可以试用，可随时退款。
   upgrade: 升级订阅
+  price: ${price}/年
+  instance-price: ${price}/实例/月
+  deploy: 部署
+  contact-us: 联系我们
+  start-trial: 以 {days} 天 {price} 美元的价格试用
+  subscribe: 开始订阅
+  current-plan: 当前订阅
+  buy: 购买{plan}
   features:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间
@@ -1040,3 +1043,47 @@ subscription:
     bb-feature-schema-drift:
       title: Schema 偏差
       desc: "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+  feature-sections:
+    database-management:
+      title: 数据库管理
+      features:
+        instance-count: 实例数
+        instance-upto-5: 不多于 5 个
+        instance-customized: 自定义
+        schema-change: Schema 变更
+        migration-history: 迁移历史
+        sql-editor: SQL 编辑器
+        database-backup-restore: 数据库备份和恢复
+        archiving: 归档
+        sql-check: SQL 检查
+        sql-check-basic: 基础
+        sql-check-advanced: 进阶 (例如向后兼容性检查)
+        anomaly-detection: 异常检测
+        anomaly-detection-basic: 基础
+        anomaly-detection-advanced: 进阶 (例如 Schema 偏差检测)
+        review-and-backup-policy: 审查和备份策略
+        tenancy: 多地区/多租户
+    collaboration:
+      title: 团队合作
+      features:
+        ui-based-sql-review: 基于 UI 的 SQL 审查
+        gitops-workflow: GitOps 工作流
+        sql-review-commenting: SQL 审查中的批注
+        im-integration: IM 集成
+        inbox-notification: 通知
+    admin-and-security:
+      title: 管理与安全
+      features:
+        activity-log: 活动日志
+        rbac: 权限管理
+  plan:
+    title: 版本
+    free:
+      title: 免费版
+      desc: 专为小型团队量身打造
+    team:
+      title: 团队版
+      desc: 扩大规模，提升工作效率
+    enterprise:
+      title: 企业版
+      desc: 应对多区域/多租户场景
