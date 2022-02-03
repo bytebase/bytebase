@@ -1057,7 +1057,7 @@ subscription:
         archiving: 归档
         sql-check: SQL 检查
         sql-check-basic: 基础
-        sql-check-advanced: 进阶 (例如向后兼容性检查)
+        sql-check-advanced: 高级 (例如向后兼容性检查)
         anomaly-detection: 异常检测
         anomaly-detection-basic: 基础
         anomaly-detection-advanced: 进阶 (例如 Schema 偏差检测)
