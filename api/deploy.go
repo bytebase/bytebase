@@ -96,7 +96,8 @@ type DeploymentConfigUpsert struct {
 	ProjectID int
 
 	// Domain specific fields
-	Name    string `jsonapi:"attr,name"`
+	Name string `jsonapi:"attr,name"`
+	// Payload is a json serialization of DeploymentSchedule.
 	Payload string `jsonapi:"attr,payload"`
 }
 

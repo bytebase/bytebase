@@ -213,10 +213,26 @@ func TestGetBaseDatabaseName(t *testing.T) {
 		errPart      string
 	}{
 		{
+			"no_template_success",
+			"db1",
+			"",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
 			"only_database_name_success",
 			"db1",
 			"{{DB_NAME}}",
 			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"only_database_name_no_label_success",
+			"db1",
+			"{{DB_NAME}}",
+			"",
 			"db1",
 			"",
 		},
