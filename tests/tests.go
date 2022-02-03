@@ -659,10 +659,28 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
-func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string) error {
+func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, labelMap map[string]string) error {
+	var labelList []*api.DatabaseLabel
+	for k, v := range labelMap {
+		labelList = append(labelList, &api.DatabaseLabel{
+			Key:   k,
+			Value: v,
+		})
+	}
+	labelList = append(labelList, &api.DatabaseLabel{
+		Key:   api.EnvironmentKeyName,
+		Value: instance.Environment.Name,
+	})
+
+	labels, err := json.Marshal(labelList)
+	if err != nil {
+		return err
+	}
+
 	createContext, err := json.Marshal(&api.CreateDatabaseContext{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
+		Labels:       string(labels),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
@@ -697,4 +715,98 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
 	}
 	return nil
+}
+
+// getLabels gets all the labels.
+func (ctl *controller) getLabels() ([]*api.LabelKey, error) {
+	body, err := ctl.get("/label", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var labelKeys []*api.LabelKey
+	lks, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.LabelKey)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get label response, error: %w", err)
+	}
+	for _, lk := range lks {
+		labelKey, ok := lk.(*api.LabelKey)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert label key")
+		}
+		labelKeys = append(labelKeys, labelKey)
+	}
+	return labelKeys, nil
+}
+
+// patchLabelKey patches the label key with given ID.
+func (ctl *controller) patchLabelKey(labelKeyPatch api.LabelKeyPatch) (*api.LabelKey, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &labelKeyPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal label key patch, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/label/%d", labelKeyPatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	labelKey := new(api.LabelKey)
+	if err = jsonapi.UnmarshalPayload(body, labelKey); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal patch label key response, error: %w", err)
+	}
+	return labelKey, nil
+}
+
+// addLabelValues adds values to an existing label key.
+func (ctl *controller) addLabelValues(key string, values []string) error {
+	labelKeys, err := ctl.getLabels()
+	if err != nil {
+		return fmt.Errorf("failed to get labels, error: %w", err)
+	}
+	var labelKey *api.LabelKey
+	for _, lk := range labelKeys {
+		if lk.Key == key {
+			labelKey = lk
+			break
+		}
+	}
+	if labelKey == nil {
+		return fmt.Errorf("failed to find label with key %q", key)
+	}
+	valueList := append(labelKey.ValueList, values...)
+	_, err = ctl.patchLabelKey(api.LabelKeyPatch{
+		ID:        labelKey.ID,
+		ValueList: valueList,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to patch label key for key %q ID %d values %+v, error: %w", key, labelKey.ID, valueList, err)
+	}
+	return nil
+}
+
+// upsertDeploymentConfig upserts the deployment configuration for a project.
+func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.DeploymentConfigUpsert, deploymentSchedule api.DeploymentSchedule) (*api.DeploymentConfig, error) {
+	fmt.Printf("Barny1: %q\n", fmt.Sprintf("/project/%d/deployment", deploymentConfigUpsert.ProjectID))
+	scheduleBuf, err := json.Marshal(&deploymentSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal deployment schedule, error: %w", err)
+	}
+	deploymentConfigUpsert.Payload = string(scheduleBuf)
+
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &deploymentConfigUpsert); err != nil {
+		return nil, fmt.Errorf("failed to marshal deployment config upsert, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/project/%d/deployment", deploymentConfigUpsert.ProjectID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	deploymentConfig := new(api.DeploymentConfig)
+	if err = jsonapi.UnmarshalPayload(body, deploymentConfig); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal upsert deployment config response, error: %w", err)
+	}
+	return deploymentConfig, nil
 }
