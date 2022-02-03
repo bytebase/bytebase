@@ -276,7 +276,7 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	}
 	names := re.FindStringSubmatch(databaseName)
 	if len(names) != 2 || names[1] == "" {
-		return "", fmt.Errorf("failed to find base database name from %q submatches %v", databaseName, names)
+		return "", fmt.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
 	}
 	return names[1], nil
 }

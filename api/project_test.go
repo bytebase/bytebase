@@ -213,6 +213,14 @@ func TestGetBaseDatabaseName(t *testing.T) {
 		errPart      string
 	}{
 		{
+			"only_database_name_success",
+			"db1",
+			"{{DB_NAME}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
 			"tenant_label_success",
 			"db1_tenant123",
 			"{{DB_NAME}}_{{TENANT}}",
@@ -234,7 +242,7 @@ func TestGetBaseDatabaseName(t *testing.T) {
 			"{{DB_NAME}}_{{LOCATION}}",
 			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 			"",
-			"failed to find base database name",
+			"doesn't follow database name template",
 		},
 	}
 
