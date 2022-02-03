@@ -202,3 +202,63 @@ func TestFormatTemplate(t *testing.T) {
 		}
 	}
 }
+
+func TestGetBaseDatabaseName(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseName string
+		template     string
+		labelsJSON   string
+		want         string
+		errPart      string
+	}{
+		{
+			"only_database_name_success",
+			"db1",
+			"{{DB_NAME}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"tenant_label_success",
+			"db1_tenant123",
+			"{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"tenant_location_label_success",
+			"us-central1...db你好_tenant123",
+			"{{LOCATION}}...{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db你好",
+			"",
+		},
+		{
+			"tenant_label_fail",
+			"db1_tenant123",
+			"{{DB_NAME}}_{{LOCATION}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"",
+			"doesn't follow database name template",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := GetBaseDatabaseName(test.databaseName, test.template, test.labelsJSON)
+		if err != nil {
+			if !strings.Contains(err.Error(), test.errPart) {
+				t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got error %q, want errPart %q.", test.name, test.databaseName, test.template, test.labelsJSON, err.Error(), test.errPart)
+			}
+		} else {
+			if test.errPart != "" {
+				t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got no error, want errPart %q.", test.name, test.databaseName, test.template, test.labelsJSON, test.errPart)
+			}
+		}
+		if got != test.want {
+			t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got %q, want %q.", test.name, test.databaseName, test.template, test.labelsJSON, got, test.want)
+		}
+	}
+}
