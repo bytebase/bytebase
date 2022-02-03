@@ -43,7 +43,7 @@ func TestTenantSchemaUpdate(t *testing.T) {
 		t.Fatalf("failed to create project, error: %v", err)
 	}
 
-	// Provision an instance.
+	// Provision instances.
 	instanceRootDir := t.TempDir()
 
 	var stagingInstanceDirs []string
@@ -75,7 +75,7 @@ func TestTenantSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Add an instance.
+	// Add the provisioned instances.
 	var stagingInstances []*api.Instance
 	var prodInstances []*api.Instance
 	for i, stagingInstanceDir := range stagingInstanceDirs {
