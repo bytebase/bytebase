@@ -1217,4 +1217,4 @@ subscription:
       desc: Medium size team, has dedicated DBA or TL with management needs
     enterprise:
       title: Enterprise
-      desc: Dedicated support and infrastructure for your company.
+      desc: Large organization, has dedicated DBA group
