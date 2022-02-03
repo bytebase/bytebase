@@ -1080,7 +1080,7 @@ subscription:
     title: 版本
     free:
       title: 免费版
-      desc: 专为小型团队量身打造
+      desc: 个人或小团队，无专职 DBA
     team:
       title: 团队版
       desc: 中型团队，有专职 DBA 或者 TL 有管控需求
