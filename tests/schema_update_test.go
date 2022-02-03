@@ -2,22 +2,16 @@ package tests
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
-	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/kr/pretty"
 )
-
-//go:embed fake
-var fakeFS embed.FS
 
 var (
 	migrationStatement = `
@@ -25,6 +19,7 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL
 	);`
+	schemaSQLResult = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
 )
 
 func TestSchemaUpdate(t *testing.T) {
@@ -35,20 +30,10 @@ func TestSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
-
 	if err := ctl.Login(); err != nil {
 		t.Fatal(err)
 	}
-
-	// Switch plan to increase instance limit.
-	license, err := fs.ReadFile(fakeFS, "fake/license")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
-		License: string(license),
-	})
-	if err != nil {
+	if err := ctl.setLicense(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -62,9 +47,9 @@ func TestSchemaUpdate(t *testing.T) {
 	}
 
 	// Provision an instance.
-	instanceDir := t.TempDir()
-	instance1Name := "testInstance1"
-	instance1Dir, err := ctl.provisionSQLiteInstance(instanceDir, instance1Name)
+	instanceRootDir := t.TempDir()
+	instanceName := "testInstance1"
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,23 +58,17 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var prodEnvironment *api.Environment
-	for _, environment := range environments {
-		if environment.Name == "Prod" {
-			prodEnvironment = environment
-			break
-		}
-	}
-	if prodEnvironment == nil {
-		t.Fatal("unable to find prod environment")
+	prodEnvironment, err := findEnvironment(environments, "Prod")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// Add an instance.
-	instance1, err := ctl.addInstance(api.InstanceCreate{
+	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
-		Name:          instance1Name,
+		Name:          instanceName,
 		Engine:        db.SQLite,
-		Host:          instance1Dir,
+		Host:          instanceDir,
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)
@@ -107,45 +86,19 @@ func TestSchemaUpdate(t *testing.T) {
 	}
 	// Expecting instance to have no database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance1.ID,
+		InstanceID: &instance.ID,
 	})
 	if err != nil {
 		t.Fatalf("failed to get databases, error: %v", err)
 	}
 	if len(databases) != 0 {
-		t.Fatalf("invalid number of databases %v in instance %v, expecting no database", len(databases), instance1.ID)
+		t.Fatalf("invalid number of databases %v in instance %v, expecting no database", len(databases), instance.ID)
 	}
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	createContext, err := json.Marshal(&api.CreateDatabaseContext{
-		InstanceID:   instance1.ID,
-		DatabaseName: databaseName,
-	})
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err))
-	}
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("create database %q", databaseName),
-		Type:        api.IssueDatabaseCreate,
-		Description: fmt.Sprintf("This creates a database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
-		CreateContext: string(createContext),
-	})
-	if err != nil {
-		t.Fatalf("failed to create database creation issue, error: %v", err)
-	}
-	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
-		t.Fatalf("issue %v pipeline %v is supposed to be pending manual approval.", issue.ID, issue.Pipeline.ID)
-	}
-	status, err := ctl.waitIssuePipeline(issue.ID)
-	if err != nil {
-		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
-	}
-	if status != api.TaskDone {
-		t.Fatalf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
+	if err := ctl.createDatabase(project, instance, databaseName); err != nil {
+		t.Fatal(err)
 	}
 
 	// Expecting project to have 1 database.
@@ -159,12 +112,12 @@ func TestSchemaUpdate(t *testing.T) {
 		t.Fatalf("invalid number of databases %v in project %v, expecting one database", project.ID, len(databases))
 	}
 	database := databases[0]
-	if database.Instance.ID != instance1.ID {
-		t.Fatalf("expect database %v name %q to be in instance %v, got %v", database.ID, database.Name, instance1.ID, database.Instance.ID)
+	if database.Instance.ID != instance.ID {
+		t.Fatalf("expect database %v name %q to be in instance %v, got %v", database.ID, database.Name, instance.ID, database.Instance.ID)
 	}
 
 	// Create an issue that updates database schema.
-	createContext, err = json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
 		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
 			{
@@ -176,7 +129,7 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct schema update issue CreateContext payload, error: %v", err)
 	}
-	issue, err = ctl.createIssue(api.IssueCreate{
+	issue, err := ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
 		Name:        fmt.Sprintf("update schema for database %q", databaseName),
 		Type:        api.IssueDatabaseSchemaUpdate,
@@ -188,7 +141,7 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create schema update issue, error: %v", err)
 	}
-	status, err = ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
 		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
 	}
@@ -197,21 +150,12 @@ func TestSchemaUpdate(t *testing.T) {
 	}
 
 	// Query schema.
-	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
-		InstanceID:   instance1.ID,
-		DatabaseName: databaseName,
-		Statement:    "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';",
-		Readonly:     true,
-	})
+	result, err := ctl.query(instance, databaseName)
 	if err != nil {
-		t.Fatalf("failed to execute SQL, error: %v", err)
+		t.Fatal(err)
 	}
-	if sqlResultSet.Error != "" {
-		t.Fatalf("expect SQL result has no error, got %q", sqlResultSet.Error)
-	}
-	wantResult := `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
-	if sqlResultSet.Data != wantResult {
-		t.Fatalf("want SQL result %q, got %q, diff %q", wantResult, sqlResultSet.Data, pretty.Diff(wantResult, sqlResultSet.Data))
+	if schemaSQLResult != result {
+		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
 	}
 }
 
@@ -223,20 +167,10 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
-
 	if err := ctl.Login(); err != nil {
 		t.Fatal(err)
 	}
-
-	// Switch plan to increase instance limit.
-	license, err := fs.ReadFile(fakeFS, "fake/license")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
-		License: string(license),
-	})
-	if err != nil {
+	if err := ctl.setLicense(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -292,9 +226,9 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	}
 
 	// Provision an instance.
-	instanceDir := t.TempDir()
-	instance1Name := "testInstance1"
-	instance1Dir, err := ctl.provisionSQLiteInstance(instanceDir, instance1Name)
+	instanceRootDir := t.TempDir()
+	instanceName := "testInstance1"
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,65 +237,30 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var prodEnvironment *api.Environment
-	for _, environment := range environments {
-		if environment.Name == "Prod" {
-			prodEnvironment = environment
-			break
-		}
-	}
-	if prodEnvironment == nil {
-		t.Fatal("unable to find prod environment")
+	prodEnvironment, err := findEnvironment(environments, "Prod")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// Add an instance.
-	instance1, err := ctl.addInstance(api.InstanceCreate{
+	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
-		Name:          instance1Name,
+		Name:          instanceName,
 		Engine:        db.SQLite,
-		Host:          instance1Dir,
+		Host:          instanceDir,
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)
 	}
+
 	// Create an issue that creates a database.
 	databaseName := "testVCSSchemaUpdate"
-	createContext, err := json.Marshal(&api.CreateDatabaseContext{
-		InstanceID:   instance1.ID,
-		DatabaseName: databaseName,
-	})
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err))
-	}
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("create database %q", databaseName),
-		Type:        api.IssueDatabaseCreate,
-		Description: fmt.Sprintf("This creates a database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
-		CreateContext: string(createContext),
-	})
-	if err != nil {
-		t.Fatalf("failed to create database creation issue, error: %v", err)
-	}
-	status, err := ctl.waitIssuePipeline(issue.ID)
-	if err != nil {
-		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
-	}
-	if status != api.TaskDone {
-		t.Fatalf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
-	}
-	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
-	})
-	if err != nil {
-		t.Fatalf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+	if err := ctl.createDatabase(project, instance, databaseName); err != nil {
+		t.Fatal(err)
 	}
 
 	// Simulate Git commits.
-	file1 := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
+	gitFile := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
 	pushEvent := &gitlab.WebhookPushEvent{
 		ObjectKind: gitlab.WebhookPush,
 		Ref:        "refs/heads/feature/foo",
@@ -372,12 +271,12 @@ func TestVCSSchemaUpdate(t *testing.T) {
 			{
 				Timestamp: "2021-01-13T13:14:00Z",
 				AddedList: []string{
-					file1,
+					gitFile,
 				},
 			},
 		},
 	}
-	if err := ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{file1: migrationStatement}); err != nil {
+	if err := ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement}); err != nil {
 		t.Fatalf("failed to add files to gitlab project %q, error %v", gitlabProjectID, err)
 	}
 	if err := ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent); err != nil {
@@ -393,8 +292,8 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	if len(issues) != 1 {
 		t.Fatalf("invalid number of open issues %v in project %v, expecting one issue", len(issues), project.ID)
 	}
-	issue = issues[0]
-	status, err = ctl.waitIssuePipeline(issue.ID)
+	issue := issues[0]
+	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
 		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
 	}
@@ -403,20 +302,11 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	}
 
 	// Query schema.
-	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
-		InstanceID:   instance1.ID,
-		DatabaseName: databaseName,
-		Statement:    "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';",
-		Readonly:     true,
-	})
+	result, err := ctl.query(instance, databaseName)
 	if err != nil {
-		t.Fatalf("failed to execute SQL, error: %v", err)
+		t.Fatal(err)
 	}
-	if sqlResultSet.Error != "" {
-		t.Fatalf("expect SQL result has no error, got %q", sqlResultSet.Error)
-	}
-	wantResult := `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
-	if sqlResultSet.Data != wantResult {
-		t.Fatalf("want SQL result %q, got %q, diff %q", wantResult, sqlResultSet.Data, pretty.Diff(wantResult, sqlResultSet.Data))
+	if schemaSQLResult != result {
+		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
 	}
 }
