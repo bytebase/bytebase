@@ -103,7 +103,8 @@ func TestTenantSchemaUpdate(t *testing.T) {
 		prodInstances = append(prodInstances, instance)
 	}
 
-	// Set up label values for tenants. prodInstancesNumber is the number of tenants.
+	// Set up label values for tenants.
+	// Prod and staging are using the same tenant values. Use prodInstancesNumber because it's larger than stagingInstancesNumber.
 	var tenants []string
 	for i := 0; i < prodInstancesNumber; i++ {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))

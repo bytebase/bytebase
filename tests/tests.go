@@ -787,7 +787,6 @@ func (ctl *controller) addLabelValues(key string, values []string) error {
 
 // upsertDeploymentConfig upserts the deployment configuration for a project.
 func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.DeploymentConfigUpsert, deploymentSchedule api.DeploymentSchedule) (*api.DeploymentConfig, error) {
-	fmt.Printf("Barny1: %q\n", fmt.Sprintf("/project/%d/deployment", deploymentConfigUpsert.ProjectID))
 	scheduleBuf, err := json.Marshal(&deploymentSchedule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal deployment schedule, error: %w", err)
