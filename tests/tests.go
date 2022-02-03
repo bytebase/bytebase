@@ -3,8 +3,11 @@ package tests
 import (
 	"bytes"
 	"context"
+	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,6 +22,9 @@ import (
 	"github.com/bytebase/bytebase/tests/fake"
 	"github.com/google/jsonapi"
 )
+
+//go:embed fake
+var fakeFS embed.FS
 
 var (
 	port      = 1234
@@ -306,6 +312,15 @@ func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 	return environments, nil
 }
 
+func findEnvironment(envs []*api.Environment, name string) (*api.Environment, error) {
+	for _, env := range envs {
+		if env.Name == "Prod" {
+			return env, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find environment %q", name)
+}
+
 // getDatabases gets the databases.
 func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Database, error) {
 	params := make(map[string]string)
@@ -333,6 +348,21 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 		databases = append(databases, database)
 	}
 	return databases, nil
+}
+
+func (ctl *controller) setLicense() error {
+	// Switch plan to increase instance limit.
+	license, err := fs.ReadFile(fakeFS, "fake/license")
+	if err != nil {
+		return fmt.Errorf("failed to read fake license, error: %w", err)
+	}
+	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+		License: string(license),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to switch plan, error: %w", err)
+	}
+	return nil
 }
 
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
@@ -575,6 +605,22 @@ func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet,
 	return sqlResultSet, nil
 }
 
+func (ctl *controller) query(instance *api.Instance, databaseName string) (string, error) {
+	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		Statement:    "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';",
+		Readonly:     true,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to execute SQL, error: %v", err)
+	}
+	if sqlResultSet.Error != "" {
+		return "", fmt.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	return sqlResultSet.Data, nil
+}
+
 // createVCS creates a VCS.
 func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	buf := new(bytes.Buffer)
@@ -611,4 +657,44 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 		return nil, fmt.Errorf("fail to unmarshal repository response, error: %w", err)
 	}
 	return repository, nil
+}
+
+func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string) error {
+	createContext, err := json.Marshal(&api.CreateDatabaseContext{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
+	}
+	issue, err := ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("create database %q", databaseName),
+		Type:        api.IssueDatabaseCreate,
+		Description: fmt.Sprintf("This creates a database %q.", databaseName),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+	}
+	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+	}
+	status, err := ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if status != api.TaskDone {
+		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
+	}
+	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
+		ID:     issue.ID,
+		Status: api.IssueDone,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+	}
+	return nil
 }
