@@ -1064,7 +1064,7 @@ subscription:
         review-and-backup-policy: 审核和备份策略
         tenancy: 多地域/多租户
     collaboration:
-      title: 团队合作
+      title: 团队协作
       features:
         ui-based-sql-review: 基于 UI 的 SQL 审查
         gitops-workflow: GitOps 工作流
