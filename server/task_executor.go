@@ -173,6 +173,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			stage := issue.Pipeline.StageList[i]
 			if len(stage.TaskList) > 0 {
 				lastTask = stage.TaskList[len(stage.TaskList)-1]
+				break
 			}
 		}
 		// Not the last task yet.
