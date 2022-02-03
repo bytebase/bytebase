@@ -1068,7 +1068,7 @@ subscription:
       features:
         ui-based-sql-review: 基于 UI 的 SQL 审查
         gitops-workflow: GitOps 工作流
-        sql-review-commenting: SQL 审查中的批注
+        sql-review-commenting: SQL 审核中的批注
         im-integration: IM 集成
         inbox-notification: 通知
     admin-and-security:
