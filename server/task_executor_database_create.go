@@ -158,7 +158,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
-	if database.Labels != "" {
+	if payload.Labels != "" {
 		// Compose database relationship for setting database labels.
 		err = server.composeDatabaseRelationship(ctx, database)
 		if err != nil {
@@ -174,7 +174,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
-		err = server.setDatabaseLabels(ctx, database.Labels, database, project, database.CreatorID, false)
+		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
 		}

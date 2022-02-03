@@ -45,7 +45,7 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The returned matrix doesn't include deployment with no matched database.
-func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseName, dbNameTemplate string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
+func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, baseDatabaseName, dbNameTemplate string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
 	var pipeline [][]*api.Database
 	var deployments []*api.Deployment
 
@@ -77,7 +77,7 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 		for _, database := range databaseList {
 			labels := idToLabels[database.ID]
 			// The tenant database should match the database name.
-			name, err := formatDatabaseName(databaseName, dbNameTemplate, labels)
+			name, err := formatDatabaseName(baseDatabaseName, dbNameTemplate, labels)
 			if err != nil {
 				continue
 			}
@@ -109,12 +109,13 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	return deployments, pipeline, nil
 }
 
-func formatDatabaseName(databaseName, dbNameTemplate string, labels map[string]string) (string, error) {
+// formatDatabaseName will return the full database name given the dbNameTemplate, base database name, and labels.
+func formatDatabaseName(baseDatabaseName, dbNameTemplate string, labels map[string]string) (string, error) {
 	if dbNameTemplate == "" {
-		return databaseName, nil
+		return baseDatabaseName, nil
 	}
 	tokens := make(map[string]string)
-	tokens[api.DBNameToken] = databaseName
+	tokens[api.DBNameToken] = baseDatabaseName
 	for k, v := range labels {
 		switch k {
 		case api.LocationLabelKey:
