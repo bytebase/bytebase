@@ -137,6 +137,8 @@ type Profile struct {
 	mode string
 	// port is the binding port for server.
 	port int
+	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
+	dataDir string
 	// dsn points to where Bytebase stores its own data
 	dsn string
 	// seedDir points to where to populate the initial data.
@@ -301,7 +303,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
@@ -338,7 +340,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
 
-	licenseService, err := enterprise.NewLicenseService(m.l, dataDir, m.profile.mode)
+	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
 	if err != nil {
 		return err
 	}

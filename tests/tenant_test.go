@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	stagingTenantNumber = 2
-	prodTenantNumber    = 6
+	stagingTenantNumber = 1
+	prodTenantNumber    = 3
 	stagingInstanceName = "testInstanceStaging"
 	prodInstanceName    = "testInstanceProd"
 )
