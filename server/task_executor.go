@@ -163,22 +163,24 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	tenantWriteBack := true
-	project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
-	if err != nil {
-		return true, nil, err
-	}
-	if project.TenantMode == api.TenantModeTenant && issue != nil {
-		var lastTask *api.Task
-		for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
-			stage := issue.Pipeline.StageList[i]
-			if len(stage.TaskList) > 0 {
-				lastTask = stage.TaskList[len(stage.TaskList)-1]
-				break
-			}
+	if issue != nil {
+		project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
+		if err != nil {
+			return true, nil, err
 		}
-		// Not the last task yet.
-		if lastTask != nil && task.ID != lastTask.ID {
-			tenantWriteBack = false
+		if project.TenantMode == api.TenantModeTenant {
+			var lastTask *api.Task
+			for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
+				stage := issue.Pipeline.StageList[i]
+				if len(stage.TaskList) > 0 {
+					lastTask = stage.TaskList[len(stage.TaskList)-1]
+					break
+				}
+			}
+			// Not the last task yet.
+			if lastTask != nil && task.ID != lastTask.ID {
+				tenantWriteBack = false
+			}
 		}
 	}
 
