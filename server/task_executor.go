@@ -162,7 +162,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	// For tenant mode project, we will only write back latest schema file on the last task.
-	tenantSkipWriteBack := false
+	tenantWriteBack := true
 	project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
@@ -178,12 +178,12 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 		// Not the last task yet.
 		if lastTask != nil && task.ID != lastTask.ID {
-			tenantSkipWriteBack = true
+			tenantWriteBack = false
 		}
 	}
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	if vcsPushEvent != nil && repository.SchemaPathTemplate != "" && !tenantSkipWriteBack {
+	if vcsPushEvent != nil && repository.SchemaPathTemplate != "" && tenantWriteBack {
 		latestSchemaFile := filepath.Join(repository.BaseDirectory, repository.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
