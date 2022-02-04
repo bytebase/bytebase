@@ -34,6 +34,49 @@ var (
 	gitAPIURL = fmt.Sprintf("%s/api/v4", gitURL)
 )
 
+var (
+	deploymentSchdule = api.DeploymentSchedule{
+		Deployments: []*api.Deployment{
+			{
+				Name: "Staging stage",
+				Spec: &api.DeploymentSpec{
+					Selector: &api.LabelSelector{
+						MatchExpressions: []*api.LabelSelectorRequirement{
+							{
+								Key:      api.EnvironmentKeyName,
+								Operator: api.InOperatorType,
+								Values:   []string{"Staging"},
+							},
+							{
+								Key:      api.TenantLabelKey,
+								Operator: api.ExistsOperatorType,
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: "Prod stage",
+				Spec: &api.DeploymentSpec{
+					Selector: &api.LabelSelector{
+						MatchExpressions: []*api.LabelSelectorRequirement{
+							{
+								Key:      api.EnvironmentKeyName,
+								Operator: api.InOperatorType,
+								Values:   []string{"Prod"},
+							},
+							{
+								Key:      api.TenantLabelKey,
+								Operator: api.ExistsOperatorType,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+)
+
 type controller struct {
 	main   *cmd.Main
 	client *http.Client
