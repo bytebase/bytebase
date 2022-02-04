@@ -164,7 +164,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repository.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
-	if issue != nil {
+	if writeBack && issue != nil {
 		project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
 		if err != nil {
 			return true, nil, err
