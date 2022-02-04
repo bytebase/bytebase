@@ -16,6 +16,7 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 	return Profile{
 		mode:                 "dev",
 		port:                 port,
+		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
@@ -28,6 +29,7 @@ func GetTestProfile(dataDir string) Profile {
 	return Profile{
 		mode:                 "dev",
 		port:                 1234,
+		dataDir:              dataDir,
 		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
