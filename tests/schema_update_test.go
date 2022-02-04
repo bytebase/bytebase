@@ -277,10 +277,10 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		},
 	}
 	if err := ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement}); err != nil {
-		t.Fatalf("failed to add files to gitlab project %q, error %v", gitlabProjectID, err)
+		t.Fatalf("failed to add files to gitlab project %v, error %v", gitlabProjectID, err)
 	}
 	if err := ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent); err != nil {
-		t.Fatalf("failed to send commits to gitlab project %q, error %v", gitlabProjectID, err)
+		t.Fatalf("failed to send commits to gitlab project %v, error %v", gitlabProjectID, err)
 	}
 
 	// Get schema update issue.
