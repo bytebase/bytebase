@@ -167,7 +167,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	if err != nil {
 		return true, nil, err
 	}
-	if project.TenantMode == api.TenantModeTenant {
+	if project.TenantMode == api.TenantModeTenant && issue != nil {
 		var lastTask *api.Task
 		for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
 			stage := issue.Pipeline.StageList[i]
