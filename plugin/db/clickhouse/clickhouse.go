@@ -12,7 +12,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
-	clickhouse "github.com/ClickHouse/clickhouse-go"
+	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -24,7 +24,9 @@ var migrationSchema string
 
 var (
 	systemDatabases = map[string]bool{
-		"system": true,
+		"system":             true,
+		"information_schema": true,
+		"INFORMATION_SCHEMA": true,
 	}
 
 	_ db.Driver = (*Driver)(nil)
@@ -51,58 +53,39 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a ClickHouse driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	protocol := "tcp"
-	if strings.HasPrefix(config.Host, "/") {
-		protocol = "unix"
-	}
-
-	params := []string{}
-
 	port := config.Port
 	if port == "" {
 		port = "9000"
 	}
-	baseDSN := fmt.Sprintf("%s://%s:%s?", protocol, config.Host, port)
-
-	// Default user name is "default".
-	params = append(params, fmt.Sprintf("username=%s", config.Username))
-	// Password is constructed later, after loggedDSN is constructed.
-	if config.Database != "" {
-		params = append(params, fmt.Sprintf("database=%s", config.Database))
-	}
+	addr := fmt.Sprintf("%s:%s", config.Host, port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, fmt.Errorf("sql: tls config error: %v", err)
 	}
-	tlsKey := "db.clickhouse.tls"
-	if tlsConfig != nil {
-		if err := clickhouse.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-			return nil, fmt.Errorf("sql: failed to register tls config: %v", err)
-		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		defer clickhouse.DeregisterTLSConfig(tlsKey)
-		params = append(params, fmt.Sprintf("tls_config=%s", tlsKey))
-	}
-
-	loggedDSN := fmt.Sprintf("%s%s&password=<<redacted password>>", baseDSN, strings.Join(params, "&"))
-
-	if config.Password != "" {
-		params = append(params, fmt.Sprintf("password=%s", config.Password))
-	}
-	dsn := fmt.Sprintf("%s%s", baseDSN, strings.Join(params, "&"))
+	// Default user name is "default".
+	conn := clickhouse.OpenDB(&clickhouse.Options{
+		Addr: []string{addr},
+		Auth: clickhouse.Auth{
+			Database: config.Database,
+			Username: config.Username,
+			Password: config.Password,
+		},
+		TLS: tlsConfig,
+		Settings: clickhouse.Settings{
+			"max_execution_time": 60, // 60 seconds.
+		},
+		DialTimeout: 10 * time.Second,
+	})
 
 	driver.l.Debug("Opening ClickHouse driver",
-		zap.String("dsn", loggedDSN),
+		zap.String("addr", addr),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
 	)
-	db, err := sql.Open("clickhouse", dsn)
-	if err != nil {
-		panic(err)
-	}
+
 	driver.dbType = dbType
-	driver.db = db
+	driver.db = conn
 	driver.connectionCtx = connCtx
 
 	return driver, nil
@@ -212,8 +195,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				database,
 				name,
 				engine,
-				total_rows,
-				total_bytes,
+				IFNULL(total_rows, 0),
+				IFNULL(total_bytes, 0),
 				metadata_modification_time,
 				create_table_query,
 				comment
@@ -232,7 +215,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 	for tableRows.Next() {
 		var dbName, name, engine, definition, comment string
-		var rowCount, totalBytes sql.NullInt64
+		var rowCount, totalBytes int64
 		var lastUpdatedTime time.Time
 		if err := tableRows.Scan(
 			&dbName,
@@ -260,12 +243,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			table.Name = name
 			table.Engine = engine
 			table.Comment = comment
-			if rowCount.Valid {
-				table.RowCount = rowCount.Int64
-			}
-			if totalBytes.Valid {
-				table.DataSize = totalBytes.Int64
-			}
+			table.RowCount = rowCount
+			table.DataSize = totalBytes
 			table.UpdatedTs = lastUpdatedTime.Unix()
 			key := fmt.Sprintf("%s/%s", dbName, name)
 			table.ColumnList = columnMap[key]
@@ -453,7 +432,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		issue_id,
 		payload
 	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 	`
 
 	updateHistoryAsDoneQuery := `
@@ -461,9 +440,9 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			bytebase.migration_history
 		UPDATE
 			status = 'DONE',
-			execution_duration_ns = ?,
-		` + "`schema` = ?" + `
-		WHERE id = ?
+			execution_duration_ns = $1,
+		` + "`schema` = $2" + `
+		WHERE id = $3
 	`
 
 	updateHistoryAsFailedQuery := `
@@ -471,28 +450,28 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			bytebase.migration_history
 		UPDATE
 			status = 'FAILED',
-			execution_duration_ns = ?
-		WHERE id = ?
+			execution_duration_ns = $1
+		WHERE id = $2
 	`
 
 	checkDuplicateVersionQuery := `
 		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = ? AND engine= ?  AND version = ?
+		WHERE namespace = $1 AND engine= $2  AND version = $3
 	`
 
 	findBaselineQuery := `
 		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = ? AND type = 'BASELINE'
+		WHERE namespace = $1 AND type = 'BASELINE'
 	`
 
 	checkOutofOrderVersionQuery := `
 		SELECT MIN(version) FROM bytebase.migration_history
-		WHERE namespace = ? AND engine = ? AND version > ?
+		WHERE namespace = $1 AND engine = $2 AND version > $3
 	`
 
 	findNextSequenceQuery := `
 		SELECT MAX(sequence) + 1 FROM bytebase.migration_history
-		WHERE namespace = ?
+		WHERE namespace = $1
 	`
 
 	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
@@ -590,7 +569,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		paramNames, params = append(paramNames, "version"), append(params, *v)
 	}
 	var query = baseQuery +
-		db.FormatParamNameInQuestionMark(paramNames) +
+		db.FormatParamNameInNumberedPosition(paramNames) +
 		`ORDER BY created_ts DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
