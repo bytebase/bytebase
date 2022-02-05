@@ -444,3 +444,17 @@ func FormatParamNameInQuestionMark(paramNames []string) string {
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
 }
+
+// FormatParamNameInNumberedPosition formats the param name in numbered positions.
+func FormatParamNameInNumberedPosition(paramNames []string) string {
+	if len(paramNames) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(paramNames))
+	for i, param := range paramNames {
+		idx := fmt.Sprintf("$%d", i+1)
+		param = param + "=" + idx
+		parts = append(parts, param)
+	}
+	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+}
