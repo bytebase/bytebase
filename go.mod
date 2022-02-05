@@ -3,13 +3,11 @@ module github.com/bytebase/bytebase
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go v1.5.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
-	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
@@ -19,9 +17,9 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.1+incompatible
 	github.com/pingcap/parser v0.0.0-20200623164729-3a18f1e5dceb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
-	github.com/snowflakedb/gosnowflake v1.6.3 // indirect
+	github.com/snowflakedb/gosnowflake v1.6.3
 	github.com/spf13/cobra v1.2.0
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0

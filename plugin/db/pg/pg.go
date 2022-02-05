@@ -782,25 +782,12 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		paramNames, params = append(paramNames, "version"), append(params, *v)
 	}
 	var query = baseQuery +
-		formatParams(paramNames) +
+		db.FormatParamNameInNumberedPosition(paramNames) +
 		`ORDER BY created_ts DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
-}
-
-func formatParams(paramNames []string) string {
-	if len(paramNames) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(paramNames))
-	for i, param := range paramNames {
-		idx := fmt.Sprintf("$%d", i+1)
-		param = param + "=" + idx
-		parts = append(parts, param)
-	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
 // Dump and restore
