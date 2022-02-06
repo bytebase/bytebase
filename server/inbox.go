@@ -13,17 +13,17 @@ import (
 )
 
 func (s *Server) registerInboxRoutes(g *echo.Group) {
-	g.GET("/inbox", func(c echo.Context) error {
+	g.GET("/inbox/user/:userId", func(c echo.Context) error {
 		ctx := context.Background()
-		inboxFind := &api.InboxFind{}
-		userIDStr := c.QueryParams().Get("user")
-		if userIDStr != "" {
-			userID, err := strconv.Atoi(userIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
-			}
-			inboxFind.ReceiverID = &userID
+		userID, err := strconv.Atoi(c.Param("userId"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
 		}
+
+		inboxFind := &api.InboxFind{
+			ReceiverID: &userID,
+		}
+
 		createdAfterStr := c.QueryParams().Get("created")
 		if createdAfterStr != "" {
 			createdTs, err := strconv.ParseInt(createdAfterStr, 10, 64)
@@ -50,15 +50,11 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/inbox/summary", func(c echo.Context) error {
+	g.GET("/inbox/user/:userId/summary", func(c echo.Context) error {
 		ctx := context.Background()
-		userIDStr := c.QueryParams().Get("user")
-		if userIDStr == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Missing query parameter user")
-		}
-		userID, err := strconv.Atoi(userIDStr)
+		userID, err := strconv.Atoi(c.Param("userId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
 		}
 
 		summary, err := s.InboxService.FindInboxSummary(ctx, userID)

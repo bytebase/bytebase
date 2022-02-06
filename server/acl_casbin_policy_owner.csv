@@ -62,8 +62,8 @@ p, OWNER, /activity, POST
 p, OWNER, /activity, GET
 p, OWNER, /activity/{id}, PATCH_SELF
 p, OWNER, /activity/{id}, DELETE_SELF
-p, OWNER, /inbox, GET
-p, OWNER, /inbox/summary, GET
+p, OWNER, /inbox/user/{userID}, GET_SELF
+p, OWNER, /inbox/user/{userID}/summary, GET_SELF
 p, OWNER, /inbox/{id}, PATCH_SELF
 p, OWNER, /bookmark, POST
 p, OWNER, /bookmark, GET
