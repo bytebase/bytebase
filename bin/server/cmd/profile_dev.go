@@ -25,10 +25,10 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 }
 
 // GetTestProfile will return a profile for testing.
-func GetTestProfile(dataDir string) Profile {
+func GetTestProfile(dataDir string, port int) Profile {
 	return Profile{
 		mode:                 "dev",
-		port:                 1234,
+		port:                 port,
 		dataDir:              dataDir,
 		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",

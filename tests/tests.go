@@ -27,14 +27,6 @@ import (
 var fakeFS embed.FS
 
 var (
-	port      = 1234
-	rootURL   = fmt.Sprintf("http://localhost:%d/api", port)
-	gitPort   = 1235
-	gitURL    = fmt.Sprintf("http://localhost:%d", gitPort)
-	gitAPIURL = fmt.Sprintf("%s/api/v4", gitURL)
-)
-
-var (
 	deploymentSchdule = api.DeploymentSchedule{
 		Deployments: []*api.Deployment{
 			{
@@ -78,23 +70,51 @@ var (
 )
 
 type controller struct {
-	main   *cmd.Main
-	client *http.Client
-	cookie string
-	gitlab *fake.GitLab
+	main      *cmd.Main
+	client    *http.Client
+	cookie    string
+	gitlab    *fake.GitLab
+	rootURL   string
+	gitURL    string
+	gitAPIURL string
+}
+
+func getTestPort(testName string) int {
+	// The port should be incremented by 2. One port for bytebase server, and the other for gitlab server.
+	switch testName {
+	case "TestServiceStart":
+		return 1234
+	case "TestSchemaUpdate":
+		return 1236
+	case "TestVCSSchemaUpdate":
+		return 1238
+	case "TestTenant":
+		return 1240
+	case "TestTenantVCS":
+		return 1242
+	case "TestTenantDatabaseNameTemplate":
+		return 1244
+	}
+	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
 // StartMain starts the main server.
-func (ctl *controller) StartMain(ctx context.Context, dataDir string) error {
+func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) error {
 	// start main server.
 	logger, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
-	profile := cmd.GetTestProfile(dataDir)
+	profile := cmd.GetTestProfile(dataDir, port)
 	ctl.main = cmd.NewMain(profile, logger)
-	ctl.gitlab = fake.NewGitLab(gitPort)
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d/api", port)
+
+	// set up gitlab.
+	gitlabPort := port + 1
+	ctl.gitlab = fake.NewGitLab(gitlabPort)
+	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
+	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
 
 	errChan := make(chan error, 1)
 	go func() {
@@ -187,7 +207,7 @@ func (ctl *controller) Close() error {
 // Login will login as user demo@example.com and caches its cookie.
 func (ctl *controller) Login() error {
 	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/login/BYTEBASE", rootURL),
+		fmt.Sprintf("%s/auth/login/BYTEBASE", ctl.rootURL),
 		"",
 		strings.NewReader(`{"data":{"type":"loginInfo","attributes":{"email":"demo@example.com","password":"1024"}}}`))
 	if err != nil {
@@ -223,7 +243,7 @@ func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, er
 
 // get sends a GET client request.
 func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
-	gURL := fmt.Sprintf("%s%s", rootURL, shortURL)
+	gURL := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
 	req, err := http.NewRequest("GET", gURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
@@ -250,7 +270,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", rootURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new POST request(%q), error: %w", url, err)
@@ -272,7 +292,7 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 
 // patch sends a PATCH client request.
 func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", rootURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
 	req, err := http.NewRequest("PATCH", url, body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new PATCH request(%q), error: %w", url, err)
