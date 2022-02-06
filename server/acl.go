@@ -105,15 +105,13 @@ func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipa
 }
 
 func isGettingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
-	if strings.HasPrefix(c.Path(), "/api/inbox") {
-		if userIDStr := c.Param("userId"); userIDStr != "" {
-			userID, err := strconv.Atoi(userIDStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", userIDStr)).SetInternal(err)
-			}
-
-			return userID == curPrincipalID, nil
+	if strings.HasPrefix(c.Path(), "/api/inbox/user") {
+		userID, err := strconv.Atoi(c.Param("userId"))
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
 		}
+
+		return userID == curPrincipalID, nil
 	}
 
 	return false, nil
