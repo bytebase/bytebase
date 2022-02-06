@@ -21,10 +21,11 @@ var (
 )
 
 func TestTenant(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	if err := ctl.StartMain(ctx, dataDir); err != nil {
+	if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
@@ -226,10 +227,11 @@ func TestTenant(t *testing.T) {
 }
 
 func TestTenantVCS(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	if err := ctl.StartMain(ctx, dataDir); err != nil {
+	if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
@@ -246,8 +248,8 @@ func TestTenantVCS(t *testing.T) {
 	vcs, err := ctl.createVCS(api.VCSCreate{
 		Name:          "TestVCS",
 		Type:          vcs.GitLabSelfHost,
-		InstanceURL:   gitURL,
-		APIURL:        gitAPIURL,
+		InstanceURL:   ctl.gitURL,
+		APIURL:        ctl.gitAPIURL,
 		ApplicationID: applicationID,
 		Secret:        applicationSecret,
 	})
@@ -278,7 +280,7 @@ func TestTenantVCS(t *testing.T) {
 		ProjectID:          project.ID,
 		Name:               "Test Repository",
 		FullPath:           repositoryPath,
-		WebURL:             fmt.Sprintf("%s/%s", gitURL, repositoryPath),
+		WebURL:             fmt.Sprintf("%s/%s", ctl.gitURL, repositoryPath),
 		BranchFilter:       "feature/foo",
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
@@ -482,10 +484,11 @@ func TestTenantVCS(t *testing.T) {
 }
 
 func TestTenantDatabaseNameTemplate(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	if err := ctl.StartMain(ctx, dataDir); err != nil {
+	if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
 		t.Fatal(err)
 	}
 	defer ctl.Close()
