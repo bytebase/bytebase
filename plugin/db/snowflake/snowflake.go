@@ -11,6 +11,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	snow "github.com/snowflakedb/gosnowflake"
@@ -28,7 +29,8 @@ var (
 	sysAdminRole     = "SYSADMIN"
 	accountAdminRole = "ACCOUNTADMIN"
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver              = (*Driver)(nil)
+	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
 func init() {
@@ -581,12 +583,105 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return int64(0), "", err
+func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
+	const checkDuplicateVersionQuery = `
+		SELECT 1 FROM bytebase.public.migration_history
+		WHERE namespace = ? AND engine = ? AND version = ?
+	`
+	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
 	}
-	insertHistoryQuery := `
+	defer row.Close()
+
+	if row.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error) {
+	const checkOutofOrderVersionQuery = `
+		SELECT MIN(version) FROM bytebase.public.migration_history
+		WHERE namespace = ? AND engine = ? AND version > ?
+	`
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
+func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
+	const findBaselineQuery = `
+		SELECT 1 FROM bytebase.public.migration_history
+		WHERE namespace = ? AND type = 'BASELINE'
+	`
+	row, err := tx.QueryContext(ctx, findBaselineQuery,
+		namespace,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, findBaselineQuery)
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
+	const findNextSequenceQuery = `
+		SELECT MAX(sequence) + 1 FROM bytebase.public.migration_history
+		WHERE namespace = ?
+	`
+	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
+		namespace,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, findNextSequenceQuery)
+	}
+	defer row.Close()
+
+	var sequence sql.NullInt32
+	row.Next()
+	if err := row.Scan(&sequence); err != nil {
+		return -1, err
+	}
+
+	if !sequence.Valid {
+		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
+		if !requireBaseline {
+			return 1, nil
+		}
+
+		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+	}
+
+	return int(sequence.Int32), nil
+}
+
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (int64, error) {
+	const insertHistoryQuery = `
 		INSERT INTO bytebase.public.migration_history (
 			created_by,
 			created_ts,
@@ -609,8 +704,54 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		)
 		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
 	`
+	var insertedID int64
+	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	var id sql.NullInt64
+	for rows.Next() {
+		if err := rows.Scan(
+			&id,
+		); err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	if id.Valid {
+		insertedID = id.Int64
+	} else {
+		insertedID = 1
+	}
 
-	updateHistoryAsDoneQuery := `
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+	return insertedID, nil
+}
+
+func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+	const updateHistoryAsDoneQuery = `
 		UPDATE
 			bytebase.public.migration_history
 		SET
@@ -619,8 +760,12 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			schema = ?
 		WHERE id = ?
 	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	return err
+}
 
-	updateHistoryAsFailedQuery := `
+func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+	const updateHistoryAsFailedQuery = `
 		UPDATE
 			bytebase.public.migration_history
 		SET
@@ -628,84 +773,16 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 			execution_duration_ns = ?
 		WHERE id = ?
 	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	return err
+}
 
-	checkDuplicateVersionQuery := `
-		SELECT 1 FROM bytebase.public.migration_history
-		WHERE namespace = ? AND engine = ? AND version = ?
-	`
-
-	findBaselineQuery := `
-		SELECT 1 FROM bytebase.public.migration_history
-		WHERE namespace = ? AND type = 'BASELINE'
-	`
-
-	checkOutofOrderVersionQuery := `
-		SELECT MIN(version) FROM bytebase.public.migration_history
-		WHERE namespace = ? AND engine = ? AND version > ?
-	`
-
-	findNextSequenceQuery := `
-		SELECT MAX(sequence) + 1 FROM bytebase.public.migration_history
-		WHERE namespace = ?
-	`
-
-	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
-		var insertedID int64
-		maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
-		rows, err := tx.QueryContext(ctx, maxIDQuery)
-		if err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
-		}
-		defer rows.Close()
-		var id sql.NullInt64
-		for rows.Next() {
-			if err := rows.Scan(
-				&id,
-			); err != nil {
-				return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
-		}
-		if id.Valid {
-			insertedID = id.Int64
-		} else {
-			insertedID = 1
-		}
-
-		_, err = tx.ExecContext(ctx, insertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
-			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
-			statement,
-			prevSchema,
-			prevSchema,
-			m.IssueID,
-			m.Payload,
-		)
-		if err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
-		}
-		return insertedID, nil
+// ExecuteMigration will execute the migration.
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+	if err := driver.useRole(ctx, sysAdminRole); err != nil {
+		return int64(0), "", err
 	}
-
-	args := util.MigrationExecutionArgs{
-		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
-		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
-		FindBaselineQuery:           findBaselineQuery,
-		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
-		FindNextSequenceQuery:       findNextSequenceQuery,
-		InsertPendingHistoryFunc:    insertPendingFunc,
-	}
-	return util.ExecuteMigration(ctx, driver.l, db.Snowflake, driver, m, statement, args)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
 }
 
 // FindMigrationHistoryList finds the migration history.

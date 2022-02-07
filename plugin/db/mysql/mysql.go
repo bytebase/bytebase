@@ -34,7 +34,8 @@ var (
 	baseTableType        = "BASE TABLE"
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver              = (*Driver)(nil)
+	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
 func init() {
@@ -589,109 +590,184 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	insertHistoryQuery := `
-	INSERT INTO bytebase.migration_history (
-		created_by,
-		created_ts,
-		updated_by,
-		updated_ts,
-		release_version,
-		namespace,
-		sequence,
-		engine,
-		type,
-		status,
-		version,
-		description,
-		statement,
-		` + "`schema`," + `
-		schema_prev,
-		execution_duration_ns,
-		issue_id,
-		payload
-	)
-	VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
-	`
-
-	updateHistoryAsDoneQuery := `
-	UPDATE
-		bytebase.migration_history
-	SET
-		status = 'DONE',
-		execution_duration_ns = ?,
-	` + "`schema` = ?" + `
-	WHERE id = ?
-	`
-
-	updateHistoryAsFailedQuery := `
-	UPDATE
-		bytebase.migration_history
-	SET
-		status = 'FAILED',
-		execution_duration_ns = ?
-	WHERE id = ?
-	`
-
-	checkDuplicateVersionQuery := `
+func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
+	const checkDuplicateVersionQuery = `
 		SELECT 1 FROM bytebase.migration_history
 		WHERE namespace = ? AND engine = ? AND version = ?
-	`
+		`
+	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
+	}
+	defer row.Close()
 
-	findBaselineQuery := `
-		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = ? AND type = 'BASELINE'
-	`
+	if row.Next() {
+		return true, nil
+	}
+	return false, nil
+}
 
-	checkOutofOrderVersionQuery := `
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error) {
+	const checkOutofOrderVersionQuery = `
 		SELECT MIN(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND engine = ? AND version > ?
-	`
+		`
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+	}
+	defer row.Close()
 
-	findNextSequenceQuery := `
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
+func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
+	const findBaselineQuery = `
+		SELECT 1 FROM bytebase.migration_history
+		WHERE namespace = ? AND type = 'BASELINE'
+		`
+	row, err := tx.QueryContext(ctx, findBaselineQuery,
+		namespace,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, findBaselineQuery)
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
+	const findNextSequenceQuery = `
 		SELECT MAX(sequence) + 1 FROM bytebase.migration_history
 		WHERE namespace = ?
-	`
+		`
+	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
+		namespace,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, findNextSequenceQuery)
+	}
+	defer row.Close()
 
-	insertPendingFunc := func(tx *sql.Tx, sequence int, prevSchema string) (int64, error) {
-		res, err := tx.ExecContext(ctx, insertHistoryQuery,
-			m.Creator,
-			m.Creator,
-			m.ReleaseVersion,
-			m.Namespace,
+	var sequence sql.NullInt32
+	row.Next()
+	if err := row.Scan(&sequence); err != nil {
+		return -1, err
+	}
+
+	if !sequence.Valid {
+		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
+		if !requireBaseline {
+			return 1, nil
+		}
+
+		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+	}
+
+	return int(sequence.Int32), nil
+}
+
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (int64, error) {
+	const insertHistoryQuery = `
+		INSERT INTO bytebase.migration_history (
+			created_by,
+			created_ts,
+			updated_by,
+			updated_ts,
+			release_version,
+			namespace,
 			sequence,
-			m.Engine,
-			m.Type,
-			m.Version,
-			m.Description,
+			engine,
+			type,
+			status,
+			version,
+			description,
 			statement,
-			prevSchema,
-			prevSchema,
-			m.IssueID,
-			m.Payload,
+			` + "`schema`," + `
+			schema_prev,
+			execution_duration_ns,
+			issue_id,
+			payload
 		)
-		if err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
-		}
-
-		insertedID, err := res.LastInsertId()
-		if err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
-		}
-		return insertedID, nil
+		VALUES (?, unix_timestamp(), ?, unix_timestamp(), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+		`
+	res, err := tx.ExecContext(ctx, insertHistoryQuery,
+		m.Creator,
+		m.Creator,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
 
-	args := util.MigrationExecutionArgs{
-		UpdateHistoryAsDoneQuery:    updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery:  updateHistoryAsFailedQuery,
-		CheckDuplicateVersionQuery:  checkDuplicateVersionQuery,
-		FindBaselineQuery:           findBaselineQuery,
-		CheckOutofOrderVersionQuery: checkOutofOrderVersionQuery,
-		FindNextSequenceQuery:       findNextSequenceQuery,
-		InsertPendingHistoryFunc:    insertPendingFunc,
+	insertedID, err := res.LastInsertId()
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
-	return util.ExecuteMigration(ctx, driver.l, db.MySQL, driver, m, statement, args)
+	return insertedID, nil
+}
+
+func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+	const updateHistoryAsDoneQuery = `
+		UPDATE
+			bytebase.migration_history
+		SET
+			status = 'DONE',
+			execution_duration_ns = ?,
+		` + "`schema` = ?" + `
+		WHERE id = ?
+		`
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	return err
+}
+
+func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+	const updateHistoryAsFailedQuery = `
+		UPDATE
+			bytebase.migration_history
+		SET
+			status = 'FAILED',
+			execution_duration_ns = ?
+		WHERE id = ?
+		`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	return err
+}
+
+// ExecuteMigration will execute the migration.
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
 }
 
 // FindMigrationHistoryList finds the migration history.
