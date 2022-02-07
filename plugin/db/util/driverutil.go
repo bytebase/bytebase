@@ -109,30 +109,37 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 	return true, nil
 }
 
-// MigrationExecutionArgs includes the arguments for ExecuteMigration().
-type MigrationExecutionArgs struct {
-	UpdateHistoryAsDoneQuery      string
-	UpdateHistoryAsFailedQuery    string
-	CheckDuplicateVersionQuery    string
-	FindBaselineQuery             string
-	CheckOutofOrderVersionQuery   string
-	FindNextSequenceQuery         string
-	FindMigrationHistoryListQuery string
-	InsertPendingHistoryFunc      func(tx *sql.Tx, sequence int, prevSchema string) (int64, error)
+// MigrationExecutor is an adapter for ExecuteMigration().
+type MigrationExecutor interface {
+	db.Driver
+	// CheckDuplicateVersion will check whether the version is already applied.
+	CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (isDuplicate bool, err error)
+	// CheckOutOfOrderVersion will return versions that are higher than the given version.
+	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error)
+	// FindBaseline retruns true if any baseline is found.
+	FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error)
+	// FindNextSequence will return the highest sequence number plus one.
+	FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error)
+	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
+	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
+	// UpdateHistoryAsDone will update the migration record as done.
+	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error
+	// UpdateHistoryAsFailed will update the migration record as failed.
+	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error
 }
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver db.Driver, m *db.MigrationInfo, statement string, args MigrationExecutionArgs) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
-		if err := driver.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+		if err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
 
-	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return -1, "", err
 	}
@@ -144,7 +151,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	duplicate, err := checkDuplicateVersion(ctx, args.CheckDuplicateVersionQuery, tx, m.Namespace, m.Engine, m.Version)
+	duplicate, err := executor.CheckDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return -1, "", err
 	}
@@ -153,7 +160,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	}
 
 	// Check if there is any higher version already been applied
-	version, err := checkOutofOrderVersion(ctx, args.CheckOutofOrderVersionQuery, tx, m.Namespace, m.Engine, m.Version)
+	version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version)
 	if err != nil {
 		return -1, "", err
 	}
@@ -165,7 +172,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
 	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		hasBaseline, err := findBaseline(ctx, args.FindBaselineQuery, tx, m.Namespace)
+		hasBaseline, err := executor.FindBaseline(ctx, tx, m.Namespace)
 		if err != nil {
 			return -1, "", err
 		}
@@ -177,7 +184,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 	// VCS based SQL migration requires existing baselining
 	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
-	sequence, err := findNextSequence(ctx, args.FindNextSequenceQuery, tx, m.Namespace, requireBaseline)
+	sequence, err := executor.FindNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return -1, "", err
 	}
@@ -186,7 +193,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	insertedID, err := args.InsertPendingHistoryFunc(tx, sequence, prevSchemaBuf.String())
+	insertedID, err := executor.InsertPendingHistory(ctx, tx, sequence, prevSchemaBuf.String(), m, statement)
 	if err != nil {
 		return -1, "", err
 	}
@@ -210,7 +217,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		}()
 
 		migrationDurationNs := time.Now().UnixNano() - startedNs
-		afterSqldb, tmpErr := driver.GetDbConnection(ctx, bytebaseDatabase)
+		afterSqldb, tmpErr := executor.GetDbConnection(ctx, bytebaseDatabase)
 		if tmpErr != nil {
 			return
 		}
@@ -222,17 +229,10 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 
 		if resErr == nil {
 			// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsDoneQuery,
-				migrationDurationNs,
-				updatedSchema,
-				insertedID,
-			)
+			tmpErr = executor.UpdateHistoryAsDone(ctx, afterTx, migrationDurationNs, prevSchemaBuf.String(), insertedID)
 		} else {
 			// Otherwise, update the migration history as 'FAILED', exeuction_duration
-			_, tmpErr = afterTx.ExecContext(ctx, args.UpdateHistoryAsFailedQuery,
-				migrationDurationNs,
-				insertedID,
-			)
+			tmpErr = executor.UpdateHistoryAsFailed(ctx, afterTx, migrationDurationNs, insertedID)
 		}
 
 		if tmpErr != nil {
@@ -249,7 +249,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 	if statement != "" && (m.Type != db.Baseline || m.CreateDatabase) {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
-			_, err := driver.GetDbConnection(ctx, m.Database)
+			_, err := executor.GetDbConnection(ctx, m.Database)
 			if err != nil {
 				return -1, "", err
 			}
@@ -257,14 +257,14 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, dbType db.Type, driver
 		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction from previous migration history updates.
 		// Also, we don't use transaction for creating databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
-		if err = driver.Execute(ctx, statement, !m.CreateDatabase); err != nil {
+		if err = executor.Execute(ctx, statement, !m.CreateDatabase); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if err = driver.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if err = executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", formatError(err)
 	}
 
@@ -346,87 +346,6 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	}
 
 	return resultSet, nil
-}
-
-func findBaseline(ctx context.Context, findBaselineQuery string, tx *sql.Tx, namespace string) (bool, error) {
-	row, err := tx.QueryContext(ctx, findBaselineQuery,
-		namespace,
-	)
-	if err != nil {
-		return false, FormatErrorWithQuery(err, findBaselineQuery)
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func checkDuplicateVersion(ctx context.Context, checkDuplicateVersionQuery string, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, engine.String(), version,
-	)
-	if err != nil {
-		return false, FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
-}
-
-func checkOutofOrderVersion(ctx context.Context, checkOutofOrderVersionQuery string, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (*string, error) {
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, engine.String(), version,
-	)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
-	}
-	defer row.Close()
-
-	var minVersion sql.NullString
-	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
-		return nil, err
-	}
-
-	if minVersion.Valid {
-		return &minVersion.String, nil
-	}
-
-	return nil, nil
-}
-
-func findNextSequence(ctx context.Context, findNextSequenceQuery string, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
-	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
-		namespace,
-	)
-	if err != nil {
-		return -1, FormatErrorWithQuery(err, findNextSequenceQuery)
-	}
-	defer row.Close()
-
-	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
-		return -1, err
-	}
-
-	if !sequence.Valid {
-		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
-		if !requireBaseline {
-			return 1, nil
-		}
-
-		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
-	}
-
-	return int(sequence.Int32), nil
 }
 
 // FindMigrationHistoryList will find the list of migration history.
