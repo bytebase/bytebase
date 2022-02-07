@@ -23,7 +23,7 @@
                 "
               />
             </div>
-            <div v-if="hasAdminFeature" class="radio-set-row">
+            <div v-if="hasRBACFeature" class="radio-set-row">
               <div class="radio">
                 <label class="label">
                   <input
@@ -116,7 +116,7 @@ export default {
       error: "",
     });
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -175,7 +175,7 @@ export default {
       // If admin feature is NOT enabled, then we set every member to OWNER role.
       const projectMember: ProjectMemberCreate = {
         principalId: state.principalId,
-        role: hasAdminFeature.value ? state.role : "OWNER",
+        role: hasRBACFeature.value ? state.role : "OWNER",
       };
       const member = store.getters["member/memberByPrincipalId"](
         state.principalId
@@ -202,7 +202,7 @@ export default {
 
     return {
       state,
-      hasAdminFeature,
+      hasRBACFeature,
       allowAddMember,
       validateMember,
       clearValidationError,
