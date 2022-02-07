@@ -203,7 +203,15 @@ export default defineComponent({
             }),
           });
 
-          router.push(`/project/${projectSlug(createdProject)}`);
+          const url = {
+            path: `/project/${projectSlug(createdProject)}`,
+            hash: "",
+          };
+          if (state.project.tenantMode === "TENANT") {
+            // Jump to Deployment Config panel if it's a tenant mode project
+            url.hash = "deployment-config";
+          }
+          router.push(url);
           emit("dismiss");
         });
     };
