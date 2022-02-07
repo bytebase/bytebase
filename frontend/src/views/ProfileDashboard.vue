@@ -191,7 +191,7 @@ export default {
       (): Principal => store.getters["auth/currentUser"]()
     );
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -262,7 +262,7 @@ export default {
     return {
       editNameTextField,
       state,
-      hasAdminFeature,
+      hasRBACFeature,
       principal,
       allowEdit,
       allowSaveEdit,
