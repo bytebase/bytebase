@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/common"
@@ -24,11 +25,13 @@ import (
 
 // Server is the Bytebase server.
 type Server struct {
+	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
 
@@ -259,27 +262,15 @@ func (server *Server) InitSubscription() {
 }
 
 // Run will run the server.
-func (server *Server) Run() error {
+func (server *Server) Run(ctx context.Context) error {
 	if !server.readonly {
-		if err := server.TaskScheduler.Run(); err != nil {
-			return err
-		}
-
-		if err := server.TaskCheckScheduler.Run(); err != nil {
-			return err
-		}
-
-		if err := server.SchemaSyncer.Run(); err != nil {
-			return err
-		}
-
-		if err := server.BackupRunner.Run(); err != nil {
-			return err
-		}
-
-		if err := server.AnomalyScanner.Run(); err != nil {
-			return err
-		}
+		go server.TaskScheduler.Run(ctx, &server.runnerWG)
+		go server.TaskCheckScheduler.Run(ctx, &server.runnerWG)
+		go server.SchemaSyncer.Run(ctx, &server.runnerWG)
+		go server.BackupRunner.Run(ctx, &server.runnerWG)
+		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
+		// Add above 5 goroutines to the wait group.
+		server.runnerWG.Add(5)
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.
@@ -293,6 +284,8 @@ func (server *Server) Shutdown(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)
 	}
+	// Wait for all runners to exit.
+	server.runnerWG.Wait()
 }
 
 // GetEcho returns the echo server.

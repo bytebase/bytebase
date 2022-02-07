@@ -35,12 +35,16 @@ type TaskScheduler struct {
 }
 
 // Run will run the task scheduler.
-func (s *TaskScheduler) Run() error {
-	go func() {
-		s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
-		runningTasks := make(map[int]bool)
-		mu := sync.RWMutex{}
-		for {
+func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(taskSchedulerInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
+	runningTasks := make(map[int]bool)
+	mu := sync.RWMutex{}
+	for {
+		select {
+		case <-ticker.C:
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -212,12 +216,10 @@ func (s *TaskScheduler) Run() error {
 					}(task)
 				}
 			}()
-
-			time.Sleep(taskSchedulerInterval)
+		case <-ctx.Done(): // if cancel() execute
+			return
 		}
-	}()
-
-	return nil
+	}
 }
 
 // Register will register a task executor.

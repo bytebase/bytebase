@@ -162,6 +162,8 @@ type Main struct {
 	l *zap.Logger
 
 	server *server.Server
+	// serverCancel cancels any runner on the server.
+	serverCancel context.CancelFunc
 
 	db *store.DB
 }
@@ -290,6 +292,8 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 
 // Run will run the main server.
 func (m *Main) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.serverCancel = cancel
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
@@ -351,7 +355,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
 
-	if err := s.Run(); err != nil {
+	if err := s.Run(ctx); err != nil {
 		return err
 	}
 
@@ -364,6 +368,8 @@ func (m *Main) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	m.l.Info("Trying to cancel main...")
+	m.serverCancel()
 	if m.server != nil {
 		m.l.Info("Trying to gracefully shutdown server...")
 		m.server.Shutdown(ctx)
