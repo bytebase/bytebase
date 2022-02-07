@@ -113,7 +113,7 @@ export default defineComponent({
 
     watchEffect(prepareProjectList);
 
-    const hasRbacFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -137,7 +137,7 @@ export default defineComponent({
         return false;
       });
 
-      if (!hasRbacFeature.value || isDBAOrOwner(currentUser.value.role)) {
+      if (!hasRBACFeature.value || isDBAOrOwner(currentUser.value.role)) {
         return list;
       }
 

@@ -3,7 +3,7 @@
     <MemberAddOrInvite />
   </div>
   <FeatureAttention
-      v-if="!hasRbacFeature"
+      v-if="!hasRBACFeature"
       custom-class="my-5"
       feature="bb.feature.rbac"
       :description="$t('subscription.features.bb-feature-rbac.desc')"
@@ -44,7 +44,7 @@ export default {
     const store = useStore();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasRbacFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -75,7 +75,7 @@ export default {
     });
 
     const showUpgradeInfo = computed(() => {
-      return !hasRbacFeature.value && isOwner(currentUser.value.role);
+      return !hasRBACFeature.value && isOwner(currentUser.value.role);
     });
 
     return {
@@ -83,7 +83,7 @@ export default {
       inactiveMemberList,
       allowAddOrInvite,
       showUpgradeInfo,
-      hasRbacFeature,
+      hasRBACFeature,
     };
   },
 };
