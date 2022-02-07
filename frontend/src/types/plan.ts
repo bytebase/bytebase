@@ -34,7 +34,6 @@ export interface Plan {
   pricePerInstancePerMonth: number;
   // Plan desc and feature
   title: string;
-  description: string;
   features: { id: string; content?: string }[];
 }
 
@@ -61,33 +60,33 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
 
 export const FEATURE_SECTIONS = [
   {
-    id: "Database Management",
+    id: "database-management",
     features: [
-      "Instance",
-      "Schema change",
-      "Migration history",
-      "SQL Editor",
-      "Database backup/restore",
-      "Archiving",
-      "SQL check",
-      "Anomaly detection",
-      "Review and backup policy",
-      "Multi-Region / Multi-Tenancy",
+      "instance-count",
+      "schema-change",
+      "migration-history",
+      "sql-editor",
+      "database-backup-restore",
+      "archiving",
+      "sql-check",
+      "anomaly-detection",
+      "review-and-backup-policy",
+      "tenancy",
     ],
   },
   {
-    id: "Collaboration",
+    id: "collaboration",
     features: [
-      "UI based SQL review",
-      "GitOps workflow",
-      "SQL review commenting",
-      "IM integration",
-      "Inbox notification",
+      "ui-based-sql-review",
+      "gitops-workflow",
+      "sql-review-commenting",
+      "im-integration",
+      "inbox-notification",
     ],
   },
   {
-    id: "Admin & Security",
-    features: ["Activity Log", "RBAC"],
+    id: "admin-and-security",
+    features: ["activity-log", "rbac"],
   },
 ];
 
@@ -100,24 +99,34 @@ export const FREE_PLAN: Plan = {
   freeInstanceCount: 1,
   pricePerInstancePerMonth: 0,
   // Plan desc and feature
-  title: "Free",
-  description: "The essentials to provide your best work for clients.",
+  title: "free",
   features: [
-    { id: "Instance", content: "1" },
-    { id: "Schema change" },
-    { id: "Migration history" },
-    { id: "SQL Editor" },
-    { id: "Database backup/restore" },
-    { id: "Archiving" },
-    { id: "SQL check", content: "Basic" },
-    { id: "Anomaly detection", content: "Basic" },
-    { id: "UI based SQL review" },
-    { id: "GitOps workflow" },
-    { id: "SQL review commenting" },
-    { id: "IM integration" },
-    { id: "Inbox notification" },
-    { id: "Activity Log" },
-    { id: "UI based SQL review" },
+    {
+      id: "instance-count",
+      content:
+        "subscription.feature-sections.database-management.features.instance-upto-5",
+    },
+    { id: "schema-change" },
+    { id: "migration-history" },
+    { id: "sql-editor" },
+    { id: "database-backup-restore" },
+    { id: "archiving" },
+    {
+      id: "sql-check",
+      content:
+        "subscription.feature-sections.database-management.features.sql-check-basic",
+    },
+    {
+      id: "anomaly-detection",
+      content:
+        "subscription.feature-sections.database-management.features.anomaly-detection-basic",
+    },
+    { id: "ui-based-sql-review" },
+    { id: "gitops-workflow" },
+    { id: "sql-review-commenting" },
+    { id: "im-integration" },
+    { id: "inbox-notification" },
+    { id: "activity-log" },
   ],
 };
 
@@ -130,28 +139,36 @@ export const TEAM_PLAN: Plan = {
   freeInstanceCount: 5,
   pricePerInstancePerMonth: 29,
   // Plan desc and feature
-  title: "Team",
-  description: "A plan that scales with your rapidly growing business.",
+  title: "team",
   features: [
-    { id: "Instance", content: "5" },
-    { id: "Schema change" },
-    { id: "Migration history" },
-    { id: "SQL Editor" },
-    { id: "Database backup/restore" },
-    { id: "Archiving" },
     {
-      id: "SQL check",
-      content: "Advanced (e.g. Backward compatibility check)",
+      id: "instance-count",
+      content:
+        "subscription.feature-sections.database-management.features.instance-customized",
     },
-    { id: "Anomaly detection", content: "Advanced (e.g. Drift detection)" },
-    { id: "Review and backup policy" },
-    { id: "UI based SQL review" },
-    { id: "GitOps workflow" },
-    { id: "SQL review commenting" },
-    { id: "IM integration" },
-    { id: "Inbox notification" },
-    { id: "Activity Log" },
-    { id: "RBAC" },
+    { id: "schema-change" },
+    { id: "migration-history" },
+    { id: "sql-editor" },
+    { id: "database-backup-restore" },
+    { id: "archiving" },
+    {
+      id: "sql-check",
+      content:
+        "subscription.feature-sections.database-management.features.sql-check-advanced",
+    },
+    {
+      id: "anomaly-detection",
+      content:
+        "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
+    },
+    { id: "review-and-backup-policy" },
+    { id: "ui-based-sql-review" },
+    { id: "gitops-workflow" },
+    { id: "sql-review-commenting" },
+    { id: "im-integration" },
+    { id: "inbox-notification" },
+    { id: "activity-log" },
+    { id: "rbac" },
   ],
 };
 
@@ -164,28 +181,36 @@ export const ENTERPRISE_PLAN: Plan = {
   freeInstanceCount: 5,
   pricePerInstancePerMonth: 29,
   // Plan desc and feature
-  title: "Enterprise",
-  description: "Dedicated support and infrastructure for your company.",
+  title: "enterprise",
   features: [
-    { id: "Instance", content: "Customized" },
-    { id: "Schema change" },
-    { id: "Migration history" },
-    { id: "SQL Editor" },
-    { id: "Database backup/restore" },
-    { id: "Archiving" },
     {
-      id: "SQL check",
-      content: "Advanced (e.g. Backward compatibility check)",
+      id: "instance-count",
+      content:
+        "subscription.feature-sections.database-management.features.instance-customized",
     },
-    { id: "Anomaly detection", content: "Advanced (e.g. Drift detection)" },
-    { id: "Review and backup policy" },
-    { id: "Multi-Region / Multi-Tenancy" },
-    { id: "UI based SQL review" },
-    { id: "GitOps workflow" },
-    { id: "SQL review commenting" },
-    { id: "IM integration" },
-    { id: "Inbox notification" },
-    { id: "Activity Log" },
-    { id: "RBAC" },
+    { id: "schema-change" },
+    { id: "migration-history" },
+    { id: "sql-editor" },
+    { id: "database-backup-restore" },
+    { id: "archiving" },
+    {
+      id: "sql-check",
+      content:
+        "subscription.feature-sections.database-management.features.sql-check-advanced",
+    },
+    {
+      id: "anomaly-detection",
+      content:
+        "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
+    },
+    { id: "review-and-backup-policy" },
+    { id: "tenancy" },
+    { id: "ui-based-sql-review" },
+    { id: "gitops-workflow" },
+    { id: "sql-review-commenting" },
+    { id: "im-integration" },
+    { id: "inbox-notification" },
+    { id: "activity-log" },
+    { id: "rbac" },
   ],
 };

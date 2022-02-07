@@ -58,10 +58,10 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
-		// If the requests is trying to PATCH/DELETE herself, we will change the method signature to
+		// If the request is trying to GET/PATCH/DELETE itself, we will change the method signature to
 		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
-		if method == "PATCH" || method == "DELETE" {
-			if isSelf, err := isUpdatingSelf(ctx, c, s, principalID); err != nil {
+		if method == "GET" || method == "PATCH" || method == "DELETE" {
+			if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
 				return err
 			} else if isSelf {
 				method = method + "_SELF"
@@ -94,6 +94,29 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 	}
 }
 
+func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string) (bool, error) {
+	if method == "GET" {
+		return isGettingSelf(ctx, c, s, curPrincipalID)
+	} else if method == "PATCH" || method == "DELETE" {
+		return isUpdatingSelf(ctx, c, s, curPrincipalID)
+	}
+
+	return false, nil
+}
+
+func isGettingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
+	if strings.HasPrefix(c.Path(), "/api/inbox/user") {
+		userID, err := strconv.Atoi(c.Param("userId"))
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
+		}
+
+		return userID == curPrincipalID, nil
+	}
+
+	return false, nil
+}
+
 func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
 	const defaultErrMsg = "Failed to process authorize request."
 	if strings.HasPrefix(c.Path(), "/api/principal") {
@@ -105,10 +128,9 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 		if activityIDStr := c.Param("activityID"); activityIDStr != "" {
 			activityID, err := strconv.Atoi(activityIDStr)
 			if err != nil {
-				msg := "Activity ID is not a number: " + activityIDStr
-				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s"+activityIDStr)).SetInternal(err)
 			}
+
 			activityFind := &api.ActivityFind{
 				ID: &activityID,
 			}
@@ -119,16 +141,16 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			if activity == nil {
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", activityID))
 			}
+
 			return activity.CreatorID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
 		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {
 			bookmarkID, err := strconv.Atoi(bookmarkIDStr)
 			if err != nil {
-				msg := "Bookmark ID is not a number: " + bookmarkIDStr
-				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s"+bookmarkIDStr)).SetInternal(err)
 			}
+
 			bookmarkFind := &api.BookmarkFind{
 				ID: &bookmarkID,
 			}
@@ -137,18 +159,18 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
 			if bookmark == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID))
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)).SetInternal(err)
 			}
+
 			return bookmark.CreatorID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/inbox") {
 		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
 			inboxID, err := strconv.Atoi(inboxIDStr)
 			if err != nil {
-				msg := "Inbox ID is not a number: " + inboxIDStr
-				httpErr := echo.NewHTTPError(http.StatusBadRequest, msg)
-				return false, httpErr
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr)).SetInternal(err)
 			}
+
 			inboxFind := &api.InboxFind{
 				ID: &inboxID,
 			}
@@ -157,16 +179,18 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
 			if inbox == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID))
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID)).SetInternal(err)
 			}
+
 			return inbox.ReceiverID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/savedquery") {
 		if idStr := c.Param("id"); idStr != "" {
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Saved query ID is not a number: %s", idStr))
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Saved query ID is not a number: %s", idStr)).SetInternal(err)
 			}
+
 			savedQueryFind := &api.SavedQueryFind{
 				ID: &id,
 			}
@@ -175,16 +199,18 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
 			if savedQuery == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id))
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Saved query ID not found: %d", id)).SetInternal(err)
 			}
+
 			return savedQuery.CreatorID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/sheet") {
 		if idStr := c.Param("id"); idStr != "" {
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Sheet ID is not a number: %s", idStr))
+				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Sheet ID is not a number: %s", idStr)).SetInternal(err)
 			}
+
 			sheetFind := &api.SheetFind{
 				ID: &id,
 			}
@@ -193,10 +219,12 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
 			if sheet == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", id))
+				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", id)).SetInternal(err)
 			}
+
 			return sheet.CreatorID == curPrincipalID, nil
 		}
 	}
+
 	return false, nil
 }

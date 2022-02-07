@@ -141,7 +141,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Retrieve sql by reading the file content
-				reader, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
+				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
 					ctx,
 					common.OauthContext{
 						ClientID:     repository.VCS.ApplicationID,
@@ -159,13 +159,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					createIgnoredFileActivity(err)
 					continue
 				}
-				defer reader.Close()
-
-				b, err := io.ReadAll(reader)
-				if err != nil {
-					createIgnoredFileActivity(fmt.Errorf("failed to read file response: %w", err))
-					continue
-				}
 
 				// Create schema update issue.
 				var createContext string
@@ -173,9 +166,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					if !s.feature(api.FeatureMultiTenancy) {
 						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 					}
-					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, content)
 				} else {
-					createContext, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, string(b))
+					createContext, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, content)
 				}
 				if err != nil {
 					createIgnoredFileActivity(err)

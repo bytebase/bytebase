@@ -67,7 +67,7 @@ const actions = {
       readCreatedAfterTs,
     }: { userId: PrincipalId; readCreatedAfterTs?: number }
   ) {
-    let url = `/api/inbox?user=${userId}`;
+    let url = `/api/inbox/user/${userId}`;
     if (readCreatedAfterTs) {
       url += `&created=${readCreatedAfterTs}`;
     }
@@ -81,7 +81,7 @@ const actions = {
   },
 
   async fetchInboxSummaryByUser({ commit }: any, userId: PrincipalId) {
-    const inboxSummary = (await axios.get(`/api/inbox/summary?user=${userId}`))
+    const inboxSummary = (await axios.get(`/api/inbox/user/${userId}/summary`))
       .data;
 
     commit("setInboxSummaryByUser", { userId, inboxSummary });

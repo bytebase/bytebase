@@ -1066,11 +1066,6 @@ datasource:
   connection-name-string-copied-to-clipboard: '{0} string copied to clipboard.'
   jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC can''t connect to socket {0} '
 setting:
-  plan:
-    self: Plan
-    free: Free
-    team: Team
-    enterprise: Enterprise
   label:
     key: Key
     values: Values
@@ -1131,6 +1126,9 @@ oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
   description: You can upload your bytebase license to unlock team/enterprise features.
+  current: Current plan
+  instance-count: Instance count
+  expires-at: Expires at
   description-highlight: Purchase a license
   sensitive-placeholder: Paste your license here - write only
   upload-license: Upload license
@@ -1139,6 +1137,14 @@ subscription:
   trial: You can start a trial with $7 for 7 days.
   trial-comment: Only enabled for the first payment. You can cancel the subscription at any time.
   upgrade: Upgrade subscription
+  price: ${price}/year
+  instance-price: ${price}/instance/month
+  deploy: Deploy
+  contact-us: Contact us
+  start-trial: Start trial with ${price} for {days} days
+  subscribe: Subscribe now
+  current-plan: Current plan
+  buy: Buy {plan} plan
   features:
     bb-feature-task-schedule-time:
       name: Set task schedule time
@@ -1171,3 +1177,47 @@ subscription:
     bb-feature-schema-drift:
       title: Schema drift
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+  feature-sections:
+    database-management:
+      title: Database Management
+      features:
+        instance-count: Instance count
+        instance-upto-5: Up to 5
+        instance-customized: Customized
+        schema-change: Schema change
+        migration-history: Migration history
+        sql-editor: SQL Editor
+        database-backup-restore: Database backup/restore
+        archiving: Archiving
+        sql-check: SQL check
+        sql-check-basic: Basic
+        sql-check-advanced: Advanced (e.g. Backward compatibility check)
+        anomaly-detection: Anomaly detection
+        anomaly-detection-basic: Basic
+        anomaly-detection-advanced: Advanced (e.g. Drift detection)
+        review-and-backup-policy: Review and backup policy
+        tenancy: Multi-Region / Multi-Tenancy
+    collaboration:
+      title: Collaboration
+      features:
+        ui-based-sql-review: UI based SQL review
+        gitops-workflow: GitOps workflow
+        sql-review-commenting: SQL review commenting
+        im-integration: IM integration
+        inbox-notification: Inbox notification
+    admin-and-security:
+      title: Admin & Security
+      features:
+        activity-log: Activity Log
+        rbac: RBAC
+  plan:
+    title: Plan
+    free:
+      title: Free
+      desc: Personal project or small team, no DBA
+    team:
+      title: Team
+      desc: Medium size team, has dedicated DBA or TL with management needs
+    enterprise:
+      title: Enterprise
+      desc: Large organization, has dedicated DBA group
