@@ -1169,7 +1169,7 @@ subscription:
       desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
     bb-feature-rbac:
       title: Role management
-      desc: Role management can assign different permissions to different roles. @:{'subscription.upgrade'} to open this feature.
+      desc: Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to open this feature.
     bb-feature-3rd-party-login:
       title: 3rd-party login
       desc: Bytebase auto-support 3rd-party login based on your VCS configuration. @:{'subscription.upgrade'} to open this feature.
