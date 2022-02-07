@@ -409,6 +409,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// CheckDuplicateVersion will check whether the version is already applied.
 func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
 	const checkDuplicateVersionQuery = `
 		SELECT 1 FROM bytebase.migration_history
@@ -428,6 +429,7 @@ func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace s
 	return false, nil
 }
 
+// CheckOutOfOrderVersion will return versions that are higher than the given version.
 func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error) {
 	const checkOutofOrderVersionQuery = `
 		SELECT MIN(version) FROM bytebase.migration_history
@@ -454,6 +456,7 @@ func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace 
 	return nil, nil
 }
 
+// FindBaseline retruns true if any baseline is found.
 func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
 	const findBaselineQuery = `
 		SELECT 1 FROM bytebase.migration_history
@@ -474,6 +477,7 @@ func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (h
 	return true, nil
 }
 
+// FindNextSequence will return the highest sequence number plus one.
 func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
 	const findNextSequenceQuery = `
 		SELECT MAX(sequence) + 1 FROM bytebase.migration_history
@@ -506,6 +510,7 @@ func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string
 	return int(sequence.Int32), nil
 }
 
+// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (int64, error) {
 	const insertHistoryQuery = `
 	INSERT INTO bytebase.migration_history (
@@ -578,6 +583,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 	return insertedID, nil
 }
 
+// UpdateHistoryAsDone will update the migration record as done.
 func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
 	const updateHistoryAsDoneQuery = `
 		ALTER TABLE
@@ -592,6 +598,7 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 	return err
 }
 
+// UpdateHistoryAsFailed will update the migration record as failed.
 func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
 	const updateHistoryAsFailedQuery = `
 		ALTER TABLE
