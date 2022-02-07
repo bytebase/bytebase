@@ -9,7 +9,7 @@
   >
     <template #header>
       <BBTableHeaderCell :left-padding="4" class="w-auto table-cell" :title="columnList[0].title" />
-      <template v-if="hasAdminFeature">
+      <template v-if="hasRBACFeature">
         <BBTableHeaderCell class="w-8 table-cell" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-72 table-cell" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-auto table-cell" :title="columnList[3].title" />
@@ -46,7 +46,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasAdminFeature" class="whitespace-nowrap">
+      <BBTableCell v-if="hasRBACFeature" class="whitespace-nowrap">
         <ProjectRoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member.role)"
@@ -111,7 +111,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -132,7 +132,7 @@ export default {
         }
 
         const dataSource: BBTableSectionDataSource<ProjectMember>[] = [];
-        if (hasAdminFeature.value) {
+        if (hasRBACFeature.value) {
           dataSource.push({
             title: t("common.role.owner"),
             list: ownerList,
@@ -155,7 +155,7 @@ export default {
     );
 
     const columnList = computed((): BBTableColumn[] => {
-      return hasAdminFeature.value
+      return hasRBACFeature.value
         ? [
             {
               title: t("settings.members.table.account"),
@@ -237,7 +237,7 @@ export default {
     return {
       state,
       currentUser,
-      hasAdminFeature,
+      hasRBACFeature,
       columnList,
       dataSource,
       allowChangeRole,
