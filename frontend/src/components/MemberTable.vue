@@ -130,7 +130,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasAdminFeature = computed(() =>
+    const hasRbacFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -179,7 +179,7 @@ export default {
 
     const allowChangeRole = (member: Member) => {
       return (
-        hasAdminFeature.value &&
+        hasRbacFeature.value &&
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
         (member.role != "OWNER" || dataSource.value[0].list.length > 1)
@@ -191,7 +191,7 @@ export default {
         return "";
       }
 
-      if (!hasAdminFeature.value) {
+      if (!hasRbacFeature.value) {
         return t("settings.members.tooltip.upgrade");
       }
 
@@ -238,7 +238,7 @@ export default {
       COLUMN_LIST,
       state,
       currentUser,
-      hasAdminFeature,
+      hasRbacFeature,
       dataSource,
       allowEdit,
       allowChangeRole,

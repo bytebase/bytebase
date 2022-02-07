@@ -26,7 +26,7 @@
               class="mt-2 text-sm text-error"
             >{{ state.errorList[index] }}</p>
           </div>
-          <div v-if="hasAdminFeature" class="sm:hidden w-36">
+          <div v-if="hasRbacFeature" class="sm:hidden w-36">
             <RoleSelect
               :selected-role="user.role"
               @change-role="
@@ -37,7 +37,7 @@
             />
           </div>
           <div
-            v-if="hasAdminFeature"
+            v-if="hasRbacFeature"
             class="hidden sm:flex sm:flex-row space-x-4"
             :class="state.errorList[index] ? '-mt-7' : ''"
           >
@@ -138,7 +138,7 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
-    const hasAdminFeature = computed(() =>
+    const hasRbacFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -207,7 +207,7 @@ export default {
           // Needs to assign to a local variable as user will change after createPrincipal but before createdMember
           let role = user.role;
           // If admin feature is NOT enabled, then we set every user to OWNER role.
-          if (!hasAdminFeature.value) {
+          if (!hasRbacFeature.value) {
             role = "OWNER";
           }
           // Note "principal/createPrincipal" would return the existing principal.
@@ -247,7 +247,7 @@ export default {
     return {
       state,
       isAdd,
-      hasAdminFeature,
+      hasRbacFeature,
       validateUser,
       clearValidationError,
       addUser,
