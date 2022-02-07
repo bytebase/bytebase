@@ -1147,7 +1147,7 @@ subscription:
   buy: Buy {plan} plan
   features:
     bb-feature-task-schedule-time:
-      name: Set task schedule time
+      title: Set task schedule time
       desc: Set task schedule time allows you to set a specific time to run your tasks.
     bb-feature-instance-count:
       title: Instance count limit

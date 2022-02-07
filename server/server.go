@@ -83,6 +83,7 @@ type Server struct {
 	readonly     bool
 	demo         bool
 	dataDir      string
+	subscription *enterprise.Subscription
 }
 
 //go:embed acl_casbin_model.conf
@@ -250,6 +251,11 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
 	return s
+}
+
+// InitSubscription will initial the subscription cache in memory
+func (server *Server) InitSubscription() {
+	server.subscription = server.loadSubscription()
 }
 
 // Run will run the server.
