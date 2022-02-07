@@ -84,6 +84,12 @@
       >{{ $t("common.next") }}</button>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -121,6 +127,7 @@ type LocalState = ProjectStandardState &
   CommonTenantState & {
     project?: Project;
     tab: "standard" | "tenant";
+    showFeatureModal: boolean;
   };
 
 export default defineComponent({
@@ -168,6 +175,7 @@ export default defineComponent({
       tenantProjectId: undefined,
       selectedDatabaseName: undefined,
       deployingTenantDatabaseList: [],
+      showFeatureModal: false,
     });
 
     // Returns true if alter schema, false if change data.
@@ -254,6 +262,13 @@ export default defineComponent({
     });
 
     const generateTenant = async () => {
+      if (
+        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
+
       emit("dismiss");
 
       const projectId = props.projectId || state.tenantProjectId;
