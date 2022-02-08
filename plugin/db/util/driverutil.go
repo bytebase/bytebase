@@ -206,7 +206,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// If we have already started migration, there will be a PENDING migration record. Upon returning,
 	// we will update that record to DONE or FAILED depending on whether error occurs.
-	defer func() (myErr error) {
+	defer func() {
+		var myErr error
 		defer func() {
 			if myErr != nil {
 				l.Error("Failed to update migration history record",
@@ -217,29 +218,36 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		}()
 
 		migrationDurationNs := time.Now().UnixNano() - startedNs
-		afterSqldb, tmpErr := executor.GetDbConnection(ctx, bytebaseDatabase)
-		if tmpErr != nil {
+		afterSqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+		if err != nil {
+			myErr = err
 			return
 		}
-		afterTx, tmpErr := afterSqldb.BeginTx(ctx, nil)
-		if tmpErr != nil {
+		afterTx, err := afterSqldb.BeginTx(ctx, nil)
+		if err != nil {
+			myErr = err
 			return
 		}
 		defer afterTx.Rollback()
 
 		if resErr == nil {
 			// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-			tmpErr = executor.UpdateHistoryAsDone(ctx, afterTx, migrationDurationNs, prevSchemaBuf.String(), insertedID)
+			if err := executor.UpdateHistoryAsDone(ctx, afterTx, migrationDurationNs, prevSchemaBuf.String(), insertedID); err != nil {
+				myErr = err
+				return
+			}
 		} else {
 			// Otherwise, update the migration history as 'FAILED', exeuction_duration
-			tmpErr = executor.UpdateHistoryAsFailed(ctx, afterTx, migrationDurationNs, insertedID)
+			if err := executor.UpdateHistoryAsFailed(ctx, afterTx, migrationDurationNs, insertedID); err != nil {
+				myErr = err
+				return
+			}
 		}
 
-		if tmpErr != nil {
-			return tmpErr
+		if err := afterTx.Commit(); err != nil {
+			myErr = err
+			return
 		}
-
-		return afterTx.Commit()
 	}()
 
 	// Phase 3 - Executing migration
