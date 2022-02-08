@@ -147,7 +147,6 @@ export default {
       const createFunc = () => {
         const repositoryCreate: RepositoryCreate = {
           vcsId: state.config.vcs.id,
-          projectId: props.project.id,
           name: state.config.repositoryInfo.name,
           fullPath: state.config.repositoryInfo.fullPath,
           webUrl: state.config.repositoryInfo.webUrl,
@@ -161,7 +160,10 @@ export default {
           refreshToken: state.config.token.refreshToken,
         };
         store
-          .dispatch("repository/createRepository", repositoryCreate)
+          .dispatch("repository/createRepository", {
+            projectId: props.project.id,
+            repositoryCreate,
+          })
           .then(() => {
             allowFinishCallback();
             emit("finish");
