@@ -17,7 +17,7 @@ func NewDataUpdateTaskExecutor(logger *zap.Logger) TaskExecutor {
 	}
 }
 
-// NewDataUpdateTaskExecutor is the data update (DML) task executor.
+// DataUpdateTaskExecutor is the data update (DML) task executor.
 type DataUpdateTaskExecutor struct {
 	l *zap.Logger
 }

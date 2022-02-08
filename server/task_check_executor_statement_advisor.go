@@ -30,7 +30,7 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	var advisorType advisor.AdvisorType
+	var advisorType advisor.Type
 	switch taskCheckRun.Type {
 	case api.TaskCheckDatabaseStatementFakeAdvise:
 		advisorType = advisor.Fake
@@ -46,7 +46,7 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 	adviceList, err := advisor.Check(
 		payload.DbType,
 		advisorType,
-		advisor.AdvisorContext{
+		advisor.Context{
 			Logger:    exec.l,
 			Charset:   payload.Charset,
 			Collation: payload.Collation,
