@@ -39,35 +39,46 @@ func TestGetTemplateTokens(t *testing.T) {
 
 func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 	tests := []struct {
-		name     string
-		template string
-		errPart  string
+		name       string
+		template   string
+		tenantMode ProjectTenantMode
+		errPart    string
 	}{
 		{
 			"OK",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}.sql",
+			TenantModeDisabled,
 			"",
 		}, {
 			"OK with optional tokens",
 			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
+			TenantModeDisabled,
 			"",
 		}, {
 			"Missing {{VERSION}}",
 			"{{DB_NAME}}_{{TYPE}}.sql",
+			TenantModeDisabled,
 			"missing {{VERSION}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNWON}}.sql",
+			TenantModeDisabled,
 			"unknown token {{UNKNWON}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNWON}}.sql",
+			TenantModeDisabled,
 			"unknown token {{UNKNWON}}",
+		}, {
+			"Tenant mode {{ENV_NAME}}",
+			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",
+			TenantModeTenant,
+			"not allowed in the template",
 		},
 	}
 
 	for _, test := range tests {
-		err := ValidateRepositoryFilePathTemplate(test.template)
+		err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode)
 		if err != nil {
 			if test.errPart == "" {
 				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
@@ -84,27 +95,36 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 
 func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 	tests := []struct {
-		name     string
-		template string
-		errPart  string
+		name       string
+		template   string
+		tenantMode ProjectTenantMode
+		errPart    string
 	}{
 		{
 			"OK",
 			"{{DB_NAME}}_hello.sql",
+			TenantModeDisabled,
 			"",
 		}, {
 			"OK with optional tokens",
 			"{{ENV_NAME}}/{{DB_NAME}}.sql",
+			TenantModeDisabled,
 			"",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}.sql",
+			TenantModeDisabled,
 			"unknown token {{TYPE}}",
+		}, {
+			"Tenant mode {{ENV_NAME}}",
+			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",
+			TenantModeTenant,
+			"not allowed in the template",
 		},
 	}
 
 	for _, test := range tests {
-		err := ValidateRepositorySchemaPathTemplate(test.template)
+		err := ValidateRepositorySchemaPathTemplate(test.template, test.tenantMode)
 		if err != nil {
 			if test.errPart == "" {
 				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
