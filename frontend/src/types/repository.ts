@@ -35,7 +35,6 @@ export type Repository = {
 export type RepositoryCreate = {
   // Related fields
   vcsId: VCSId;
-  projectId: ProjectId;
 
   // Domain specific fields
   name: string;
