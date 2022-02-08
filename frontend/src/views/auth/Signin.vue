@@ -7,8 +7,7 @@
     <div class="mt-8 mb-3">
       <template v-for="authProvider in authProviderList" :key="authProvider.type">
         <n-button
-          class="w-full h-10 mb-2"
-          :class="has3rdPartyLoginFeature ? 'tooltip-wrapper' : ''"
+          class="w-full h-10 mb-2 tooltip-wrapper"
           :disabled="!has3rdPartyLoginFeature"
           @click.prevent="
             () => {
@@ -25,8 +24,9 @@
                 : authProvider.name
             }}
           </span>
+          <span v-if="isDemo" class="tooltip">{{ $t("auth.sign-in.gitlab-demo") }}</span>
           <span
-            v-if="!has3rdPartyLoginFeature"
+            v-else-if="!has3rdPartyLoginFeature"
             class="tooltip"
           >{{ $t("subscription.features.bb-feature-3rd-party-login.login") }}</span>
         </n-button>
