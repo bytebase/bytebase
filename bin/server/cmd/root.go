@@ -163,6 +163,8 @@ type Main struct {
 
 	server *server.Server
 	// serverCancel cancels any runner on the server.
+	// Then the runnerWG waits for all runners to finish before we shutdown the server.
+	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
 	db *store.DB
@@ -368,10 +370,9 @@ func (m *Main) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	m.l.Info("Trying to cancel main...")
-	m.serverCancel()
 	if m.server != nil {
 		m.l.Info("Trying to gracefully shutdown server...")
+		m.serverCancel()
 		m.server.Shutdown(ctx)
 	}
 

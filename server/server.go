@@ -264,13 +264,17 @@ func (server *Server) InitSubscription() {
 // Run will run the server.
 func (server *Server) Run(ctx context.Context) error {
 	if !server.readonly {
+		// runnerWG waits for all goroutines to complete.
 		go server.TaskScheduler.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
 		go server.TaskCheckScheduler.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
 		go server.SchemaSyncer.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
 		go server.BackupRunner.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
-		// Add above 5 goroutines to the wait group.
-		server.runnerWG.Add(5)
+		server.runnerWG.Add(1)
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.
