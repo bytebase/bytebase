@@ -162,6 +162,10 @@ type Main struct {
 	l *zap.Logger
 
 	server *server.Server
+	// serverCancel cancels any runner on the server.
+	// Then the runnerWG waits for all runners to finish before we shutdown the server.
+	// Otherwise, we will get database is closed error from runner when we shutdown the server.
+	serverCancel context.CancelFunc
 
 	db *store.DB
 }
@@ -290,6 +294,8 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 
 // Run will run the main server.
 func (m *Main) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.serverCancel = cancel
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
@@ -351,7 +357,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
 
-	if err := s.Run(); err != nil {
+	if err := s.Run(ctx); err != nil {
 		return err
 	}
 
@@ -366,6 +372,7 @@ func (m *Main) Close() error {
 
 	if m.server != nil {
 		m.l.Info("Trying to gracefully shutdown server...")
+		m.serverCancel()
 		m.server.Shutdown(ctx)
 	}
 
