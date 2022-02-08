@@ -108,6 +108,7 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	return list, nil
 }
 
+// CountInstance counts the number of instances.
 func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

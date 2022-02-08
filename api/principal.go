@@ -28,10 +28,13 @@ func (e PrincipalType) String() string {
 	return ""
 }
 
+// PrincipalAuthProvider is the type of an authentication provider.
 type PrincipalAuthProvider string
 
 const (
-	PrincipalAuthProviderBytebase       PrincipalAuthProvider = "BYTEBASE"
+	// PrincipalAuthProviderBytebase is the Bytebase's own authentication provider.
+	PrincipalAuthProviderBytebase PrincipalAuthProvider = "BYTEBASE"
+	// PrincipalAuthProviderGitlabSelfHost is the self-hosted GitLab authentication provider.
 	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
 )
 

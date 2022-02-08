@@ -24,7 +24,7 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (adv *CompatibilityAdvisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
+func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	p := newParser()
 
 	root, _, err := p.Parse(statement, ctx.Charset, ctx.Collation)
