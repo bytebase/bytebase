@@ -172,11 +172,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
 
-		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate); err != nil {
+		project, err := s.composeProjectByID(ctx, projectID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+
+		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
-		if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate); err != nil {
+		if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
@@ -299,15 +307,22 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
 		}
+		project, err := s.composeProjectByID(ctx, projectID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
 
 		if repositoryPatch.FilePathTemplate != nil {
-			if err := api.ValidateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate); err != nil {
+			if err := api.ValidateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate, project.TenantMode); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch linked repository request: %s", err.Error()))
 			}
 		}
 
 		if repositoryPatch.SchemaPathTemplate != nil {
-			if err := api.ValidateRepositorySchemaPathTemplate(*repositoryPatch.SchemaPathTemplate); err != nil {
+			if err := api.ValidateRepositorySchemaPathTemplate(*repositoryPatch.SchemaPathTemplate, project.TenantMode); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 			}
 		}
@@ -555,7 +570,7 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 		return nil, err
 	}
 	if project == nil {
-		return nil, fmt.Errorf("project ID not found %v", id)
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", id)}
 	}
 
 	if err := s.composeProjectRelationship(ctx, project); err != nil {

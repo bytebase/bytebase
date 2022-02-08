@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // DefaultProjectID is the ID for the default project.
@@ -167,11 +169,16 @@ var (
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
+func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
 	tokens := getTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
+	}
+	if tenantMode == TenantModeTenant {
+		if _, ok := tokenMap[EnvironemntToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		}
 	}
 
 	for token, required := range repositoryFilePathTemplateTokens {
@@ -190,7 +197,7 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
 }
 
 // ValidateRepositorySchemaPathTemplate validates the repository schema path template.
-func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
+func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode ProjectTenantMode) error {
 	if schemaPathTemplate == "" {
 		return nil
 	}
@@ -198,6 +205,11 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
+	}
+	if tenantMode == TenantModeTenant {
+		if _, ok := tokenMap[EnvironemntToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		}
 	}
 
 	for token, required := range schemaPathTemplateTokens {
