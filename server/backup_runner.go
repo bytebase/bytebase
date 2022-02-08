@@ -30,13 +30,16 @@ type BackupRunner struct {
 }
 
 // Run is the runner for backup runner.
-func (s *BackupRunner) Run() error {
-	go func() {
-		s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
-		ctx := context.Background()
-		runningTasks := make(map[int]bool)
-		var mu sync.RWMutex
-		for {
+func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(s.backupRunnerInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+	runningTasks := make(map[int]bool)
+	var mu sync.RWMutex
+	for {
+		select {
+		case <-ticker.C:
 			s.l.Debug("New auto backup round started...")
 			func() {
 				defer func() {
@@ -123,12 +126,10 @@ func (s *BackupRunner) Run() error {
 					}(database, backupSetting.ID, backupName, backupSetting.HookURL)
 				}
 			}()
-
-			time.Sleep(s.backupRunnerInterval)
+		case <-ctx.Done(): // if cancel() execute
+			return
 		}
-	}()
-
-	return nil
+	}
 }
 
 func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string) error {
