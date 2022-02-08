@@ -106,9 +106,16 @@ func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipa
 
 func isGettingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
 	if strings.HasPrefix(c.Path(), "/api/inbox/user") {
-		userID, err := strconv.Atoi(c.Param("userId"))
+		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
-			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
+			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
+		}
+
+		return userID == curPrincipalID, nil
+	} else if strings.HasPrefix(c.Path(), "/api/bookmark/user") {
+		userID, err := strconv.Atoi(c.Param("userID"))
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
 		}
 
 		return userID == curPrincipalID, nil
