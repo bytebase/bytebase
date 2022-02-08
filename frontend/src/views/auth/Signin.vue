@@ -1,21 +1,13 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img
-        class="h-12 w-auto"
-        src="../../assets/logo-full.svg"
-        alt="Bytebase"
-      />
+      <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
     </div>
 
     <div class="mt-8 mb-3">
-      <template
-        v-for="authProvider in authProviderList"
-        :key="authProvider.type"
-      >
+      <template v-for="authProvider in authProviderList" :key="authProvider.type">
         <n-button
-          class="w-full h-10 mb-2"
-          :class="'tooltip-wrapper'"
+          class="w-full h-10 mb-2 tooltip-wrapper"
           :disabled="!has3rdPartyLoginFeature"
           @click.prevent="
             () => {
@@ -24,29 +16,30 @@
             }
           "
         >
-          <img
-            class="w-5 mr-1"
-            :src="AuthProviderConfig[authProvider.type].iconPath"
-          /><span class="text-center font-semibold align-middle">{{
-            authProviderList.length == 1
-              ? $t("auth.sign-in.gitlab")
-              : authProvider.name
-          }}</span>
-          <span v-if="!has3rdPartyLoginFeature" class="tooltip">
-            {{ $t("subscription.features.bb-feature-3rd-party-login.login") }}
+          <img class="w-5 mr-1" :src="AuthProviderConfig[authProvider.type].iconPath" />
+          <span class="text-center font-semibold align-middle">
+            {{
+              authProviderList.length == 1
+                ? $t("auth.sign-in.gitlab")
+                : authProvider.name
+            }}
           </span>
+          <span v-if="isDemo" class="tooltip">{{ $t("auth.sign-in.gitlab-demo") }}</span>
+          <span
+            v-else-if="!has3rdPartyLoginFeature"
+            class="tooltip"
+          >{{ $t("subscription.features.bb-feature-3rd-party-login.login") }}</span>
         </n-button>
       </template>
 
       <template v-if="authProviderList.length == 0">
         <n-button class="w-full h-10 mb-2" disabled>
-          <img
-            class="w-5 mr-1"
-            :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
-          />
-          <span class="text-center font-semibold align-middle">{{
-            $t("auth.sign-in.gitlab-oauth")
-          }}</span>
+          <img class="w-5 mr-1" :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath" />
+          <span class="text-center font-semibold align-middle">
+            {{
+              $t("auth.sign-in.gitlab-oauth")
+            }}
+          </span>
         </n-button>
       </template>
     </div>
@@ -56,9 +49,7 @@
         <div class="w-full border-t border-control-border"></div>
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-2 bg-white text-control">
-          {{ $t("common.or") }}
-        </span>
+        <span class="px-2 bg-white text-control">{{ $t("common.or") }}</span>
       </div>
     </div>
 
@@ -66,11 +57,9 @@
       <div class="mt-2">
         <form class="space-y-6" @submit.prevent="trySignin">
           <div>
-            <label
-              for="email"
-              class="block text-sm font-medium leading-5 text-control"
-            >
-              {{ $t("common.email") }}<span class="text-red-600">*</span>
+            <label for="email" class="block text-sm font-medium leading-5 text-control">
+              {{ $t("common.email") }}
+              <span class="text-red-600">*</span>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -90,14 +79,13 @@
               class="flex justify-between text-sm font-medium leading-5 text-control"
             >
               <div>
-                {{ $t("common.password") }}<span class="text-red-600">*</span>
+                {{ $t("common.password") }}
+                <span class="text-red-600">*</span>
               </div>
               <router-link
                 to="/auth/password-forgot"
                 class="text-sm font-normal text-control-light hover:underline focus:outline-none"
-              >
-                {{ $t("auth.sign-in.forget-password") }}
-              </router-link>
+              >{{ $t("auth.sign-in.forget-password") }}</router-link>
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <input
@@ -117,9 +105,7 @@
                 type="submit"
                 :disabled="!allowSignin"
                 class="btn-primary justify-center flex-grow py-2 px-4"
-              >
-                {{ $t("common.sign-in") }}
-              </button>
+              >{{ $t("common.sign-in") }}</button>
             </span>
           </div>
         </form>
@@ -128,12 +114,16 @@
 
     <div class="mt-6 relative">
       <div class="relative flex justify-center text-sm">
-        <span class="pl-2 bg-white text-control">
-          {{ $t("auth.sign-in.new-user") }}
-        </span>
-        <router-link to="/auth/signup" class="accent-link bg-white px-2">
-          {{ $t("common.sign-up") }}
-        </router-link>
+        <template v-if="isDemo">
+          <span class="pl-2 bg-white text-accent">{{ $t("auth.sign-in.demo-note") }}</span>
+        </template>
+        <template v-else>
+          <span class="pl-2 bg-white text-control">{{ $t("auth.sign-in.new-user") }}</span>
+          <router-link
+            to="/auth/signup"
+            class="accent-link bg-white px-2"
+          >{{ $t("common.sign-up") }}</router-link>
+        </template>
       </div>
     </div>
   </div>
@@ -178,10 +168,11 @@ export default {
       activeAuthProvider: EmptyAuthProvider,
     });
 
+    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+
     onMounted(() => {
-      const demo = store.getters["actuator/isDemo"]();
-      state.email = isDev() || demo ? "demo@example.com" : "";
-      state.password = isDev() || demo ? "1024" : "";
+      state.email = isDev() || isDemo.value ? "demo@example.com" : "";
+      state.password = isDev() || isDemo.value ? "1024" : "";
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
@@ -271,8 +262,7 @@ export default {
       }
 
       openWindowForOAuth(
-        `${authProvider.instanceUrl}/${
-          AuthProviderConfig[authProvider.type].apiPath
+        `${authProvider.instanceUrl}/${AuthProviderConfig[authProvider.type].apiPath
         }`,
         authProvider.applicationId,
         "bb.oauth.signin"
@@ -287,6 +277,7 @@ export default {
 
     return {
       state,
+      isDemo,
       allowSignin,
       authProviderList,
       AuthProviderConfig,
