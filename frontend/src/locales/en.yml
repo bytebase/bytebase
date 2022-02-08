@@ -593,11 +593,11 @@ auth:
     existing-user: Already have an account?
   sign-in:
     title: Sign in to your account
-    admin-title: Setup {'account'}
-    admin-account: admin account
     forget-password: Forgot your password?
     new-user: New to Bytebase?
+    demo-note: Please use demo account to sign in
     gitlab: Login with GitLab
+    gitlab-demo: GitLab login is disabled in Demo mode
     gitlab-oauth: Reach to your Admin to enable GitLab login
   password-forget:
     title: Forgot your password?
