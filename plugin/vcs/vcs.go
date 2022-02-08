@@ -28,8 +28,8 @@ func (e Type) String() string {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
-// VCSFileCommit is the API message for a VCS file commit.
-type VCSFileCommit struct {
+// FileCommit is the API message for a VCS file commit.
+type FileCommit struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
 	Message    string `json:"message"`
@@ -47,21 +47,21 @@ type FileCommitCreate struct {
 	LastCommitID  string
 }
 
-// FileMata records the file metadata.
+// FileMeta records the file metadata.
 type FileMeta struct {
 	LastCommitID string
 }
 
-// VCSPushEvent is the API message for a VCS push event.
-type VCSPushEvent struct {
-	VCSType            Type          `json:"vcsType"`
-	BaseDirectory      string        `json:"baseDir"`
-	Ref                string        `json:"ref"`
-	RepositoryID       string        `json:"repositoryId"`
-	RepositoryURL      string        `json:"repositoryUrl"`
-	RepositoryFullPath string        `json:"repositoryFullPath"`
-	AuthorName         string        `json:"authorName"`
-	FileCommit         VCSFileCommit `json:"fileCommit"`
+// PushEvent is the API message for a VCS push event.
+type PushEvent struct {
+	VCSType            Type       `json:"vcsType"`
+	BaseDirectory      string     `json:"baseDir"`
+	Ref                string     `json:"ref"`
+	RepositoryID       string     `json:"repositoryId"`
+	RepositoryURL      string     `json:"repositoryUrl"`
+	RepositoryFullPath string     `json:"repositoryFullPath"`
+	AuthorName         string     `json:"authorName"`
+	FileCommit         FileCommit `json:"fileCommit"`
 }
 
 type UserState string
@@ -122,9 +122,9 @@ type Provider interface {
 	// Patches a webhook.
 	//
 	// The payload stores the patched field(s).
-	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string, payload []byte) error
+	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string, payload []byte) error
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string) error
+	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string) error
 }
 
 var (

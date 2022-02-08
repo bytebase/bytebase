@@ -938,7 +938,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.VCSPushEvent, d *api.UpdateSchemaDetail, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
