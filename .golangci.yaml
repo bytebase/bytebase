@@ -1,7 +1,6 @@
 linters:
-  disable:
-    - errcheck
   enable:
+    - errcheck
     - goimports
     - golint
     - govet
