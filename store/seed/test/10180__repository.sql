@@ -133,8 +133,8 @@ VALUES
         "http://gitlab.bytebase.com/bytebase-demo/tenant",
         "master",
         "bytebase",
-        "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-        "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+        "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+        ".{{DB_NAME}}__LATEST.sql",
         -- Refers to the bytebase-demo/tenant
         "15",
         -- Refers to the webhook in bytebase-demo/tenant
