@@ -2,7 +2,9 @@
   <div class="space-y-4">
     <div>
       <div class="flex flex-row space-x-2 items-center">
-        <label for="gitprovider" class="textlabel"> {{ $t('repository.git-provider') }} </label>
+        <label for="gitprovider" class="textlabel">
+          {{ $t("repository.git-provider") }}
+        </label>
         <template v-if="vcsType.startsWith('GITLAB')">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
@@ -18,13 +20,15 @@
     </div>
     <div>
       <div class="flex flex-row space-x-2 items-center">
-        <label for="repository" class="textlabel"> {{ $t('common.repository') }} </label>
+        <label for="repository" class="textlabel">
+          {{ $t("common.repository") }}
+        </label>
         <div
           v-if="!create && allowEdit"
           class="ml-1 normal-link text-sm"
           @click.prevent="$emit('change-repository')"
         >
-          {{ $t('common.change') }}
+          {{ $t("common.change") }}
         </div>
       </div>
       <input
@@ -37,9 +41,11 @@
       />
     </div>
     <div>
-      <div class="textlabel">{{ $t('common.branch') }} <span class="text-red-600">*</span></div>
+      <div class="textlabel">
+        {{ $t("common.branch") }} <span class="text-red-600">*</span>
+      </div>
       <div class="mt-1 textinfolabel">
-        {{ $t('repository.branch-observe-file-change') }}
+        {{ $t("repository.branch-observe-file-change") }}
       </div>
       <input
         id="branch"
@@ -51,13 +57,13 @@
         :disabled="!allowEdit"
       />
       <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
-        {{ $t('repository.branch-specify-tip') }}
+        {{ $t("repository.branch-specify-tip") }}
       </div>
     </div>
     <div>
-      <div class="textlabel">{{ $t('repository.base-directory') }}</div>
+      <div class="textlabel">{{ $t("repository.base-directory") }}</div>
       <div class="mt-1 textinfolabel">
-        {{ $t('repository.base-directory-description') }}
+        {{ $t("repository.base-directory-description") }}
       </div>
       <input
         id="basedirectory"
@@ -70,17 +76,18 @@
     </div>
     <div>
       <div class="textlabel">
-        {{ $t('repository.file-path-template') }} <span class="text-red-600">*</span>
+        {{ $t("repository.file-path-template") }}
+        <span class="text-red-600">*</span>
         <a
           href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#file-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
-          {{ $t('common.config-guide') }}</a
+          {{ $t("common.config-guide") }}</a
         >
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t('repository.file-path-template-description') }}
+        {{ $t("repository.file-path-template-description") }}
       </div>
       <input
         id="filepathtemplate"
@@ -91,12 +98,16 @@
         :disabled="!allowEdit"
       />
       <div class="mt-2 textinfolabel capitalize">
-        <span class="text-red-600">*</span> {{ $t('common.required-placeholder') }}:
-        {{ FILE_REQUIRED_PLACEHOLDER }}; {{ $t('common.optional-placeholder') }}:
-        {{ FILE_OPTIONAL_PLACEHOLDER }}
+        <span class="text-red-600">*</span>
+        {{ $t("common.required-placeholder") }}:
+        {{ FILE_REQUIRED_PLACEHOLDER }};
+        <template v-if="fileOptionalPlaceholder.length > 0">
+          {{ $t("common.optional-placeholder") }}:
+          {{ fileOptionalPlaceholder.join(", ") }}
+        </template>
       </div>
       <div class="mt-2 textinfolabel">
-        • {{ $t('repository.file-path-example-normal-migration') }}:
+        • {{ $t("repository.file-path-example-normal-migration") }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -106,7 +117,7 @@
         }}
       </div>
       <div class="mt-2 textinfolabel">
-        • {{ $t('repository.file-path-example-baseline-migration') }}:
+        • {{ $t("repository.file-path-example-baseline-migration") }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -118,20 +129,20 @@
     </div>
     <div>
       <div class="textlabel">
-        {{ $t('repository.schema-path-template') }}
+        {{ $t("repository.schema-path-template") }}
         <a
           href="https://docs.bytebase.com/use-bytebase/vcs-integration/organize-repository-files#schema-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
-          {{ $t('common.config-guide') }}</a
+          {{ $t("common.config-guide") }}</a
         >
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t('repository.schema-writeback-description') }}
-        <span class="font-medium text-main"
-          >{{ $t('repository.schema-writeback-protected-branch') }}</span
-        >
+        {{ $t("repository.schema-writeback-description") }}
+        <span class="font-medium text-main">{{
+          $t("repository.schema-writeback-protected-branch")
+        }}</span>
       </div>
       <input
         id="schemapathtemplate"
@@ -142,15 +153,19 @@
         :disabled="!allowEdit"
       />
       <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span> {{ $t('repository.if-specified') }}, {{ $t('common.required-placeholder') }}:
-        {{ SCHEMA_REQUIRED_PLACEHOLDER }}; {{ $t('common.optional-placeholder') }}:
-        {{ SCHEMA_OPTIONAL_PLACEHOLDER }}
+        <span class="text-red-600">*</span> {{ $t("repository.if-specified") }},
+        {{ $t("common.required-placeholder") }}:
+        {{ SCHEMA_REQUIRED_PLACEHOLDER }};
+        <template v-if="schemaOptionalTagPlaceholder.length > 0">
+          {{ $t("common.optional-placeholder") }}:
+          {{ schemaOptionalTagPlaceholder.join(", ") }}
+        </template>
       </div>
       <div
         v-if="repositoryConfig.schemaPathTemplate"
         class="mt-2 textinfolabel"
       >
-        • {{ $t('repository.schema-path-example') }}:
+        • {{ $t("repository.schema-path-example") }}:
         {{
           sampleSchemaPath(
             repositoryConfig.baseDirectory,
@@ -163,18 +178,21 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
-import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "../types";
+import { reactive, PropType, defineComponent, computed } from "vue";
+import {
+  ExternalRepositoryInfo,
+  Project,
+  RepositoryConfig,
+  VCSType,
+} from "../types";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
-const FILE_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}, {{DESCRIPTION}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
-const SCHEMA_OPTIONAL_PLACEHOLDER = "{{ENV_NAME}}";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "RepositoryForm",
   props: {
     allowEdit: {
@@ -201,10 +219,18 @@ export default {
       required: true,
       type: Object as PropType<RepositoryConfig>,
     },
+    project: {
+      required: true,
+      type: Object as PropType<Project>,
+    },
   },
   emits: ["change-repository"],
-  setup() {
+  setup(props) {
     const state = reactive<LocalState>({});
+
+    const isTenantProject = computed(() => {
+      return props.project.tenantMode === "TENANT";
+    });
 
     const sampleFilePath = (
       baseDirectory: string,
@@ -271,15 +297,30 @@ export default {
       return result;
     };
 
+    const fileOptionalPlaceholder = computed(() => {
+      const tags = [] as string[];
+      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      tags.push("{{DESCRIPTION}}");
+      return tags;
+    });
+
+    const schemaOptionalTagPlaceholder = computed(() => {
+      const tags = [] as string[];
+      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      return tags;
+    });
+
     return {
       FILE_REQUIRED_PLACEHOLDER,
-      FILE_OPTIONAL_PLACEHOLDER,
+      fileOptionalPlaceholder,
       SCHEMA_REQUIRED_PLACEHOLDER,
-      SCHEMA_OPTIONAL_PLACEHOLDER,
+      schemaOptionalTagPlaceholder,
       state,
       sampleFilePath,
       sampleSchemaPath,
     };
   },
-};
+});
 </script>
