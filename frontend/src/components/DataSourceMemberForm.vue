@@ -93,7 +93,7 @@
           <!-- eslint-disable vue/attribute-hyphenation -->
           <MemberSelect
             id="user"
-            class="mt-1"
+            class="mt-1 w-full"
             name="user"
             :allowed-role-list="['DEVELOPER']"
             :disabled="!allowUpdateDataSourceMember"
