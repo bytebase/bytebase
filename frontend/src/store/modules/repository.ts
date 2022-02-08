@@ -82,28 +82,28 @@ const getters = {
 const actions = {
   async createRepository(
     { dispatch, commit, rootGetters }: any,
-    repositoryCreate: RepositoryCreate
+    {
+      projectId,
+      repositoryCreate,
+    }: { projectId: ProjectId; repositoryCreate: RepositoryCreate }
   ): Promise<Repository> {
     const data = (
-      await axios.post(
-        `/api/project/${repositoryCreate.projectId}/repository`,
-        {
-          data: {
-            type: "RepositoryCreate",
-            attributes: repositoryCreate,
-          },
-        }
-      )
+      await axios.post(`/api/project/${projectId}/repository`, {
+        data: {
+          type: "RepositoryCreate",
+          attributes: repositoryCreate,
+        },
+      })
     ).data;
 
     const createdRepository = convert(data.data, data.included, rootGetters);
     commit("setRepositoryByProjectId", {
-      projectId: repositoryCreate.projectId,
+      projectId: projectId,
       repository: createdRepository,
     });
 
     // Refetch the project as the project workflow type has been updated to "VCS"
-    dispatch("project/fetchProjectById", repositoryCreate.projectId, {
+    dispatch("project/fetchProjectById", projectId, {
       root: true,
     });
 
