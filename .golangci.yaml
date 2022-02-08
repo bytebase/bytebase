@@ -6,5 +6,8 @@ linters:
     - govet
     - staticcheck
 
+issues:
+  exclude-use-default: true
+
 run:
   timeout: 5m
