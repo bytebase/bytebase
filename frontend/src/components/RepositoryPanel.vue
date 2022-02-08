@@ -54,6 +54,7 @@
     :vcs-name="repository.vcs.name"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
+    :project="project"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
@@ -80,7 +81,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import RepositoryForm from "./RepositoryForm.vue";
 import {
@@ -97,7 +98,7 @@ interface LocalState {
   repositoryConfig: RepositoryConfig;
 }
 
-export default {
+export default defineComponent({
   name: "RepositoryPanel",
   components: { RepositoryForm },
   props: {
@@ -222,5 +223,5 @@ export default {
       doUpdate,
     };
   },
-};
+});
 </script>

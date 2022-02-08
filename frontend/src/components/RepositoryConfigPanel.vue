@@ -5,24 +5,29 @@
     :vcs-name="config.vcs.name"
     :repository-info="config.repositoryInfo"
     :repository-config="config.repositoryConfig"
+    :project="project"
   />
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import RepositoryForm from "./RepositoryForm.vue";
-import { ProjectRepositoryConfig } from "../types";
+import { Project, ProjectRepositoryConfig } from "../types";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "RepositoryConfigPanel",
   components: { RepositoryForm },
   props: {
     config: {
       required: true,
       type: Object as PropType<ProjectRepositoryConfig>,
+    },
+    project: {
+      required: true,
+      type: Object as PropType<Project>,
     },
   },
   emits: ["next"],
@@ -33,5 +38,5 @@ export default {
       state,
     };
   },
-};
+});
 </script>
