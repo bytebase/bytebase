@@ -195,20 +195,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-						CreatorID:               api.SystemBotID,
-						TaskID:                  task.ID,
-						Type:                    api.TaskCheckDatabaseStatementCompatibility,
-						Payload:                 string(payload),
-						SkipIfAlreadyTerminated: false,
-					})
-					if err != nil {
-						// It's OK if we failed to trigger a check, just emit an error log
-						s.l.Error("Failed to trigger compatibility check after changing task statement",
-							zap.Int("task_id", task.ID),
-							zap.String("task_name", task.Name),
-							zap.Error(err),
-						)
+					if s.feature(api.FeatureBackwardCompatibilty) {
+						_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+							CreatorID:               api.SystemBotID,
+							TaskID:                  task.ID,
+							Type:                    api.TaskCheckDatabaseStatementCompatibility,
+							Payload:                 string(payload),
+							SkipIfAlreadyTerminated: false,
+						})
+						if err != nil {
+							// It's OK if we failed to trigger a check, just emit an error log
+							s.l.Error("Failed to trigger compatibility check after changing task statement",
+								zap.Int("task_id", task.ID),
+								zap.String("task_name", task.Name),
+								zap.Error(err),
+							)
+						}
 					}
 				}
 			}
@@ -550,81 +552,6 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", updatedTask.Name)
 		}
 		updatedTask = scheduledTask
-	}
-
-	// If create database task completes, then we will create a database entry immediately
-	// instead of waiting for the next schema sync cycle to sync over this newly created database.
-	// This is for 2 reasons:
-	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
-	//    sync will place the synced db into the default project.
-	// 2. Allow user to see the created database right away.
-	if (updatedTask.Type == api.TaskDatabaseCreate) &&
-		updatedTask.Status == api.TaskDone {
-		payload := &api.TaskDatabaseCreatePayload{}
-		if err := json.Unmarshal([]byte(updatedTask.Payload), payload); err != nil {
-			return nil, fmt.Errorf("invalid create database task payload: %w", err)
-		}
-
-		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{
-			ID: &task.InstanceID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to find instance: %v", task.InstanceID)
-		}
-		if instance == nil {
-			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
-		}
-		project, err := s.composeProjectByID(ctx, payload.ProjectID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
-		}
-		if project == nil {
-			return nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
-		}
-
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     taskStatusPatch.UpdaterID,
-			ProjectID:     payload.ProjectID,
-			InstanceID:    task.InstanceID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          payload.DatabaseName,
-			CharacterSet:  payload.CharacterSet,
-			Collation:     payload.Collation,
-			Labels:        &payload.Labels,
-			SchemaVersion: payload.SchemaVersion,
-		}
-		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			// Just emits an error instead of failing, since we have another periodic job to sync db info.
-			// Though the db will be assigned to the default project instead of the desired project in that case.
-			s.l.Error("failed to record database after creating database",
-				zap.String("database_name", payload.DatabaseName),
-				zap.Int("project_id", payload.ProjectID),
-				zap.Int("instance_id", task.InstanceID),
-				zap.Error(err),
-			)
-		}
-		err = s.composeDatabaseRelationship(ctx, database)
-		if err != nil {
-			s.l.Error("failed to compose database relationship after creating database",
-				zap.String("database_name", payload.DatabaseName),
-				zap.Int("project_id", payload.ProjectID),
-				zap.Int("instance_id", task.InstanceID),
-				zap.Error(err),
-			)
-		}
-		// Set database labels, except bb.environment is immutable and must match instance environment.
-		// This needs to be after we compose database relationship.
-		if err == nil && databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
-				s.l.Error("failed to record database labels after creating database",
-					zap.String("database_name", payload.DatabaseName),
-					zap.Int("project_id", payload.ProjectID),
-					zap.Int("instance_id", task.InstanceID),
-					zap.Error(err),
-				)
-			}
-		}
 	}
 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.

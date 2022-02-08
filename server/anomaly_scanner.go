@@ -34,12 +34,16 @@ type AnomalyScanner struct {
 }
 
 // Run will run the anomaly scanner once.
-func (s *AnomalyScanner) Run() error {
-	go func() {
-		s.l.Debug(fmt.Sprintf("Anomaly scanner started and will run every %v", anomalyScanInterval))
-		runningTasks := make(map[int]bool)
-		mu := sync.RWMutex{}
-		for {
+func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(anomalyScanInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	s.l.Debug(fmt.Sprintf("Anomaly scanner started and will run every %v", anomalyScanInterval))
+	runningTasks := make(map[int]bool)
+	mu := sync.RWMutex{}
+	for {
+		select {
+		case <-ticker.C:
 			s.l.Debug("New anomaly scanner round started...")
 			func() {
 				defer func() {
@@ -143,12 +147,10 @@ func (s *AnomalyScanner) Run() error {
 					time.Sleep(1 * time.Second)
 				}
 			}()
-
-			time.Sleep(anomalyScanInterval)
+		case <-ctx.Done(): // if cancel() execute
+			return
 		}
-	}()
-
-	return nil
+	}
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
@@ -278,7 +280,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	}
 
 	// Check schema drift
-	{
+	if s.server.feature(api.FeatureSchemaDrift) {
 		setup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
 			s.l.Debug("Failed to check anomaly",

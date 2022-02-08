@@ -3,15 +3,7 @@
     <label for="search" class="sr-only">Search</label>
     <div class="relative rounded-md shadow-sm">
       <div
-        class="
-          absolute
-          inset-y-0
-          left-0
-          pl-3
-          flex
-          items-center
-          pointer-events-none
-        "
+        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
         aria-hidden="true"
       >
         <!-- Heroicon name: solid/search -->
@@ -22,31 +14,26 @@
         type="text"
         autocomplete="off"
         name="search"
-        class="
-          focus:ring-main focus:border-main
-          block
-          w-full
-          pl-9
-          sm:text-sm
-          border-control-border
-          rounded-md
-        "
+        class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
         :placeholder="placeholder"
-        @input="$emit('change-text', $event.target.value)"
+        @input="(e: any) => $emit('change-text', e.target.value)"
       />
     </div>
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: "BBTableSearch",
-  props: {
-    placeholder: {
-      default: "Search",
-      type: String,
-    },
-  },
-  emits: ["change-text"],
-};
+<script lang="ts" setup>
+import { withDefaults, defineProps, defineEmits } from "vue";
+withDefaults(
+  defineProps<{
+    placeholder?: string;
+  }>(),
+  {
+    placeholder: "Search",
+  }
+);
+
+defineEmits<{
+  (event: "change-text", value: string): void;
+}>();
 </script>

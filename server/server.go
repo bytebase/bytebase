@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/common"
@@ -24,11 +25,13 @@ import (
 
 // Server is the Bytebase server.
 type Server struct {
+	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
 
@@ -67,7 +70,7 @@ type Server struct {
 	DeploymentConfigService api.DeploymentConfigService
 	SavedQueryService       api.SavedQueryService
 	LicenseService          enterprise.LicenseService
-	SheetService          	api.SheetService
+	SheetService            api.SheetService
 
 	e *echo.Echo
 
@@ -82,8 +85,8 @@ type Server struct {
 	secret       string
 	readonly     bool
 	demo         bool
-	plan         api.PlanType
 	dataDir      string
+	subscription *enterprise.Subscription
 }
 
 //go:embed acl_casbin_model.conf
@@ -126,7 +129,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 		secret:       secret,
 		readonly:     readonly,
 		demo:         demo,
-		plan:         api.TEAM,
 		dataDir:      dataDir,
 	}
 
@@ -239,7 +241,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerPlanRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
 	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
@@ -255,28 +256,25 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	return s
 }
 
+// InitSubscription will initial the subscription cache in memory
+func (server *Server) InitSubscription() {
+	server.subscription = server.loadSubscription()
+}
+
 // Run will run the server.
-func (server *Server) Run() error {
+func (server *Server) Run(ctx context.Context) error {
 	if !server.readonly {
-		if err := server.TaskScheduler.Run(); err != nil {
-			return err
-		}
-
-		if err := server.TaskCheckScheduler.Run(); err != nil {
-			return err
-		}
-
-		if err := server.SchemaSyncer.Run(); err != nil {
-			return err
-		}
-
-		if err := server.BackupRunner.Run(); err != nil {
-			return err
-		}
-
-		if err := server.AnomalyScanner.Run(); err != nil {
-			return err
-		}
+		// runnerWG waits for all goroutines to complete.
+		go server.TaskScheduler.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
+		go server.TaskCheckScheduler.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
+		go server.SchemaSyncer.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
+		go server.BackupRunner.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
+		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.
@@ -290,6 +288,8 @@ func (server *Server) Shutdown(ctx context.Context) {
 	if err := server.e.Shutdown(ctx); err != nil {
 		server.e.Logger.Fatal(err)
 	}
+	// Wait for all runners to exit.
+	server.runnerWG.Wait()
 }
 
 // GetEcho returns the echo server.

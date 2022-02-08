@@ -29,12 +29,16 @@ type SchemaSyncer struct {
 }
 
 // Run will run the schema syncer once.
-func (s *SchemaSyncer) Run() error {
-	go func() {
-		s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
-		runningTasks := make(map[int]bool)
-		mu := sync.RWMutex{}
-		for {
+func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(schemaSyncInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
+	runningTasks := make(map[int]bool)
+	mu := sync.RWMutex{}
+	for {
+		select {
+		case <-ticker.C:
 			s.l.Debug("New schema syncer round started...")
 			func() {
 				defer func() {
@@ -92,10 +96,8 @@ func (s *SchemaSyncer) Run() error {
 					}(instance)
 				}
 			}()
-
-			time.Sleep(schemaSyncInterval)
+		case <-ctx.Done(): // if cancel() execute
+			return
 		}
-	}()
-
-	return nil
+	}
 }

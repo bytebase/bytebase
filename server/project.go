@@ -25,6 +25,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
 		}
+		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
 		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		if projectCreate.TenantMode == "" {
 			projectCreate.TenantMode = api.TenantModeDisabled
@@ -157,7 +160,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	// When we link the repository with the project, we will also change the project workflow type to VCS
 	g.POST("/project/:projectID/repository", func(c echo.Context) error {
 		ctx := context.Background()
-		repositoryCreate := &api.RepositoryCreate{}
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
+		}
+		repositoryCreate := &api.RepositoryCreate{
+			ProjectID: projectID,
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
@@ -219,7 +229,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		repositoryCreate.ExternalWebhookID = webhookID
 
-		repositoryCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
@@ -284,7 +293,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-
 		repositoryPatch := &api.RepositoryPatch{
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}

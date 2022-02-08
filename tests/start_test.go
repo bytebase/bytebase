@@ -6,10 +6,11 @@ import (
 )
 
 func TestServiceStart(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	if err := ctl.StartMain(ctx, dataDir); err != nil {
+	if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
 		t.Fatal(err)
 	}
 	defer ctl.Close()

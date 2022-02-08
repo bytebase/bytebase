@@ -8,32 +8,27 @@
   </th>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
+<script lang="ts" setup>
+import { withDefaults, defineProps, computed } from "vue";
+const props = withDefaults(
+  defineProps<{
+    title?: string;
+    leftPadding?: number;
+    compact?: boolean;
+  }>(),
+  {
+    title: "",
+    leftPadding: 2,
+    compact: false,
+  }
+);
 
-export default defineComponent({
-  name: "BBTableHeaderCell",
-  props: {
-    title: {
-      type: String,
-      default: "",
-    },
-    leftPadding: {
-      type: Number,
-      default: 2,
-    },
-    compact: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup(props) {
-    const classNames: string[] = [];
-    if (!props.compact) {
-      classNames.push(`pl-${props.leftPadding}`);
-      classNames.push("py-2");
-    }
-    return { classNames };
-  },
+const classNames = computed((): string[] => {
+  const classNames: string[] = [];
+  if (!props.compact) {
+    classNames.push(`pl-${props.leftPadding}`);
+    classNames.push("py-2");
+  }
+  return classNames;
 });
 </script>

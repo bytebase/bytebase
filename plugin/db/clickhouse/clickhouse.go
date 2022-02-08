@@ -12,7 +12,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
-	clickhouse "github.com/ClickHouse/clickhouse-go"
+	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -24,10 +24,13 @@ var migrationSchema string
 
 var (
 	systemDatabases = map[string]bool{
-		"system": true,
+		"system":             true,
+		"information_schema": true,
+		"INFORMATION_SCHEMA": true,
 	}
 
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver              = (*Driver)(nil)
+	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
 func init() {
@@ -51,58 +54,39 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a ClickHouse driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	protocol := "tcp"
-	if strings.HasPrefix(config.Host, "/") {
-		protocol = "unix"
-	}
-
-	params := []string{}
-
 	port := config.Port
 	if port == "" {
 		port = "9000"
 	}
-	baseDSN := fmt.Sprintf("%s://%s:%s?", protocol, config.Host, port)
-
-	// Default user name is "default".
-	params = append(params, fmt.Sprintf("username=%s", config.Username))
-	// Password is constructed later, after loggedDSN is constructed.
-	if config.Database != "" {
-		params = append(params, fmt.Sprintf("database=%s", config.Database))
-	}
+	addr := fmt.Sprintf("%s:%s", config.Host, port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, fmt.Errorf("sql: tls config error: %v", err)
 	}
-	tlsKey := "db.clickhouse.tls"
-	if tlsConfig != nil {
-		if err := clickhouse.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-			return nil, fmt.Errorf("sql: failed to register tls config: %v", err)
-		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		defer clickhouse.DeregisterTLSConfig(tlsKey)
-		params = append(params, fmt.Sprintf("tls_config=%s", tlsKey))
-	}
-
-	loggedDSN := fmt.Sprintf("%s%s&password=<<redacted password>>", baseDSN, strings.Join(params, "&"))
-
-	if config.Password != "" {
-		params = append(params, fmt.Sprintf("password=%s", config.Password))
-	}
-	dsn := fmt.Sprintf("%s%s", baseDSN, strings.Join(params, "&"))
+	// Default user name is "default".
+	conn := clickhouse.OpenDB(&clickhouse.Options{
+		Addr: []string{addr},
+		Auth: clickhouse.Auth{
+			Database: config.Database,
+			Username: config.Username,
+			Password: config.Password,
+		},
+		TLS: tlsConfig,
+		Settings: clickhouse.Settings{
+			"max_execution_time": 60, // 60 seconds.
+		},
+		DialTimeout: 10 * time.Second,
+	})
 
 	driver.l.Debug("Opening ClickHouse driver",
-		zap.String("dsn", loggedDSN),
+		zap.String("addr", addr),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
 	)
-	db, err := sql.Open("clickhouse", dsn)
-	if err != nil {
-		panic(err)
-	}
+
 	driver.dbType = dbType
-	driver.db = db
+	driver.db = conn
 	driver.connectionCtx = connCtx
 
 	return driver, nil
@@ -212,8 +196,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				database,
 				name,
 				engine,
-				total_rows,
-				total_bytes,
+				IFNULL(total_rows, 0),
+				IFNULL(total_bytes, 0),
 				metadata_modification_time,
 				create_table_query,
 				comment
@@ -232,7 +216,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 	for tableRows.Next() {
 		var dbName, name, engine, definition, comment string
-		var rowCount, totalBytes sql.NullInt64
+		var rowCount, totalBytes int64
 		var lastUpdatedTime time.Time
 		if err := tableRows.Scan(
 			&dbName,
@@ -260,12 +244,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			table.Name = name
 			table.Engine = engine
 			table.Comment = comment
-			if rowCount.Valid {
-				table.RowCount = rowCount.Int64
-			}
-			if totalBytes.Valid {
-				table.DataSize = totalBytes.Int64
-			}
+			table.RowCount = rowCount
+			table.DataSize = totalBytes
 			table.UpdatedTs = lastUpdatedTime.Unix()
 			key := fmt.Sprintf("%s/%s", dbName, name)
 			table.ColumnList = columnMap[key]
@@ -429,9 +409,110 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	insertHistoryQuery := `
+// CheckDuplicateVersion will check whether the version is already applied.
+func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
+	const checkDuplicateVersionQuery = `
+		SELECT 1 FROM bytebase.migration_history
+		WHERE namespace = $1 AND engine= $2  AND version = $3
+	`
+	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
+// CheckOutOfOrderVersion will return versions that are higher than the given version.
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error) {
+	const checkOutofOrderVersionQuery = `
+		SELECT MIN(version) FROM bytebase.migration_history
+		WHERE namespace = $1 AND engine = $2 AND version > $3
+	`
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, engine.String(), version,
+	)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
+// FindBaseline retruns true if any baseline is found.
+func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
+	const findBaselineQuery = `
+		SELECT 1 FROM bytebase.migration_history
+		WHERE namespace = $1 AND type = 'BASELINE'
+	`
+	row, err := tx.QueryContext(ctx, findBaselineQuery,
+		namespace,
+	)
+	if err != nil {
+		return false, util.FormatErrorWithQuery(err, findBaselineQuery)
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// FindNextSequence will return the highest sequence number plus one.
+func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
+	const findNextSequenceQuery = `
+		SELECT MAX(sequence) + 1 FROM bytebase.migration_history
+		WHERE namespace = $1
+	`
+	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
+		namespace,
+	)
+	if err != nil {
+		return -1, util.FormatErrorWithQuery(err, findNextSequenceQuery)
+	}
+	defer row.Close()
+
+	var sequence sql.NullInt32
+	row.Next()
+	if err := row.Scan(&sequence); err != nil {
+		return -1, err
+	}
+
+	if !sequence.Valid {
+		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
+		if !requireBaseline {
+			return 1, nil
+		}
+
+		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+	}
+
+	return int(sequence.Int32), nil
+}
+
+// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (int64, error) {
+	const insertHistoryQuery = `
 	INSERT INTO bytebase.migration_history (
 		id,
 		created_by,
@@ -453,33 +534,87 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 		issue_id,
 		payload
 	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`
-	updateHistoryAsDoneQuery := `
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+	`
+	var insertedID int64
+	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.migration_history"
+	rows, err := tx.QueryContext(ctx, maxIDQuery)
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(
+			&insertedID,
+		); err != nil {
+			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+	}
+	// Clickhouse sql driver doesn't support taking now() as prepared value.
+	now := time.Now().Unix()
+	_, err = tx.ExecContext(ctx, insertHistoryQuery,
+		insertedID,
+		m.Creator,
+		now,
+		m.Creator,
+		now,
+		m.ReleaseVersion,
+		m.Namespace,
+		sequence,
+		m.Engine,
+		m.Type,
+		"PENDING",
+		m.Version,
+		m.Description,
+		statement,
+		prevSchema,
+		prevSchema,
+		0,
+		m.IssueID,
+		m.Payload,
+	)
+	if err != nil {
+		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+	}
+
+	return insertedID, nil
+}
+
+// UpdateHistoryAsDone will update the migration record as done.
+func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+	const updateHistoryAsDoneQuery = `
 		ALTER TABLE
 			bytebase.migration_history
 		UPDATE
 			status = 'DONE',
-			execution_duration_ns = ?,
-		` + "`schema` = ?" + `
-		WHERE id = ?
+			execution_duration_ns = $1,
+		` + "`schema` = $2" + `
+		WHERE id = $3
 	`
-	updateHistoryAsFailedQuery := `
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	return err
+}
+
+// UpdateHistoryAsFailed will update the migration record as failed.
+func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+	const updateHistoryAsFailedQuery = `
 		ALTER TABLE
 			bytebase.migration_history
 		UPDATE
 			status = 'FAILED',
-			execution_duration_ns = ?
-		WHERE id = ?
+			execution_duration_ns = $1
+		WHERE id = $2
 	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	return err
+}
 
-	args := util.MigrationExecutionArgs{
-		InsertHistoryQuery:         insertHistoryQuery,
-		UpdateHistoryAsDoneQuery:   updateHistoryAsDoneQuery,
-		UpdateHistoryAsFailedQuery: updateHistoryAsFailedQuery,
-		TablePrefix:                "bytebase.",
-	}
-	return util.ExecuteMigration(ctx, driver.l, db.ClickHouse, driver, m, statement, args)
+// ExecuteMigration will execute the migration.
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -506,7 +641,23 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.migration_history `
-	return util.FindMigrationHistoryList(ctx, db.MySQL, driver, find, baseQuery)
+	paramNames, params := []string{}, []interface{}{}
+	if v := find.ID; v != nil {
+		paramNames, params = append(paramNames, "id"), append(params, *v)
+	}
+	if v := find.Database; v != nil {
+		paramNames, params = append(paramNames, "namespace"), append(params, *v)
+	}
+	if v := find.Version; v != nil {
+		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	var query = baseQuery +
+		db.FormatParamNameInNumberedPosition(paramNames) +
+		`ORDER BY created_ts DESC`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
 }
 
 // Dump and restore

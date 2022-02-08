@@ -90,84 +90,65 @@
   </table>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+<script lang="ts" setup>
+import { computed, withDefaults, defineProps, defineEmits } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../types";
 
-export default defineComponent({
-  name: "BBTable",
-  components: {},
-  props: {
-    columnList: {
-      type: Array as PropType<BBTableColumn[]>,
-      default: () => [],
-    },
-    dataSource: {
-      default: () => [],
-      type: Array as PropType<any[]>,
-    },
-    sectionDataSource: {
-      type: Array as PropType<BBTableSectionDataSource<any>[]>,
-      default: undefined,
-    },
+type DataType = any; // vue does not support generic typed components yet
+
+const props = withDefaults(
+  defineProps<{
+    columnList?: BBTableColumn[];
+    dataSource?: DataType[];
+    sectionDataSource?: BBTableSectionDataSource<DataType>[] | undefined;
     // Only applicable to sectionDataSource. If true, when there is only one
     // section, it won't render the extra section header. In another words, it will
     // just look like a non-section list.
-    compactSection: {
-      default: false,
-      type: Boolean,
-    },
-    showHeader: {
-      default: true,
-      type: Boolean,
-    },
-    customHeader: {
-      default: false,
-      type: Boolean,
-    },
-    rowClickable: {
-      default: true,
-      type: Boolean,
-    },
-    leftBordered: {
-      default: true,
-      type: Boolean,
-    },
-    rightBordered: {
-      default: true,
-      type: Boolean,
-    },
-    topBordered: {
-      default: true,
-      type: Boolean,
-    },
-    bottomBordered: {
-      default: true,
-      type: Boolean,
-    },
-  },
-  emits: ["click-row"],
-  setup(props) {
-    const borderVisibility = computed(() => {
-      const style = [];
-      if (props.leftBordered) {
-        style.push("border-l");
-      }
+    compactSection?: boolean;
+    showHeader?: boolean;
+    customHeader?: boolean;
+    rowClickable?: boolean;
+    leftBordered?: boolean;
+    rightBordered?: boolean;
+    topBordered?: boolean;
+    bottomBordered?: boolean;
+  }>(),
+  {
+    columnList: () => [],
+    dataSource: () => [],
+    sectionDataSource: undefined,
+    compactSection: false,
+    showHeader: true,
+    customHeader: false,
+    rowClickable: true,
+    leftBordered: true,
+    rightBordered: true,
+    topBordered: true,
+    bottomBordered: true,
+  }
+);
 
-      if (props.rightBordered) {
-        style.push("border-r");
-      }
+defineEmits<{
+  (event: "click-row", section: number, row: number): void;
+}>();
 
-      if (props.topBordered) {
-        style.push("border-t");
-      }
+const borderVisibility = computed(() => {
+  const style = [];
+  if (props.leftBordered) {
+    style.push("border-l");
+  }
 
-      if (props.bottomBordered) {
-        style.push("border-b");
-      }
-      return style.join(" ");
-    });
-    return { borderVisibility };
-  },
+  if (props.rightBordered) {
+    style.push("border-r");
+  }
+
+  if (props.topBordered) {
+    style.push("border-t");
+  }
+
+  if (props.bottomBordered) {
+    style.push("border-b");
+  }
+  return style.join(" ");
 });
 </script>

@@ -42,6 +42,9 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	if err != nil {
 		return nil, err
 	}
+	if tokenString == "" {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("cannot find license"))
+	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
@@ -79,18 +82,18 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, common.Errorf(common.Invalid, err)
 	}
 
-	exp, ok := claims["exp"].(int64)
+	exp, ok := claims["exp"].(float64)
 	if !ok {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
 	}
 
-	iss, ok := claims["iss"].(string)
-	if !ok || iss != s.config.Issuer {
+	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
+	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
 	}
 
-	instance, ok := claims["instance"].(int)
-	if !ok || instance < s.config.MinimumInstance {
+	instance, ok := claims["instance"].(float64)
+	if !ok || int(instance) < s.config.MinimumInstance {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance))
 	}
 
@@ -110,8 +113,8 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	}
 
 	license := &enterpriseAPI.License{
-		InstanceCount: instance,
-		ExpiresTs:     exp,
+		InstanceCount: int(instance),
+		ExpiresTs:     int64(exp),
 		Plan:          planType,
 		Audience:      aud,
 	}

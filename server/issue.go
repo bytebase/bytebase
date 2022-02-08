@@ -669,7 +669,14 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		var schemaVersion, schema string
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, m.DatabaseName)
+			if !s.feature(api.FeatureMultiTenancy) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
+			baseDatabaseName, err := api.GetBaseDatabaseName(m.DatabaseName, project.DBNameTemplate, m.Labels)
+			if err != nil {
+				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", m.DatabaseName, project.DBNameTemplate, m.Labels, err)
+			}
+			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -791,6 +798,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
+			if !s.feature(api.FeatureMultiTenancy) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
 			if m.MigrationType != db.Migrate {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
 			}
@@ -808,7 +818,11 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, d.DatabaseName)
+			baseDatabaseName := d.DatabaseName
+			if err != nil {
+				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
+			}
+			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -1128,7 +1142,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, databaseList []*api.Database, databaseName string) ([]*api.Deployment, [][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, databaseList []*api.Database, baseDatabaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
@@ -1147,7 +1161,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, databaseName, dbNameTemplate, databaseList)
+	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
@@ -1158,7 +1172,7 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, databaseName string) (string, string, error) {
+func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
 	// Find all databases in the project.
 	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
@@ -1167,7 +1181,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, databaseName)
+	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 	if err != nil {
 		return "", "", err
 	}
@@ -1179,13 +1193,25 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	if similarDB == nil {
 		found := false
 		for _, db := range databaseList {
-			if db.Name == databaseName {
+			var labelList []*api.DatabaseLabel
+			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
+				return "", "", fmt.Errorf("failed to unmarshal labels for database ID %v name %q, error: %v", db.ID, db.Name, err)
+			}
+			labelMap := map[string]string{}
+			for _, label := range labelList {
+				labelMap[label.Key] = label.Value
+			}
+			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
+			if err != nil {
+				return "", "", fmt.Errorf("failed to format database name formatDatabaseName(%q, %q, %+v), error: %v", baseDatabaseName, project.DBNameTemplate, labelMap, err)
+			}
+			if db.Name == dbName {
 				found = true
 				break
 			}
 		}
 		if found {
-			err := fmt.Errorf("Conflicting database name, project has existing database named %q, but it's not from the selected peer tenants", databaseName)
+			err := fmt.Errorf("Conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
 			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		return "", "", nil
@@ -1210,7 +1236,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 
 func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
 	var similarDB *api.Database
-	// We try to use an existing tenant with the same environment.
+	// We try to use an existing tenant with the same environment, if possible.
 	for _, databaseList := range databaseMatrix {
 		for _, db := range databaseList {
 			if db.Instance.EnvironmentID == environmentID {

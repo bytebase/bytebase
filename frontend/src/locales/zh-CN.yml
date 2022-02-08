@@ -849,7 +849,7 @@ version-control:
       Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
       (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
       中选取他们的 Git 仓库。
-    description-highlight: 配置 VCS 后，Bytebase 将自动开启通过 VCS 的第三方认证登录
+    description-highlight: 配置 VCS 后，在付费版订阅下，Bytebase 将自动开启通过 VCS 的第三方认证登录
     add-git-provider:
       self: 添加 Git 提供方
       description: >-
@@ -939,11 +939,6 @@ datasource:
   connection-name-string-copied-to-clipboard: '{0} 字符串已复制到剪贴板。'
   jdbc-cant-connect-to-socket-database-value-instance-host: 'JDBC 无法连接到 socket {0} '
 setting:
-  plan:
-    self: 版本
-    free: 免费版
-    team: 团队版
-    enterprise: 企业版
   label:
     key: Key
     values: 值
@@ -1002,6 +997,9 @@ oauth:
   unknown-event: 未知的事件类型，认证失败
 subscription:
   description: 您可以在这里上传您购买的 bytebase 证书来解锁团队版/企业版功能。
+  current: 当前版本
+  instance-count: 实例数
+  expires-at: 过期时间
   description-highlight: 购买证书
   sensitive-placeholder: 粘贴您的证书 - 仅写入
   upload-license: 上传证书
@@ -1009,7 +1007,88 @@ subscription:
   disabled-feature: 这是一个订阅版高级功能
   trial: 您可以以 $7 的价格试用 7 天
   trial-comment: 仅首次付费可以试用，可随时退款。
+  upgrade: 升级订阅
+  price: ${price}/年
+  instance-price: ${price}/实例/月
+  deploy: 部署
+  contact-us: 联系我们
+  start-trial: 以 {days} 天 {price} 美元的价格试用
+  subscribe: 开始订阅
+  current-plan: 当前订阅
+  buy: 购买{plan}
   features:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间
       desc: 「设定任务执行时间」可以将任务设定在特定时间执行
+    bb-feature-instance-count:
+      title: 实例数量限制
+      desc: 您已达最大实例数量限制，请付费升级来获取更多实例额度。
+      remaining: 当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。
+      runoutof: 已用尽全部 {total} 个实例额度。
+      upgrade: "@:{'subscription.upgrade'}来获取更多实例额度。"
+    bb-feature-multi-tenancy:
+      title: 多租户
+      desc: 「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。
+    bb-feature-approval-policy:
+      title: 审批策略
+      desc: 「审批策略」可以控制数据库 schema 的变更是否需要手动审批
+    bb-feature-backup-policy:
+      title: 备份策略
+      desc: 「备份策略」可以根据指定的周期自动备份数据库
+    bb-feature-backward-compatibility:
+      title: 向后兼容
+      desc: MySQL 和 TiDB 支持向后兼容的 schema 迁移，可以通过@:{'subscription.upgrade'}来开启该功能。
+    bb-feature-rbac:
+      title: 角色管理
+      desc: 「角色管理」可以赋予成员诸如 DBA 这样的特定角色，可以通过@:{'subscription.upgrade'}来开启该功能。
+    bb-feature-3rd-party-login:
+      title: 第三方登录
+      desc: Bytebase 可自动根据您配置的 VCS 来支持相应的第三方登录。请通过@:{'subscription.upgrade'}来开启该功能。
+      login: "请@:{'subscription.upgrade'}来开启该功能"
+    bb-feature-schema-drift:
+      title: Schema 偏差
+      desc: "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+  feature-sections:
+    database-management:
+      title: 数据库管理
+      features:
+        instance-count: 实例数
+        instance-upto-5: 不多于 5 个
+        instance-customized: 自定义
+        schema-change: Schema 变更
+        migration-history: 迁移历史
+        sql-editor: SQL 编辑器
+        database-backup-restore: 数据库备份和恢复
+        archiving: 归档
+        sql-check: SQL 检查
+        sql-check-basic: 基础
+        sql-check-advanced: 高级 (例如向后兼容性检查)
+        anomaly-detection: 异常检测
+        anomaly-detection-basic: 基础
+        anomaly-detection-advanced: 高级 (例如 Schema 偏差检测)
+        review-and-backup-policy: 审核和备份策略
+        tenancy: 多地域/多租户
+    collaboration:
+      title: 团队协作
+      features:
+        ui-based-sql-review: 基于 UI 的 SQL 审查
+        gitops-workflow: GitOps 工作流
+        sql-review-commenting: SQL 审核中的批注
+        im-integration: IM 集成
+        inbox-notification: 站内信通知
+    admin-and-security:
+      title: 管理与安全
+      features:
+        activity-log: 活动日志
+        rbac: RBAC 权限管理
+  plan:
+    title: 版本
+    free:
+      title: 免费版
+      desc: 个人或小团队，无专职 DBA
+    team:
+      title: 团队版
+      desc: 中型团队，有专职 DBA 或者 TL 有管控需求
+    enterprise:
+      title: 企业版
+      desc: 大型组织，有专属 DBA 团队

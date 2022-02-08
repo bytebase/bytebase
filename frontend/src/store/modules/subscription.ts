@@ -17,8 +17,7 @@ const getters = {
   },
 
   currentPlan: (state: SubscriptionState) => (): PlanType => {
-    // TODO: this is used for align with current logic - TEAM plan is default plan
-    return state.subscription?.plan ?? PlanType.TEAM;
+    return state.subscription?.plan ?? PlanType.FREE;
   },
 
   feature:
@@ -57,17 +56,6 @@ const actions = {
     const subscription = data.attributes;
     commit("setSubscription", subscription);
     return subscription;
-  },
-
-  // TODO: this is a mock function, should remove this before GA
-  async changePlan({ commit }: any, newPlan: PlanType) {
-    const subscription: Subscription = {
-      instanceCount: 5,
-      plan: newPlan,
-      expiresTs: new Date().getTime() / 1000 + 24 * 60 * 60,
-    };
-    console.debug(`set subscription: ${JSON.stringify(subscription)}`);
-    commit("setSubscription", subscription);
   },
 };
 

@@ -249,6 +249,43 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 	return template, nil
 }
 
+// GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
+func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
+	if dbNameTemplate == "" {
+		return databaseName, nil
+	}
+	var labels []*DatabaseLabel
+	if labelsJSON != "" {
+		if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+			return "", err
+		}
+	}
+	labelMap := map[string]string{}
+	for _, label := range labels {
+		switch label.Key {
+		case LocationLabelKey:
+			labelMap[LocationToken] = label.Value
+		case TenantLabelKey:
+			labelMap[TenantToken] = label.Value
+		}
+	}
+	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
+
+	expr, err := FormatTemplate(dbNameTemplate, labelMap)
+	if err != nil {
+		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
+	}
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return "", fmt.Errorf("regexp %q compiled failure, error: %v", expr, err)
+	}
+	names := re.FindStringSubmatch(databaseName)
+	if len(names) != 2 || names[1] == "" {
+		return "", fmt.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
+	}
+	return names[1], nil
+}
+
 func getTemplateTokens(template string) []string {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
 	return r.FindAllString(template, -1)

@@ -51,29 +51,22 @@
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
           <span class="hidden lg:block font-normal text-accent">
-            {{ $t("setting.plan.self") }}
+            {{ $t("subscription.plan.title") }}
           </span>
           <div
             class="bar-link"
             :class="currentPlan == 0 ? 'underline' : ''"
             @click.prevent="switchToFree"
           >
-            {{ $t("setting.plan.free") }}
+            {{ $t("subscription.plan.free.title") }}
           </div>
           <div
             class="bar-link"
             :class="currentPlan == 1 ? 'underline' : ''"
             @click.prevent="switchToTeam"
           >
-            {{ $t("setting.plan.team") }}
+            {{ $t("subscription.plan.team.title") }}
           </div>
-          <!-- <div
-            class="bar-link"
-            :class="currentPlan == 2 ? 'underline' : ''"
-            @click.prevent="switchToEnterprise"
-          >
-            {{ $t('setting.plan.enterprise') }}
-          </div>-->
         </div>
         <div
           v-if="!isRelease"
@@ -192,7 +185,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
-import { InboxSummary, PlanType, UNKNOWN_ID } from "../types";
+import { InboxSummary, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 
@@ -270,18 +263,15 @@ export default defineComponent({
       });
     };
 
-    // TODO: Do we still need this?
-    // Maybe we need to change the UX, redirect user to subscription page?
     const switchToFree = () => {
-      store.dispatch("subscription/changePlan", PlanType.FREE);
+      store.dispatch("subscription/patchSubscription", "");
     };
 
     const switchToTeam = () => {
-      store.dispatch("subscription/changePlan", PlanType.TEAM);
-    };
-
-    const switchToEnterprise = () => {
-      store.dispatch("subscription/changePlan", PlanType.ENTERPRISE);
+      store.dispatch(
+        "subscription/patchSubscription",
+        import.meta.env.BB_DEV_LICENSE
+      );
     };
 
     const kbarActions = computed(() => [
@@ -373,7 +363,6 @@ export default defineComponent({
       switchToDeveloper,
       switchToFree,
       switchToTeam,
-      switchToEnterprise,
       toggleLocales,
     };
   },

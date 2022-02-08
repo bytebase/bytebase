@@ -431,61 +431,30 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	return driver, nil
 }
 
-// QueryParams is a list of query parameters for prepared query.
-type QueryParams struct {
-	DatabaseType Type
-	Names        []string
-	Params       []interface{}
+// FormatParamNameInQuestionMark formats the param name in question mark.
+// For example, it will be WHERE hello = ? AND world = ?.
+func FormatParamNameInQuestionMark(paramNames []string) string {
+	if len(paramNames) == 0 {
+		return ""
+	}
+	for i, param := range paramNames {
+		if !strings.Contains(param, "?") {
+			paramNames[i] = param + " = ?"
+		}
+	}
+	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
 }
 
-// AddParam adds a parameter to QueryParams.
-func (p *QueryParams) AddParam(name string, param interface{}) {
-	p.Names = append(p.Names, name)
-	p.Params = append(p.Params, param)
-}
-
-// QueryString returns the query where clause string for the query parameters.
-func (p *QueryParams) QueryString() string {
-	mysqlQuery := func(params []string) string {
-		if len(params) == 0 {
-			return ""
-		}
-		for i, param := range params {
-			if !strings.Contains(param, "?") {
-				params[i] = param + " = ?"
-			}
-		}
-		return fmt.Sprintf("WHERE %s ", strings.Join(params, " AND "))
+// FormatParamNameInNumberedPosition formats the param name in numbered positions.
+func FormatParamNameInNumberedPosition(paramNames []string) string {
+	if len(paramNames) == 0 {
+		return ""
 	}
-	pgQuery := func(params []string) string {
-		if len(params) == 0 {
-			return ""
-		}
-		parts := make([]string, 0, len(params))
-		for i, param := range params {
-			idx := fmt.Sprintf("$%d", i+1)
-			if strings.Contains(param, "?") {
-				param = strings.ReplaceAll(param, "?", idx)
-			} else {
-				param = param + "=" + idx
-			}
-			parts = append(parts, param)
-		}
-		return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+	parts := make([]string, 0, len(paramNames))
+	for i, param := range paramNames {
+		idx := fmt.Sprintf("$%d", i+1)
+		param = param + "=" + idx
+		parts = append(parts, param)
 	}
-	switch p.DatabaseType {
-	case MySQL:
-		return mysqlQuery(p.Names)
-	case TiDB:
-		return mysqlQuery(p.Names)
-	case ClickHouse:
-		return mysqlQuery(p.Names)
-	case Snowflake:
-		return mysqlQuery(p.Names)
-	case Postgres:
-		return pgQuery(p.Names)
-	case SQLite:
-		return mysqlQuery(p.Names)
-	}
-	return ""
+	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
