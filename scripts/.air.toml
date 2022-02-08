@@ -10,4 +10,6 @@ tmp_dir = ".air"
   exclude_regex = []
   exclude_unchanged = false
   follow_symlink = false
+  send_interrupt = true
+  kill_delay = 1000
   full_bin = ""
