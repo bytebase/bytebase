@@ -34,7 +34,7 @@ func defaultMigrationVersionFromTaskID(taskID int) string {
 	return strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(taskID)}, ".")
 }
 
-func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement string, vcsPushEvent *vcs.VCSPushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement string, vcsPushEvent *vcs.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -275,7 +275,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcs.VCSPushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcs.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	schemaFileMeta, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
