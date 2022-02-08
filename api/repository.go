@@ -53,7 +53,7 @@ type RepositoryCreate struct {
 
 	// Related fields
 	VCSID     int `jsonapi:"attr,vcsId"`
-	ProjectID int `jsonapi:"attr,projectId"`
+	ProjectID int
 
 	// Domain specific fields
 	Name               string `jsonapi:"attr,name"`
