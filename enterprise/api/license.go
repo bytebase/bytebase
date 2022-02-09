@@ -54,6 +54,4 @@ type LicenseService interface {
 	StoreLicense(tokenString string) error
 	// LoadLicense will load license from file and validate it.
 	LoadLicense() (*License, error)
-	// VerifyLicense will check if license is valid.
-	VerifyLicense(license string) error
 }
