@@ -13,6 +13,16 @@ module.exports = {
   rules: {
     "no-empty-pattern": "warn",
     "no-useless-escape": "warn",
+    "prettier/prettier": [
+      "warn",
+      {
+        useTabs: false,
+        tabWidth: 2,
+        singleQuote: false,
+        trailingComma: "es5",
+        printWidth: 80,
+      },
+    ],
     "@typescript-eslint/no-empty-interface": "warn",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
