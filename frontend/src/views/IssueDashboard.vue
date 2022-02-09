@@ -18,6 +18,7 @@
         <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           v-if="scopeByPrincipal"
+          class="w-72"
           :selectedId="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
