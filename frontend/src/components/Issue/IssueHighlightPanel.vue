@@ -22,14 +22,21 @@
           />
         </div>
         <div v-if="!create">
-          <i18n-t keypath="issue.opened-by-at" tag="p" class="text-sm text-control-light">
+          <i18n-t
+            keypath="issue.opened-by-at"
+            tag="p"
+            class="text-sm text-control-light"
+          >
             <template #creator>
               <router-link
                 :to="`/u/${issue.creator.id}`"
                 class="font-medium text-control hover:underline"
-              >{{ issue.creator.name }}</router-link>
+                >{{ issue.creator.name }}</router-link
+              >
             </template>
-            <template #time>{{ dayjs(issue.updatedTs * 1000).format("LLL") }}</template>
+            <template #time>{{
+              dayjs(issue.updatedTs * 1000).format("LLL")
+            }}</template>
           </i18n-t>
           <p
             v-if="pushEvent"
@@ -38,11 +45,9 @@
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../../assets/gitlab-logo.svg" />
             </template>
-            <a
-              :href="vcsBranchUrl"
-              target="_blank"
-              class="normal-link"
-            >{{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}</a>
+            <a :href="vcsBranchUrl" target="_blank" class="normal-link">{{
+              `${vcsBranch}@${pushEvent.repositoryFullPath}`
+            }}</a>
 
             <i18n-t keypath="issue.commit-by-at" tag="span">
               <template #id>
@@ -50,13 +55,16 @@
                   :href="pushEvent.fileCommit.url"
                   target="_blank"
                   class="normal-link"
-                >{{ pushEvent.fileCommit.id.substring(0, 7) }}:</a>
+                  >{{ pushEvent.fileCommit.id.substring(0, 7) }}:</a
+                >
               </template>
               <template #title>
                 <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
               </template>
               <template #author>{{ pushEvent.authorName }}</template>
-              <template #time>{{ dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL") }}</template>
+              <template #time>{{
+                dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL")
+              }}</template>
             </i18n-t>
           </p>
         </div>
@@ -139,7 +147,7 @@ export default defineComponent({
 
     const vcsBranch = computed((): string => {
       if (pushEvent.value) {
-        return pushEvent.value.ref.replace(/^refs\/heads\//g, "")
+        return pushEvent.value.ref.replace(/^refs\/heads\//g, "");
       }
       return "";
     });

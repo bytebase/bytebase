@@ -46,16 +46,16 @@ export default {
 
     const COLUMN_LIST = [
       {
-        title: t('common.id'),
+        title: t("common.id"),
       },
       {
-        title: t('common.name'),
+        title: t("common.name"),
       },
       {
-        title: t('common.created-at'),
+        title: t("common.created-at"),
       },
       {
-        title: t('common.updated-at'),
+        title: t("common.updated-at"),
       },
     ];
 

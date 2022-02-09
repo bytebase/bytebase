@@ -21,7 +21,7 @@ export type QueryInfo = {
   databaseName?: string;
   statement: string;
   limit?: number;
-}
+};
 
 export type SqlResultSet = {
   data: string;

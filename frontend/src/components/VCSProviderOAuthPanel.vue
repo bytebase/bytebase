@@ -2,34 +2,52 @@
   <div class="space-y-4">
     <div class="textlabel">
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
-        {{ $t('version-control.setting.add-git-provider.oauth-info.register-oauth-application') }}
+        {{
+          $t(
+            "version-control.setting.add-git-provider.oauth-info.register-oauth-application"
+          )
+        }}
       </template>
     </div>
     <ol class="textinfolabel space-y-2">
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
         <li>
-          1. {{ $t('version-control.setting.add-git-provider.oauth-info.login-as-admin') }}
+          1.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.login-as-admin"
+            )
+          }}
           <img class="w-auto" src="../assets/gitlab_admin_area.png" />
         </li>
         <li>
-          2. {{ $t('version-control.setting.add-git-provider.oauth-info.visit-admin-page') }}
+          2.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.visit-admin-page"
+            )
+          }}
           <a
             :href="createAdminApplicationUrl"
             target="_blank"
             class="normal-link"
-            >{{ $t('version-control.setting.add-git-provider.oauth-info.direct-link') }}</a
+            >{{
+              $t(
+                "version-control.setting.add-git-provider.oauth-info.direct-link"
+              )
+            }}</a
           >
         </li>
         <li>
-          3. {{ $t('version-control.setting.add-git-provider.oauth-info.create-oauth-app') }}
+          3.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.create-oauth-app"
+            )
+          }}
           <div class="m-4 flex justify-center">
             <dl
-              class="
-                divide-y divide-block-border
-                border border-block-border
-                shadow
-                rounded-lg
-              "
+              class="divide-y divide-block-border border border-block-border shadow rounded-lg"
             >
               <div class="grid grid-cols-2 gap-4 px-4 py-2">
                 <dt class="text-sm font-medium text-control-light text-right">
@@ -45,13 +63,7 @@
                   {{ redirectUrl() }}
                   <button
                     tabindex="-1"
-                    class="
-                      ml-1
-                      text-sm
-                      font-medium
-                      text-control-light
-                      hover:bg-gray-100
-                    "
+                    class="ml-1 text-sm font-medium text-control-light hover:bg-gray-100"
                     @click.prevent="copyRedirectURI"
                   >
                     <heroicons-outline:clipboard class="w-6 h-6" />
@@ -80,22 +92,31 @@
           </div>
         </li>
         <li>
-          4. {{ $t('version-control.setting.add-git-provider.oauth-info.paste-oauth-info') }}
+          4.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.paste-oauth-info"
+            )
+          }}
         </li>
       </template>
     </ol>
     <div>
       <div class="textlabel">
-        {{ $t('common.application') }} ID <span class="text-red-600">*</span>
+        {{ $t("common.application") }} ID <span class="text-red-600">*</span>
       </div>
       <BBTextField
         class="mt-2 w-full"
         :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77bexa8edda'"
         :value="config.applicationId"
-        @input="changeApplicationId($event.target.value)"
+        @input="(e: any) => changeApplicationId(e.target.value)"
       />
       <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
-        {{ $t('version-control.setting.add-git-provider.oauth-info.application-id-error') }}
+        {{
+          $t(
+            "version-control.setting.add-git-provider.oauth-info.application-id-error"
+          )
+        }}
       </p>
       <div class="mt-4 textlabel">
         Secret <span class="text-red-600">*</span>
@@ -104,17 +125,25 @@
         class="mt-2 w-full"
         :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a'"
         :value="config.secret"
-        @input="changeSecret($event.target.value)"
+        @input="(e: any) => changeSecret(e.target.value)"
       />
       <p v-if="state.showSecretError" class="mt-2 text-sm text-error">
-        {{ $t('version-control.setting.add-git-provider.oauth-info.secret-error') }}
+        {{
+          $t("version-control.setting.add-git-provider.oauth-info.secret-error")
+        }}
       </p>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, onUnmounted, PropType, reactive } from "vue";
+import {
+  computed,
+  defineComponent,
+  onUnmounted,
+  PropType,
+  reactive,
+} from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import {
@@ -132,7 +161,7 @@ interface LocalState {
   showSecretError: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "VCSProviderOAuthPanel",
   props: {
     config: {
@@ -178,6 +207,7 @@ export default {
     };
 
     const changeApplicationId = (value: string) => {
+      // eslint-disable-next-line vue/no-mutating-props
       props.config.applicationId = value;
 
       if (state.applicationIdValidationTimer) {
@@ -205,6 +235,7 @@ export default {
     };
 
     const changeSecret = (value: string) => {
+      // eslint-disable-next-line vue/no-mutating-props
       props.config.secret = value;
 
       if (state.secretValidationTimer) {
@@ -240,5 +271,5 @@ export default {
       changeSecret,
     };
   },
-};
+});
 </script>

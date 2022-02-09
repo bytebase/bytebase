@@ -7,22 +7,21 @@
     @select-item="(role) => $emit('change-role', role)"
   >
     <template #menuItem="{ item }">
-      {{
-        $t(`common.role.${item.toLowerCase()}`)
-      }}
+      {{ $t(`common.role.${item.toLowerCase()}`) }}
     </template>
   </BBSelect>
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { ProjectRoleType } from "../types";
 
-export default {
+export default defineComponent({
   name: "ProjectRoleSelect",
   props: {
     selectedRole: {
       type: String as PropType<ProjectRoleType>,
+      default: undefined,
     },
     disabled: {
       default: false,
@@ -30,5 +29,5 @@ export default {
     },
   },
   emits: ["change-role"],
-};
+});
 </script>
