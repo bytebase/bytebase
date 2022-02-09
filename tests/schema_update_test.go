@@ -34,7 +34,7 @@ CREATE TABLE sqlite_sequence(name,seq);
 `
 )
 
-func TestSchemaUpdate(t *testing.T) {
+func TestSchemaAndDataUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
@@ -259,7 +259,7 @@ func TestSchemaUpdate(t *testing.T) {
 	}
 }
 
-func TestVCSSchemaUpdate(t *testing.T) {
+func TestVCSSchemaAndDataUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
