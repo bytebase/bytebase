@@ -32,7 +32,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
 		s.subscription = s.loadSubscription()
