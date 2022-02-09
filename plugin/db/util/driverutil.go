@@ -232,7 +232,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 		if resErr == nil {
 			// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-			if err := executor.UpdateHistoryAsDone(ctx, afterTx, migrationDurationNs, prevSchemaBuf.String(), insertedID); err != nil {
+			if err := executor.UpdateHistoryAsDone(ctx, afterTx, migrationDurationNs, updatedSchema, insertedID); err != nil {
 				myErr = err
 				return
 			}
