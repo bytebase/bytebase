@@ -1,5 +1,9 @@
 <template>
-  <div id="issue-detail-top" class="flex-1 overflow-auto focus:outline-none" tabindex="0">
+  <div
+    id="issue-detail-top"
+    class="flex-1 overflow-auto focus:outline-none"
+    tabindex="0"
+  >
     <IssueBanner v-if="!create" :issue="issue" />
 
     <!-- Highlight Panel -->
@@ -94,7 +98,9 @@
     >
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
-          <div class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border">
+          <div
+            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
+          >
             <IssueSidebar
               :issue="issue"
               :database="database"
@@ -117,7 +123,10 @@
           <div class="w-full py-4 pr-4">
             <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
               <div v-if="!create" class="mb-4">
-                <TaskCheckBar :task="selectedTask" @run-checks="runTaskChecks" />
+                <TaskCheckBar
+                  :task="selectedTask"
+                  @run-checks="runTaskChecks"
+                />
               </div>
               <template v-if="isTenantDeployMode">
                 <!--
@@ -156,7 +165,11 @@
                     "
                   />
                 </template>
-                <template v-for="(stage, index) in issue.pipeline.stageList" v-else :key="index">
+                <template
+                  v-for="(stage, index) in issue.pipeline.stageList"
+                  v-else
+                  :key="index"
+                >
                   <template v-if="selectedStage.id == stage.id">
                     <IssueTaskStatementPanel
                       :sql-hint="sqlHint(false)"
@@ -171,7 +184,10 @@
                 </template>
               </template>
             </section>
-            <section v-if="showIssueTaskRollbackStatementPanel" class="border-b mb-4">
+            <section
+              v-if="showIssueTaskRollbackStatementPanel"
+              class="border-b mb-4"
+            >
               <template v-if="create">
                 <IssueTaskStatementPanel
                   :sql-hint="sqlHint(true)"
@@ -186,7 +202,11 @@
                   "
                 />
               </template>
-              <template v-for="(stage, index) in issue.pipeline.stageList" v-else :key="index">
+              <template
+                v-for="(stage, index) in issue.pipeline.stageList"
+                v-else
+                :key="index"
+              >
                 <template v-if="selectedStage.id == stage.id">
                   <IssueTaskStatementPanel
                     :sql-hint="sqlHint(true)"
@@ -206,7 +226,11 @@
               :allow-edit="allowEditNameAndDescription"
               @update-description="updateDescription"
             />
-            <section v-if="!create" aria-labelledby="activity-title" class="mt-4">
+            <section
+              v-if="!create"
+              aria-labelledby="activity-title"
+              class="mt-4"
+            >
               <IssueActivityPanel
                 :issue="issue"
                 :issue-template="issueTemplate"
@@ -429,7 +453,10 @@ export default defineComponent({
     const applyRollbackStatementToOtherStages = (newStatement: string) => {
       for (const stage of (props.issue as IssueCreate).pipeline!.stageList) {
         for (const task of stage.taskList) {
-          if (task.type == "bb.task.database.schema.update" || task.type == "bb.task.database.data.update") {
+          if (
+            task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.data.update"
+          ) {
             task.rollbackStatement = newStatement;
           }
         }
@@ -753,8 +780,8 @@ export default defineComponent({
       switch (task.type) {
         case "bb.task.database.schema.update":
           return (
-            (task.payload as TaskDatabaseSchemaUpdatePayload).rollbackStatement ||
-            ""
+            (task.payload as TaskDatabaseSchemaUpdatePayload)
+              .rollbackStatement || ""
           );
         case "bb.task.database.data.update":
           return (
@@ -762,9 +789,8 @@ export default defineComponent({
             ""
           );
         default:
-          return ""
+          return "";
       }
-
     };
 
     const isTenantDeployMode = computed((): boolean => {
@@ -913,7 +939,10 @@ export default defineComponent({
         return false;
       }
       if (!props.create) {
-        if (props.issue.type == "bb.issue.database.schema.update" || props.issue.type == "bb.issue.database.data.update") {
+        if (
+          props.issue.type == "bb.issue.database.schema.update" ||
+          props.issue.type == "bb.issue.database.data.update"
+        ) {
           if (
             (props.issue as Issue).status == "DONE" ||
             (props.issue as Issue).status == "CANCELED"
@@ -921,21 +950,22 @@ export default defineComponent({
             for (const stage of (props.issue as Issue).pipeline.stageList) {
               for (const task of stage.taskList) {
                 if (task.status == "DONE") {
-                  if (task.type == "bb.task.database.schema.update" &&
+                  if (
+                    task.type == "bb.task.database.schema.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseSchemaUpdatePayload)
                         .rollbackStatement
                     )
                   ) {
-                    return true
-                  }
-                  else if (task.type == "bb.task.database.data.update" &&
+                    return true;
+                  } else if (
+                    task.type == "bb.task.database.data.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseDataUpdatePayload)
                         .rollbackStatement
                     )
                   ) {
-                    return true
+                    return true;
                   }
                 }
               }
@@ -984,7 +1014,10 @@ export default defineComponent({
     const showIssueTaskRollbackStatementPanel = computed(() => {
       if (isTenantDeployMode.value) return false;
       if (project.value.workflowType == "UI") {
-        if (props.issue.type == "bb.issue.database.schema.update" || props.issue.type == "bb.issue.database.data.update") {
+        if (
+          props.issue.type == "bb.issue.database.schema.update" ||
+          props.issue.type == "bb.issue.database.data.update"
+        ) {
           return true;
         }
       }

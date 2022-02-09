@@ -16,4 +16,4 @@ export function makeActions<T>(types: StringRecord = {}): T {
   }
 
   return actions as T;
-};
+}

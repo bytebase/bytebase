@@ -68,20 +68,26 @@
         type="button"
         class="btn-normal py-2 px-4"
         @click.prevent="cancel"
-      >{{ $t("common.cancel") }}</button>
+      >
+        {{ $t("common.cancel") }}
+      </button>
       <button
         v-if="state.alterType == 'MULTI_DB'"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateMultiDb"
         @click.prevent="generateMultDb"
-      >{{ $t("common.next") }}</button>
+      >
+        {{ $t("common.next") }}
+      </button>
 
       <button
         v-if="isTenantProject || (!projectId && state.tab === 'tenant')"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateTenant"
         @click.prevent="generateTenant"
-      >{{ $t("common.next") }}</button>
+      >
+        {{ $t("common.next") }}
+      </button>
     </div>
   </div>
 
@@ -147,8 +153,11 @@ export default defineComponent({
       default: undefined,
     },
     type: {
-      type: String as PropType<"bb.issue.database.schema.update" | "bb.issue.database.data.update">,
-    }
+      type: String as PropType<
+        "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+      >,
+      required: true,
+    },
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
@@ -180,8 +189,8 @@ export default defineComponent({
 
     // Returns true if alter schema, false if change data.
     const isAlterSchema = computed((): boolean => {
-      return props.type === "bb.issue.database.schema.update"
-    })
+      return props.type === "bb.issue.database.schema.update";
+    });
 
     const isTenantProject = computed((): boolean => {
       return state.project?.tenantMode === "TENANT";
@@ -262,9 +271,7 @@ export default defineComponent({
     });
 
     const generateTenant = async () => {
-      if (
-        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
-      ) {
+      if (!store.getters["subscription/feature"]("bb.feature.multi-tenancy")) {
         state.showFeatureModal = true;
         return;
       }
@@ -288,7 +295,9 @@ export default defineComponent({
           },
           query: {
             template: props.type,
-            name: `[${state.selectedDatabaseName}] ${isAlterSchema.value ? `Alter schema` : `Change data`}`,
+            name: `[${state.selectedDatabaseName}] ${
+              isAlterSchema.value ? `Alter schema` : `Change data`
+            }`,
             project: project.id,
             databaseName: state.selectedDatabaseName,
             mode: "tenant",
@@ -314,7 +323,9 @@ export default defineComponent({
           },
           query: {
             template: props.type,
-            name: `[${database.name}] ${isAlterSchema.value ? `Alter schema` : `Change data`}`,
+            name: `[${database.name}] ${
+              isAlterSchema.value ? `Alter schema` : `Change data`
+            }`,
             project: database.project.id,
             databaseList: database.id,
           },

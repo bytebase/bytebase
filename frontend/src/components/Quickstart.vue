@@ -1,7 +1,9 @@
 <template>
   <div class="space-y-2 w-full pl-4 pr-2">
     <div class="flex flex-row justify-between">
-      <div class="outline-title toplevel flex">{{ $t("common.quickstart") }}</div>
+      <div class="outline-title toplevel flex">
+        {{ $t("common.quickstart") }}
+      </div>
       <button class="btn-icon" @click.prevent="hideQuickstart">
         <heroicons-solid:x class="w-4 h-4" />
       </button>
@@ -19,7 +21,9 @@
             @click="intro.click"
           >
             <span class="flex items-start">
-              <span class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center">
+              <span
+                class="flex-shrink-0 relative h-5 w-5 flex items-center justify-center"
+              >
                 <template v-if="intro.done">
                   <!-- Heroicon name: solid/check-circle -->
                   <heroicons-solid:check-circle
@@ -27,17 +31,24 @@
                   />
                 </template>
                 <template v-else-if="isTaskActive(index)">
-                  <span class="absolute h-4 w-4 rounded-full bg-blue-200"></span>
-                  <span class="relative block w-2 h-2 bg-info rounded-full"></span>
+                  <span
+                    class="absolute h-4 w-4 rounded-full bg-blue-200"
+                  ></span>
+                  <span
+                    class="relative block w-2 h-2 bg-info rounded-full"
+                  ></span>
                 </template>
                 <template v-else>
-                  <div class="h-2 w-2 bg-gray-300 rounded-full group-hover:bg-gray-400"></div>
+                  <div
+                    class="h-2 w-2 bg-gray-300 rounded-full group-hover:bg-gray-400"
+                  ></div>
                 </template>
               </span>
               <span
                 class="ml-2 text-sm font-medium text-control-light group-hover:text-control-light-hover"
                 :class="intro.done ? 'line-through' : ''"
-              >{{ intro.name }}</span>
+                >{{ intro.name }}</span
+              >
             </span>
           </component>
         </li>
@@ -112,7 +123,9 @@ export default defineComponent({
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
-        allowDeveloper: !store.getters["subscription/feature"]("bb.feature.dba-workflow"),
+        allowDeveloper: !store.getters["subscription/feature"](
+          "bb.feature.dba-workflow"
+        ),
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.visit");
         }),
