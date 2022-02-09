@@ -1145,12 +1145,12 @@ subscription:
   subscribe: Subscribe now
   current-plan: Current plan
   buy: Buy {plan} plan
-  upload:
+  update:
     success:
-      title: License upload successful
+      title: Successfully updated license
       description: Premium features in subscription plan unlocked.
-    failed:
-      title: License upload failed
+    failure:
+      title: Failed to update license
       description: Please check if your license is valid.
   features:
     bb-feature-task-schedule-time:
