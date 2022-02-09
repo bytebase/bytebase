@@ -158,15 +158,12 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// Phase 1 - Precheck before executing migration
 	// Phase 2 - Record migration history as PENDING
-	insertedID, err := preMigrate(ctx, executor, m, prevSchemaBuf.String(), statement)
+	insertedID, err := beginMigration(ctx, executor, m, prevSchemaBuf.String(), statement)
 	if err != nil {
 		return -1, "", err
 	}
 
-	// If we have already started migration, there will be a PENDING migration record. Upon returning,
-	// we will update that record to DONE or FAILED depending on whether error occurs.
-	// Returned values are passed by reference so that postMigrate() can get the final values.
-	defer postMigrate(ctx, l, executor, time.Now().UnixNano(), &migrationHistoryID, &updatedSchema, &resErr)
+	startedNs := time.Now().UnixNano()
 
 	// Phase 3 - Executing migration
 	// Branch migration type always has empty sql.
@@ -177,6 +174,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		if !m.CreateDatabase {
 			_, err := executor.GetDbConnection(ctx, m.Database)
 			if err != nil {
+				endMigration(ctx, l, executor, startedNs, insertedID, "", false /*isDone*/)
 				return -1, "", err
 			}
 		}
@@ -184,6 +182,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		// Also, we don't use transaction for creating databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if err = executor.Execute(ctx, statement, !m.CreateDatabase); err != nil {
+			endMigration(ctx, l, executor, startedNs, insertedID, "", false /*isDone*/)
 			return -1, "", formatError(err)
 		}
 	}
@@ -191,14 +190,16 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if err = executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		endMigration(ctx, l, executor, startedNs, insertedID, "", false /*isDone*/)
 		return -1, "", formatError(err)
 	}
 
+	endMigration(ctx, l, executor, startedNs, insertedID, afterSchemaBuf.String(), true /*isDone*/)
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-// preMigrate checks before executing migration and inserts a migration history record with pending status.
-func preMigrate(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
+// beginMigration checks before executing migration and inserts a migration history record with pending status.
+func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
 	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return -1, err
@@ -265,41 +266,44 @@ func preMigrate(ctx context.Context, executor MigrationExecutor, m *db.Migration
 	return insertedID, nil
 }
 
-// postMigrate updates the migration history record to DONE or FAILED depending on whether error occurs.
-func postMigrate(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID *int64, updatedSchema *string, resErr *error) (err error) {
+// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, isDone bool) {
+	var err error
 	defer func() {
 		if err != nil {
 			l.Error("Failed to update migration history record",
 				zap.Error(err),
-				zap.Int64("migration_id", *migrationHistoryID),
+				zap.Int64("migration_id", migrationHistoryID),
 			)
 		}
 	}()
 
 	migrationDurationNs := time.Now().UnixNano() - startedNs
-	sqldb, tmpErr := executor.GetDbConnection(ctx, bytebaseDatabase)
-	if tmpErr != nil {
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
 		return
 	}
-	tx, tmpErr := sqldb.BeginTx(ctx, nil)
-	if tmpErr != nil {
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
 		return
 	}
 	defer tx.Rollback()
 
-	if *resErr == nil {
+	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		tmpErr = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, *updatedSchema, *migrationHistoryID)
+		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
 		// Otherwise, update the migration history as 'FAILED', exeuction_duration
-		tmpErr = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, *migrationHistoryID)
+		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
 	}
 
-	if tmpErr != nil {
-		return tmpErr
+	if err != nil {
+		return
 	}
 
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return
+	}
 }
 
 // Query will execute a readonly / SELECT query.
