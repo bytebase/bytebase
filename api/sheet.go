@@ -80,9 +80,9 @@ type SheetPatch struct {
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name       *string          `jsonapi:"attr,name"`
-	Statement  *string          `jsonapi:"attr,statement"`
-	Visibility *string          `jsonapi:"attr,visibility"`
+	Name       *string `jsonapi:"attr,name"`
+	Statement  *string `jsonapi:"attr,statement"`
+	Visibility *string `jsonapi:"attr,visibility"`
 }
 
 // SheetFind is the API message for finding sheets.
