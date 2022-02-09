@@ -194,7 +194,7 @@ func TestSchemaUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		t.Fatalf("failed to create schema update issue, error: %v", err)
+		t.Fatalf("failed to create data update issue, error: %v", err)
 	}
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
