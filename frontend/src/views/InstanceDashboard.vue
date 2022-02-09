@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col">
     <FeatureAttention
-      custom-class="m-5"
       v-if="remainingInstanceCount <= 3"
+      custom-class="m-5"
       feature="bb.feature.instance-count"
       :description="instanceCountAttention"
     />
