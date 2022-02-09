@@ -151,7 +151,12 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, resErr == nil /*isDone*/)
+		if err := endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, resErr == nil /*isDone*/); err != nil {
+			l.Error("Failed to update migration history record",
+				zap.Error(err),
+				zap.Int64("migration_id", migrationHistoryID),
+			)
+		}
 	}()
 
 	// Phase 3 - Executing migration
@@ -244,16 +249,8 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, isDone bool) (err error) {
-	defer func() {
-		if err != nil {
-			l.Error("Failed to update migration history record",
-				zap.Error(err),
-				zap.Int64("migration_id", migrationHistoryID),
-			)
-		}
-	}()
-
 	migrationDurationNs := time.Now().UnixNano() - startedNs
+
 	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return err
