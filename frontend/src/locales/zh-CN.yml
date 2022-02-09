@@ -1016,6 +1016,13 @@ subscription:
   subscribe: 开始订阅
   current-plan: 当前订阅
   buy: 购买{plan}
+  upload:
+    success:
+      title: 证书上传成功
+      description: 订阅版权限已解锁
+    failed:
+      title: 证书上传失败
+      description: 请检查证书是否有效
   features:
     bb-feature-task-schedule-time:
       title: 设定任务执行时间

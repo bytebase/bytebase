@@ -27,6 +27,10 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create subscription request").SetInternal(err)
 		}
 
+		if err := s.LicenseService.VerifyLicense(patch.License); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "License is invalid").SetInternal(err)
+		}
+
 		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 		}

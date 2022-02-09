@@ -1145,6 +1145,13 @@ subscription:
   subscribe: Subscribe now
   current-plan: Current plan
   buy: Buy {plan} plan
+  upload:
+    success:
+      title: License upload successful
+      description: Premium features in subscription plan unlocked.
+    failed:
+      title: License upload failed
+      description: Please check if your license is valid.
   features:
     bb-feature-task-schedule-time:
       title: Set task schedule time

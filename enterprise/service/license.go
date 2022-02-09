@@ -46,7 +46,17 @@ func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("cannot find license"))
 	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	return s.parseLicense(tokenString)
+}
+
+// VerifyLicense will check if license is valid
+func (s *LicenseService) VerifyLicense(license string) error {
+	_, err := s.parseLicense(license)
+	return err
+}
+
+func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
+	token, err := jwt.Parse(license, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, common.Errorf(common.Invalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 		}
