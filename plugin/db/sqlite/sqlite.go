@@ -503,17 +503,15 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
 	}
-	if database != "" {
-		exist := false
-		for _, n := range databases {
-			if n == database {
-				exist = true
-				break
-			}
+	exist := false
+	for _, n := range databases {
+		if n == database {
+			exist = true
+			break
 		}
-		if !exist {
-			return fmt.Errorf("database %s not found", database)
-		}
+	}
+	if !exist {
+		return fmt.Errorf("database %s not found", database)
 	}
 
 	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
