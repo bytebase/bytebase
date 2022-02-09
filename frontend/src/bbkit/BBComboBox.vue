@@ -22,7 +22,6 @@
               {{ placeholder }}
             </slot>
           </template>
-          <template v-if="state.open && state.query"> </template>
           <input
             v-model="state.query"
             type="text"
