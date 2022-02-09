@@ -1,11 +1,16 @@
 linters:
-  disable:
-    - errcheck
   enable:
+    - errcheck
     - goimports
     - golint
     - govet
     - staticcheck
+
+# golangci-lint run --exclude="Rollback,logger.Sync"
+issues:
+  exclude:
+    - Rollback
+    - logger.Sync
 
 run:
   timeout: 5m

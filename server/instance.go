@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
@@ -46,7 +47,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		db, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err == nil {
 			defer db.Close(ctx)
-			db.SetupMigrationIfNeeded(ctx)
+			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+				s.l.Warn("Failed to setup migration schema on instance creation",
+					zap.String("instance_name", instance.Name),
+					zap.String("engine", string(instance.Engine)),
+					zap.Error(err))
+			}
 			// Try immediately sync the engine version and schema after instance creation.
 			s.syncEngineVersionAndSchema(ctx, instance)
 		}
@@ -190,7 +196,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			db, err := getDatabaseDriver(ctx, instance, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
-				db.SetupMigrationIfNeeded(ctx)
+				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+					s.l.Warn("Failed to setup migration schema on instance update",
+						zap.String("instance_name", instance.Name),
+						zap.String("engine", string(instance.Engine)),
+						zap.Error(err))
+				}
 				s.syncEngineVersionAndSchema(ctx, instance)
 			}
 		}
