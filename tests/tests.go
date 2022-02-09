@@ -84,9 +84,9 @@ func getTestPort(testName string) int {
 	switch testName {
 	case "TestServiceStart":
 		return 1234
-	case "TestSchemaUpdate":
+	case "TestSchemaAndDataUpdate":
 		return 1236
-	case "TestVCSSchemaUpdate":
+	case "TestVCSSchemaAndDataUpdate":
 		return 1238
 	case "TestTenant":
 		return 1240
