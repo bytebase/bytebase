@@ -99,7 +99,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		}
 
 		sheetFind := &api.SheetFind{
-			ID:        &id,
+			ID: &id,
 		}
 
 		sheet, err := s.SheetService.FindSheet(ctx, sheetFind)

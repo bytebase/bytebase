@@ -28,14 +28,14 @@
         <RepositorySelectionPanel :config="state.config" @next="next()" />
       </template>
       <template #2>
-        <RepositoryConfigPanel :config="state.config" />
+        <RepositoryConfigPanel :config="state.config" :project="project" />
       </template>
     </BBStepTab>
   </div>
 </template>
 
 <script lang="ts">
-import { reactive, computed, PropType } from "vue";
+import { reactive, computed, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
@@ -59,6 +59,11 @@ const DEFAULT_FILE_PATH_TEMPLATE =
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
 
+// For tenant mode projects, {{ENV_NAME}} is not supported.
+const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
+  "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
+const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}__LATEST.sql";
+
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;
 const CONFIGURE_DEPLOY_STEP = 2;
@@ -68,7 +73,7 @@ interface LocalState {
   currentStep: number;
 }
 
-export default {
+export default defineComponent({
   name: "RepositorySetupWizard",
   components: {
     RepositoryVCSProviderPanel,
@@ -99,6 +104,10 @@ export default {
       { title: t("repository.configure-deploy") },
     ];
 
+    const isTenantProject = computed(() => {
+      return props.project.tenantMode === "TENANT";
+    });
+
     const state = reactive<LocalState>({
       config: {
         vcs: unknown("VCS") as VCS,
@@ -117,8 +126,12 @@ export default {
         repositoryConfig: {
           baseDirectory: "",
           branchFilter: "",
-          filePathTemplate: DEFAULT_FILE_PATH_TEMPLATE,
-          schemaPathTemplate: DEFAULT_SCHEMA_PATH_TEMPLATE,
+          filePathTemplate: isTenantProject.value
+            ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
+            : DEFAULT_FILE_PATH_TEMPLATE,
+          schemaPathTemplate: isTenantProject.value
+            ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
+            : DEFAULT_SCHEMA_PATH_TEMPLATE,
         },
       },
       currentStep: CHOOSE_PROVIDER_STEP,
@@ -203,5 +216,5 @@ export default {
       cancel,
     };
   },
-};
+});
 </script>

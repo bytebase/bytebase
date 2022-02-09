@@ -57,7 +57,7 @@ p, DEVELOPER, /inbox/user/{userID}, GET_SELF
 p, DEVELOPER, /inbox/user/{userID}/summary, GET_SELF
 p, DEVELOPER, /inbox/{id}, PATCH_SELF
 p, DEVELOPER, /bookmark, POST
-p, DEVELOPER, /bookmark, GET
+p, DEVELOPER, /bookmark/user/{userID}, GET_SELF
 p, DEVELOPER, /bookmark/{id}, DELETE_SELF
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH

@@ -12,32 +12,32 @@ import (
 	"go.uber.org/zap"
 )
 
-// licenseService is the service for enterprise license.
-type licenseService struct {
+// LicenseService is the service for enterprise license.
+type LicenseService struct {
 	l      *zap.Logger
 	config *config.Config
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*licenseService, error) {
+func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*LicenseService, error) {
 	config, err := config.NewConfig(l, dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
 
-	return &licenseService{
+	return &LicenseService{
 		config: config,
 		l:      l,
 	}, nil
 }
 
 // StoreLicense will store license into file.
-func (s *licenseService) StoreLicense(tokenString string) error {
+func (s *LicenseService) StoreLicense(tokenString string) error {
 	return s.writeLicense(tokenString)
 }
 
 // LoadLicense will load license from file and validate it.
-func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
+func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
+func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, err)
@@ -126,7 +126,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	return license, nil
 }
 
-func (s *licenseService) readLicense() (string, error) {
+func (s *LicenseService) readLicense() (string, error) {
 	token, err := ioutil.ReadFile(s.config.StorePath)
 	if err != nil {
 		return "", common.Errorf(
@@ -138,7 +138,7 @@ func (s *licenseService) readLicense() (string, error) {
 	return string(token), nil
 }
 
-func (s *licenseService) writeLicense(token string) error {
+func (s *LicenseService) writeLicense(token string) error {
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 

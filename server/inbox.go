@@ -13,11 +13,11 @@ import (
 )
 
 func (s *Server) registerInboxRoutes(g *echo.Group) {
-	g.GET("/inbox/user/:userId", func(c echo.Context) error {
+	g.GET("/inbox/user/:userID", func(c echo.Context) error {
 		ctx := context.Background()
-		userID, err := strconv.Atoi(c.Param("userId"))
+		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
 		}
 
 		inboxFind := &api.InboxFind{
@@ -50,11 +50,11 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/inbox/user/:userId/summary", func(c echo.Context) error {
+	g.GET("/inbox/user/:userID/summary", func(c echo.Context) error {
 		ctx := context.Background()
-		userID, err := strconv.Atoi(c.Param("userId"))
+		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userId"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
 		}
 
 		summary, err := s.InboxService.FindInboxSummary(ctx, userID)

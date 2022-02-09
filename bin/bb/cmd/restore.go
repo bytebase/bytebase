@@ -1,4 +1,4 @@
-// cmd is the command surface of Bytebase bb tool provided by bytebase.com.
+// Package cmd is the command surface of Bytebase bb tool provided by bytebase.com.
 package cmd
 
 import (
@@ -19,8 +19,12 @@ func init() {
 	restoreCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	restoreCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
 	restoreCmd.Flags().StringVar(&file, "file", "", "File to store the dump.")
-	restoreCmd.MarkFlagRequired("database")
-	restoreCmd.MarkFlagRequired("file")
+	if err := restoreCmd.MarkFlagRequired("database"); err != nil {
+		panic(err)
+	}
+	if err := restoreCmd.MarkFlagRequired("file"); err != nil {
+		panic(err)
+	}
 
 	// tls flags for SSL connection.
 	restoreCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")

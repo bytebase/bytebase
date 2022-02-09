@@ -1,4 +1,4 @@
-// Advisor defines the interface for analyzing sql statements.
+// Package advisor defines the interface for analyzing sql statements.
 // The advisor could be syntax checker, index suggestion etc.
 package advisor
 
@@ -11,12 +11,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// Status is the advisor result status.
 type Status string
 
 const (
+	// Success is the adivsor status for successes.
 	Success Status = "SUCCESS"
-	Warn    Status = "WARN"
-	Error   Status = "ERROR"
+	// Warn is the adivsor status for warnings.
+	Warn Status = "WARN"
+	// Error is the adivsor status for errors.
+	Error Status = "ERROR"
 )
 
 func (e Status) String() string {
@@ -31,14 +35,19 @@ func (e Status) String() string {
 	return "UNKNOWN"
 }
 
-type AdvisorType string
+// Type is the type of advisor.
+type Type string
 
 const (
-	Fake                        AdvisorType = "bb.plugin.advisor.fake"
-	MySQLSyntax                 AdvisorType = "bb.plugin.advisor.mysql.syntax"
-	MySQLMigrationCompatibility AdvisorType = "bb.plugin.advisor.mysql.migration-compatibility"
+	// Fake is a fake advisor type for testing.
+	Fake Type = "bb.plugin.advisor.fake"
+	// MySQLSyntax is an advisor type for MySQL syntax.
+	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
+	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
+	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 )
 
+// Advice is the result of an advisor.
 type Advice struct {
 	Status  Status
 	Code    common.Code
@@ -46,25 +55,27 @@ type Advice struct {
 	Content string
 }
 
-type AdvisorContext struct {
+// Context is the context for advisor.
+type Context struct {
 	Logger    *zap.Logger
 	Charset   string
 	Collation string
 }
 
+// Advisor is the interface for advisor.
 type Advisor interface {
-	Check(ctx AdvisorContext, statement string) ([]Advice, error)
+	Check(ctx Context, statement string) ([]Advice, error)
 }
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[db.Type]map[AdvisorType]Advisor)
+	advisors  = make(map[db.Type]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType db.Type, advType AdvisorType, f Advisor) {
+func Register(dbType db.Type, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -72,7 +83,7 @@ func Register(dbType db.Type, advType AdvisorType, f Advisor) {
 	}
 	dbAdvisors, ok := advisors[dbType]
 	if !ok {
-		advisors[dbType] = map[AdvisorType]Advisor{
+		advisors[dbType] = map[Type]Advisor{
 			advType: f,
 		}
 	} else {
@@ -83,7 +94,8 @@ func Register(dbType db.Type, advType AdvisorType, f Advisor) {
 	}
 }
 
-func Check(dbType db.Type, advType AdvisorType, ctx AdvisorContext, statement string) ([]Advice, error) {
+// Check runs the advisor and returns the advices.
+func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()

@@ -61,7 +61,7 @@ p, DBA, /inbox/user/{userID}, GET_SELF
 p, DBA, /inbox/user/{userID}/summary, GET_SELF
 p, DBA, /inbox/{id}, PATCH_SELF
 p, DBA, /bookmark, POST
-p, DBA, /bookmark, GET
+p, DBA, /bookmark/user/{userID}, GET_SELF
 p, DBA, /bookmark/{id}, DELETE_SELF
 p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/status, PATCH

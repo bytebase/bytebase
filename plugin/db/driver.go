@@ -205,7 +205,7 @@ func (e MigrationStatus) String() string {
 
 // MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {
-	VCSPushEvent *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
+	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // MigrationInfo is the API message for migration info.

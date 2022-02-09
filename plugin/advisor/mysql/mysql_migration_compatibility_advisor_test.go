@@ -19,7 +19,7 @@ type test struct {
 func runTests(t *testing.T, tests []test) {
 	adv := CompatibilityAdvisor{}
 	logger, _ := zap.NewDevelopmentConfig().Build()
-	ctx := advisor.AdvisorContext{
+	ctx := advisor.Context{
 		Logger:    logger,
 		Charset:   "",
 		Collation: "",

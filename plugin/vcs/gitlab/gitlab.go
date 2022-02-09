@@ -134,10 +134,12 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 	}
 }
 
+// APIURL returns the API URL path of a GitLab instance.
 func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
+// TryLogin will try to login GitLab.
 func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
 	code, body, err := httpGet(
 		instanceURL,
@@ -171,6 +173,7 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return UserInfo, err
 }
 
+// CreateFile creates a file.
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(FileCommit{
 		Branch:        fileCommitCreate.Branch,
@@ -207,6 +210,7 @@ func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthC
 	return nil
 }
 
+// OverwriteFile overwrite the content of a file.
 func (provider *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(FileCommit{
 		Branch:        fileCommitCreate.Branch,
@@ -244,6 +248,7 @@ func (provider *Provider) OverwriteFile(ctx context.Context, oauthCtx common.Oau
 	return nil
 }
 
+// ReadFileMeta reads the content of a file.
 func (provider *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (string, error) {
 	code, body, err := httpGet(
 		instanceURL,
@@ -274,6 +279,7 @@ func (provider *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthCon
 	return body, nil
 }
 
+// ReadFileMeta reads the metadata of a file.
 func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, branch string) (*vcs.FileMeta, error) {
 	code, body, err := httpGet(
 		instanceURL,
@@ -311,6 +317,7 @@ func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.Oaut
 	}, nil
 }
 
+// CreateWebhook creates a webhook in a GitLab project.
 func (provider *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, payload []byte) (string, error) {
 	resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryID)
 	code, body, err := httpPost(
@@ -351,8 +358,9 @@ func (provider *Provider) CreateWebhook(ctx context.Context, oauthCtx common.Oau
 	return strconv.Itoa(webhookInfo.ID), nil
 }
 
-func (provider *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string, payload []byte) error {
-	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookId)
+// PatchWebhook patches a webhook in a GitLab project.
+func (provider *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string, payload []byte) error {
+	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookID)
 	code, _, err := httpPut(
 		instanceURL,
 		resourcePath,
@@ -366,17 +374,18 @@ func (provider *Provider) PatchWebhook(ctx context.Context, oauthCtx common.Oaut
 		oauthCtx.Refresher,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s: %w", webhookId, repositoryID, instanceURL, err)
+		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
 	}
 
 	if code >= 300 {
-		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookId, repositoryID, instanceURL, code)
+		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
 	}
 	return nil
 }
 
-func (provider *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string) error {
-	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookId)
+// DeleteWebhook deletes a webhook in a GitLab project.
+func (provider *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string) error {
+	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookID)
 	code, _, err := httpDelete(
 		instanceURL,
 		resourcePath,
@@ -389,11 +398,11 @@ func (provider *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.Oau
 		oauthCtx.Refresher,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s: %w", webhookId, repositoryID, instanceURL, err)
+		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
 	}
 
 	if code >= 300 {
-		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookId, repositoryID, instanceURL, code)
+		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
 	}
 	return nil
 }
