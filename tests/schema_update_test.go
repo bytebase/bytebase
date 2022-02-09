@@ -19,7 +19,19 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL
 	);`
-	schemaSQLResult = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	schemaSQLResult     = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	dataUpdateStatement = `
+	INSERT INTO book(name) VALUES
+		("byte"),
+		("base");
+	`
+	dumpedSchema = "" +
+		`CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL
+	);
+CREATE TABLE sqlite_sequence(name,seq);
+`
 )
 
 func TestSchemaUpdate(t *testing.T) {
@@ -158,6 +170,93 @@ func TestSchemaUpdate(t *testing.T) {
 	if schemaSQLResult != result {
 		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
 	}
+
+	// Create an issue that updates database data.
+	createContext, err = json.Marshal(&api.UpdateSchemaContext{
+		MigrationType: db.Data,
+		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+			{
+				DatabaseID: database.ID,
+				Statement:  dataUpdateStatement,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to construct data update issue CreateContext payload, error: %v", err)
+	}
+	issue, err = ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("update data for database %q", databaseName),
+		Type:        api.IssueDatabaseDataUpdate,
+		Description: fmt.Sprintf("This updates the data of database %q.", databaseName),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	if err != nil {
+		t.Fatalf("failed to create schema update issue, error: %v", err)
+	}
+	status, err = ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if status != api.TaskDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
+	}
+
+	// Get migration history.
+	histories, err := ctl.getInstanceMigrationHistory(instance.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHistories := []api.MigrationHistory{
+		{
+			ID:         3,
+			Database:   databaseName,
+			Engine:     db.UI,
+			Type:       db.Data,
+			Status:     db.Done,
+			Schema:     dumpedSchema,
+			SchemaPrev: dumpedSchema,
+		},
+		{
+			ID:         2,
+			Database:   databaseName,
+			Engine:     db.UI,
+			Type:       db.Migrate,
+			Status:     db.Done,
+			Schema:     dumpedSchema,
+			SchemaPrev: "",
+		},
+		{
+			ID:         1,
+			Database:   databaseName,
+			Engine:     db.UI,
+			Type:       db.Baseline,
+			Status:     db.Done,
+			Schema:     "",
+			SchemaPrev: "",
+		},
+	}
+	if len(histories) != len(wantHistories) {
+		t.Fatalf("number of migration history got %v, want %v", len(histories), len(wantHistories))
+	}
+	for i, history := range histories {
+		got := api.MigrationHistory{
+			ID:         history.ID,
+			Database:   history.Database,
+			Engine:     history.Engine,
+			Type:       history.Type,
+			Status:     history.Status,
+			Schema:     history.Schema,
+			SchemaPrev: history.SchemaPrev,
+		}
+		want := wantHistories[i]
+		diff := pretty.Diff(got, want)
+		if len(diff) != 0 {
+			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
+		}
+	}
 }
 
 func TestVCSSchemaUpdate(t *testing.T) {
@@ -261,7 +360,7 @@ func TestVCSSchemaUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Simulate Git commits.
+	// Simulate Git commits for schema update.
 	gitFile := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
 	pushEvent := &gitlab.WebhookPushEvent{
 		ObjectKind: gitlab.WebhookPush,
@@ -302,6 +401,12 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	if status != api.TaskDone {
 		t.Fatalf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
 	}
+	if _, err := ctl.patchIssueStatus(api.IssueStatusPatch{
+		ID:     issue.ID,
+		Status: api.IssueDone,
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	// Query schema.
 	result, err := ctl.query(instance, databaseName)
@@ -310,5 +415,106 @@ func TestVCSSchemaUpdate(t *testing.T) {
 	}
 	if schemaSQLResult != result {
 		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+	}
+
+	// Simulate Git commits for schema update.
+	gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+	pushEvent = &gitlab.WebhookPushEvent{
+		ObjectKind: gitlab.WebhookPush,
+		Ref:        "refs/heads/feature/foo",
+		Project: gitlab.WebhookProject{
+			ID: gitlabProjectID,
+		},
+		CommitList: []gitlab.WebhookCommit{
+			{
+				Timestamp: "2021-01-13T13:14:00Z",
+				AddedList: []string{
+					gitFile,
+				},
+			},
+		},
+	}
+	if err := ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement}); err != nil {
+		t.Fatalf("failed to add files to gitlab project %v, error %v", gitlabProjectID, err)
+	}
+	if err := ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent); err != nil {
+		t.Fatalf("failed to send commits to gitlab project %v, error %v", gitlabProjectID, err)
+	}
+	// Get data update issue.
+	openStatus = []api.IssueStatus{api.IssueOpen}
+	issues, err = ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
+	if err != nil {
+		t.Fatalf("failed to get open issues for project %v, error: %v", project.ID, err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("invalid number of open issues %v in project %v, expecting one issue", len(issues), project.ID)
+	}
+	issue = issues[0]
+	status, err = ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		t.Fatalf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if status != api.TaskDone {
+		t.Fatalf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
+	}
+	if _, err := ctl.patchIssueStatus(api.IssueStatusPatch{
+		ID:     issue.ID,
+		Status: api.IssueDone,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Get migration history.
+	histories, err := ctl.getInstanceMigrationHistory(instance.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHistories := []api.MigrationHistory{
+		{
+			ID:         3,
+			Database:   databaseName,
+			Engine:     db.VCS,
+			Type:       db.Data,
+			Status:     db.Done,
+			Schema:     dumpedSchema,
+			SchemaPrev: dumpedSchema,
+		},
+		{
+			ID:         2,
+			Database:   databaseName,
+			Engine:     db.VCS,
+			Type:       db.Migrate,
+			Status:     db.Done,
+			Schema:     dumpedSchema,
+			SchemaPrev: "",
+		},
+		{
+			ID:         1,
+			Database:   databaseName,
+			Engine:     db.UI,
+			Type:       db.Baseline,
+			Status:     db.Done,
+			Schema:     "",
+			SchemaPrev: "",
+		},
+	}
+	if len(histories) != len(wantHistories) {
+		t.Fatalf("number of migration history got %v, want %v", len(histories), len(wantHistories))
+	}
+	for i, history := range histories {
+		got := api.MigrationHistory{
+			ID:         history.ID,
+			Database:   history.Database,
+			Engine:     history.Engine,
+			Type:       history.Type,
+			Status:     history.Status,
+			Schema:     history.Schema,
+			SchemaPrev: history.SchemaPrev,
+		}
+		want := wantHistories[i]
+		diff := pretty.Diff(got, want)
+		if len(diff) != 0 {
+			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
+		}
 	}
 }

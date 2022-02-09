@@ -461,6 +461,27 @@ func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Inst
 	return instance, nil
 }
 
+func (ctl *controller) getInstanceMigrationHistory(instanceID int) ([]*api.MigrationHistory, error) {
+	body, err := ctl.get(fmt.Sprintf("/instance/%v/migration/history", instanceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var histories []*api.MigrationHistory
+	hs, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.MigrationHistory)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get migration history response, error %w", err)
+	}
+	for _, h := range hs {
+		history, ok := h.(*api.MigrationHistory)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert migration history")
+		}
+		histories = append(histories, history)
+	}
+	return histories, nil
+}
+
 // createIssue creates an issue.
 func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, error) {
 	buf := new(bytes.Buffer)

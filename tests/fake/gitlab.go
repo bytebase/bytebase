@@ -50,6 +50,7 @@ func NewGitLab(port int) *GitLab {
 	projectGroup.GET("/projects/:id/repository/files/:file/raw", gl.readProjectFile)
 	projectGroup.GET("/projects/:id/repository/files/:file", gl.readProjectFileMetadata)
 	projectGroup.POST("/projects/:id/repository/files/:file", gl.createProjectFile)
+	projectGroup.PUT("/projects/:id/repository/files/:file", gl.createProjectFile)
 
 	return gl
 }
