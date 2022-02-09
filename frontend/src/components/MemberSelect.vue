@@ -1,10 +1,11 @@
 <template>
-  <BBSelect
-    :selected-item="selectedPrincipal"
-    :item-list="principalList"
+  <BBComboBox
+    :value="selectedPrincipal"
+    :options="principalList"
+    :filter="filter"
     :placeholder="placeholder"
     :disabled="disabled"
-    @select-item="
+    @update:value="
       (principal) => {
         state.selectedId = principal.id;
         $emit('select-principal-id', parseInt(principal.id));
@@ -33,11 +34,11 @@
         }}</span>
       </span>
     </template>
-  </BBSelect>
+  </BBComboBox>
 </template>
 
 <script lang="ts">
-import { reactive, computed, watch, PropType } from "vue";
+import { reactive, computed, watch, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
@@ -48,18 +49,20 @@ import {
   SYSTEM_BOT_ID,
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
+import { BBComboBox } from "../bbkit";
 
 interface LocalState {
-  selectedId?: PrincipalId;
+  selectedId: PrincipalId | undefined;
   showMenu: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "MemberSelect",
-  components: { PrincipalAvatar },
+  components: { BBComboBox, PrincipalAvatar },
   props: {
     selectedId: {
       type: Number,
+      default: undefined,
     },
     disabled: {
       default: false,
@@ -135,12 +138,20 @@ export default {
       state.showMenu = false;
     };
 
+    const filter = (options: Principal[], query: string): Principal[] => {
+      query = query.toLowerCase();
+      return options.filter((principal) =>
+        principal.name.toLowerCase().includes(query)
+      );
+    };
+
     return {
       state,
       principalList,
       selectedPrincipal,
+      filter,
       close,
     };
   },
-};
+});
 </script>
