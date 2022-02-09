@@ -777,7 +777,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 	RETURNING id
 	`
 	var insertedID int64
-	tx.QueryRowContext(ctx, insertHistoryQuery,
+	if err := tx.QueryRowContext(ctx, insertHistoryQuery,
 		m.Creator,
 		m.Creator,
 		m.ReleaseVersion,
@@ -792,7 +792,9 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		prevSchema,
 		m.IssueID,
 		m.Payload,
-	).Scan(&insertedID)
+	).Scan(&insertedID); err != nil {
+		return 0, err
+	}
 	return insertedID, nil
 }
 
