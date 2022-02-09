@@ -197,7 +197,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-					s.l.Warn("Failed to setup migration if needed on instance creation",
+					s.l.Warn("Failed to setup migration schema on instance update",
 						zap.String("instance_name", instance.Name),
 						zap.String("engine", string(instance.Engine)),
 						zap.Error(err))
