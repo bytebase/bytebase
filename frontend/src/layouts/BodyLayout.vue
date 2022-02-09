@@ -8,31 +8,12 @@
         </div>
         <div
           tabindex="0"
-          class="
-            relative
-            flex-1 flex flex-col
-            max-w-xs
-            w-full
-            bg-white
-            focus:outline-none
-          "
+          class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none"
         >
           <div class="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
-              class="
-                ml-1
-                flex
-                items-center
-                justify-center
-                h-10
-                w-10
-                rounded-full
-                focus:outline-none
-                focus:ring-2
-                focus:ring-inset
-                focus:ring-white
-              "
+              class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
               @click.prevent="state.showMobileOverlay = false"
             >
               <span class="sr-only">Close sidebar</span>
@@ -61,7 +42,7 @@
             >
               <div class="flex items-center">
                 <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
-                <span class="text-sm">{{ $t('common.help') }}</span>
+                <span class="text-sm">{{ $t("common.help") }}</span>
               </div>
               <div class="text-sm">{{ version }}</div>
             </a>
@@ -89,12 +70,7 @@
         </router-link>
         <div
           v-if="showQuickstart"
-          class="
-            flex-shrink-0 flex
-            justify-center
-            border-t border-block-border
-            py-2
-          "
+          class="flex-shrink-0 flex justify-center border-t border-block-border py-2"
         >
           <Quickstart />
         </div>
@@ -102,15 +78,7 @@
           <a
             href="https://docs.bytebase.com"
             target="_blank"
-            class="
-              flex
-              justify-between
-              items-center
-              flex-shrink-0
-              w-full
-              text-main
-              group
-            "
+            class="flex justify-between items-center flex-shrink-0 w-full text-main group"
           >
             <div class="flex items-center py-1">
               <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
@@ -127,30 +95,12 @@
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
         <div
-          class="
-            flex
-            items-center
-            justify-start
-            bg-gray-50
-            border-b border-block-border
-            px-4
-            py-1.5
-          "
+          class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4 py-1.5"
         >
           <div>
             <button
               type="button"
-              class="
-                -mr-3
-                h-12
-                w-12
-                inline-flex
-                items-center
-                justify-center
-                rounded-md
-                text-gray-500
-                hover:text-gray-900
-              "
+              class="-mr-3 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
               @click.prevent="state.showMobileOverlay = true"
             >
               <span class="sr-only">Open sidebar</span>

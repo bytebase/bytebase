@@ -5,9 +5,7 @@
         <div class="w-0 flex-1 flex items-center">
           <p class="ml-3 font-medium text-white truncate">
             <span>
-              {{
-                $t(`banner.demo-intro${isReadonly ? '-readonly' : ''}`)
-              }}
+              {{ $t(`banner.demo-intro${isReadonly ? "-readonly" : ""}`) }}
             </span>
           </p>
         </div>
@@ -17,22 +15,7 @@
           <a
             href="https://github.com/bytebase/bytebase"
             target="_blank"
-            class="
-              flex
-              items-center
-              justify-center
-              pl-4
-              pr-2
-              py-2
-              border border-transparent
-              rounded-md
-              shadow-sm
-              text-base
-              font-medium
-              text-accent
-              bg-white
-              hover:bg-indigo-50
-            "
+            class="flex items-center justify-center pl-4 pr-2 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
             {{ $t("banner.action") }}
             <heroicons-outline:lightning-bolt class="ml-1 w-6 h-6" />
@@ -41,15 +24,7 @@
         <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-3">
           <button
             type="button"
-            class="
-              -mr-1
-              flex
-              p-2
-              rounded-md
-              hover:bg-accent-hover
-              focus:outline-none focus:ring-2 focus:ring-white
-              sm:-mr-2
-            "
+            class="-mr-1 flex p-2 rounded-md hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-white sm:-mr-2"
             @click.prevent="show = false"
           >
             <span class="sr-only">{{ $t("common.dismiss") }}</span>

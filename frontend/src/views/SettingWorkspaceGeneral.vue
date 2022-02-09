@@ -6,30 +6,27 @@
         class="btn-primary"
         :disabled="!allowSave"
         @click.prevent="doSave"
-      >{{ $t("common.update") }}</button>
+      >
+        {{ $t("common.update") }}
+      </button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import { isOwner } from "../utils";
-import { Setting } from "../types/setting";
 
-interface LocalState {
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceGeneral",
-  data() {
-    return { placeholder: "{{ DB_NAME_PLACEHOLDER }}" }
-  },
   setup() {
     const store = useStore();
 
-    const state = reactive<LocalState>({
-    });
+    const state = reactive<LocalState>({});
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -42,6 +39,7 @@ export default {
     });
 
     const doSave = () => {
+      // do nothing
     };
 
     return {
@@ -51,5 +49,8 @@ export default {
       doSave,
     };
   },
-};
+  data() {
+    return { placeholder: "{{ DB_NAME_PLACEHOLDER }}" };
+  },
+});
 </script>

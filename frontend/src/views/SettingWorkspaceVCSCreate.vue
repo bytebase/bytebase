@@ -8,9 +8,9 @@
             target="_blank"
             class="normal-link"
           >
-            {{ $t('common.detailed-guide') }}</a
+            {{ $t("common.detailed-guide") }}</a
           >
-      </template>
+        </template>
       </i18n-t>
     </div>
     <div class="pt-4">

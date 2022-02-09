@@ -27,7 +27,9 @@
               <heroicons-outline:check class="w-5 h-5" />
             </template>
             <template v-else-if="taskRun.status == 'FAILED'">
-              <span class="text-white font-medium text-base" aria-hidden="true">!</span>
+              <span class="text-white font-medium text-base" aria-hidden="true"
+                >!</span
+              >
             </template>
             <template v-else-if="taskRun.status == 'CANCELED'">
               <heroicons-outline:minus-sm class="w-5 h-5" />
@@ -41,7 +43,8 @@
           <router-link
             class="ml-1 normal-link"
             :to="commentLink(taskRun).link"
-          >{{ commentLink(taskRun).title }}</router-link>
+            >{{ commentLink(taskRun).title }}</router-link
+          >
         </template>
       </BBTableCell>
       <BBTableCell class="table-cell w-12">
@@ -49,13 +52,19 @@
           <PrincipalAvatar :principal="taskRun.creator" :size="'SMALL'" />
           <div class="flex flex-col">
             <div class="flex flex-row items-center space-x-2">
-              <router-link :to="`/u/${taskRun.creator.id}`">{{ taskRun.creator.name }}</router-link>
+              <router-link :to="`/u/${taskRun.creator.id}`">{{
+                taskRun.creator.name
+              }}</router-link>
             </div>
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-12">{{ humanizeTs(taskRun.createdTs) }}</BBTableCell>
-      <BBTableCell class="table-cell w-12">{{ humanizeTs(taskRun.updatedTs) }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">{{
+        humanizeTs(taskRun.createdTs)
+      }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">{{
+        humanizeTs(taskRun.updatedTs)
+      }}</BBTableCell>
     </template>
   </BBTable>
 </template>
