@@ -87,6 +87,7 @@ p, DBA, /savedquery/{id}, PATCH_SELF
 p, DBA, /savedquery/{id}, DELETE_SELF
 p, DBA, /subscription, GET
 p, DBA, /subscription, PATCH
+p, DBA, /subscription, DELETE
 p, DBA, /sheet, POST
 p, DBA, /sheet, GET
 p, DBA, /sheet/{id}, GET

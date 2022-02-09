@@ -264,7 +264,7 @@ export default defineComponent({
     };
 
     const switchToFree = () => {
-      store.dispatch("subscription/patchSubscription", "");
+      store.dispatch("subscription/deleteSubscription");
     };
 
     const switchToTeam = () => {
