@@ -69,7 +69,7 @@ type SheetCreate struct {
 
 // SheetPatch is the API message for patching a sheet.
 type SheetPatch struct {
-	ID int
+	ID int `jsonapi:"primary,sheetPatch"`
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -80,9 +80,9 @@ type SheetPatch struct {
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name       *string          `jsonapi:"attr,name"`
-	Statement  *string          `jsonapi:"attr,statement"`
-	Visibility *SheetVisibility `jsonapi:"attr,visibility"`
+	Name       *string `jsonapi:"attr,name"`
+	Statement  *string `jsonapi:"attr,statement"`
+	Visibility *string `jsonapi:"attr,visibility"`
 }
 
 // SheetFind is the API message for finding sheets.

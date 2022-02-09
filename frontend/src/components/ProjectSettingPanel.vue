@@ -10,7 +10,9 @@
           :style="'ARCHIVE'"
           :button-text="$t('project.settings.archive.btn-text')"
           :ok-text="$t('common.archive')"
-          :confirm-title="$t('project.settings.archive.title') + ` '${project.name}'?`"
+          :confirm-title="
+            $t('project.settings.archive.title') + ` '${project.name}'?`
+          "
           :confirm-description="$t('project.settings.archive.description')"
           :require-confirm="true"
           @confirm="archiveOrRestoreProject(true)"
@@ -21,7 +23,9 @@
           :style="'RESTORE'"
           :button-text="$t('project.settings.restore.btn-text')"
           :ok-text="$t('common.restore')"
-          :confirm-title="$t('project.settings.restore.title') + ` '${project.name}'?`"
+          :confirm-title="
+            $t('project.settings.restore.title') + ` '${project.name}'?`
+          "
           :confirm-description="''"
           :require-confirm="true"
           @confirm="archiveOrRestoreProject(false)"

@@ -3,13 +3,13 @@
     class="btn-select w-full disabled:cursor-not-allowed"
     :disabled="disabled"
     @change="
-      (e) => {
+      (e: any) => {
         $emit('select-instance-id', parseInt(e.target.value));
       }
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      {{ $t('instance.select') }}
+      {{ $t("instance.select") }}
     </option>
     <template v-for="(instance, index) in instanceList" :key="index">
       <option
@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, defineComponent, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import { Instance } from "../types";
 
@@ -40,15 +40,17 @@ interface LocalState {
   selectedId?: number;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceSelect",
   components: {},
   props: {
     selectedId: {
       type: Number,
+      default: undefined,
     },
     environmentId: {
       type: Number,
+      default: undefined,
     },
     disabled: {
       default: false,
@@ -100,5 +102,5 @@ export default {
       instanceList,
     };
   },
-};
+});
 </script>

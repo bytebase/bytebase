@@ -28,12 +28,16 @@
               <span class="text-sm flex-1">{{ item.taskName }}</span>
             </div>
             <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
-              <span class="tooltip whitespace-nowrap">Missing SQL statement</span>
+              <span class="tooltip whitespace-nowrap"
+                >Missing SQL statement</span
+              >
               <span
                 v-if="!item.valid"
                 class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
               >
-                <span class="text-center font-normal" aria-hidden="true">!</span>
+                <span class="text-center font-normal" aria-hidden="true"
+                  >!</span
+                >
               </span>
             </div>
           </span>
@@ -77,14 +81,18 @@
             :status="task.status"
             class="transform scale-75"
           />
-          <heroicons-solid:arrow-narrow-right v-if="isActiveTask(task)" class="name w-5 h-5" />
+          <heroicons-solid:arrow-narrow-right
+            v-if="isActiveTask(task)"
+            class="name w-5 h-5"
+          />
           <div class="name">{{ j + 1 }} - {{ databaseForTask(task).name }}</div>
         </div>
         <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
           <InstanceEngineIcon :instance="databaseForTask(task).instance" />
           <span
             class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
-          >{{ instanceName(databaseForTask(task).instance) }}</span>
+            >{{ instanceName(databaseForTask(task).instance) }}</span
+          >
         </div>
       </div>
     </div>
@@ -219,8 +227,9 @@ export default defineComponent({
           if (stage.taskList.length > 1) {
             for (let i = 0; i < stage.taskList.length; i++) {
               if ((stage.taskList[i] as Task).id == (activeTask as Task).id) {
-                taskName = `${activeTask.name} (${i + 1}/${stage.taskList.length
-                  })`;
+                taskName = `${activeTask.name} (${i + 1}/${
+                  stage.taskList.length
+                })`;
                 break;
               }
             }

@@ -23,7 +23,8 @@
           <router-link
             to="/setting/profile"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >{{ $t("settings.sidebar.profile") }}</router-link>
+            >{{ $t("settings.sidebar.profile") }}</router-link
+          >
         </div>
       </div>
       <div class="mt-8">
@@ -49,7 +50,8 @@
           <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >{{ $t("settings.sidebar.members") }}</router-link>
+            >{{ $t("settings.sidebar.members") }}</router-link
+          >
           <!--
             Label Management is visible to all
             but only editable to Owners and DBAs
@@ -57,17 +59,20 @@
           <router-link
             to="/setting/label"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >{{ $t("settings.sidebar.labels") }}</router-link>
+            >{{ $t("settings.sidebar.labels") }}</router-link
+          >
           <router-link
             v-if="showOwnerItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >{{ $t("settings.sidebar.version-control") }}</router-link>
+            >{{ $t("settings.sidebar.version-control") }}</router-link
+          >
           <router-link
             v-if="isDev()"
             to="/setting/subscription"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-          >{{ $t("settings.sidebar.subscription") }}</router-link>
+            >{{ $t("settings.sidebar.subscription") }}</router-link
+          >
           <!-- <router-link
             to="/setting/billing"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"

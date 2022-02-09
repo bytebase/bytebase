@@ -1,17 +1,9 @@
 <template>
   <div class="flex flex-col space-y-4">
     <div
-      class="
-        flex flex-row
-        items-center
-        text-lg
-        leading-6
-        font-medium
-        text-main
-        space-x-2
-      "
+      class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
-      {{ $t('migration-history.self') }}
+      {{ $t("migration-history.self") }}
       <button
         v-if="allowEdit"
         type="button"
@@ -19,10 +11,13 @@
         :disabled="state.migrationSetupStatus != 'OK'"
         @click.prevent="state.showBaselineModal = true"
       >
-        {{ $t('migration-history.establish-baseline') }}
+        {{ $t("migration-history.establish-baseline") }}
       </button>
       <div>
-        <BBSpin v-if="state.loading" :title="$t('migration-history.refreshing-history')" />
+        <BBSpin
+          v-if="state.loading"
+          :title="$t('migration-history.refreshing-history')"
+        />
       </div>
     </div>
     <MigrationHistoryTable
@@ -34,7 +29,9 @@
       v-else
       :style="`WARN`"
       :title="attentionTitle"
-      :action-text="allowConfigInstance ? $t('migration-history.config-instance') : ''"
+      :action-text="
+        allowConfigInstance ? $t('migration-history.config-instance') : ''
+      "
       @click-action="configInstance"
     />
   </div>
@@ -44,7 +41,11 @@
     :style="'INFO'"
     :ok-text="$t('migration-history.establish-baseline')"
     :cancel-text="$t('common.cancel')"
-    :title="$t('migration-history.establish-database-baseline', { name: database.name })"
+    :title="
+      $t('migration-history.establish-database-baseline', {
+        name: database.name,
+      })
+    "
     :description="$t('migration-history.establish-baseline-description')"
     @ok="
       () => {
@@ -142,17 +143,21 @@ export default {
     const attentionTitle = computed((): string => {
       if (state.migrationSetupStatus == "NOT_EXIST") {
         return (
-          t('migration-history.instance-missing-migration-schema', { name: props.database.instance.name }) +
+          t("migration-history.instance-missing-migration-schema", {
+            name: props.database.instance.name,
+          }) +
           (isDBAOrOwner(currentUser.value.role)
             ? ""
-            : " " + t('migration-history.contact-dba'))
+            : " " + t("migration-history.contact-dba"))
         );
       } else if (state.migrationSetupStatus == "UNKNOWN") {
         return (
-          t('migration-history.instance-bad-connection', { name: props.database.instance.name })  +
+          t("migration-history.instance-bad-connection", {
+            name: props.database.instance.name,
+          }) +
           (isDBAOrOwner(currentUser.value.role)
             ? ""
-            : " " + t('migration-history.contact-dba'))
+            : " " + t("migration-history.contact-dba"))
         );
       }
       return "";
@@ -184,7 +189,9 @@ export default {
         },
         query: {
           template: "bb.issue.database.schema.baseline",
-          name: t('migration-history.establish-database-baseline', { name: props.database.name }),
+          name: t("migration-history.establish-database-baseline", {
+            name: props.database.name,
+          }),
           project: props.database.project.id,
           databaseList: `${props.database.id}`,
         },

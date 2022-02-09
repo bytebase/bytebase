@@ -198,8 +198,8 @@ export default defineComponent({
         project = await store.dispatch("project/fetchProjectById", projectId);
       }
 
-      return project
-    }
+      return project;
+    };
 
     const maybeBuildTenantDeployIssue = async (): Promise<
       IssueCreate | false
@@ -208,7 +208,7 @@ export default defineComponent({
         return false;
       }
 
-      const project = await findProject()
+      const project = await findProject();
       const issueType = route.query.template as IssueType;
       if (
         project.tenantMode === "TENANT" &&
@@ -241,7 +241,10 @@ export default defineComponent({
           title =
             "INVALID STATE, please create rollback from the original issue.";
         } else {
-          if (rollbackIssue.type != "bb.issue.database.schema.update" && rollbackIssue.type != "bb.issue.database.data.update") {
+          if (
+            rollbackIssue.type != "bb.issue.database.schema.update" &&
+            rollbackIssue.type != "bb.issue.database.data.update"
+          ) {
             title =
               "INVALID STATE, only support to rollback update schema or change data issue.";
           } else if (
@@ -253,20 +256,23 @@ export default defineComponent({
           } else {
             for (const stage of rollbackIssue.pipeline.stageList) {
               for (const task of stage.taskList) {
-                if (
-                  task.status == "DONE") {
-                  if (task.type == "bb.task.database.schema.update" &&
+                if (task.status == "DONE") {
+                  if (
+                    task.type == "bb.task.database.schema.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseSchemaUpdatePayload)
                         .rollbackStatement
-                    )) {
+                    )
+                  ) {
                     validState = true;
                     break;
-                  } else if (task.type == "bb.task.database.data.update" &&
+                  } else if (
+                    task.type == "bb.task.database.data.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseDataUpdatePayload)
                         .rollbackStatement
-                    )) {
+                    )
+                  ) {
                     validState = true;
                     break;
                   }
@@ -299,21 +305,25 @@ export default defineComponent({
             const stage = rollbackIssue.pipeline.stageList[i];
             for (let j = stage.taskList.length - 1; j >= 0; j--) {
               const task = stage.taskList[j];
-              let allowRollback = false
+              let allowRollback = false;
 
               if (task.status == "DONE") {
-                if (task.type == "bb.task.database.schema.update" &&
+                if (
+                  task.type == "bb.task.database.schema.update" &&
                   !isEmpty(
                     (task.payload as TaskDatabaseSchemaUpdatePayload)
                       .rollbackStatement
-                  )) {
-                  allowRollback = true
-                } else if (task.type == "bb.task.database.data.update" &&
+                  )
+                ) {
+                  allowRollback = true;
+                } else if (
+                  task.type == "bb.task.database.data.update" &&
                   !isEmpty(
                     (task.payload as TaskDatabaseDataUpdatePayload)
                       .rollbackStatement
-                  )) {
-                  allowRollback = true
+                  )
+                ) {
+                  allowRollback = true;
                 }
               }
 
@@ -524,7 +534,7 @@ export default defineComponent({
       () => state.newIssue,
       async (issue) => {
         if (issue?.type === "bb.issue.database.schema.update") {
-          const project = await findProject()
+          const project = await findProject();
           if (
             project.tenantMode === "TENANT" &&
             !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
@@ -533,7 +543,7 @@ export default defineComponent({
           }
         }
       }
-    )
+    );
 
     const onStatusChanged = (eager: boolean) => {
       pollIssue(eager ? POST_CHANGE_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
