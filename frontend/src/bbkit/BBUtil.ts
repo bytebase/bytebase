@@ -6,3 +6,24 @@ export function hashCode(s: string): number {
   }
   return hash;
 }
+
+export function scrollIntoViewIfNeeded(elem: any, ...args: any[]) {
+  // this is not well-defined in typescript
+  if (typeof elem.scrollIntoViewIfNeeded === "function") {
+    elem.scrollIntoViewIfNeeded(...args);
+  } else if (typeof elem.scrollIntoView === "function") {
+    elem.scrollIntoView(...args);
+  }
+}
+
+export function isAncestorOf(
+  maybeAncestor: HTMLElement,
+  maybeDescendant: HTMLElement
+): boolean {
+  let element: HTMLElement | null = maybeDescendant;
+  while (element) {
+    if (element === maybeAncestor) return true;
+    element = element.parentElement;
+  }
+  return false;
+}
