@@ -108,7 +108,7 @@
         <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
           {{ migrationHistory.statement }}
         </div>
-        <template v-if="hasBaselineChange">
+        <template v-if="isBaselineChange">
           <a
             id="baseline-change"
             href="#baseline-change"
@@ -241,7 +241,9 @@ import {
 } from "../types";
 
 interface LocalState {
+  // showBaselineChange switches show diff between *lastRecordedSchema* and schema.
   showBaselineChange: boolean;
+  // showMigrationDiff switches show diff between *schemaPrev* and schema.
   showMigrationDiff: boolean;
 }
 
@@ -267,11 +269,12 @@ export default defineComponent({
       );
     });
 
-    const hasBaselineChange = computed(
+    const isBaselineChange = computed(
       (): boolean => migrationHistory.value.type === "BASELINE"
     );
 
-    // In baseline type, only show migration diff if there is unexpected schema change
+    // Baseline migration should NOT cause schema change,
+    // thus we only show migration diff if there is unexpected schema change.
     const hasMigrationDiff = computed(
       (): boolean =>
         migrationHistory.value.type !== "BASELINE" ||
@@ -341,7 +344,7 @@ export default defineComponent({
       nanosecondsToString,
       database,
       migrationHistory,
-      hasBaselineChange,
+      isBaselineChange,
       hasMigrationDiff,
       pushEvent,
       vcsBranch,
