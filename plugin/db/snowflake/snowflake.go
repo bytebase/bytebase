@@ -816,23 +816,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		issue_id,
 		payload
 		FROM bytebase.public.migration_history `
-	paramNames, params := []string{}, []interface{}{}
-	if v := find.ID; v != nil {
-		paramNames, params = append(paramNames, "id"), append(params, *v)
-	}
-	if v := find.Database; v != nil {
-		paramNames, params = append(paramNames, "namespace"), append(params, *v)
-	}
-	if v := find.Version; v != nil {
-		paramNames, params = append(paramNames, "version"), append(params, *v)
-	}
-	var query = baseQuery +
-		db.FormatParamNameInQuestionMark(paramNames) +
-		`ORDER BY created_ts DESC`
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, driver, find, baseQuery, db.FormatParamNameInQuestionMark)
 }
 
 // Dump and restore

@@ -332,12 +332,27 @@ type MigrationHistory struct {
 	Payload             string
 }
 
+// VersionFindOption is the option for version find.
+type VersionFindOption uint8
+
+const (
+	// Equal is the default option for version find.
+	Equal VersionFindOption = iota
+	GreaterThan
+	LessThan
+	NoGreaterThan
+	NoLessThan
+)
+
 // MigrationHistoryFind is the API message for finding migration historys.
 type MigrationHistoryFind struct {
 	ID *int
 
 	Database *string
-	Version  *string
+
+	Version           *string
+	VersionFindOption VersionFindOption
+
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit *int
 }
