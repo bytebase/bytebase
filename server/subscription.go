@@ -28,7 +28,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
 		s.subscription = s.loadSubscription()
@@ -85,5 +85,8 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
+	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FeatureMatrix[feature][api.FREE]
+	}
 	return api.FeatureMatrix[feature][s.subscription.Plan]
 }
