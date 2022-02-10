@@ -128,8 +128,10 @@ export type MigrationHistory = {
   description: string;
   statement: string;
   schema: string;
+  // schemaPrev is the schema dumped right before the migration.
   schemaPrev: string;
-  lastSchema: string;
+  // lastRecordedSchema is the schema attribute of the last migration history record.
+  lastRecordedSchema: string;
   executionDurationNs: number;
   issueId: number;
   payload?: MigrationHistoryPayload;

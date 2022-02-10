@@ -357,7 +357,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		entry := list[0]
 
-		var lastSchema string
+		var lastRecordedSchema string
 		// For baseline migration, find its prev migration history
 		if entry.Type == db.Baseline {
 			limit := 1
@@ -367,7 +367,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 			}
 			if len(list) > 0 {
-				lastSchema = list[0].Schema
+				lastRecordedSchema = list[0].Schema
 			}
 		}
 
@@ -388,7 +388,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Statement:           entry.Statement,
 			Schema:              entry.Schema,
 			SchemaPrev:          entry.SchemaPrev,
-			LastSchema:          lastSchema,
+			LastRecordedSchema:  lastRecordedSchema,
 			ExecutionDurationNs: entry.ExecutionDurationNs,
 			IssueID:             entry.IssueID,
 			Payload:             entry.Payload,
@@ -442,7 +442,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, entry := range list {
-			var lastSchema string
+			var lastRecordedSchema string
 			// For baseline migration, find its prev migration history
 			if entry.Type == db.Baseline {
 				limit := 1
@@ -452,7 +452,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 				}
 				if len(list) > 0 {
-					lastSchema = list[0].Schema
+					lastRecordedSchema = list[0].Schema
 				}
 			}
 
@@ -472,7 +472,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				Statement:           entry.Statement,
 				Schema:              entry.Schema,
 				SchemaPrev:          entry.SchemaPrev,
-				LastSchema:          lastSchema,
+				LastRecordedSchema:  lastRecordedSchema,
 				ExecutionDurationNs: entry.ExecutionDurationNs,
 				IssueID:             entry.IssueID,
 				Payload:             entry.Payload,

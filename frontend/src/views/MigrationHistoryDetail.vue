@@ -125,7 +125,9 @@
           </a>
           <div class="flex flex-row items-center space-x-2 mt-2">
             <BBSwitch
-              v-if="migrationHistory.lastSchema != migrationHistory.schema"
+              v-if="
+                migrationHistory.lastRecordedSchema != migrationHistory.schema
+              "
               :label="$t('migration-history.show-diff')"
               :value="state.showBaselineChange"
               @toggle="
@@ -142,7 +144,9 @@
               }}
             </div>
             <div
-              v-if="migrationHistory.lastSchema == migrationHistory.schema"
+              v-if="
+                migrationHistory.lastRecordedSchema == migrationHistory.schema
+              "
               class="text-sm font-normal text-accent"
             >
               ({{ $t("migration-history.no-schema-change") }})
@@ -151,7 +155,7 @@
           <code-diff
             v-if="state.showBaselineChange"
             class="mt-4 w-full"
-            :old-string="migrationHistory.lastSchema"
+            :old-string="migrationHistory.lastRecordedSchema"
             :new-string="migrationHistory.schema"
             output-format="side-by-side"
           />
@@ -276,7 +280,8 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showBaselineChange:
-        migrationHistory.value.lastSchema != migrationHistory.value.schema,
+        migrationHistory.value.lastRecordedSchema !=
+        migrationHistory.value.schema,
       showMigrationDiff:
         migrationHistory.value.schema != migrationHistory.value.schemaPrev,
     });

@@ -135,18 +135,20 @@ type MigrationHistory struct {
 	UpdatedTs int64  `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	ReleaseVersion      string             `jsonapi:"attr,releaseVersion"`
-	Database            string             `jsonapi:"attr,database"`
-	Engine              db.MigrationEngine `jsonapi:"attr,engine"`
-	Type                db.MigrationType   `jsonapi:"attr,type"`
-	Status              db.MigrationStatus `jsonapi:"attr,status"`
-	Version             string             `jsonapi:"attr,version"`
-	Description         string             `jsonapi:"attr,description"`
-	Statement           string             `jsonapi:"attr,statement"`
-	Schema              string             `jsonapi:"attr,schema"`
-	SchemaPrev          string             `jsonapi:"attr,schemaPrev"`
-	LastSchema          string             `jsonapi:"attr,lastSchema"`
-	ExecutionDurationNs int64              `jsonapi:"attr,executionDurationNs"`
+	ReleaseVersion string             `jsonapi:"attr,releaseVersion"`
+	Database       string             `jsonapi:"attr,database"`
+	Engine         db.MigrationEngine `jsonapi:"attr,engine"`
+	Type           db.MigrationType   `jsonapi:"attr,type"`
+	Status         db.MigrationStatus `jsonapi:"attr,status"`
+	Version        string             `jsonapi:"attr,version"`
+	Description    string             `jsonapi:"attr,description"`
+	Statement      string             `jsonapi:"attr,statement"`
+	Schema         string             `jsonapi:"attr,schema"`
+	// SchemaPrev is the schema dumped right before the migration.
+	SchemaPrev string `jsonapi:"attr,schemaPrev"`
+	// LastRecordedSchema is the schema attribute of the last migration history record.
+	LastRecordedSchema  string `jsonapi:"attr,lastRecordedSchema"`
+	ExecutionDurationNs int64  `jsonapi:"attr,executionDurationNs"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
 	IssueID string `jsonapi:"attr,issueId"`
 	Payload string `jsonapi:"attr,payload"`
