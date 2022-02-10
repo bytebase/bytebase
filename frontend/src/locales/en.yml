@@ -639,6 +639,8 @@ migration-history:
   show-diff: Show diff
   left-vs-right: Prev (left) vs This version (right)
   schema-snapshot-after-migration: The schema snapshot recorded after applying this migration
+  schema-snapshot-after-baseline: The schema snapshot recorded after establishing baseline
+  baseline-change: Baseline Change
   list-limit: >-
     For database having migration history, we list up to 5 most recent histories
     below. You can click the database name to view all histories.

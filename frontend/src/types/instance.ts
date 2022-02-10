@@ -129,6 +129,7 @@ export type MigrationHistory = {
   statement: string;
   schema: string;
   schemaPrev: string;
+  lastSchema: string;
   executionDurationNs: number;
   issueId: number;
   payload?: MigrationHistoryPayload;

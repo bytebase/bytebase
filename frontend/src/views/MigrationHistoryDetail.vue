@@ -108,59 +108,116 @@
         <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
           {{ migrationHistory.statement }}
         </div>
-        <a
-          id="schema"
-          href="#schema"
-          class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
-        >
-          Schema {{ $t("common.snapshot") }}
-          <button
-            tabindex="-1"
-            class="btn-icon ml-1"
-            @click.prevent="copySchema"
+        <template v-if="hasBaselineChange">
+          <a
+            id="baseline-change"
+            href="#baseline-change"
+            class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
           >
-            <heroicons-outline:clipboard class="w-6 h-6" />
-          </button>
-        </a>
-        <div class="flex flex-row items-center space-x-2 mt-2">
-          <BBSwitch
-            v-if="migrationHistory.schemaPrev != migrationHistory.schema"
-            :label="$t('migration-history.show-diff')"
-            :value="state.showDiff"
-            @toggle="
+            {{ $t("migration-history.baseline-change") }}
+            <button
+              tabindex="-1"
+              class="btn-icon ml-1"
+              @click.prevent="copySchema"
+            >
+              <heroicons-outline:clipboard class="w-6 h-6" />
+            </button>
+          </a>
+          <div class="flex flex-row items-center space-x-2 mt-2">
+            <BBSwitch
+              v-if="migrationHistory.lastSchema != migrationHistory.schema"
+              :label="$t('migration-history.show-diff')"
+              :value="state.showBaselineChange"
+              @toggle="
               (on: any) => {
-                state.showDiff = on;
+                state.showBaselineChange = on;
               }
             "
+            />
+            <div class="textinfolabel">
+              {{
+                state.showBaselineChange
+                  ? $t("migration-history.left-vs-right")
+                  : $t("migration-history.schema-snapshot-after-baseline")
+              }}
+            </div>
+            <div
+              v-if="migrationHistory.lastSchema == migrationHistory.schema"
+              class="text-sm font-normal text-accent"
+            >
+              ({{ $t("migration-history.no-schema-change") }})
+            </div>
+          </div>
+          <code-diff
+            v-if="state.showBaselineChange"
+            class="mt-4 w-full"
+            :old-string="migrationHistory.lastSchema"
+            :new-string="migrationHistory.schema"
+            output-format="side-by-side"
           />
-          <div class="textinfolabel">
-            {{
-              state.showDiff
-                ? $t("migration-history.left-vs-right")
-                : $t("migration-history.schema-snapshot-after-migration")
-            }}
-          </div>
           <div
-            v-if="migrationHistory.schemaPrev == migrationHistory.schema"
-            class="text-sm font-normal text-accent"
+            v-else
+            v-highlight
+            class="border mt-2 px-2 whitespace-pre-wrap w-full"
           >
-            ({{ $t("migration-history.no-schema-change") }})
+            {{ migrationHistory.schema }}
           </div>
-        </div>
-        <code-diff
-          v-if="state.showDiff"
-          class="mt-4 w-full"
-          :old-string="migrationHistory.schemaPrev"
-          :new-string="migrationHistory.schema"
-          output-format="side-by-side"
-        />
-        <div
-          v-else
-          v-highlight
-          class="border mt-2 px-2 whitespace-pre-wrap w-full"
-        >
-          {{ migrationHistory.schema }}
-        </div>
+        </template>
+        <template v-if="hasMigrationDiff">
+          <a
+            id="schema"
+            href="#schema"
+            class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
+          >
+            Schema {{ $t("common.snapshot") }}
+            <button
+              tabindex="-1"
+              class="btn-icon ml-1"
+              @click.prevent="copySchema"
+            >
+              <heroicons-outline:clipboard class="w-6 h-6" />
+            </button>
+          </a>
+          <div class="flex flex-row items-center space-x-2 mt-2">
+            <BBSwitch
+              v-if="migrationHistory.schemaPrev != migrationHistory.schema"
+              :label="$t('migration-history.show-diff')"
+              :value="state.showMigrationDiff"
+              @toggle="
+              (on: any) => {
+                state.showMigrationDiff = on;
+              }
+            "
+            />
+            <div class="textinfolabel">
+              {{
+                state.showMigrationDiff
+                  ? $t("migration-history.left-vs-right")
+                  : $t("migration-history.schema-snapshot-after-migration")
+              }}
+            </div>
+            <div
+              v-if="migrationHistory.schemaPrev == migrationHistory.schema"
+              class="text-sm font-normal text-accent"
+            >
+              ({{ $t("migration-history.no-schema-change") }})
+            </div>
+          </div>
+          <code-diff
+            v-if="state.showMigrationDiff"
+            class="mt-4 w-full"
+            :old-string="migrationHistory.schemaPrev"
+            :new-string="migrationHistory.schema"
+            output-format="side-by-side"
+          />
+          <div
+            v-else
+            v-highlight
+            class="border mt-2 px-2 whitespace-pre-wrap w-full"
+          >
+            {{ migrationHistory.schema }}
+          </div>
+        </template>
       </div>
     </main>
   </div>
@@ -180,7 +237,8 @@ import {
 } from "../types";
 
 interface LocalState {
-  showDiff: boolean;
+  showBaselineChange: boolean;
+  showMigrationDiff: boolean;
 }
 
 export default defineComponent({
@@ -205,8 +263,21 @@ export default defineComponent({
       );
     });
 
+    const hasBaselineChange = computed(
+      (): boolean => migrationHistory.value.type === "BASELINE"
+    );
+
+    // In baseline type, only show migration diff if there is unexpected schema change
+    const hasMigrationDiff = computed(
+      (): boolean =>
+        migrationHistory.value.type !== "BASELINE" ||
+        migrationHistory.value.schemaPrev != migrationHistory.value.schema
+    );
+
     const state = reactive<LocalState>({
-      showDiff:
+      showBaselineChange:
+        migrationHistory.value.lastSchema != migrationHistory.value.schema,
+      showMigrationDiff:
         migrationHistory.value.schema != migrationHistory.value.schemaPrev,
     });
 
@@ -265,6 +336,8 @@ export default defineComponent({
       nanosecondsToString,
       database,
       migrationHistory,
+      hasBaselineChange,
+      hasMigrationDiff,
       pushEvent,
       vcsBranch,
       vcsBranchUrl,

@@ -585,6 +585,8 @@ migration-history:
   show-diff: 显示差异
   left-vs-right: 之前 (左) vs 当前版本 (右)
   schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
+  schema-snapshot-after-baseline: 建立新的基线后的 schema 快照
+  baseline-change: 基线变更
   list-limit: 对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。
   no-history-in-project: 这个项目下没有发现任何数据库有迁移历史。
   recording-info: 每当数据库 schema 变更时，我们便会记录下迁移历史。
