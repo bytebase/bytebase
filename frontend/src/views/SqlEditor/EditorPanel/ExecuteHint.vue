@@ -50,7 +50,7 @@ import {
 import type {
   SqlEditorState,
   SqlEditorGetters,
-  EditorSelectorGetters,
+  TabGetters,
 } from "../../../types";
 import {
   parseSQL,
@@ -72,10 +72,7 @@ const { findProjectIdByDatabaseId } = useNamespacedGetters<SqlEditorGetters>(
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 const parsedStatement = computed(() => {
   const sqlStatement =

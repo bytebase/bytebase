@@ -5,8 +5,8 @@ export interface TabInfo {
   savedAt: string;
   queryStatement: string;
   selectedStatement: string;
+  sheetId?: number;
   queryResult?: Record<string, any>[];
-  currentQueryId?: number;
 }
 
 export type AnyTabInfo = Partial<TabInfo>;
