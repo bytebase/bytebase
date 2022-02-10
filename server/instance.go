@@ -357,6 +357,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		entry := list[0]
 
+		var lastSchema string
+		// For baseline migration, find its prev migration history
+		if entry.Type == db.Baseline {
+			limit := 1
+			find := &db.MigrationHistoryFind{Version: &entry.Version, VersionFindOption: db.LessThan, Limit: &limit}
+			list, err := driver.FindMigrationHistoryList(ctx, find)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			}
+			if len(list) > 0 {
+				lastSchema = list[0].Schema
+			}
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.MigrationHistory{
 			ID:                  entry.ID,
@@ -374,6 +388,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Statement:           entry.Statement,
 			Schema:              entry.Schema,
 			SchemaPrev:          entry.SchemaPrev,
+			LastSchema:          lastSchema,
 			ExecutionDurationNs: entry.ExecutionDurationNs,
 			IssueID:             entry.IssueID,
 			Payload:             entry.Payload,
@@ -427,6 +442,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, entry := range list {
+			var lastSchema string
+			// For baseline migration, find its prev migration history
+			if entry.Type == db.Baseline {
+				limit := 1
+				find := &db.MigrationHistoryFind{Version: &entry.Version, VersionFindOption: db.LessThan, Limit: &limit}
+				list, err := driver.FindMigrationHistoryList(ctx, find)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+				}
+				if len(list) > 0 {
+					lastSchema = list[0].Schema
+				}
+			}
+
 			historyList = append(historyList, &api.MigrationHistory{
 				ID:                  entry.ID,
 				Creator:             entry.Creator,
@@ -443,6 +472,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				Statement:           entry.Statement,
 				Schema:              entry.Schema,
 				SchemaPrev:          entry.SchemaPrev,
+				LastSchema:          lastSchema,
 				ExecutionDurationNs: entry.ExecutionDurationNs,
 				IssueID:             entry.IssueID,
 				Payload:             entry.Payload,

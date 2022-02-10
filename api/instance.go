@@ -145,6 +145,7 @@ type MigrationHistory struct {
 	Statement           string             `jsonapi:"attr,statement"`
 	Schema              string             `jsonapi:"attr,schema"`
 	SchemaPrev          string             `jsonapi:"attr,schemaPrev"`
+	LastSchema          string             `jsonapi:"attr,lastSchema"`
 	ExecutionDurationNs int64              `jsonapi:"attr,executionDurationNs"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
 	IssueID string `jsonapi:"attr,issueId"`
