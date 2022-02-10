@@ -84,9 +84,9 @@ func getTestPort(testName string) int {
 	switch testName {
 	case "TestServiceStart":
 		return 1234
-	case "TestSchemaUpdate":
+	case "TestSchemaAndDataUpdate":
 		return 1236
-	case "TestVCSSchemaUpdate":
+	case "TestVCSSchemaAndDataUpdate":
 		return 1238
 	case "TestTenant":
 		return 1240
@@ -459,6 +459,27 @@ func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Inst
 		return nil, fmt.Errorf("fail to unmarshal post instance response, error: %w", err)
 	}
 	return instance, nil
+}
+
+func (ctl *controller) getInstanceMigrationHistory(instanceID int) ([]*api.MigrationHistory, error) {
+	body, err := ctl.get(fmt.Sprintf("/instance/%v/migration/history", instanceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var histories []*api.MigrationHistory
+	hs, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.MigrationHistory)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get migration history response, error %w", err)
+	}
+	for _, h := range hs {
+		history, ok := h.(*api.MigrationHistory)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert migration history")
+		}
+		histories = append(histories, history)
+	}
+	return histories, nil
 }
 
 // createIssue creates an issue.

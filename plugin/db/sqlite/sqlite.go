@@ -491,7 +491,73 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
-	// TODO(spinningbot): implement it.
+	if database == "" {
+		return fmt.Errorf("SQLite can dump one database only at a time")
+	}
+	if !schemaOnly {
+		return fmt.Errorf("SQLite can dump schema only")
+	}
+
+	// Find all dumpable databases and make sure the existence of the database to be dumped.
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return fmt.Errorf("failed to get databases: %s", err)
+	}
+	exist := false
+	for _, n := range databases {
+		if n == database {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		return fmt.Errorf("database %s not found", database)
+	}
+
+	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+	if _, err := driver.GetDbConnection(ctx, database); err != nil {
+		return err
+	}
+
+	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	query := "SELECT sql FROM sqlite_schema;"
+	rows, err := txn.QueryContext(ctx, query)
+	if err != nil {
+		return util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(
+			&s,
+		); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s)); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
