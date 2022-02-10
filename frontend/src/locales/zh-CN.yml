@@ -1019,7 +1019,7 @@ subscription:
   update:
     success:
       title: 证书上传成功
-      description: 订阅版权限已解锁
+      description: 订阅版高级功能已解锁
     failure:
       title: 证书上传失败
       description: 请检查证书是否有效
