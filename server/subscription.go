@@ -39,20 +39,6 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
-	g.DELETE("/subscription", func(c echo.Context) error {
-		if err := s.LicenseService.StoreLicense(""); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete license").SetInternal(err)
-		}
-
-		s.subscription = s.loadSubscription()
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
-		}
-		return nil
-	})
 }
 
 // loadLicense will load current subscription by license.

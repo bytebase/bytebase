@@ -33,9 +33,10 @@ func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*LicenseServ
 
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(tokenString string) error {
-	_, err := s.parseLicense(tokenString)
-	if err != nil {
-		return err
+	if tokenString != "" {
+		if _, err := s.parseLicense(tokenString); err != nil {
+			return nil
+		}
 	}
 	return s.writeLicense(tokenString)
 }

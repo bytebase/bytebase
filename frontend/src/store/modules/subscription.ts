@@ -57,13 +57,6 @@ const actions = {
     commit("setSubscription", subscription);
     return subscription;
   },
-
-  async deleteSubscription({ commit }: any): Promise<Subscription | undefined> {
-    const data = (await axios.delete(`/api/subscription`)).data.data;
-    const subscription = data.attributes;
-    commit("setSubscription", subscription);
-    return subscription;
-  },
 };
 
 const mutations = {
