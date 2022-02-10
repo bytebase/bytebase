@@ -18,7 +18,7 @@
         </Splitpanes>
       </NTabPane>
       <NTabPane name="queries" :tab="$t('sql-editor.queries')">
-        <SavedQueryContainer />
+        <SheetContainer />
       </NTabPane>
       <NTabPane name="history" :tab="$t('common.history')">
         <QueryHistoryContainer />
@@ -34,7 +34,7 @@ import { useNamespacedState } from "vuex-composition-helpers";
 import type { SqlEditorState } from "../../../types";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import SavedQueryContainer from "./SavedQueryContainer.vue";
+import SheetContainer from "./SheetContainer.vue";
 import TableSchema from "./TableSchema.vue";
 
 const FULL_HEIGHT = 100;

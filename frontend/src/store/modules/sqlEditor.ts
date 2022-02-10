@@ -1,4 +1,3 @@
-import axios from "axios";
 import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 
@@ -11,33 +10,9 @@ import {
   DatabaseId,
   ProjectId,
   QueryHistory,
-  SavedQuery,
-  ResourceObject,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import { getPrincipalFromIncludedList } from "./principal";
-
-function convertSavedQuery(
-  savedQuery: ResourceObject,
-  includedList: ResourceObject[]
-): SavedQuery {
-  return {
-    ...(savedQuery.attributes as Omit<
-      SavedQuery,
-      "id" | "creator" | "updater"
-    >),
-    creator: getPrincipalFromIncludedList(
-      savedQuery.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      savedQuery.relationships!.updater.data,
-      includedList
-    ),
-    id: parseInt(savedQuery.id),
-  };
-}
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
@@ -59,8 +34,6 @@ const state: () => SqlEditorState = () => ({
   // Related data and status
   queryHistoryList: [],
   isFetchingQueryHistory: false,
-  savedQueryList: [],
-  isFetchingSavedQueries: false,
 });
 
 const getters = {
@@ -174,15 +147,6 @@ const mutations = {
   ) {
     state.isFetchingQueryHistory = payload;
   },
-  [types.SET_SAVED_QUERY_LIST](state: SqlEditorState, payload: SavedQuery[]) {
-    state.savedQueryList = payload;
-  },
-  [types.SET_IS_FETCHING_SAVED_QUERIES](
-    state: SqlEditorState,
-    payload: boolean
-  ) {
-    state.isFetchingSavedQueries = payload;
-  },
 };
 
 type SqlEditorActionsMap = {
@@ -193,8 +157,6 @@ type SqlEditorActionsMap = {
   setIsExecuting: typeof mutations.SET_IS_EXECUTING;
   setQueryHistoryList: typeof mutations.SET_QUERY_HISTORY_LIST;
   setIsFetchingQueryHistory: typeof mutations.SET_IS_FETCHING_QUERY_HISTORY;
-  setSavedQueryList: typeof mutations.SET_SAVED_QUERY_LIST;
-  setIsFetchingSavedQueries: typeof mutations.SET_IS_FETCHING_SAVED_QUERIES;
 };
 
 const actions = {
@@ -206,14 +168,12 @@ const actions = {
     setIsExecuting: types.SET_IS_EXECUTING,
     setQueryHistoryList: types.SET_QUERY_HISTORY_LIST,
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
-    setSavedQueryList: types.SET_SAVED_QUERY_LIST,
-    setIsFetchingSavedQueries: types.SET_IS_FETCHING_SAVED_QUERIES,
   }),
   async executeQuery(
     { dispatch, state, rootGetters }: any,
     payload: Partial<QueryInfo> = {}
   ) {
-    const currentTab = rootGetters["editorSelector/currentTab"];
+    const currentTab = rootGetters["tab/currentTab"];
     const res = await dispatch(
       "sql/query",
       {
@@ -226,7 +186,7 @@ const actions = {
     );
 
     dispatch(
-      "editorSelector/updateActiveTab",
+      "tab/updateActiveTab",
       {
         queryResult: res.data,
       },
@@ -302,90 +262,6 @@ const actions = {
       types.SET_QUERY_HISTORY_LIST,
       state.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
     );
-  },
-  async createSavedQuery(
-    { commit, state }: any,
-    { name, statement }: { name: string; statement: string }
-  ): Promise<SavedQuery> {
-    const data = (
-      await axios.post(`/api/savedquery`, {
-        data: {
-          type: "createSavedQuery",
-          attributes: {
-            name,
-            statement,
-          },
-        },
-      })
-    ).data;
-    const newSavedQuery = convertSavedQuery(data.data, data.included);
-
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      (state.savedQueryList as SavedQuery[])
-        .concat(newSavedQuery)
-        .sort((a, b) => b.createdTs - a.createdTs)
-    );
-
-    return newSavedQuery;
-  },
-  async fetchSavedQueryList({ commit }: any) {
-    commit(types.SET_IS_FETCHING_SAVED_QUERIES, true);
-    const data = (await axios.get(`/api/savedquery`)).data;
-    const savedQueryList: SavedQuery[] = data.data.map(
-      (savedQuery: ResourceObject) => {
-        return convertSavedQuery(savedQuery, data.included);
-      }
-    );
-
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      savedQueryList.sort((a, b) => b.createdTs - a.createdTs)
-    );
-    commit(types.SET_IS_FETCHING_SAVED_QUERIES, false);
-  },
-  async patchSavedQuery(
-    { dispatch }: any,
-    {
-      id,
-      name,
-      statement,
-    }: {
-      id: number;
-      name?: string;
-      statement?: string;
-    }
-  ) {
-    const attributes: any = {};
-    if (name) {
-      attributes.name = name;
-    }
-    if (statement) {
-      attributes.statement = statement;
-    }
-
-    await axios.patch(`/api/savedquery/${id}`, {
-      data: {
-        type: "patchSavedQuery",
-        attributes,
-      },
-    });
-    dispatch("fetchSavedQueryList");
-  },
-  async deleteSavedQuery({ commit, state }: any, id: number) {
-    await axios.delete(`/api/savedquery/${id}`);
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      state.savedQueryList.filter((t: SavedQuery) => t.id !== id)
-    );
-  },
-  async checkSavedQueryExistById({ state }: any, id: number) {
-    for (const savedQuery of state.savedQueryList) {
-      if (savedQuery.id === id) {
-        return true;
-      }
-    }
-    return false;
   },
 };
 

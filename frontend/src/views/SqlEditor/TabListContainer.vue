@@ -1,19 +1,19 @@
 <template>
-  <div class="tag-list-container">
+  <div class="tab-list-container">
     <!-- tab list-->
     <div
-      class="tag-list-wrapper relative overflow-hidden"
+      class="tab-list-wrapper relative overflow-hidden"
       :class="{ 'is-scrolling': scrollState.isScrolling }"
     >
       <div
         ref="tablistRef"
-        class="tag-list-tablist"
+        class="tab-list-tablist"
         @wheel="handleScollTabList"
       >
         <div
-          v-for="tab in queryTabList"
+          v-for="tab in tabList"
           :key="tab.id"
-          class="tag-list-tab"
+          class="tab-list-tab"
           :class="{ active: tab.id === activeTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
@@ -51,7 +51,7 @@
               {{ tab.label }}
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && queryTabList.length > 1">
+          <template v-if="enterTabId === tab.id && tabList.length > 0">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -65,9 +65,7 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template
-              v-else-if="tab.id === activeTabId && queryTabList.length > 1"
-            >
+            <template v-else-if="tab.id === activeTabId && tabList.length > 0">
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -83,7 +81,7 @@
       </div>
     </div>
 
-    <div class="tag-list-add">
+    <div class="tab-list-add">
       <button
         class="p-1 hover:bg-gray-200 rounded-md"
         @click="handleAddTab({})"
@@ -91,10 +89,10 @@
         <heroicons-solid:plus class="h-4 w-4" />
       </button>
     </div>
-    <div class="tag-list-more">
+    <div class="tab-list-more">
       <NPopselect
         v-model:value="selectedTab"
-        :options="tabList"
+        :options="localTabList"
         trigger="click"
         size="medium"
         scrollable
@@ -126,34 +124,34 @@ import {
 import {
   TabInfo,
   AnyTabInfo,
-  EditorSelectorGetters,
-  EditorSelectorState,
-  EditorSelectorActions,
-  SqlEditorActions,
+  TabGetters,
+  TabState,
+  TabActions,
+  SheetActions,
 } from "../../types";
-import { debounce } from "lodash-es";
+import { debounce, cloneDeep } from "lodash-es";
 
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+// getters map
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const { activeTabId, queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["activeTabId", "queryTabList"]
-);
+// state map
+const { activeTabId, tabList } = useNamespacedState<TabState>("tab", [
+  "activeTabId",
+  "tabList",
+]);
+
+// actions map
 const { addTab, removeTab, setActiveTabId, updateActiveTab } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
+  useNamespacedActions<TabActions>("tab", [
     "addTab",
     "removeTab",
     "setActiveTabId",
     "updateActiveTab",
   ]);
-const { patchSavedQuery, checkSavedQueryExistById } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "patchSavedQuery",
-    "checkSavedQueryExistById",
-  ]);
+const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
+  "sheet",
+  ["createSheet", "patchSheetById"]
+);
 
 const store = useStore();
 const { t } = useI18n();
@@ -169,8 +167,8 @@ const labelState = reactive({
 });
 const labelInputRef = ref<HTMLInputElement>();
 
-const tabList = computed(() => {
-  return queryTabList.value.map((tab: TabInfo) => {
+const localTabList = computed(() => {
+  return tabList.value.map((tab: TabInfo) => {
     return {
       label: tab.label,
       value: tab.id,
@@ -196,6 +194,15 @@ const reComputedScrollWidth = () => {
   scrollState.isScrolling = scrollingDistance.value > 0;
 };
 
+const updateSheetName = () => {
+  if (currentTab.value.sheetId) {
+    patchSheetById({
+      id: currentTab.value.sheetId,
+      name: labelState.currentLabelName,
+    });
+  }
+};
+
 // Edit label logic
 const handleEditLabel = (tab: TabInfo) => {
   labelState.isEditingLabel = true;
@@ -207,12 +214,9 @@ const handleTryChangeLabel = () => {
     updateActiveTab({
       label: labelState.currentLabelName,
     });
-    if (currentTab.value.currentQueryId) {
-      patchSavedQuery({
-        id: currentTab.value.currentQueryId,
-        name: labelState.currentLabelName,
-      });
-    }
+
+    updateSheetName();
+
     nextTick(() => {
       reComputedScrollWidth();
       scrollState.style = {
@@ -232,12 +236,9 @@ const handleCancelChangeLabel = () => {
   updateActiveTab({
     label: labelState.currentLabelName,
   });
-  if (currentTab.value.currentQueryId) {
-    patchSavedQuery({
-      id: currentTab.value.currentQueryId,
-      name: labelState.currentLabelName,
-    });
-  }
+
+  updateSheetName();
+
   nextTick(() => {
     labelState.isEditingLabel = false;
     reComputedScrollWidth();
@@ -246,23 +247,21 @@ const handleCancelChangeLabel = () => {
 
 const handleSelectTab = async (tab: TabInfo) => {
   setActiveTabId(tab.id);
-
-  if (currentTab.value.currentQueryId) {
-    const exist = await checkSavedQueryExistById(
-      currentTab.value.currentQueryId
-    );
-    if (!exist) {
-      updateActiveTab({
-        currentQueryId: undefined,
-      });
-    }
-  }
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   addTab(tab);
-  nextTick(() => {
-    const tab = currentTab.value;
+
+  nextTick(async () => {
+    const tab = cloneDeep(currentTab.value);
     handleEditLabel(tab);
+
+    // make a relation between the new sheet and the current tab
+    const newSheet = await createSheet();
+
+    updateActiveTab({
+      sheetId: newSheet.id,
+    });
+
     reComputedScrollWidth();
   });
 };
@@ -303,37 +302,37 @@ watch(
 </script>
 
 <style scoped>
-.tag-list-container {
+.tab-list-container {
   height: var(--tab-height);
   @apply flex box-border;
   @apply text-gray-500 text-sm;
   @apply border-b;
 }
 
-.tag-list-tablist {
+.tab-list-tablist {
   @apply flex overflow-auto;
   max-width: calc(100vw - 112px);
   scrollbar-width: none; /* firefox */
   -ms-overflow-style: none; /* IE 10+ */
 }
 
-.tag-list-wrapper.is-scrolling::before {
+.tab-list-wrapper.is-scrolling::before {
   @apply absolute top-0 left-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.tag-list-wrapper.is-scrolling::after {
+.tab-list-wrapper.is-scrolling::after {
   @apply absolute top-0 right-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset -10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.tag-list-tablist::-webkit-scrollbar {
+.tab-list-tablist::-webkit-scrollbar {
   display: none; /* Chrome Safari */
 }
 
-.tag-list-tab {
+.tab-list-tab {
   @apply inline-flex place-items-center;
   @apply cursor-pointer box-border;
   @apply px-2 border-r;
@@ -343,33 +342,33 @@ watch(
   transition: transform 0.3s, -webkit-transform 0.3s;
 }
 
-.tag-list-tab.active {
+.tab-list-tab.active {
   @apply cursor-text relative;
   @apply bg-white;
   @apply text-accent;
 }
 
-.tag-list-tab .label {
+.tab-list-tab .label {
   @apply p-2;
 }
-.tag-list-tab .suffix {
+.tab-list-tab .suffix {
   @apply flex justify-center items-center h-4 w-4;
 }
 
-.tag-list-tab .suffix.close {
+.tab-list-tab .suffix.close {
   @apply cursor-pointer;
   @apply text-gray-500;
 }
 
-.tag-list-move-prev,
-.tag-list-move-next,
-.tag-list-add {
+.tab-list-move-prev,
+.tab-list-move-next,
+.tab-list-add {
   @apply flex items-center;
   @apply cursor-pointer;
   @apply p-2;
 }
 
-.tag-list-more {
+.tab-list-more {
   @apply flex items-center justify-end flex-1;
   @apply cursor-pointer;
   @apply p-2;

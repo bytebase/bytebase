@@ -5,7 +5,7 @@
     <div class="w-full">
       <NInput
         v-model:value="state.search"
-        :placeholder="$t('sql-editor.search-saved-queries')"
+        :placeholder="$t('sql-editor.search-sheet')"
       >
         <template #prefix>
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
@@ -18,25 +18,25 @@
         :key="query.id"
         class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start"
         :class="`${
-          currentTab.currentQueryId === query.id
+          currentTab.sheetId === query.id
             ? 'bg-gray-100 rounded border-b-0'
             : ''
         }`"
-        @click="handleSavedQueryClick(query)"
+        @click="handleSheetClick(query)"
       >
         <div class="pb-1 w-full flex flex-row justify-between items-center">
           <div
             class="w-full mr-2"
-            @dblclick="handleEditSavedQuery(query.id, query.name)"
+            @dblclick="handleEditSheet(query.id, query.name)"
           >
             <input
-              v-if="state.editingSavedQueryId === query.id"
+              v-if="state.editingSheetId === query.id"
               ref="queryNameInputerRef"
-              v-model="state.currentSavedQueryName"
+              v-model="state.currentSheetName"
               type="text"
               class="rounded px-2 py-0 text-sm w-full"
-              @blur="handleSavedQueryNameChanged"
-              @keyup.enter="handleSavedQueryNameChanged"
+              @blur="handleSheetNameChanged"
+              @keyup.enter="handleSheetNameChanged"
               @keyup.esc="handleCancelEdit"
             />
             <span v-else class="text-sm" v-html="query.formatedName"></span>
@@ -72,7 +72,7 @@
     </div>
 
     <div
-      v-show="isLoading && savedQueryList.length === 0"
+      v-show="isLoading && sheetList.length === 0"
       class="absolute w-full h-full flex justify-center items-center"
     >
       <BBSpin :title="$t('common.loading')" />
@@ -85,9 +85,9 @@
     @close="handleHintClose"
   >
     <DeleteHint
-      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-saved-query')"
+      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-sheet')"
       @close="handleHintClose"
-      @confirm="handleDeleteSavedQuery"
+      @confirm="handleDeleteSheet"
     />
   </BBModal>
 </template>
@@ -102,12 +102,13 @@ import {
 } from "vuex-composition-helpers";
 
 import {
-  EditorSelectorActions,
-  EditorSelectorGetters,
-  EditorSelectorState,
-  SavedQuery,
+  TabActions,
+  TabGetters,
+  TabState,
+  SheetActions,
+  SheetState,
+  Sheet,
   SqlEditorActions,
-  SqlEditorState,
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
@@ -115,58 +116,54 @@ import DeleteHint from "./DeleteHint.vue";
 interface State {
   search: string;
   isShowDeletingHint: boolean;
-  currentSavedQueryName: string;
-  editingSavedQueryId: number | null;
-  currentActionSavedQuery: SavedQuery | null;
+  currentSheetName: string;
+  editingSheetId: number | null;
+  currentActionSheet: Sheet | null;
 }
 
 const { t } = useI18n();
 
-const { savedQueryList, isFetchingSavedQueries: isLoading } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "savedQueryList",
-    "isFetchingSavedQueries",
-  ]);
-const { queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["queryTabList"]
+const { sheetList, isFetchingSheet: isLoading } =
+  useNamespacedState<SheetState>("sheet", ["sheetList", "isFetchingSheet"]);
+const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+
+// actions
+const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setShouldSetContent"]
 );
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
-const { deleteSavedQuery, setShouldSetContent, patchSavedQuery } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "deleteSavedQuery",
-    "setShouldSetContent",
-    "patchSavedQuery",
-  ]);
-const { updateActiveTab, setActiveTabId } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
+const { updateActiveTab, setActiveTabId, addTab } =
+  useNamespacedActions<TabActions>("tab", [
     "updateActiveTab",
     "setActiveTabId",
+    "addTab",
   ]);
+const { deleteSheet, patchSheetById } = useNamespacedActions<SheetActions>(
+  "sheet",
+  ["deleteSheet", "patchSheetById"]
+);
 
 const state = reactive<State>({
   search: "",
-  currentSavedQueryName: "",
-  editingSavedQueryId: null,
+  currentSheetName: "",
+  editingSheetId: null,
   isShowDeletingHint: false,
-  currentActionSavedQuery: null,
+  currentActionSheet: null,
 });
 
 const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
   const tempData =
-    savedQueryList.value && savedQueryList.value.length > 0
-      ? savedQueryList.value.filter((savedQuery) => {
+    sheetList.value && sheetList.value.length > 0
+      ? sheetList.value.filter((sheet) => {
           let t = false;
 
-          if (savedQuery.name.includes(state.search)) {
+          if (sheet.name.includes(state.search)) {
             t = true;
           }
-          if (savedQuery.statement.includes(state.search)) {
+          if (sheet.statement.includes(state.search)) {
             t = true;
           }
 
@@ -174,15 +171,15 @@ const data = computed(() => {
         })
       : [];
 
-  return tempData.map((savedQuery) => {
+  return tempData.map((sheet) => {
     return {
-      ...savedQuery,
+      ...sheet,
       formatedName: state.search
-        ? getHighlightHTMLByKeyWords(savedQuery.name, state.search)
-        : savedQuery.name,
+        ? getHighlightHTMLByKeyWords(sheet.name, state.search)
+        : sheet.name,
       formatedStatement: state.search
-        ? getHighlightHTMLByKeyWords(savedQuery.statement, state.search)
-        : savedQuery.statement,
+        ? getHighlightHTMLByKeyWords(sheet.statement, state.search)
+        : sheet.statement,
     };
   });
 });
@@ -191,8 +188,8 @@ const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
   }
-  if (savedQueryList.value.length === null) {
-    return t("sql-editor.no-saved-query-found");
+  if (sheetList.value.length === null) {
+    return t("sql-editor.no-sheet-found");
   }
 
   return "";
@@ -205,37 +202,37 @@ const actionDropdownOptions = computed(() => [
   },
 ]);
 
-const handleEditSavedQuery = (id: number, name: string) => {
-  state.editingSavedQueryId = id;
-  state.currentSavedQueryName = name;
+const handleEditSheet = (id: number, name: string) => {
+  state.editingSheetId = id;
+  state.currentSheetName = name;
   nextTick(() => {
     queryNameInputerRef.value?.focus();
   });
 };
 
 const handleCancelEdit = () => {
-  state.editingSavedQueryId = null;
-  state.currentSavedQueryName = "";
+  state.editingSheetId = null;
+  state.currentSheetName = "";
 };
 
-const handleSavedQueryNameChanged = () => {
-  if (state.editingSavedQueryId) {
-    patchSavedQuery({
-      id: state.editingSavedQueryId,
-      name: state.currentSavedQueryName,
+const handleSheetNameChanged = () => {
+  if (state.editingSheetId) {
+    patchSheetById({
+      id: state.editingSheetId,
+      name: state.currentSheetName,
     });
 
-    if (currentTab.value.currentQueryId === state.editingSavedQueryId) {
+    if (currentTab.value.sheetId === state.editingSheetId) {
       updateActiveTab({
-        label: state.currentSavedQueryName,
+        label: state.currentSheetName,
       });
     }
     handleCancelEdit();
   }
 };
 
-const handleActionBtnClick = (key: string, savedQuery: SavedQuery) => {
-  state.currentActionSavedQuery = savedQuery;
+const handleActionBtnClick = (key: string, sheet: Sheet) => {
+  state.currentActionSheet = sheet;
 
   if (key === "delete") {
     state.isShowDeletingHint = true;
@@ -243,42 +240,44 @@ const handleActionBtnClick = (key: string, savedQuery: SavedQuery) => {
 };
 
 const handleActionBtnOutsideClick = () => {
-  state.currentActionSavedQuery = null;
+  state.currentActionSheet = null;
 };
 
 const handleHintClose = () => {
-  state.currentActionSavedQuery = null;
+  state.currentActionSheet = null;
   state.isShowDeletingHint = false;
 };
 
-const handleDeleteSavedQuery = () => {
-  if (state.currentActionSavedQuery) {
-    deleteSavedQuery(state.currentActionSavedQuery.id);
+const handleDeleteSheet = () => {
+  if (state.currentActionSheet) {
+    deleteSheet(state.currentActionSheet.id);
 
-    if (currentTab.value.currentQueryId === state.currentActionSavedQuery.id) {
+    if (currentTab.value.sheetId === state.currentActionSheet.id) {
       updateActiveTab({
-        currentQueryId: undefined,
+        sheetId: undefined,
       });
     }
   }
   state.isShowDeletingHint = false;
 };
 
-const handleSavedQueryClick = (savedQuery: SavedQuery) => {
-  if (currentTab.value.currentQueryId !== savedQuery.id) {
-    for (const tab of queryTabList.value) {
-      if (tab.currentQueryId === savedQuery.id) {
+const handleSheetClick = (sheet: Sheet) => {
+  if (currentTab.value.sheetId !== sheet.id) {
+    // open opened tab first
+    for (const tab of tabList.value) {
+      if (tab.sheetId === sheet.id) {
         setActiveTabId(tab.id);
         setShouldSetContent(true);
         return;
       }
     }
 
-    updateActiveTab({
-      label: savedQuery.name,
-      queryStatement: savedQuery.statement,
+    // otherwise, add new tab
+    addTab({
+      label: sheet.name,
+      queryStatement: sheet.statement,
       selectedStatement: "",
-      currentQueryId: savedQuery.id,
+      sheetId: sheet.id,
     });
     setShouldSetContent(true);
   }

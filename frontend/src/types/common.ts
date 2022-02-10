@@ -65,7 +65,7 @@ export type RouterSlug = {
   migrationHistorySlug?: string;
   vcsSlug?: string;
   connectionSlug?: string;
-  tabInfoSlug?: string;
+  sheetSlug?: string;
 };
 
 // Quick Action Type

@@ -29,3 +29,14 @@ export interface Sheet {
   statement: string;
   visibility: SheetVisibility;
 }
+
+export type CreateSheetState = Omit<
+  Sheet,
+  "id" | "creator" | "createdTs" | "updater" | "updatedTs"
+>;
+
+export type AccessOption = {
+  label: string;
+  desc: string;
+  value: SheetVisibility;
+};

@@ -6,7 +6,6 @@ import {
   Policy,
   PolicyType,
   QueryHistory,
-  SavedQuery,
   View,
   Sheet,
 } from ".";
@@ -27,6 +26,7 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
+  SheetId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -45,10 +45,10 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
-import { TabInfo } from "./editorSelector";
+import { TabInfo } from "./tab";
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
-import editorSelectorStore from "../store/modules/editorSelector";
+import tabStore from "../store/modules/tab";
 import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
@@ -198,8 +198,6 @@ export interface SqlEditorState {
   shouldSetContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
-  savedQueryList: SavedQuery[];
-  isFetchingSavedQueries: boolean;
   isExecuting: boolean;
   isShowExecutingHint: boolean;
 }
@@ -207,13 +205,13 @@ export type SqlEditorGetters = typeof sqlEditorStore.getters;
 export type SqlEditorActions = typeof sqlEditorStore.actions;
 export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
-export interface EditorSelectorState {
-  queryTabList: TabInfo[];
+export interface TabState {
+  tabList: TabInfo[];
   activeTabId: string;
 }
-export type EditorSelectorGetters = typeof editorSelectorStore.getters;
-export type EditorSelectorActions = typeof editorSelectorStore.actions;
-export type EditorSelectorMutations = typeof editorSelectorStore.mutations;
+export type TabGetters = typeof tabStore.getters;
+export type TabActions = typeof tabStore.actions;
+export type TabMutations = typeof tabStore.mutations;
 
 export interface DeploymentState {
   deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
@@ -221,6 +219,9 @@ export interface DeploymentState {
 
 export interface SheetState {
   sheetList: Sheet[];
+  sheetById: Map<SheetId, Sheet>;
+  sharedSheet?: Sheet | null;
+  isFetchingSheet: boolean;
 }
 export type SheetGetters = typeof sheetStore.getters;
 export type SheetActions = typeof sheetStore.actions;
