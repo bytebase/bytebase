@@ -1018,7 +1018,7 @@ subscription:
   buy: 购买{plan}
   update:
     success:
-      title: 证书上传成功
+      title: 证书更新成功
       description: 订阅版高级功能已解锁
     failure:
       title: 证书更新失败
