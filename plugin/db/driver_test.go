@@ -212,3 +212,49 @@ func TestParseMigrationInfo(t *testing.T) {
 
 	}
 }
+
+func TestFormatParamNameInQuestionMark(t *testing.T) {
+	tests := []struct {
+		paramName []string
+		want      string
+	}{
+		{
+			paramName: []string{"hello", "world"},
+			want:      "WHERE hello = ? AND world = ? ",
+		},
+		{
+			paramName: []string{"hello > ?", "world"},
+			want:      "WHERE hello > ? AND world = ? ",
+		},
+	}
+
+	for _, tc := range tests {
+		got := FormatParamNameInQuestionMark(tc.paramName)
+		if got != tc.want {
+			t.Errorf("paramName=%s: expected %s, got %s", tc.paramName, tc.want, got)
+		}
+	}
+}
+
+func TestFormatParamNameInNumberedPosition(t *testing.T) {
+	tests := []struct {
+		paramName []string
+		want      string
+	}{
+		{
+			paramName: []string{"hello", "world"},
+			want:      "WHERE hello = $1 AND world = $2 ",
+		},
+		{
+			paramName: []string{"hello > ?", "world"},
+			want:      "WHERE hello > $1 AND world = $2 ",
+		},
+	}
+
+	for _, tc := range tests {
+		got := FormatParamNameInNumberedPosition(tc.paramName)
+		if got != tc.want {
+			t.Errorf("paramName=%s: expected %s, got %s", tc.paramName, tc.want, got)
+		}
+	}
+}

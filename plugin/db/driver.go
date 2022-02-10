@@ -432,29 +432,38 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 }
 
 // FormatParamNameInQuestionMark formats the param name in question mark.
-// For example, it will be WHERE hello = ? AND world = ?.
+// For example:
+//  1. ["hello", "world"] will be "WHERE hello = ? AND world = ?".
+//  2. ["hello > ?", "world"] will be "WHERE hello > ? AND world = ?".
 func FormatParamNameInQuestionMark(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
+	parts := make([]string, len(paramNames))
 	for i, param := range paramNames {
+		parts[i] = param
 		if !strings.Contains(param, "?") {
-			paramNames[i] = param + " = ?"
+			parts[i] = param + " = ?"
 		}
 	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
+	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
 // FormatParamNameInNumberedPosition formats the param name in numbered positions.
+// For example:
+//  1. ["hello", "world"] will be "WHERE hello = $1 AND world = $2".
+//  2. ["hello > ?", "world"] will be "WHERE hello > $1 AND world = $2".
 func FormatParamNameInNumberedPosition(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
-	parts := make([]string, 0, len(paramNames))
+	parts := make([]string, len(paramNames))
 	for i, param := range paramNames {
 		idx := fmt.Sprintf("$%d", i+1)
-		param = param + "=" + idx
-		parts = append(parts, param)
+		parts[i] = param + " = " + idx
+		if strings.Contains(param, "?") {
+			parts[i] = strings.ReplaceAll(param, "?", idx)
+		}
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
