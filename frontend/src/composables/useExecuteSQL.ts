@@ -32,13 +32,12 @@ const useExecuteSQL = () => {
     }
 
     const currentTab = store.getters["tab/currentTab"];
+    const isDisconnected = store.getters["sqlEditor/isDisconnected"];
     const queryStatement = currentTab.queryStatement;
     const selectedStatement = currentTab.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
 
-    const ctx = store.state.sqlEditor.connectionContext;
-
-    if (ctx.instanceId === 0 || ctx.databaseId === 0) {
+    if (isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return;
     }

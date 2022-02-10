@@ -108,6 +108,12 @@ const getters = {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
+  isDisconnected(state: SqlEditorState) {
+    return (
+      state.connectionContext.instanceId === 0 ||
+      state.connectionContext.databaseId === 0
+    );
+  },
 };
 
 const mutations = {

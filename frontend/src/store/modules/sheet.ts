@@ -13,7 +13,6 @@ import type {
   TabInfo,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { isDBAOrOwner, isDeveloper } from "../../utils";
 
 function convertSheet(
   sheet: ResourceObject,
@@ -165,6 +164,8 @@ const actions = {
         .concat(newSheet)
         .sort((a, b) => b.createdTs - a.createdTs)
     );
+
+    commit(types.SET_SHEET_BY_ID, newSheet);
 
     return newSheet;
   },

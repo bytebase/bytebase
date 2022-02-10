@@ -26,17 +26,25 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleSaveQueryBtnClick"
+        @click="handleUpsertSheet"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
-      <NPopover trigger="click" :show-arrow="false" placement="bottom-end">
+      <NPopover
+        trigger="click"
+        :show-arrow="false"
+        placement="bottom-end"
+        :show="isShowSharePopover"
+      >
         <template #trigger>
-          <NButton :disabled="isEmptyStatement || !isSelectedConnection">
+          <NButton
+            :disabled="isEmptyStatement || !isSelectedConnection"
+            @click="isShowSharePopover = !isShowSharePopover"
+          >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
-        <SharePopover />
+        <SharePopover @close="isShowSharePopover = false" />
       </NPopover>
     </div>
   </div>
@@ -45,7 +53,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { CascaderOption } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -54,10 +62,12 @@ import {
 
 import {
   SqlEditorState,
+  SqlEditorGetters,
   SqlEditorActions,
   ConnectionContext,
-  EditorSelectorGetters,
-  EditorSelectorActions,
+  TabGetters,
+  SheetActions,
+  TabActions,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
@@ -67,32 +77,31 @@ const { connectionTree, connectionContext } =
     "connectionTree",
     "connectionContext",
   ]);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
-const {
-  createSavedQuery,
-  setConnectionContext,
-  patchSavedQuery,
-  checkSavedQueryExistById,
-} = useNamespacedActions<SqlEditorActions>("sqlEditor", [
-  "createSavedQuery",
-  "setConnectionContext",
-  "patchSavedQuery",
-  "checkSavedQueryExistById",
+const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+  "isDisconnected",
 ]);
-const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
-  "editorSelector",
-  ["updateActiveTab"]
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+
+// actions
+const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setConnectionContext"]
 );
 
-const isEmptyStatement = computed(
-  () => !currentTab.value || currentTab.value.queryStatement === ""
-);
+const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
+  "upsertSheet",
+]);
+
+const { updateActiveTab } = useNamespacedActions<TabActions>("tab", [
+  "updateActiveTab",
+]);
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
+const isShowSharePopover = ref(false);
+const isEmptyStatement = computed(
+  () => !currentTab.value || currentTab.value.queryStatement === ""
+);
 const isSelectedConnection = computed(
   () =>
     connectionContext.value.instanceId !== 0 &&
@@ -105,17 +114,26 @@ const handleRunQuery = () => {
   execute();
 };
 
+const setSelectedConnection = (ctx: ConnectionContext) => {
+  if (ctx) {
+    selectedConnection.value = ctx.hasSlug
+      ? ctx.tableId || ctx.databaseId || ctx.instanceId
+      : null;
+  }
+};
+
 watch(
   () => connectionTree.value,
   (newVal) => {
     if (newVal) {
-      const ctx = connectionContext.value;
-      selectedConnection.value = ctx.hasSlug
-        ? ctx.tableId || ctx.databaseId || ctx.instanceId
-        : null;
+      setSelectedConnection(connectionContext.value);
     }
   }
 );
+
+onMounted(() => {
+  setSelectedConnection(connectionContext.value);
+});
 
 const handleConnectionChange = (
   value: number,
@@ -152,30 +170,28 @@ const handleConnectionChange = (
   }
 };
 
-const handleSaveQueryBtnClick = async () => {
-  const { queryStatement, label, currentQueryId } = currentTab.value;
-  const isQueryExist = await checkSavedQueryExistById(currentQueryId || -1);
-
-  if (isQueryExist && currentQueryId) {
-    patchSavedQuery({
-      id: currentQueryId,
-      name: label,
-      statement: queryStatement,
-    });
-  } else {
-    const newSavedQuery = await createSavedQuery({
-      name: label,
-      statement: queryStatement,
-    });
-    updateActiveTab({
-      currentQueryId: newSavedQuery.id,
-    });
-  }
-
-  updateActiveTab({
-    isSaved: true,
+const handleUpsertSheet = async () => {
+  const { label, queryStatement, sheetId } = currentTab.value;
+  return upsertSheet({
+    id: sheetId,
+    name: label,
+    statement: queryStatement,
   });
 };
+
+// selected a new connection
+watch(
+  () => isDisconnected.value,
+  async (newVal) => {
+    if (!newVal) {
+      const newSheet = await handleUpsertSheet();
+      updateActiveTab({
+        sheetId: newSheet.id,
+        isSaved: true,
+      });
+    }
+  }
+);
 </script>
 
 <style scoped>

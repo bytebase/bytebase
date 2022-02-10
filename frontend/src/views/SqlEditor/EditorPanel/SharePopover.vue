@@ -1,14 +1,67 @@
 <template>
   <div class="share-popover w-112 p-2 space-y-4">
-    <h1 class="text-lg font-semibold">{{ $t("common.share") }}</h1>
-    <NAlert type="info">
-      {{ $t("sql-editor.share-a-link") }}
-    </NAlert>
+    <section class="flex justify-between">
+      <div class="pr-4">
+        <h2 class="text-lg font-semibold">{{ $t("common.share") }}</h2>
+      </div>
+      <NPopover trigger="click" :show="isShowAccessPopover">
+        <template #trigger>
+          <div
+            class="flex items-center cursor-pointer"
+            @click="isShowAccessPopover = !isShowAccessPopover"
+          >
+            <span class="pr-2">Link access:</span>
+            <strong>{{ currentAccess.label }}</strong>
+            <heroicons-solid:chevron-down />
+          </div>
+        </template>
+        <div class="access-content space-y-2 w-80">
+          <div
+            v-for="(option, idx) in accessOptions"
+            :key="option.label"
+            class="p-2 rounded-sm flex justify-between"
+            :class="[
+              creatorAccessStyle,
+              {
+                'bg-accent text-white': option.value === currentAccess.value,
+              },
+            ]"
+            @click="handleChangeAccess(option)"
+          >
+            <div class="access-content--prefix flex">
+              <div v-if="idx === 0" class="mt-1">
+                <heroicons-outline:user class="h-5 w-5" />
+              </div>
+              <div v-if="idx === 1" class="mt-1">
+                <heroicons-outline:user-group class="h-5 w-5" />
+              </div>
+              <div v-if="idx === 2" class="mt-1">
+                <heroicons-outline:globe class="h-5 w-5" />
+              </div>
+              <section class="flex flex-col pl-2">
+                <h2 class="text-md flex">
+                  {{ option.label }}
+                </h2>
+                <h3 class="text-xs" :class="creatorAccessDescStyle">
+                  {{ option.desc }}
+                </h3>
+              </section>
+            </div>
+            <div
+              v-show="option.value === currentAccess.value"
+              class="access-content--suffix flex items-center"
+            >
+              <heroicons-solid:check class="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+      </NPopover>
+    </section>
     <NInputGroup class="flex items-center justify-center">
       <n-input-group-label class="flex items-center">
         <heroicons-solid:link class="h-4 w-4" />
       </n-input-group-label>
-      <n-input v-model:value="sharedTabLink" />
+      <n-input v-model:value="sharedTabLink" disabled />
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
@@ -22,27 +75,58 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRaw } from "vue";
+import { ref, computed, onMounted, defineEmits } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useStore } from "vuex";
 import {
   useNamespacedGetters,
   useNamespacedState,
+  useNamespacedActions,
 } from "vuex-composition-helpers";
 import { useI18n } from "vue-i18n";
 import slug from "slug";
-import { omit } from "lodash-es";
 
-import { EditorSelectorGetters, SqlEditorState } from "../../../types";
-import { utoa } from "../../../utils";
+import {
+  TabGetters,
+  SqlEditorState,
+  SheetGetters,
+  SheetActions,
+  AccessOption,
+} from "../../../types";
+
+const emit = defineEmits<{
+  (e: "close"): void;
+}>();
+
+const accessOptions: AccessOption[] = [
+  {
+    label: "Private",
+    value: "PRIVATE",
+    desc: "Only you can access this sheet",
+  },
+  {
+    label: "Project",
+    value: "PROJECT",
+    desc: "Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read",
+  },
+  {
+    label: "Public",
+    value: "PUBLIC",
+    desc: "Sheet OWNER can read/write, and all others can read.",
+  },
+];
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const { currentSheet, isCreator } = useNamespacedGetters<SheetGetters>(
+  "sheet",
+  ["currentSheet", "isCreator"]
 );
+const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
+  "patchSheetById",
+]);
 
 const ctx = connectionContext.value;
 
@@ -54,12 +138,38 @@ const connectionSlug = [
   ctx.databaseId,
 ].join("_");
 
-const tabInfoSlug = utoa(
-  JSON.stringify(omit(toRaw(currentTab.value), "queryResult"))
-);
-const sharedTabLink = ref(
-  `${host}/sql-editor/${connectionSlug}/${tabInfoSlug}`
-);
+const currentAccess = ref<AccessOption>(accessOptions[0]);
+const isShowAccessPopover = ref(false);
+
+const creatorAccessStyle = computed(() => {
+  return isCreator.value
+    ? "cursor-pointer hover:bg-accent hover:text-white"
+    : "bg-transparent text-gray-300 cursor-not-allowed";
+});
+const creatorAccessDescStyle = computed(() => {
+  return isCreator.value ? "text-gray-400" : "text-gray-300 cursor-not-allowed";
+});
+
+const updateSheet = () => {
+  if (currentTab.value.sheetId) {
+    patchSheetById({
+      id: currentTab.value.sheetId,
+      visibility: currentAccess.value.value,
+    });
+  }
+};
+
+const handleChangeAccess = (option: AccessOption) => {
+  // only creator can change access
+  if (isCreator.value) {
+    currentAccess.value = option;
+    updateSheet();
+  }
+  isShowAccessPopover.value = false;
+};
+
+const sheetSlug = `${slug(currentTab.value.label)}_${currentTab.value.sheetId}`;
+const sharedTabLink = ref(`${host}/sql-editor/${connectionSlug}/${sheetSlug}`);
 
 const store = useStore();
 const { t } = useI18n();
@@ -74,5 +184,14 @@ const handleCopy = async () => {
     style: "SUCCESS",
     title: t("sql-editor.copy-share-link"),
   });
+  emit("close");
 };
+
+onMounted(() => {
+  if (currentSheet.value) {
+    const { visibility } = currentSheet.value;
+    const idx = accessOptions.findIndex((item) => item.value === visibility);
+    currentAccess.value = idx !== -1 ? accessOptions[idx] : accessOptions[0];
+  }
+});
 </script>

@@ -4,7 +4,7 @@ import { TabInfo, AnyTabInfo, TabState } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
-const getDefaultTab = () => {
+export const getDefaultTab = () => {
   return {
     id: uuidv1(),
     label: "Untitled Queries",

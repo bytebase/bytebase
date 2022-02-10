@@ -51,7 +51,7 @@
               {{ tab.label }}
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && tabList.length > 0">
+          <template v-if="enterTabId === tab.id && tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -65,7 +65,7 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template v-else-if="tab.id === activeTabId && tabList.length > 0">
+            <template v-else-if="tab.id === activeTabId && tabList.length > 1">
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -112,7 +112,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive, nextTick, computed } from "vue";
+import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
 import {
@@ -124,15 +124,23 @@ import {
 import {
   TabInfo,
   AnyTabInfo,
+  SqlEditorGetters,
   TabGetters,
   TabState,
   TabActions,
   SheetActions,
 } from "../../types";
 import { debounce, cloneDeep } from "lodash-es";
+import { getDefaultTab } from "../../store/modules/tab";
 
 // getters map
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
+  "currentTab",
+  "hasTabs",
+]);
+const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+  "isDisconnected",
+]);
 
 // state map
 const { activeTabId, tabList } = useNamespacedState<TabState>("tab", [
@@ -299,6 +307,22 @@ watch(
     }
   }
 );
+
+onMounted(async () => {
+  if (!hasTabs.value) {
+    addTab(getDefaultTab());
+    if (!isDisconnected.value) {
+      // make a relation between the new sheet and the current tab
+      const newSheet = await createSheet();
+
+      updateActiveTab({
+        sheetId: newSheet.id,
+      });
+
+      reComputedScrollWidth();
+    }
+  }
+});
 </script>
 
 <style scoped>
