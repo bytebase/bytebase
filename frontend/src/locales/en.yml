@@ -1192,7 +1192,7 @@ subscription:
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
   feature-sections:
     database-management:
-      title: Database Management
+      title: Database Development
       features:
         instance-count: Instance count
         instance-upto-5: Up to 5
@@ -1234,10 +1234,13 @@ subscription:
     title: Plan
     free:
       title: Free
+      label: ''
       desc: Personal project or small team, no DBA
     team:
       title: Team
+      label: Beta
       desc: Medium size team, has dedicated DBA or TL for engineering velocity
     enterprise:
       title: Enterprise
+      label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
