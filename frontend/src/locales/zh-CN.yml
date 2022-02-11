@@ -989,6 +989,7 @@ sql-editor:
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
+  connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
 label:
   empty-label-value: <空值>
   no-label: 没有标签

@@ -3,7 +3,7 @@
     <heroicons-outline:lightning-bolt class="mr-1" />
     <div>
       <p>
-        Select a connection or Select a sheet from left panel to get started
+        {{ $t("sql-editor.connection-holder") }}
       </p>
     </div>
   </div>

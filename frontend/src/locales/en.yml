@@ -1122,6 +1122,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read.
+  connection-holder: Select a connection or Select a sheet from left panel to get started
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
