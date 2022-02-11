@@ -143,10 +143,12 @@ type MigrationHistory struct {
 	Version        string             `jsonapi:"attr,version"`
 	Description    string             `jsonapi:"attr,description"`
 	Statement      string             `jsonapi:"attr,statement"`
-	Schema         string             `jsonapi:"attr,schema"`
+	// Schema is the schema dumped after the migration.
+	Schema string `jsonapi:"attr,schema"`
 	// SchemaPrev is the schema dumped right before the migration.
 	SchemaPrev string `jsonapi:"attr,schemaPrev"`
-	// LastRecordedSchema is the schema attribute of the last migration history record.
+	// LastRecordedSchema is the schema dumped after the last migration.
+	// Empty if there is no previous record.
 	LastRecordedSchema  string `jsonapi:"attr,lastRecordedSchema"`
 	ExecutionDurationNs int64  `jsonapi:"attr,executionDurationNs"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future

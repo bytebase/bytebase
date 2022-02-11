@@ -127,10 +127,11 @@ export type MigrationHistory = {
   version: string;
   description: string;
   statement: string;
+  // schema is the schema dumped after the migration.
   schema: string;
   // schemaPrev is the schema dumped right before the migration.
   schemaPrev: string;
-  // lastRecordedSchema is the schema attribute of the last migration history record.
+  // lastRecordedSchema is the schema dumped after the last migration, empty if there is no previous record.
   lastRecordedSchema: string;
   executionDurationNs: number;
   issueId: number;
