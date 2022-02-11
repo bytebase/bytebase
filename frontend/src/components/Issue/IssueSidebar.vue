@@ -179,18 +179,15 @@
         {{ environmentName(environment) }}
       </router-link>
 
-      <template v-if="isTenantProject && database">
-        <h2 class="textlabel flex items-start col-span-1 col-start-1">
-          {{ $t("common.labels") }}
+      <template v-for="label in visibleLabelList" :key="label.key">
+        <h2
+          class="textlabel flex items-start col-span-1 col-start-1 capitalize"
+        >
+          {{ hidePrefix(label.key) }}
         </h2>
-        <div class="col-span-2">
-          <div>
-            <DatabaseLabels
-              :editable="false"
-              :label-list="database.labels"
-              class="flex-col items-start"
-            />
-          </div>
+
+        <div class="col-span-2 text-sm font-medium text-main capitalize">
+          {{ label.value }}
         </div>
       </template>
     </div>
@@ -258,7 +255,14 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive, watch } from "vue";
+import {
+  computed,
+  defineComponent,
+  PropType,
+  reactive,
+  watch,
+  watchEffect,
+} from "vue";
 import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
@@ -269,7 +273,6 @@ import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
-import { DatabaseLabels } from "../DatabaseLabels";
 import FeatureModal from "../FeatureModal.vue";
 
 import { InputField } from "../../plugins";
@@ -287,8 +290,16 @@ import {
   Instance,
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
+  DatabaseLabel,
+  Label,
 } from "../../types";
-import { allTaskList, databaseSlug, isDBAOrOwner } from "../../utils";
+import {
+  allTaskList,
+  databaseSlug,
+  isDBAOrOwner,
+  isReservedDatabaseLabel,
+  hidePrefix,
+} from "../../utils";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -308,7 +319,6 @@ export default defineComponent({
     MemberSelect,
     StageSelect,
     TaskSelect,
-    DatabaseLabels,
     IssueStatusIcon,
     IssueSubscriberPanel,
     InstanceEngineIcon,
@@ -424,6 +434,28 @@ export default defineComponent({
 
     const isTenantProject = computed((): boolean => {
       return project.value.tenantMode === "TENANT";
+    });
+
+    const prepareLabelList = () => {
+      if (!isTenantProject.value) return;
+      store.dispatch("label/fetchLabelList");
+    };
+
+    watchEffect(prepareLabelList);
+
+    const labelList = computed(
+      () => store.getters["label/labelList"]() as Label[]
+    );
+
+    const visibleLabelList = computed((): DatabaseLabel[] => {
+      // transform non-reserved labels to db properties
+      if (project.value.tenantMode !== "TENANT") return [];
+      if (!props.database) return [];
+      if (labelList.value.length === 0) return [];
+
+      return props.database.labels.filter(
+        (label) => !isReservedDatabaseLabel(label, labelList.value)
+      );
     });
 
     const showStageSelect = computed((): boolean => {
@@ -550,7 +582,8 @@ export default defineComponent({
       environment,
       databaseName,
       project,
-      isTenantProject,
+      hidePrefix,
+      visibleLabelList,
       showInstance,
       showStageSelect,
       showTaskSelect,
