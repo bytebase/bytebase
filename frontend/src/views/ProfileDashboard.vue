@@ -1,5 +1,8 @@
 <template>
-  <main class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last" tabindex="0">
+  <main
+    class="flex-1 relative z-0 overflow-auto focus:outline-none xl:order-last"
+    tabindex="0"
+  >
     <article>
       <!-- Profile header -->
       <div>
@@ -13,7 +16,9 @@
               <div class="mt-6 flex flex-row justify-stretch space-x-4">
                 <button v-if="false" type="button" class="btn-normal">
                   <!-- Heroicon name: solid/mail -->
-                  <heroicons-solid:mail class="-ml-1 mr-2 h-5 w-5 text-control-light" />
+                  <heroicons-solid:mail
+                    class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                  />
                   <span>Message</span>
                 </button>
                 <template v-if="allowEdit">
@@ -22,7 +27,9 @@
                       type="button"
                       class="btn-normal"
                       @click.prevent="cancelEdit"
-                    >{{ $t("common.cancel") }}</button>
+                    >
+                      {{ $t("common.cancel") }}
+                    </button>
                     <button
                       type="button"
                       class="btn-normal"
@@ -30,13 +37,22 @@
                       @click.prevent="saveEdit"
                     >
                       <!-- Heroicon name: solid/save -->
-                      <heroicons-solid:save class="-ml-1 mr-2 h-5 w-5 text-control-light" />
+                      <heroicons-solid:save
+                        class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                      />
                       <span>{{ $t("common.save") }}</span>
                     </button>
                   </template>
-                  <button v-else type="button" class="btn-normal" @click.prevent="editUser">
+                  <button
+                    v-else
+                    type="button"
+                    class="btn-normal"
+                    @click.prevent="editUser"
+                  >
                     <!-- Heroicon name: solid/pencil -->
-                    <heroicons-solid:pencil class="-ml-1 mr-2 h-5 w-5 text-control-light" />
+                    <heroicons-solid:pencil
+                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
+                    />
                     <span>{{ $t("common.edit") }}</span>
                   </button>
                 </template>
@@ -53,11 +69,13 @@
               name="name"
               type="text"
               class="textfield"
-              :value="state.editingPrincipal.name"
-              @input="updatePrincipal('name', $event.target.value)"
+              :value="state.editingPrincipal?.name"
+              @input="(e: any)=>updatePrincipal('name', e.target.value)"
             />
             <!-- pb-1.5 is to avoid flicking when entering/existing the editing state -->
-            <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">{{ principal.name }}</h1>
+            <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
+              {{ principal.name }}
+            </h1>
           </div>
         </div>
       </div>
@@ -69,29 +87,35 @@
       >
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">{{ $t("settings.profile.role") }}</dt>
+            <dt class="text-sm font-medium text-control-light">
+              {{ $t("settings.profile.role") }}
+            </dt>
             <dd class="mt-1 text-sm text-main">
               <router-link
                 :to="'/setting/member'"
                 class="normal-link capitalize"
-              >{{ $t(`common.role.${principal.role.toLowerCase()}`) }}</router-link>
-              <router-link
-                :to="'/setting/subscription'"
-                class="normal-link"
-              >{{ $t("settings.profile.subscription") }}</router-link>
+                >{{
+                  $t(`common.role.${principal.role.toLowerCase()}`)
+                }}</router-link
+              >
+              <router-link :to="'/setting/subscription'" class="normal-link">{{
+                $t("settings.profile.subscription")
+              }}</router-link>
             </dd>
           </div>
 
           <div class="sm:col-span-1">
-            <dt class="text-sm font-medium text-control-light">{{ $t("settings.profile.email") }}</dt>
+            <dt class="text-sm font-medium text-control-light">
+              {{ $t("settings.profile.email") }}
+            </dt>
             <dd class="mt-1 text-sm text-main">{{ principal.email }}</dd>
           </div>
 
           <template v-if="state.editing">
             <div class="sm:col-span-1">
-              <dt
-                class="text-sm font-medium text-control-light"
-              >{{ $t("settings.profile.password") }}</dt>
+              <dt class="text-sm font-medium text-control-light">
+                {{ $t("settings.profile.password") }}
+              </dt>
               <dd class="mt-1 text-sm text-main">
                 <input
                   id="password"
@@ -100,8 +124,8 @@
                   class="textfield mt-1 w-full"
                   autocomplete="off"
                   :placeholder="$t('common.sensitive-placeholder')"
-                  :value="state.editingPrincipal.password"
-                  @input="updatePrincipal('password', $event.target.value)"
+                  :value="state.editingPrincipal?.password"
+                  @input="(e: any) => updatePrincipal('password', e.target.value)"
                 />
               </dd>
             </div>
@@ -109,10 +133,9 @@
             <div class="sm:col-span-1">
               <dt class="text-sm font-medium text-control-light">
                 {{ $t("settings.profile.password-confirm") }}
-                <span
-                  v-if="passwordMismatch"
-                  class="text-error"
-                >{{ $t("settings.profile.password-mismatch") }}</span>
+                <span v-if="passwordMismatch" class="text-error">{{
+                  $t("settings.profile.password-mismatch")
+                }}</span>
               </dt>
               <dd class="mt-1 text-sm text-main">
                 <input
@@ -121,9 +144,11 @@
                   type="text"
                   class="textfield mt-1 w-full"
                   autocomplete="off"
-                  :placeholder="$t('settings.profile.password-confirm-placeholder')"
+                  :placeholder="
+                    $t('settings.profile.password-confirm-placeholder')
+                  "
                   :value="state.passwordConfirm"
-                  @input="state.passwordConfirm = $event.target.value"
+                  @input="(e: any) => state.passwordConfirm = e.target.value"
                 />
               </dd>
             </div>
@@ -135,7 +160,15 @@
 </template>
 
 <script lang="ts">
-import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import {
+  nextTick,
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
@@ -150,12 +183,13 @@ interface LocalState {
   passwordConfirm?: string;
 }
 
-export default {
+export default defineComponent({
   name: "ProfileDashboard",
   components: { PrincipalAvatar },
   props: {
     principalId: {
       type: String,
+      default: undefined,
     },
   },
   setup(props) {
@@ -191,7 +225,7 @@ export default {
       (): Principal => store.getters["auth/currentUser"]()
     );
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -262,7 +296,7 @@ export default {
     return {
       editNameTextField,
       state,
-      hasAdminFeature,
+      hasRBACFeature,
       principal,
       allowEdit,
       allowSaveEdit,
@@ -273,5 +307,5 @@ export default {
       saveEdit,
     };
   },
-};
+});
 </script>

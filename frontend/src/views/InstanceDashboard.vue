@@ -1,5 +1,11 @@
 <template>
   <div class="flex flex-col">
+    <FeatureAttention
+      v-if="remainingInstanceCount <= 3"
+      custom-class="m-5"
+      feature="bb.feature.instance-count"
+      :description="instanceCountAttention"
+    />
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
@@ -38,9 +44,10 @@ import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
-import { Environment, Instance } from "../types";
+import { Environment, Subscription, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;
@@ -59,6 +66,7 @@ export default {
 
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"](["NORMAL"]);
@@ -141,6 +149,41 @@ export default {
       });
     };
 
+    const instanceQuota = computed((): number => {
+      const subscription: Subscription | undefined =
+        store.getters["subscription/subscription"]();
+      return subscription?.instanceCount ?? 5;
+    });
+
+    const remainingInstanceCount = computed((): number => {
+      const instanceList: Instance[] = store.getters["instance/instanceList"]([
+        "NORMAL",
+      ]);
+      return Math.max(0, instanceQuota.value - instanceList.length);
+    });
+
+    const instanceCountAttention = computed((): string => {
+      const upgrade = t(
+        "subscription.features.bb-feature-instance-count.upgrade"
+      );
+      let status = "";
+      if (remainingInstanceCount.value > 0) {
+        status = t(
+          "subscription.features.bb-feature-instance-count.remaining",
+          {
+            total: instanceQuota.value,
+            count: remainingInstanceCount.value,
+          }
+        );
+      } else {
+        status = t("subscription.features.bb-feature-instance-count.runoutof", {
+          total: instanceQuota.value,
+        });
+      }
+
+      return `${status} ${upgrade}`;
+    });
+
     return {
       searchField,
       state,
@@ -149,6 +192,8 @@ export default {
       selectEnvironment,
       changeSearchText,
       doDismissGuide,
+      remainingInstanceCount,
+      instanceCountAttention,
     };
   },
 };

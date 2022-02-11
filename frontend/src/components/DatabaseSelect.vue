@@ -11,14 +11,14 @@
   >
     <option disabled :selected="UNKNOWN_ID === state.selectedId">
       <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
-        {{ $t('db.select-instance-first') }}
+        {{ $t("db.select-instance-first") }}
       </template>
       <template
         v-else-if="mode == 'ENVIRONMENT' && environmentId == UNKNOWN_ID"
       >
-        {{ $t('db.select-environment-first') }}
+        {{ $t("db.select-environment-first") }}
       </template>
-      <template v-else> {{ $t('db.select') }} </template>
+      <template v-else> {{ $t("db.select") }} </template>
     </option>
     <option
       v-for="(database, index) in databaseList"

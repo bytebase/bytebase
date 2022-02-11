@@ -12,6 +12,11 @@
     @restore="doRestore"
     @update-policy="updatePolicy"
   />
+  <FeatureModal
+    v-if="state.missingRequiredFeature != undefined"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = undefined"
+  />
 </template>
 
 <script lang="ts">
@@ -25,6 +30,9 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
+  FeatureType,
+  DefaultApporvalPolicy,
+  DefaultSchedulePolicy,
 } from "../types";
 import { idFromSlug } from "../utils";
 
@@ -33,6 +41,9 @@ interface LocalState {
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
   backupPolicy?: Policy;
+  missingRequiredFeature?:
+    | "bb.feature.approval-policy"
+    | "bb.feature.backup-policy";
 }
 
 export default {
@@ -127,6 +138,22 @@ export default {
       type: PolicyType,
       policy: Policy
     ) => {
+      if (
+        type === "bb.policy.pipeline-approval" &&
+        policy.payload.value !== DefaultApporvalPolicy &&
+        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.approval-policy";
+        return;
+      }
+      if (
+        type === "bb.policy.backup-plan" &&
+        policy.payload.schedule !== DefaultSchedulePolicy &&
+        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.backup-policy";
+        return;
+      }
       store
         .dispatch("policy/upsertPolicyByEnvironmentAndType", {
           environmentId,

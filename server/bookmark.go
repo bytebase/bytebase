@@ -41,11 +41,15 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/bookmark", func(c echo.Context) error {
+	g.GET("/bookmark/user/:userID", func(c echo.Context) error {
 		ctx := context.Background()
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+		userID, err := strconv.Atoi(c.Param("userID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
+		}
+
 		bookmarkFind := &api.BookmarkFind{
-			CreatorID: &creatorID,
+			CreatorID: &userID,
 		}
 		list, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
 		if err != nil {

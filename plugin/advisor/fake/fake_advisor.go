@@ -21,7 +21,7 @@ type Advisor struct {
 }
 
 // Check is a fake advisor check reporting 1 advice for each severity.
-func (adv *Advisor) Check(ctx advisor.AdvisorContext, statement string) ([]advisor.Advice, error) {
+func (adv *Advisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	return []advisor.Advice{
 		{
 			Status:  advisor.Success,

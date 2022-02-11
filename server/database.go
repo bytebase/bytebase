@@ -42,6 +42,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			err := fmt.Errorf("Project ID not found %v", databaseCreate.ProjectID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummp database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
@@ -193,9 +196,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			targetProject = toProject
 
 			if toProject.TenantMode == api.TenantModeTenant {
+				if !s.feature(api.FeatureMultiTenancy) {
+					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+				}
 				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, database.Name)
+				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, database.Labels)
+				if err != nil {
+					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, database.Labels, err)
+				}
+				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, baseDatabaseName)
 				if err != nil {
 					return err
 				}
@@ -727,7 +737,11 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		for _, label := range labels {
 			tokens[label.Key] = tokens[label.Value]
 		}
-		if _, err := formatDatabaseName(database.Name, project.DBNameTemplate, tokens); err != nil {
+		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
+		if err != nil {
+			return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, project.DBNameTemplate, labelsJSON, err)
+		}
+		if _, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
 			err := fmt.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}

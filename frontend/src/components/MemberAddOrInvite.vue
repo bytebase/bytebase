@@ -6,7 +6,9 @@
         :key="index"
         class="flex justify-between py-0.5 select-none"
       >
-        <p id="add_or_invite_members_helper" class="sr-only">{{ $t("settings.members.helper") }}</p>
+        <p id="add_or_invite_members_helper" class="sr-only">
+          {{ $t("settings.members.helper") }}
+        </p>
         <div class="flex flex-row space-x-4">
           <div class="flex-grow">
             <input
@@ -24,9 +26,11 @@
               v-if="state.errorList[index]"
               id="email-error"
               class="mt-2 text-sm text-error"
-            >{{ state.errorList[index] }}</p>
+            >
+              {{ state.errorList[index] }}
+            </p>
           </div>
-          <div v-if="hasAdminFeature" class="sm:hidden w-36">
+          <div v-if="hasRBACFeature" class="sm:hidden w-36">
             <RoleSelect
               :selected-role="user.role"
               @change-role="
@@ -37,7 +41,7 @@
             />
           </div>
           <div
-            v-if="hasAdminFeature"
+            v-if="hasRBACFeature"
             class="hidden sm:flex sm:flex-row space-x-4"
             :class="state.errorList[index] ? '-mt-7' : ''"
           >
@@ -81,11 +85,9 @@
 
     <div class="flex justify-between">
       <span class="flex items-center">
-        <button
-          type="button"
-          class="btn-secondary"
-          @click.prevent="addUser"
-        >{{ $t("settings.members.add-more") }}</button>
+        <button type="button" class="btn-secondary" @click.prevent="addUser">
+          {{ $t("settings.members.add-more") }}
+        </button>
       </span>
 
       <button
@@ -138,7 +140,7 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -207,7 +209,7 @@ export default {
           // Needs to assign to a local variable as user will change after createPrincipal but before createdMember
           let role = user.role;
           // If admin feature is NOT enabled, then we set every user to OWNER role.
-          if (!hasAdminFeature.value) {
+          if (!hasRBACFeature.value) {
             role = "OWNER";
           }
           // Note "principal/createPrincipal" would return the existing principal.
@@ -247,7 +249,7 @@ export default {
     return {
       state,
       isAdd,
-      hasAdminFeature,
+      hasRBACFeature,
       validateUser,
       clearValidationError,
       addUser,

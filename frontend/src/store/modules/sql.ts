@@ -77,7 +77,7 @@ const actions = {
             type: "sqlExecute",
             attributes: {
               ...queryInfo,
-              readonly: true
+              readonly: true,
             },
           },
         },

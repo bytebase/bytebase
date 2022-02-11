@@ -91,7 +91,11 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { Database, MigrationHistory } from "../types";
-import { databaseSlug, migrationHistorySlug, nanosecondsToString } from "../utils";
+import {
+  databaseSlug,
+  migrationHistorySlug,
+  nanosecondsToString,
+} from "../utils";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
 import { useRouter } from "vue-router";
@@ -129,25 +133,25 @@ export default {
             title: "",
           },
           {
-            title: t('migration-history.workflow'),
+            title: t("migration-history.workflow"),
           },
           {
-            title: t('common.version'),
+            title: t("common.version"),
           },
           {
-            title: t('common.issue'),
+            title: t("common.issue"),
           },
           {
             title: "SQL",
           },
           {
-            title: t('common.duration'),
+            title: t("common.duration"),
           },
           {
-            title: t('common.created-at'),
+            title: t("common.created-at"),
           },
           {
-            title: t('common.creator'),
+            title: t("common.creator"),
           },
         ],
       ],
@@ -156,22 +160,22 @@ export default {
         [
           { title: "" },
           {
-            title: t('common.version'),
+            title: t("common.version"),
           },
           {
-            title: t('common.issue'),
+            title: t("common.issue"),
           },
           {
             title: "SQL",
           },
           {
-            title: t('common.duration'),
+            title: t("common.duration"),
           },
           {
-            title: t('common.created-at'),
+            title: t("common.created-at"),
           },
           {
-            title: t('common.creator'),
+            title: t("common.creator"),
           },
         ],
       ],

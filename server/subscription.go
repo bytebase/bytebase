@@ -6,7 +6,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	enterprise "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -15,26 +14,8 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
-		subscription := &enterpriseAPI.Subscription{
-			Plan: api.FREE,
-			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: 5,
-		}
-
-		license, err := s.loadLicense()
-		if err != nil {
-			s.l.Error("Failed to get valid license for subscription", zap.String("error", err.Error()))
-		} else {
-			subscription = &enterpriseAPI.Subscription{
-				Plan:          license.Plan,
-				ExpiresTs:     license.ExpiresTs,
-				InstanceCount: license.InstanceCount,
-			}
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -47,40 +28,53 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
-		license, err := s.loadLicense()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to load subscription").SetInternal(err)
-		}
-		subscription := &enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			InstanceCount: license.InstanceCount,
-		}
+		s.subscription = s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
 	})
 }
 
+// loadLicense will load current subscription by license.
+// Return subscription with free plan if no license found.
+func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
+	subscription := &enterpriseAPI.Subscription{
+		Plan: api.FREE,
+		// -1 means not expire, just for free plan
+		ExpiresTs:     -1,
+		InstanceCount: 5,
+	}
+	license, _ := s.loadLicense()
+	if license != nil {
+		subscription = &enterpriseAPI.Subscription{
+			Plan:          license.Plan,
+			ExpiresTs:     license.ExpiresTs,
+			InstanceCount: license.InstanceCount,
+		}
+	}
+
+	return subscription
+}
+
 // loadLicense will get and parse valid license from file.
-func (server *Server) loadLicense() (*enterprise.License, error) {
-	license, err := server.LicenseService.LoadLicense()
+func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
+	license, err := s.LicenseService.LoadLicense()
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			server.l.Debug("Failed to find license", zap.String("error", err.Error()))
+			s.l.Debug("Failed to find license", zap.String("error", err.Error()))
 		} else {
-			server.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
+			s.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
 		}
 		return nil, err
 	}
 
-	server.l.Info(
+	s.l.Info(
 		"Load valid license",
 		zap.String("plan", license.Plan.String()),
 		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
@@ -88,4 +82,11 @@ func (server *Server) loadLicense() (*enterprise.License, error) {
 	)
 
 	return license, nil
+}
+
+func (s *Server) feature(feature api.FeatureType) bool {
+	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FeatureMatrix[feature][api.FREE]
+	}
+	return api.FeatureMatrix[feature][s.subscription.Plan]
 }

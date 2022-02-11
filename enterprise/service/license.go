@@ -12,38 +12,50 @@ import (
 	"go.uber.org/zap"
 )
 
-// licenseService is the service for enterprise license.
-type licenseService struct {
+// LicenseService is the service for enterprise license.
+type LicenseService struct {
 	l      *zap.Logger
 	config *config.Config
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*licenseService, error) {
+func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*LicenseService, error) {
 	config, err := config.NewConfig(l, dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
 
-	return &licenseService{
+	return &LicenseService{
 		config: config,
 		l:      l,
 	}, nil
 }
 
 // StoreLicense will store license into file.
-func (s *licenseService) StoreLicense(tokenString string) error {
+func (s *LicenseService) StoreLicense(tokenString string) error {
+	if tokenString != "" {
+		if _, err := s.parseLicense(tokenString); err != nil {
+			return nil
+		}
+	}
 	return s.writeLicense(tokenString)
 }
 
 // LoadLicense will load license from file and validate it.
-func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
+func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
 	tokenString, err := s.readLicense()
 	if err != nil {
 		return nil, err
 	}
+	if tokenString == "" {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("cannot find license"))
+	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	return s.parseLicense(tokenString)
+}
+
+func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
+	token, err := jwt.Parse(license, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, common.Errorf(common.Invalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 		}
@@ -73,24 +85,24 @@ func (s *licenseService) LoadLicense() (*enterpriseAPI.License, error) {
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
+func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, err)
 	}
 
-	exp, ok := claims["exp"].(int64)
+	exp, ok := claims["exp"].(float64)
 	if !ok {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
 	}
 
-	iss, ok := claims["iss"].(string)
-	if !ok || iss != s.config.Issuer {
+	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
+	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
 	}
 
-	instance, ok := claims["instance"].(int)
-	if !ok || instance < s.config.MinimumInstance {
+	instance, ok := claims["instance"].(float64)
+	if !ok || int(instance) < s.config.MinimumInstance {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance))
 	}
 
@@ -110,8 +122,8 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	}
 
 	license := &enterpriseAPI.License{
-		InstanceCount: instance,
-		ExpiresTs:     exp,
+		InstanceCount: int(instance),
+		ExpiresTs:     int64(exp),
 		Plan:          planType,
 		Audience:      aud,
 	}
@@ -123,7 +135,7 @@ func (s *licenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	return license, nil
 }
 
-func (s *licenseService) readLicense() (string, error) {
+func (s *LicenseService) readLicense() (string, error) {
 	token, err := ioutil.ReadFile(s.config.StorePath)
 	if err != nil {
 		return "", common.Errorf(
@@ -135,7 +147,7 @@ func (s *licenseService) readLicense() (string, error) {
 	return string(token), nil
 }
 
-func (s *licenseService) writeLicense(token string) error {
+func (s *LicenseService) writeLicense(token string) error {
 	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
 }
 

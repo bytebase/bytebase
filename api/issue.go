@@ -160,7 +160,7 @@ type UpdateSchemaContext struct {
 	// When a project is in tenant mode, there should be one item in the list.
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
-	VCSPushEvent *vcs.VCSPushEvent
+	VCSPushEvent *vcs.PushEvent
 }
 
 // IssueFind is the API message for finding issues.

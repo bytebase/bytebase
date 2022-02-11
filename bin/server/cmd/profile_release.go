@@ -20,6 +20,7 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 	return Profile{
 		mode:                 "release",
 		port:                 port,
+		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              seedDir,
 		forceResetSeed:       forceResetSeed,

@@ -24,15 +24,10 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: "BBSpin",
-  components: {},
-  props: {
-    title: {
-      default: "",
-      type: String,
-    },
-  },
-};
+<script lang="ts" setup>
+import { defineProps, withDefaults } from "vue";
+
+withDefaults(defineProps<{ title?: string }>(), {
+  title: "",
+});
 </script>

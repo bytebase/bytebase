@@ -49,7 +49,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	tests := []struct {
 		name                 string
 		schedule             *api.DeploymentSchedule
-		databaseName         string
+		baseDatabaseName     string
 		databaseNameTemplate string
 		databaseList         []*api.Database
 		want                 [][]*api.Database
@@ -243,7 +243,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseName, test.databaseNameTemplate, test.databaseList)
+		_, create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
 
 		diff := pretty.Diff(create, test.want)
 		if len(diff) > 0 {

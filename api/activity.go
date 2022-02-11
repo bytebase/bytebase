@@ -227,7 +227,7 @@ type ActivityMemberActivateDeactivatePayload struct {
 
 // ActivityProjectRepositoryPushPayload is the API message payloads for pushing repositories.
 type ActivityProjectRepositoryPushPayload struct {
-	VCSPushEvent vcs.VCSPushEvent `json:"pushEvent"`
+	VCSPushEvent vcs.PushEvent `json:"pushEvent"`
 	// Used by activity table to display info without paying the join cost
 	// IssueID/IssueName only exist if the push event leads to the issue creation.
 	IssueID   int    `json:"issueId,omitempty"`

@@ -11,7 +11,10 @@
     />
     <div class="px-6 space-y-6">
       <InstanceForm :create="false" :instance="instance" />
-      <div v-if="hasDataSourceFeature" class="py-6 space-y-4 border-t divide-control-border">
+      <div
+        v-if="hasDataSourceFeature"
+        class="py-6 space-y-4 border-t divide-control-border"
+      >
         <DataSourceTable :instance="instance" />
       </div>
       <div v-else>
@@ -27,20 +30,27 @@
           />
           <div class="flex items-center space-x-4">
             <div>
-              <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+              <BBSpin
+                v-if="state.syncingSchema"
+                :title="$t('instance.syncing')"
+              />
             </div>
             <button
               v-if="allowEdit"
               type="button"
               class="btn-normal"
               @click.prevent="syncSchema"
-            >{{ $t("instance.sync-now") }}</button>
+            >
+              {{ $t("instance.sync-now") }}
+            </button>
             <button
               v-if="instance.rowStatus == 'NORMAL'"
               type="button"
               class="btn-primary"
               @click.prevent="createDatabase"
-            >{{ $t("instance.new-database") }}</button>
+            >
+              {{ $t("instance.new-database") }}
+            </button>
           </div>
         </div>
         <DatabaseTable
@@ -53,7 +63,7 @@
           :instance-user-list="instanceUserList"
         />
       </div>
-      <template v-if="allowEdit">
+      <template v-if="allowArchiveOrRestore">
         <template v-if="instance.rowStatus == 'NORMAL'">
           <BBButtonConfirm
             :style="'ARCHIVE'"
@@ -121,6 +131,11 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-count"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -142,6 +157,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { Subscription } from "../types";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -153,6 +169,7 @@ interface LocalState {
   creatingMigrationSchema: boolean;
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
+  showFeatureModal: boolean;
 }
 
 export default {
@@ -184,6 +201,7 @@ export default {
       creatingMigrationSchema: false,
       showCreateDatabaseModal: false,
       syncingSchema: false,
+      showFeatureModal: false,
     });
 
     const instance = computed((): Instance => {
@@ -233,7 +251,7 @@ export default {
           ) +
           (isDBAOrOwner(currentUser.value.role)
             ? " " +
-            t("instance.please-check-the-instance-connection-info-is-correct")
+              t("instance.please-check-the-instance-connection-info-is-correct")
             : " " + t("instance.please-contact-your-dba-to-configure-it"))
         );
       }
@@ -289,6 +307,10 @@ export default {
       );
     });
 
+    const allowArchiveOrRestore = computed(() => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
+
     const tabItemList = computed((): BBTabFilterItem[] => {
       return [
         {
@@ -323,6 +345,13 @@ export default {
     };
 
     const doRestore = () => {
+      const subscription: Subscription | undefined =
+        store.getters["subscription/subscription"]();
+      const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+      if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
+        state.showFeatureModal = true;
+        return;
+      }
       store
         .dispatch("instance/patchInstance", {
           instanceId: instance.value.id,
@@ -422,6 +451,7 @@ export default {
       databaseList,
       instanceUserList,
       allowEdit,
+      allowArchiveOrRestore,
       tabItemList,
       doArchive,
       doRestore,

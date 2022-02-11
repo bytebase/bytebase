@@ -2,6 +2,7 @@ package api
 
 import "github.com/bytebase/bytebase/plugin/vcs"
 
+// AuthProvider is the authentication provider which only supports GitLab for now.
 type AuthProvider struct {
 	Type          vcs.Type `jsonapi:"attr,type"`
 	Name          string   `jsonapi:"attr,name"`

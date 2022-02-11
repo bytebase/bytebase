@@ -120,6 +120,66 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, err
 	}
 
+	// If the database creation statement executed successfully,
+	// then we will create a database entry immediately
+	// instead of waiting for the next schema sync cycle to sync over this newly created database.
+	// This is for 2 reasons:
+	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
+	// sync will place the synced db into the default project.
+	// 2. Allow user to see the created database right away.
+	databaseCreate := &api.DatabaseCreate{
+		CreatorID:     api.SystemBotID,
+		ProjectID:     payload.ProjectID,
+		InstanceID:    task.InstanceID,
+		EnvironmentID: instance.EnvironmentID,
+		Name:          payload.DatabaseName,
+		CharacterSet:  payload.CharacterSet,
+		Collation:     payload.Collation,
+		Labels:        &payload.Labels,
+		SchemaVersion: payload.SchemaVersion,
+	}
+	database, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
+	if err != nil {
+		return true, nil, err
+	}
+
+	// After the task related database entry created successfully,
+	// we need to update task's database_id with the newly created database immediately.
+	// Here is the main reason:
+	// The task database_id represents its related database entry both for creating and patching,
+	// so we should sync its value right here when the related database entry created.
+	taskDatabaseIDPatch := &api.TaskPatch{
+		ID:         task.ID,
+		UpdaterID:  api.SystemBotID,
+		DatabaseID: &database.ID,
+	}
+	_, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
+	if err != nil {
+		return true, nil, err
+	}
+
+	if payload.Labels != "" {
+		// Compose database relationship for setting database labels.
+		err = server.composeDatabaseRelationship(ctx, database)
+		if err != nil {
+			return true, nil, err
+		}
+
+		project, err := server.composeProjectByID(ctx, payload.ProjectID)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
+		}
+		if project == nil {
+			return true, nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
+		}
+
+		// Set database labels, except bb.environment is immutable and must match instance environment.
+		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
+		}
+	}
+
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
 		MigrationID: migrationID,

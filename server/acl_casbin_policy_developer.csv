@@ -53,11 +53,11 @@ p, DEVELOPER, /activity, POST
 p, DEVELOPER, /activity, GET
 p, DEVELOPER, /activity/{id}, PATCH_SELF
 p, DEVELOPER, /activity/{id}, DELETE_SELF
-p, DEVELOPER, /inbox, GET
-p, DEVELOPER, /inbox/summary, GET
+p, DEVELOPER, /inbox/user/{userID}, GET_SELF
+p, DEVELOPER, /inbox/user/{userID}/summary, GET_SELF
 p, DEVELOPER, /inbox/{id}, PATCH_SELF
 p, DEVELOPER, /bookmark, POST
-p, DEVELOPER, /bookmark, GET
+p, DEVELOPER, /bookmark/user/{userID}, GET_SELF
 p, DEVELOPER, /bookmark/{id}, DELETE_SELF
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
@@ -80,4 +80,5 @@ p, DEVELOPER, /sheet, POST
 p, DEVELOPER, /sheet, GET
 p, DEVELOPER, /sheet/{id}, GET
 p, DEVELOPER, /sheet/{id}, PATCH
+p, DEVELOPER, /sheet/{id}, PATCH_SELF
 p, DEVELOPER, /sheet/{id}, DELETE_SELF

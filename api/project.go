@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // DefaultProjectID is the ID for the default project.
@@ -167,11 +169,16 @@ var (
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
+func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
 	tokens := getTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
+	}
+	if tenantMode == TenantModeTenant {
+		if _, ok := tokenMap[EnvironemntToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		}
 	}
 
 	for token, required := range repositoryFilePathTemplateTokens {
@@ -190,7 +197,7 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string) error {
 }
 
 // ValidateRepositorySchemaPathTemplate validates the repository schema path template.
-func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
+func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode ProjectTenantMode) error {
 	if schemaPathTemplate == "" {
 		return nil
 	}
@@ -198,6 +205,11 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string) error {
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
+	}
+	if tenantMode == TenantModeTenant {
+		if _, ok := tokenMap[EnvironemntToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		}
 	}
 
 	for token, required := range schemaPathTemplateTokens {
@@ -247,6 +259,43 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 		template = strings.ReplaceAll(template, key, tokens[key])
 	}
 	return template, nil
+}
+
+// GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
+func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
+	if dbNameTemplate == "" {
+		return databaseName, nil
+	}
+	var labels []*DatabaseLabel
+	if labelsJSON != "" {
+		if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+			return "", err
+		}
+	}
+	labelMap := map[string]string{}
+	for _, label := range labels {
+		switch label.Key {
+		case LocationLabelKey:
+			labelMap[LocationToken] = label.Value
+		case TenantLabelKey:
+			labelMap[TenantToken] = label.Value
+		}
+	}
+	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
+
+	expr, err := FormatTemplate(dbNameTemplate, labelMap)
+	if err != nil {
+		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
+	}
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return "", fmt.Errorf("regexp %q compiled failure, error: %v", expr, err)
+	}
+	names := re.FindStringSubmatch(databaseName)
+	if len(names) != 2 || names[1] == "" {
+		return "", fmt.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
+	}
+	return names[1], nil
 }
 
 func getTemplateTokens(template string) []string {

@@ -18,6 +18,7 @@ import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
+import { DefaultApporvalPolicy } from "./policy";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -311,7 +312,7 @@ export const unknown = (
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
-      value: "MANUAL_APPROVAL_ALWAYS",
+      value: DefaultApporvalPolicy,
     },
   };
 
@@ -681,7 +682,7 @@ export const empty = (
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
-      value: "MANUAL_APPROVAL_ALWAYS",
+      value: DefaultApporvalPolicy,
     },
   };
 

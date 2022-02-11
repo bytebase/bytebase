@@ -62,11 +62,11 @@ p, OWNER, /activity, POST
 p, OWNER, /activity, GET
 p, OWNER, /activity/{id}, PATCH_SELF
 p, OWNER, /activity/{id}, DELETE_SELF
-p, OWNER, /inbox, GET
-p, OWNER, /inbox/summary, GET
+p, OWNER, /inbox/user/{userID}, GET_SELF
+p, OWNER, /inbox/user/{userID}/summary, GET_SELF
 p, OWNER, /inbox/{id}, PATCH_SELF
 p, OWNER, /bookmark, POST
-p, OWNER, /bookmark, GET
+p, OWNER, /bookmark/user/{userID}, GET_SELF
 p, OWNER, /bookmark/{id}, DELETE_SELF
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
@@ -97,4 +97,5 @@ p, OWNER, /sheet, POST
 p, OWNER, /sheet, GET
 p, OWNER, /sheet/{id}, GET
 p, OWNER, /sheet/{id}, PATCH
+p, OWNER, /sheet/{id}, PATCH_SELF
 p, OWNER, /sheet/{id}, DELETE_SELF

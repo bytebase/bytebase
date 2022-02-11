@@ -13,9 +13,18 @@
         class="w-auto table-cell"
         :title="$t(COLUMN_LIST[0].title)"
       />
-      <BBTableHeaderCell class="w-8 table-cell" :title="$t(COLUMN_LIST[1].title)" />
-      <BBTableHeaderCell class="w-72 table-cell" :title="$t(COLUMN_LIST[2].title)" />
-      <BBTableHeaderCell class="w-auto table-cell" :title="$t(COLUMN_LIST[3].title)" />
+      <BBTableHeaderCell
+        class="w-8 table-cell"
+        :title="$t(COLUMN_LIST[1].title)"
+      />
+      <BBTableHeaderCell
+        class="w-72 table-cell"
+        :title="$t(COLUMN_LIST[2].title)"
+      />
+      <BBTableHeaderCell
+        class="w-auto table-cell"
+        :title="$t(COLUMN_LIST[3].title)"
+      />
     </template>
     <template #body="{ rowData: member }">
       <BBTableCell :left-padding="4" class="table-cell">
@@ -23,7 +32,8 @@
           <template v-if="'INVITED' == member.principal.status">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-main text-main-text"
-            >{{ $t("settings.members.invited") }}</span>
+              >{{ $t("settings.members.invited") }}</span
+            >
             <span class="textlabel">{{ member.principal.email }}</span>
           </template>
           <template v-else>
@@ -33,11 +43,13 @@
                 <router-link
                   :to="`/u/${member.principal.id}`"
                   class="normal-link"
-                >{{ member.principal.name }}</router-link>
+                  >{{ member.principal.name }}</router-link
+                >
                 <span
                   v-if="currentUser.id == member.principal.id"
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                >{{ $t("settings.members.yourself") }}</span>
+                  >{{ $t("settings.members.yourself") }}</span
+                >
               </div>
               <span class="textlabel">{{ member.principal.email }}</span>
             </div>
@@ -45,7 +57,9 @@
         </div>
       </BBTableCell>
       <BBTableCell class="whitespace-nowrap tooltip-wrapper">
-        <span v-if="changeRoleTooltip(member)" class="tooltip">{{ changeRoleTooltip(member) }}</span>
+        <span v-if="changeRoleTooltip(member)" class="tooltip">{{
+          changeRoleTooltip(member)
+        }}</span>
         <RoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member)"
@@ -60,7 +74,9 @@
         <div class="flex flex-row items-center space-x-1">
           <span>{{ humanizeTs(member.updatedTs) }}</span>
           <span>by</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{ member.updater.name }}</router-link>
+          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
+            member.updater.name
+          }}</router-link>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -69,8 +85,12 @@
           :style="'ARCHIVE'"
           :require-confirm="true"
           :ok-text="$t('settings.members.action.deactivate')"
-          :confirm-title="`${$t('settings.members.action.deactivate-confirm-title')} '${member.principal.name}'?`"
-          :confirm-description="$t('settings.members.action.deactivate-confirm-description')"
+          :confirm-title="`${$t(
+            'settings.members.action.deactivate-confirm-title'
+          )} '${member.principal.name}'?`"
+          :confirm-description="
+            $t('settings.members.action.deactivate-confirm-description')
+          "
           @confirm="changeRowStatus(member.id, 'ARCHIVED')"
         />
         <BBButtonConfirm
@@ -78,7 +98,9 @@
           :style="'RESTORE'"
           :require-confirm="true"
           :ok-text="$t('settings.members.action.reactivate')"
-          :confirm-title="`${$t('settings.members.action.reactivate-confirm-title')} '${member.principal.name}'?`"
+          :confirm-title="`${$t(
+            'settings.members.action.reactivate-confirm-title'
+          )} '${member.principal.name}'?`"
           :confirm-description="''"
           @confirm="changeRowStatus(member.id, 'NORMAL')"
         />
@@ -113,7 +135,7 @@ const COLUMN_LIST: BBTableColumn[] = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState { }
+interface LocalState {}
 
 export default {
   name: "MemberTable",
@@ -130,7 +152,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -179,7 +201,7 @@ export default {
 
     const allowChangeRole = (member: Member) => {
       return (
-        hasAdminFeature.value &&
+        hasRBACFeature.value &&
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
         (member.role != "OWNER" || dataSource.value[0].list.length > 1)
@@ -191,7 +213,7 @@ export default {
         return "";
       }
 
-      if (!hasAdminFeature.value) {
+      if (!hasRBACFeature.value) {
         return t("settings.members.tooltip.upgrade");
       }
 
@@ -238,7 +260,7 @@ export default {
       COLUMN_LIST,
       state,
       currentUser,
-      hasAdminFeature,
+      hasRBACFeature,
       dataSource,
       allowEdit,
       allowChangeRole,

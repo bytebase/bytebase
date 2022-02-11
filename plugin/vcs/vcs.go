@@ -2,7 +2,6 @@ package vcs
 
 import (
 	"context"
-	"io"
 	"sync"
 
 	"github.com/bytebase/bytebase/common"
@@ -29,8 +28,8 @@ func (e Type) String() string {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
-// VCSFileCommit is the API message for a VCS file commit.
-type VCSFileCommit struct {
+// FileCommit is the API message for a VCS file commit.
+type FileCommit struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
 	Message    string `json:"message"`
@@ -48,27 +47,30 @@ type FileCommitCreate struct {
 	LastCommitID  string
 }
 
-// FileMata records the file metadata.
+// FileMeta records the file metadata.
 type FileMeta struct {
 	LastCommitID string
 }
 
-// VCSPushEvent is the API message for a VCS push event.
-type VCSPushEvent struct {
-	VCSType            Type          `json:"vcsType"`
-	BaseDirectory      string        `json:"baseDir"`
-	Ref                string        `json:"ref"`
-	RepositoryID       string        `json:"repositoryId"`
-	RepositoryURL      string        `json:"repositoryUrl"`
-	RepositoryFullPath string        `json:"repositoryFullPath"`
-	AuthorName         string        `json:"authorName"`
-	FileCommit         VCSFileCommit `json:"fileCommit"`
+// PushEvent is the API message for a VCS push event.
+type PushEvent struct {
+	VCSType            Type       `json:"vcsType"`
+	BaseDirectory      string     `json:"baseDir"`
+	Ref                string     `json:"ref"`
+	RepositoryID       string     `json:"repositoryId"`
+	RepositoryURL      string     `json:"repositoryUrl"`
+	RepositoryFullPath string     `json:"repositoryFullPath"`
+	AuthorName         string     `json:"authorName"`
+	FileCommit         FileCommit `json:"fileCommit"`
 }
 
+// UserState is the state of a VCS user account.
 type UserState string
 
 const (
-	UserStateActive   UserState = "active"
+	// UserStateActive is the active state for VCS user state.
+	UserStateActive UserState = "active"
+	// UserStateArchived is the archived state for VCS user state.
 	UserStateArchived UserState = "archived"
 )
 
@@ -79,6 +81,7 @@ type UserInfo struct {
 	State UserState `json:"state"`
 }
 
+// Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
@@ -108,7 +111,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// commitID: the specific version to be read
-	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (io.ReadCloser, error)
+	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (string, error)
 	// Reads the file metadata. Returns the file meta on success.
 	//
 	// Similar to ReadFile except it specifies a branch instead of a commitID.
@@ -123,9 +126,9 @@ type Provider interface {
 	// Patches a webhook.
 	//
 	// The payload stores the patched field(s).
-	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string, payload []byte) error
+	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string, payload []byte) error
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookId string) error
+	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string) error
 }
 
 var (

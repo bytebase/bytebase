@@ -101,6 +101,11 @@
       </button>
     </div>
   </form>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -115,6 +120,7 @@ import { useEventListener } from "@vueuse/core";
 
 interface LocalState {
   project: ProjectCreate;
+  showFeatureModal: boolean;
   enableDbNameTemplate: boolean;
 }
 
@@ -134,6 +140,7 @@ export default defineComponent({
         tenantMode: "DISABLED",
         dbNameTemplate: "",
       },
+      showFeatureModal: false,
       enableDbNameTemplate: false,
     });
 
@@ -172,6 +179,13 @@ export default defineComponent({
         // clear up unnecessary fields
         state.project.dbNameTemplate = "";
       }
+      if (
+        state.project.tenantMode == "TENANT" &&
+        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
 
       store
         .dispatch("project/createProject", state.project)
@@ -189,7 +203,15 @@ export default defineComponent({
             }),
           });
 
-          router.push(`/project/${projectSlug(createdProject)}`);
+          const url = {
+            path: `/project/${projectSlug(createdProject)}`,
+            hash: "",
+          };
+          if (state.project.tenantMode === "TENANT") {
+            // Jump to Deployment Config panel if it's a tenant mode project
+            url.hash = "deployment-config";
+          }
+          router.push(url);
           emit("dismiss");
         });
     };

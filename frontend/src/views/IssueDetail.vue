@@ -8,6 +8,11 @@
   <div v-else class="w-full h-full flex justify-center items-center">
     <NSpin />
   </div>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -57,6 +62,7 @@ interface LocalState {
   newIssue?: IssueCreate;
   // Timer tracking the issue poller, we need this to cancel the outstanding one when needed.
   pollIssueTimer?: ReturnType<typeof setTimeout>;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -116,6 +122,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       create: props.issueSlug.toLowerCase() == "new",
       newIssue: undefined,
+      showFeatureModal: false,
     });
 
     const issue = computed((): Issue | IssueCreate => {
@@ -182,13 +189,7 @@ export default defineComponent({
       return issueCreate;
     };
 
-    const maybeBuildTenantDeployIssue = async (): Promise<
-      IssueCreate | false
-    > => {
-      if (route.query.mode !== "tenant") {
-        return false;
-      }
-
+    const findProject = async (): Promise<Project> => {
       const projectId = route.query.project
         ? parseInt(route.query.project as string)
         : UNKNOWN_ID;
@@ -196,6 +197,18 @@ export default defineComponent({
       if (projectId !== UNKNOWN_ID) {
         project = await store.dispatch("project/fetchProjectById", projectId);
       }
+
+      return project;
+    };
+
+    const maybeBuildTenantDeployIssue = async (): Promise<
+      IssueCreate | false
+    > => {
+      if (route.query.mode !== "tenant") {
+        return false;
+      }
+
+      const project = await findProject();
       const issueType = route.query.template as IssueType;
       if (
         project.tenantMode === "TENANT" &&
@@ -228,7 +241,10 @@ export default defineComponent({
           title =
             "INVALID STATE, please create rollback from the original issue.";
         } else {
-          if (rollbackIssue.type != "bb.issue.database.schema.update" && rollbackIssue.type != "bb.issue.database.data.update") {
+          if (
+            rollbackIssue.type != "bb.issue.database.schema.update" &&
+            rollbackIssue.type != "bb.issue.database.data.update"
+          ) {
             title =
               "INVALID STATE, only support to rollback update schema or change data issue.";
           } else if (
@@ -240,20 +256,23 @@ export default defineComponent({
           } else {
             for (const stage of rollbackIssue.pipeline.stageList) {
               for (const task of stage.taskList) {
-                if (
-                  task.status == "DONE") {
-                  if (task.type == "bb.task.database.schema.update" &&
+                if (task.status == "DONE") {
+                  if (
+                    task.type == "bb.task.database.schema.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseSchemaUpdatePayload)
                         .rollbackStatement
-                    )) {
+                    )
+                  ) {
                     validState = true;
                     break;
-                  } else if (task.type == "bb.task.database.data.update" &&
+                  } else if (
+                    task.type == "bb.task.database.data.update" &&
                     !isEmpty(
                       (task.payload as TaskDatabaseDataUpdatePayload)
                         .rollbackStatement
-                    )) {
+                    )
+                  ) {
                     validState = true;
                     break;
                   }
@@ -286,21 +305,25 @@ export default defineComponent({
             const stage = rollbackIssue.pipeline.stageList[i];
             for (let j = stage.taskList.length - 1; j >= 0; j--) {
               const task = stage.taskList[j];
-              let allowRollback = false
+              let allowRollback = false;
 
               if (task.status == "DONE") {
-                if (task.type == "bb.task.database.schema.update" &&
+                if (
+                  task.type == "bb.task.database.schema.update" &&
                   !isEmpty(
                     (task.payload as TaskDatabaseSchemaUpdatePayload)
                       .rollbackStatement
-                  )) {
-                  allowRollback = true
-                } else if (task.type == "bb.task.database.data.update" &&
+                  )
+                ) {
+                  allowRollback = true;
+                } else if (
+                  task.type == "bb.task.database.data.update" &&
                   !isEmpty(
                     (task.payload as TaskDatabaseDataUpdatePayload)
                       .rollbackStatement
-                  )) {
-                  allowRollback = true
+                  )
+                ) {
+                  allowRollback = true;
                 }
               }
 
@@ -503,6 +526,21 @@ export default defineComponent({
         } else if (state.create && !oldCreate) {
           clearInterval(state.pollIssueTimer as any);
           state.newIssue = await buildNewIssue();
+        }
+      }
+    );
+
+    watch(
+      () => state.newIssue,
+      async (issue) => {
+        if (issue?.type === "bb.issue.database.schema.update") {
+          const project = await findProject();
+          if (
+            project.tenantMode === "TENANT" &&
+            !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+          ) {
+            state.showFeatureModal = true;
+          }
         }
       }
     );

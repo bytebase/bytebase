@@ -24,6 +24,7 @@
       <div class="col-span-2">
         <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
+          class="w-full"
           :disabled="!allowEditAssignee"
           :selectedId="create ? issue.assigneeId : issue.assignee?.id"
           :allowed-role-list="['OWNER', 'DBA']"

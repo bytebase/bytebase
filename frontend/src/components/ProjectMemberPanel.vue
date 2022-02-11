@@ -1,19 +1,23 @@
 <template>
   <div>
-    <p class="text-lg font-medium leading-7 text-main">{{ $t("project.settings.manage-member") }}</p>
+    <p class="text-lg font-medium leading-7 text-main">
+      {{ $t("project.settings.manage-member") }}
+    </p>
     <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
         <div class="space-y-2">
-          <div class="flex flex-row justify-between py-0.5 select-none space-x-4">
+          <div
+            class="flex flex-row justify-between py-0.5 select-none space-x-4"
+          >
             <div class="w-64">
-              <!-- eslint-disable vue/attribute-hyphenation -->
               <MemberSelect
                 id="user"
                 name="user"
+                class="w-full"
                 :required="false"
                 :placeholder="$t('project.settings.member-placeholder')"
-                :selectedId="state.principalId"
+                :selected-id="state.principalId"
                 @select-principal-id="
                   (principalId) => {
                     state.principalId = principalId;
@@ -23,7 +27,7 @@
                 "
               />
             </div>
-            <div v-if="hasAdminFeature" class="radio-set-row">
+            <div v-if="hasRBACFeature" class="radio-set-row">
               <div class="radio">
                 <label class="label">
                   <input
@@ -64,7 +68,9 @@
         </div>
 
         <div id="state-error" class="flex justify-start">
-          <span v-if="state.error" class="text-sm text-error">{{ state.error }}</span>
+          <span v-if="state.error" class="text-sm text-error">
+            {{ state.error }}
+          </span>
         </div>
       </div>
     </div>
@@ -73,7 +79,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
@@ -95,7 +101,7 @@ interface LocalState {
   error: string;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectMemberPanel",
   components: { MemberSelect, ProjectMemberTable },
   props: {
@@ -116,7 +122,7 @@ export default {
       error: "",
     });
 
-    const hasAdminFeature = computed(() =>
+    const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
@@ -175,7 +181,7 @@ export default {
       // If admin feature is NOT enabled, then we set every member to OWNER role.
       const projectMember: ProjectMemberCreate = {
         principalId: state.principalId,
-        role: hasAdminFeature.value ? state.role : "OWNER",
+        role: hasRBACFeature.value ? state.role : "OWNER",
       };
       const member = store.getters["member/memberByPrincipalId"](
         state.principalId
@@ -202,7 +208,7 @@ export default {
 
     return {
       state,
-      hasAdminFeature,
+      hasRBACFeature,
       allowAddMember,
       validateMember,
       clearValidationError,
@@ -210,5 +216,5 @@ export default {
       addMember,
     };
   },
-};
+});
 </script>

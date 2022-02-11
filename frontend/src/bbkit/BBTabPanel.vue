@@ -1,17 +1,11 @@
 <template>
-  <section v-if="active" :aria-hiddem="!active">
+  <section v-if="active" :aria-hidden="!active">
     <slot />
   </section>
 </template>
 
-<script lang="ts">
-export default {
-  name: "BBTabPanel",
-  props: {
-    active: {
-      required: true,
-      type: Boolean,
-    },
-  },
-};
+<script lang="ts" setup>
+import { defineProps } from "vue";
+
+defineProps<{ active: boolean }>();
 </script>

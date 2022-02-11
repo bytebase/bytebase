@@ -31,12 +31,16 @@ type TaskCheckScheduler struct {
 }
 
 // Run will run the task check scheduler once.
-func (s *TaskCheckScheduler) Run() error {
-	go func() {
-		s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
-		runningTaskChecks := make(map[int]bool)
-		mu := sync.RWMutex{}
-		for {
+func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(taskSchedulerInterval)
+	defer ticker.Stop()
+	defer wg.Done()
+	s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
+	runningTaskChecks := make(map[int]bool)
+	mu := sync.RWMutex{}
+	for {
+		select {
+		case <-ticker.C:
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -158,12 +162,10 @@ func (s *TaskCheckScheduler) Run() error {
 					}(taskCheckRun)
 				}
 			}()
-
-			time.Sleep(taskSchedulerInterval)
+		case <-ctx.Done(): // if cancel() execute
+			return
 		}
-	}()
-
-	return nil
+	}
 }
 
 // Register will register the task check executor.
@@ -318,15 +320,17 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				return nil, err
 			}
 
-			_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementCompatibility,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			})
-			if err != nil {
-				return nil, err
+			if s.server.feature(api.FeatureBackwardCompatibilty) {
+				_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					CreatorID:               creatorID,
+					TaskID:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementCompatibility,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+				})
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 

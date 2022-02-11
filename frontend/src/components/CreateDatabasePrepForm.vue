@@ -170,7 +170,7 @@
         <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           id="user"
-          class="mt-1"
+          class="mt-1 w-full"
           name="user"
           :allowed-role-list="['OWNER', 'DBA']"
           :selectedId="state.assigneeId"
@@ -197,6 +197,11 @@
       </button>
     </div>
   </div>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.multi-tenancy"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -251,6 +256,7 @@ interface LocalState {
   characterSet: string;
   collation: string;
   assigneeId?: PrincipalId;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -316,6 +322,7 @@ export default defineComponent({
       characterSet: "",
       collation: "",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
+      showFeatureModal: false,
     });
 
     const project = computed((): Project => {
@@ -472,6 +479,12 @@ export default defineComponent({
         };
       }
       if (isTenantProject.value) {
+        if (
+          !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+        ) {
+          state.showFeatureModal = true;
+          return;
+        }
         const context = newIssue.createContext as CreateDatabaseContext;
         // Do not submit non-selected optional labels
         const labelList = state.labelList.filter((label) => !!label.value);

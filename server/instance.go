@@ -11,12 +11,17 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := context.Background()
+		if err := s.instanceCountGuard(ctx); err != nil {
+			return err
+		}
+
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
@@ -42,7 +47,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		db, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err == nil {
 			defer db.Close(ctx)
-			db.SetupMigrationIfNeeded(ctx)
+			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+				s.l.Warn("Failed to setup migration schema on instance creation",
+					zap.String("instance_name", instance.Name),
+					zap.String("engine", string(instance.Engine)),
+					zap.Error(err))
+			}
 			// Try immediately sync the engine version and schema after instance creation.
 			s.syncEngineVersionAndSchema(ctx, instance)
 		}
@@ -118,6 +128,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
+			// Users can switch instance status from ARCHIVED to NORMAL.
+			// So we need to check the current instance count with NORMAL status for quota limitation.
+			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
+				if err := s.instanceCountGuard(ctx); err != nil {
+					return err
+				}
+			}
 			instance, err = s.InstanceService.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
@@ -179,7 +196,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			db, err := getDatabaseDriver(ctx, instance, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
-				db.SetupMigrationIfNeeded(ctx)
+				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+					s.l.Warn("Failed to setup migration schema on instance update",
+						zap.String("instance_name", instance.Name),
+						zap.String("engine", string(instance.Engine)),
+						zap.Error(err))
+				}
 				s.syncEngineVersionAndSchema(ctx, instance)
 			}
 		}
@@ -527,4 +549,23 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 		}
 	}
 	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceID)}
+}
+
+// instanceCountGuard is a feature guard for instance count.
+// We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
+func (s *Server) instanceCountGuard(ctx context.Context) error {
+	status := api.Normal
+	count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
+		RowStatus: &status,
+	})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
+	}
+	subscription := s.loadSubscription()
+	if count >= subscription.InstanceCount {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
+	}
+
+	return nil
 }

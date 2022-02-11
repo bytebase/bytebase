@@ -89,17 +89,17 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
-	MigrationType     db.MigrationType  `json:"migrationType,omitempty"`
-	Statement         string            `json:"statement,omitempty"`
-	RollbackStatement string            `json:"rollbackStatement,omitempty"`
-	VCSPushEvent      *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
+	MigrationType     db.MigrationType `json:"migrationType,omitempty"`
+	Statement         string           `json:"statement,omitempty"`
+	RollbackStatement string           `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
-	Statement         string            `json:"statement,omitempty"`
-	RollbackStatement string            `json:"rollbackStatement,omitempty"`
-	VCSPushEvent      *vcs.VCSPushEvent `json:"pushEvent,omitempty"`
+	Statement         string         `json:"statement,omitempty"`
+	RollbackStatement string         `json:"rollbackStatement,omitempty"`
+	VCSPushEvent      *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -133,7 +133,7 @@ type Task struct {
 	StageID    int `jsonapi:"attr,stageId"`
 	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
-	// Tasks like creating database may not have database.
+	// Could be empty for creating database task when the task isn't yet completed successfully.
 	DatabaseID       *int
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
@@ -174,7 +174,7 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
-	VCSPushEvent      *vcs.VCSPushEvent
+	VCSPushEvent      *vcs.PushEvent
 	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
@@ -207,6 +207,7 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
+	DatabaseID        *int
 	Statement         *string `jsonapi:"attr,statement"`
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`

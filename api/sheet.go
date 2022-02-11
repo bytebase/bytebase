@@ -9,11 +9,11 @@ import (
 type SheetVisibility string
 
 const (
-	// Private is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
+	// PrivateSheet is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
 	PrivateSheet SheetVisibility = "PRIVATE"
-	// Project is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	// ProjectSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
 	ProjectSheet SheetVisibility = "PROJECT"
-	// Public is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
+	// PublicSheet is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
 	PublicSheet SheetVisibility = "PUBLIC"
 )
 
@@ -42,12 +42,12 @@ type Sheet struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	InstanceID int `jsonapi:"attr,instanceId"`
+	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name      string `jsonapi:"attr,name"`
-	Statement string `jsonapi:"attr,statement"`
+	Name       string          `jsonapi:"attr,name"`
+	Statement  string          `jsonapi:"attr,statement"`
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
 }
 
@@ -58,37 +58,37 @@ type SheetCreate struct {
 	CreatorID int
 
 	// Related fields
-	InstanceID int `jsonapi:"attr,instanceId"`
+	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name      string `jsonapi:"attr,name"`
-	Statement string `jsonapi:"attr,statement"`
+	Name       string          `jsonapi:"attr,name"`
+	Statement  string          `jsonapi:"attr,statement"`
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
 }
 
 // SheetPatch is the API message for patching a sheet.
 type SheetPatch struct {
-	ID int
+	ID int `jsonapi:"primary,sheetPatch"`
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
 	// Related fields
-	InstanceID int `jsonapi:"attr,instanceId"`
+	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name      *string `jsonapi:"attr,name"`
-	Statement *string `jsonapi:"attr,statement"`
-	Visibility *SheetVisibility `jsonapi:"attr,visibility"`
+	Name       *string `jsonapi:"attr,name"`
+	Statement  *string `jsonapi:"attr,statement"`
+	Visibility *string `jsonapi:"attr,visibility"`
 }
 
 // SheetFind is the API message for finding sheets.
 type SheetFind struct {
 	// Standard fields
-	ID *int
+	ID        *int
 	RowStatus *RowStatus
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID *int
