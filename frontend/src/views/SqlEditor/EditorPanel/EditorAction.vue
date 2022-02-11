@@ -54,7 +54,6 @@
 import { computed, ref, watch, onMounted, nextTick } from "vue";
 import { cloneDeep } from "lodash-es";
 import { CascaderOption } from "naive-ui";
-import { useRouter } from "vue-router";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -66,6 +65,7 @@ import {
   SqlEditorGetters,
   SqlEditorActions,
   ConnectionContext,
+  TabState,
   TabGetters,
   SheetActions,
   TabActions,
@@ -73,15 +73,16 @@ import {
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 
-const router = useRouter();
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
     "connectionTree",
     "connectionContext",
   ]);
+const { activeTabId } = useNamespacedState<TabState>("tab", ["activeTabId"]);
 const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
   "isDisconnected",
 ]);
+
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 // actions
@@ -123,29 +124,6 @@ const setSelectedConnection = (ctx: ConnectionContext) => {
       : null;
   }
 };
-
-watch(
-  () => connectionTree.value,
-  (newVal) => {
-    if (newVal) {
-      setSelectedConnection(connectionContext.value);
-    }
-  }
-);
-
-watch(
-  () => connectionContext.value,
-  (newVal) => {
-    if (newVal) {
-      setSelectedConnection(newVal);
-    }
-  },
-  { deep: true }
-);
-
-onMounted(() => {
-  setSelectedConnection(connectionContext.value);
-});
 
 const handleConnectionChange = (
   value: number,
@@ -191,6 +169,17 @@ const handleUpsertSheet = async () => {
   });
 };
 
+watch(
+  () => connectionTree.value,
+  (newVal) => {
+    if (newVal) {
+      console.log(newVal);
+      setSelectedConnection(connectionContext.value);
+    }
+  },
+  { deep: true }
+);
+
 // selected a new connection
 watch(
   () => isDisconnected.value,
@@ -201,9 +190,15 @@ watch(
         sheetId: newSheet.id,
         isSaved: true,
       });
+    } else {
+      setSelectedConnection(connectionContext.value);
     }
   }
 );
+
+onMounted(() => {
+  setSelectedConnection(connectionContext.value);
+});
 </script>
 
 <style scoped>

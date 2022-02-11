@@ -295,7 +295,11 @@ const handleAddTab = (tab: AnyTabInfo) => {
 };
 const handleRemoveTab = async (tab: TabInfo) => {
   await removeTab(tab);
-  setActiveConnectionByTab(router);
+  const tabsLength = tabList.value.length;
+
+  if (tabsLength > 0) {
+    handleSelectTab(tabList.value[tabsLength - 1]);
+  }
   nextTick(() => {
     reComputedScrollWidth();
   });

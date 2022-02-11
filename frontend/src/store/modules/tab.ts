@@ -7,7 +7,7 @@ import { makeActions } from "../actions";
 export const getDefaultTab = () => {
   return {
     id: uuidv1(),
-    label: "Untitled Queries",
+    label: "Untitled Sheet",
     isSaved: false,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     queryStatement: "",
@@ -15,7 +15,7 @@ export const getDefaultTab = () => {
   };
 };
 
-// this store for frontend
+// this sheet store for frontend
 const state: () => TabState = () => {
   return {
     tabList: [],
@@ -67,11 +67,13 @@ const mutations = {
 
 type ActionsMap = {
   setTabState: typeof mutations.SET_TAB_STATE;
+  removeTab: typeof mutations.REMOVE_TAB;
 };
 
 const actions = {
   ...makeActions<ActionsMap>({
     setTabState: types.SET_TAB_STATE,
+    removeTab: types.REMOVE_TAB,
   }),
   addTab({ commit }: any, payload: AnyTabInfo) {
     const defaultTab = getDefaultTab();
@@ -85,14 +87,6 @@ const actions = {
       activeTabId: newTab.id,
     });
     commit(types.ADD_TAB, newTab);
-  },
-  async removeTab({ commit, state, dispatch }: any, payload: TabInfo) {
-    commit(types.REMOVE_TAB, payload);
-    const tabsLength = state.tabList.length;
-
-    if (tabsLength > 0) {
-      dispatch("setActiveTabId", state.tabList[tabsLength - 1].id);
-    }
   },
   updateActiveTab({ commit }: any, payload: AnyTabInfo) {
     commit(types.UPDATE_ACTIVE_TAB, payload);

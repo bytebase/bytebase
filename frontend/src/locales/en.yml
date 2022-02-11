@@ -1102,13 +1102,13 @@ sql-editor:
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
   no-history-found: No history found
-  no-saved-query-found: No saved query found
+  no-sheet-found: No sheet found
   search-history: Search History
-  search-saved-queries: Search Saved Queries
+  search-sheets: Search Sheets
   queries: Queries
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
-    confirm-to-delete-this-saved-query: Confirm to delete this saved query?
+    confirm-to-delete-this-sheet: Confirm to delete this sheet?
   please-input-the-tab-label: Please input the tab label!
   copy-code: Copy code
   notify:
@@ -1118,6 +1118,8 @@ sql-editor:
     Share the current tab as a link, any team member with data connection access
     can view this query
   view-all-tabs: View all Tabs
+  sheet: Sheet
+  sheets: Sheets
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

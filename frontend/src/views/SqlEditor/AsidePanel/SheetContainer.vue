@@ -5,7 +5,7 @@
     <div class="w-full">
       <NInput
         v-model:value="state.search"
-        :placeholder="$t('sql-editor.search-sheet')"
+        :placeholder="$t('sql-editor.search-sheets')"
       >
         <template #prefix>
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />

@@ -284,6 +284,7 @@ const actions = {
   ) {
     const currentTab = rootGetters["tab/currentTab"];
     const sheetById = rootState.sheet.sheetById as Map<number, Sheet>;
+
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
       const sheet = sheetById.get(currentTab.sheetId);
 

@@ -3,7 +3,7 @@
     <heroicons-outline:lightning-bolt class="mr-1" />
     <div>
       <p>
-        Select a connection or Select a queries from left panel to get started
+        Select a connection or Select a sheet from left panel to get started
       </p>
     </div>
   </div>

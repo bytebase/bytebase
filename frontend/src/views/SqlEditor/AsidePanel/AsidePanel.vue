@@ -17,7 +17,7 @@
           </Pane>
         </Splitpanes>
       </NTabPane>
-      <NTabPane name="queries" :tab="$t('sql-editor.queries')">
+      <NTabPane name="sheets" :tab="$t('sql-editor.sheets')">
         <SheetContainer />
       </NTabPane>
       <NTabPane name="history" :tab="$t('common.history')">
