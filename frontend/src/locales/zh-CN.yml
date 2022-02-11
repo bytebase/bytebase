@@ -1008,14 +1008,19 @@ subscription:
   trial: 您可以以 $7 的价格试用 7 天
   trial-comment: 仅首次付费可以试用，可随时退款。
   upgrade: 升级订阅
-  price: ${price}/年
-  instance-price: ${price}/实例/月
+  per-month: / 月
+  per-instance: 每个实例
+  free-price-intro: 最多 5 个实例
+  team-price-intro: 5 个起步，按年付费
+  enterprise-price-intro: 自定义实例数，按年付费
   deploy: 部署
   contact-us: 联系我们
   start-trial: 以 {days} 天 {price} 美元的价格试用
   subscribe: 开始订阅
   current-plan: 当前订阅
   buy: 购买{plan}
+  cancel: 取消订阅
+  announcement: 您可以随时升级、降级或{cancel}。没有任何隐藏费用。
   update:
     success:
       title: 证书更新成功
@@ -1061,26 +1066,32 @@ subscription:
       features:
         instance-count: 实例数
         instance-upto-5: 不多于 5 个
+        instance-minimum-5: 5 ~ 无限制
         instance-customized: 自定义
-        schema-change: Schema 变更
+        schema-change: Schema 和数据变更
         migration-history: 迁移历史
         sql-editor: SQL 编辑器
         database-backup-restore: 数据库备份和恢复
         archiving: 归档
         sql-check: SQL 检查
         sql-check-basic: 基础
-        sql-check-advanced: 高级 (例如向后兼容性检查)
+        sql-check-basic-tooltip: 语法检查、数据库连接检查
+        sql-check-advanced: 高级
+        sql-check-advanced-tooltip: 基础版功能+向后兼容性检查
         anomaly-detection: 异常检测
         anomaly-detection-basic: 基础
-        anomaly-detection-advanced: 高级 (例如 Schema 偏差检测)
+        anomaly-detection-basic-tooltip: 数据库连接异常、备份缺失
+        anomaly-detection-advanced: 高级
+        anomaly-detection-advanced-tooltip: 基础版功能+ Schema 偏差检测
+        schedule-change: 设定任务执行时间
         review-and-backup-policy: 审核和备份策略
-        tenancy: 多地域/多租户
+        tenancy: 多地域/多租户部署
     collaboration:
       title: 团队协作
       features:
         ui-based-sql-review: 基于 UI 的 SQL 审查
-        gitops-workflow: GitOps 工作流
-        sql-review-commenting: SQL 审核中的批注
+        vsc-workflow: 'VCS 工作流 #GitOps'
+        shareable-query-link: 分享查询链接
         im-integration: IM 集成
         inbox-notification: 站内信通知
     admin-and-security:
@@ -1088,6 +1099,7 @@ subscription:
       features:
         activity-log: 活动日志
         rbac: RBAC 权限管理
+        gitlab-login: 通过 GitLab 账户登录
   plan:
     title: 版本
     free:
@@ -1095,7 +1107,7 @@ subscription:
       desc: 个人或小团队，无专职 DBA
     team:
       title: 团队版
-      desc: 中型团队，有专职 DBA 或者 TL 有管控需求
+      desc: 中型团队，有专职 DBA 或 TL 以提高工程速度
     enterprise:
       title: 企业版
-      desc: 大型组织，有专属 DBA 团队
+      desc: 大型组织，有专属 DBA 团队来管理数据库
