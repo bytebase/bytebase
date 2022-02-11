@@ -1,7 +1,7 @@
 <template>
   <div class="h-8 w-24">
     <div
-      class="flex flex-row h-8 w-full rounded-lg relative bg-transparent mt-1 bg-gray-200 text-gray-600 items-center"
+      class="flex flex-row h-8 w-full rounded-lg relative bg-transparent bg-gray-200 text-gray-600 items-center"
     >
       <button
         class="hover:text-gray-700 hover:bg-gray-300 h-full w-14 rounded-l cursor-pointer outline-none"

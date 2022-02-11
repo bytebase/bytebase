@@ -1145,6 +1145,9 @@ subscription:
   subscribe: Subscribe now
   current-plan: Current plan
   buy: Buy {plan} plan
+  cancel: cancel your subscription
+  announcement: You can upgrade, downgrade, or {cancel} anytime. No
+        hidden charges.
   update:
     success:
       title: Successfully updated license
@@ -1191,32 +1194,38 @@ subscription:
         instance-count: Instance count
         instance-upto-5: Up to 5
         instance-customized: Customized
-        schema-change: Schema change
+        schema-change: Schema and data change
         migration-history: Migration history
         sql-editor: SQL Editor
-        database-backup-restore: Database backup/restore
+        database-backup-restore: Database backup / restore
         archiving: Archiving
         sql-check: SQL check
         sql-check-basic: Basic
-        sql-check-advanced: Advanced (e.g. Backward compatibility check)
+        sql-check-basic-tooltip: Syntax check, connection check
+        sql-check-advanced: Advanced
+        sql-check-advanced-tooltip: Basic + Backward compatibility check
         anomaly-detection: Anomaly detection
         anomaly-detection-basic: Basic
-        anomaly-detection-advanced: Advanced (e.g. Drift detection)
+        anomaly-detection-basic-tooltip: Connection failure, missing backup
+        anomaly-detection-advanced: Advanced
+        anomaly-detection-advanced-tooltip: Basic + Drift detection
+        schedule-change: Scheduled change at specific time
         review-and-backup-policy: Review and backup policy
-        tenancy: Multi-Region / Multi-Tenancy
+        tenancy: Multi-Region / Multi-Tenancy deployment
     collaboration:
       title: Collaboration
       features:
         ui-based-sql-review: UI based SQL review
-        gitops-workflow: GitOps workflow
-        sql-review-commenting: SQL review commenting
+        vsc-workflow: 'VCS workflow #GitOps'
+        shareable-query-link: Shareable query link
         im-integration: IM integration
         inbox-notification: Inbox notification
     admin-and-security:
       title: Admin & Security
       features:
-        activity-log: Activity Log
-        rbac: RBAC
+        activity-log: Activity log
+        rbac: RBAC (Owner, DBA, Developer role)
+        gitlab-login: Login with GitLab account
   plan:
     title: Plan
     free:
@@ -1224,7 +1233,7 @@ subscription:
       desc: Personal project or small team, no DBA
     team:
       title: Team
-      desc: Medium size team, has dedicated DBA or TL with management needs
+      desc: Medium size team, has dedicated DBA or TL for engineering velocity
     enterprise:
       title: Enterprise
-      desc: Large organization, has dedicated DBA group
+      desc: Large organization, has dedicated DBA group to manage database fleet
