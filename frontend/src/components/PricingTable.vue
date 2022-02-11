@@ -1,6 +1,6 @@
 <template>
   <div class="hidden md:block">
-    <table id="plans" class="w-full h-px table-fixed mb-16">
+    <table id="plans" class="w-full h-px table-fixed">
       <caption class="sr-only">
         Pricing plan comparison
       </caption>
@@ -13,7 +13,7 @@
           <td
             v-for="plan in plans"
             :key="plan.type"
-            class="h-full py-8 px-6 align-top"
+            class="h-full pt-8 px-6 align-top"
           >
             <div class="flex-1">
               <img :src="plan.image" class="hidden lg:block p-5" />
@@ -24,37 +24,18 @@
                 {{ $t(`subscription.plan.${plan.title}.desc`) }}
               </p>
 
-              <p class="mt-4 flex items-baseline text-gray-900">
+              <p class="mt-4 flex items-baseline text-gray-900 text-xl">
                 <span class="text-4xl">
-                  {{ plan.price }}
+                  ${{ plan.pricePerInstancePerMonth }}
                 </span>
+                {{ $t("subscription.per-month") }}
               </p>
 
-              <div
-                :class="[
-                  isAvailableToPurchase(plan) ? '' : 'opacity-0 disabled',
-                  'flex justify-center items-center mt-5',
-                ]"
-              >
-                <div>
-                  {{
-                    $t(
-                      "subscription.feature-sections.database-management.features.instance-count"
-                    )
-                  }}
-                  <br />
-                  {{
-                    $t("subscription.instance-price", {
-                      price: instancePricePerMonth,
-                    })
-                  }}
-                </div>
-                <Counter
-                  class="ml-auto"
-                  :count="state.instanceCount"
-                  :minimum="minimumInstanceCount"
-                  @on-change="(val) => (state.instanceCount = val)"
-                />
+              <div class="text-gray-400">
+                {{ $t("subscription.per-instance") }}
+              </div>
+              <div class="text-gray-400">
+                {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
@@ -73,6 +54,23 @@
           </td>
         </tr>
       </thead>
+    </table>
+    <div class="px-4 py-8 text-right text-gray-500">
+      <i18n-t keypath="subscription.announcement">
+        <template #cancel>
+          <a
+            class="underline"
+            href="https://bytebase.com/refund"
+            target="_blank"
+            >{{ $t("subscription.cancel") }}</a
+          >
+        </template>
+      </i18n-t>
+    </div>
+    <table class="w-full h-px table-fixed mb-16">
+      <caption class="sr-only">
+        Feature comparison
+      </caption>
       <tbody class="border-t border-gray-200 divide-y divide-gray-200">
         <template v-for="section in sections" :key="section.id">
           <tr>
@@ -99,18 +97,34 @@
                 )
               }}
             </th>
-            <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
-              <template v-if="getFeature(plan, feature)">
-                <span
-                  v-if="getFeature(plan, feature)?.content"
-                  class="block text-sm text-gray-700"
-                  >{{ $t(getFeature(plan, feature)?.content) }}</span
-                >
-                <heroicons-solid:check v-else class="w-5 h-5 text-green-500" />
-              </template>
-              <template v-else>
-                <heroicons-solid:minus class="w-5 h-5 text-gray-500" />
-              </template>
+            <td
+              v-for="plan in plans"
+              :key="plan.type"
+              class="py-5 px-6 font-semibold tooltip-wrapper"
+              :class="plan.highlight ? 'text-indigo-600' : 'text-gray-600'"
+            >
+              <div class="flex justify-center">
+                <template v-if="getFeature(plan, feature)">
+                  <span
+                    v-if="getFeature(plan, feature)?.content"
+                    class="block text-sm"
+                    >{{ $t(getFeature(plan, feature)?.content) }}</span
+                  >
+                  <heroicons-solid:check v-else class="w-5 h-5" />
+                </template>
+                <template v-else>
+                  <heroicons-solid:minus class="w-5 h-5" />
+                </template>
+                <template v-if="getFeature(plan, feature)?.tooltip">
+                  <heroicons-solid:question-mark-circle class="w-5 h-5 ml-1" />
+                  <span
+                    v-if="getFeature(plan, feature)?.tooltip"
+                    class="tooltip whitespace-nowrap"
+                  >
+                    {{ $t(getFeature(plan, feature)?.tooltip) }}
+                  </span>
+                </template>
+              </div>
             </td>
           </tr>
         </template>
@@ -165,7 +179,6 @@ interface LocalPlan extends Plan {
 }
 
 const minimumInstanceCount = 5;
-const instancePricePerMonth = 29;
 
 export default {
   name: "PricingTable",
@@ -189,17 +202,17 @@ export default {
         (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
     );
 
-    const instancePricePerYear = computed((): number => {
+    const getInstancePricePerYear = (plan: Plan): number => {
       return (
         (state.instanceCount - minimumInstanceCount) *
-        instancePricePerMonth *
+        plan.pricePerInstancePerMonth *
         12
       );
-    });
+    };
 
     const getPlanPrice = (plan: Plan): number => {
       if (plan.type !== PlanType.TEAM) return plan.unitPrice;
-      return plan.unitPrice + instancePricePerYear.value;
+      return plan.unitPrice + getInstancePricePerYear(plan);
     };
 
     const plans = computed((): LocalPlan[] => {
@@ -250,10 +263,6 @@ export default {
       }
     };
 
-    const isAvailableToPurchase = (plan: Plan): boolean => {
-      return plan.type === PlanType.TEAM;
-    };
-
     return {
       state,
       plans,
@@ -261,8 +270,6 @@ export default {
       getFeature,
       onButtonClick,
       minimumInstanceCount,
-      instancePricePerMonth,
-      isAvailableToPurchase,
     };
   },
 };
