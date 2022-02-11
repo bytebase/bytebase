@@ -69,34 +69,38 @@ type Column struct {
 	// Nullable isn't supported for ClickHouse.
 	Nullable bool
 	Type     string
-	// CharacterSet isn't supported for Postgres, ClickHouse..
+	// CharacterSet isn't supported for Postgres, ClickHouse, SQLite.
 	CharacterSet string
-	// Collation isn't supported for ClickHouse.
+	// Collation isn't supported for ClickHouse, SQLite.
 	Collation string
-	Comment   string
+	// Comment isn't supported for SQLite.
+	Comment string
 }
 
 // Table is the database table.
 type Table struct {
 	Name string
-	// CreatedTs isn't supported for ClickHouse.
+	// CreatedTs isn't supported for ClickHouse, SQLite.
 	CreatedTs int64
+	// UpdatedTs isn't supported for SQLite.
 	UpdatedTs int64
 	Type      string
-	// Engine isn't supported for Postgres, Snowflake.
+	// Engine isn't supported for Postgres, Snowflake, SQLite.
 	Engine string
-	// Collation isn't supported for Postgres, ClickHouse, Snowflake.
+	// Collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
 	Collation string
 	RowCount  int64
-	DataSize  int64
-	// IndexSize isn't supported for ClickHouse, Snowflake.
+	// DataSize isn't supported for SQLite.
+	DataSize int64
+	// IndexSize isn't supported for ClickHouse, Snowflake, SQLite.
 	IndexSize int64
-	// DataFree isn't supported for Postgres, ClickHouse, Snowflake.
+	// DataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
 	DataFree int64
-	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake.
+	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
 	CreateOptions string
-	Comment       string
-	ColumnList    []Column
+	// Comment isn't supported for SQLite.
+	Comment    string
+	ColumnList []Column
 	// IndexList isn't supported for ClickHouse, Snowflake.
 	IndexList []Index
 }
