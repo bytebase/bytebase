@@ -359,7 +359,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch the last recorded schema before version %v", entry.Version)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -435,7 +435,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		for _, entry := range list {
 			lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch the last recorded schema before version %v", entry.Version)).SetInternal(err)
 			}
 
 			historyList = append(historyList, &api.MigrationHistory{
