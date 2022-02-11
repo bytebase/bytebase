@@ -1008,8 +1008,11 @@ subscription:
   trial: 您可以以 $7 的价格试用 7 天
   trial-comment: 仅首次付费可以试用，可随时退款。
   upgrade: 升级订阅
-  price: ${price}/年
-  instance-price: ${price}/实例/月
+  per-month: / 月
+  per-instance: 每个实例
+  free-price-intro: 最多 5 个实例
+  team-price-intro: 5 个起步，按年付费
+  enterprise-price-intro: 自定义实例数，按年付费
   deploy: 部署
   contact-us: 联系我们
   start-trial: 以 {days} 天 {price} 美元的价格试用
@@ -1063,6 +1066,7 @@ subscription:
       features:
         instance-count: 实例数
         instance-upto-5: 不多于 5 个
+        instance-minimum-5: 5 ~ 无限制
         instance-customized: 自定义
         schema-change: Schema 和数据变更
         migration-history: 迁移历史

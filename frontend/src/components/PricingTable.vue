@@ -24,42 +24,18 @@
                 {{ $t(`subscription.plan.${plan.title}.desc`) }}
               </p>
 
-              <p class="mt-4 flex items-baseline text-gray-900">
+              <p class="mt-4 flex items-baseline text-gray-900 text-xl">
                 <span class="text-4xl">
-                  {{ plan.price }}
+                  ${{ plan.pricePerInstancePerMonth }}
                 </span>
+                {{ $t("subscription.per-month") }}
               </p>
 
-              <div
-                :class="[
-                  plan.type !== freePlan ? '' : 'opacity-0 disabled',
-                  'flex flex-col justify-center mt-5 items-start h-14',
-                ]"
-              >
-                <div class="flex items-center">
-                  <Counter
-                    v-if="plan.type !== enterprisePlan"
-                    class="mr-1"
-                    :count="state.instanceCount"
-                    :minimum="minimumInstanceCount"
-                    @on-change="(val) => (state.instanceCount = val)"
-                  />
-                  <span v-else class="mr-1">
-                    {{
-                      $t(
-                        "subscription.feature-sections.database-management.features.instance-customized"
-                      )
-                    }}
-                  </span>
-                  {{ $t("common.instances") }}
-                </div>
-                <p>
-                  {{
-                    $t("subscription.instance-price", {
-                      price: plan.pricePerInstancePerMonth,
-                    })
-                  }}
-                </p>
+              <div class="text-gray-400">
+                {{ $t("subscription.per-instance") }}
+              </div>
+              <div class="text-gray-400">
+                {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
@@ -294,8 +270,6 @@ export default {
       getFeature,
       onButtonClick,
       minimumInstanceCount,
-      enterprisePlan: ENTERPRISE_PLAN.type,
-      freePlan: FREE_PLAN.type,
     };
   },
 };

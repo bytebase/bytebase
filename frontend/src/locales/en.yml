@@ -1137,8 +1137,11 @@ subscription:
   trial: You can start a trial with $7 for 7 days.
   trial-comment: Only enabled for the first payment. You can cancel the subscription at any time.
   upgrade: Upgrade subscription
-  price: ${price}/year
-  instance-price: ${price}/instance/month
+  per-month: / month
+  per-instance: Per instance
+  free-price-intro: Up to 5
+  team-price-intro: 5 minimum, billed annually
+  enterprise-price-intro: Customized, billed annually
   deploy: Deploy
   contact-us: Contact us
   start-trial: Start trial with ${price} for {days} days
@@ -1194,6 +1197,7 @@ subscription:
         instance-count: Instance count
         instance-upto-5: Up to 5
         instance-customized: Customized
+        instance-minimum-5: 5 ~ unlimited
         schema-change: Schema and data change
         migration-history: Migration history
         sql-editor: SQL Editor

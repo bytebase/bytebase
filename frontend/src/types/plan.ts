@@ -151,7 +151,7 @@ export const TEAM_PLAN: Plan = {
     {
       id: "instance-count",
       content:
-        "subscription.feature-sections.database-management.features.instance-customized",
+        "subscription.feature-sections.database-management.features.instance-minimum-5",
     },
     { id: "schema-change" },
     { id: "migration-history" },
