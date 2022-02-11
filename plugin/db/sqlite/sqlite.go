@@ -123,10 +123,88 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		var schema db.Schema
 		schema.Name = dbName
+
+		sqldb, err := driver.GetDbConnection(ctx, dbName)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+		}
+		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+		if err != nil {
+			return nil, nil, err
+		}
+		defer txn.Rollback()
+
 		// TODO(d-bytebase): retrieve database schema such as tables and indices.
+		tbls, err := getTables(txn)
+		if err != nil {
+			return nil, nil, err
+		}
+		schema.TableList = tbls
+
+		if err := txn.Commit(); err != nil {
+			return nil, nil, err
+		}
+
 		schemaList = append(schemaList, &schema)
 	}
 	return nil, schemaList, nil
+}
+
+// getTables gets all tables of a database.
+func getTables(txn *sql.Tx) ([]db.Table, error) {
+	var tables []db.Table
+	query := "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tableNames []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		tableNames = append(tableNames, name)
+	}
+	for _, name := range tableNames {
+		var tbl db.Table
+		tbl.Name = name
+		tbl.Type = "BASE TABLE"
+
+		// Get columns: cid, name, type, notnull, dflt_value, pk.
+		query := fmt.Sprintf("pragma table_info(%s);", name)
+		rows, err := txn.Query(query)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var col db.Column
+
+			var cid int
+			var notnull, pk bool
+			var name, ctype string
+			var dfltValue sql.NullString
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+				return nil, err
+			}
+			col.Position = cid
+			col.Name = name
+			col.Nullable = !notnull
+			col.Type = ctype
+			if dfltValue.Valid {
+				col.Default = &dfltValue.String
+			}
+
+			tbl.ColumnList = append(tbl.ColumnList, col)
+		}
+
+		tables = append(tables, tbl)
+	}
+	return tables, nil
 }
 
 func (driver *Driver) getDatabases() ([]string, error) {
