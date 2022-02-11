@@ -82,12 +82,22 @@
     </div>
 
     <div class="tab-list-add">
-      <button
-        class="p-1 hover:bg-gray-200 rounded-md"
-        @click="handleAddTab({})"
+      <NTooltip
+        trigger="hover"
+        placement="bottom-center"
+        :disabled="!isDisconnected"
       >
-        <heroicons-solid:plus class="h-4 w-4" />
-      </button>
+        <template #trigger>
+          <button
+            class="p-1 hover:bg-gray-200 rounded-md"
+            :class="{ 'cursor-not-allowed': isDisconnected }"
+            @click="handleAddTab({})"
+          >
+            <heroicons-solid:plus class="h-4 w-4" />
+          </button>
+        </template>
+        Please select connections
+      </NTooltip>
     </div>
     <div class="tab-list-more">
       <NPopselect
@@ -113,8 +123,10 @@
 
 <script lang="ts" setup>
 import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
+import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import {
   useNamespacedGetters,
   useNamespacedState,
@@ -125,12 +137,12 @@ import {
   TabInfo,
   AnyTabInfo,
   SqlEditorGetters,
+  SqlEditorActions,
   TabGetters,
   TabState,
   TabActions,
   SheetActions,
 } from "../../types";
-import { debounce, cloneDeep } from "lodash-es";
 import { getDefaultTab } from "../../store/modules/tab";
 
 // getters map
@@ -160,8 +172,13 @@ const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
   "sheet",
   ["createSheet", "patchSheetById"]
 );
+const { setActiveConnectionByTab } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setActiveConnectionByTab"]
+);
 
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const enterTabId = ref("");
@@ -255,8 +272,11 @@ const handleCancelChangeLabel = () => {
 
 const handleSelectTab = async (tab: TabInfo) => {
   setActiveTabId(tab.id);
+  setActiveConnectionByTab(router);
 };
 const handleAddTab = (tab: AnyTabInfo) => {
+  if (isDisconnected.value) return;
+
   addTab(tab);
 
   nextTick(async () => {
@@ -273,14 +293,16 @@ const handleAddTab = (tab: AnyTabInfo) => {
     reComputedScrollWidth();
   });
 };
-const handleRemoveTab = (tab: TabInfo) => {
-  removeTab(tab);
+const handleRemoveTab = async (tab: TabInfo) => {
+  await removeTab(tab);
+  setActiveConnectionByTab(router);
   nextTick(() => {
     reComputedScrollWidth();
   });
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setActiveTabId(tabId);
+  setActiveConnectionByTab(router);
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {

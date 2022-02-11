@@ -10,24 +10,28 @@ import {
   DatabaseId,
   ProjectId,
   QueryHistory,
+  Sheet,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
+import { connectionSlug } from "../../utils";
+
+export const getDefaultConnectionContext = () => ({
+  hasSlug: false,
+  instanceId: 0,
+  instanceName: "",
+  databaseId: 0,
+  databaseName: "",
+  tableId: 0,
+  tableName: "",
+  isLoadingTree: false,
+  selectedDatabaseId: 0,
+  selectedTableName: "",
+});
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
-  connectionContext: {
-    hasSlug: false,
-    instanceId: 0,
-    instanceName: "",
-    databaseId: 0,
-    databaseName: "",
-    tableId: 0,
-    tableName: "",
-    isLoadingTree: false,
-    selectedDatabaseId: 0,
-    selectedTableName: "",
-  },
+  connectionContext: getDefaultConnectionContext(),
   isExecuting: false,
   isShowExecutingHint: false,
   shouldSetContent: false,
@@ -268,6 +272,45 @@ const actions = {
       types.SET_QUERY_HISTORY_LIST,
       state.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
     );
+  },
+  /**
+   * Set the connection by tab info
+   * @param param
+   * @param payload
+   */
+  setActiveConnectionByTab(
+    { commit, dispatch, state, getters, rootGetters, rootState }: any,
+    router: any
+  ) {
+    const currentTab = rootGetters["tab/currentTab"];
+    const sheetById = rootState.sheet.sheetById as Map<number, Sheet>;
+    if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
+      const sheet = sheetById.get(currentTab.sheetId);
+
+      const database = rootGetters["database/databaseById"](
+        sheet?.databaseId,
+        sheet?.instanceId
+      );
+
+      commit(types.SET_CONNECTION_CONTEXT, {
+        hasSlug: true,
+        databaseId: sheet?.databaseId,
+        instanceId: sheet?.instanceId,
+      });
+
+      router.replace({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: connectionSlug(database),
+        },
+      });
+    } else {
+      commit(types.SET_CONNECTION_CONTEXT, getDefaultConnectionContext());
+
+      router.push({
+        path: "/sql-editor",
+      });
+    }
   },
 };
 

@@ -32,8 +32,8 @@
       </NButton>
       <NPopover
         trigger="click"
-        :show-arrow="false"
         placement="bottom-end"
+        :show-arrow="false"
         :show="isShowSharePopover"
       >
         <template #trigger>
@@ -51,9 +51,10 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, ref, watch, onMounted, nextTick } from "vue";
 import { cloneDeep } from "lodash-es";
 import { CascaderOption } from "naive-ui";
-import { computed, ref, watch, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -72,6 +73,7 @@ import {
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 
+const router = useRouter();
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
     "connectionTree",
@@ -129,6 +131,16 @@ watch(
       setSelectedConnection(connectionContext.value);
     }
   }
+);
+
+watch(
+  () => connectionContext.value,
+  (newVal) => {
+    if (newVal) {
+      setSelectedConnection(newVal);
+    }
+  },
+  { deep: true }
 );
 
 onMounted(() => {

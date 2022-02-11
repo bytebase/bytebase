@@ -16,7 +16,7 @@
       <div
         v-for="query in data"
         :key="query.id"
-        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start"
+        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer"
         :class="`${
           currentTab.sheetId === query.id
             ? 'bg-gray-100 rounded border-b-0'
@@ -95,6 +95,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import {
   useNamespacedActions,
   useNamespacedGetters,
@@ -122,6 +123,7 @@ interface State {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 
 const { sheetList, isFetchingSheet: isLoading } =
   useNamespacedState<SheetState>("sheet", ["sheetList", "isFetchingSheet"]);
@@ -129,10 +131,11 @@ const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 // actions
-const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setShouldSetContent"]
-);
+const { setShouldSetContent, setActiveConnectionByTab } =
+  useNamespacedActions<SqlEditorActions>("sqlEditor", [
+    "setShouldSetContent",
+    "setActiveConnectionByTab",
+  ]);
 const { updateActiveTab, setActiveTabId, addTab } =
   useNamespacedActions<TabActions>("tab", [
     "updateActiveTab",
@@ -261,12 +264,13 @@ const handleDeleteSheet = () => {
   state.isShowDeletingHint = false;
 };
 
-const handleSheetClick = (sheet: Sheet) => {
+const handleSheetClick = async (sheet: Sheet) => {
   if (currentTab.value.sheetId !== sheet.id) {
     // open opened tab first
     for (const tab of tabList.value) {
       if (tab.sheetId === sheet.id) {
         setActiveTabId(tab.id);
+        setActiveConnectionByTab(router);
         setShouldSetContent(true);
         return;
       }
@@ -279,6 +283,7 @@ const handleSheetClick = (sheet: Sheet) => {
       selectedStatement: "",
       sheetId: sheet.id,
     });
+    setActiveConnectionByTab(router);
     setShouldSetContent(true);
   }
 };

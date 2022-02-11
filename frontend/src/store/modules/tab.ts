@@ -36,10 +36,7 @@ const getters = {
 };
 
 const mutations = {
-  [types.SET_EDITOR_SELECTOR_STATE](
-    state: TabState,
-    payload: Partial<TabState>
-  ) {
+  [types.SET_TAB_STATE](state: TabState, payload: Partial<TabState>) {
     Object.assign(state, payload);
   },
   [types.ADD_TAB](state: TabState, payload: TabInfo) {
@@ -69,12 +66,12 @@ const mutations = {
 };
 
 type ActionsMap = {
-  setTabState: typeof mutations.SET_EDITOR_SELECTOR_STATE;
+  setTabState: typeof mutations.SET_TAB_STATE;
 };
 
 const actions = {
   ...makeActions<ActionsMap>({
-    setTabState: types.SET_EDITOR_SELECTOR_STATE,
+    setTabState: types.SET_TAB_STATE,
   }),
   addTab({ commit }: any, payload: AnyTabInfo) {
     const defaultTab = getDefaultTab();
@@ -84,12 +81,12 @@ const actions = {
       ...payload,
     };
 
-    commit(types.SET_EDITOR_SELECTOR_STATE, {
+    commit(types.SET_TAB_STATE, {
       activeTabId: newTab.id,
     });
     commit(types.ADD_TAB, newTab);
   },
-  removeTab({ commit, state, dispatch }: any, payload: TabInfo) {
+  async removeTab({ commit, state, dispatch }: any, payload: TabInfo) {
     commit(types.REMOVE_TAB, payload);
     const tabsLength = state.tabList.length;
 
