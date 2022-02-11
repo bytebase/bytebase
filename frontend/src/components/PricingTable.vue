@@ -17,9 +17,19 @@
           >
             <div class="flex-1">
               <img :src="plan.image" class="hidden lg:block p-5" />
-              <h3 class="text-2xl font-semibold text-gray-900">
-                {{ $t(`subscription.plan.${plan.title}.title`) }}
-              </h3>
+
+              <div class="flex items-center h-10">
+                <h3 class="text-xl font-semibold text-gray-900">
+                  {{ $t(`subscription.plan.${plan.title}.title`) }}
+                </h3>
+                <span
+                  v-if="plan.label"
+                  class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800"
+                >
+                  {{ plan.label }}
+                </span>
+              </div>
+
               <p class="text-gray-500 mb-10 h-12">
                 {{ $t(`subscription.plan.${plan.title}.desc`) }}
               </p>
@@ -171,6 +181,7 @@ interface LocalState {
 }
 
 interface LocalPlan extends Plan {
+  label: string;
   image: string;
   price: string;
   buttonText: string;
@@ -229,6 +240,7 @@ export default {
         buttonText: getButtonText(plan),
         highlight: plan.type === PlanType.TEAM,
         isFreePlan: plan.type === PlanType.FREE,
+        label: t(`subscription.plan.${plan.title}.label`),
       }));
     });
 
