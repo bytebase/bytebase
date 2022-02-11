@@ -1100,7 +1100,6 @@ sql-editor:
   no-sheet-found: No sheet found
   search-history: Search History
   search-sheets: Search Sheets
-  queries: Queries
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
     confirm-to-delete-this-sheet: Confirm to delete this sheet?

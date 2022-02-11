@@ -971,7 +971,6 @@ sql-editor:
   no-sheet-found: 暂无工作表
   search-history: 搜索历史记录
   search-sheets: 搜索工作表
-  queries: 归档查询
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
     confirm-to-delete-this-sheet: 确定删除这条查询语句?
