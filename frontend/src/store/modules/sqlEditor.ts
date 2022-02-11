@@ -198,7 +198,7 @@ const actions = {
     dispatch(
       "tab/updateActiveTab",
       {
-        queryResult: res.data,
+        queryResult: Array.isArray(res.data) ? res.data : [],
       },
       { root: true }
     );

@@ -52,7 +52,7 @@
     </NDataTable>
     <div
       v-show="notifyMessage"
-      class="absolute w-full h-full flex justify-center items-center transition-all bg-transparent"
+      class="absolute w-full h-full flex justify-center items-center transition-all bg-transparent text-gray-400"
       :class="notifyMessage ? 'bg-white bg-opacity-90' : ''"
     >
       {{ notifyMessage }}
@@ -70,6 +70,7 @@ import {
 } from "vuex-composition-helpers";
 
 import { TabGetters, SqlEditorState } from "../../../types";
+import { isEmpty } from "lodash-es";
 
 interface State {
   search: string;
@@ -83,7 +84,7 @@ const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const queryResult = computed(() => currentTab.value.queryResult || []);
+const queryResult = computed(() => currentTab.value.queryResult || null);
 
 const state = reactive<State>({
   search: "",
@@ -138,10 +139,12 @@ const exportDropdownOptions = computed(() => [
   {
     label: t("sql-editor.download-as-csv"),
     key: "csv",
+    disabled: queryResult.value === null || isEmpty(queryResult.value),
   },
   {
     label: t("sql-editor.download-as-json"),
     key: "json",
+    disabled: queryResult.value === null || isEmpty(queryResult.value),
   },
 ]);
 
