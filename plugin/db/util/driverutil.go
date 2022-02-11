@@ -382,9 +382,9 @@ func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.Mi
 	if v := find.Version; v != nil {
 		versionParam := "version"
 		if find.Limit != nil {
-			// If both Version and Limit presents then it will
-			// fetch the"Limit" most recent versions before (not include) "version".
-			versionParam = "version < ?"
+			// If both Version and Limit presents then it will fetch
+			// the "Limit" most recent versions before (include) "version".
+			versionParam = "version <= ?"
 		}
 		paramNames, params = append(paramNames, versionParam), append(params, *v)
 	}

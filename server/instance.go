@@ -357,18 +357,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		entry := list[0]
 
-		var lastRecordedSchema string
-		// For baseline migration, find its prev migration history
-		if entry.Type == db.Baseline {
-			limit := 1
-			find := &db.MigrationHistoryFind{Version: &entry.Version, Limit: &limit}
-			list, err := driver.FindMigrationHistoryList(ctx, find)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-			}
-			if len(list) > 0 {
-				lastRecordedSchema = list[0].Schema
-			}
+		lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -442,18 +433,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, entry := range list {
-			var lastRecordedSchema string
-			// For baseline migration, find its prev migration history
-			if entry.Type == db.Baseline {
-				limit := 1
-				find := &db.MigrationHistoryFind{Version: &entry.Version, Limit: &limit}
-				list, err := driver.FindMigrationHistoryList(ctx, find)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
-				}
-				if len(list) > 0 {
-					lastRecordedSchema = list[0].Schema
-				}
+			lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 			}
 
 			historyList = append(historyList, &api.MigrationHistory{
