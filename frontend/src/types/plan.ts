@@ -26,7 +26,6 @@ export type PlanPatch = {
 
 export interface Plan {
   // Plan meta data
-  label?: string;
   type: PlanType;
   trialDays: number;
   unitPrice: number;
@@ -138,7 +137,6 @@ export const FREE_PLAN: Plan = {
 
 export const TEAM_PLAN: Plan = {
   // Plan meta data
-  label: "Beta",
   type: PlanType.TEAM,
   trialDays: 7,
   unitPrice: 1740,
@@ -187,7 +185,6 @@ export const TEAM_PLAN: Plan = {
 
 export const ENTERPRISE_PLAN: Plan = {
   // Plan meta data
-  label: "Early access",
   type: PlanType.ENTERPRISE,
   trialDays: 7,
   unitPrice: 0,
