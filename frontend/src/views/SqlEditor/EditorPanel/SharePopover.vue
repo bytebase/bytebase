@@ -10,7 +10,7 @@
             class="flex items-center cursor-pointer"
             @click="isShowAccessPopover = !isShowAccessPopover"
           >
-            <span class="pr-2">Link access:</span>
+            <span class="pr-2">{{ $t("sql-editor.link-access") }}:</span>
             <strong>{{ currentAccess.label }}</strong>
             <heroicons-solid:chevron-down />
           </div>
@@ -78,12 +78,12 @@
 import { ref, computed, onMounted, defineEmits } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 import {
   useNamespacedGetters,
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { useI18n } from "vue-i18n";
 import slug from "slug";
 
 import {
@@ -98,23 +98,28 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const accessOptions: AccessOption[] = [
-  {
-    label: "Private",
-    value: "PRIVATE",
-    desc: "Only you can access this sheet",
-  },
-  {
-    label: "Project",
-    value: "PROJECT",
-    desc: "Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read",
-  },
-  {
-    label: "Public",
-    value: "PUBLIC",
-    desc: "Sheet OWNER can read/write, and all others can read.",
-  },
-];
+const store = useStore();
+const { t } = useI18n();
+
+const accessOptions = computed<AccessOption[]>(() => {
+  return [
+    {
+      label: t("sql-editor.private"),
+      value: "PRIVATE",
+      desc: t("sql-editor.private-desc"),
+    },
+    {
+      label: t("common.project"),
+      value: "PROJECT",
+      desc: t("sql-editor.project-desc"),
+    },
+    {
+      label: t("sql-editor.public"),
+      value: "PUBLIC",
+      desc: t("sql-editor.public-desc"),
+    },
+  ];
+});
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
@@ -138,7 +143,7 @@ const connectionSlug = [
   ctx.databaseId,
 ].join("_");
 
-const currentAccess = ref<AccessOption>(accessOptions[0]);
+const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
 
 const creatorAccessStyle = computed(() => {
@@ -171,8 +176,6 @@ const handleChangeAccess = (option: AccessOption) => {
 const sheetSlug = `${slug(currentTab.value.label)}_${currentTab.value.sheetId}`;
 const sharedTabLink = ref(`${host}/sql-editor/${connectionSlug}/${sheetSlug}`);
 
-const store = useStore();
-const { t } = useI18n();
 const { copy, copied } = useClipboard({
   source: sharedTabLink.value,
 });
@@ -190,8 +193,11 @@ const handleCopy = async () => {
 onMounted(() => {
   if (currentSheet.value) {
     const { visibility } = currentSheet.value;
-    const idx = accessOptions.findIndex((item) => item.value === visibility);
-    currentAccess.value = idx !== -1 ? accessOptions[idx] : accessOptions[0];
+    const idx = accessOptions.value.findIndex(
+      (item) => item.value === visibility
+    );
+    currentAccess.value =
+      idx !== -1 ? accessOptions.value[idx] : accessOptions.value[0];
   }
 });
 </script>
