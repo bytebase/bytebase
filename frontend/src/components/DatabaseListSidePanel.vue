@@ -1,25 +1,35 @@
 <template>
   <BBOutline
-    :id="'database'"
+    id="database"
     :title="$t('common.databases')"
-    :item-list="databaseListByEnvironment"
+    :item-list="mixedDatabaseList"
     :allow-collapse="false"
   />
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed, defineComponent, watchEffect } from "vue";
 import { useStore } from "vuex";
-import cloneDeep from "lodash-es/cloneDeep";
-
-import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
-import { databaseSlug, environmentName } from "../utils";
+import { cloneDeep, groupBy, uniqBy } from "lodash-es";
+import {
+  Database,
+  Environment,
+  EnvironmentId,
+  Label,
+  UNKNOWN_ID,
+} from "../types";
+import {
+  databaseSlug,
+  environmentName,
+  parseDatabaseNameByTemplate,
+  projectSlug,
+} from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "DatabaseListSidePanel",
   setup() {
     const { t } = useI18n();
@@ -34,14 +44,16 @@ export default {
       ).reverse();
     });
 
-    const prepareDatabaseList = () => {
+    const prepareList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
         store.dispatch("database/fetchDatabaseList");
       }
+
+      store.dispatch("label/fetchLabelList");
     };
 
-    watchEffect(prepareDatabaseList);
+    watchEffect(prepareList);
 
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
@@ -50,12 +62,19 @@ export default {
       );
     });
 
+    // Use this to parse database name from name template
+    const labelList = computed((): Label[] => {
+      return store.getters["label/labelList"]() as Label[];
+    });
+
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
       for (const environment of environmentList.value) {
         envToDbMap.set(environment.id, []);
       }
-      const list = [...databaseList.value];
+      const list = [...databaseList.value].filter(
+        (db) => db.project.tenantMode !== "TENANT"
+      );
       list.sort((a: any, b: any) => {
         return a.name.localeCompare(b.name);
       });
@@ -64,7 +83,7 @@ export default {
         // dbList may be undefined if the environment is archived
         if (dbList) {
           dbList.push({
-            id: database.id.toString(),
+            id: `bb.database.${database.id}`,
             name: database.name,
             link: `/db/${databaseSlug(database)}`,
           });
@@ -77,7 +96,7 @@ export default {
         })
         .map((environment: Environment): BBOutlineItem => {
           return {
-            id: "env." + environment.id,
+            id: `bb.env.${environment.id}`,
             name: environmentName(environment),
             childList: envToDbMap.get(environment.id),
             childCollapse: true,
@@ -85,23 +104,102 @@ export default {
         });
     });
 
+    const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
+      if (labelList.value.length === 0) {
+        // wait for the labelList to be loaded
+        // to prevent UI jitter
+        return [];
+      }
+
+      const list = databaseList.value.filter(
+        (db) => db.project.tenantMode === "TENANT"
+      );
+      // In case that each `db.project` is not reference equal
+      // we run a uniq() on the list by project.id
+      const projectList = uniqBy(
+        list.map((db) => db.project),
+        (project) => project.id
+      );
+      // Sort the list as what <ProjectListSidePanel /> does
+      projectList.sort((a, b) => a.name.localeCompare(b.name));
+      // Then group databaseList by project
+      const databaseListGroupByProject = projectList.map((project) => {
+        const databaseList = list.filter((db) => db.project.id === project.id);
+        return {
+          project,
+          databaseList,
+        };
+      });
+      // Map groups to `BBOutlineItem[]`
+      const itemList = databaseListGroupByProject.map(
+        ({ project, databaseList }) => {
+          const databaseListGroupByName = groupBy(databaseList, (db) => {
+            if (project.dbNameTemplate) {
+              // parse db name from template if possible
+              return parseDatabaseNameByTemplate(
+                db.name,
+                project.dbNameTemplate,
+                labelList.value
+              );
+            } else {
+              // use raw db.name otherwise
+              return db.name;
+            }
+          });
+          const databaseListGroupByNameAndCount = Object.keys(
+            databaseListGroupByName
+          ).map((name) => {
+            return {
+              name,
+              count: databaseListGroupByName[name].length,
+            };
+          });
+          return {
+            id: `bb.project.${project.id}.databases`,
+            name: project.name,
+            childList: databaseListGroupByNameAndCount.map(
+              ({ name, count }) => {
+                return {
+                  id: `bb.project.${project.id}.database.${name}`,
+                  name: `${name} (${count})`,
+                  link: `/project/${projectSlug(project)}`,
+                } as BBOutlineItem;
+              }
+            ),
+            childCollapse: true,
+          } as BBOutlineItem;
+        }
+      );
+      return itemList;
+    });
+
+    const mixedDatabaseList = computed(() => {
+      return [
+        ...databaseListByEnvironment.value,
+        ...tenantDatabaseListByProject.value,
+      ];
+    });
+
     const kbarActions = computed((): Action[] => {
-      const actions = databaseListByEnvironment.value.flatMap((env: any) =>
-        env.childList.map((db: any) =>
+      const actions = mixedDatabaseList.value.flatMap((group: BBOutlineItem) =>
+        group.childList!.map((item) =>
           defineAction({
-            // `db.id` is global unique, so need not to specify `env.id`
-            // so here `id` looks like "bb.database.1234"
-            id: `bb.database.${db.id}`,
+            // `item.id` is namespaced already
+            // so here `id` looks like
+            // "bb.database.7001" for non-tenant databases
+            // "bb.project.3007.database.db3" for tenant databases
+            id: item.id,
             section: t("common.databases"),
-            name: db.name,
-            // env.name is also a keyword to provide better search
-            // e.g. "Blog" under "staged" now can be searched by "bl st"
-            keywords: `database db ${env.name}`,
+            name: item.name,
+            // `group.name` is also a keyword to provide better search
+            // e.g. "blog" under "staged" now can be searched by "bl st"
+            // also "blog" under "HR system" (a project) can be searched by "bl hr"
+            keywords: `database db ${group.name}`,
             data: {
-              tags: [env.name],
+              tags: [group.name],
             },
             perform: () => {
-              router.push({ path: db.link });
+              router.push(item.link!);
             },
           })
         )
@@ -111,10 +209,8 @@ export default {
     useRegisterActions(kbarActions);
 
     return {
-      environmentList,
-      databaseList,
-      databaseListByEnvironment,
+      mixedDatabaseList,
     };
   },
-};
+});
 </script>

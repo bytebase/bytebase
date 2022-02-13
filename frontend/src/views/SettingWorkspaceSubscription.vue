@@ -96,8 +96,22 @@ export default {
 
       try {
         await store.dispatch("subscription/patchSubscription", state.license);
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("subscription.update.success.title"),
+          description: t("subscription.update.success.description"),
+        });
+      } catch {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("subscription.update.failure.title"),
+          description: t("subscription.update.failure.description"),
+        });
       } finally {
         state.loading = false;
+        state.license = "";
       }
     };
 

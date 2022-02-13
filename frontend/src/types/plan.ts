@@ -34,7 +34,7 @@ export interface Plan {
   pricePerInstancePerMonth: number;
   // Plan desc and feature
   title: string;
-  features: { id: string; content?: string }[];
+  features: { id: string; content?: string; tooltip?: string }[];
 }
 
 // A map from the a particular feature to the respective enablement of a particular plan
@@ -70,6 +70,7 @@ export const FEATURE_SECTIONS = [
       "archiving",
       "sql-check",
       "anomaly-detection",
+      "schedule-change",
       "review-and-backup-policy",
       "tenancy",
     ],
@@ -78,15 +79,15 @@ export const FEATURE_SECTIONS = [
     id: "collaboration",
     features: [
       "ui-based-sql-review",
-      "gitops-workflow",
-      "sql-review-commenting",
+      "vsc-workflow",
+      "shareable-query-link",
       "im-integration",
       "inbox-notification",
     ],
   },
   {
     id: "admin-and-security",
-    features: ["activity-log", "rbac"],
+    features: ["activity-log", "rbac", "gitlab-login"],
   },
 ];
 
@@ -115,15 +116,19 @@ export const FREE_PLAN: Plan = {
       id: "sql-check",
       content:
         "subscription.feature-sections.database-management.features.sql-check-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.sql-check-basic-tooltip",
     },
     {
       id: "anomaly-detection",
       content:
         "subscription.feature-sections.database-management.features.anomaly-detection-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.anomaly-detection-basic-tooltip",
     },
     { id: "ui-based-sql-review" },
-    { id: "gitops-workflow" },
-    { id: "sql-review-commenting" },
+    { id: "vsc-workflow" },
+    { id: "shareable-query-link" },
     { id: "im-integration" },
     { id: "inbox-notification" },
     { id: "activity-log" },
@@ -144,7 +149,7 @@ export const TEAM_PLAN: Plan = {
     {
       id: "instance-count",
       content:
-        "subscription.feature-sections.database-management.features.instance-customized",
+        "subscription.feature-sections.database-management.features.instance-minimum-5",
     },
     { id: "schema-change" },
     { id: "migration-history" },
@@ -155,20 +160,26 @@ export const TEAM_PLAN: Plan = {
       id: "sql-check",
       content:
         "subscription.feature-sections.database-management.features.sql-check-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.sql-check-advanced-tooltip",
     },
     {
       id: "anomaly-detection",
       content:
         "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.anomaly-detection-advanced-tooltip",
     },
+    { id: "schedule-change" },
     { id: "review-and-backup-policy" },
     { id: "ui-based-sql-review" },
-    { id: "gitops-workflow" },
-    { id: "sql-review-commenting" },
+    { id: "vsc-workflow" },
+    { id: "shareable-query-link" },
     { id: "im-integration" },
     { id: "inbox-notification" },
     { id: "activity-log" },
     { id: "rbac" },
+    { id: "gitlab-login" },
   ],
 };
 
@@ -179,7 +190,7 @@ export const ENTERPRISE_PLAN: Plan = {
   unitPrice: 0,
   trialPrice: 0,
   freeInstanceCount: 5,
-  pricePerInstancePerMonth: 29,
+  pricePerInstancePerMonth: 199,
   // Plan desc and feature
   title: "enterprise",
   features: [
@@ -197,20 +208,26 @@ export const ENTERPRISE_PLAN: Plan = {
       id: "sql-check",
       content:
         "subscription.feature-sections.database-management.features.sql-check-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.sql-check-advanced-tooltip",
     },
     {
       id: "anomaly-detection",
       content:
         "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.anomaly-detection-advanced-tooltip",
     },
+    { id: "schedule-change" },
     { id: "review-and-backup-policy" },
     { id: "tenancy" },
     { id: "ui-based-sql-review" },
-    { id: "gitops-workflow" },
-    { id: "sql-review-commenting" },
+    { id: "vsc-workflow" },
+    { id: "shareable-query-link" },
     { id: "im-integration" },
     { id: "inbox-notification" },
     { id: "activity-log" },
     { id: "rbac" },
+    { id: "gitlab-login" },
   ],
 };

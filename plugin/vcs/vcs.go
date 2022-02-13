@@ -64,10 +64,13 @@ type PushEvent struct {
 	FileCommit         FileCommit `json:"fileCommit"`
 }
 
+// UserState is the state of a VCS user account.
 type UserState string
 
 const (
-	UserStateActive   UserState = "active"
+	// UserStateActive is the active state for VCS user state.
+	UserStateActive UserState = "active"
+	// UserStateArchived is the archived state for VCS user state.
 	UserStateArchived UserState = "archived"
 )
 
@@ -78,6 +81,7 @@ type UserInfo struct {
 	State UserState `json:"state"`
 }
 
+// Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string

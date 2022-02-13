@@ -3,13 +3,13 @@
     class="btn-select disabled:cursor-not-allowed"
     :disabled="disabled"
     @change="
-      (e) => {
+      (e: any) => {
         $emit('select-environment-id', parseInt(e.target.value));
       }
     "
   >
     <option disabled :selected="undefined === state.selectedId">
-      {{ $t('environment.select') }}
+      {{ $t("environment.select") }}
     </option>
     <template v-for="(environment, index) in environmentList" :key="index">
       <option
@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, defineComponent, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
@@ -40,11 +40,12 @@ interface LocalState {
   selectedId?: number;
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentSelect",
   props: {
     selectedId: {
       type: Number,
+      default: undefined,
     },
     selectDefault: {
       default: true,
@@ -118,5 +119,5 @@ export default {
       environmentList,
     };
   },
-};
+});
 </script>

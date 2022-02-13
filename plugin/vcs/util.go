@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Branch is the helper function returns the branch name from reference name.
 // For now, this method only supports branch reference.
 // https://git-scm.com/book/en/v2/Git-Internals-Git-References
 func Branch(ref string) (string, error) {

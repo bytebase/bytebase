@@ -8,14 +8,18 @@
       }
     "
   >
-    <option disabled :selected="UNKNOWN_ID == state.selectedId">Select project</option>
+    <option disabled :selected="UNKNOWN_ID == state.selectedId">
+      Select project
+    </option>
     <!-- If includeDefaultProject is false but the selected project is the default
          project, we will show it. If includeDefaultProject is true, then it's
     already in the list, so no need to show it twice-->
     <option
       v-if="!includeDefaultProject && state.selectedId == DEFAULT_PROJECT_ID"
       :selected="true"
-    >Default</option>
+    >
+      Default
+    </option>
     <!-- It may happen the selected id might not be in the project list.
          e.g. the selected project is deleted after the selection and we
          are unable to cleanup properly. In such case, the seleted project id
@@ -24,18 +28,24 @@
       v-else-if="selectedIdNotInList"
       :value="state.selectedId"
       :selected="true"
-    >{{ state.selectedId }}</option>
+    >
+      {{ state.selectedId }}
+    </option>
     <template v-for="(project, index) in projectList" :key="index">
       <option
         v-if="project.rowStatus == 'NORMAL'"
         :value="project.id"
         :selected="project.id == state.selectedId"
-      >{{ projectName(project) }}</option>
+      >
+        {{ projectName(project) }}
+      </option>
       <option
         v-else-if="project.id == state.selectedId"
         :value="project.id"
         :selected="true"
-      >{{ projectName(project) }}</option>
+      >
+        {{ projectName(project) }}
+      </option>
     </template>
   </select>
 </template>

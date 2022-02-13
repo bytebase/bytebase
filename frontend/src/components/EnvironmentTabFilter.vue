@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, defineComponent, reactive, watch } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Environment } from "../types";
@@ -26,12 +26,13 @@ interface LocalState {
   selectedIndex: number;
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentTabFilter",
   components: {},
   props: {
     selectedId: {
       type: Number,
+      default: undefined,
     },
   },
   emits: ["select-environment"],
@@ -69,7 +70,7 @@ export default {
     const tabItemList = computed((): BBTabFilterItem[] => {
       const list: BBTabFilterItem[] = [
         {
-          title: t('common.all'),
+          title: t("common.all"),
           alert: false,
         },
       ];
@@ -90,5 +91,5 @@ export default {
       tabItemList,
     };
   },
-};
+});
 </script>

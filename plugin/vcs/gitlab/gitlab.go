@@ -248,7 +248,7 @@ func (provider *Provider) OverwriteFile(ctx context.Context, oauthCtx common.Oau
 	return nil
 }
 
-// ReadFileMeta reads the content of a file.
+// ReadFile reads the content of a file.
 func (provider *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (string, error) {
 	code, body, err := httpGet(
 		instanceURL,

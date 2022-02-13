@@ -93,6 +93,7 @@
 </template>
 
 <script lang="ts" setup>
+import { escape } from "lodash-es";
 import { computed, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -178,11 +179,17 @@ const data = computed(() => {
     return {
       ...savedQuery,
       formatedName: state.search
-        ? getHighlightHTMLByKeyWords(savedQuery.name, state.search)
-        : savedQuery.name,
+        ? getHighlightHTMLByKeyWords(
+            escape(savedQuery.name),
+            escape(state.search)
+          )
+        : escape(savedQuery.name),
       formatedStatement: state.search
-        ? getHighlightHTMLByKeyWords(savedQuery.statement, state.search)
-        : savedQuery.statement,
+        ? getHighlightHTMLByKeyWords(
+            escape(savedQuery.statement),
+            escape(state.search)
+          )
+        : escape(savedQuery.statement),
     };
   });
 });

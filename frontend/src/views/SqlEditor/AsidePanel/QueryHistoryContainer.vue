@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts" setup>
+import { escape } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
@@ -140,8 +141,11 @@ const data = computed(() => {
     return {
       ...history,
       formatedStatement: state.search
-        ? getHighlightHTMLByKeyWords(history.statement, state.search)
-        : history.statement,
+        ? getHighlightHTMLByKeyWords(
+            escape(history.statement),
+            escape(state.search)
+          )
+        : escape(history.statement),
     };
   });
 });
