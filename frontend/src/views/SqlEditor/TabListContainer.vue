@@ -1,19 +1,19 @@
 <template>
-  <div class="tag-list-container">
+  <div class="tab-list-container">
     <!-- tab list-->
     <div
-      class="tag-list-wrapper relative overflow-hidden"
+      class="tab-list-wrapper relative overflow-hidden"
       :class="{ 'is-scrolling': scrollState.isScrolling }"
     >
       <div
         ref="tablistRef"
-        class="tag-list-tablist"
+        class="tab-list-tablist"
         @wheel="handleScollTabList"
       >
         <div
           v-for="tab in tabList"
           :key="tab.id"
-          class="tag-list-tab"
+          class="tab-list-tab"
           :class="{ active: tab.id === currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
@@ -81,18 +81,28 @@
       </div>
     </div>
 
-    <div class="tag-list-add">
-      <button
-        class="p-1 hover:bg-gray-200 rounded-md"
-        @click="handleAddTab({})"
+    <div class="tab-list-add">
+      <NTooltip
+        trigger="hover"
+        placement="bottom-center"
+        :disabled="!isDisconnected"
       >
-        <heroicons-solid:plus class="h-4 w-4" />
-      </button>
+        <template #trigger>
+          <button
+            class="p-1 hover:bg-gray-200 rounded-md"
+            :class="{ 'cursor-not-allowed': isDisconnected }"
+            @click="handleAddTab({})"
+          >
+            <heroicons-solid:plus class="h-4 w-4" />
+          </button>
+        </template>
+        Please select connections
+      </NTooltip>
     </div>
-    <div class="tag-list-more">
+    <div class="tab-list-more">
       <NPopselect
         v-model:value="selectedTab"
-        :options="tabListOptions"
+        :options="localTabList"
         trigger="click"
         size="medium"
         scrollable
@@ -112,9 +122,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive, nextTick, computed } from "vue";
+import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
+import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import {
   useNamespacedGetters,
   useNamespacedState,
@@ -124,19 +136,31 @@ import {
 import {
   TabInfo,
   AnyTabInfo,
+  SqlEditorGetters,
+  SqlEditorActions,
   TabGetters,
   TabState,
   TabActions,
-  SqlEditorActions,
+  SheetActions,
 } from "../../types";
-import { debounce } from "lodash-es";
+import { getDefaultTab } from "../../store/modules/tab";
 
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+// getters map
+const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
+  "currentTab",
+  "hasTabs",
+]);
+const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+  "isDisconnected",
+]);
 
+// state map
 const { currentTabId, tabList } = useNamespacedState<TabState>("tab", [
   "currentTabId",
   "tabList",
 ]);
+
+// actions map
 const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
   useNamespacedActions<TabActions>("tab", [
     "addTab",
@@ -144,13 +168,17 @@ const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
     "setCurrentTabId",
     "updateCurrentTab",
   ]);
-const { patchSavedQuery, checkSavedQueryExistById } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "patchSavedQuery",
-    "checkSavedQueryExistById",
-  ]);
+const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
+  "sheet",
+  ["createSheet", "patchSheetById"]
+);
+const { setCurrentConnectionByTab } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setCurrentConnectionByTab"]
+);
 
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const enterTabId = ref("");
@@ -164,7 +192,7 @@ const labelState = reactive({
 });
 const labelInputRef = ref<HTMLInputElement>();
 
-const tabListOptions = computed(() => {
+const localTabList = computed(() => {
   return tabList.value.map((tab: TabInfo) => {
     return {
       label: tab.label,
@@ -191,6 +219,15 @@ const reComputedScrollWidth = () => {
   scrollState.isScrolling = scrollingDistance.value > 0;
 };
 
+const updateSheetName = () => {
+  if (currentTab.value.sheetId) {
+    patchSheetById({
+      id: currentTab.value.sheetId,
+      name: labelState.currentLabelName,
+    });
+  }
+};
+
 // Edit label logic
 const handleEditLabel = (tab: TabInfo) => {
   labelState.isEditingLabel = true;
@@ -202,12 +239,9 @@ const handleTryChangeLabel = () => {
     updateCurrentTab({
       label: labelState.currentLabelName,
     });
-    if (currentTab.value.currentQueryId) {
-      patchSavedQuery({
-        id: currentTab.value.currentQueryId,
-        name: labelState.currentLabelName,
-      });
-    }
+
+    updateSheetName();
+
     nextTick(() => {
       reComputedScrollWidth();
       scrollState.style = {
@@ -227,12 +261,9 @@ const handleCancelChangeLabel = () => {
   updateCurrentTab({
     label: labelState.currentLabelName,
   });
-  if (currentTab.value.currentQueryId) {
-    patchSavedQuery({
-      id: currentTab.value.currentQueryId,
-      name: labelState.currentLabelName,
-    });
-  }
+
+  updateSheetName();
+
   nextTick(() => {
     labelState.isEditingLabel = false;
     reComputedScrollWidth();
@@ -241,34 +272,41 @@ const handleCancelChangeLabel = () => {
 
 const handleSelectTab = async (tab: TabInfo) => {
   setCurrentTabId(tab.id);
-
-  if (currentTab.value.currentQueryId) {
-    const exist = await checkSavedQueryExistById(
-      currentTab.value.currentQueryId
-    );
-    if (!exist) {
-      updateCurrentTab({
-        currentQueryId: undefined,
-      });
-    }
-  }
+  setCurrentConnectionByTab(router);
 };
 const handleAddTab = (tab: AnyTabInfo) => {
+  if (isDisconnected.value) return;
+
   addTab(tab);
-  nextTick(() => {
-    const tab = currentTab.value;
+
+  nextTick(async () => {
+    const tab = cloneDeep(currentTab.value);
     handleEditLabel(tab);
+
+    // make a relation between the new sheet and the current tab
+    const newSheet = await createSheet();
+
+    updateCurrentTab({
+      sheetId: newSheet.id,
+    });
+
     reComputedScrollWidth();
   });
 };
-const handleRemoveTab = (tab: TabInfo) => {
-  removeTab(tab);
+const handleRemoveTab = async (tab: TabInfo) => {
+  await removeTab(tab);
+  const tabsLength = tabList.value.length;
+
+  if (tabsLength > 0) {
+    handleSelectTab(tabList.value[tabsLength - 1]);
+  }
   nextTick(() => {
     reComputedScrollWidth();
   });
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setCurrentTabId(tabId);
+  setCurrentConnectionByTab(router);
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {
@@ -295,40 +333,56 @@ watch(
     }
   }
 );
+
+onMounted(async () => {
+  if (!hasTabs.value) {
+    addTab(getDefaultTab());
+    if (!isDisconnected.value) {
+      // make a relation between the new sheet and the current tab
+      const newSheet = await createSheet();
+
+      updateCurrentTab({
+        sheetId: newSheet.id,
+      });
+
+      reComputedScrollWidth();
+    }
+  }
+});
 </script>
 
 <style scoped>
-.tag-list-container {
+.tab-list-container {
   height: var(--tab-height);
   @apply flex box-border;
   @apply text-gray-500 text-sm;
   @apply border-b;
 }
 
-.tag-list-tablist {
+.tab-list-tablist {
   @apply flex overflow-auto;
   max-width: calc(100vw - 112px);
   scrollbar-width: none; /* firefox */
   -ms-overflow-style: none; /* IE 10+ */
 }
 
-.tag-list-wrapper.is-scrolling::before {
+.tab-list-wrapper.is-scrolling::before {
   @apply absolute top-0 left-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.tag-list-wrapper.is-scrolling::after {
+.tab-list-wrapper.is-scrolling::after {
   @apply absolute top-0 right-0 w-4 h-full z-10;
   content: "";
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset -10px 0 8px -8px rgb(0 0 0 / 16%);
 }
-.tag-list-tablist::-webkit-scrollbar {
+.tab-list-tablist::-webkit-scrollbar {
   display: none; /* Chrome Safari */
 }
 
-.tag-list-tab {
+.tab-list-tab {
   @apply inline-flex place-items-center;
   @apply cursor-pointer box-border;
   @apply px-2 border-r;
@@ -338,33 +392,33 @@ watch(
   transition: transform 0.3s, -webkit-transform 0.3s;
 }
 
-.tag-list-tab.active {
+.tab-list-tab.active {
   @apply cursor-text relative;
   @apply bg-white;
   @apply text-accent;
 }
 
-.tag-list-tab .label {
+.tab-list-tab .label {
   @apply p-2;
 }
-.tag-list-tab .suffix {
+.tab-list-tab .suffix {
   @apply flex justify-center items-center h-4 w-4;
 }
 
-.tag-list-tab .suffix.close {
+.tab-list-tab .suffix.close {
   @apply cursor-pointer;
   @apply text-gray-500;
 }
 
-.tag-list-move-prev,
-.tag-list-move-next,
-.tag-list-add {
+.tab-list-move-prev,
+.tab-list-move-next,
+.tab-list-add {
   @apply flex items-center;
   @apply cursor-pointer;
   @apply p-2;
 }
 
-.tag-list-more {
+.tab-list-more {
   @apply flex items-center justify-end flex-1;
   @apply cursor-pointer;
   @apply p-2;

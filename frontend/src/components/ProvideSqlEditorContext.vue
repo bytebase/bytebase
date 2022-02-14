@@ -116,7 +116,7 @@ const prepareSqlEdtiorContext = async () => {
     isLoadingTree: false,
   });
   store.dispatch("sqlEditor/fetchQueryHistoryList");
-  store.dispatch("sqlEditor/fetchSavedQueryList");
+  store.dispatch("sheet/fetchSheetList");
 };
 
 onMounted(async () => {

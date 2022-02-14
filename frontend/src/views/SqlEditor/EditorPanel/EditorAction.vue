@@ -26,7 +26,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleSaveQueryBtnClick"
+        @click="handleUpsertSheet"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -38,9 +38,9 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, ref, watch, onMounted } from "vue";
 import { cloneDeep } from "lodash-es";
 import { CascaderOption } from "naive-ui";
-import { computed, ref, watch } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -49,9 +49,11 @@ import {
 
 import {
   SqlEditorState,
+  SqlEditorGetters,
   SqlEditorActions,
   ConnectionContext,
   TabGetters,
+  SheetActions,
   TabActions,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
@@ -62,45 +64,45 @@ const { connectionTree, connectionContext } =
     "connectionTree",
     "connectionContext",
   ]);
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
-const {
-  createSavedQuery,
-  setConnectionContext,
-  patchSavedQuery,
-  checkSavedQueryExistById,
-} = useNamespacedActions<SqlEditorActions>("sqlEditor", [
-  "createSavedQuery",
-  "setConnectionContext",
-  "patchSavedQuery",
-  "checkSavedQueryExistById",
+const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+  "isDisconnected",
 ]);
+
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+
+// actions
+const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setConnectionContext"]
+);
+
+const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
+  "upsertSheet",
+]);
+
 const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
   "updateCurrentTab",
 ]);
 
+const selectedConnection = ref();
+const isSeletedDatabase = ref(false);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.queryStatement === ""
 );
 
-const selectedConnection = ref();
-const isSeletedDatabase = ref(false);
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
   execute();
 };
 
-watch(
-  () => connectionTree.value,
-  (newVal) => {
-    if (newVal) {
-      const ctx = connectionContext.value;
-      selectedConnection.value = ctx.hasSlug
-        ? ctx.tableId || ctx.databaseId || ctx.instanceId
-        : null;
-    }
+const setSelectedConnection = (ctx: ConnectionContext) => {
+  if (ctx) {
+    selectedConnection.value = ctx.hasSlug
+      ? ctx.tableId || ctx.databaseId || ctx.instanceId
+      : null;
   }
-);
+};
 
 const handleConnectionChange = (
   value: number,
@@ -137,30 +139,44 @@ const handleConnectionChange = (
   }
 };
 
-const handleSaveQueryBtnClick = async () => {
-  const { queryStatement, label, currentQueryId } = currentTab.value;
-  const isQueryExist = await checkSavedQueryExistById(currentQueryId || -1);
-
-  if (isQueryExist && currentQueryId) {
-    patchSavedQuery({
-      id: currentQueryId,
-      name: label,
-      statement: queryStatement,
-    });
-  } else {
-    const newSavedQuery = await createSavedQuery({
-      name: label,
-      statement: queryStatement,
-    });
-    updateCurrentTab({
-      currentQueryId: newSavedQuery.id,
-    });
-  }
-
-  updateCurrentTab({
-    isSaved: true,
+const handleUpsertSheet = async () => {
+  const { label, queryStatement, sheetId } = currentTab.value;
+  return upsertSheet({
+    id: sheetId,
+    name: label,
+    statement: queryStatement,
   });
 };
+
+watch(
+  () => connectionTree.value,
+  (newVal) => {
+    if (newVal) {
+      setSelectedConnection(connectionContext.value);
+    }
+  },
+  { deep: true }
+);
+
+// selected a new connection
+watch(
+  () => isDisconnected.value,
+  async (newVal) => {
+    if (!newVal) {
+      const newSheet = await handleUpsertSheet();
+      updateCurrentTab({
+        sheetId: newSheet.id,
+        isSaved: true,
+      });
+    } else {
+      setSelectedConnection(connectionContext.value);
+    }
+  }
+);
+
+onMounted(() => {
+  setSelectedConnection(connectionContext.value);
+});
 </script>
 
 <style scoped>

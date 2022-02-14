@@ -6,7 +6,7 @@ export interface TabInfo {
   queryStatement: string;
   selectedStatement: string;
   queryResult?: Record<string, any>[];
-  currentQueryId?: number;
+  sheetId?: number;
 }
 
 export type AnyTabInfo = Partial<TabInfo>;

@@ -17,26 +17,15 @@ import {
 } from "vuex-composition-helpers";
 
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import {
-  TabActions,
-  TabGetters,
-  SqlEditorActions,
-} from "../../../types";
+import { TabActions, TabGetters, SheetActions } from "../../../types";
 
-const { currentTab } = useNamespacedGetters<TabGetters>(
-  "tab",
-  ["currentTab"]
-);
-const { updateCurrentTab } = useNamespacedActions<TabActions>(
-  "tab",
-  ["updateCurrentTab"]
-);
-const { createSavedQuery, patchSavedQuery, checkSavedQueryExistById } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "createSavedQuery",
-    "patchSavedQuery",
-    "checkSavedQueryExistById",
-  ]);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
+  "updateCurrentTab",
+]);
+const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
+  "upsertSheet",
+]);
 
 const { execute } = useExecuteSQL();
 
@@ -56,26 +45,16 @@ const handleChangeSelection = debounce((value: string) => {
 }, 300);
 
 const handleSave = async (statement: string) => {
-  const { label, currentQueryId } = currentTab.value;
-  const isQueryExist = await checkSavedQueryExistById(currentQueryId || -1);
+  const { label, sheetId } = currentTab.value;
 
-  if (isQueryExist && currentQueryId) {
-    patchSavedQuery({
-      id: currentQueryId,
-      name: label,
-      statement,
-    });
-  } else {
-    const newSavedQuery = await createSavedQuery({
-      name: label,
-      statement,
-    });
-    updateCurrentTab({
-      currentQueryId: newSavedQuery.id,
-    });
-  }
+  const newSheet = await upsertSheet({
+    id: sheetId,
+    name: label,
+    statement,
+  });
 
   updateCurrentTab({
+    sheetId: newSheet.id,
     isSaved: true,
   });
 };

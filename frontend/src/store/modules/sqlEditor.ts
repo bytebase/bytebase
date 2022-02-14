@@ -1,4 +1,3 @@
-import axios from "axios";
 import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 
@@ -11,56 +10,34 @@ import {
   DatabaseId,
   ProjectId,
   QueryHistory,
-  SavedQuery,
-  ResourceObject,
+  Sheet,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import { getPrincipalFromIncludedList } from "./principal";
+import { connectionSlug } from "../../utils";
 
-function convertSavedQuery(
-  savedQuery: ResourceObject,
-  includedList: ResourceObject[]
-): SavedQuery {
-  return {
-    ...(savedQuery.attributes as Omit<
-      SavedQuery,
-      "id" | "creator" | "updater"
-    >),
-    creator: getPrincipalFromIncludedList(
-      savedQuery.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      savedQuery.relationships!.updater.data,
-      includedList
-    ),
-    id: parseInt(savedQuery.id),
-  };
-}
+export const getDefaultConnectionContext = () => ({
+  hasSlug: false,
+  instanceId: 0,
+  instanceName: "",
+  databaseId: 0,
+  databaseName: "",
+  tableId: 0,
+  tableName: "",
+  isLoadingTree: false,
+  selectedDatabaseId: 0,
+  selectedTableName: "",
+});
 
 const state: () => SqlEditorState = () => ({
   connectionTree: [],
-  connectionContext: {
-    hasSlug: false,
-    instanceId: 0,
-    instanceName: "",
-    databaseId: 0,
-    databaseName: "",
-    tableId: 0,
-    tableName: "",
-    isLoadingTree: false,
-    selectedDatabaseId: 0,
-    selectedTableName: "",
-  },
+  connectionContext: getDefaultConnectionContext(),
   isExecuting: false,
   isShowExecutingHint: false,
   shouldSetContent: false,
   // Related data and status
   queryHistoryList: [],
   isFetchingQueryHistory: false,
-  savedQueryList: [],
-  isFetchingSavedQueries: false,
 });
 
 const getters = {
@@ -135,6 +112,13 @@ const getters = {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
+  // in case of the connection is not set, miss the instance id, we can not create the sheet
+  isDisconnected(state: SqlEditorState) {
+    return (
+      state.connectionContext.instanceId === 0 ||
+      state.connectionContext.databaseId === 0
+    );
+  },
 };
 
 const mutations = {
@@ -174,15 +158,6 @@ const mutations = {
   ) {
     state.isFetchingQueryHistory = payload;
   },
-  [types.SET_SAVED_QUERY_LIST](state: SqlEditorState, payload: SavedQuery[]) {
-    state.savedQueryList = payload;
-  },
-  [types.SET_IS_FETCHING_SAVED_QUERIES](
-    state: SqlEditorState,
-    payload: boolean
-  ) {
-    state.isFetchingSavedQueries = payload;
-  },
 };
 
 type SqlEditorActionsMap = {
@@ -193,8 +168,6 @@ type SqlEditorActionsMap = {
   setIsExecuting: typeof mutations.SET_IS_EXECUTING;
   setQueryHistoryList: typeof mutations.SET_QUERY_HISTORY_LIST;
   setIsFetchingQueryHistory: typeof mutations.SET_IS_FETCHING_QUERY_HISTORY;
-  setSavedQueryList: typeof mutations.SET_SAVED_QUERY_LIST;
-  setIsFetchingSavedQueries: typeof mutations.SET_IS_FETCHING_SAVED_QUERIES;
 };
 
 const actions = {
@@ -206,8 +179,6 @@ const actions = {
     setIsExecuting: types.SET_IS_EXECUTING,
     setQueryHistoryList: types.SET_QUERY_HISTORY_LIST,
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
-    setSavedQueryList: types.SET_SAVED_QUERY_LIST,
-    setIsFetchingSavedQueries: types.SET_IS_FETCHING_SAVED_QUERIES,
   }),
   async executeQuery(
     { dispatch, state, rootGetters }: any,
@@ -228,7 +199,7 @@ const actions = {
     dispatch(
       "tab/updateCurrentTab",
       {
-        queryResult: res.data,
+        queryResult: Array.isArray(res.data) ? res.data : [],
       },
       { root: true }
     );
@@ -303,89 +274,45 @@ const actions = {
       state.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
     );
   },
-  async createSavedQuery(
-    { commit, state }: any,
-    { name, statement }: { name: string; statement: string }
-  ): Promise<SavedQuery> {
-    const data = (
-      await axios.post(`/api/savedquery`, {
-        data: {
-          type: "createSavedQuery",
-          attributes: {
-            name,
-            statement,
-          },
-        },
-      })
-    ).data;
-    const newSavedQuery = convertSavedQuery(data.data, data.included);
-
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      (state.savedQueryList as SavedQuery[])
-        .concat(newSavedQuery)
-        .sort((a, b) => b.createdTs - a.createdTs)
-    );
-
-    return newSavedQuery;
-  },
-  async fetchSavedQueryList({ commit }: any) {
-    commit(types.SET_IS_FETCHING_SAVED_QUERIES, true);
-    const data = (await axios.get(`/api/savedquery`)).data;
-    const savedQueryList: SavedQuery[] = data.data.map(
-      (savedQuery: ResourceObject) => {
-        return convertSavedQuery(savedQuery, data.included);
-      }
-    );
-
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      savedQueryList.sort((a, b) => b.createdTs - a.createdTs)
-    );
-    commit(types.SET_IS_FETCHING_SAVED_QUERIES, false);
-  },
-  async patchSavedQuery(
-    { dispatch }: any,
-    {
-      id,
-      name,
-      statement,
-    }: {
-      id: number;
-      name?: string;
-      statement?: string;
-    }
+  /**
+   * Set the connection by tab info
+   * @param param
+   * @param payload
+   */
+  setCurrentConnectionByTab(
+    { commit, dispatch, state, getters, rootGetters, rootState }: any,
+    router: any
   ) {
-    const attributes: any = {};
-    if (name) {
-      attributes.name = name;
-    }
-    if (statement) {
-      attributes.statement = statement;
-    }
+    const currentTab = rootGetters["tab/currentTab"];
+    const sheetById = rootState.sheet.sheetById as Map<number, Sheet>;
 
-    await axios.patch(`/api/savedquery/${id}`, {
-      data: {
-        type: "patchSavedQuery",
-        attributes,
-      },
-    });
-    dispatch("fetchSavedQueryList");
-  },
-  async deleteSavedQuery({ commit, state }: any, id: number) {
-    await axios.delete(`/api/savedquery/${id}`);
-    commit(
-      types.SET_SAVED_QUERY_LIST,
-      state.savedQueryList.filter((t: SavedQuery) => t.id !== id)
-    );
-  },
-  async checkSavedQueryExistById({ state }: any, id: number) {
-    for (const savedQuery of state.savedQueryList) {
-      if (savedQuery.id === id) {
-        return true;
-      }
+    if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
+      const sheet = sheetById.get(currentTab.sheetId);
+
+      const database = rootGetters["database/databaseById"](
+        sheet?.databaseId,
+        sheet?.instanceId
+      );
+
+      commit(types.SET_CONNECTION_CONTEXT, {
+        hasSlug: true,
+        databaseId: sheet?.databaseId,
+        instanceId: sheet?.instanceId,
+      });
+
+      router.replace({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: connectionSlug(database),
+        },
+      });
+    } else {
+      commit(types.SET_CONNECTION_CONTEXT, getDefaultConnectionContext());
+
+      router.push({
+        path: "/sql-editor",
+      });
     }
-    return false;
   },
 };
 

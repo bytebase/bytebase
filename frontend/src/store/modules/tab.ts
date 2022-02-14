@@ -7,7 +7,7 @@ import { makeActions } from "../actions";
 export const getDefaultTab = () => {
   return {
     id: uuidv1(),
-    label: "Untitled Queries",
+    label: "Untitled Sheet",
     isSaved: false,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     queryStatement: "",
