@@ -15,4 +15,4 @@ export const ADD_TAB = "ADD_TAB";
 export const REMOVE_TAB = "REMOVE_TAB";
 export const UPDATE_TAB = "UPDATE_TAB";
 export const UPDATE_ACTIVE_TAB = "UPDATE_ACTIVE_TAB";
-export const SET_ACTIVE_TAB_ID = "SET_ACTIVE_TAB_ID";
+export const SET_CURRENT_TAB_ID = "SET_CURRENT_TAB_ID";

@@ -19,14 +19,14 @@ export const getDefaultTab = () => {
 const state: () => TabState = () => {
   return {
     tabList: [],
-    activeTabId: "",
+    currentTabId: "",
   };
 };
 
 const getters = {
   currentTab(state: TabState) {
     const idx = state.tabList.findIndex(
-      (tab: TabInfo) => tab.id === state.activeTabId
+      (tab: TabInfo) => tab.id === state.currentTabId
     );
     return (idx === -1 ? {} : state.tabList[idx]) as TabInfo;
   },
@@ -53,15 +53,15 @@ const mutations = {
   },
   [types.UPDATE_ACTIVE_TAB](state: TabState, payload: AnyTabInfo) {
     const idx = state.tabList.findIndex(
-      (tab: TabInfo) => tab.id === state.activeTabId
+      (tab: TabInfo) => tab.id === state.currentTabId
     );
     Object.assign(state.tabList[idx], {
       ...state.tabList[idx],
       ...payload,
     });
   },
-  [types.SET_ACTIVE_TAB_ID](state: TabState, payload: string) {
-    state.activeTabId = payload;
+  [types.SET_CURRENT_TAB_ID](state: TabState, payload: string) {
+    state.currentTabId = payload;
   },
 };
 
@@ -84,15 +84,15 @@ const actions = {
     };
 
     commit(types.SET_TAB_STATE, {
-      activeTabId: newTab.id,
+      currentTabId: newTab.id,
     });
     commit(types.ADD_TAB, newTab);
   },
   updateActiveTab({ commit }: any, payload: AnyTabInfo) {
     commit(types.UPDATE_ACTIVE_TAB, payload);
   },
-  setActiveTabId({ commit, state }: any, payload: string) {
-    commit(types.SET_ACTIVE_TAB_ID, payload);
+  setCurrentTabId({ commit, state }: any, payload: string) {
+    commit(types.SET_CURRENT_TAB_ID, payload);
   },
 };
 

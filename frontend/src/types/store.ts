@@ -207,7 +207,7 @@ export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface TabState {
   tabList: TabInfo[];
-  activeTabId: string;
+  currentTabId: string;
 }
 export type TabGetters = typeof tabStore.getters;
 export type TabActions = typeof tabStore.actions;

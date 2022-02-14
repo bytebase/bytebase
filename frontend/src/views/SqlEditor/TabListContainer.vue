@@ -14,7 +14,7 @@
           v-for="tab in tabList"
           :key="tab.id"
           class="tag-list-tab"
-          :class="{ active: tab.id === activeTabId }"
+          :class="{ active: tab.id === currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
           @mouseover="enterTabId = tab.id"
@@ -65,7 +65,7 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template v-else-if="tab.id === activeTabId && tabList.length > 1">
+            <template v-else-if="tab.id === currentTabId && tabList.length > 1">
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -133,15 +133,15 @@ import { debounce } from "lodash-es";
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const { activeTabId, tabList } = useNamespacedState<TabState>("tab", [
-  "activeTabId",
+const { currentTabId, tabList } = useNamespacedState<TabState>("tab", [
+  "currentTabId",
   "tabList",
 ]);
-const { addTab, removeTab, setActiveTabId, updateActiveTab } =
+const { addTab, removeTab, setCurrentTabId, updateActiveTab } =
   useNamespacedActions<TabActions>("tab", [
     "addTab",
     "removeTab",
-    "setActiveTabId",
+    "setCurrentTabId",
     "updateActiveTab",
   ]);
 const { patchSavedQuery, checkSavedQueryExistById } =
@@ -154,7 +154,7 @@ const store = useStore();
 const { t } = useI18n();
 
 const enterTabId = ref("");
-const selectedTab = computed(() => activeTabId.value);
+const selectedTab = computed(() => currentTabId.value);
 // edit label state
 const labelState = reactive({
   isEditingLabel: false,
@@ -240,7 +240,7 @@ const handleCancelChangeLabel = () => {
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
-  setActiveTabId(tab.id);
+  setCurrentTabId(tab.id);
 
   if (currentTab.value.currentQueryId) {
     const exist = await checkSavedQueryExistById(
@@ -268,7 +268,7 @@ const handleRemoveTab = (tab: TabInfo) => {
   });
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
-  setActiveTabId(tabId);
+  setCurrentTabId(tabId);
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {
