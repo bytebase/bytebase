@@ -69,7 +69,7 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { EditorSelectorGetters, SqlEditorState } from "../../../types";
+import { TabGetters, SqlEditorState } from "../../../types";
 
 interface State {
   search: string;
@@ -81,10 +81,7 @@ const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "isExecuting",
 ]);
 
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 const queryResult = computed(() => currentTab.value.queryResult || []);
 

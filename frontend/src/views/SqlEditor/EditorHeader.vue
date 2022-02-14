@@ -3,15 +3,17 @@
     <div class="flex items-center">
       <div class="flex-shrink-0 w-44">
         <router-link to="/" class="select-none" active-class exact-active-class>
-          <img class="h-12 w-auto" src="../../assets/logo-full.svg" alt="Bytebase" />
+          <img
+            class="h-12 w-auto"
+            src="../../assets/logo-full.svg"
+            alt="Bytebase"
+          />
         </router-link>
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
           <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">
-            {{
-              $t("sql-editor.self")
-            }}
+            {{ $t("sql-editor.self") }}
           </router-link>
         </div>
       </div>
@@ -25,7 +27,11 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <div v-if="showSwitchPlan" class="cursor-pointer" @click="toggleLocales">
+        <div
+          v-if="showSwitchPlan"
+          class="cursor-pointer"
+          @click="toggleLocales"
+        >
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
@@ -57,32 +63,31 @@
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
-      {{
-        $t("common.projects")
-      }}
+      {{ $t("common.projects") }}
     </router-link>
 
     <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
-      {{
-        $t("common.databases")
-      }}
+      {{ $t("common.databases") }}
     </router-link>
 
     <router-link
       v-if="showDBAItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.instances") }}</router-link>
+      >{{ $t("common.instances") }}</router-link
+    >
 
     <router-link
       to="/environment"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.environments") }}</router-link>
+      >{{ $t("common.environments") }}</router-link
+    >
 
     <router-link
       to="/setting/member"
       class="bar-link rounded-md block px-3 py-2"
-    >{{ $t("common.settings") }}</router-link>
+      >{{ $t("common.settings") }}</router-link
+    >
   </div>
 </template>
 
@@ -95,7 +100,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { useStore } from "vuex";
 
 import ProfileDropdown from "../../components/ProfileDropdown.vue";
-import { InboxSummary, PlanType, UNKNOWN_ID } from "../../types";
+import { InboxSummary, UNKNOWN_ID } from "../../types";
 import { isDBAOrOwner, isDev } from "../../utils";
 
 interface LocalState {
@@ -116,7 +121,9 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const currentPlan = computed(() => store.getters["subscription/currentPlan"]());
+    const currentPlan = computed(() =>
+      store.getters["subscription/currentPlan"]()
+    );
 
     const showDBAItem = computed((): boolean => {
       return (
