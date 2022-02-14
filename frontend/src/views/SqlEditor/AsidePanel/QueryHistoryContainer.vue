@@ -83,7 +83,7 @@ import {
 } from "vuex-composition-helpers";
 
 import {
-  EditorSelectorActions,
+  TabActions,
   QueryHistory,
   SqlEditorActions,
   SqlEditorState,
@@ -109,10 +109,7 @@ const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["deleteQueryHistory"]
 );
-const { addTab } = useNamespacedActions<EditorSelectorActions>(
-  "editorSelector",
-  ["addTab"]
-);
+const { addTab } = useNamespacedActions<TabActions>("tab", ["addTab"]);
 
 const state = reactive<State>({
   search: "",

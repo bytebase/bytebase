@@ -103,9 +103,9 @@ import {
 } from "vuex-composition-helpers";
 
 import {
-  EditorSelectorActions,
-  EditorSelectorGetters,
-  EditorSelectorState,
+  TabActions,
+  TabGetters,
+  TabState,
   SavedQuery,
   SqlEditorActions,
   SqlEditorState,
@@ -128,25 +128,18 @@ const { savedQueryList, isFetchingSavedQueries: isLoading } =
     "savedQueryList",
     "isFetchingSavedQueries",
   ]);
-const { queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["queryTabList"]
-);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { deleteSavedQuery, setShouldSetContent, patchSavedQuery } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
     "deleteSavedQuery",
     "setShouldSetContent",
     "patchSavedQuery",
   ]);
-const { updateActiveTab, setActiveTabId } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
-    "updateActiveTab",
-    "setActiveTabId",
-  ]);
+const { updateCurrentTab, setCurrentTabId } = useNamespacedActions<TabActions>(
+  "tab",
+  ["updateCurrentTab", "setCurrentTabId"]
+);
 
 const state = reactive<State>({
   search: "",
@@ -233,7 +226,7 @@ const handleSavedQueryNameChanged = () => {
     });
 
     if (currentTab.value.currentQueryId === state.editingSavedQueryId) {
-      updateActiveTab({
+      updateCurrentTab({
         label: state.currentSavedQueryName,
       });
     }
@@ -263,7 +256,7 @@ const handleDeleteSavedQuery = () => {
     deleteSavedQuery(state.currentActionSavedQuery.id);
 
     if (currentTab.value.currentQueryId === state.currentActionSavedQuery.id) {
-      updateActiveTab({
+      updateCurrentTab({
         currentQueryId: undefined,
       });
     }
@@ -273,15 +266,15 @@ const handleDeleteSavedQuery = () => {
 
 const handleSavedQueryClick = (savedQuery: SavedQuery) => {
   if (currentTab.value.currentQueryId !== savedQuery.id) {
-    for (const tab of queryTabList.value) {
+    for (const tab of tabList.value) {
       if (tab.currentQueryId === savedQuery.id) {
-        setActiveTabId(tab.id);
+        setCurrentTabId(tab.id);
         setShouldSetContent(true);
         return;
       }
     }
 
-    updateActiveTab({
+    updateCurrentTab({
       label: savedQuery.name,
       queryStatement: savedQuery.statement,
       selectedStatement: "",
