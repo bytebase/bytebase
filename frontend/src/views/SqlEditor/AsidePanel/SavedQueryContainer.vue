@@ -103,9 +103,9 @@ import {
 } from "vuex-composition-helpers";
 
 import {
-  EditorSelectorActions,
-  EditorSelectorGetters,
-  EditorSelectorState,
+  TabActions,
+  TabGetters,
+  TabState,
   SavedQuery,
   SqlEditorActions,
   SqlEditorState,
@@ -128,25 +128,18 @@ const { savedQueryList, isFetchingSavedQueries: isLoading } =
     "savedQueryList",
     "isFetchingSavedQueries",
   ]);
-const { queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["queryTabList"]
-);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { deleteSavedQuery, setShouldSetContent, patchSavedQuery } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
     "deleteSavedQuery",
     "setShouldSetContent",
     "patchSavedQuery",
   ]);
-const { updateActiveTab, setActiveTabId } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
-    "updateActiveTab",
-    "setActiveTabId",
-  ]);
+const { updateActiveTab, setActiveTabId } = useNamespacedActions<TabActions>(
+  "tab",
+  ["updateActiveTab", "setActiveTabId"]
+);
 
 const state = reactive<State>({
   search: "",
@@ -273,7 +266,7 @@ const handleDeleteSavedQuery = () => {
 
 const handleSavedQueryClick = (savedQuery: SavedQuery) => {
   if (currentTab.value.currentQueryId !== savedQuery.id) {
-    for (const tab of queryTabList.value) {
+    for (const tab of tabList.value) {
       if (tab.currentQueryId === savedQuery.id) {
         setActiveTabId(tab.id);
         setShouldSetContent(true);

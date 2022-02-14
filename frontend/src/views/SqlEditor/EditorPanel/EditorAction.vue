@@ -51,8 +51,8 @@ import {
   SqlEditorState,
   SqlEditorActions,
   ConnectionContext,
-  EditorSelectorGetters,
-  EditorSelectorActions,
+  TabGetters,
+  TabActions,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import { isDev } from "../../../utils";
@@ -62,8 +62,8 @@ const { connectionTree, connectionContext } =
     "connectionTree",
     "connectionContext",
   ]);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
+const { currentTab } = useNamespacedGetters<TabGetters>(
+  "tab",
   ["currentTab"]
 );
 const {
@@ -77,8 +77,8 @@ const {
   "patchSavedQuery",
   "checkSavedQueryExistById",
 ]);
-const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
-  "editorSelector",
+const { updateActiveTab } = useNamespacedActions<TabActions>(
+  "tab",
   ["updateActiveTab"]
 );
 

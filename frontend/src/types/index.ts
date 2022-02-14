@@ -36,5 +36,5 @@ export * from "./view";
 export * from "./label";
 export * from "./deployment";
 export * from "./sqlEditor";
-export * from "./editorSelector";
+export * from "./tab";
 export * from "./subscription";

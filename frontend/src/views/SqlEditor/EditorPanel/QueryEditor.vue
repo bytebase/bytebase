@@ -18,17 +18,17 @@ import {
 
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import {
-  EditorSelectorActions,
-  EditorSelectorGetters,
+  TabActions,
+  TabGetters,
   SqlEditorActions,
 } from "../../../types";
 
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
+const { currentTab } = useNamespacedGetters<TabGetters>(
+  "tab",
   ["currentTab"]
 );
-const { updateActiveTab } = useNamespacedActions<EditorSelectorActions>(
-  "editorSelector",
+const { updateActiveTab } = useNamespacedActions<TabActions>(
+  "tab",
   ["updateActiveTab"]
 );
 const { createSavedQuery, patchSavedQuery, checkSavedQueryExistById } =

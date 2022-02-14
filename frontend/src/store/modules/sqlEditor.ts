@@ -213,7 +213,7 @@ const actions = {
     { dispatch, state, rootGetters }: any,
     payload: Partial<QueryInfo> = {}
   ) {
-    const currentTab = rootGetters["editorSelector/currentTab"];
+    const currentTab = rootGetters["tab/currentTab"];
     const res = await dispatch(
       "sql/query",
       {
@@ -226,7 +226,7 @@ const actions = {
     );
 
     dispatch(
-      "editorSelector/updateActiveTab",
+      "tab/updateActiveTab",
       {
         queryResult: res.data,
       },

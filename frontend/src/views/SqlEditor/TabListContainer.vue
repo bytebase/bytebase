@@ -11,7 +11,7 @@
         @wheel="handleScollTabList"
       >
         <div
-          v-for="tab in queryTabList"
+          v-for="tab in tabList"
           :key="tab.id"
           class="tag-list-tab"
           :class="{ active: tab.id === activeTabId }"
@@ -51,7 +51,7 @@
               {{ tab.label }}
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && queryTabList.length > 1">
+          <template v-if="enterTabId === tab.id && tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -65,9 +65,7 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template
-              v-else-if="tab.id === activeTabId && queryTabList.length > 1"
-            >
+            <template v-else-if="tab.id === activeTabId && tabList.length > 1">
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -94,7 +92,7 @@
     <div class="tag-list-more">
       <NPopselect
         v-model:value="selectedTab"
-        :options="tabList"
+        :options="tabListOptions"
         trigger="click"
         size="medium"
         scrollable
@@ -126,24 +124,21 @@ import {
 import {
   TabInfo,
   AnyTabInfo,
-  EditorSelectorGetters,
-  EditorSelectorState,
-  EditorSelectorActions,
+  TabGetters,
+  TabState,
+  TabActions,
   SqlEditorActions,
 } from "../../types";
 import { debounce } from "lodash-es";
 
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const { activeTabId, queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["activeTabId", "queryTabList"]
-);
+const { activeTabId, tabList } = useNamespacedState<TabState>("tab", [
+  "activeTabId",
+  "tabList",
+]);
 const { addTab, removeTab, setActiveTabId, updateActiveTab } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
+  useNamespacedActions<TabActions>("tab", [
     "addTab",
     "removeTab",
     "setActiveTabId",
@@ -169,8 +164,8 @@ const labelState = reactive({
 });
 const labelInputRef = ref<HTMLInputElement>();
 
-const tabList = computed(() => {
-  return queryTabList.value.map((tab: TabInfo) => {
+const tabListOptions = computed(() => {
+  return tabList.value.map((tab: TabInfo) => {
     return {
       label: tab.label,
       value: tab.id,

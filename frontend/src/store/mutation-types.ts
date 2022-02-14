@@ -10,7 +10,7 @@ export const SET_SAVED_QUERY_LIST = "SET_SAVED_QUERY_LIST";
 export const SET_IS_FETCHING_SAVED_QUERIES = "SET_IS_FETCHING_SAVED_QUERIES";
 
 // Editor Selector mutation types
-export const SET_EDITOR_SELECTOR_STATE = "SET_EDITOR_SELECTOR_STATE";
+export const SET_TAB_STATE = "SET_TAB_STATE";
 export const ADD_TAB = "ADD_TAB";
 export const REMOVE_TAB = "REMOVE_TAB";
 export const UPDATE_TAB = "UPDATE_TAB";
