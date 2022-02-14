@@ -35,8 +35,8 @@ import GettingStarted from "./GettingStarted.vue";
 
 const store = useStore();
 
-const hasTabs = computed(() => store.getters["editorSelector/hasTabs"]);
-const paneKey = computed(() => store.getters["editorSelector/currentTab"].id);
+const hasTabs = computed(() => store.getters["tab/hasTabs"]);
+const paneKey = computed(() => store.getters["tab/currentTab"].id);
 </script>
 
 <style>

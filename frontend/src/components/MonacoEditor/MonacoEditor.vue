@@ -19,7 +19,7 @@ import type { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
 import {
-  EditorSelectorGetters,
+  TabGetters,
   SqlDialect,
   SqlEditorActions,
   SqlEditorState,
@@ -56,8 +56,8 @@ const language = toRef(props, "language");
 const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "shouldSetContent",
 ]);
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
+const { currentTab } = useNamespacedGetters<TabGetters>(
+  "tab",
   ["currentTab"]
 );
 const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
