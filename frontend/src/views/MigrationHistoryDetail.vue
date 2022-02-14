@@ -109,19 +109,6 @@
           {{ migrationHistory.statement }}
         </div>
         <code-diff
-          v-if="showBaselineChange"
-          el-id="baseline-change"
-          :title="$t('migration-history.baseline-change')"
-          :switcher-label="$t('migration-history.show-diff')"
-          :info-switch-on-diff="$t('migration-history.left-vs-right')"
-          :info-switch-off-diff="
-            $t('migration-history.schema-snapshot-after-baseline')
-          "
-          :info-no-diff="$t('migration-history.no-schema-change')"
-          :old-code="migrationHistory.lastRecordedSchema"
-          :new-code="migrationHistory.schemaPrev"
-        />
-        <code-diff
           v-if="showMigrationChange"
           el-id="schema"
           :title="'Schema ' + $t('common.snapshot')"
@@ -173,19 +160,6 @@ export default defineComponent({
         idFromSlug(props.migrationHistorySlug)
       );
     });
-
-    // In normal migration, baseline changes might indicates that
-    // the actual schema is different from the desired schema (a.k.a. database schema drift,
-    // see https://bytebase.com/blog/what-is-database-schema-drift).
-    // thus we show baseline change to warn the user.
-    //
-    // In baseline migration, always show the baseline change.
-    const showBaselineChange = computed(
-      (): boolean =>
-        migrationHistory.value.type === "BASELINE" ||
-        migrationHistory.value.lastRecordedSchema !==
-          migrationHistory.value.schemaPrev
-    );
 
     // Baseline migration should NOT cause schema change,
     // thus we only show migration change if there is unexpected schema change.
@@ -241,7 +215,6 @@ export default defineComponent({
       nanosecondsToString,
       database,
       migrationHistory,
-      showBaselineChange,
       showMigrationChange,
       pushEvent,
       vcsBranch,

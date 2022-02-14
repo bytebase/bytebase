@@ -357,11 +357,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		entry := list[0]
 
-		lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch the last recorded schema before version %v", entry.Version)).SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.MigrationHistory{
 			ID:                  entry.ID,
@@ -379,7 +374,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Statement:           entry.Statement,
 			Schema:              entry.Schema,
 			SchemaPrev:          entry.SchemaPrev,
-			LastRecordedSchema:  lastRecordedSchema,
 			ExecutionDurationNs: entry.ExecutionDurationNs,
 			IssueID:             entry.IssueID,
 			Payload:             entry.Payload,
@@ -433,11 +427,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		for _, entry := range list {
-			lastRecordedSchema, err := db.FindLastRecordedSchema(ctx, driver, entry.Version)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch the last recorded schema before version %v", entry.Version)).SetInternal(err)
-			}
-
 			historyList = append(historyList, &api.MigrationHistory{
 				ID:                  entry.ID,
 				Creator:             entry.Creator,
@@ -454,7 +443,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				Statement:           entry.Statement,
 				Schema:              entry.Schema,
 				SchemaPrev:          entry.SchemaPrev,
-				LastRecordedSchema:  lastRecordedSchema,
 				ExecutionDurationNs: entry.ExecutionDurationNs,
 				IssueID:             entry.IssueID,
 				Payload:             entry.Payload,
