@@ -137,12 +137,12 @@ const { currentTabId, tabList } = useNamespacedState<TabState>("tab", [
   "currentTabId",
   "tabList",
 ]);
-const { addTab, removeTab, setCurrentTabId, updateActiveTab } =
+const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
   useNamespacedActions<TabActions>("tab", [
     "addTab",
     "removeTab",
     "setCurrentTabId",
-    "updateActiveTab",
+    "updateCurrentTab",
   ]);
 const { patchSavedQuery, checkSavedQueryExistById } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
@@ -199,7 +199,7 @@ const handleEditLabel = (tab: TabInfo) => {
 const handleTryChangeLabel = () => {
   if (labelState.currentLabelName !== "") {
     labelState.isEditingLabel = false;
-    updateActiveTab({
+    updateCurrentTab({
       label: labelState.currentLabelName,
     });
     if (currentTab.value.currentQueryId) {
@@ -224,7 +224,7 @@ const handleTryChangeLabel = () => {
 };
 const handleCancelChangeLabel = () => {
   labelState.currentLabelName = labelState.oldLabelName;
-  updateActiveTab({
+  updateCurrentTab({
     label: labelState.currentLabelName,
   });
   if (currentTab.value.currentQueryId) {
@@ -247,7 +247,7 @@ const handleSelectTab = async (tab: TabInfo) => {
       currentTab.value.currentQueryId
     );
     if (!exist) {
-      updateActiveTab({
+      updateCurrentTab({
         currentQueryId: undefined,
       });
     }

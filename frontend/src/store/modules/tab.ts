@@ -51,7 +51,7 @@ const mutations = {
     );
     Object.assign(state.tabList[idx], payload);
   },
-  [types.UPDATE_ACTIVE_TAB](state: TabState, payload: AnyTabInfo) {
+  [types.UPDATE_CURRENT_TAB](state: TabState, payload: AnyTabInfo) {
     const idx = state.tabList.findIndex(
       (tab: TabInfo) => tab.id === state.currentTabId
     );
@@ -88,8 +88,8 @@ const actions = {
     });
     commit(types.ADD_TAB, newTab);
   },
-  updateActiveTab({ commit }: any, payload: AnyTabInfo) {
-    commit(types.UPDATE_ACTIVE_TAB, payload);
+  updateCurrentTab({ commit }: any, payload: AnyTabInfo) {
+    commit(types.UPDATE_CURRENT_TAB, payload);
   },
   setCurrentTabId({ commit, state }: any, payload: string) {
     commit(types.SET_CURRENT_TAB_ID, payload);

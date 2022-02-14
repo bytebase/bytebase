@@ -226,7 +226,7 @@ const actions = {
     );
 
     dispatch(
-      "tab/updateActiveTab",
+      "tab/updateCurrentTab",
       {
         queryResult: res.data,
       },

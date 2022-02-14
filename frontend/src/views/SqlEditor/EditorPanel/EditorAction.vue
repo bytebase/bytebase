@@ -62,10 +62,7 @@ const { connectionTree, connectionContext } =
     "connectionTree",
     "connectionContext",
   ]);
-const { currentTab } = useNamespacedGetters<TabGetters>(
-  "tab",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const {
   createSavedQuery,
   setConnectionContext,
@@ -77,10 +74,9 @@ const {
   "patchSavedQuery",
   "checkSavedQueryExistById",
 ]);
-const { updateActiveTab } = useNamespacedActions<TabActions>(
-  "tab",
-  ["updateActiveTab"]
-);
+const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
+  "updateCurrentTab",
+]);
 
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.queryStatement === ""
@@ -156,12 +152,12 @@ const handleSaveQueryBtnClick = async () => {
       name: label,
       statement: queryStatement,
     });
-    updateActiveTab({
+    updateCurrentTab({
       currentQueryId: newSavedQuery.id,
     });
   }
 
-  updateActiveTab({
+  updateCurrentTab({
     isSaved: true,
   });
 };

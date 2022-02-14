@@ -136,9 +136,9 @@ const { deleteSavedQuery, setShouldSetContent, patchSavedQuery } =
     "setShouldSetContent",
     "patchSavedQuery",
   ]);
-const { updateActiveTab, setCurrentTabId } = useNamespacedActions<TabActions>(
+const { updateCurrentTab, setCurrentTabId } = useNamespacedActions<TabActions>(
   "tab",
-  ["updateActiveTab", "setCurrentTabId"]
+  ["updateCurrentTab", "setCurrentTabId"]
 );
 
 const state = reactive<State>({
@@ -226,7 +226,7 @@ const handleSavedQueryNameChanged = () => {
     });
 
     if (currentTab.value.currentQueryId === state.editingSavedQueryId) {
-      updateActiveTab({
+      updateCurrentTab({
         label: state.currentSavedQueryName,
       });
     }
@@ -256,7 +256,7 @@ const handleDeleteSavedQuery = () => {
     deleteSavedQuery(state.currentActionSavedQuery.id);
 
     if (currentTab.value.currentQueryId === state.currentActionSavedQuery.id) {
-      updateActiveTab({
+      updateCurrentTab({
         currentQueryId: undefined,
       });
     }
@@ -274,7 +274,7 @@ const handleSavedQueryClick = (savedQuery: SavedQuery) => {
       }
     }
 
-    updateActiveTab({
+    updateCurrentTab({
       label: savedQuery.name,
       queryStatement: savedQuery.statement,
       selectedStatement: "",

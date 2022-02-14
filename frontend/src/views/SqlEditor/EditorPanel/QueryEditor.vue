@@ -27,9 +27,9 @@ const { currentTab } = useNamespacedGetters<TabGetters>(
   "tab",
   ["currentTab"]
 );
-const { updateActiveTab } = useNamespacedActions<TabActions>(
+const { updateCurrentTab } = useNamespacedActions<TabActions>(
   "tab",
-  ["updateActiveTab"]
+  ["updateCurrentTab"]
 );
 const { createSavedQuery, patchSavedQuery, checkSavedQueryExistById } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
@@ -43,14 +43,14 @@ const { execute } = useExecuteSQL();
 const sqlCode = computed(() => currentTab.value.queryStatement);
 
 const handleChange = debounce((value: string) => {
-  updateActiveTab({
+  updateCurrentTab({
     queryStatement: value,
     isSaved: false,
   });
 }, 300);
 
 const handleChangeSelection = debounce((value: string) => {
-  updateActiveTab({
+  updateCurrentTab({
     selectedStatement: value,
   });
 }, 300);
@@ -70,12 +70,12 @@ const handleSave = async (statement: string) => {
       name: label,
       statement,
     });
-    updateActiveTab({
+    updateCurrentTab({
       currentQueryId: newSavedQuery.id,
     });
   }
 
-  updateActiveTab({
+  updateCurrentTab({
     isSaved: true,
   });
 };
