@@ -358,7 +358,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string, paramNamesFormatFunc func(paramsNames []string) string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return nil, err
@@ -369,35 +369,9 @@ func FindMigrationHistoryList(ctx context.Context, driver db.Driver, find *db.Mi
 	}
 	defer tx.Rollback()
 
-	var (
-		paramNames []string
-		params     []interface{}
-	)
-	if v := find.ID; v != nil {
-		paramNames, params = append(paramNames, "id"), append(params, *v)
-	}
-	if v := find.Database; v != nil {
-		paramNames, params = append(paramNames, "namespace"), append(params, *v)
-	}
-	if v := find.Version; v != nil {
-		versionParam := "version"
-		if find.Limit != nil {
-			// If both Version and Limit presents then it will fetch
-			// the "Limit" most recent versions before (include) "version".
-			versionParam = "version <= ?"
-		}
-		paramNames, params = append(paramNames, versionParam), append(params, *v)
-	}
-	query := baseQuery +
-		paramNamesFormatFunc(paramNames) +
-		`ORDER BY created_ts DESC`
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, query, params...)
+	rows, err := tx.QueryContext(ctx, findMigrationHistoryListQuery, queryParams...)
 	if err != nil {
-		return nil, FormatErrorWithQuery(err, query)
+		return nil, FormatErrorWithQuery(err, findMigrationHistoryListQuery)
 	}
 	defer rows.Close()
 

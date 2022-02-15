@@ -337,11 +337,7 @@ type MigrationHistoryFind struct {
 	ID *int
 
 	Database *string
-
-	// If both Version and Limit presented then it will fetch
-	// the "Limit" most recent versions before (include) "Version".
-	Version *string
-
+	Version  *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit *int
 }
@@ -436,38 +432,29 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 }
 
 // FormatParamNameInQuestionMark formats the param name in question mark.
-// For example:
-//  1. ["hello", "world"] will be "WHERE hello = ? AND world = ?".
-//  2. ["hello > ?", "world"] will be "WHERE hello > ? AND world = ?".
+// For example, it will be WHERE hello = ? AND world = ?.
 func FormatParamNameInQuestionMark(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
-	parts := make([]string, len(paramNames))
 	for i, param := range paramNames {
-		parts[i] = param
 		if !strings.Contains(param, "?") {
-			parts[i] = param + " = ?"
+			paramNames[i] = param + " = ?"
 		}
 	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
 }
 
 // FormatParamNameInNumberedPosition formats the param name in numbered positions.
-// For example:
-//  1. ["hello", "world"] will be "WHERE hello = $1 AND world = $2".
-//  2. ["hello > ?", "world"] will be "WHERE hello > $1 AND world = $2".
 func FormatParamNameInNumberedPosition(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
-	parts := make([]string, len(paramNames))
+	parts := make([]string, 0, len(paramNames))
 	for i, param := range paramNames {
 		idx := fmt.Sprintf("$%d", i+1)
-		parts[i] = param + " = " + idx
-		if strings.Contains(param, "?") {
-			parts[i] = strings.ReplaceAll(param, "?", idx)
-		}
+		param = param + "=" + idx
+		parts = append(parts, param)
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }

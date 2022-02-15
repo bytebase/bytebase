@@ -129,27 +129,23 @@ type MigrationHistory struct {
 	ID int `jsonapi:"primary,migrationHistory"`
 
 	// Standard fields
-
 	Creator   string `jsonapi:"attr,creator"`
 	CreatedTs int64  `jsonapi:"attr,createdTs"`
 	Updater   string `jsonapi:"attr,updater"`
 	UpdatedTs int64  `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-
-	ReleaseVersion string             `jsonapi:"attr,releaseVersion"`
-	Database       string             `jsonapi:"attr,database"`
-	Engine         db.MigrationEngine `jsonapi:"attr,engine"`
-	Type           db.MigrationType   `jsonapi:"attr,type"`
-	Status         db.MigrationStatus `jsonapi:"attr,status"`
-	Version        string             `jsonapi:"attr,version"`
-	Description    string             `jsonapi:"attr,description"`
-	Statement      string             `jsonapi:"attr,statement"`
-	// Schema is the schema dumped after the migration.
-	Schema string `jsonapi:"attr,schema"`
-	// SchemaPrev is the schema dumped right before the migration.
-	SchemaPrev          string `jsonapi:"attr,schemaPrev"`
-	ExecutionDurationNs int64  `jsonapi:"attr,executionDurationNs"`
+	ReleaseVersion      string             `jsonapi:"attr,releaseVersion"`
+	Database            string             `jsonapi:"attr,database"`
+	Engine              db.MigrationEngine `jsonapi:"attr,engine"`
+	Type                db.MigrationType   `jsonapi:"attr,type"`
+	Status              db.MigrationStatus `jsonapi:"attr,status"`
+	Version             string             `jsonapi:"attr,version"`
+	Description         string             `jsonapi:"attr,description"`
+	Statement           string             `jsonapi:"attr,statement"`
+	Schema              string             `jsonapi:"attr,schema"`
+	SchemaPrev          string             `jsonapi:"attr,schemaPrev"`
+	ExecutionDurationNs int64              `jsonapi:"attr,executionDurationNs"`
 	// This is a string instead of int as the issue id may come from other issue tracking system in the future
 	IssueID string `jsonapi:"attr,issueId"`
 	Payload string `jsonapi:"attr,payload"`
