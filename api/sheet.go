@@ -45,7 +45,7 @@ type Sheet struct {
 	InstanceID int  `jsonapi:"attr,instanceId"`
 	Instance   *Instance `jsonapi:"relation,instance"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
-	Database   *Database       `jsonapi:"relation,database"`
+	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
