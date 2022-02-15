@@ -45,11 +45,11 @@ const handleChangeSelection = debounce((value: string) => {
 }, 300);
 
 const handleSave = async (statement: string) => {
-  const { label, sheetId } = currentTab.value;
+  const { name, sheetId } = currentTab.value;
 
   const newSheet = await upsertSheet({
     id: sheetId,
-    name: label,
+    name,
     statement,
   });
 

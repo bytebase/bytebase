@@ -140,11 +140,11 @@ const handleConnectionChange = (
 };
 
 const handleUpsertSheet = async () => {
-  const { label, statement, sheetId } = currentTab.value;
+  const { name, statement, sheetId } = currentTab.value;
   return upsertSheet({
     id: sheetId,
-    name: label,
-    statement: statement,
+    name,
+    statement,
   });
 };
 

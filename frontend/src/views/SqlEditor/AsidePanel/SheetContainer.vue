@@ -228,7 +228,7 @@ const handleSheetNameChanged = () => {
 
     if (currentTab.value.sheetId === state.editingSheetId) {
       updateCurrentTab({
-        label: state.currentSheetName,
+        name: state.currentSheetName,
       });
     }
     handleCancelEdit();
@@ -279,7 +279,7 @@ const handleSheetClick = async (sheet: Sheet) => {
 
     // otherwise, add new tab
     addTab({
-      label: sheet.name,
+      name: sheet.name,
       statement: sheet.statement,
       selectedStatement: "",
       sheetId: sheet.id,
