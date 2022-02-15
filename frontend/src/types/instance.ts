@@ -127,9 +127,7 @@ export type MigrationHistory = {
   version: string;
   description: string;
   statement: string;
-  // schema is the schema dumped after the migration.
   schema: string;
-  // schemaPrev is the schema dumped right before the migration.
   schemaPrev: string;
   executionDurationNs: number;
   issueId: number;
