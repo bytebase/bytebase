@@ -572,9 +572,6 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if database == "" {
 		return fmt.Errorf("SQLite can dump one database only at a time")
 	}
-	if !schemaOnly {
-		return fmt.Errorf("SQLite can dump schema only")
-	}
 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
 	databases, err := driver.getDatabases()
@@ -599,6 +596,12 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return nil
 }
 
+type sqliteSchema struct {
+	stype     string
+	name      string
+	statement string
+}
+
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	if _, err := driver.GetDbConnection(ctx, database); err != nil {
 		return err
@@ -610,32 +613,92 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	}
 	defer txn.Rollback()
 
-	query := "SELECT sql FROM sqlite_schema;"
+	// Get all schemas.
+	query := "SELECT type, name, sql FROM sqlite_schema;"
 	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
+	var sqliteSchemas []sqliteSchema
 	for rows.Next() {
-		var s string
+		var s sqliteSchema
 		if err := rows.Scan(
-			&s,
+			&s.stype,
+			&s.name,
+			&s.statement,
 		); err != nil {
 			return err
 		}
-
-		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s)); err != nil {
-			return err
-		}
+		sqliteSchemas = append(sqliteSchemas, s)
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
+
+	for _, s := range sqliteSchemas {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s.statement)); err != nil {
+			return err
+		}
+
+		// Dump table data.
+		if !schemaOnly && s.stype == "table" {
+			if err := exportTableData(txn, s.name, out); err != nil {
+				return err
+			}
+		}
+	}
+
 	if err := txn.Commit(); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+// exportTableData gets the data of a table.
+func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
+	query := fmt.Sprintf("SELECT * FROM `%s`;", tblName)
+	rows, err := txn.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		return err
+	}
+	if len(cols) <= 0 {
+		return nil
+	}
+	values := make([]*sql.NullString, len(cols))
+	ptrs := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		ptrs[i] = &values[i]
+	}
+	for rows.Next() {
+		if err := rows.Scan(ptrs...); err != nil {
+			return err
+		}
+		tokens := make([]string, len(cols))
+		for i, v := range values {
+			switch {
+			case v == nil || !v.Valid:
+				tokens[i] = "NULL"
+			default:
+				tokens[i] = fmt.Sprintf("'%s'", v.String)
+			}
+		}
+		stmt := fmt.Sprintf("INSERT INTO '%s' VALUES (%s);\n", tblName, strings.Join(tokens, ", "))
+		if _, err := io.WriteString(out, stmt); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, "\n"); err != nil {
+		return err
+	}
 	return nil
 }
 

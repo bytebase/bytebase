@@ -35,7 +35,6 @@ export type BackupCreate = {
 
   // Domain specific fields
   name: string;
-  status: BackupStatus;
   type: BackupType;
   storageBackend: BackupStorageBackend;
 };

@@ -153,7 +153,6 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		CreatorID:               api.SystemBotID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
-		Status:                  api.BackupStatusPendingCreate,
 		Type:                    api.BackupTypeAutomatic,
 		MigrationHistoryVersion: migrationHistoryVersion,
 		StorageBackend:          api.BackupStorageBackendLocal,
