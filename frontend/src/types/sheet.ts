@@ -35,6 +35,10 @@ export type CreateSheetState = Omit<
   "id" | "creator" | "createdTs" | "updater" | "updatedTs"
 >;
 
+export type SheetPatch = Partial<
+  Pick<Sheet, "id" | "name" | "statement" | "visibility">
+>;
+
 export type AccessOption = {
   label: string;
   description: string;

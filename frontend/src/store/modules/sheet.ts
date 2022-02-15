@@ -7,6 +7,7 @@ import type {
   Sheet,
   SheetId,
   SheetState,
+  SheetPatch,
   CreateSheetState,
   Principal,
   ResourceObject,
@@ -149,11 +150,9 @@ const actions = {
   // update
   async patchSheetById(
     { dispatch }: any,
-    { id, name, statement, visibility }: Partial<Sheet>
+    { id, name, statement, visibility }: SheetPatch
   ): Promise<Sheet> {
-    const attributes: Partial<
-      Pick<Sheet, "name" | "statement" | "visibility">
-    > = {};
+    const attributes: Omit<SheetPatch, "id"> = {};
     if (name) {
       attributes.name = name;
     }
