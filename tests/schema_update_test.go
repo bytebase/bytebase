@@ -32,7 +32,6 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL
 	);
-CREATE TABLE sqlite_sequence(name,seq);
 `
 	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', 'base');\n\nCREATE TABLE sqlite_sequence(name,seq);\nINSERT INTO 'sqlite_sequence' VALUES ('book', '2');\n\n"
 )
