@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
@@ -32,6 +34,7 @@ var (
 	);
 CREATE TABLE sqlite_sequence(name,seq);
 `
+	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', 'base');\n\nCREATE TABLE sqlite_sequence(name,seq);\nINSERT INTO 'sqlite_sequence' VALUES ('book', '2');\n\n"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -256,6 +259,29 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		if len(diff) != 0 {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
+	}
+
+	// Create a manual backup.
+	backup, err := ctl.createBackup(api.BackupCreate{
+		DatabaseID:     database.ID,
+		Name:           "name",
+		Type:           api.BackupTypeManual,
+		StorageBackend: api.BackupStorageBackendLocal,
+	})
+	if err != nil {
+		t.Fatalf("failed to create backup, error %v", err)
+	}
+	if err := ctl.waitBackup(backup.DatabaseID, backup.ID); err != nil {
+		t.Fatalf("failed to wait for backup, error %v", err)
+	}
+
+	backupPath := path.Join(dataDir, backup.Path)
+	backupContent, err := os.ReadFile(backupPath)
+	if err != nil {
+		t.Fatalf("failed to read backup file %q, error %v", backupPath, err)
+	}
+	if string(backupContent) != backupDump {
+		t.Fatalf("backup content doesn't match, got %q, want %q", backupContent, backupDump)
 	}
 }
 

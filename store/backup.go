@@ -121,14 +121,13 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 			migration_history_version,
 			path
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, 'PENDING_CREATE', ?, ?, ?, ?)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
 		create.Name,
-		create.Status,
 		create.Type,
 		create.StorageBackend,
 		create.MigrationHistoryVersion,
