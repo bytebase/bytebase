@@ -6,8 +6,8 @@ import {
   Policy,
   PolicyType,
   QueryHistory,
-  SavedQuery,
   View,
+  Sheet,
 } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
@@ -26,6 +26,7 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
+  SheetId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -48,6 +49,7 @@ import { TabInfo } from "./tab";
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
 import tabStore from "../store/modules/tab";
+import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -196,9 +198,8 @@ export interface SqlEditorState {
   shouldSetContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
-  savedQueryList: SavedQuery[];
-  isFetchingSavedQueries: boolean;
   isExecuting: boolean;
+  isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
@@ -216,3 +217,11 @@ export type TabMutations = typeof tabStore.mutations;
 export interface DeploymentState {
   deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
 }
+
+export interface SheetState {
+  sheetList: Sheet[];
+  sheetById: Map<SheetId, Sheet>;
+}
+export type SheetGetters = typeof sheetStore.getters;
+export type SheetActions = typeof sheetStore.actions;
+export type SheetMutations = typeof sheetStore.mutations;

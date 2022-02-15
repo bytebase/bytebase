@@ -42,8 +42,10 @@ type Sheet struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	InstanceID int  `jsonapi:"attr,instanceId"`
-	DatabaseID *int `jsonapi:"attr,databaseId"`
+	InstanceID int       `jsonapi:"attr,instanceId"`
+	Instance   *Instance `jsonapi:"relation,instance"`
+	DatabaseID *int      `jsonapi:"attr,databaseId"`
+	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
