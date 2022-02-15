@@ -125,7 +125,7 @@ interface State {
 }
 
 const { t } = useI18n();
-const { setCurrentConnectionByTab } = useSQLEditorConnection();
+const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 
 const { isFetchingSheet: isLoading } = useNamespacedState<SqlEditorState>(
   "sqlEditor",
@@ -277,7 +277,7 @@ const handleSheetClick = async (sheet: Sheet) => {
     for (const tab of tabList.value) {
       if (tab.sheetId === sheet.id) {
         setCurrentTabId(tab.id);
-        setCurrentConnectionByTab();
+        setConnectionContextFromCurrentTab();
         setShouldSetContent(true);
         return;
       }
@@ -290,7 +290,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       selectedStatement: "",
       sheetId: sheet.id,
     });
-    setCurrentConnectionByTab();
+    setConnectionContextFromCurrentTab();
     setShouldSetContent(true);
   }
 };

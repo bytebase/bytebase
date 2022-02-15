@@ -14,7 +14,7 @@ const useSQLEditorConnection = () => {
    * @param param
    * @param payload
    */
-  const setCurrentConnectionByTab = () => {
+  const setConnectionContextFromCurrentTab = () => {
     const currentTab = store.getters["tab/currentTab"];
     const sheetById = store.state.sheet.sheetById as SheetState["sheetById"];
 
@@ -51,7 +51,7 @@ const useSQLEditorConnection = () => {
   };
 
   return {
-    setCurrentConnectionByTab,
+    setConnectionContextFromCurrentTab,
   };
 };
 

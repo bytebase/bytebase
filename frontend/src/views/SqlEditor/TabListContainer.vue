@@ -174,7 +174,7 @@ const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
 
 const store = useStore();
 const { t } = useI18n();
-const { setCurrentConnectionByTab } = useSQLEditorConnection();
+const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 
 const enterTabId = ref("");
 const selectedTab = computed(() => currentTabId.value);
@@ -208,7 +208,7 @@ const scrollingDistance = computed(() => {
   return scrollState.scrollWidth - scrollState.offsetWidth;
 });
 
-const reComputedScrollWidth = () => {
+const recalculateScrollWidth = () => {
   scrollState.scrollWidth = tablistRef.value?.scrollWidth as number;
   scrollState.offsetWidth = tablistRef.value?.offsetWidth as number;
   scrollState.isScrolling = scrollingDistance.value > 0;
@@ -238,7 +238,7 @@ const handleTryChangeLabel = () => {
     updateSheetName();
 
     nextTick(() => {
-      reComputedScrollWidth();
+      recalculateScrollWidth();
       scrollState.style = {
         transform: `translateX(0px)`,
       };
@@ -261,13 +261,13 @@ const handleCancelChangeLabel = () => {
 
   nextTick(() => {
     labelState.isEditingLabel = false;
-    reComputedScrollWidth();
+    recalculateScrollWidth();
   });
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
   setCurrentTabId(tab.id);
-  setCurrentConnectionByTab();
+  setConnectionContextFromCurrentTab();
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   if (isDisconnected.value) return;
@@ -285,7 +285,7 @@ const handleAddTab = (tab: AnyTabInfo) => {
       sheetId: newSheet.id,
     });
 
-    reComputedScrollWidth();
+    recalculateScrollWidth();
   });
 };
 const handleRemoveTab = async (tab: TabInfo) => {
@@ -296,12 +296,12 @@ const handleRemoveTab = async (tab: TabInfo) => {
     handleSelectTab(tabList.value[tabsLength - 1]);
   }
   nextTick(() => {
-    reComputedScrollWidth();
+    recalculateScrollWidth();
   });
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setCurrentTabId(tabId);
-  setCurrentConnectionByTab();
+  setConnectionContextFromCurrentTab();
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {
@@ -340,7 +340,7 @@ onMounted(async () => {
         sheetId: newSheet.id,
       });
 
-      reComputedScrollWidth();
+      recalculateScrollWidth();
     }
   }
 });
