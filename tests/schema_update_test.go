@@ -15,27 +15,6 @@ import (
 	"github.com/kr/pretty"
 )
 
-var (
-	migrationStatement = `
-	CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
-	);`
-	schemaSQLResult     = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
-	dataUpdateStatement = `
-	INSERT INTO book(name) VALUES
-		("byte"),
-		("base");
-	`
-	dumpedSchema = "" +
-		`CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
-	);
-`
-	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', 'base');\n\nCREATE TABLE sqlite_sequence(name,seq);\nINSERT INTO 'sqlite_sequence' VALUES ('book', '2');\n\n"
-)
-
 func TestSchemaAndDataUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -165,12 +144,12 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName)
+	result, err := ctl.query(instance, databaseName, bookTableQuery)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if schemaSQLResult != result {
-		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+	if bookSchemaSQLResult != result {
+		t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 	}
 
 	// Create an issue that updates database data.
@@ -282,9 +261,23 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	if string(backupContent) != backupDump {
 		t.Fatalf("backup content doesn't match, got %q, want %q", backupContent, backupDump)
 	}
+
+	// Create an issue that creates a database.
+	cloneDatabaseName := "testClone"
+	if err := ctl.cloneDatabaseFromBackup(project, instance, cloneDatabaseName, backup, nil /* labelMap */); err != nil {
+		t.Fatal(err)
+	}
+	// Query clone database book table data.
+	result, err = ctl.query(instance, cloneDatabaseName, bookDataQuery)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bookDataSQLResult != result {
+		t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
+	}
 }
 
-func TestVCSSchemaAndDataUpdate(t *testing.T) {
+func TestVCS(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
@@ -434,12 +427,12 @@ func TestVCSSchemaAndDataUpdate(t *testing.T) {
 	}
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName)
+	result, err := ctl.query(instance, databaseName, bookTableQuery)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if schemaSQLResult != result {
-		t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+	if bookSchemaSQLResult != result {
+		t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 	}
 
 	// Simulate Git commits for schema update.
