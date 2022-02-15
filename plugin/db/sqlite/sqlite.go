@@ -639,7 +639,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 
 	for _, s := range sqliteSchemas {
 		// We should skip sqlite sequence table if we're dumping schema only.
-		if schemaOnly && strings.HasPrefix(s.name, "sqlite_") {
+		if schemaOnly && s.name == "sqlite_sequence" {
 			continue
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", s.statement)); err != nil {
