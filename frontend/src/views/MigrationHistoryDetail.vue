@@ -125,9 +125,11 @@
 
         <div v-if="hasDrift" class="flex flex-row items-center space-x-2 mt-2">
           <div class="text-sm font-normal text-accent">
-            ({{ "Schema drift after last migration" }})
+            ({{ $t("migration-history.schema-drift") }})
           </div>
-          <span class="textinfolabel"> The schema snapshot recorded </span>
+          <span class="textinfolabel">
+            {{ $t("migration-history.before-old-schema-choice") }}
+          </span>
           <div>
             <BBSelect
               :selected-item="state.oldSelected"
@@ -144,12 +146,16 @@
               "
             >
               <template #menuItem="{ item: value }">
-                {{ value === "last" ? "after last" : "before this" }}
+                {{
+                  value === "last"
+                    ? $t("migration-history.old-schema-choice-last")
+                    : $t("migration-history.old-schema-choice-prev")
+                }}
               </template>
             </BBSelect>
           </div>
           <span class="textinfolabel">
-            migration (left) vs After this migration (right)
+            {{ $t("migration-history.after-old-schema-choice") }}
           </span>
         </div>
 

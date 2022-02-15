@@ -582,6 +582,11 @@ migration-history:
   workflow: 工作流
   commit-info: 由 {author} 于 {time}
   no-schema-change: 本次迁移没有任何 Schema 的改动
+  schema-drift: 上次迁移后的 Schema 与本次迁移前不一致
+  before-old-schema-choice: 比较
+  old-schema-choice-last: 上次迁移后
+  old-schema-choice-prev: 本次迁移前
+  after-old-schema-choice: 和本次迁移后的 Schema
   show-diff: 显示差异
   left-vs-right: 之前 (左) vs 当前版本 (右)
   schema-snapshot-after-migration: 完成这次迁移后的 schema 快照
