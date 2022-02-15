@@ -597,9 +597,9 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 type sqliteSchema struct {
-	stype     string
-	name      string
-	statement string
+	schemaType string
+	name       string
+	statement  string
 }
 
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
@@ -625,7 +625,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	for rows.Next() {
 		var s sqliteSchema
 		if err := rows.Scan(
-			&s.stype,
+			&s.schemaType,
 			&s.name,
 			&s.statement,
 		); err != nil {
@@ -643,7 +643,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		}
 
 		// Dump table data.
-		if !schemaOnly && s.stype == "table" {
+		if !schemaOnly && s.schemaType == "table" {
 			if err := exportTableData(txn, s.name, out); err != nil {
 				return err
 			}

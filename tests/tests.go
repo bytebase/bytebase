@@ -963,5 +963,5 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
-	return nil
+	return fmt.Errorf("failed to wait for backup as this condition should never be reached")
 }
