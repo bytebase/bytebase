@@ -67,7 +67,7 @@ const mutations = {
   [types.SET_SHEET_BY_ID](state: SheetState, payload: Sheet) {
     state.sheetById.set(payload.id, payload);
   },
-  [types.REMOVE_SHEET](state: SheetState, payload: Sheet) {
+  [types.DELETE_SHEET](state: SheetState, payload: Sheet) {
     state.sheetList.splice(state.sheetList.indexOf(payload), 1);
 
     if (state.sheetById.has(payload.id)) {
@@ -181,7 +181,7 @@ const actions = {
     const sheet = state.sheetById.get(id);
 
     await axios.delete(`/api/sheet/${id}`);
-    commit(types.REMOVE_SHEET, sheet);
+    commit(types.DELETE_SHEET, sheet);
   },
   // upsert
   async upsertSheet(

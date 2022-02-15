@@ -37,6 +37,6 @@ export type CreateSheetState = Omit<
 
 export type AccessOption = {
   label: string;
-  desc: string;
+  description: string;
   value: SheetVisibility;
 };

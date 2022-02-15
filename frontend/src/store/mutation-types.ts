@@ -19,4 +19,4 @@ export const SET_CURRENT_TAB_ID = "SET_CURRENT_TAB_ID";
 export const SET_SHEET_STATE = "SET_SHEET_STATE";
 export const SET_SHEET_LIST = "SET_SHEET_LIST";
 export const SET_SHEET_BY_ID = "SET_SHEET_BY_ID";
-export const REMOVE_SHEET = "REMOVE_SHEET";
+export const DELETE_SHEET = "DELETE_SHEET";
