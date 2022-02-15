@@ -55,9 +55,7 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSqlEdtiorContext = async () => {
-  store.dispatch("sqlEditor/setConnectionContext", {
-    isLoadingTree: true,
-  });
+  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: true });
   let connectionTree = [];
 
   const mapConnectionAtom =
@@ -112,11 +110,11 @@ const prepareSqlEdtiorContext = async () => {
   }
 
   store.dispatch("sqlEditor/setConnectionTree", connectionTree);
-  store.dispatch("sqlEditor/setConnectionContext", {
-    isLoadingTree: false,
-  });
+  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: false });
   store.dispatch("sqlEditor/fetchQueryHistoryList");
-  store.dispatch("sqlEditor/fetchSavedQueryList");
+  store.dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: true });
+  store.dispatch("sheet/fetchSheetList");
+  store.dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: false });
 };
 
 onMounted(async () => {

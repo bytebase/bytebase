@@ -952,7 +952,7 @@ sql-editor:
   close-pane: 关闭面板
   loading-data: 加载数据中...
   table-empty-placehoder: 点击 ”运行“ 执行查询
-  no-rows-found: 无数据
+  no-rows-found: 暂无数据
   download-as-csv: 下载为 CSV 格式
   download-as-json: 下载为 JSON 格式
   only-select-allowed: 只允许执行 {select} 语句
@@ -965,19 +965,21 @@ sql-editor:
   goto-alter-schema-hint: 请从编辑器顶部选择一个数据库连接
   can-not-execute-query: 加载数据时无法执行查询
   rows: 条记录
-  no-history-found: 无历史记录
-  no-saved-query-found: 无归档查询语句
+  no-history-found: 暂无历史记录
+  no-sheet-found: 暂无工作表
   search-history: 搜索历史记录
-  search-saved-queries: 搜索归档查询
-  queries: 归档查询
+  search-sheets: 搜索工作表
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
-    confirm-to-delete-this-saved-query: 确定删除这条查询语句?
+    confirm-to-delete-this-sheet: 确定删除这条查询语句?
   please-input-the-tab-label: 请输入标签页名称!
   copy-code: 复制代码
   notify:
     copy-code-succeed: 代码复制成功
   view-all-tabs: 查看所有标签页
+  sheet: 工作表
+  sheets: 工作表
+  connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
 label:
   empty-label-value: <空值>
   no-label: 没有标签
