@@ -48,7 +48,7 @@
               </span>
             </div>
             <span v-else>
-              {{ tab.label }}
+              {{ tab.name }}
             </span>
           </div>
           <template v-if="enterTabId === tab.id && tabList.length > 1">
@@ -195,7 +195,7 @@ const labelInputRef = ref<HTMLInputElement>();
 const localTabList = computed(() => {
   return tabList.value.map((tab: TabInfo) => {
     return {
-      label: tab.label,
+      label: tab.name,
       value: tab.id,
     };
   });
@@ -237,7 +237,7 @@ const handleTryChangeLabel = () => {
   if (labelState.currentLabelName !== "") {
     labelState.isEditingLabel = false;
     updateCurrentTab({
-      label: labelState.currentLabelName,
+      name: labelState.currentLabelName,
     });
 
     updateSheetName();
@@ -259,7 +259,7 @@ const handleTryChangeLabel = () => {
 const handleCancelChangeLabel = () => {
   labelState.currentLabelName = labelState.oldLabelName;
   updateCurrentTab({
-    label: labelState.currentLabelName,
+    name: labelState.currentLabelName,
   });
 
   updateSheetName();
@@ -319,8 +319,8 @@ watch(
   () => labelState.isEditingLabel,
   (newVal) => {
     if (newVal) {
-      labelState.currentLabelName = currentTab.value.label;
-      labelState.oldLabelName = currentTab.value.label;
+      labelState.currentLabelName = currentTab.value.name;
+      labelState.oldLabelName = currentTab.value.name;
       nextTick(() => {
         labelInputRef.value?.focus();
       });

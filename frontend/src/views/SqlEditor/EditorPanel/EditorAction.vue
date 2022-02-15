@@ -87,7 +87,7 @@ const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
 const isEmptyStatement = computed(
-  () => !currentTab.value || currentTab.value.queryStatement === ""
+  () => !currentTab.value || currentTab.value.statement === ""
 );
 
 const { execute, state: executeState } = useExecuteSQL();
@@ -140,11 +140,11 @@ const handleConnectionChange = (
 };
 
 const handleUpsertSheet = async () => {
-  const { label, queryStatement, sheetId } = currentTab.value;
+  const { label, statement, sheetId } = currentTab.value;
   return upsertSheet({
     id: sheetId,
     name: label,
-    statement: queryStatement,
+    statement: statement,
   });
 };
 

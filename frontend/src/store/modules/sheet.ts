@@ -107,8 +107,8 @@ const actions = {
           attributes: {
             instanceId: ctx.instanceId,
             databaseId: ctx.databaseId,
-            name: tab.label,
-            statement: tab.queryStatement,
+            name: tab.name,
+            statement: tab.statement,
             visibility: "PRIVATE",
           },
         },

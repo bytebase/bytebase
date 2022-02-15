@@ -191,7 +191,7 @@ const actions = {
       {
         instanceId: state.connectionContext.instanceId,
         databaseName: state.connectionContext.databaseName,
-        statement: currentTab.selectedStatement || currentTab.queryStatement,
+        statement: currentTab.selectedStatement || currentTab.statement,
         ...payload,
       },
       { root: true }

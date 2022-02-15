@@ -78,7 +78,7 @@ const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 const parsedStatement = computed(() => {
   const sqlStatement =
-    currentTab.value.selectedStatement || currentTab.value.queryStatement;
+    currentTab.value.selectedStatement || currentTab.value.statement;
   const { data } = parseSQL(sqlStatement);
   return data !== null ? transformSQL(data) : sqlStatement;
 });

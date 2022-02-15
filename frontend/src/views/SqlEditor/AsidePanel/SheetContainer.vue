@@ -280,7 +280,7 @@ const handleSheetClick = async (sheet: Sheet) => {
     // otherwise, add new tab
     addTab({
       label: sheet.name,
-      queryStatement: sheet.statement,
+      statement: sheet.statement,
       selectedStatement: "",
       sheetId: sheet.id,
     });

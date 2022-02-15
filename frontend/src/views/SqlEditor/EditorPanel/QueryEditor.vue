@@ -29,11 +29,11 @@ const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
 
 const { execute } = useExecuteSQL();
 
-const sqlCode = computed(() => currentTab.value.queryStatement);
+const sqlCode = computed(() => currentTab.value.statement);
 
 const handleChange = debounce((value: string) => {
   updateCurrentTab({
-    queryStatement: value,
+    statement: value,
     isSaved: false,
   });
 }, 300);
