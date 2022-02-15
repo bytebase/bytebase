@@ -5,6 +5,7 @@ import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import type {
   Sheet,
+  SheetId,
   SheetState,
   CreateSheetState,
   Principal,
@@ -14,8 +15,6 @@ import type {
 } from "../../types";
 import { empty, unknown } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
-
-type currentSheetType = Sheet | null;
 
 function convertSheet(
   sheet: ResourceObject,
@@ -70,11 +69,12 @@ const mutations = {
   [types.SET_SHEET_BY_ID](state: SheetState, payload: Sheet) {
     state.sheetById.set(payload.id, payload);
   },
-  [types.DELETE_SHEET](state: SheetState, payload: Sheet) {
-    state.sheetList.splice(state.sheetList.indexOf(payload), 1);
+  [types.DELETE_SHEET](state: SheetState, sheetId: SheetId) {
+    const idx = state.sheetList.findIndex((sheet) => sheet.id === sheetId);
+    if (idx !== -1) state.sheetList.splice(idx, 1);
 
-    if (state.sheetById.has(payload.id)) {
-      state.sheetById.delete(payload.id);
+    if (state.sheetById.has(sheetId)) {
+      state.sheetById.delete(sheetId);
     }
   },
 };
@@ -181,10 +181,9 @@ const actions = {
   },
   // delete
   async deleteSheet({ commit, state }: any, id: number) {
-    const sheet = state.sheetById.get(id);
-
     await axios.delete(`/api/sheet/${id}`);
-    commit(types.DELETE_SHEET, sheet);
+
+    commit(types.DELETE_SHEET, id);
   },
   // upsert
   async upsertSheet(
