@@ -398,22 +398,6 @@ type Driver interface {
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 }
 
-// FindLastRecordedSchema returns the schema of the migration right before the given version.
-// Empty string if there is no previous record. Error if failed to find migration history list.
-func FindLastRecordedSchema(ctx context.Context, driver Driver, version string) (string, error) {
-	limint := 2
-	find := &MigrationHistoryFind{
-		Version: &version,
-		Limit:   &limint,
-	}
-	if list, err := driver.FindMigrationHistoryList(ctx, find); err != nil {
-		return "", err
-	} else if len(list) > 1 {
-		return list[1].Schema, nil
-	}
-	return "", nil
-}
-
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
