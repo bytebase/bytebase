@@ -185,7 +185,7 @@ const actions = {
     payload: Partial<QueryInfo> = {}
   ) {
     const currentTab = rootGetters["tab/currentTab"];
-    const res = await dispatch(
+    const queryResult = await dispatch(
       "sql/query",
       {
         instanceId: state.connectionContext.instanceId,
@@ -196,15 +196,9 @@ const actions = {
       { root: true }
     );
 
-    dispatch(
-      "tab/updateCurrentTab",
-      {
-        queryResult: Array.isArray(res.data) ? res.data : [],
-      },
-      { root: true }
-    );
+    dispatch("tab/updateCurrentTab", { queryResult }, { root: true });
     dispatch("fetchQueryHistoryList");
-    return res;
+    return queryResult;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
     { commit, dispatch }: any,
