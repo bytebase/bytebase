@@ -1,12 +1,14 @@
+import { SheetId } from "../types";
+
 export interface TabInfo {
   id: string;
-  label: string;
+  name: string;
   isSaved: boolean;
   savedAt: string;
-  queryStatement: string;
+  statement: string;
   selectedStatement: string;
   queryResult?: Record<string, any>[];
-  currentQueryId?: number;
+  sheetId?: SheetId;
 }
 
 export type AnyTabInfo = Partial<TabInfo>;

@@ -88,7 +88,7 @@ const actions = {
     ).data.data;
 
     const resultSet = convert(data);
-    return resultSet;
+    return resultSet.data;
   },
 };
 

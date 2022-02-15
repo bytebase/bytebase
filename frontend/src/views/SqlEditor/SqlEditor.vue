@@ -8,10 +8,10 @@
       <Pane size="80">
         <template v-if="hasTabs">
           <Splitpanes horizontal class="default-theme">
-            <Pane size="60">
+            <Pane :size="isDisconnected ? 100 : 60">
               <EditorPanel :key="paneKey" />
             </Pane>
-            <Pane size="40">
+            <Pane :size="isDisconnected ? 0 : 40">
               <TablePanel :key="paneKey" />
             </Pane>
           </Splitpanes>
@@ -37,6 +37,9 @@ const store = useStore();
 
 const hasTabs = computed(() => store.getters["tab/hasTabs"]);
 const paneKey = computed(() => store.getters["tab/currentTab"].id);
+const isDisconnected = computed(
+  () => store.getters["sqlEditor/isDisconnected"]
+);
 </script>
 
 <style>

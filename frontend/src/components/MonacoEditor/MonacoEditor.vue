@@ -56,10 +56,7 @@ const language = toRef(props, "language");
 const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "shouldSetContent",
 ]);
-const { currentTab } = useNamespacedGetters<TabGetters>(
-  "tab",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setShouldSetContent"]
@@ -165,7 +162,7 @@ watch(
   () => {
     if (shouldSetContent.value) {
       setShouldSetContent(false);
-      setContent(editorInstance, currentTab.value.queryStatement);
+      setContent(editorInstance, currentTab.value.statement);
     }
   }
 );

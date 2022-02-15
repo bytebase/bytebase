@@ -1,5 +1,4 @@
 import { createStore, Store } from "vuex";
-import createPersistedState from "vuex-persistedstate";
 
 /**
  * Following states are persisted in database
@@ -20,10 +19,5 @@ const isProd = import.meta.env.NODE_ENV == "production";
 
 export const store: Store<any> = createStore({
   modules,
-  plugins: [
-    createPersistedState({
-      paths: ["tab"],
-    }),
-  ],
   strict: !isProd,
 });
