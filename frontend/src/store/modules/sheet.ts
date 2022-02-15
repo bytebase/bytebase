@@ -12,7 +12,10 @@ import type {
   ConnectionContext,
   TabInfo,
 } from "../../types";
+import { empty, unknown } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
+
+type currentSheetType = Sheet | null;
 
 function convertSheet(
   sheet: ResourceObject,
@@ -46,14 +49,14 @@ const getters = {
     getters: any,
     rootState: any,
     rootGetters: any
-  ) => {
+  ): Sheet => {
     const currentTab = rootGetters["tab/currentTab"];
 
-    if (!currentTab || isEmpty(currentTab)) return null;
+    if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
 
     const sheetId = currentTab.sheetId;
 
-    return state.sheetById.get(sheetId);
+    return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
   },
 };
 

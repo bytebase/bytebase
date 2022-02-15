@@ -19,6 +19,7 @@ import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
+import { Sheet } from "./sheet";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -128,7 +129,8 @@ export type ResourceType =
   | "VCS"
   | "REPOSITORY"
   | "ANOMALY"
-  | "DEPLOYMENT_CONFIG";
+  | "DEPLOYMENT_CONFIG"
+  | "SHEET";
 
 export const unknown = (
   type: ResourceType
@@ -154,7 +156,8 @@ export const unknown = (
   | VCS
   | Repository
   | Anomaly
-  | DeploymentConfig => {
+  | DeploymentConfig
+  | Sheet => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -453,6 +456,21 @@ export const unknown = (
     },
   };
 
+  const UNKNOWN_SHEET: Sheet = {
+    id: UNKNOWN_ID,
+    creator: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updater: UNKNOWN_PRINCIPAL,
+    updatedTs: 0,
+    instanceId: UNKNOWN_ID,
+    instance: UNKNOWN_INSTANCE,
+    databaseId: UNKNOWN_ID,
+    database: UNKNOWN_DATABASE,
+    name: "<<Unknown sheet>>",
+    statement: "",
+    visibility: "PRIVATE",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -498,6 +516,8 @@ export const unknown = (
       return UNKNOWN_ANOMALY;
     case "DEPLOYMENT_CONFIG":
       return UNKNOWN_DEPLOYMENT_CONFIG;
+    case "SHEET":
+      return UNKNOWN_SHEET;
   }
 };
 
@@ -526,7 +546,8 @@ export const empty = (
   | VCS
   | Repository
   | Anomaly
-  | DeploymentConfig => {
+  | DeploymentConfig
+  | Sheet => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -823,6 +844,21 @@ export const empty = (
     },
   };
 
+  const EMPTY_SHEET: Sheet = {
+    id: EMPTY_ID,
+    creator: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updater: EMPTY_PRINCIPAL,
+    updatedTs: 0,
+    instanceId: EMPTY_ID,
+    instance: EMPTY_INSTANCE,
+    databaseId: EMPTY_ID,
+    database: EMPTY_DATABASE,
+    name: "<<Empty sheet>>",
+    statement: "",
+    visibility: "PRIVATE",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -868,5 +904,7 @@ export const empty = (
       return EMPTY_ANOMALY;
     case "DEPLOYMENT_CONFIG":
       return EMPTY_DEPLOYMENT_CONFIG;
+    case "SHEET":
+      return EMPTY_SHEET;
   }
 };
