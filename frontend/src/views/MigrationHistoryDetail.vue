@@ -210,7 +210,7 @@ import {
   MigrationHistoryPayload,
   VCSPushEvent,
 } from "../types";
-import { BBComboBox, BBSelect } from "../bbkit";
+import { BBSelect } from "../bbkit";
 
 interface LocalState {
   showDiff: boolean;
@@ -221,7 +221,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "MigrationHistoryDetail",
-  components: { CodeDiff, MigrationHistoryStatusIcon, BBComboBox, BBSelect },
+  components: { CodeDiff, MigrationHistoryStatusIcon, BBSelect },
   props: {
     databaseSlug: {
       required: true,
