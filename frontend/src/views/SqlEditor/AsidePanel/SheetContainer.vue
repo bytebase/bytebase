@@ -96,7 +96,6 @@
 import { escape } from "lodash-es";
 import { computed, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import {
   useNamespacedActions,
   useNamespacedGetters,
@@ -114,6 +113,7 @@ import {
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
+import { useSQLEditorConnection } from "../../../composables/useSQLEditorConnection";
 
 interface State {
   search: string;
@@ -124,7 +124,7 @@ interface State {
 }
 
 const { t } = useI18n();
-const router = useRouter();
+const { setCurrentConnectionByTab } = useSQLEditorConnection();
 
 const { sheetList, isFetchingSheet: isLoading } =
   useNamespacedState<SheetState>("sheet", ["sheetList", "isFetchingSheet"]);
@@ -132,11 +132,10 @@ const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 // actions
-const { setShouldSetContent, setCurrentConnectionByTab } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "setShouldSetContent",
-    "setCurrentConnectionByTab",
-  ]);
+const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setShouldSetContent"]
+);
 const { updateCurrentTab, setCurrentTabId, addTab } =
   useNamespacedActions<TabActions>("tab", [
     "updateCurrentTab",
@@ -271,7 +270,7 @@ const handleSheetClick = async (sheet: Sheet) => {
     for (const tab of tabList.value) {
       if (tab.sheetId === sheet.id) {
         setCurrentTabId(tab.id);
-        setCurrentConnectionByTab(router);
+        setCurrentConnectionByTab();
         setShouldSetContent(true);
         return;
       }
@@ -284,7 +283,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       selectedStatement: "",
       sheetId: sheet.id,
     });
-    setCurrentConnectionByTab(router);
+    setCurrentConnectionByTab();
     setShouldSetContent(true);
   }
 };

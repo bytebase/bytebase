@@ -55,6 +55,7 @@ import {
   TabGetters,
   SheetActions,
   TabActions,
+  UNKNOWN_ID,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import { isDev } from "../../../utils";
@@ -99,7 +100,9 @@ const handleRunQuery = () => {
 const setSelectedConnection = (ctx: ConnectionContext) => {
   if (ctx) {
     selectedConnection.value = ctx.hasSlug
-      ? ctx.tableId || ctx.databaseId || ctx.instanceId
+      ? (ctx.tableId !== UNKNOWN_ID && ctx.tableId) ||
+        (ctx.databaseId !== UNKNOWN_ID && ctx.databaseId) ||
+        (ctx.instanceId !== UNKNOWN_ID && ctx.instanceId)
       : null;
   }
 };

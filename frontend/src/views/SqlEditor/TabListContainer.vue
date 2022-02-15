@@ -126,7 +126,6 @@ import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
 import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import {
   useNamespacedGetters,
   useNamespacedState,
@@ -137,13 +136,13 @@ import {
   TabInfo,
   AnyTabInfo,
   SqlEditorGetters,
-  SqlEditorActions,
   TabGetters,
   TabState,
   TabActions,
   SheetActions,
 } from "../../types";
 import { getDefaultTab } from "../../store/modules/tab";
+import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
 
 // getters map
 const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
@@ -172,14 +171,10 @@ const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
   "sheet",
   ["createSheet", "patchSheetById"]
 );
-const { setCurrentConnectionByTab } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setCurrentConnectionByTab"]
-);
 
 const store = useStore();
-const router = useRouter();
 const { t } = useI18n();
+const { setCurrentConnectionByTab } = useSQLEditorConnection();
 
 const enterTabId = ref("");
 const selectedTab = computed(() => currentTabId.value);
@@ -272,7 +267,7 @@ const handleCancelChangeLabel = () => {
 
 const handleSelectTab = async (tab: TabInfo) => {
   setCurrentTabId(tab.id);
-  setCurrentConnectionByTab(router);
+  setCurrentConnectionByTab();
 };
 const handleAddTab = (tab: AnyTabInfo) => {
   if (isDisconnected.value) return;
@@ -306,7 +301,7 @@ const handleRemoveTab = async (tab: TabInfo) => {
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setCurrentTabId(tabId);
-  setCurrentConnectionByTab(router);
+  setCurrentConnectionByTab();
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {
