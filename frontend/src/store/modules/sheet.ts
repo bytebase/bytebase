@@ -67,8 +67,11 @@ const mutations = {
   [types.SET_SHEET_LIST](state: SheetState, payload: Sheet[]) {
     state.sheetList = payload;
   },
-  [types.SET_SHEET_BY_ID](state: SheetState, payload: Sheet) {
-    state.sheetById.set(payload.id, payload);
+  [types.SET_SHEET_BY_ID](
+    state: SheetState,
+    { sheetId, sheet }: { sheetId: SheetId; sheet: Sheet }
+  ) {
+    state.sheetById.set(sheetId, sheet);
   },
   [types.DELETE_SHEET](state: SheetState, sheetId: SheetId) {
     const idx = state.sheetList.findIndex((sheet) => sheet.id === sheetId);
@@ -125,7 +128,10 @@ const actions = {
         .sort((a, b) => b.createdTs - a.createdTs)
     );
 
-    commit(types.SET_SHEET_BY_ID, newSheet);
+    commit(types.SET_SHEET_BY_ID, {
+      sheetId: newSheet.id,
+      sheet: newSheet,
+    });
 
     return newSheet;
   },
@@ -136,7 +142,10 @@ const actions = {
     const data = (await axios.get(`/api/sheet`)).data;
     const sheetList: Sheet[] = data.data.map((sheet: ResourceObject) => {
       const newSheet = convertSheet(sheet, data.included);
-      commit(types.SET_SHEET_BY_ID, newSheet);
+      commit(types.SET_SHEET_BY_ID, {
+        sheetId: newSheet.id,
+        sheet: newSheet,
+      });
       return newSheet;
     });
 
