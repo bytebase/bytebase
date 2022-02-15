@@ -1108,7 +1108,7 @@ sql-editor:
   view-all-tabs: View all Tabs
   sheet: Sheet
   sheets: Sheets
-  connection-holder: Select a connection or Select a sheet from left panel to get started
+  connection-holder: Select a connection or select a sheet from left panel to get started
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
