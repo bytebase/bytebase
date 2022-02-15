@@ -186,6 +186,10 @@ Bytebase should now be running at https://localhost:3000 and change either front
 > Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema by the end of Jan 2022. In the mean time, if you are eager to try Bytebase for your business and encounter
 > issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
+
 ## We are hiring
 
-We are looking for an experienced frontend engineer to lead Bytebase frontend development. Check out our [jobs page](https://bytebase.com/jobs).
+We are looking for engineers and developer advocates, interns are also welcomed. Check out our [jobs page](https://bytebase.com/jobs).
