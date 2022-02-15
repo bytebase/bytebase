@@ -87,17 +87,20 @@
                 <heroicons-outline:terminal class="w-4 h-4" />
               </button>
             </dd>
-          </dl>
-          <div v-if="isTenantProject" class="flex items-center mt-2 h-7">
-            <label class="textlabel"
-              >{{ $t("common.labels") }}&nbsp;-&nbsp;</label
-            >
-            <DatabaseLabelsEditor
+            <DatabaseLabelProps
+              v-if="isTenantProject"
               :label-list="database.labels"
+              :database="database"
               :allow-edit="allowEditDatabaseLabels"
-              @save="updateLabels"
-            />
-          </div>
+              @update:label-list="updateLabels"
+            >
+              <template #label="{ label }">
+                <span class="textlabel capitalize">
+                  {{ hidePrefix(label.key) }}&nbsp;-&nbsp;
+                </span>
+              </template>
+            </DatabaseLabelProps>
+          </dl>
         </div>
         <div class="flex items-center space-x-2">
           <button
@@ -224,8 +227,8 @@ import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { DatabaseLabelsEditor } from "../components/DatabaseLabels";
-import { idFromSlug, isDBAOrOwner, connectionSlug } from "../utils";
+import { DatabaseLabelProps } from "../components/DatabaseLabels";
+import { idFromSlug, isDBAOrOwner, connectionSlug, hidePrefix } from "../utils";
 import {
   ProjectId,
   UNKNOWN_ID,
@@ -261,7 +264,7 @@ export default defineComponent({
     DatabaseMigrationHistoryPanel,
     DatabaseBackupPanel,
     InstanceEngineIcon,
-    DatabaseLabelsEditor,
+    DatabaseLabelProps,
   },
   props: {
     databaseSlug: {
@@ -371,10 +374,7 @@ export default defineComponent({
 
     const allowEditDatabaseLabels = computed((): boolean => {
       // only allowed to edit database labels when allowAdmin
-      if (!allowAdmin.value) return false;
-
-      // not allowed to edit in db name template mode
-      return database.value.project.dbNameTemplate === "";
+      return allowAdmin.value;
     });
 
     const alterSchemaText = computed(() => {
@@ -546,6 +546,7 @@ export default defineComponent({
       updateLabels,
       selectTab,
       gotoSqlEditor,
+      hidePrefix,
     };
   },
 });
