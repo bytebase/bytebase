@@ -130,13 +130,13 @@
           <span class="textinfolabel"> The schema snapshot recorded </span>
           <div>
             <BBSelect
-              :selected-item="state.selectedOld"
+              :selected-item="state.oldSelected"
               :item-list="['last', 'prev']"
               @select-item="
                 (value) => {
-                  state.selectedOld = value;
+                  state.oldSelected = value;
                   state.oldSchema =
-                    state.selectedOld === 'last'
+                    state.oldSelected === 'last'
                       ? lastRecordedSchema
                       : migrationHistory.schemaPrev;
                   state.showDiff = state.oldSchema !== state.newSchema;
@@ -212,10 +212,17 @@ import {
 } from "../types";
 import { BBSelect } from "../bbkit";
 
+type OldSchemaSelected =
+  | "last" // schema after last migration
+  | "prev"; // schema before this migration
+
 interface LocalState {
   showDiff: boolean;
-  selectedOld: string;
+  oldSelected: OldSchemaSelected;
+  // oldSchema is the schema snapshot at the left side of the diff.
+  // Default to migrationHistory.schemaPrev. If drift is detected, it can be selected to be lastRecordedSchema.
   oldSchema: string;
+  // newSchema is the schema snapshot at the right side of the diff. Always migrationHistory.schema.
   newSchema: string;
 }
 
@@ -255,6 +262,7 @@ export default defineComponent({
       (): MigrationHistory => prevMigrationHistoryList.value[0]
     );
 
+    // lastRecordedSchema is the schema snapshot of the last migration history before the one of given id.
     const lastRecordedSchema = computed(
       (): string => prevMigrationHistoryList.value[1].schema
     );
@@ -268,7 +276,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showDiff:
         migrationHistory.value.schema != migrationHistory.value.schemaPrev,
-      selectedOld: "prev",
+      oldSelected: "prev",
       oldSchema: migrationHistory.value.schemaPrev,
       newSchema: migrationHistory.value.schema,
     });
