@@ -1095,18 +1095,20 @@ sql-editor:
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
   no-history-found: No history found
-  no-saved-query-found: No saved query found
+  no-sheet-found: No sheet found
   search-history: Search History
-  search-saved-queries: Search Saved Queries
-  queries: Queries
+  search-sheets: Search Sheets
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
-    confirm-to-delete-this-saved-query: Confirm to delete this saved query?
+    confirm-to-delete-this-sheet: Confirm to delete this sheet?
   please-input-the-tab-label: Please input the tab label!
   copy-code: Copy code
   notify:
     copy-code-succeed: Copy code succeed
   view-all-tabs: View all Tabs
+  sheet: Sheet
+  sheets: Sheets
+  connection-holder: Select a connection or select a sheet from left panel to get started
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

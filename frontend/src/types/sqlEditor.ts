@@ -1,13 +1,6 @@
 import * as monaco from "monaco-editor";
 
-import {
-  InstanceId,
-  DatabaseId,
-  TableId,
-  ViewId,
-  ActivityId,
-  SavedQueryId,
-} from "../types";
+import { InstanceId, DatabaseId, TableId, ViewId, ActivityId } from "../types";
 import { Principal } from "./principal";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -61,23 +54,6 @@ export interface QueryHistory {
   instanceName: string;
   databaseName: string;
   error: string;
-
-  // Customerize fields
-  createdAt: string;
-}
-
-export interface SavedQuery {
-  id: SavedQueryId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
-  // Domain fields
-  name: string;
-  statement: string;
 
   // Customerize fields
   createdAt: string;
