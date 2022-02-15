@@ -638,8 +638,8 @@ migration-history:
   no-schema-change: this migration has no schema change
   schema-drift: Schema drift detected
   before-old-schema-choice: Compare the schema
-  old-schema-choice-last: after last migration
-  old-schema-choice-prev: before this migration
+  old-schema-choice-prev-history-schema: after prev migration
+  old-schema-choice-current-history-schema-prev: before this migration
   after-old-schema-choice: and after this migration
   show-diff: Show diff
   left-vs-right: Prev (left) vs This version (right)

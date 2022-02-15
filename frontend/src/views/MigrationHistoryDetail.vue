@@ -133,23 +133,27 @@
           <div>
             <BBSelect
               :selected-item="state.oldSelected"
-              :item-list="['last', 'prev']"
+              :item-list="['previousHistorySchema', 'currentHistorySchemaPrev']"
               @select-item="
                 (value) => {
                   state.oldSelected = value;
-                  state.oldSchema =
-                    state.oldSelected === 'last'
-                      ? lastRecordedSchema
+                  state.leftSchema =
+                    state.oldSelected === 'previousHistorySchema'
+                      ? previousHistorySchema
                       : migrationHistory.schemaPrev;
-                  state.showDiff = state.oldSchema !== state.newSchema;
+                  state.showDiff = state.leftSchema !== state.rightSchema;
                 }
               "
             >
               <template #menuItem="{ item: value }">
                 {{
-                  value === "last"
-                    ? $t("migration-history.old-schema-choice-last")
-                    : $t("migration-history.old-schema-choice-prev")
+                  value === "previousHistorySchema"
+                    ? $t(
+                        "migration-history.old-schema-choice-prev-history-schema"
+                      )
+                    : $t(
+                        "migration-history.old-schema-choice-current-history-schema-prev"
+                      )
                 }}
               </template>
             </BBSelect>
@@ -161,7 +165,7 @@
 
         <div class="flex flex-row items-center space-x-2 mt-2">
           <BBSwitch
-            v-if="state.oldSchema !== state.newSchema"
+            v-if="state.leftSchema !== state.rightSchema"
             :label="$t('migration-history.show-diff')"
             :value="state.showDiff"
             @toggle="
@@ -178,7 +182,7 @@
             }}
           </div>
           <div
-            v-if="state.oldSchema === state.newSchema"
+            v-if="state.leftSchema === state.rightSchema"
             class="text-sm font-normal text-accent"
           >
             ({{ $t("migration-history.no-schema-change") }})
@@ -187,8 +191,8 @@
         <code-diff
           v-if="state.showDiff"
           class="mt-4 w-full"
-          :old-string="state.oldSchema"
-          :new-string="state.newSchema"
+          :old-string="state.leftSchema"
+          :new-string="state.rightSchema"
           output-format="side-by-side"
         />
         <div
@@ -219,17 +223,17 @@ import {
 import { BBSelect } from "../bbkit";
 
 type OldSchemaSelected =
-  | "last" // schema after last migration
-  | "prev"; // schema before this migration
+  | "previousHistorySchema" // schema after last migration
+  | "currentHistorySchemaPrev"; // schema before this migration
 
 interface LocalState {
   showDiff: boolean;
   oldSelected: OldSchemaSelected;
-  // oldSchema is the schema snapshot at the left side of the diff.
+  // leftSchema is the schema snapshot at the left side of the diff.
   // Default to migrationHistory.schemaPrev. If drift is detected, it can be selected to be lastRecordedSchema.
-  oldSchema: string;
-  // newSchema is the schema snapshot at the right side of the diff. Always migrationHistory.schema.
-  newSchema: string;
+  leftSchema: string;
+  // rightSchema is the schema snapshot at the right side of the diff. Always migrationHistory.schema.
+  rightSchema: string;
 }
 
 export default defineComponent({
@@ -268,23 +272,23 @@ export default defineComponent({
       (): MigrationHistory => prevMigrationHistoryList.value[0]
     );
 
-    // lastRecordedSchema is the schema snapshot of the last migration history before the one of given id.
-    const lastRecordedSchema = computed(
+    // previousHistorySchema is the schema snapshot of the last migration history before the one of given id.
+    const previousHistorySchema = computed(
       (): string => prevMigrationHistoryList.value[1].schema
     );
 
     const hasDrift = computed(
       (): boolean =>
         prevMigrationHistoryList.value.length > 1 && // no drift if no previous migration history
-        lastRecordedSchema.value !== migrationHistory.value.schemaPrev
+        previousHistorySchema.value !== migrationHistory.value.schemaPrev
     );
 
     const state = reactive<LocalState>({
       showDiff:
         migrationHistory.value.schema != migrationHistory.value.schemaPrev,
-      oldSelected: "prev",
-      oldSchema: migrationHistory.value.schemaPrev,
-      newSchema: migrationHistory.value.schema,
+      oldSelected: "currentHistorySchemaPrev",
+      leftSchema: migrationHistory.value.schemaPrev,
+      rightSchema: migrationHistory.value.schema,
     });
 
     const pushEvent = computed((): VCSPushEvent | undefined => {
@@ -336,7 +340,7 @@ export default defineComponent({
       nanosecondsToString,
       database,
       migrationHistory,
-      lastRecordedSchema,
+      previousHistorySchema,
       hasDrift,
       pushEvent,
       vcsBranch,
