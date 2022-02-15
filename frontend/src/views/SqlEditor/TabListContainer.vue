@@ -11,10 +11,10 @@
         @wheel="handleScollTabList"
       >
         <div
-          v-for="tab in queryTabList"
+          v-for="tab in tabList"
           :key="tab.id"
           class="tag-list-tab"
-          :class="{ active: tab.id === activeTabId }"
+          :class="{ active: tab.id === currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
           @mouseover="enterTabId = tab.id"
@@ -51,7 +51,7 @@
               {{ tab.label }}
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && queryTabList.length > 1">
+          <template v-if="enterTabId === tab.id && tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -65,9 +65,7 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template
-              v-else-if="tab.id === activeTabId && queryTabList.length > 1"
-            >
+            <template v-else-if="tab.id === currentTabId && tabList.length > 1">
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -94,7 +92,7 @@
     <div class="tag-list-more">
       <NPopselect
         v-model:value="selectedTab"
-        :options="tabList"
+        :options="tabListOptions"
         trigger="click"
         size="medium"
         scrollable
@@ -126,28 +124,25 @@ import {
 import {
   TabInfo,
   AnyTabInfo,
-  EditorSelectorGetters,
-  EditorSelectorState,
-  EditorSelectorActions,
+  TabGetters,
+  TabState,
+  TabActions,
   SqlEditorActions,
 } from "../../types";
 import { debounce } from "lodash-es";
 
-const { currentTab } = useNamespacedGetters<EditorSelectorGetters>(
-  "editorSelector",
-  ["currentTab"]
-);
+const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const { activeTabId, queryTabList } = useNamespacedState<EditorSelectorState>(
-  "editorSelector",
-  ["activeTabId", "queryTabList"]
-);
-const { addTab, removeTab, setActiveTabId, updateActiveTab } =
-  useNamespacedActions<EditorSelectorActions>("editorSelector", [
+const { currentTabId, tabList } = useNamespacedState<TabState>("tab", [
+  "currentTabId",
+  "tabList",
+]);
+const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
+  useNamespacedActions<TabActions>("tab", [
     "addTab",
     "removeTab",
-    "setActiveTabId",
-    "updateActiveTab",
+    "setCurrentTabId",
+    "updateCurrentTab",
   ]);
 const { patchSavedQuery, checkSavedQueryExistById } =
   useNamespacedActions<SqlEditorActions>("sqlEditor", [
@@ -159,7 +154,7 @@ const store = useStore();
 const { t } = useI18n();
 
 const enterTabId = ref("");
-const selectedTab = computed(() => activeTabId.value);
+const selectedTab = computed(() => currentTabId.value);
 // edit label state
 const labelState = reactive({
   isEditingLabel: false,
@@ -169,8 +164,8 @@ const labelState = reactive({
 });
 const labelInputRef = ref<HTMLInputElement>();
 
-const tabList = computed(() => {
-  return queryTabList.value.map((tab: TabInfo) => {
+const tabListOptions = computed(() => {
+  return tabList.value.map((tab: TabInfo) => {
     return {
       label: tab.label,
       value: tab.id,
@@ -204,7 +199,7 @@ const handleEditLabel = (tab: TabInfo) => {
 const handleTryChangeLabel = () => {
   if (labelState.currentLabelName !== "") {
     labelState.isEditingLabel = false;
-    updateActiveTab({
+    updateCurrentTab({
       label: labelState.currentLabelName,
     });
     if (currentTab.value.currentQueryId) {
@@ -229,7 +224,7 @@ const handleTryChangeLabel = () => {
 };
 const handleCancelChangeLabel = () => {
   labelState.currentLabelName = labelState.oldLabelName;
-  updateActiveTab({
+  updateCurrentTab({
     label: labelState.currentLabelName,
   });
   if (currentTab.value.currentQueryId) {
@@ -245,14 +240,14 @@ const handleCancelChangeLabel = () => {
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
-  setActiveTabId(tab.id);
+  setCurrentTabId(tab.id);
 
   if (currentTab.value.currentQueryId) {
     const exist = await checkSavedQueryExistById(
       currentTab.value.currentQueryId
     );
     if (!exist) {
-      updateActiveTab({
+      updateCurrentTab({
         currentQueryId: undefined,
       });
     }
@@ -273,7 +268,7 @@ const handleRemoveTab = (tab: TabInfo) => {
   });
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
-  setActiveTabId(tabId);
+  setCurrentTabId(tabId);
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {

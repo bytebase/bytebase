@@ -149,7 +149,7 @@ import {
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
-import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
@@ -307,7 +307,6 @@ export default {
       const newBackup: BackupCreate = {
         databaseId: props.database.id!,
         name: backupName,
-        status: "PENDING_CREATE",
         type: "MANUAL",
         storageBackend: "LOCAL",
       };

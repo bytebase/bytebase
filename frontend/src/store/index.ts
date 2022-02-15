@@ -22,7 +22,7 @@ export const store: Store<any> = createStore({
   modules,
   plugins: [
     createPersistedState({
-      paths: ["editorSelector"],
+      paths: ["tab"],
     }),
   ],
   strict: !isProd,
