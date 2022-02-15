@@ -190,5 +190,23 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 		return err
 	}
 
+	sheet.Instance, err = s.composeInstanceByID(ctx, sheet.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	if sheet.DatabaseID != nil {
+		databaseFind := &api.DatabaseFind{
+			ID: sheet.DatabaseID,
+		}
+		sheet.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return err
+		}
+		if sheet.Database == nil {
+			return fmt.Errorf("database ID not found %v", sheet.DatabaseID)
+		}
+	}
+
 	return nil
 }

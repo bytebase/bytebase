@@ -11,16 +11,39 @@ import type {
   CreateSheetState,
   Principal,
   ResourceObject,
+  ResourceIdentifier,
   ConnectionContext,
   TabInfo,
+  Instance,
+  Database,
 } from "../../types";
-import { empty, unknown } from "../../types";
+import { unknown } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convertSheet(
   sheet: ResourceObject,
-  includedList: ResourceObject[]
+  includedList: ResourceObject[],
+  rootGetters: any
 ): Sheet {
+  const instanceId = (sheet.relationships!.instance.data as ResourceIdentifier)
+    .id;
+
+  let instance: Instance = unknown("INSTANCE") as Instance;
+
+  const databaseId = (sheet.relationships!.database.data as ResourceIdentifier)
+    .id;
+
+  let database: Database = unknown("DATABASE") as Database;
+
+  for (const item of includedList || []) {
+    if (item.type == "instance" && item.id == instanceId) {
+      instance = rootGetters["instance/convert"](item, includedList);
+    }
+    if (item.type == "database" && item.id == databaseId) {
+      database = rootGetters["database/convert"](item, includedList);
+    }
+  }
+
   return {
     ...(sheet.attributes as Omit<Sheet, "id" | "creator" | "updater">),
     creator: getPrincipalFromIncludedList(
@@ -31,6 +54,8 @@ function convertSheet(
       sheet.relationships!.updater.data,
       includedList
     ) as Principal,
+    instance,
+    database,
     id: parseInt(sheet.id),
   };
 }
@@ -98,8 +123,6 @@ const actions = {
     sheetRecord?: CreateSheetState
   ): Promise<Sheet> {
     const ctx = rootState.sqlEditor.connectionContext as ConnectionContext;
-    const instance = rootGetters["instance/instanceById"](ctx.instanceId);
-    const database = rootGetters["database/databaseById"](ctx.databaseId);
     const tab = rootGetters["tab/currentTab"] as TabInfo;
 
     const result = (
@@ -116,9 +139,7 @@ const actions = {
         },
       })
     ).data;
-    const newSheet = convertSheet(result.data, result.included);
-    newSheet.instance = instance;
-    newSheet.database = database;
+    const newSheet = convertSheet(result.data, result.included, rootGetters);
 
     commit(
       types.SET_SHEET_LIST,
@@ -135,10 +156,10 @@ const actions = {
     return newSheet;
   },
   // retrieve
-  async fetchSheetList({ commit, dispatch, state }: any) {
+  async fetchSheetList({ commit, dispatch, state, rootGetters }: any) {
     const data = (await axios.get(`/api/sheet`)).data;
     const sheetList: Sheet[] = data.data.map((sheet: ResourceObject) => {
-      const newSheet = convertSheet(sheet, data.included);
+      const newSheet = convertSheet(sheet, data.included, rootGetters);
       commit(types.SET_SHEET_BY_ID, {
         sheetId: newSheet.id,
         sheet: newSheet,
@@ -153,7 +174,7 @@ const actions = {
   },
   // update
   async patchSheetById(
-    { dispatch }: any,
+    { dispatch, rootGetters }: any,
     { id, name, statement, visibility }: SheetPatch
   ): Promise<Sheet> {
     const attributes: Omit<SheetPatch, "id"> = {};
@@ -176,7 +197,7 @@ const actions = {
       })
     ).data;
 
-    const newSheet = convertSheet(result.data, result.included);
+    const newSheet = convertSheet(result.data, result.included, rootGetters);
 
     dispatch("fetchSheetList");
 
