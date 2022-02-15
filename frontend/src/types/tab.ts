@@ -1,3 +1,5 @@
+import { SheetId } from "../types";
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -6,7 +8,7 @@ export interface TabInfo {
   statement: string;
   selectedStatement: string;
   queryResult?: Record<string, any>[];
-  sheetId?: number;
+  sheetId?: SheetId;
 }
 
 export type AnyTabInfo = Partial<TabInfo>;
