@@ -31,7 +31,7 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const currentTab = store.getters["editorSelector/currentTab"];
+    const currentTab = store.getters["tab/currentTab"];
     const queryStatement = currentTab.queryStatement;
     const selectedStatement = currentTab.selectedStatement;
     const sqlStatement = selectedStatement || queryStatement;
