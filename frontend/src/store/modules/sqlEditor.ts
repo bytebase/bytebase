@@ -37,6 +37,7 @@ const state: () => SqlEditorState = () => ({
   // Related data and status
   queryHistoryList: [],
   isFetchingQueryHistory: false,
+  isFetchingSheet: false,
 });
 
 const getters = {

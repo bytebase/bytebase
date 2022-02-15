@@ -39,7 +39,6 @@ const state: () => SheetState = () => {
   return {
     sheetList: [],
     sheetById: new Map(),
-    isFetchingSheet: false,
   };
 };
 
@@ -137,8 +136,6 @@ const actions = {
   },
   // retrieve
   async fetchSheetList({ commit, dispatch, state }: any) {
-    dispatch("setSheetState", { isFetchingSheet: true });
-
     const data = (await axios.get(`/api/sheet`)).data;
     const sheetList: Sheet[] = data.data.map((sheet: ResourceObject) => {
       const newSheet = convertSheet(sheet, data.included);
@@ -153,8 +150,6 @@ const actions = {
       types.SET_SHEET_LIST,
       sheetList.sort((a, b) => b.createdTs - a.createdTs)
     );
-
-    dispatch("setSheetState", { isFetchingSheet: false });
   },
   // update
   async patchSheetById(

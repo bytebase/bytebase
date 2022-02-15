@@ -199,6 +199,7 @@ export interface SqlEditorState {
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
   isExecuting: boolean;
+  isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
@@ -220,7 +221,6 @@ export interface DeploymentState {
 export interface SheetState {
   sheetList: Sheet[];
   sheetById: Map<SheetId, Sheet>;
-  isFetchingSheet: boolean;
 }
 export type SheetGetters = typeof sheetStore.getters;
 export type SheetActions = typeof sheetStore.actions;

@@ -110,6 +110,7 @@ import {
   SheetState,
   Sheet,
   SqlEditorActions,
+  SqlEditorState,
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
@@ -126,8 +127,11 @@ interface State {
 const { t } = useI18n();
 const { setCurrentConnectionByTab } = useSQLEditorConnection();
 
-const { sheetList, isFetchingSheet: isLoading } =
-  useNamespacedState<SheetState>("sheet", ["sheetList", "isFetchingSheet"]);
+const { isFetchingSheet: isLoading } = useNamespacedState<SqlEditorState>(
+  "sqlEditor",
+  ["isFetchingSheet"]
+);
+const { sheetList } = useNamespacedState<SheetState>("sheet", ["sheetList"]);
 const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
