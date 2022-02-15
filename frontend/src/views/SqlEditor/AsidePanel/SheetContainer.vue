@@ -182,11 +182,14 @@ const data = computed(() => {
     return {
       ...sheet,
       formatedName: state.search
-        ? getHighlightHTMLByKeyWords(sheet.name, state.search)
-        : sheet.name,
+        ? getHighlightHTMLByKeyWords(escape(sheet.name), escape(state.search))
+        : escape(sheet.name),
       formatedStatement: state.search
-        ? getHighlightHTMLByKeyWords(sheet.statement, state.search)
-        : sheet.statement,
+        ? getHighlightHTMLByKeyWords(
+            escape(sheet.statement),
+            escape(state.search)
+          )
+        : escape(sheet.statement),
     };
   });
 });
