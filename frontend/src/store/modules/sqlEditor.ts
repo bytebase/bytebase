@@ -11,6 +11,7 @@ import {
   ProjectId,
   QueryHistory,
   Sheet,
+  UNKNOWN_ID,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
@@ -18,14 +19,14 @@ import { connectionSlug } from "../../utils";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
-  instanceId: 0,
+  instanceId: UNKNOWN_ID,
   instanceName: "",
-  databaseId: 0,
+  databaseId: UNKNOWN_ID,
   databaseName: "",
-  tableId: 0,
+  tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
-  selectedDatabaseId: 0,
+  selectedDatabaseId: UNKNOWN_ID,
   selectedTableName: "",
 });
 
@@ -115,8 +116,8 @@ const getters = {
   // in case of the connection is not set, miss the instance id, we can not create the sheet
   isDisconnected(state: SqlEditorState) {
     return (
-      state.connectionContext.instanceId === 0 ||
-      state.connectionContext.databaseId === 0
+      state.connectionContext.instanceId === UNKNOWN_ID ||
+      state.connectionContext.databaseId === UNKNOWN_ID
     );
   },
 };

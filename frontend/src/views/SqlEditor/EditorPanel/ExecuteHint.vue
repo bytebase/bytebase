@@ -47,6 +47,8 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
+import { UNKNOWN_ID } from "../../../types";
+
 import type {
   SqlEditorState,
   SqlEditorGetters,
@@ -91,7 +93,7 @@ const handleColse = () => {
 };
 
 const gotoAlterSchema = () => {
-  if (ctx.databaseId === 0) {
+  if (ctx.databaseId === UNKNOWN_ID) {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "CRITICAL",
