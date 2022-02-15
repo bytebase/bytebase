@@ -104,11 +104,10 @@ type BackupCreate struct {
 
 	// Domain specific fields
 	Name                    string               `jsonapi:"attr,name"`
-	Status                  BackupStatus         `jsonapi:"attr,status"`
 	Type                    BackupType           `jsonapi:"attr,type"`
 	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
-	MigrationHistoryVersion string               `jsonapi:"attr,migrationHistoryVersion"`
-	Path                    string               `jsonapi:"attr,path"`
+	MigrationHistoryVersion string
+	Path                    string
 }
 
 // BackupFind is the API message for finding backups.

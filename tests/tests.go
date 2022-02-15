@@ -893,3 +893,75 @@ func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.Deploym
 	}
 	return deploymentConfig, nil
 }
+
+// createBackup creates a backup.
+func (ctl *controller) createBackup(backupCreate api.BackupCreate) (*api.Backup, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &backupCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal backupCreate, error: %w", err)
+	}
+
+	body, err := ctl.post(fmt.Sprintf("/database/%d/backup", backupCreate.DatabaseID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	backup := new(api.Backup)
+	if err = jsonapi.UnmarshalPayload(body, backup); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal backup response, error: %w", err)
+	}
+	return backup, nil
+}
+
+// listBackups lists backups for a database.
+func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/backup", databaseID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var backups []*api.Backup
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Backup)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get backup response, error: %w", err)
+	}
+	for _, p := range ps {
+		backup, ok := p.(*api.Backup)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert backup")
+		}
+		backups = append(backups, backup)
+	}
+	return backups, nil
+}
+
+// waitBackup waits for a backup to be done.
+func (ctl *controller) waitBackup(databaseID, backupID int) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		backups, err := ctl.listBackups(databaseID)
+		if err != nil {
+			return err
+		}
+		var backup *api.Backup
+		for _, b := range backups {
+			if b.ID == backupID {
+				backup = b
+				break
+			}
+		}
+		if backup == nil {
+			return fmt.Errorf("backup %v for database %v not found", backupID, databaseID)
+		}
+		switch backup.Status {
+		case api.BackupStatusDone:
+			return nil
+		case api.BackupStatusFailed:
+			return fmt.Errorf("backup %v for database %v failed", backupID, databaseID)
+		}
+	}
+	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
+	return fmt.Errorf("failed to wait for backup as this condition should never be reached")
+}
