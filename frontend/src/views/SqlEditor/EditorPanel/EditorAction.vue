@@ -30,9 +30,22 @@
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
-      <NButton v-if="isDev()" :disabled="isEmptyStatement">
-        <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }} (⌘+S)
-      </NButton>
+      <NPopover
+        trigger="click"
+        placement="bottom-end"
+        :show-arrow="false"
+        :show="isShowSharePopover"
+      >
+        <template #trigger>
+          <NButton
+            :disabled="isEmptyStatement || isDisconnected"
+            @click="isShowSharePopover = !isShowSharePopover"
+          >
+            <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+          </NButton>
+        </template>
+        <SharePopover @close="isShowSharePopover = false" />
+      </NPopover>
     </div>
   </div>
 </template>
@@ -58,7 +71,7 @@ import {
   UNKNOWN_ID,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import { isDev } from "../../../utils";
+import SharePopover from "./SharePopover.vue";
 
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -87,6 +100,7 @@ const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
 
 const selectedConnection = ref();
 const isSeletedDatabase = ref(false);
+const isShowSharePopover = ref(false);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );

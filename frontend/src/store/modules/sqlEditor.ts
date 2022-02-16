@@ -6,17 +6,22 @@ import {
   ConnectionAtom,
   QueryInfo,
   ConnectionContext,
+  Instance,
   Database,
   DatabaseId,
   ProjectId,
   QueryHistory,
   UNKNOWN_ID,
+  Sheet,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
+import { unknown } from "../../types";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
+  projectId: UNKNOWN_ID,
+  projectName: "",
   instanceId: UNKNOWN_ID,
   instanceName: "",
   databaseId: UNKNOWN_ID,
@@ -38,6 +43,7 @@ const state: () => SqlEditorState = () => ({
   queryHistoryList: [],
   isFetchingQueryHistory: false,
   isFetchingSheet: false,
+  sharedSheet: unknown("SHEET") as Sheet,
 });
 
 const getters = {
@@ -92,11 +98,11 @@ const getters = {
     };
   },
   findProjectIdByDatabaseId:
-    (state: SqlEditorState, getter: any) =>
+    (state: SqlEditorState, getter: any, rootState: any) =>
     (databaseId: DatabaseId): ProjectId => {
-      let projectId = 1;
+      let projectId = UNKNOWN_ID;
       const databaseListByProjectId =
-        getter.connectionInfo.databaseListByProjectId;
+        rootState.database.databaseListByProjectId;
       for (const [id, databaseList] of databaseListByProjectId) {
         const idx = databaseList.findIndex(
           (database: Database) => database.id === databaseId
@@ -204,16 +210,16 @@ const actions = {
     { commit, dispatch }: any,
     { instanceId, databaseId }: Partial<SqlEditorState["connectionContext"]>
   ) {
-    const instanceInfo = await dispatch(
+    const instanceInfo = (await dispatch(
       "instance/fetchInstanceById",
       instanceId,
       { root: true }
-    );
-    const databaseInfo = await dispatch(
+    )) as Instance;
+    const databaseInfo = (await dispatch(
       "database/fetchDatabaseById",
       { databaseId },
       { root: true }
-    );
+    )) as Database;
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
       instanceId,
