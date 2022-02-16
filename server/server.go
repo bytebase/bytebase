@@ -68,7 +68,6 @@ type Server struct {
 	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
-	SavedQueryService       api.SavedQueryService
 	LicenseService          enterprise.LicenseService
 	SheetService            api.SheetService
 
@@ -242,7 +241,6 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
 	s.registerLabelRoutes(apiGroup)
-	s.registerSavedQueryRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 
