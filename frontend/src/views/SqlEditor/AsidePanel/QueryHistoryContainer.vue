@@ -209,7 +209,7 @@ const handleDeleteHistory = () => {
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   addTab({
-    queryStatement: queryHistory.statement,
+    statement: queryHistory.statement,
     selectedStatement: "",
   });
 };
