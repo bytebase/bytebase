@@ -222,13 +222,13 @@ import {
 } from "../types";
 import { BBSelect } from "../bbkit";
 
-type OldSchemaSelected =
+type LeftSchemaSelected =
   | "previousHistorySchema" // schema after last migration
   | "currentHistorySchemaPrev"; // schema before this migration
 
 interface LocalState {
   showDiff: boolean;
-  oldSelected: OldSchemaSelected;
+  oldSelected: LeftSchemaSelected;
   // leftSchema is the schema snapshot at the left side of the diff.
   // Default to migrationHistory.schemaPrev. If drift is detected, it can be selected to be lastRecordedSchema.
   leftSchema: string;
