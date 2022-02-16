@@ -16,6 +16,8 @@ import type {
   TabInfo,
   Instance,
   Database,
+  Project,
+  ProjectMember,
 } from "../../types";
 import { unknown } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -35,6 +37,12 @@ function convertSheet(
 
   let database: Database = unknown("DATABASE") as Database;
 
+  const projectId = rootGetters["sqlEditor/findProjectIdByDatabaseId"](
+    Number(databaseId)
+  );
+
+  let project: Project = unknown("PROJECT") as Project;
+
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = rootGetters["instance/convert"](item, includedList);
@@ -42,10 +50,14 @@ function convertSheet(
     if (item.type == "database" && item.id == databaseId) {
       database = rootGetters["database/convert"](item, includedList);
     }
+    if (item.type == "project" && Number(item.id) === Number(projectId)) {
+      project = rootGetters["project/convert"](item, includedList);
+    }
   }
 
   return {
     ...(sheet.attributes as Omit<Sheet, "id" | "creator" | "updater">),
+    id: parseInt(sheet.id),
     creator: getPrincipalFromIncludedList(
       sheet.relationships!.creator.data,
       includedList
@@ -56,7 +68,7 @@ function convertSheet(
     ) as Principal,
     instance,
     database,
-    id: parseInt(sheet.id),
+    project,
   };
 }
 
@@ -81,6 +93,55 @@ const getters = {
     const sheetId = currentTab.sheetId;
 
     return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
+  },
+  isCreator: (
+    state: SheetState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => {
+    const currentUser = rootGetters["auth/currentUser"]();
+    const currentSheet = getters.currentSheet;
+
+    if (!currentSheet) return false;
+
+    return currentUser.id === currentSheet!.creator.id;
+  },
+  isReadOnly: (
+    state: SheetState,
+    getters: any,
+    rootState: any,
+    rootGetters: any
+  ) => {
+    const currentUser = rootGetters["auth/currentUser"]();
+    const { currentSheet } = getters;
+
+    if (!currentSheet) return true;
+    // creator always can edit
+    if (getters.isCreator) return false;
+
+    const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
+    const isProject = currentSheet?.visibility === "PROJECT" ?? false;
+    const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
+
+    const checkProjectMemberAccess = () => {
+      const projectMemberList = currentSheet?.project.memberList;
+
+      if (projectMemberList && projectMemberList.length > 0) {
+        const currentMemberByProjectMember = projectMemberList?.find(
+          (member: ProjectMember) => {
+            return member.principal.id === currentUser.id;
+          }
+        );
+
+        return currentMemberByProjectMember.role !== "OWNER";
+      } else {
+        return false;
+      }
+    };
+
+    // if current user is not creator, check the link access level by project relationship
+    return isPrivate || isPublic || (isProject && checkProjectMemberAccess());
   },
 };
 
@@ -171,6 +232,19 @@ const actions = {
       types.SET_SHEET_LIST,
       sheetList.sort((a, b) => b.createdTs - a.createdTs)
     );
+  },
+  async fetchSheetById(
+    { commit, dispatch, state, rootGetters }: any,
+    sheetId: SheetId
+  ) {
+    const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
+    const sheet = convertSheet(data.data, data.included, rootGetters);
+    commit(types.SET_SHEET_BY_ID, {
+      sheetId: sheet.id,
+      sheet: sheet,
+    });
+
+    return sheet;
   },
   // update
   async patchSheetById(

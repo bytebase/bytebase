@@ -15,6 +15,7 @@ import {
   onUnmounted,
   watch,
 } from "vue";
+import { useStore } from "vuex";
 import type { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
@@ -23,6 +24,7 @@ import {
   SqlDialect,
   SqlEditorActions,
   SqlEditorState,
+  SheetGetters,
 } from "../../types";
 import {
   useNamespacedActions,
@@ -53,10 +55,14 @@ const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
+const store = useStore();
 const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "shouldSetContent",
 ]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const { isReadOnly } = useNamespacedGetters<SheetGetters>("sheet", [
+  "isReadOnly",
+]);
 const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setShouldSetContent"]
@@ -121,6 +127,14 @@ const init = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
+      if (isReadOnly.value) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "INFO",
+          title: "The shared sheet is read-only.",
+        });
+        return;
+      }
       formatContent(editorInstance, language.value);
       nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
@@ -148,6 +162,19 @@ const init = async () => {
     const value = editorInstance.getValue();
     emit("save", value);
   });
+
+  watch(
+    () => isReadOnly.value,
+    (readOnly) => {
+      if (editorInstance) {
+        editorInstance.updateOptions({ readOnly });
+      }
+    },
+    {
+      deep: true,
+      immediate: true,
+    }
+  );
 };
 
 onMounted(init);

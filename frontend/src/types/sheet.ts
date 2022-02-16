@@ -5,6 +5,7 @@ import {
   Database,
   DatabaseId,
   Principal,
+  Project,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -23,6 +24,7 @@ export interface Sheet {
   instance: Instance;
   databaseId?: DatabaseId;
   database?: Database;
+  project?: Project;
 
   // Domain fields
   name: string;
@@ -37,6 +39,10 @@ export type CreateSheetState = Omit<
 
 export type SheetPatch = Partial<
   Pick<Sheet, "id" | "name" | "statement" | "visibility">
+>;
+
+export type SheetFind = Partial<
+  Pick<Sheet, "databaseId" | "instanceId" | "visibility">
 >;
 
 export type AccessOption = {

@@ -167,6 +167,8 @@ common:
   delete: Delete
   history: History
   loading: Loading
+  copy: Copy
+  copied: Copied
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1105,10 +1107,19 @@ sql-editor:
   copy-code: Copy code
   notify:
     copy-code-succeed: Copy code succeed
+    copy-share-link: The share link was copied to Clipboard.
   view-all-tabs: View all Tabs
   sheet: Sheet
   sheets: Sheets
   connection-holder: Select a connection or select a sheet from left panel to get started
+  link-access: Link access
+  private: Private
+  private-desc: Only you can access this sheet
+  project-desc: >-
+    Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can
+    read
+  public: Public
+  public-desc: Sheet OWNER can read/write, and all others can read.
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
