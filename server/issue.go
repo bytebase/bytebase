@@ -704,7 +704,11 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			taskStatus = api.TaskPending
 		}
 
-		if m.BackupID != 0 || m.BackupName != "" {
+		if m.BackupID != 0 {
+			backup, err := s.BackupService.FindBackup(ctx, &api.BackupFind{ID: &m.BackupID})
+			if err != nil {
+				return nil, fmt.Errorf("failed to find backup %v", m.BackupID)
+			}
 			restorePayload := api.TaskDatabaseRestorePayload{}
 			restorePayload.DatabaseName = m.DatabaseName
 			restorePayload.BackupID = m.BackupID
@@ -714,7 +718,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 
 			pipelineCreate = &api.PipelineCreate{
-				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, m.BackupName),
+				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 				StageList: []api.StageCreate{
 					{
 						Name:          "Create database",
@@ -736,7 +740,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 						TaskList: []api.TaskCreate{
 							{
 								InstanceID:   m.InstanceID,
-								Name:         fmt.Sprintf("Restore backup %v", m.BackupName),
+								Name:         fmt.Sprintf("Restore backup %v", backup.Name),
 								Status:       api.TaskPending,
 								Type:         api.TaskDatabaseRestore,
 								DatabaseName: payload.DatabaseName,
