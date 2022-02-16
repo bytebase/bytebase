@@ -128,17 +128,17 @@
             ({{ $t("migration-history.schema-drift") }})
           </div>
           <span class="textinfolabel">
-            {{ $t("migration-history.before-old-schema-choice") }}
+            {{ $t("migration-history.before-left-schema-choice") }}
           </span>
           <div>
             <BBSelect
-              :selected-item="state.oldSelected"
+              :selected-item="state.leftSelected"
               :item-list="['previousHistorySchema', 'currentHistorySchemaPrev']"
               @select-item="
                 (value) => {
-                  state.oldSelected = value;
+                  state.leftSelected = value;
                   state.leftSchema =
-                    state.oldSelected === 'previousHistorySchema'
+                    state.leftSelected === 'previousHistorySchema'
                       ? previousHistorySchema
                       : migrationHistory.schemaPrev;
                   state.showDiff = state.leftSchema !== state.rightSchema;
@@ -149,17 +149,17 @@
                 {{
                   value === "previousHistorySchema"
                     ? $t(
-                        "migration-history.old-schema-choice-prev-history-schema"
+                        "migration-history.left-schema-choice-prev-history-schema"
                       )
                     : $t(
-                        "migration-history.old-schema-choice-current-history-schema-prev"
+                        "migration-history.left-schema-choice-current-history-schema-prev"
                       )
                 }}
               </template>
             </BBSelect>
           </div>
           <span class="textinfolabel">
-            {{ $t("migration-history.after-old-schema-choice") }}
+            {{ $t("migration-history.after-left-schema-choice") }}
           </span>
         </div>
 
@@ -228,7 +228,7 @@ type LeftSchemaSelected =
 
 interface LocalState {
   showDiff: boolean;
-  oldSelected: LeftSchemaSelected;
+  leftSelected: LeftSchemaSelected;
   // leftSchema is the schema snapshot at the left side of the diff.
   // Default to migrationHistory.schemaPrev. If drift is detected, it can be selected to be lastRecordedSchema.
   leftSchema: string;
@@ -291,7 +291,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showDiff:
         migrationHistory.value.schema != migrationHistory.value.schemaPrev,
-      oldSelected: "currentHistorySchemaPrev",
+      leftSelected: "currentHistorySchemaPrev",
       leftSchema: migrationHistory.value.schemaPrev,
       rightSchema: migrationHistory.value.schema,
     });
