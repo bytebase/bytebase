@@ -107,6 +107,14 @@ const getters = {
 
     return currentUser.id === currentSheet!.creator.id;
   },
+  /**
+   * Check the sheet whether is read-only.
+   * 1、If the sheet is not created yet, it can not be edited.
+   * 2、If the sheet is created by the current user, it can be edited.
+   * 3、If the sheet is created by other user, will be checked the visibility of the sheet.
+   *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
+   *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
+   */
   isReadOnly: (
     state: SheetState,
     getters: any,
@@ -114,7 +122,7 @@ const getters = {
     rootGetters: any
   ) => {
     const currentUser = rootGetters["auth/currentUser"]();
-    const { currentSheet } = getters;
+    const currentSheet = getters.currentSheet;
 
     if (!currentSheet) return true;
     // creator always can edit
@@ -124,7 +132,7 @@ const getters = {
     const isProject = currentSheet?.visibility === "PROJECT" ?? false;
     const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
 
-    const checkProjectMemberAccess = () => {
+    const isCurrentUserProjectOwner = () => {
       const projectMemberList = currentSheet?.project.memberList;
 
       if (projectMemberList && projectMemberList.length > 0) {
@@ -135,13 +143,13 @@ const getters = {
         );
 
         return currentMemberByProjectMember.role !== "OWNER";
-      } else {
-        return false;
       }
+
+      return false;
     };
 
     // if current user is not creator, check the link access level by project relationship
-    return isPrivate || isPublic || (isProject && checkProjectMemberAccess());
+    return isPrivate || isPublic || (isProject && isCurrentUserProjectOwner());
   },
 };
 
