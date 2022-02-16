@@ -268,11 +268,16 @@ export default defineComponent({
       );
     });
 
-    const migrationHistory = computed(
-      (): MigrationHistory => prevMigrationHistoryList.value[0]
-    );
+    const migrationHistory = computed((): MigrationHistory => {
+      if (prevMigrationHistoryList.value.length > 0)
+        return prevMigrationHistoryList.value[0];
+      return store.getters["instance/migrationHistoryById"](
+        idFromSlug(props.migrationHistorySlug)
+      ) as MigrationHistory;
+    });
 
     // previousHistorySchema is the schema snapshot of the last migration history before the one of given id.
+    // Only referenced if hasDrift is true.
     const previousHistorySchema = computed(
       (): string => prevMigrationHistoryList.value[1].schema
     );
