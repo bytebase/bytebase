@@ -6,6 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/casbin/casbin/v2 v2.40.6
+	github.com/fergusstrange/embedded-postgres v1.14.0 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/google/jsonapi v1.0.0
