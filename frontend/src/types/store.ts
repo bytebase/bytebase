@@ -201,6 +201,7 @@ export interface SqlEditorState {
   isExecuting: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
+  sharedSheet: Sheet;
 }
 export type SqlEditorGetters = typeof sqlEditorStore.getters;
 export type SqlEditorActions = typeof sqlEditorStore.actions;
