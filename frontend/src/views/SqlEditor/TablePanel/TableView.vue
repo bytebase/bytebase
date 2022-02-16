@@ -68,6 +68,7 @@ import {
   useNamespacedGetters,
   useNamespacedState,
 } from "vuex-composition-helpers";
+import { unparse } from "papaparse";
 
 import { TabGetters, SqlEditorState } from "../../../types";
 
@@ -149,22 +150,19 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   let rawText = "";
 
   if (format === "csv") {
-    let CSVContent = "";
-    CSVContent += columns.value
-      .map((item) => JSON.stringify(item.key))
-      .join(",");
-    CSVContent += "\n";
-
-    for (const d of data.value) {
+    const csvFields = columns.value.map((item) => item.key);
+    const csvData = data.value.map((d) => {
       const temp: any[] = [];
       for (const k in d) {
         temp.push(d[k]);
       }
-      CSVContent += temp.map((item) => JSON.stringify(item)).join(",");
-      CSVContent += "\r\n";
-    }
+      return temp;
+    });
 
-    rawText = CSVContent;
+    rawText = unparse({
+      fields: csvFields,
+      data: csvData,
+    });
   } else {
     rawText = JSON.stringify(data.value);
   }
