@@ -115,7 +115,6 @@
 
       <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
       <DatabaseLabelForm
-        v-if="isTenantProject"
         :project="project"
         :label-list="state.labelList"
         filter="optional"
@@ -485,11 +484,11 @@ export default defineComponent({
           state.showFeatureModal = true;
           return;
         }
-        const context = newIssue.createContext as CreateDatabaseContext;
-        // Do not submit non-selected optional labels
-        const labelList = state.labelList.filter((label) => !!label.value);
-        context.labels = JSON.stringify(labelList);
       }
+      const context = newIssue.createContext as CreateDatabaseContext;
+      // Do not submit non-selected optional labels
+      const labelList = state.labelList.filter((label) => !!label.value);
+      context.labels = JSON.stringify(labelList);
       store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
         router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
       });
