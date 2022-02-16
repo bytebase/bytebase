@@ -186,7 +186,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}
 
 	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(instance.ID)
+	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,6 +274,50 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}
 	if bookDataSQLResult != result {
 		t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
+	}
+	// Query clone migration history.
+	histories, err = ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &cloneDatabaseName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantCloneHistories := []api.MigrationHistory{
+		{
+			ID:         5,
+			Database:   cloneDatabaseName,
+			Engine:     db.UI,
+			Type:       db.Branch,
+			Status:     db.Done,
+			Schema:     dumpedSchema,
+			SchemaPrev: dumpedSchema,
+		},
+		{
+			ID:         4,
+			Database:   cloneDatabaseName,
+			Engine:     db.UI,
+			Type:       db.Baseline,
+			Status:     db.Done,
+			Schema:     "",
+			SchemaPrev: "",
+		},
+	}
+	if len(histories) != len(wantCloneHistories) {
+		t.Fatalf("number of migration history got %v, want %v", len(histories), len(wantCloneHistories))
+	}
+	for i, history := range histories {
+		got := api.MigrationHistory{
+			ID:         history.ID,
+			Database:   history.Database,
+			Engine:     history.Engine,
+			Type:       history.Type,
+			Status:     history.Status,
+			Schema:     history.Schema,
+			SchemaPrev: history.SchemaPrev,
+		}
+		want := wantCloneHistories[i]
+		diff := pretty.Diff(got, want)
+		if len(diff) != 0 {
+			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
+		}
 	}
 }
 
@@ -483,7 +527,7 @@ func TestVCS(t *testing.T) {
 	}
 
 	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(instance.ID)
+	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
