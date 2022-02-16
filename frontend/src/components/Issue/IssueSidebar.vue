@@ -432,12 +432,7 @@ export default defineComponent({
       return (props.issue as Issue).project;
     });
 
-    const isTenantProject = computed((): boolean => {
-      return project.value.tenantMode === "TENANT";
-    });
-
     const prepareLabelList = () => {
-      if (!isTenantProject.value) return;
       store.dispatch("label/fetchLabelList");
     };
 
@@ -449,7 +444,6 @@ export default defineComponent({
 
     const visibleLabelList = computed((): DatabaseLabel[] => {
       // transform non-reserved labels to db properties
-      if (project.value.tenantMode !== "TENANT") return [];
       if (!props.database) return [];
       if (labelList.value.length === 0) return [];
 
