@@ -13,7 +13,7 @@ import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import { store } from "../store";
-import { Database, QuickActionType } from "../types";
+import { Database, QuickActionType, Sheet } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -779,6 +779,13 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("../views/SqlEditor/SqlEditor.vue"),
         props: true,
       },
+      {
+        path: "/sql-editor/:connectionSlug/:sheetSlug",
+        name: "sql-editor.share",
+        meta: { title: () => "SQL Editor" },
+        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        props: true,
+      },
     ],
   },
 ];
@@ -931,6 +938,7 @@ router.beforeEach((to, from, next) => {
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
+  const sheetSlug = routerSlug.sheetSlug;
 
   if (principalId) {
     store
@@ -1134,6 +1142,34 @@ router.beforeEach((to, from, next) => {
         databaseId: Number(databaseId),
       })
       .then(() => {
+        // for sharing the sheet to others
+        if (sheetSlug) {
+          const [_, sheetId] = sheetSlug.split("_");
+          store
+            .dispatch("sheet/fetchSheetById", sheetId)
+            .then((sheet: Sheet) => {
+              store.dispatch("tab/addTab", {
+                name: sheet.name,
+                statement: sheet.statement,
+                isSaved: true,
+              });
+              store.dispatch("tab/updateCurrentTab", {
+                sheetId: sheet.id,
+              });
+              store.dispatch("sqlEditor/setSqlEditorState", {
+                sharedSheet: sheet,
+              });
+
+              next();
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
+        }
         next();
       })
       .catch((error) => {

@@ -167,6 +167,8 @@ common:
   delete: 删除
   history: 历史记录
   loading: 加载中
+  copied: 已拷贝
+  copy: 拷贝
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -981,10 +983,18 @@ sql-editor:
   copy-code: 复制代码
   notify:
     copy-code-succeed: 代码复制成功
+    copy-share-link: 分享链接已拷贝到剪贴板
+    sheet-is-read-only: 分享的工作表是只读的，无法编辑。
   view-all-tabs: 查看所有标签页
   sheet: 工作表
   sheets: 工作表
   connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
+  link-access: 链接访问权限
+  private: 私有
+  private-desc: 只有您自己可以访问此工作表
+  project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
+  public: 公开
+  public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
 label:
   empty-label-value: <空值>
   no-label: 没有标签
