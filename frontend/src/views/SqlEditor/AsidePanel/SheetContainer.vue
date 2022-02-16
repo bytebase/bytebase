@@ -111,6 +111,7 @@ import {
   Sheet,
   SqlEditorActions,
   SqlEditorState,
+  UNKNOWN_ID,
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
 import DeleteHint from "./DeleteHint.vue";
@@ -127,10 +128,11 @@ interface State {
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 
-const { isFetchingSheet: isLoading } = useNamespacedState<SqlEditorState>(
-  "sqlEditor",
-  ["isFetchingSheet"]
-);
+const { sharedSheet, isFetchingSheet: isLoading } =
+  useNamespacedState<SqlEditorState>("sqlEditor", [
+    "sharedSheet",
+    "isFetchingSheet",
+  ]);
 const { sheetList } = useNamespacedState<SheetState>("sheet", ["sheetList"]);
 const { tabList } = useNamespacedState<TabState>("tab", ["tabList"]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
@@ -162,9 +164,13 @@ const state = reactive<State>({
 const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
+  const newSheetList =
+    sharedSheet.value.id !== UNKNOWN_ID
+      ? [...sheetList.value, sharedSheet.value]
+      : sheetList.value;
   const tempData =
-    sheetList.value && sheetList.value.length > 0
-      ? sheetList.value.filter((sheet) => {
+    newSheetList && newSheetList.length > 0
+      ? newSheetList.filter((sheet) => {
           let t = false;
 
           if (sheet.name.includes(state.search)) {
