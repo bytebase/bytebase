@@ -636,6 +636,11 @@ migration-history:
   workflow: Workflow
   commit-info: by {author} at {time}
   no-schema-change: this migration has no schema change
+  schema-drift: Schema drift detected
+  before-left-schema-choice: Compare the schema
+  left-schema-choice-prev-history-schema: after prev migration
+  left-schema-choice-current-history-schema-prev: before this migration
+  after-left-schema-choice: and after this migration
   show-diff: Show diff
   left-vs-right: Prev (left) vs This version (right)
   schema-snapshot-after-migration: The schema snapshot recorded after applying this migration
