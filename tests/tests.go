@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/tests/fake"
 	"github.com/google/jsonapi"
 )
@@ -484,8 +485,18 @@ func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Inst
 	return instance, nil
 }
 
-func (ctl *controller) getInstanceMigrationHistory(instanceID int) ([]*api.MigrationHistory, error) {
-	body, err := ctl.get(fmt.Sprintf("/instance/%v/migration/history", instanceID), nil)
+func (ctl *controller) getInstanceMigrationHistory(find db.MigrationHistoryFind) ([]*api.MigrationHistory, error) {
+	params := make(map[string]string)
+	if find.Database != nil {
+		params["database"] = *find.Database
+	}
+	if find.Version != nil {
+		params["version"] = *find.Version
+	}
+	if find.Limit != nil {
+		params["limit"] = fmt.Sprintf("%d", *find.Limit)
+	}
+	body, err := ctl.get(fmt.Sprintf("/instance/%v/migration/history", *find.ID), params)
 	if err != nil {
 		return nil, err
 	}
