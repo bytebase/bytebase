@@ -16,6 +16,7 @@ import {
   watch,
 } from "vue";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 import type { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
@@ -56,6 +57,7 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 const store = useStore();
+const { t } = useI18n();
 const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "shouldSetContent",
 ]);
@@ -131,7 +133,7 @@ const init = async () => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: "The shared sheet is read-only.",
+          title: t("sql-editor.notify.sheet-is-read-only"),
         });
         return;
       }

@@ -1113,6 +1113,7 @@ sql-editor:
   notify:
     copy-code-succeed: Copy code succeed
     copy-share-link: The share link was copied to Clipboard.
+    sheet-is-read-only: The shared sheet is read-only.
   view-all-tabs: View all Tabs
   sheet: Sheet
   sheets: Sheets

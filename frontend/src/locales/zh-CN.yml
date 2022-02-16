@@ -984,6 +984,7 @@ sql-editor:
   notify:
     copy-code-succeed: 代码复制成功
     copy-share-link: 分享链接已拷贝到剪贴板
+    sheet-is-read-only: 分享的工作表是只读的，无法编辑。
   view-all-tabs: 查看所有标签页
   sheet: 工作表
   sheets: 工作表
