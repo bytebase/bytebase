@@ -990,7 +990,7 @@ sql-editor:
   connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
   link-access: 链接访问权限
   private: 私有
-  private-desc: 只有你自己可以访问此工作表
+  private-desc: 只有您自己可以访问此工作表
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
