@@ -207,21 +207,21 @@ func TestTenant(t *testing.T) {
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
-		result, err := ctl.query(stagingInstance, databaseName)
+		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 	for _, prodInstance := range prodInstances {
-		result, err := ctl.query(prodInstance, databaseName)
+		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 }
@@ -464,21 +464,21 @@ func TestTenantVCS(t *testing.T) {
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
-		result, err := ctl.query(stagingInstance, databaseName)
+		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 	for _, prodInstance := range prodInstances {
-		result, err := ctl.query(prodInstance, databaseName)
+		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 }
@@ -660,22 +660,22 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	// Query schema.
 	for i := 0; i < stagingTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		result, err := ctl.query(stagingInstance, databaseName)
+		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		result, err := ctl.query(prodInstance, databaseName)
+		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if schemaSQLResult != result {
-			t.Fatalf("SQL result want %q, got %q, diff %q", schemaSQLResult, result, pretty.Diff(schemaSQLResult, result))
+		if bookSchemaSQLResult != result {
+			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
 }
