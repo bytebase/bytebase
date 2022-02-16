@@ -100,9 +100,6 @@ DELETE FROM
     deployment_config;
 
 DELETE FROM
-    saved_query;
-
-DELETE FROM
     sheet;
 
 -- Project 1 refers to DEFAULT project which is considered as part of schema
