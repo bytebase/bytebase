@@ -27,6 +27,29 @@ import (
 var fakeFS embed.FS
 
 var (
+	migrationStatement = `
+	CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL
+	);`
+	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
+	bookSchemaSQLResult = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	bookDataQuery       = `SELECT * FROM book;`
+	bookDataSQLResult   = `[{"id":"1","name":"byte"},{"id":"2","name":"base"}]`
+
+	dataUpdateStatement = `
+	INSERT INTO book(name) VALUES
+		("byte"),
+		("base");
+	`
+	dumpedSchema = "" +
+		`CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL
+	);
+`
+	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', 'base');\n\n"
+
 	deploymentSchdule = api.DeploymentSchedule{
 		Deployments: []*api.Deployment{
 			{
@@ -86,7 +109,7 @@ func getTestPort(testName string) int {
 		return 1234
 	case "TestSchemaAndDataUpdate":
 		return 1236
-	case "TestVCSSchemaAndDataUpdate":
+	case "TestVCS":
 		return 1238
 	case "TestTenant":
 		return 1240
@@ -689,11 +712,11 @@ func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet,
 	return sqlResultSet, nil
 }
 
-func (ctl *controller) query(instance *api.Instance, databaseName string) (string, error) {
+func (ctl *controller) query(instance *api.Instance, databaseName, query string) (string, error) {
 	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
-		Statement:    "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';",
+		Statement:    query,
 		Readonly:     true,
 	})
 	if err != nil {
@@ -744,19 +767,7 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 }
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, labelMap map[string]string) error {
-	var labelList []*api.DatabaseLabel
-	for k, v := range labelMap {
-		labelList = append(labelList, &api.DatabaseLabel{
-			Key:   k,
-			Value: v,
-		})
-	}
-	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentKeyName,
-		Value: instance.Environment.Name,
-	})
-
-	labels, err := json.Marshal(labelList)
+	labels, err := marshalLabels(labelMap, instance.Environment.Name)
 	if err != nil {
 		return err
 	}
@@ -764,7 +775,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	createContext, err := json.Marshal(&api.CreateDatabaseContext{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
-		Labels:       string(labels),
+		Labels:       labels,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
@@ -799,6 +810,74 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
 	}
 	return nil
+}
+
+// cloneDatabaseFromBackup clones the database from an existing backup.
+func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
+	labels, err := marshalLabels(labelMap, instance.Environment.Name)
+	if err != nil {
+		return err
+	}
+
+	createContext, err := json.Marshal(&api.CreateDatabaseContext{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		BackupID:     backup.ID,
+		Labels:       labels,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
+	}
+	issue, err := ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
+		Type:        api.IssueDatabaseCreate,
+		Description: fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+	}
+	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+	}
+	status, err := ctl.waitIssuePipeline(issue.ID)
+	if err != nil {
+		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+	}
+	if status != api.TaskDone {
+		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
+	}
+	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
+		ID:     issue.ID,
+		Status: api.IssueDone,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+	}
+	return nil
+}
+
+func marshalLabels(labelMap map[string]string, environmentName string) (string, error) {
+	var labelList []*api.DatabaseLabel
+	for k, v := range labelMap {
+		labelList = append(labelList, &api.DatabaseLabel{
+			Key:   k,
+			Value: v,
+		})
+	}
+	labelList = append(labelList, &api.DatabaseLabel{
+		Key:   api.EnvironmentKeyName,
+		Value: environmentName,
+	})
+
+	labels, err := json.Marshal(labelList)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal labels %+v, error %v", labelList, err)
+	}
+	return string(labels), nil
 }
 
 // getLabels gets all the labels.
