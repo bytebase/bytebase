@@ -1181,14 +1181,14 @@ subscription:
       desc: Backup policy will auto-backup your database based on the schedule.
     bb-feature-backward-compatibility:
       title: Backward compatibility
-      desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to open this feature.
+      desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-rbac:
       title: Role management
-      desc: Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to open this feature.
+      desc: Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-3rd-party-login:
       title: 3rd-party login
-      desc: Bytebase auto-support 3rd-party login based on your VCS configuration. @:{'subscription.upgrade'} to open this feature.
-      login: "@:{'subscription.upgrade'} to open this feature"
+      desc: Bytebase auto-support 3rd-party login based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.
+      login: "@:{'subscription.upgrade'} to unlock this feature"
     bb-feature-schema-drift:
       title: Schema drift
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
