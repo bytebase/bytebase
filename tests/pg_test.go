@@ -9,7 +9,7 @@ import (
 )
 
 func TestEmbeddedPostgresSelectOne(t *testing.T) {
-	database := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(1580).Version(embeddedpostgres.V14))
+	database := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(1301).Version(embeddedpostgres.V14))
 	if err := database.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestEmbeddedPostgresSelectOne(t *testing.T) {
 		}
 	}()
 
-	db, err := sql.Open("postgres", "host=localhost port=1580 user=postgres password=postgres dbname=postgres sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=1301 user=postgres password=postgres dbname=postgres sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
