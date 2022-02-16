@@ -1124,7 +1124,7 @@ sql-editor:
     Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can
     read
   public: Public
-  public-desc: Sheet OWNER can read/write, and all others can read.
+  public-desc: Sheet OWNER can read/write, and all others can read
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
