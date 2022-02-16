@@ -88,7 +88,6 @@
               </button>
             </dd>
             <DatabaseLabelProps
-              v-if="isTenantProject"
               :label-list="database.labels"
               :database="database"
               :allow-edit="allowEditDatabaseLabels"
