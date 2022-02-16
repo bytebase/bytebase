@@ -1388,35 +1388,6 @@ WHERE
 
 END;
 
--- saved_query table stores the saved queries for the user
-CREATE TABLE saved_query (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT (strftime('%s', 'now')),
-    name TEXT NOT NULL,
-    statement TEXT NOT NULL
-);
-
-INSERT INTO
-    sqlite_sequence (name, seq)
-VALUES
-    ('saved_query', 100);
-
-CREATE TRIGGER IF NOT EXISTS `trigger_update_saved_query_modification_time`
-AFTER
-UPDATE
-    ON `saved_query` FOR EACH ROW BEGIN
-UPDATE
-    `saved_query`
-SET
-    updated_ts = (strftime('%s', 'now'))
-WHERE
-    rowid = old.rowid;
-
-END;
-
 -- sheet table stores the query for the user
 CREATE TABLE sheet (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
