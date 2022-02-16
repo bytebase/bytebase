@@ -69,6 +69,7 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 import { unparse } from "papaparse";
+import { isEmpty } from "lodash-es";
 
 import { TabGetters, SqlEditorState } from "../../../types";
 
@@ -84,7 +85,7 @@ const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const queryResult = computed(() => currentTab.value.queryResult || []);
+const queryResult = computed(() => currentTab.value.queryResult || null);
 
 const state = reactive<State>({
   search: "",
@@ -139,10 +140,12 @@ const exportDropdownOptions = computed(() => [
   {
     label: t("sql-editor.download-as-csv"),
     key: "csv",
+    disabled: queryResult.value === null || isEmpty(queryResult.value),
   },
   {
     label: t("sql-editor.download-as-json"),
     key: "json",
+    disabled: queryResult.value === null || isEmpty(queryResult.value),
   },
 ]);
 
@@ -170,7 +173,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
   const link = document.createElement("a");
 
-  link.download = `${currentTab.value.label}.${format}`;
+  link.download = `${currentTab.value.name}.${format}`;
   link.href = encodedUri;
   link.click();
 };
