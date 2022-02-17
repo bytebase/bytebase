@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 
@@ -21,22 +22,47 @@ var postgresDarwin []byte
 //go:embed postgres-linux-x86_64.txz
 var postgresLinux []byte
 
-// ExtractPostgresBinary returns the postgres binary depending on the OS.
-func ExtractPostgresBinary(directory string) error {
+// InstallPostgres returns the postgres binary depending on the OS.
+func InstallPostgres(resourceDir, dataDir string) (string, error) {
+	var version string
 	var data []byte
 	switch runtime.GOOS {
 	case "darwin":
-		data = postgresDarwin
+		version, data = "postgres-darwin-amd64-14.2.0", postgresDarwin
 	case "linux":
-		data = postgresLinux
+		version, data = "postgres-linux-amd64-14.2.0", postgresLinux
 	default:
-		return fmt.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 
-	if err := extractTXZ(directory, data); err != nil {
-		return fmt.Errorf("failed to extract txz file")
+	// Skip installation if installed already.
+	binPath := path.Join(resourceDir, version)
+	_, err := os.Stat(binPath)
+	if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to check binary path %q, error: %w", binPath, err)
 	}
-	return nil
+	if err == nil {
+		return binPath, nil
+	}
+
+	// The ordering below made Postgres installation atomic.
+	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
+	}
+	tmpPath := path.Join(resourceDir, "tmppgbin")
+	if err := os.RemoveAll(tmpPath); err != nil {
+		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpPath, err)
+	}
+	if err := os.MkdirAll(tmpPath, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to make postgres binary temp directory %q, error: %w", tmpPath, err)
+	}
+	if err := extractTXZ(tmpPath, data); err != nil {
+		return "", fmt.Errorf("failed to extract txz file")
+	}
+	if err := os.Rename(tmpPath, binPath); err != nil {
+		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpPath, binPath, err)
+	}
+	return binPath, nil
 }
 
 func extractTXZ(directory string, data []byte) error {

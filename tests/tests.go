@@ -104,20 +104,20 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 2. One port for bytebase server, and the other for gitlab server.
+	// The port should be incremented by 3. One port for bytebase server, and the other for gitlab server.
 	switch testName {
 	case "TestServiceStart":
 		return 1234
 	case "TestSchemaAndDataUpdate":
-		return 1236
+		return 1237
 	case "TestVCS":
-		return 1238
-	case "TestTenant":
 		return 1240
+	case "TestTenant":
+		return 1243
 	case "TestTenantVCS":
-		return 1242
+		return 1246
 	case "TestTenantDatabaseNameTemplate":
-		return 1244
+		return 1249
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -130,12 +130,16 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) 
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
-	profile := cmd.GetTestProfile(dataDir, port)
-	ctl.main = cmd.NewMain(profile, logger)
+	datastorePort := port + 1
+	profile := cmd.GetTestProfile(dataDir, port, datastorePort)
+	ctl.main, err = cmd.NewMain(profile, logger)
+	if err != nil {
+		return err
+	}
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// set up gitlab.
-	gitlabPort := port + 1
+	gitlabPort := port + 2
 	ctl.gitlab = fake.NewGitLab(gitlabPort)
 	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
 	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
