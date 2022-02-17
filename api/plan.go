@@ -168,16 +168,16 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.backward-compatibility": {true, true, true},
-	"bb.feature.schema-drift":           {true, true, true},
-	"bb.feature.task-schedule-time":     {true, true, true},
-	"bb.feature.multi-tenancy":          {true, true, true},
-	"bb.feature.dba-workflow":           {true, false, true},
-	"bb.feature.data-source":            {true, false, false},
-	"bb.feature.approval-policy":        {true, true, true},
-	"bb.feature.backup-policy":          {true, true, true},
-	"bb.feature.rbac":                   {true, true, true},
-	"bb.feature.3rd-party-login":        {true, true, true},
+	"bb.feature.backward-compatibility": {false, true, true},
+	"bb.feature.schema-drift":           {false, true, true},
+	"bb.feature.task-schedule-time":     {false, true, true},
+	"bb.feature.multi-tenancy":          {false, true, true},
+	"bb.feature.dba-workflow":           {false, false, true},
+	"bb.feature.data-source":            {false, false, false},
+	"bb.feature.approval-policy":        {false, true, true},
+	"bb.feature.backup-policy":          {false, true, true},
+	"bb.feature.rbac":                   {false, true, true},
+	"bb.feature.3rd-party-login":        {false, true, true},
 }
 
 // Plan is the API message for a plan.

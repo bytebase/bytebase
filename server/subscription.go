@@ -48,7 +48,7 @@ func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 		Plan: api.FREE,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
-		InstanceCount: 20,
+		InstanceCount: 9999,
 	}
 	license, _ := s.loadLicense()
 	if license != nil {
@@ -86,7 +86,7 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 
 func (s *Server) feature(feature api.FeatureType) bool {
 	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) && s.subscription.ExpiresTs > 0 {
-		return api.FeatureMatrix[feature][api.FREE]
+		return api.FeatureMatrix[feature][api.TEAM]
 	}
 	return api.FeatureMatrix[feature][s.subscription.Plan]
 }
