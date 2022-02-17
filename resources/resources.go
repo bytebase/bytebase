@@ -69,19 +69,16 @@ func extractTXZ(directory string, data []byte) error {
 			if err != nil {
 				return err
 			}
+			defer outFile.Close()
 
 			if _, err := io.Copy(outFile, reader()); err != nil {
 				return err
 			}
-
-			if err := outFile.Close(); err != nil {
-				return err
-			}
 		case tar.TypeSymlink:
+			// We need to remove existing file and redo the symlink.
 			if err := os.RemoveAll(targetPath); err != nil {
 				return err
 			}
-
 			if err := os.Symlink(header.Linkname, targetPath); err != nil {
 				return err
 			}
