@@ -85,7 +85,7 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) && s.subscription.ExpiresTs > 0 {
+	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
 		return api.FeatureMatrix[feature][api.TEAM]
 	}
 	return api.FeatureMatrix[feature][s.subscription.Plan]
