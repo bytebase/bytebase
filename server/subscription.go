@@ -45,7 +45,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 // Return subscription with free plan if no license found.
 func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 	subscription := &enterpriseAPI.Subscription{
-		Plan: api.FREE,
+		Plan: api.TEAM,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
 		InstanceCount: 9999,
@@ -85,8 +85,8 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) && s.subscription.ExpiresTs > 0 {
+	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
 		return api.FeatureMatrix[feature][api.FREE]
 	}
-	return api.FeatureMatrix[feature][api.TEAM]
+	return api.FeatureMatrix[feature][s.subscription.Plan]
 }
