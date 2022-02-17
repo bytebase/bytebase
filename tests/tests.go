@@ -104,7 +104,7 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3. One port for bytebase server, and the other for gitlab server.
+	// The port should be incremented by 3 for bytebase, Postgres, and GitLab.
 	switch testName {
 	case "TestServiceStart":
 		return 1234
