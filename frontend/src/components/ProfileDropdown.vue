@@ -123,7 +123,7 @@
 
 <script lang="ts">
 import { computed, ref } from "vue";
-import { mapGetters, useStore } from "vuex";
+import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
