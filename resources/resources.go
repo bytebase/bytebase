@@ -53,9 +53,6 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	if err := os.RemoveAll(tmpPath); err != nil {
 		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpPath, err)
 	}
-	if err := os.MkdirAll(tmpPath, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to make postgres binary temp directory %q, error: %w", tmpPath, err)
-	}
 	if err := extractTXZ(tmpPath, data); err != nil {
 		return "", fmt.Errorf("failed to extract txz file")
 	}
