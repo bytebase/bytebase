@@ -45,10 +45,10 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 // Return subscription with free plan if no license found.
 func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 	subscription := &enterpriseAPI.Subscription{
-		Plan: api.FREE,
+		Plan: api.TEAM,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
-		InstanceCount: 5,
+		InstanceCount: 9999,
 	}
 	license, _ := s.loadLicense()
 	if license != nil {
