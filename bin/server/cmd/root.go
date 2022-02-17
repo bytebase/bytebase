@@ -159,7 +159,8 @@ type config struct {
 type Main struct {
 	profile *Profile
 
-	l *zap.Logger
+	l   *zap.Logger
+	lvl *zap.AtomicLevel
 
 	server *server.Server
 	// serverCancel cancels any runner on the server.
@@ -192,7 +193,7 @@ func checkDataDir() error {
 }
 
 // GetLogger will return a logger.
-func GetLogger() (*zap.Logger, error) {
+func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
 	logConfig := zap.NewProductionConfig()
 	// Always set encoding to "console" for now since we do not redirect to file.
 	logConfig.Encoding = "console"
@@ -203,11 +204,12 @@ func GetLogger() (*zap.Logger, error) {
 	} else {
 		logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
-	return logConfig.Build()
+	logger, err := logConfig.Build()
+	return logger, &logConfig.Level, err
 }
 
 func start() {
-	logger, err := GetLogger()
+	logger, level, err := GetLogger()
 	if err != nil {
 		panic(fmt.Errorf("failed to create logger, %w", err))
 	}
@@ -224,6 +226,7 @@ func start() {
 
 	activeProfile := activeProfile(dataDir, port, demo)
 	m := NewMain(activeProfile, logger)
+	m.lvl = level
 
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -309,7 +312,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
