@@ -11,11 +11,7 @@ import (
 
 func (s *Server) registerDebugRoutes(g *echo.Group) {
 	g.GET("/debug", func(c echo.Context) error {
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.Debug{IsDebug: s.lvl.Enabled(zap.DebugLevel)}); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug info response").SetInternal(err)
-		}
-		return nil
+		return s.currentDebugState(c)
 	})
 
 	g.PATCH("/debug", func(c echo.Context) error {
@@ -23,12 +19,23 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, &debugPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to unmarshal debug patch request").SetInternal(err)
 		}
+
+		lvl := zap.InfoLevel
 		if debugPatch.IsDebug {
-			s.lvl.SetLevel(zap.DebugLevel)
-		} else {
-			s.lvl.SetLevel(zap.InfoLevel)
+			lvl = zap.DebugLevel
 		}
+		s.lvl.SetLevel(lvl)
+
 		s.e.Debug = debugPatch.IsDebug
-		return nil
+
+		return s.currentDebugState(c)
 	})
+}
+
+func (s *Server) currentDebugState(c echo.Context) error {
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	if err := jsonapi.MarshalPayload(c.Response().Writer, &api.Debug{IsDebug: s.lvl.Enabled(zap.DebugLevel)}); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug info response").SetInternal(err)
+	}
+	return nil
 }
