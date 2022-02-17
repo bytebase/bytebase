@@ -55,7 +55,7 @@
       </div>
       <div class="grid grid-cols-4 gap-4 px-4 py-2">
         <dt class="text-sm font-medium text-control-light text-right">
-          $t('common.application') ID
+          {{ $t("common.application") }} ID
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           {{ config.applicationId }}
