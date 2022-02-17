@@ -47,7 +47,7 @@ func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 	subscription := &enterpriseAPI.Subscription{
 		Plan: api.TEAM,
 		// -1 means not expire, just for free plan
-		ExpiresTs:     -1,
+		ExpiresTs:     time.Now().AddDate(100, 0, 0).Unix(),
 		InstanceCount: 9999,
 	}
 	license, _ := s.loadLicense()
