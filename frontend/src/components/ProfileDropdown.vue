@@ -46,13 +46,8 @@
           </a>
         </div>
       </div>
-      <div
-        v-if="!isRelease"
-        class="py-1 menu-item"
-        role="menuitem"
-        @click.prevent="switchDebug"
-      >
-        <div class="flex flex-row items-center space-x-2 mt-2">
+      <div class="py-1 menu-item">
+        <div class="flex flex-row items-center space-x-2">
           <span> Debug </span>
           <BBSwitch :value="isDebug" @toggle="switchDebug" />
         </div>
