@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
@@ -194,18 +195,16 @@ func checkDataDir() error {
 
 // GetLogger will return a logger.
 func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
-	logConfig := zap.NewProductionConfig()
-	// Always set encoding to "console" for now since we do not redirect to file.
-	logConfig.Encoding = "console"
-	// "console" encoding needs to use the corresponding development encoder config.
-	logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+	atom := zap.NewAtomicLevelAt(zap.InfoLevel)
 	if debug {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+		atom.SetLevel(zap.DebugLevel)
 	}
-	logger, err := logConfig.Build()
-	return logger, &logConfig.Level, err
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		zapcore.Lock(os.Stdout),
+		atom,
+	))
+	return logger, &atom, nil
 }
 
 func start() {
