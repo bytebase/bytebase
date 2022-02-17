@@ -49,7 +49,7 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
 	}
-	tmpPath := path.Join(resourceDir, "tmppgbin")
+	tmpPath := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpPath); err != nil {
 		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpPath, err)
 	}
