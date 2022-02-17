@@ -46,12 +46,6 @@
           </a>
         </div>
       </div>
-      <div v-if="!isRelease" class="py-1 menu-item">
-        <div class="flex flex-row items-center space-x-2">
-          <span> Debug </span>
-          <BBSwitch :value="isDebug" @toggle="switchDebug" />
-        </div>
-      </div>
       <div
         v-if="!isRelease"
         class="py-1 menu-item"
@@ -105,6 +99,13 @@
           @click.prevent="resetQuickstart"
           >{{ $t("common.quickstart") }}</a
         >
+      </div>
+      <div class="border-t border-gray-100"></div>
+      <div v-if="!isRelease" class="py-1 menu-item">
+        <div class="flex flex-row items-center space-x-2 justify-between">
+          <span> Debug </span>
+          <BBSwitch :value="isDebug" @toggle="switchDebug" />
+        </div>
       </div>
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
