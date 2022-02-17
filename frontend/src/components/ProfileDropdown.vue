@@ -50,6 +50,17 @@
         v-if="!isRelease"
         class="py-1 menu-item"
         role="menuitem"
+        @click.prevent="switchDebug"
+      >
+        <div class="flex flex-row items-center space-x-2 mt-2">
+          <span> Debug </span>
+          <BBSwitch :value="isDebug" @toggle="switchDebug" />
+        </div>
+      </div>
+      <div
+        v-if="!isRelease"
+        class="py-1 menu-item"
+        role="menuitem"
         @click.prevent="ping"
       >
         Ping
@@ -112,7 +123,7 @@
 
 <script lang="ts">
 import { computed, ref } from "vue";
-import { useStore } from "vuex";
+import { mapGetters, useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
@@ -228,6 +239,12 @@ export default {
       });
     };
 
+    const isDebug = computed(() => store.getters["debug/isDebug"]());
+
+    const switchDebug = () => {
+      store.dispatch("debug/patchDebug", { isDebug: !isDebug.value });
+    };
+
     const ping = () => {
       store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
@@ -251,6 +268,8 @@ export default {
       switchToOwner,
       switchToDBA,
       switchToDeveloper,
+      isDebug,
+      switchDebug,
       ping,
       toggleLocale,
       languageMenu,
