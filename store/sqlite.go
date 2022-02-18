@@ -149,8 +149,8 @@ func (db *DB) Open() (err error) {
 
 		if err := db.pgSeed(verBefore, verAfter); err != nil {
 			return fmt.Errorf("failed to seed: %w."+
-				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove bytebase_dev.db,"+
-				" bytebase_dev.db-shm, bytebase_dev.db-wal under the same directory where the bytebase binary resides. and restart again to let"+
+				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
+				" directory under the same directory where the bytebase binary resides. and restart again to let"+
 				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 				err)
 		}
