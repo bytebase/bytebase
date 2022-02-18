@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -14,8 +15,10 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
+	"github.com/bytebase/bytebase/resources"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
+	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -137,6 +140,8 @@ type Profile struct {
 	mode string
 	// port is the binding port for server.
 	port int
+	// datastorePort is the binding port for database instance for storing Bytebase data.
+	datastorePort int
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
 	// dsn points to where Bytebase stores its own data
@@ -167,6 +172,9 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
+	// pginstance is an embeded Postgres instance for storing Bytebase data.
+	pgInstance *embeddedpostgres.EmbeddedPostgres
+	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
 
@@ -222,8 +230,14 @@ func start() {
 		return
 	}
 
-	activeProfile := activeProfile(dataDir, port, demo)
-	m := NewMain(activeProfile, logger)
+	// We use port+1 for datastore port.
+	datastorePort := port + 1
+	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
+	m, err := NewMain(activeProfile, logger)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -255,22 +269,44 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(activeProfile Profile, logger *zap.Logger) *Main {
+func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
+	resourceDir := path.Join(activeProfile.dataDir, "resources")
+	pgdataDir := path.Join(activeProfile.dataDir, "pgdata")
+	pgruntimeDir := path.Join(activeProfile.dataDir, "pgruntime")
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
+	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
+	fmt.Printf("resourceDir=%s\n", resourceDir)
+	fmt.Printf("pgdataDir=%s\n", pgdataDir)
+	fmt.Printf("pgruntimeDir=%s\n", pgruntimeDir)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	return &Main{
-		profile: &activeProfile,
-		l:       logger,
+	pgbinPath, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	if err != nil {
+		return nil, err
 	}
+	pgInstance := embeddedpostgres.NewDatabase(
+		embeddedpostgres.
+			DefaultConfig().
+			Port(uint32(activeProfile.datastorePort)).
+			Version(embeddedpostgres.V14).
+			BinariesPath(pgbinPath).
+			RuntimePath(pgruntimeDir).
+			DataPath(pgdataDir),
+	)
+
+	return &Main{
+		profile:    &activeProfile,
+		l:          logger,
+		pgInstance: pgInstance,
+	}, nil
 }
 
 func initSetting(ctx context.Context, settingService api.SettingService) (*config, error) {
@@ -296,6 +332,11 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
+
+	if err := m.pgInstance.Start(); err != nil {
+		return fmt.Errorf("cannot start postgresql server: %w", err)
+	}
+
 	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
@@ -378,6 +419,13 @@ func (m *Main) Close() error {
 	if m.db != nil {
 		m.l.Info("Trying to close database connections...")
 		if err := m.db.Close(); err != nil {
+			return err
+		}
+	}
+
+	if m.pgInstance != nil {
+		m.l.Info("Trying to shutdown postgresql server...")
+		if err := m.pgInstance.Stop(); err != nil {
 			return err
 		}
 	}
