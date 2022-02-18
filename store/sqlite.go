@@ -44,6 +44,7 @@ const (
 
 // If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
 var sqliteDriver = "sqlite3"
+var postgresDriver = "postgres"
 
 // Allocate 32MB cache
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=33554432"}
@@ -51,17 +52,22 @@ var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=3
 //go:embed migration
 var migrationFS embed.FS
 
+//go:embed pg_migration
+var pgMigrationFS embed.FS
+
 //go:embed seed
 var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	Db *sql.DB
+	Db   *sql.DB
+	PgDB *sql.DB
 
 	l *zap.Logger
 
 	// Datasource name.
-	DSN string
+	DSN   string
+	PgDSN string
 
 	// Dir to load seed data
 	seedDir string
@@ -81,13 +87,15 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
+func NewDB(logger *zap.Logger, dsn, pgDSN string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
 	if readonly {
 		pragmaList = append(pragmaList, "mode=ro")
+		pgDSN = fmt.Sprintf("%s default_transaction_read_only=true", pgDSN)
 	}
 	db := &DB{
 		l:              logger,
 		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
+		PgDSN:          pgDSN,
 		seedDir:        seedDir,
 		forceResetSeed: forceResetSeed,
 		readonly:       readonly,
@@ -106,6 +114,9 @@ func (db *DB) Open() (err error) {
 
 	// Connect to the database.
 	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
+		return err
+	}
+	if db.PgDB, err = sql.Open(postgresDriver, db.PgDSN); err != nil {
 		return err
 	}
 	if db.readonly {
@@ -232,9 +243,14 @@ func (db *DB) migrate() error {
 	if err != nil {
 		return err
 	}
+	pgNames, err := fs.Glob(pgMigrationFS, "pg_migration/*.sql")
+	if err != nil {
+		return err
+	}
 
 	// Sort the migration up file in ascending order.
 	sort.Strings(names)
+	sort.Strings(pgNames)
 
 	for _, name := range names {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
@@ -245,6 +261,10 @@ func (db *DB) migrate() error {
 		v := versionFromInt(version)
 		if v.biggerThan(curVer) {
 			if err := db.migrateFile(name, true); err != nil {
+				return fmt.Errorf("migration error: name=%q err=%w", name, err)
+			}
+			// Migrate pg migration files.
+			if err := db.pgMigrateFile(fmt.Sprintf("pg_%s", name), true); err != nil {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
@@ -288,6 +308,30 @@ func (db *DB) migrateFile(name string, up bool) error {
 
 	// Read and execute migration file.
 	if buf, err := fs.ReadFile(migrationFS, name); err != nil {
+		return err
+	} else if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// pgMigrateFile runs a migration file within a transaction.
+func (db *DB) pgMigrateFile(name string, up bool) error {
+	if up {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	} else {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	}
+
+	tx, err := db.PgDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	if buf, err := fs.ReadFile(pgMigrationFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
