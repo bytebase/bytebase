@@ -125,7 +125,7 @@ func getTestPort(testName string) int {
 // StartMain starts the main server.
 func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) error {
 	// start main server.
-	logger, err := cmd.GetLogger()
+	logger, _, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
