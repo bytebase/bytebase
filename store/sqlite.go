@@ -58,6 +58,9 @@ var pgMigrationFS embed.FS
 //go:embed seed
 var seedFS embed.FS
 
+//go:embed pg_seed
+var pgSeedFS embed.FS
+
 // DB represents the database connection.
 type DB struct {
 	Db   *sql.DB
@@ -143,6 +146,14 @@ func (db *DB) Open() (err error) {
 				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 				err)
 		}
+
+		if err := db.pgSeed(verBefore, verAfter); err != nil {
+			return fmt.Errorf("failed to seed: %w."+
+				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove bytebase_dev.db,"+
+				" bytebase_dev.db-shm, bytebase_dev.db-wal under the same directory where the bytebase binary resides. and restart again to let"+
+				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
+				err)
+		}
 	}
 
 	return nil
@@ -197,6 +208,41 @@ func (db *DB) seed(verBefore, verAfter version) error {
 	return nil
 }
 
+// pgSeed loads the seed data for testing
+func (db *DB) pgSeed(verBefore, verAfter version) error {
+	db.l.Info(fmt.Sprintf("Seeding database from pg_%s, force: %t ...", db.seedDir, db.forceResetSeed))
+	names, err := fs.Glob(pgSeedFS, fmt.Sprintf("pg_%s/*.sql", db.seedDir))
+	if err != nil {
+		return err
+	}
+
+	// We separate seed data for each table into their own seed file.
+	// And there exists foreign key dependency among tables, so we
+	// name the seed file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
+	// the file name so they are loaded accordingly.
+	sort.Strings(names)
+
+	// Loop over all seed files and execute them in order.
+	for _, name := range names {
+		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
+		version, err := strconv.Atoi(versionPrefix)
+		if err != nil {
+			return fmt.Errorf("invalid seed file format %s, expected number prefix", filepath.Base(name))
+		}
+		ver := versionFromInt(version)
+		if db.forceResetSeed || ver.biggerThan(verBefore) && !ver.biggerThan(verAfter) {
+			if err := db.pgSeedFile(name); err != nil {
+				return fmt.Errorf("seed error: name=%q err=%w", name, err)
+			}
+		} else {
+			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %s is not in the applicable range (%s, %s].",
+				name, ver, verBefore, verAfter))
+		}
+	}
+	db.l.Info("Completed database seeding.")
+	return nil
+}
+
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
 	db.l.Info(fmt.Sprintf("Seeding %s...", name))
@@ -208,6 +254,25 @@ func (db *DB) seedFile(name string) error {
 
 	// Read and execute migration file.
 	if buf, err := fs.ReadFile(seedFS, name); err != nil {
+		return err
+	} else if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// pgSeedFile runs a single seed file within a transaction.
+func (db *DB) pgSeedFile(name string) error {
+	db.l.Info(fmt.Sprintf("Seeding %s...", name))
+	tx, err := db.PgDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	if buf, err := fs.ReadFile(pgSeedFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
