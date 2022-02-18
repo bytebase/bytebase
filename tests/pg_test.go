@@ -3,6 +3,7 @@ package tests
 import (
 	"database/sql"
 	"fmt"
+	"path"
 	"testing"
 
 	"github.com/bytebase/bytebase/resources"
@@ -15,14 +16,22 @@ const (
 )
 
 func TestEmbeddedPostgresSelectOne(t *testing.T) {
-	postgresDir := t.TempDir()
-	if err := resources.ExtractPostgresBinary(postgresDir); err != nil {
+	dataDir := t.TempDir()
+	resourceDir := path.Join(dataDir, "resources")
+	pgdataDir := path.Join(dataDir, "pgdata")
+	pgruntimeDir := path.Join(dataDir, "pgruntime")
+	pgbinPath, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	if err != nil {
 		t.Fatal(err)
 	}
-	postgresRuntimeDir := t.TempDir()
-	postgresDataDir := t.TempDir()
 	database := embeddedpostgres.NewDatabase(
-		embeddedpostgres.DefaultConfig().Port(port).Version(embeddedpostgres.V14).BinariesPath(postgresDir).RuntimePath(postgresRuntimeDir).DataPath(postgresDataDir),
+		embeddedpostgres.
+			DefaultConfig().
+			Port(port).
+			Version(embeddedpostgres.V14).
+			BinariesPath(pgbinPath).
+			RuntimePath(pgruntimeDir).
+			DataPath(pgdataDir),
 	)
 	if err := database.Start(); err != nil {
 		t.Fatal(err)
