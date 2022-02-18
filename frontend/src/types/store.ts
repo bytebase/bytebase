@@ -226,3 +226,7 @@ export interface SheetState {
 export type SheetGetters = typeof sheetStore.getters;
 export type SheetActions = typeof sheetStore.actions;
 export type SheetMutations = typeof sheetStore.mutations;
+
+export interface DebugState {
+  isDebug: boolean;
+}
