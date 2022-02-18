@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func activeProfile(dataDir string, port int, isDemo bool) Profile {
+func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
 	dsn := fmt.Sprintf("file:%s/bytebase.db", dataDir)
 	seedDir := "seed/release"
 	forceResetSeed := false
@@ -20,6 +20,7 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 	return Profile{
 		mode:                 "release",
 		port:                 port,
+		datastorePort:        datastorePort,
 		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              seedDir,

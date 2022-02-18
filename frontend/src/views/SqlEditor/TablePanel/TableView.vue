@@ -43,6 +43,8 @@
       :bordered="false"
       :columns="columns"
       :data="data"
+      flex-height
+      :style="{ height: `${tableMaxHeight}px` }"
     >
       <template #empty>
         <span>
