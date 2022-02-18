@@ -21,6 +21,7 @@ import (
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
@@ -164,7 +165,8 @@ type config struct {
 type Main struct {
 	profile *Profile
 
-	l *zap.Logger
+	l   *zap.Logger
+	lvl *zap.AtomicLevel
 
 	server *server.Server
 	// serverCancel cancels any runner on the server.
@@ -200,22 +202,21 @@ func checkDataDir() error {
 }
 
 // GetLogger will return a logger.
-func GetLogger() (*zap.Logger, error) {
-	logConfig := zap.NewProductionConfig()
-	// Always set encoding to "console" for now since we do not redirect to file.
-	logConfig.Encoding = "console"
-	// "console" encoding needs to use the corresponding development encoder config.
-	logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
+	atom := zap.NewAtomicLevelAt(zap.InfoLevel)
 	if debug {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+		atom.SetLevel(zap.DebugLevel)
 	}
-	return logConfig.Build()
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		zapcore.Lock(os.Stdout),
+		atom,
+	))
+	return logger, &atom, nil
 }
 
 func start() {
-	logger, err := GetLogger()
+	logger, level, err := GetLogger()
 	if err != nil {
 		panic(fmt.Errorf("failed to create logger, %w", err))
 	}
@@ -238,6 +239,7 @@ func start() {
 		logger.Error(err.Error())
 		return
 	}
+	m.lvl = level
 
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -351,7 +353,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)

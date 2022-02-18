@@ -101,6 +101,13 @@
         >
       </div>
       <div class="border-t border-gray-100"></div>
+      <div v-if="!isRelease" class="py-1 menu-item">
+        <div class="flex flex-row items-center space-x-2 justify-between">
+          <span> Debug </span>
+          <BBSwitch :value="isDebug" @toggle="switchDebug" />
+        </div>
+      </div>
+      <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <a class="menu-item" role="menuitem" @click.prevent="logout">{{
           $t("common.logout")
@@ -228,6 +235,12 @@ export default {
       });
     };
 
+    const isDebug = computed(() => store.getters["debug/isDebug"]());
+
+    const switchDebug = () => {
+      store.dispatch("debug/patchDebug", { isDebug: !isDebug.value });
+    };
+
     const ping = () => {
       store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
@@ -251,6 +264,8 @@ export default {
       switchToOwner,
       switchToDBA,
       switchToDeveloper,
+      isDebug,
+      switchDebug,
       ping,
       toggleLocale,
       languageMenu,
