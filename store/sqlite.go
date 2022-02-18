@@ -52,6 +52,9 @@ var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=3
 //go:embed migration
 var migrationFS embed.FS
 
+//go:embed pg_migration
+var pgMigrationFS embed.FS
+
 //go:embed seed
 var seedFS embed.FS
 
@@ -240,9 +243,14 @@ func (db *DB) migrate() error {
 	if err != nil {
 		return err
 	}
+	pgNames, err := fs.Glob(pgMigrationFS, "pg_migration/*.sql")
+	if err != nil {
+		return err
+	}
 
 	// Sort the migration up file in ascending order.
 	sort.Strings(names)
+	sort.Strings(pgNames)
 
 	for _, name := range names {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
@@ -253,6 +261,10 @@ func (db *DB) migrate() error {
 		v := versionFromInt(version)
 		if v.biggerThan(curVer) {
 			if err := db.migrateFile(name, true); err != nil {
+				return fmt.Errorf("migration error: name=%q err=%w", name, err)
+			}
+			// Migrate pg migration files.
+			if err := db.pgMigrateFile(fmt.Sprintf("pg_%s", name), true); err != nil {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
@@ -296,6 +308,30 @@ func (db *DB) migrateFile(name string, up bool) error {
 
 	// Read and execute migration file.
 	if buf, err := fs.ReadFile(migrationFS, name); err != nil {
+		return err
+	} else if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// pgMigrateFile runs a migration file within a transaction.
+func (db *DB) pgMigrateFile(name string, up bool) error {
+	if up {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	} else {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	}
+
+	tx, err := db.PgDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	if buf, err := fs.ReadFile(pgMigrationFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
