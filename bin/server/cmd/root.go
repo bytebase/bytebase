@@ -337,7 +337,8 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("cannot start postgresql server: %w", err)
 	}
 
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
+	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres password=postgres dbname=postgres sslmode=disable", port)
+	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}

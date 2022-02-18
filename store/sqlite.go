@@ -44,6 +44,7 @@ const (
 
 // If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
 var sqliteDriver = "sqlite3"
+var postgresDriver = "postgres"
 
 // Allocate 32MB cache
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=33554432"}
@@ -56,12 +57,14 @@ var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	Db *sql.DB
+	Db   *sql.DB
+	PgDB *sql.DB
 
 	l *zap.Logger
 
 	// Datasource name.
-	DSN string
+	DSN   string
+	PgDSN string
 
 	// Dir to load seed data
 	seedDir string
@@ -81,13 +84,15 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
+func NewDB(logger *zap.Logger, dsn, pgDSN string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
 	if readonly {
 		pragmaList = append(pragmaList, "mode=ro")
+		pgDSN = fmt.Sprintf("%s default_transaction_read_only=true", pgDSN)
 	}
 	db := &DB{
 		l:              logger,
 		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
+		PgDSN:          pgDSN,
 		seedDir:        seedDir,
 		forceResetSeed: forceResetSeed,
 		readonly:       readonly,
@@ -106,6 +111,9 @@ func (db *DB) Open() (err error) {
 
 	// Connect to the database.
 	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
+		return err
+	}
+	if db.PgDB, err = sql.Open(postgresDriver, db.PgDSN); err != nil {
 		return err
 	}
 	if db.readonly {
