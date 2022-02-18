@@ -33,14 +33,18 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	principal, err := createPrincipal(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +61,8 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findPrincipalList(ctx, tx, &api.PrincipalFind{})
 	if err != nil {
@@ -93,7 +98,8 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findPrincipalList(ctx, tx, find)
 	if err != nil {
@@ -119,14 +125,18 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	principal, err := patchPrincipal(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -140,7 +150,7 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 // createPrincipal creates a new principal.
 func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (*api.Principal, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO principal (
 			creator_id,
 			updater_id,
@@ -194,7 +204,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 		where, args = append(where, "email = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -254,7 +264,7 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE principal
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?

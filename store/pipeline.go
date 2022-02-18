@@ -33,14 +33,18 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	pipeline, err := s.createPipeline(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +61,8 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findPipelineList(ctx, tx, find)
 	if err != nil {
@@ -93,7 +98,8 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findPipelineList(ctx, tx, find)
 	if err != nil {
@@ -118,14 +124,18 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	pipeline, err := s.patchPipeline(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -138,7 +148,7 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 
 // createPipeline creates a new pipeline.
 func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
@@ -185,7 +195,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 		where, args = append(where, "status = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -239,7 +249,7 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?

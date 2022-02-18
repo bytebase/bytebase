@@ -31,14 +31,18 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	stage, err := s.createStage(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,8 @@ func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findStageList(ctx, tx, find)
 	if err != nil {
@@ -68,7 +73,8 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findStageList(ctx, tx, find)
 	if err != nil {
@@ -85,7 +91,7 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 
 // createStage creates a new stage.
 func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.StageCreate) (*api.Stage, error) {
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO stage (
 			creator_id,
 			updater_id,
@@ -136,7 +142,7 @@ func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.Stag
 		where, args = append(where, "pipeline_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,

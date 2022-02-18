@@ -32,14 +32,18 @@ func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCrea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	column, err := s.createColumn(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -52,7 +56,8 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findColumnList(ctx, tx, find)
 	if err != nil {
@@ -69,7 +74,8 @@ func (s *ColumnService) FindColumn(ctx context.Context, find *api.ColumnFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findColumnList(ctx, tx, find)
 	if err != nil {
@@ -91,14 +97,18 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	column, err := s.patchColumn(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -116,7 +126,7 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *Tx, create *api.Co
 	}
 
 	// Insert row into column.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO col (
 			creator_id,
 			updater_id,
@@ -198,7 +208,7 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -271,7 +281,7 @@ func (s *ColumnService) patchColumn(ctx context.Context, tx *Tx, patch *api.Colu
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE col
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?`+
