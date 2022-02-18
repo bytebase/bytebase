@@ -83,12 +83,11 @@ ________________________________________________________________________________
 // -----------------------------------Command Line Config BEGIN------------------------------------
 var (
 	// Used for flags.
-	host          string
-	port          int
-	datastorePort int
-	frontendHost  string
-	frontendPort  int
-	dataDir       string
+	host         string
+	port         int
+	frontendHost string
+	frontendPort int
+	dataDir      string
 	// When we are running in readonly mode:
 	// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 	// - Requests other than GET will be rejected
@@ -123,7 +122,6 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&datastorePort, "datastore-port", 0, "port of datastore instance for storing Bytebase data")
 	rootCmd.PersistentFlags().StringVar(&frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
 	rootCmd.PersistentFlags().IntVar(&frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
 	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
@@ -232,10 +230,8 @@ func start() {
 		return
 	}
 
-	// We use port+1 for datastore port if unspecified by users.
-	if datastorePort == 0 {
-		datastorePort = port + 1
-	}
+	// We use port+1 for datastore port.
+	datastorePort := port + 1
 	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
 	m, err := NewMain(activeProfile, logger)
 	if err != nil {
