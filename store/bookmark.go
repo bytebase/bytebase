@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,11 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.Bookma
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	bookmark, err := createBookmark(ctx, tx, create)
+	bookmark, err := createBookmark(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgCreateBookmark(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -99,8 +103,10 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	err = deleteBookmark(ctx, tx, delete)
-	if err != nil {
+	if err := deleteBookmark(ctx, tx.Tx, delete); err != nil {
+		return FormatError(err)
+	}
+	if err := pgDeleteBookmark(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -115,9 +121,9 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 }
 
 // createBookmark creates a new bookmark.
-func createBookmark(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
+func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO bookmark (
 			creator_id,
 			updater_id,
@@ -125,6 +131,47 @@ func createBookmark(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*a
 			link
 		)
 		VALUES (?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+		create.Link,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var bookmark api.Bookmark
+	if err := row.Scan(
+		&bookmark.ID,
+		&bookmark.CreatorID,
+		&bookmark.CreatedTs,
+		&bookmark.UpdaterID,
+		&bookmark.UpdatedTs,
+		&bookmark.Name,
+		&bookmark.Link,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &bookmark, nil
+}
+
+// pgCreateBookmark creates a new bookmark.
+func pgCreateBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO bookmark (
+			creator_id,
+			updater_id,
+			name,
+			link
+		)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
 	`,
 		create.CreatorID,
@@ -209,9 +256,25 @@ func findBookmarkList(ctx context.Context, tx *Tx, find *api.BookmarkFind) (_ []
 }
 
 // deleteBookmark permanently deletes a bookmark by ID.
-func deleteBookmark(ctx context.Context, tx *Tx, delete *api.BookmarkDelete) error {
+func deleteBookmark(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
 	// Remove row from database.
-	result, err := tx.Tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = ?`, delete.ID)
+	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = ?`, delete.ID)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("bookmark ID not found: %d", delete.ID)}
+	}
+
+	return nil
+}
+
+// pgDeleteBookmark permanently deletes a bookmark by ID.
+func pgDeleteBookmark(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
+	// Remove row from database.
+	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = $1`, delete.ID)
 	if err != nil {
 		return FormatError(err)
 	}

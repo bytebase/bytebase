@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,11 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	stage, err := s.createStage(ctx, tx, create)
+	stage, err := s.createStage(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.pgCreateStage(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -90,8 +94,8 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 }
 
 // createStage creates a new stage.
-func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.StageCreate) (*api.Stage, error) {
-	row, err := tx.Tx.QueryContext(ctx, `
+func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.Stage, error) {
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO stage (
 			creator_id,
 			updater_id,
@@ -100,6 +104,49 @@ func (s *StageService) createStage(ctx context.Context, tx *Tx, create *api.Stag
 			name
 		)
 		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name`+`
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.PipelineID,
+		create.EnvironmentID,
+		create.Name,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var stage api.Stage
+	if err := row.Scan(
+		&stage.ID,
+		&stage.CreatorID,
+		&stage.CreatedTs,
+		&stage.UpdaterID,
+		&stage.UpdatedTs,
+		&stage.PipelineID,
+		&stage.EnvironmentID,
+		&stage.Name,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &stage, nil
+}
+
+// pgCreateStage creates a new stage.
+func (s *StageService) pgCreateStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.Stage, error) {
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO stage (
+			creator_id,
+			updater_id,
+			pipeline_id,
+			environment_id,
+			name
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name`+`
 	`,
 		create.CreatorID,
