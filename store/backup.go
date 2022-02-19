@@ -473,6 +473,61 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 	return &backupSetting, nil
 }
 
+// PgUpsertBackupSettingTx updates an existing backup setting.
+func (s *BackupService) PgUpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+	// Upsert row into backup_setting.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO backup_setting (
+			creator_id,
+			updater_id,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			hook_url
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT(database_id) DO UPDATE SET
+				enabled = EXCLUDED.enabled,
+				hour = EXCLUDED.hour,
+				day_of_week = EXCLUDED.day_of_week,
+				hook_url = EXCLUDED.hook_url
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week, hook_url
+		`,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.DatabaseID,
+		upsert.Enabled,
+		upsert.Hour,
+		upsert.DayOfWeek,
+		upsert.HookURL,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var backupSetting api.BackupSetting
+	if err := row.Scan(
+		&backupSetting.ID,
+		&backupSetting.CreatorID,
+		&backupSetting.CreatedTs,
+		&backupSetting.UpdaterID,
+		&backupSetting.UpdatedTs,
+		&backupSetting.DatabaseID,
+		&backupSetting.Enabled,
+		&backupSetting.Hour,
+		&backupSetting.DayOfWeek,
+		&backupSetting.HookURL,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &backupSetting, nil
+}
+
 // FindBackupSettingsMatch retrieves a list of backup settings based on match condition.
 func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

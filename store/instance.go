@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -39,8 +40,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instance, err := createInstance(ctx, tx, create)
+	instance, err := createInstance(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgCreateInstance(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -58,6 +62,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	if err != nil {
 		return nil, err
 	}
+	if _, err := s.databaseService.PgCreateDatabaseTx(ctx, tx.PTx, databaseCreate); err != nil {
+		return nil, err
+	}
 
 	// Create admin data source
 	adminDataSourceCreate := &api.DataSourceCreate{
@@ -69,8 +76,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	_, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate)
-	if err != nil {
+	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate); err != nil {
+		return nil, err
+	}
+	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
@@ -192,8 +201,11 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instance, err := patchInstance(ctx, tx, patch)
+	instance, err := patchInstance(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := pgPatchInstance(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -212,9 +224,9 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 }
 
 // createInstance creates a new instance.
-func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*api.Instance, error) {
+func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance (
 			creator_id,
 			updater_id,
@@ -226,6 +238,61 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 			port
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.EnvironmentID,
+		create.Name,
+		create.Engine,
+		create.ExternalLink,
+		create.Host,
+		create.Port,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var instance api.Instance
+	if err := row.Scan(
+		&instance.ID,
+		&instance.RowStatus,
+		&instance.CreatorID,
+		&instance.CreatedTs,
+		&instance.UpdaterID,
+		&instance.UpdatedTs,
+		&instance.EnvironmentID,
+		&instance.Name,
+		&instance.Engine,
+		&instance.EngineVersion,
+		&instance.ExternalLink,
+		&instance.Host,
+		&instance.Port,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &instance, nil
+}
+
+// pgCreateInstance creates a new instance.
+func pgCreateInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO instance (
+			creator_id,
+			updater_id,
+			environment_id,
+			name,
+			engine,
+			external_link,
+			host,
+			port
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
 	`,
 		create.CreatorID,
@@ -325,7 +392,7 @@ func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []
 }
 
 // patchInstance updates a instance by ID. Returns the new state of the instance after update.
-func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.Instance, error) {
+func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -350,12 +417,77 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var instance api.Instance
+		if err := row.Scan(
+			&instance.ID,
+			&instance.RowStatus,
+			&instance.CreatorID,
+			&instance.CreatedTs,
+			&instance.UpdaterID,
+			&instance.UpdatedTs,
+			&instance.EnvironmentID,
+			&instance.Name,
+			&instance.Engine,
+			&instance.EngineVersion,
+			&instance.ExternalLink,
+			&instance.Host,
+			&instance.Port,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &instance, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
+}
+
+// pgPatchInstance updates a instance by ID. Returns the new state of the instance after update.
+func pgPatchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(set)+1)), append(args, api.RowStatus(*v))
+	}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(set)+1)), append(args, *v)
+	}
+	if v := patch.EngineVersion; v != nil {
+		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(set)+1)), append(args, *v)
+	}
+	if v := patch.ExternalLink; v != nil {
+		set, args = append(set, fmt.Sprintf("external_link = $%d", len(set)+1)), append(args, *v)
+	}
+	if v := patch.Host; v != nil {
+		set, args = append(set, fmt.Sprintf("host = $%d", len(set)+1)), append(args, *v)
+	}
+	if v := patch.Port; v != nil {
+		set, args = append(set, fmt.Sprintf("port = $%d", len(set)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE instance
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+	`, len(set)+1),
 		args...,
 	)
 	if err != nil {

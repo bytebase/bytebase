@@ -756,7 +756,7 @@ VALUES
         '2022v0'
     );
 
--- Database for prod environment archived mysql instance 6099
+-- Database for prod environment archived mysql instance 6009
 INSERT INTO
     db (
         id,
@@ -773,10 +773,10 @@ INSERT INTO
     )
 VALUES
     (
-        7099,
+        7027,
         101,
         101,
-        6099,
+        6009,
         3001,
         '*',
         'utf8mb4',

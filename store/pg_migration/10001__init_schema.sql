@@ -551,7 +551,7 @@ CREATE TABLE backup_setting (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
     -- allowed enabled values are 0, 1.
-    enabled INTEGER NOT NULL,
+    enabled boolean NOT NULL,
     -- allowed hour is from 0 to 23 (included).
     hour INTEGER NOT NULL,
     -- allowed day_of_week is from -1 to 6.
