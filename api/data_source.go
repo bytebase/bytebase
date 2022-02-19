@@ -112,6 +112,7 @@ type DataSourceService interface {
 	CreateDataSource(ctx context.Context, create *DataSourceCreate) (*DataSource, error)
 	// This is specifically used to create the admin data source when creating the instance.
 	CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *DataSourceCreate) (*DataSource, error)
+	PgCreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *DataSourceCreate) (*DataSource, error)
 	FindDataSourceList(ctx context.Context, find *DataSourceFind) ([]*DataSource, error)
 	FindDataSource(ctx context.Context, find *DataSourceFind) (*DataSource, error)
 	PatchDataSource(ctx context.Context, patch *DataSourcePatch) (*DataSource, error)

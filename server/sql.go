@@ -493,9 +493,9 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
-							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
+							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
 						}
-						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, database.Name, err)
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
 					}
 
 					tableDelete := &api.TableDelete{
