@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,11 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	index, err := s.createIndex(ctx, tx, create)
+	index, err := s.createIndex(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.pgCreateIndex(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -90,9 +94,9 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 }
 
 // createIndex creates a new index.
-func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.IndexCreate) (*api.Index, error) {
+func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO idx (
 			creator_id,
 			updater_id,
@@ -108,6 +112,68 @@ func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.Inde
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, `unique`, visible, comment"+`
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
+		create.TableID,
+		create.Name,
+		create.Expression,
+		create.Position,
+		create.Type,
+		create.Unique,
+		create.Visible,
+		create.Comment,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var index api.Index
+	if err := row.Scan(
+		&index.ID,
+		&index.CreatorID,
+		&index.CreatedTs,
+		&index.UpdaterID,
+		&index.UpdatedTs,
+		&index.DatabaseID,
+		&index.TableID,
+		&index.Name,
+		&index.Expression,
+		&index.Position,
+		&index.Type,
+		&index.Unique,
+		&index.Visible,
+		&index.Comment,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &index, nil
+}
+
+// pgCreateIndex creates a new index.
+func (s *IndexService) pgCreateIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
+	// Insert row into index.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO idx (
+			creator_id,
+			updater_id,
+			database_id,
+			table_id,
+			name,
+			expression,
+			position,
+			type,
+			unique,
+			visible,
+			comment
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, "unique", visible, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
