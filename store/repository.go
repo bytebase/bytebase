@@ -33,14 +33,18 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	repository, err := s.createRepository(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -53,7 +57,8 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findRepositoryList(ctx, tx, find)
 	if err != nil {
@@ -70,7 +75,8 @@ func (s *RepositoryService) FindRepository(ctx context.Context, find *api.Reposi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findRepositoryList(ctx, tx, find)
 	if err != nil {
@@ -92,14 +98,18 @@ func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.Repo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	repository, err := patchRepository(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -112,14 +122,18 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = s.deleteRepository(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -140,7 +154,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *Tx, create
 	}
 
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO repository (
 		    creator_id,
 		    updater_id,
@@ -239,7 +253,7 @@ func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 		where, args = append(where, "webhook_endpoint_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -341,7 +355,7 @@ func patchRepository(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -403,7 +417,7 @@ func (s *RepositoryService) deleteRepository(ctx context.Context, tx *Tx, delete
 	}
 
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = ?`, delete.ProjectID); err != nil {
 		return FormatError(err)
 	}
 	return nil

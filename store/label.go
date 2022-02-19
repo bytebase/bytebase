@@ -31,14 +31,18 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,7 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -92,7 +96,7 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	}
 
 	// Find key values.
-	valueRows, err := tx.QueryContext(ctx, `
+	valueRows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			key,
 			value
@@ -139,7 +143,8 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
 	if err != nil {
@@ -188,7 +193,10 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -198,7 +206,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 
 func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
-	if _, err := tx.ExecContext(ctx, `
+	if _, err := tx.Tx.ExecContext(ctx, `
 		INSERT INTO label_value (
 			row_status,
 			creator_id,
@@ -229,14 +237,18 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	databaseLabelList, err := s.findDatabaseLabels(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -255,7 +267,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			row_status,
@@ -304,7 +316,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api
 
 func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	// Upsert row into db_label
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO db_label (
 			row_status,
 			creator_id,
@@ -366,7 +378,8 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	var ret []*api.DatabaseLabel
 
@@ -407,7 +420,10 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 		ret = append(ret, label)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

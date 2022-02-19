@@ -34,7 +34,8 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	status := api.Normal
 	find := &api.AnomalyFind{
@@ -68,7 +69,10 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -81,7 +85,8 @@ func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findAnomalyList(ctx, tx, find)
 	if err != nil {
@@ -98,14 +103,18 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = archiveAnomaly(ctx, tx, archive)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -115,7 +124,7 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 // createAnomaly creates a new anomaly.
 func createAnomaly(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	// Inserts row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO anomaly (
 			creator_id,
 			updater_id,
@@ -186,7 +195,7 @@ func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*a
 		where, args = append(where, "type = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -258,7 +267,7 @@ func patchAnomaly(ctx context.Context, tx *Tx, patch *anomalyPatch) (*api.Anomal
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE anomaly
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -311,7 +320,7 @@ func archiveAnomaly(ctx context.Context, tx *Tx, archive *api.AnomalyArchive) er
 	}
 	// Remove row from database.
 	if archive.InstanceID != nil {
-		result, err := tx.ExecContext(ctx,
+		result, err := tx.Tx.ExecContext(ctx,
 			`UPDATE anomaly SET row_status = ? WHERE instance_id = ? AND database_id IS NULL AND type = ?`,
 			api.Archived,
 			*archive.InstanceID,
@@ -326,7 +335,7 @@ func archiveAnomaly(ctx context.Context, tx *Tx, archive *api.AnomalyArchive) er
 			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
 		}
 	} else if archive.DatabaseID != nil {
-		result, err := tx.ExecContext(ctx,
+		result, err := tx.Tx.ExecContext(ctx,
 			`UPDATE anomaly SET row_status = ? WHERE database_id = ? AND type = ?`,
 			api.Archived,
 			*archive.DatabaseID,

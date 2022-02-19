@@ -34,14 +34,18 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	issue, err := s.createIssue(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -58,7 +62,8 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findIssueList(ctx, tx, find)
 	if err != nil {
@@ -83,7 +88,8 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findIssueList(ctx, tx, find)
 	if err != nil {
@@ -108,14 +114,18 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	issue, err := s.patchIssue(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -128,7 +138,7 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 
 // createIssue creates a new issue.
 func (s *IssueService) createIssue(ctx context.Context, tx *Tx, create *api.IssueCreate) (*api.Issue, error) {
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
@@ -231,7 +241,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := tx.Tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -295,7 +305,7 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *Tx, patch *api.IssueP
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?

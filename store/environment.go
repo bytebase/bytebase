@@ -33,14 +33,18 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	environment, err := s.createEnvironment(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +61,8 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findEnvironmentList(ctx, tx, find)
 	if err != nil {
@@ -93,7 +98,8 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findEnvironmentList(ctx, tx, find)
 	if err != nil {
@@ -118,14 +124,18 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	environment, err := s.patchEnvironment(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -139,7 +149,7 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 // createEnvironment creates a new environment.
 func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
 	// The order is the MAX(order) + 1
-	row1, err1 := tx.QueryContext(ctx, `
+	row1, err1 := tx.Tx.QueryContext(ctx, `
 		SELECT `+"`order`"+`
 		FROM environment
 		ORDER BY `+"`order`"+` DESC
@@ -160,7 +170,7 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *Tx, crea
 	}
 
 	// Insert row into database.
-	row2, err2 := tx.QueryContext(ctx, `
+	row2, err2 := tx.Tx.QueryContext(ctx, `
 		INSERT INTO environment (
 			creator_id,
 			updater_id,
@@ -209,7 +219,7 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, fi
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 			row_status,
@@ -271,7 +281,7 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *Tx, patch
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE environment
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
