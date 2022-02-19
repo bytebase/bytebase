@@ -36,8 +36,11 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	backup, err := s.createBackup(ctx, tx, create)
+	backup, err := s.createBackup(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.pgCreateBackup(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -101,8 +104,11 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	backup, err := s.patchBackup(ctx, tx, patch)
+	backup, err := s.patchBackup(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := s.pgPatchBackup(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -117,9 +123,9 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 }
 
 // createBackup creates a new backup.
-func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.BackupCreate) (*api.Backup, error) {
+func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.Backup, error) {
 	// Insert row into backup.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup (
 			creator_id,
 			updater_id,
@@ -132,6 +138,62 @@ func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.Ba
 			path
 		)
 		VALUES (?, ?, ?, ?, 'PENDING_CREATE', ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.DatabaseID,
+		create.Name,
+		create.Type,
+		create.StorageBackend,
+		create.MigrationHistoryVersion,
+		create.Path,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var backup api.Backup
+	if err := row.Scan(
+		&backup.ID,
+		&backup.CreatorID,
+		&backup.CreatedTs,
+		&backup.UpdaterID,
+		&backup.UpdatedTs,
+		&backup.DatabaseID,
+		&backup.Name,
+		&backup.Status,
+		&backup.Type,
+		&backup.StorageBackend,
+		&backup.MigrationHistoryVersion,
+		&backup.Path,
+		&backup.Comment,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &backup, nil
+}
+
+// pgCreateBackup creates a new backup.
+func (s *BackupService) pgCreateBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.Backup, error) {
+	// Insert row into backup.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO backup (
+			creator_id,
+			updater_id,
+			database_id,
+			name,
+			status,
+			type,
+			storage_backend,
+			migration_history_version,
+			path
+		)
+		VALUES ($1, $2, $3, $4, 'PENDING_CREATE', $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		create.CreatorID,
@@ -244,7 +306,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 }
 
 // patchBackup updates a backup by ID. Returns the new state of the backup after update.
-func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.BackupPatch) (*api.Backup, error) {
+func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.Backup, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = ?"), append(args, patch.Status)
@@ -253,10 +315,58 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var backup api.Backup
+		if err := row.Scan(
+			&backup.ID,
+			&backup.CreatorID,
+			&backup.CreatedTs,
+			&backup.UpdaterID,
+			&backup.UpdatedTs,
+			&backup.DatabaseID,
+			&backup.Name,
+			&backup.Status,
+			&backup.Type,
+			&backup.StorageBackend,
+			&backup.MigrationHistoryVersion,
+			&backup.Path,
+			&backup.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &backup, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
+}
+
+// pgPatchBackup updates a backup by ID. Returns the new state of the backup after update.
+func (s *BackupService) pgPatchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.Backup, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args = append(set, "status = $2"), append(args, patch.Status)
+	set, args = append(set, "comment = $3"), append(args, patch.Comment)
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE backup
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $4
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		args...,
@@ -405,6 +515,9 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 
 	backup, err := s.UpsertBackupSettingTx(ctx, tx.Tx, upsert)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.PgUpsertBackupSettingTx(ctx, tx.Tx, upsert); err != nil {
 		return nil, err
 	}
 
