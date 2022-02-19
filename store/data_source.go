@@ -39,6 +39,9 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	if err != nil {
 		return nil, err
 	}
+	if _, err := s.pgCreateDataSource(ctx, tx.PTx, create); err != nil {
+		return nil, err
+	}
 
 	if err := tx.Tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -53,6 +56,11 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 // CreateDataSourceTx creates a data source with a transaction.
 func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
 	return s.createDataSource(ctx, tx, create)
+}
+
+// PgCreateDataSourceTx creates a data source with a transaction.
+func (s *DataSourceService) PgCreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+	return s.pgCreateDataSource(ctx, tx, create)
 }
 
 // FindDataSourceList retrieves a list of data sources based on find.
@@ -109,6 +117,9 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	if _, err := s.pgPatchDataSource(ctx, tx, patch); err != nil {
+		return nil, FormatError(err)
+	}
 
 	if err := tx.Tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -135,6 +146,59 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 			password
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.InstanceID,
+		create.DatabaseID,
+		create.Name,
+		create.Type,
+		create.Username,
+		create.Password,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var dataSource api.DataSource
+	if err := row.Scan(
+		&dataSource.ID,
+		&dataSource.CreatorID,
+		&dataSource.CreatedTs,
+		&dataSource.UpdaterID,
+		&dataSource.UpdatedTs,
+		&dataSource.InstanceID,
+		&dataSource.DatabaseID,
+		&dataSource.Name,
+		&dataSource.Type,
+		&dataSource.Username,
+		&dataSource.Password,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &dataSource, nil
+}
+
+// pgCreateDataSource creates a new dataSource.
+func (s *DataSourceService) pgCreateDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+	// Insert row into dataSource.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO data_source (
+			creator_id,
+			updater_id,
+			instance_id,
+			database_id,
+			name,
+			type,
+			username,
+			password
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
 	`,
 		create.CreatorID,
@@ -257,6 +321,56 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var dataSource api.DataSource
+		if err := row.Scan(
+			&dataSource.ID,
+			&dataSource.CreatorID,
+			&dataSource.CreatedTs,
+			&dataSource.UpdaterID,
+			&dataSource.UpdatedTs,
+			&dataSource.InstanceID,
+			&dataSource.DatabaseID,
+			&dataSource.Name,
+			&dataSource.Type,
+			&dataSource.Username,
+			&dataSource.Password,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &dataSource, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("dataSource ID not found: %d", patch.ID)}
+}
+
+// pgPatchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
+func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.Username; v != nil {
+		set, args = append(set, fmt.Sprintf("username = $%d", len(set)+1)), append(args, *v)
+	}
+	if v := patch.Password; v != nil {
+		set, args = append(set, fmt.Sprintf("password = $%d", len(set)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.Tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE data_source
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+	`, len(set)+1),
 		args...,
 	)
 	if err != nil {
