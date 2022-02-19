@@ -31,7 +31,8 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -42,7 +43,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -105,9 +106,10 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 	INSERT INTO deployment_config (
 		creator_id,
 		updater_id,
@@ -150,7 +152,10 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

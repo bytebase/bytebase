@@ -29,14 +29,18 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	instanceUser, err := upsertInstanceUser(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -49,7 +53,8 @@ func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findInstanceUserList(ctx, tx, find)
 	if err != nil {
@@ -65,14 +70,18 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteInstanceUser(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -82,7 +91,7 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 // upsertInstanceUser upserts a new instanceUser.
 func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO instance_user (
 			creator_id,
 			updater_id,
@@ -127,7 +136,7 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, "instance_id = ?"), append(args, find.InstanceID)
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			instance_id,
@@ -169,7 +178,7 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 // deleteInstanceUser permanently deletes a instance user by ID.
 func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

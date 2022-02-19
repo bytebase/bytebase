@@ -31,14 +31,18 @@ func (s *ActivityService) CreateActivity(ctx context.Context, create *api.Activi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	activity, err := createActivity(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,8 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findActivityList(ctx, tx, find)
 	if err != nil {
@@ -68,7 +73,8 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findActivityList(ctx, tx, find)
 	if err != nil {
@@ -90,14 +96,18 @@ func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.Activity
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	activity, err := patchActivity(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -110,14 +120,18 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteActivity(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -127,7 +141,7 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 // createActivity creates a new activity.
 func createActivity(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*api.Activity, error) {
 	// Insert row into activity.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO activity (
 			creator_id,
 			updater_id,
@@ -208,7 +222,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, query,
+	rows, err := tx.Tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {
@@ -255,7 +269,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE activity
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -294,7 +308,7 @@ func patchActivity(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*api.
 // deleteActivity permanently deletes a activity by ID.
 func deleteActivity(ctx context.Context, tx *Tx, delete *api.ActivityDelete) error {
 	// Remove row from activity.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM activity WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

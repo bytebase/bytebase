@@ -31,14 +31,18 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	index, err := s.createIndex(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,8 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findIndexList(ctx, tx, find)
 	if err != nil {
@@ -68,7 +73,8 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findIndexList(ctx, tx, find)
 	if err != nil {
@@ -86,7 +92,7 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 // createIndex creates a new index.
 func (s *IndexService) createIndex(ctx context.Context, tx *Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO idx (
 			creator_id,
 			updater_id,
@@ -164,7 +170,7 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 		where, args = append(where, "expression = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,

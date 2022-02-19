@@ -29,14 +29,18 @@ func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, crea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	issueSubscriber, err := createIssueSubscriber(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -49,7 +53,8 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findIssueSubscriberList(ctx, tx, find)
 	if err != nil {
@@ -65,14 +70,18 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteIssueSubscriber(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -82,7 +91,7 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 // createIssueSubscriber creates a new issueSubscriber.
 func createIssueSubscriber(ctx context.Context, tx *Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO issue_subscriber (
 			issue_id,
 			subscriber_id
@@ -121,7 +130,7 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 		where, args = append(where, "subscriber_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			issue_id,
 			subscriber_id
@@ -157,7 +166,7 @@ func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscri
 // deleteIssueSubscriber permanently deletes a issueSubscriber by ID.
 func deleteIssueSubscriber(ctx context.Context, tx *Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID); err != nil {
 		return FormatError(err)
 	}
 	return nil
