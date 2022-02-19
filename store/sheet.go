@@ -32,14 +32,18 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	sheet, err := createSheet(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -52,14 +56,18 @@ func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	sheet, err := patchSheet(ctx, tx, patch)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -72,7 +80,8 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findSheetList(ctx, tx, find)
 	if err != nil {
@@ -89,7 +98,8 @@ func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findSheetList(ctx, tx, find)
 	if err != nil {
@@ -111,14 +121,18 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteSheet(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -127,7 +141,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 
 // createSheet creates a new sheet.
 func createSheet(ctx context.Context, tx *Tx, create *api.SheetCreate) (*api.Sheet, error) {
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -195,7 +209,7 @@ func patchSheet(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*api.Sheet,
 
 	args = append(args, patch.ID)
 
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -269,7 +283,7 @@ func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.S
 		where, args = append(where, "visibility = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -325,7 +339,7 @@ func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.S
 
 // deleteSheet permanently deletes a sheet by ID.
 func deleteSheet(ctx context.Context, tx *Tx, delete *api.SheetDelete) error {
-	result, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = ?`, delete.ID)
+	result, err := tx.Tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = ?`, delete.ID)
 	if err != nil {
 		return FormatError(err)
 	}

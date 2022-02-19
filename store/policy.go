@@ -40,7 +40,8 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findPolicy(ctx, tx, find)
 	var ret *api.Policy
@@ -85,7 +86,7 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.Policy
 		where, args = append(where, "type = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -142,14 +143,18 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	policy, err := s.upsertPolicy(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -160,7 +165,7 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	// Upsert row into policy.
 	// TODO(spinningbot): fix the query.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO policy (
 			creator_id,
 			updater_id,

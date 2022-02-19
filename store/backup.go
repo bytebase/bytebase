@@ -33,14 +33,18 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	backup, err := s.createBackup(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -54,7 +58,8 @@ func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findBackupList(ctx, tx, find)
 	if err != nil {
@@ -75,7 +80,8 @@ func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findBackupList(ctx, tx, find)
 	if err != nil {
@@ -92,14 +98,18 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	backup, err := s.patchBackup(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -109,7 +119,7 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 // createBackup creates a new backup.
 func (s *BackupService) createBackup(ctx context.Context, tx *Tx, create *api.BackupCreate) (*api.Backup, error) {
 	// Insert row into backup.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO backup (
 			creator_id,
 			updater_id,
@@ -178,7 +188,7 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.Ba
 		where, args = append(where, "status = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -243,7 +253,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *Tx, patch *api.Back
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -288,7 +298,8 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findBackupSetting(ctx, tx, find)
 	if err != nil {
@@ -313,7 +324,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *Tx, find *api
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -389,14 +400,18 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	backup, err := s.UpsertBackupSettingTx(ctx, tx.Tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -464,9 +479,10 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
