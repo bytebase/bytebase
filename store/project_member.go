@@ -31,14 +31,18 @@ func (s *ProjectMemberService) CreateProjectMember(ctx context.Context, create *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	projectMember, err := createProjectMember(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,8 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectMemberList(ctx, tx, find)
 	if err != nil {
@@ -67,7 +72,8 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectMemberList(ctx, tx, find)
 	if err != nil {
@@ -89,14 +95,18 @@ func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	projectMember, err := patchProjectMember(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -109,14 +119,18 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteProjectMember(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -126,7 +140,7 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 // createProjectMember creates a new projectMember.
 func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
@@ -177,7 +191,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -233,7 +247,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -270,7 +284,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 // deleteProjectMember permanently deletes a projectMember by ID.
 func deleteProjectMember(ctx context.Context, tx *Tx, delete *api.ProjectMemberDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

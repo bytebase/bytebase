@@ -36,7 +36,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	instance, err := createInstance(ctx, tx, create)
 	if err != nil {
@@ -73,7 +74,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -90,7 +94,8 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findInstanceList(ctx, tx, find)
 	if err != nil {
@@ -114,11 +119,12 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 	if err != nil {
 		return 0, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	where, args := findInstanceQuery(find)
 
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		SELECT COUNT(*)
 		FROM instance
 		WHERE `+where,
@@ -157,7 +163,8 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findInstanceList(ctx, tx, find)
 	if err != nil {
@@ -182,14 +189,18 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	instance, err := patchInstance(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -203,7 +214,7 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 // createInstance creates a new instance.
 func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*api.Instance, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO instance (
 			creator_id,
 			updater_id,
@@ -258,7 +269,7 @@ func createInstance(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*a
 func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
 	where, args := findInstanceQuery(find)
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 			row_status,
@@ -339,7 +350,7 @@ func patchInstance(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?

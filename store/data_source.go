@@ -32,14 +32,18 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	dataSource, err := s.createDataSource(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +61,8 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findDataSourceList(ctx, tx, find)
 	if err != nil {
@@ -74,7 +79,8 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findDataSourceList(ctx, tx, find)
 	if err != nil {
@@ -96,14 +102,18 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	dataSource, err := s.patchDataSource(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -176,7 +186,7 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find
 		where, args = append(where, "type = ?"), append(args, api.DataSourceType(*v))
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -241,7 +251,7 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE data_source
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
