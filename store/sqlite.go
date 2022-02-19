@@ -396,9 +396,11 @@ func (db *DB) pgMigrateFile(name string, up bool) error {
 	defer tx.Rollback()
 
 	// Read and execute migration file.
-	if buf, err := fs.ReadFile(pgMigrationFS, name); err != nil {
+	buf, err := fs.ReadFile(pgMigrationFS, name)
+	if err != nil {
 		return err
-	} else if _, err := tx.Exec(string(buf)); err != nil {
+	}
+	if _, err := tx.Exec(string(buf)); err != nil {
 		return err
 	}
 
@@ -408,10 +410,18 @@ func (db *DB) pgMigrateFile(name string, up bool) error {
 // Close closes the database connection.
 func (db *DB) Close() error {
 	// Close database.
+	var e error
 	if db.Db != nil {
-		return db.Db.Close()
+		if err := db.Db.Close(); err != nil {
+			e = err
+		}
 	}
-	return nil
+	if db.PgDB != nil {
+		if err := db.PgDB.Close(); err != nil {
+			e = err
+		}
+	}
+	return e
 }
 
 // BeginTx starts a transaction and returns a wrapper Tx type. This type
@@ -422,10 +432,15 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
+	ptx, err := db.PgDB.BeginTx(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
 		Tx:  tx,
+		PTx: ptx,
 		db:  db,
 		now: db.Now().UTC().Truncate(time.Second),
 	}, nil
@@ -433,7 +448,8 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
-	*sql.Tx
+	Tx  *sql.Tx
+	PTx *sql.Tx
 	db  *DB
 	now time.Time
 }

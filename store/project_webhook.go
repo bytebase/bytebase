@@ -31,14 +31,18 @@ func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	projectWebhook, err := createProjectWebhook(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +55,8 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectWebhookList(ctx, tx, find)
 	if err != nil {
@@ -68,7 +73,8 @@ func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectWebhookList(ctx, tx, find)
 	if err != nil {
@@ -90,14 +96,18 @@ func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	projectWebhook, err := patchProjectWebhook(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -110,14 +120,18 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	err = deleteProjectWebhook(ctx, tx, delete)
 	if err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -127,7 +141,7 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 // createProjectWebhook creates a new projectWebhook.
 func createProjectWebhook(ctx context.Context, tx *Tx, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO project_webhook (
 			creator_id,
 			updater_id,
@@ -186,7 +200,7 @@ func findProjectWebhookList(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -263,7 +277,7 @@ func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookP
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE project_webhook
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -304,7 +318,7 @@ func patchProjectWebhook(ctx context.Context, tx *Tx, patch *api.ProjectWebhookP
 // deleteProjectWebhook permanently deletes a projectWebhook by ID.
 func deleteProjectWebhook(ctx context.Context, tx *Tx, delete *api.ProjectWebhookDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = ?`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

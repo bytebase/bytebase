@@ -33,14 +33,18 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	member, err := createMember(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +61,8 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findMemberList(ctx, tx, find)
 	if err != nil {
@@ -93,7 +98,8 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findMemberList(ctx, tx, find)
 	if err != nil {
@@ -118,14 +124,18 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	member, err := patchMember(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -139,7 +149,7 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 // createMember creates a new member.
 func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.Member, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
@@ -194,7 +204,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 		where, args = append(where, "role = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 			row_status,
@@ -255,7 +265,7 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?

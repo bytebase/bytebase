@@ -36,14 +36,18 @@ func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	task, err := s.createTask(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -56,7 +60,8 @@ func (s *TaskService) FindTaskList(ctx context.Context, find *api.TaskFind) ([]*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findTaskList(ctx, tx, find)
 	if err != nil {
@@ -73,7 +78,8 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	return s.findTask(ctx, tx, find)
 }
@@ -85,14 +91,18 @@ func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	task, err := s.patchTask(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -106,14 +116,18 @@ func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatus
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	task, err := s.patchTaskStatus(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -126,7 +140,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 	var err error
 
 	if create.DatabaseID == nil {
-		row, err = tx.QueryContext(ctx, `
+		row, err = tx.Tx.QueryContext(ctx, `
 		INSERT INTO task (
 			creator_id,
 			updater_id,
@@ -154,7 +168,7 @@ func (s *TaskService) createTask(ctx context.Context, tx *Tx, create *api.TaskCr
 			create.EarliestAllowedTs,
 		)
 	} else {
-		row, err = tx.QueryContext(ctx, `
+		row, err = tx.Tx.QueryContext(ctx, `
 		INSERT INTO task (
 			creator_id,
 			updater_id,
@@ -257,7 +271,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *Tx, find *api.TaskFi
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -345,7 +359,7 @@ func (s *TaskService) patchTask(ctx context.Context, tx *Tx, patch *api.TaskPatc
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -461,7 +475,7 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *Tx, patch *api.Ta
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row, err := tx.Tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
