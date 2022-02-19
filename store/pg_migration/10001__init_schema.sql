@@ -397,7 +397,7 @@ CREATE TABLE col (
     name TEXT NOT NULL,
     position INTEGER NOT NULL,
     "default" TEXT,
-    nullable INTEGER NOT NULL,
+    nullable BOOLEAN NOT NULL,
     type TEXT NOT NULL,
     character_set TEXT NOT NULL,
     "collation" TEXT NOT NULL,
