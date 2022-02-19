@@ -1,6 +1,6 @@
 package mysql
 
-import "github.com/pingcap/parser"
+import "github.com/pingcap/tidb/parser"
 
 // Wrapper for parser.New().
 func newParser() *parser.Parser {
