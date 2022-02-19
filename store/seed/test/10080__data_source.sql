@@ -212,11 +212,11 @@ INSERT INTO
     )
 VALUES
     (
-        8099,
+        8009,
         1,
         1,
-        6099,
-        7099,
+        6009,
+        7027,
         'Admin data source',
         'ADMIN',
         'admin',

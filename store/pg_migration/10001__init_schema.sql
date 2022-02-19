@@ -397,7 +397,7 @@ CREATE TABLE col (
     name TEXT NOT NULL,
     position INTEGER NOT NULL,
     "default" TEXT,
-    nullable INTEGER NOT NULL,
+    nullable BOOLEAN NOT NULL,
     type TEXT NOT NULL,
     character_set TEXT NOT NULL,
     "collation" TEXT NOT NULL,
@@ -551,7 +551,7 @@ CREATE TABLE backup_setting (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
     -- allowed enabled values are 0, 1.
-    enabled INTEGER NOT NULL,
+    enabled BOOLEAN NOT NULL,
     -- allowed hour is from 0 to 23 (included).
     hour INTEGER NOT NULL,
     -- allowed day_of_week is from -1 to 6.
