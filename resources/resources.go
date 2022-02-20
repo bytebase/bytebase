@@ -128,7 +128,7 @@ func initDB(pgBinDir, pgdataDir, username string) error {
 	p.Stdout = os.Stdout
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("unable to init database using: %s, error %v", p.String(), err)
+		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
 	}
 
 	return nil
@@ -144,7 +144,7 @@ func StartPostgres(pgBinDir, pgdataDir string, port int, stdout, stderr *os.File
 	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("could not start postgres using %s, error %v", p.String(), err)
+		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
 	}
 
 	return nil
