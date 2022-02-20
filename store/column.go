@@ -35,11 +35,11 @@ func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCrea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	column, err := s.createColumn(ctx, tx.Tx, create)
+	column, err := s.pgCreateColumn(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateColumn(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createColumn(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -103,11 +103,11 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	column, err := s.patchColumn(ctx, tx.Tx, patch)
+	column, err := s.pgPatchColumn(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchColumn(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchColumn(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

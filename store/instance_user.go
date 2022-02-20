@@ -33,11 +33,11 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instanceUser, err := upsertInstanceUser(ctx, tx.Tx, upsert)
+	instanceUser, err := pgUpsertInstanceUser(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgUpsertInstanceUser(ctx, tx.PTx, upsert); err != nil {
+	if _, err := upsertInstanceUser(ctx, tx.Tx, upsert); err != nil {
 		return nil, err
 	}
 
@@ -77,10 +77,10 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteInstanceUser(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteInstanceUser(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteInstanceUser(ctx, tx.PTx, delete); err != nil {
+	if err := deleteInstanceUser(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -151,7 +151,7 @@ func pgUpsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceU
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			updater_id = excluded.updater_id,
-			grant = excluded.grant
+			"grant" = excluded.grant
 		RETURNING id, instance_id, name, "grant"
 	`,
 		upsert.CreatorID,

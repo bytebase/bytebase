@@ -37,11 +37,11 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	repository, err := s.createRepository(ctx, tx.Tx, create)
+	repository, err := s.pgCreateRepository(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateRepository(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createRepository(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -105,11 +105,11 @@ func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.Repo
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	repository, err := patchRepository(ctx, tx.Tx, patch)
+	repository, err := pgPatchRepository(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchRepository(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchRepository(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -132,10 +132,10 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := s.deleteRepository(ctx, tx.Tx, delete); err != nil {
+	if err := s.pgDeleteRepository(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := s.pgDeleteRepository(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteRepository(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

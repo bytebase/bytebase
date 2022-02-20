@@ -116,7 +116,7 @@ INSERT INTO
     )
 VALUES
     (
-        7405,
+        7404,
         101,
         1628359200,
         101,
@@ -150,7 +150,7 @@ INSERT INTO
     )
 VALUES
     (
-        7406,
+        7405,
         101,
         1629250800,
         101,
@@ -183,7 +183,7 @@ INSERT INTO
     )
 VALUES
     (
-        7407,
+        7406,
         101,
         1629337200,
         101,
@@ -216,7 +216,7 @@ INSERT INTO
     )
 VALUES
     (
-        7408,
+        7407,
         101,
         1627754400,
         101,
@@ -249,7 +249,7 @@ INSERT INTO
     )
 VALUES
     (
-        7409,
+        7408,
         101,
         1628359200,
         101,
@@ -264,4 +264,4 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE backup_id_seq RESTART WITH 7410;
+ALTER SEQUENCE backup_id_seq RESTART WITH 7409;
