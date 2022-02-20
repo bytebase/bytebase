@@ -44,7 +44,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		DatabaseID: upsert.DatabaseID,
 		Type:       &upsert.Type,
 	}
-	list, err := findAnomalyList(ctx, tx, find)
+	list, err := findAnomalyList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyF
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findAnomalyList(ctx, tx, find)
+	list, err := findAnomalyList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Anomaly{}, err
 	}
@@ -236,28 +236,28 @@ func pgCreateAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert)
 	return nil, err
 }
 
-func findAnomalyList(ctx context.Context, tx *Tx, find *api.AnomalyFind) (_ []*api.Anomaly, err error) {
+func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) (_ []*api.Anomaly, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, "instance_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 		if find.InstanceOnly {
 			where = append(where, "database_id is NULL")
 		}
 	}
 	if find.InstanceID == nil || !find.InstanceOnly {
 		if v := find.DatabaseID; v != nil {
-			where, args = append(where, "database_id = ?"), append(args, *v)
+			where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 		}
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "type = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,

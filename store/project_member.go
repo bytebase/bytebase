@@ -62,7 +62,7 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectMemberList(ctx, tx, find)
+	list, err := findProjectMemberList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.ProjectMember{}, err
 	}
@@ -79,7 +79,7 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectMemberList(ctx, tx, find)
+	list, err := findProjectMemberList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -234,26 +234,26 @@ func pgCreateProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectM
 	return &projectMember, nil
 }
 
-func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberFind) (_ []*api.ProjectMember, err error) {
+func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMemberFind) (_ []*api.ProjectMember, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			project_id,
-		    role,
-		    principal_id
+			role,
+			principal_id
 		FROM project_member
 		WHERE `+strings.Join(where, " AND "),
 		args...,

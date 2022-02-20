@@ -267,27 +267,27 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			database_id,
-		    name,
+			name,
 			type,
 			engine,
-			collation,
+			"collation",
 			row_count,
 			data_size,
 			index_size,

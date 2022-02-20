@@ -35,7 +35,7 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	ret, err := s.findLabelKeyList(ctx, tx, find)
+	ret, err := s.findLabelKeyList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -50,20 +50,20 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	return ret, nil
 }
 
-func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+func (s *LabelService) findLabelKeyList(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, "row_status = $1"), append(args, *v)
 	}
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
 			created_ts,
 			updater_id,
 			updated_ts,
-		    key
+			key
 		FROM label_key
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -71,8 +71,6 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer rows.Close()
-
 	// Iterate over result set and deserialize rows into list.
 	var ret []*api.LabelKey
 	keymap := make(map[string]*api.LabelKey)
@@ -95,9 +93,12 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, FormatError(err)
+	}
 
 	// Find key values.
-	valueRows, err := tx.Tx.QueryContext(ctx, `
+	valueRows, err := tx.QueryContext(ctx, `
 		SELECT
 			key,
 			value
@@ -147,7 +148,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
+	ret, err := s.findLabelKeyList(ctx, tx.PTx, &api.LabelKeyFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +272,7 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	databaseLabelList, err := s.findDatabaseLabels(ctx, tx, find)
+	databaseLabelList, err := s.findDatabaseLabels(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -286,19 +287,19 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	return databaseLabelList, nil
 }
 
-func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			row_status,
@@ -307,7 +308,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api
 			updater_id,
 			updated_ts,
 			database_id,
-		    key,
+			key,
 			value
 		FROM db_label
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY key`,
