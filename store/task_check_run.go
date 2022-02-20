@@ -32,7 +32,6 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
@@ -82,68 +81,12 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.CreateTaskCheckRunTx(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return taskCheckRun, nil
-}
-
-// CreateTaskCheckRunTx creates a new taskCheckRun.
-func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO task_check_run (
-			creator_id,
-			updater_id,
-			task_id,
-			status,
-			type,
-			comment,
-			payload
-		)
-		VALUES (?, ?, ?, 'RUNNING', ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.TaskID,
-		create.Type,
-		create.Comment,
-		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var taskCheckRun api.TaskCheckRun
-	if err := row.Scan(
-		&taskCheckRun.ID,
-		&taskCheckRun.CreatorID,
-		&taskCheckRun.CreatedTs,
-		&taskCheckRun.UpdaterID,
-		&taskCheckRun.UpdatedTs,
-		&taskCheckRun.TaskID,
-		&taskCheckRun.Status,
-		&taskCheckRun.Type,
-		&taskCheckRun.Code,
-		&taskCheckRun.Comment,
-		&taskCheckRun.Result,
-		&taskCheckRun.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &taskCheckRun, nil
 }
 
 // PgCreateTaskCheckRunTx creates a new taskCheckRun.
@@ -206,7 +149,6 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.pgFindTaskCheckRunList(ctx, tx.PTx, find)
@@ -243,75 +185,18 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	taskCheckRun, err := s.PgPatchTaskCheckRunStatusTx(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.PatchTaskCheckRunStatusTx(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return taskCheckRun, nil
-}
-
-// PatchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "status = ?"), append(args, patch.Status)
-	set, args = append(set, "code = ?"), append(args, patch.Code)
-	set, args = append(set, "result = ?"), append(args, patch.Result)
-
-	// Build WHERE clause.
-	where := []string{"1 = 1"}
-	if v := patch.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
-	}
-
-	row, err := tx.QueryContext(ctx, `
-		UPDATE task_check_run
-		SET `+strings.Join(set, ", ")+`
-		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`,
-		args...,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var taskCheckRun api.TaskCheckRun
-	if err := row.Scan(
-		&taskCheckRun.ID,
-		&taskCheckRun.CreatorID,
-		&taskCheckRun.CreatedTs,
-		&taskCheckRun.UpdaterID,
-		&taskCheckRun.UpdatedTs,
-		&taskCheckRun.TaskID,
-		&taskCheckRun.Status,
-		&taskCheckRun.Type,
-		&taskCheckRun.Code,
-		&taskCheckRun.Comment,
-		&taskCheckRun.Result,
-		&taskCheckRun.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &taskCheckRun, nil
 }
 
 // PgPatchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
