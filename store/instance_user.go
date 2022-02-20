@@ -151,7 +151,7 @@ func pgUpsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceU
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			updater_id = excluded.updater_id,
-			grant = excluded.grant
+			"grant" = excluded.grant
 		RETURNING id, instance_id, name, "grant"
 	`,
 		upsert.CreatorID,
