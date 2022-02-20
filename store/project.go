@@ -169,6 +169,22 @@ func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *
 	return project, nil
 }
 
+// PgPatchProjectTx updates an existing project by ID.
+// Returns ENOTFOUND if project does not exist.
+func (s *ProjectService) PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+	project, err := pgPatchProject(ctx, tx, patch)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
 // createProject creates a new project.
 func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
 	// Insert row into database.
