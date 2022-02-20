@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -31,14 +32,18 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +56,7 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, "row_status = ?"), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -92,7 +97,7 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *Tx, find *api.L
 	}
 
 	// Find key values.
-	valueRows, err := tx.QueryContext(ctx, `
+	valueRows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			key,
 			value
@@ -139,7 +144,8 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx, &api.LabelKeyFind{})
 	if err != nil {
@@ -183,12 +189,18 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	}
 
 	for _, upsert := range upserts {
-		if err := s.upsertLabelValue(ctx, tx, upsert); err != nil {
+		if err := s.pgUpsertLabelValue(ctx, tx.PTx, upsert); err != nil {
+			return nil, err
+		}
+		if err := s.upsertLabelValue(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -196,7 +208,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	return labelKey, nil
 }
 
-func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labelValueUpsert) error {
+func (s *LabelService) upsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO label_value (
@@ -223,20 +235,51 @@ func (s *LabelService) upsertLabelValue(ctx context.Context, tx *Tx, upsert labe
 	return nil
 }
 
+func (s *LabelService) pgUpsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
+	// Upsert row into label_value
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO label_value (
+			row_status,
+			creator_id,
+			updater_id,
+			key,
+			value
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(key, value) DO UPDATE SET
+			row_status = excluded.row_status,
+			creator_id = excluded.creator_id,
+			updater_id = excluded.updater_id
+		`,
+		upsert.rowStatus,
+		upsert.updaterID,
+		upsert.updaterID,
+		upsert.key,
+		upsert.value,
+	); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
 // FindDatabaseLabelList finds the labels associated with the database.
 func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	databaseLabelList, err := s.findDatabaseLabels(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -255,7 +298,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, "database_id = ?"), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			row_status,
@@ -302,7 +345,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *Tx, find *api
 	return ret, nil
 }
 
-func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db_label (
@@ -353,6 +396,57 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *Tx, upsert *
 	return &databaseLabel, nil
 }
 
+func (s *LabelService) pgUpsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+	// Upsert row into db_label
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO db_label (
+			row_status,
+			creator_id,
+			updater_id,
+			database_id,
+			key,
+			value
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT(database_id, key) DO UPDATE SET
+			row_status = excluded.row_status,
+			creator_id = excluded.creator_id,
+			updater_id = excluded.updater_id,
+			value = excluded.value
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
+		`,
+		upsert.RowStatus,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.DatabaseID,
+		upsert.Key,
+		upsert.Value,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var databaseLabel api.DatabaseLabel
+	if err := row.Scan(
+		&databaseLabel.ID,
+		&databaseLabel.RowStatus,
+		&databaseLabel.CreatorID,
+		&databaseLabel.CreatedTs,
+		&databaseLabel.UpdaterID,
+		&databaseLabel.UpdatedTs,
+		&databaseLabel.DatabaseID,
+		&databaseLabel.Key,
+		&databaseLabel.Value,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &databaseLabel, nil
+}
+
 // SetDatabaseLabelList sets the labels for a database.
 func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
 	oldLabelList, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
@@ -366,7 +460,8 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	var ret []*api.DatabaseLabel
 
@@ -376,14 +471,17 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 		if oldLabel.Key == api.EnvironmentKeyName {
 			continue
 		}
-		_, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+		upsert := &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Archived,
 			DatabaseID: databaseID,
 			Key:        oldLabel.Key,
 			Value:      oldLabel.Value,
-		})
-		if err != nil {
+		}
+		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
+			return nil, err
+		}
+		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -394,20 +492,27 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 		if label.Key == api.EnvironmentKeyName {
 			continue
 		}
-		label, err := s.upsertDatabaseLabel(ctx, tx, &api.DatabaseLabelUpsert{
+		upsert := &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Normal,
 			DatabaseID: databaseID,
 			Key:        label.Key,
 			Value:      label.Value,
-		})
+		}
+		label, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert)
 		if err != nil {
+			return nil, err
+		}
+		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 		ret = append(ret, label)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

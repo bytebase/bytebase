@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -31,7 +32,8 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -42,7 +44,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 		where, args = append(where, "project_id = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -105,8 +107,28 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
+	cfg, err := s.pgUpsertDeploymentConfig(ctx, tx.PTx, upsert)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := s.upsertDeploymentConfig(ctx, tx.Tx, upsert); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return cfg, nil
+}
+
+func (s *DeploymentConfigService) upsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	row, err := tx.QueryContext(ctx, `
 	INSERT INTO deployment_config (
 		creator_id,
@@ -131,7 +153,7 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	)
 
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
 	defer row.Close()
 
@@ -147,12 +169,53 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 		&cfg.Name,
 		&cfg.Payload,
 	); err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
+	return &cfg, nil
+}
 
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
+func (s *DeploymentConfigService) pgUpsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
+	row, err := tx.QueryContext(ctx, `
+	INSERT INTO deployment_config (
+		creator_id,
+		updater_id,
+		project_id,
+		name,
+		config
+	)
+	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT(project_id) DO UPDATE SET
+		creator_id = excluded.creator_id,
+		updater_id = excluded.updater_id,
+		name = excluded.name,
+		config = excluded.config
+	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
+	`,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.ProjectID,
+		upsert.Name,
+		upsert.Payload,
+	)
+
+	if err != nil {
+		return nil, err
 	}
+	defer row.Close()
 
+	row.Next()
+	var cfg api.DeploymentConfig
+	if err := row.Scan(
+		&cfg.ID,
+		&cfg.CreatorID,
+		&cfg.CreatedTs,
+		&cfg.UpdaterID,
+		&cfg.UpdatedTs,
+		&cfg.ProjectID,
+		&cfg.Name,
+		&cfg.Payload,
+	); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }

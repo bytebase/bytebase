@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -33,14 +34,21 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	principal, err := createPrincipal(ctx, tx, create)
+	principal, err := pgCreatePrincipal(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := createPrincipal(ctx, tx.Tx, create); err != nil {
+		return nil, err
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -57,7 +65,8 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findPrincipalList(ctx, tx, &api.PrincipalFind{})
 	if err != nil {
@@ -93,7 +102,8 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findPrincipalList(ctx, tx, find)
 	if err != nil {
@@ -119,14 +129,21 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	principal, err := patchPrincipal(ctx, tx, patch)
+	principal, err := pgPatchPrincipal(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	if _, err := patchPrincipal(ctx, tx.Tx, patch); err != nil {
+		return nil, FormatError(err)
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -138,7 +155,7 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 }
 
 // createPrincipal creates a new principal.
-func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (*api.Principal, error) {
+func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*api.Principal, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO principal (
@@ -184,6 +201,53 @@ func createPrincipal(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (
 	return &principal, nil
 }
 
+// pgCreatePrincipal creates a new principal.
+func pgCreatePrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*api.Principal, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO principal (
+			creator_id,
+			updater_id,
+			type,
+			name,
+			email,
+			password_hash
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Type,
+		create.Name,
+		create.Email,
+		create.PasswordHash,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var principal api.Principal
+	if err := row.Scan(
+		&principal.ID,
+		&principal.CreatorID,
+		&principal.CreatedTs,
+		&principal.UpdaterID,
+		&principal.UpdatedTs,
+		&principal.Type,
+		&principal.Name,
+		&principal.Email,
+		&principal.PasswordHash,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &principal, nil
+}
+
 func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ []*api.Principal, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -194,7 +258,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 		where, args = append(where, "email = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 		    creator_id,
@@ -242,7 +306,7 @@ func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ 
 }
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
-func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
+func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, "name = ?"), append(args, *v)
@@ -260,6 +324,54 @@ func patchPrincipal(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*ap
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var principal api.Principal
+		if err := row.Scan(
+			&principal.ID,
+			&principal.CreatorID,
+			&principal.CreatedTs,
+			&principal.UpdaterID,
+			&principal.UpdatedTs,
+			&principal.Type,
+			&principal.Name,
+			&principal.Email,
+			&principal.PasswordHash,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &principal, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+}
+
+// pgPatchPrincipal updates a principal by ID. Returns the new state of the principal after update.
+func pgPatchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.PasswordHash; v != nil {
+		set, args = append(set, fmt.Sprintf("password_hash = $%d", len(args)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE principal
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

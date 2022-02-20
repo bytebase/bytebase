@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -31,14 +32,21 @@ func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	view, err := s.createView(ctx, tx, create)
+	view, err := s.pgCreateView(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := s.createView(ctx, tx.Tx, create); err != nil {
+		return nil, err
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -51,7 +59,8 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findViewList(ctx, tx, find)
 	if err != nil {
@@ -68,7 +77,8 @@ func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.Vi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := s.findViewList(ctx, tx, find)
 	if err != nil {
@@ -89,14 +99,20 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	err = deleteView(ctx, tx, delete)
-	if err != nil {
+	if err := pgDeleteView(ctx, tx.PTx, delete); err != nil {
+		return FormatError(err)
+	}
+	if err := deleteView(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -104,7 +120,7 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 }
 
 // createView creates a new view.
-func (s *ViewService) createView(ctx context.Context, tx *Tx, create *api.ViewCreate) (*api.View, error) {
+func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.View, error) {
 	// Insert row into view.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO vw (
@@ -154,6 +170,57 @@ func (s *ViewService) createView(ctx context.Context, tx *Tx, create *api.ViewCr
 	return &view, nil
 }
 
+// pgCreateView creates a new view.
+func (s *ViewService) pgCreateView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.View, error) {
+	// Insert row into view.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO vw (
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			name,
+			definition,
+			comment
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`+
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment"+`
+	`,
+		create.CreatorID,
+		create.CreatedTs,
+		create.CreatorID,
+		create.UpdatedTs,
+		create.DatabaseID,
+		create.Name,
+		create.Definition,
+		create.Comment,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var view api.View
+	if err := row.Scan(
+		&view.ID,
+		&view.CreatorID,
+		&view.CreatedTs,
+		&view.UpdaterID,
+		&view.UpdatedTs,
+		&view.DatabaseID,
+		&view.Name,
+		&view.Definition,
+		&view.Comment,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &view, nil
+}
+
 func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFind) (_ []*api.View, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -167,7 +234,7 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -216,9 +283,18 @@ func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFi
 }
 
 // deleteView permanently deletes views from a database.
-func deleteView(ctx context.Context, tx *Tx, delete *api.ViewDelete) error {
+func deleteView(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = ?`, delete.DatabaseID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+// pgDeleteView permanently deletes views from a database.
+func pgDeleteView(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
+	// Remove row from database.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = $1`, delete.DatabaseID); err != nil {
 		return FormatError(err)
 	}
 	return nil

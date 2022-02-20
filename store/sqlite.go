@@ -44,6 +44,7 @@ const (
 
 // If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
 var sqliteDriver = "sqlite3"
+var postgresDriver = "postgres"
 
 // Allocate 32MB cache
 var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=33554432"}
@@ -51,17 +52,25 @@ var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=3
 //go:embed migration
 var migrationFS embed.FS
 
+//go:embed pg_migration
+var pgMigrationFS embed.FS
+
 //go:embed seed
 var seedFS embed.FS
 
+//go:embed pg_seed
+var pgSeedFS embed.FS
+
 // DB represents the database connection.
 type DB struct {
-	Db *sql.DB
+	Db   *sql.DB
+	PgDB *sql.DB
 
 	l *zap.Logger
 
 	// Datasource name.
-	DSN string
+	DSN   string
+	PgDSN string
 
 	// Dir to load seed data
 	seedDir string
@@ -81,13 +90,15 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
+func NewDB(logger *zap.Logger, dsn, pgDSN string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
 	if readonly {
 		pragmaList = append(pragmaList, "mode=ro")
+		pgDSN = fmt.Sprintf("%s default_transaction_read_only=true", pgDSN)
 	}
 	db := &DB{
 		l:              logger,
 		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
+		PgDSN:          pgDSN,
 		seedDir:        seedDir,
 		forceResetSeed: forceResetSeed,
 		readonly:       readonly,
@@ -106,6 +117,9 @@ func (db *DB) Open() (err error) {
 
 	// Connect to the database.
 	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
+		return err
+	}
+	if db.PgDB, err = sql.Open(postgresDriver, db.PgDSN); err != nil {
 		return err
 	}
 	if db.readonly {
@@ -129,6 +143,14 @@ func (db *DB) Open() (err error) {
 			return fmt.Errorf("failed to seed: %w."+
 				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove bytebase_dev.db,"+
 				" bytebase_dev.db-shm, bytebase_dev.db-wal under the same directory where the bytebase binary resides. and restart again to let"+
+				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
+				err)
+		}
+
+		if err := db.pgSeed(verBefore, verAfter); err != nil {
+			return fmt.Errorf("failed to seed: %w."+
+				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
+				" directory under the same directory where the bytebase binary resides. and restart again to let"+
 				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 				err)
 		}
@@ -186,6 +208,41 @@ func (db *DB) seed(verBefore, verAfter version) error {
 	return nil
 }
 
+// pgSeed loads the seed data for testing
+func (db *DB) pgSeed(verBefore, verAfter version) error {
+	db.l.Info(fmt.Sprintf("Seeding database from pg_%s, force: %t ...", db.seedDir, db.forceResetSeed))
+	names, err := fs.Glob(pgSeedFS, fmt.Sprintf("pg_%s/*.sql", db.seedDir))
+	if err != nil {
+		return err
+	}
+
+	// We separate seed data for each table into their own seed file.
+	// And there exists foreign key dependency among tables, so we
+	// name the seed file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
+	// the file name so they are loaded accordingly.
+	sort.Strings(names)
+
+	// Loop over all seed files and execute them in order.
+	for _, name := range names {
+		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
+		version, err := strconv.Atoi(versionPrefix)
+		if err != nil {
+			return fmt.Errorf("invalid seed file format %s, expected number prefix", filepath.Base(name))
+		}
+		ver := versionFromInt(version)
+		if db.forceResetSeed || ver.biggerThan(verBefore) && !ver.biggerThan(verAfter) {
+			if err := db.pgSeedFile(name); err != nil {
+				return fmt.Errorf("seed error: name=%q err=%w", name, err)
+			}
+		} else {
+			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %s is not in the applicable range (%s, %s].",
+				name, ver, verBefore, verAfter))
+		}
+	}
+	db.l.Info("Completed database seeding.")
+	return nil
+}
+
 // seedFile runs a single seed file within a transaction.
 func (db *DB) seedFile(name string) error {
 	db.l.Info(fmt.Sprintf("Seeding %s...", name))
@@ -197,6 +254,25 @@ func (db *DB) seedFile(name string) error {
 
 	// Read and execute migration file.
 	if buf, err := fs.ReadFile(seedFS, name); err != nil {
+		return err
+	} else if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// pgSeedFile runs a single seed file within a transaction.
+func (db *DB) pgSeedFile(name string) error {
+	db.l.Info(fmt.Sprintf("Seeding %s...", name))
+	tx, err := db.PgDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	if buf, err := fs.ReadFile(pgSeedFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
@@ -232,9 +308,14 @@ func (db *DB) migrate() error {
 	if err != nil {
 		return err
 	}
+	pgNames, err := fs.Glob(pgMigrationFS, "pg_migration/*.sql")
+	if err != nil {
+		return err
+	}
 
 	// Sort the migration up file in ascending order.
 	sort.Strings(names)
+	sort.Strings(pgNames)
 
 	for _, name := range names {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
@@ -245,6 +326,10 @@ func (db *DB) migrate() error {
 		v := versionFromInt(version)
 		if v.biggerThan(curVer) {
 			if err := db.migrateFile(name, true); err != nil {
+				return fmt.Errorf("migration error: name=%q err=%w", name, err)
+			}
+			// Migrate pg migration files.
+			if err := db.pgMigrateFile(fmt.Sprintf("pg_%s", name), true); err != nil {
 				return fmt.Errorf("migration error: name=%q err=%w", name, err)
 			}
 		} else {
@@ -296,13 +381,47 @@ func (db *DB) migrateFile(name string, up bool) error {
 	return tx.Commit()
 }
 
+// pgMigrateFile runs a migration file within a transaction.
+func (db *DB) pgMigrateFile(name string, up bool) error {
+	if up {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	} else {
+		db.l.Info(fmt.Sprintf("Migrating %s...", name))
+	}
+
+	tx, err := db.PgDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read and execute migration file.
+	buf, err := fs.ReadFile(pgMigrationFS, name)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(string(buf)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 // Close closes the database connection.
 func (db *DB) Close() error {
 	// Close database.
+	var e error
 	if db.Db != nil {
-		return db.Db.Close()
+		if err := db.Db.Close(); err != nil {
+			e = err
+		}
 	}
-	return nil
+	if db.PgDB != nil {
+		if err := db.PgDB.Close(); err != nil {
+			e = err
+		}
+	}
+	return e
 }
 
 // BeginTx starts a transaction and returns a wrapper Tx type. This type
@@ -313,10 +432,15 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
+	ptx, err := db.PgDB.BeginTx(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
 		Tx:  tx,
+		PTx: ptx,
 		db:  db,
 		now: db.Now().UTC().Truncate(time.Second),
 	}, nil
@@ -324,7 +448,8 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
-	*sql.Tx
+	Tx  *sql.Tx
+	PTx *sql.Tx
 	db  *DB
 	now time.Time
 }

@@ -15,6 +15,17 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
+  go-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+            go-version: 1.17
+      - name: Verify tidy
+        run: |
+          go mod tidy
+          git diff --exit-code
   go-tests:
     runs-on: ubuntu-latest
     steps:

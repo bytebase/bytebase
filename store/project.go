@@ -34,14 +34,21 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	project, err := createProject(ctx, tx, create)
+	project, err := pgCreateProject(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := createProject(ctx, tx.Tx, create); err != nil {
+		return nil, err
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -58,7 +65,8 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectList(ctx, tx, find)
 	if err != nil {
@@ -94,7 +102,8 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findProjectList(ctx, tx, find)
 	if err != nil {
@@ -119,14 +128,21 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	project, err := patchProject(ctx, tx.Tx, patch)
+	project, err := pgPatchProject(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	if _, err := patchProject(ctx, tx.Tx, patch); err != nil {
+		return nil, FormatError(err)
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -153,8 +169,24 @@ func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *
 	return project, nil
 }
 
+// PgPatchProjectTx updates an existing project by ID.
+// Returns ENOTFOUND if project does not exist.
+func (s *ProjectService) PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+	project, err := pgPatchProject(ctx, tx, patch)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
 // createProject creates a new project.
-func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api.Project, error) {
+func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project (
@@ -205,6 +237,58 @@ func createProject(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*api
 	return &project, nil
 }
 
+// pgCreateProject creates a new project.
+func pgCreateProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO project (
+			creator_id,
+			updater_id,
+			name,
+			key,
+			workflow_type,
+			visibility,
+			tenant_mode,
+			db_name_template
+		)
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+		strings.ToUpper(create.Key),
+		create.TenantMode,
+		create.DBNameTemplate,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var project api.Project
+	if err := row.Scan(
+		&project.ID,
+		&project.RowStatus,
+		&project.CreatorID,
+		&project.CreatedTs,
+		&project.UpdaterID,
+		&project.UpdatedTs,
+		&project.Name,
+		&project.Key,
+		&project.WorkflowType,
+		&project.Visibility,
+		&project.TenantMode,
+		&project.DBNameTemplate,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &project, nil
+}
+
 func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*api.Project, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -218,7 +302,7 @@ func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*a
 		where, args = append(where, "id IN (SELECT project_id FROM project_member WHERE principal_id = ?)"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 		    id,
 			row_status,
@@ -297,6 +381,64 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		WHERE id = ?
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var project api.Project
+		if err := row.Scan(
+			&project.ID,
+			&project.RowStatus,
+			&project.CreatorID,
+			&project.CreatedTs,
+			&project.UpdaterID,
+			&project.UpdatedTs,
+			&project.Name,
+			&project.Key,
+			&project.WorkflowType,
+			&project.Visibility,
+			&project.TenantMode,
+			&project.DBNameTemplate,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &project, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+}
+
+// pgPatchProject updates a project by ID. Returns the new state of the project after update.
+func pgPatchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+	}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Key; v != nil {
+		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, strings.ToUpper(*v))
+	}
+	if v := patch.WorkflowType; v != nil {
+		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE project
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

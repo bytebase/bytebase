@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func activeProfile(dataDir string, port int, isDemo bool) Profile {
+func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
 	dsn := fmt.Sprintf("file:%s/bytebase_dev.db", dataDir)
 	if isDemo {
 		dsn = fmt.Sprintf("file:%s/bytebase_demo.db", dataDir)
@@ -16,6 +16,7 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 	return Profile{
 		mode:                 "dev",
 		port:                 port,
+		datastorePort:        datastorePort,
 		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              "seed/test",
@@ -25,10 +26,11 @@ func activeProfile(dataDir string, port int, isDemo bool) Profile {
 }
 
 // GetTestProfile will return a profile for testing.
-func GetTestProfile(dataDir string, port int) Profile {
+func GetTestProfile(dataDir string, port, datastorePort int) Profile {
 	return Profile{
 		mode:                 "dev",
 		port:                 port,
+		datastorePort:        datastorePort,
 		dataDir:              dataDir,
 		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",

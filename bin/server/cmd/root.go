@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -14,10 +15,12 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
+	"github.com/bytebase/bytebase/resources"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
@@ -137,6 +140,8 @@ type Profile struct {
 	mode string
 	// port is the binding port for server.
 	port int
+	// datastorePort is the binding port for database instance for storing Bytebase data.
+	datastorePort int
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
 	// dsn points to where Bytebase stores its own data
@@ -159,7 +164,8 @@ type config struct {
 type Main struct {
 	profile *Profile
 
-	l *zap.Logger
+	l   *zap.Logger
+	lvl *zap.AtomicLevel
 
 	server *server.Server
 	// serverCancel cancels any runner on the server.
@@ -167,6 +173,9 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
+	pgBinDir  string
+	pgStarted bool
+	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
 
@@ -192,22 +201,21 @@ func checkDataDir() error {
 }
 
 // GetLogger will return a logger.
-func GetLogger() (*zap.Logger, error) {
-	logConfig := zap.NewProductionConfig()
-	// Always set encoding to "console" for now since we do not redirect to file.
-	logConfig.Encoding = "console"
-	// "console" encoding needs to use the corresponding development encoder config.
-	logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
+	atom := zap.NewAtomicLevelAt(zap.InfoLevel)
 	if debug {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	} else {
-		logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+		atom.SetLevel(zap.DebugLevel)
 	}
-	return logConfig.Build()
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		zapcore.Lock(os.Stdout),
+		atom,
+	))
+	return logger, &atom, nil
 }
 
 func start() {
-	logger, err := GetLogger()
+	logger, level, err := GetLogger()
 	if err != nil {
 		panic(fmt.Errorf("failed to create logger, %w", err))
 	}
@@ -222,8 +230,15 @@ func start() {
 		return
 	}
 
-	activeProfile := activeProfile(dataDir, port, demo)
-	m := NewMain(activeProfile, logger)
+	// We use port+1 for datastore port.
+	datastorePort := port + 1
+	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
+	m, err := NewMain(activeProfile, logger)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	m.lvl = level
 
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -255,22 +270,33 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(activeProfile Profile, logger *zap.Logger) *Main {
+func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
+	resourceDir := path.Join(activeProfile.dataDir, "resources")
+	pgdataDir := path.Join(activeProfile.dataDir, "pgdata")
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
+	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
+	fmt.Printf("resourceDir=%s\n", resourceDir)
+	fmt.Printf("pgdataDir=%s\n", pgdataDir)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	return &Main{
-		profile: &activeProfile,
-		l:       logger,
+	pgBinDir, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Main{
+		profile:  &activeProfile,
+		l:        logger,
+		pgBinDir: pgBinDir,
+	}, nil
 }
 
 func initSetting(ctx context.Context, settingService api.SettingService) (*config, error) {
@@ -296,7 +322,15 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
-	db := store.NewDB(m.l, m.profile.dsn, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
+
+	pgDataDir := path.Join(m.profile.dataDir, "pgdata")
+	if err := resources.StartPostgres(m.pgBinDir, pgDataDir, m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+		return err
+	}
+	m.pgStarted = true
+
+	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres dbname=postgres sslmode=disable", m.profile.datastorePort)
+	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -309,7 +343,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
@@ -380,6 +414,16 @@ func (m *Main) Close() error {
 		if err := m.db.Close(); err != nil {
 			return err
 		}
+	}
+
+	if m.pgStarted {
+		m.l.Info("Trying to shutdown postgresql server...")
+
+		pgDataDir := path.Join(m.profile.dataDir, "pgdata")
+		if err := resources.StopPostgres(m.pgBinDir, pgDataDir, os.Stdout, os.Stderr); err != nil {
+			return err
+		}
+		m.pgStarted = false
 	}
 	m.l.Info("Bytebase stopped properly.")
 	return nil

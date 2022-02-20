@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -41,14 +42,21 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 		if err != nil {
 			return nil, FormatError(err)
 		}
-		defer tx.Rollback()
+		defer tx.Tx.Rollback()
+		defer tx.PTx.Rollback()
 
-		setting, err = createSetting(ctx, tx, create)
+		setting, err := pgCreateSetting(ctx, tx.PTx, create)
 		if err != nil {
 			return nil, err
 		}
+		if _, err := createSetting(ctx, tx.Tx, create); err != nil {
+			return nil, err
+		}
 
-		if err := tx.Commit(); err != nil {
+		if err := tx.Tx.Commit(); err != nil {
+			return nil, FormatError(err)
+		}
+		if err := tx.PTx.Commit(); err != nil {
 			return nil, FormatError(err)
 		}
 
@@ -64,7 +72,8 @@ func (s *SettingService) FindSettingList(ctx context.Context, find *api.SettingF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findSettingList(ctx, tx, find)
 	if err != nil {
@@ -80,7 +89,8 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	list, err := findSettingList(ctx, tx, find)
 	if err != nil {
@@ -102,14 +112,21 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.Tx.Rollback()
+	defer tx.PTx.Rollback()
 
-	setting, err := patchSetting(ctx, tx, patch)
+	setting, err := pgPatchSetting(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	if _, err := patchSetting(ctx, tx.Tx, patch); err != nil {
+		return nil, FormatError(err)
+	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -117,7 +134,7 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 }
 
 // createSetting creates a new setting.
-func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api.Setting, error) {
+func createSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO setting (
@@ -155,6 +172,45 @@ func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api
 	return &setting, nil
 }
 
+// pgCreateSetting creates a new setting.
+func pgCreateSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO setting (
+			creator_id,
+			updater_id,
+			name,
+			value,
+			description
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING name, value, description
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+		create.Value,
+		create.Description,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var setting api.Setting
+	if err := row.Scan(
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &setting, nil
+}
+
 func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*api.Setting, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -162,7 +218,7 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 		where, args = append(where, "name = ?"), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.Tx.QueryContext(ctx, `
 		SELECT
 			creator_id,
 			created_ts,
@@ -206,7 +262,7 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 }
 
 // patchSetting updates a setting by name. Returns the new state of the setting after update.
-func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Setting, error) {
+func patchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "value = ?"), append(args, patch.Value)
@@ -218,6 +274,48 @@ func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Se
 		UPDATE setting
 		SET `+strings.Join(set, ", ")+`
 		WHERE name = ?
+		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var setting api.Setting
+		if err := row.Scan(
+			&setting.CreatorID,
+			&setting.CreatedTs,
+			&setting.UpdaterID,
+			&setting.UpdatedTs,
+			&setting.Name,
+			&setting.Value,
+			&setting.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &setting, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+}
+
+// pgPatchSetting updates a setting by name. Returns the new state of the setting after update.
+func pgPatchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args = append(set, "value = $2"), append(args, patch.Value)
+
+	args = append(args, patch.Name)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE setting
+		SET `+strings.Join(set, ", ")+`
+		WHERE name = $3
 		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
 	`,
 		args...,

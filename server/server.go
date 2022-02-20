@@ -74,6 +74,7 @@ type Server struct {
 	e *echo.Echo
 
 	l            *zap.Logger
+	lvl          *zap.AtomicLevel
 	version      string
 	mode         string
 	host         string
@@ -101,7 +102,7 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
@@ -116,6 +117,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 
 	s := &Server{
 		l:            logger,
+		lvl:          loggerLevel,
 		CacheService: NewCacheService(logger),
 		e:            e,
 		version:      version,
@@ -220,6 +222,7 @@ func NewServer(logger *zap.Logger, version string, host string, port int, fronte
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(logger, s, ce, next, readonly)
 	})
+	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
 	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
