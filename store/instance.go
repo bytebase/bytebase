@@ -461,22 +461,22 @@ func pgPatchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) 
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(set)+1)), append(args, api.RowStatus(*v))
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.EngineVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExternalLink; v != nil {
-		set, args = append(set, fmt.Sprintf("external_link = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Host; v != nil {
-		set, args = append(set, fmt.Sprintf("host = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Port; v != nil {
-		set, args = append(set, fmt.Sprintf("port = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -487,7 +487,7 @@ func pgPatchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) 
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
-	`, len(set)+1),
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -36,8 +37,11 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.createPipeline(ctx, tx, create)
+	pipeline, err := s.createPipeline(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.pgCreatePipeline(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -127,8 +131,11 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.patchPipeline(ctx, tx, patch)
+	pipeline, err := s.patchPipeline(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := s.pgPatchPipeline(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -147,8 +154,8 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 }
 
 // createPipeline creates a new pipeline.
-func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
-	row, err := tx.Tx.QueryContext(ctx, `
+func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
@@ -156,6 +163,45 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *Tx, create *ap
 			status
 		)
 		VALUES (?, ?, ?, 'OPEN')
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var pipeline api.Pipeline
+	if err := row.Scan(
+		&pipeline.ID,
+		&pipeline.CreatorID,
+		&pipeline.CreatedTs,
+		&pipeline.UpdaterID,
+		&pipeline.UpdatedTs,
+		&pipeline.Name,
+		&pipeline.Status,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &pipeline, nil
+}
+
+// createPipeline creates a new pipeline.
+func (s *PipelineService) pgCreatePipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO pipeline (
+			creator_id,
+			updater_id,
+			name,
+			status
+		)
+		VALUES ($1, $2, $3, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`,
 		create.CreatorID,
@@ -239,7 +285,7 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *ap
 }
 
 // patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
+func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {
@@ -249,12 +295,55 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *Tx, patch *api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var pipeline api.Pipeline
+		if err := row.Scan(
+			&pipeline.ID,
+			&pipeline.CreatorID,
+			&pipeline.CreatedTs,
+			&pipeline.UpdaterID,
+			&pipeline.UpdatedTs,
+			&pipeline.Name,
+			&pipeline.Status,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &pipeline, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
+}
+
+// pgPatchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
+func (s *PipelineService) pgPatchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.Status; v != nil {
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, api.PipelineStatus(*v))
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE pipeline
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

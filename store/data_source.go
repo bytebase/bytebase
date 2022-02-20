@@ -356,10 +356,10 @@ func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *Tx, patch
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
-		set, args = append(set, fmt.Sprintf("username = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Password; v != nil {
-		set, args = append(set, fmt.Sprintf("password = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -370,7 +370,7 @@ func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *Tx, patch
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
-	`, len(set)+1),
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

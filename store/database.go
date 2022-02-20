@@ -542,19 +542,19 @@ func (s *DatabaseService) pgPatchDatabase(ctx context.Context, tx *sql.Tx, patch
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {
-		set, args = append(set, fmt.Sprintf("project_id = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SourceBackupID; v != nil {
-		set, args = append(set, fmt.Sprintf("source_backup_id = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("source_backup_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(set)+1)), append(args, api.SyncStatus(*v))
+		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, api.SyncStatus(*v))
 	}
 	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -579,7 +579,7 @@ func (s *DatabaseService) pgPatchDatabase(ctx context.Context, tx *sql.Tx, patch
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
-	`, len(set)+1),
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

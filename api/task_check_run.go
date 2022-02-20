@@ -195,9 +195,9 @@ type TaskCheckRunService interface {
 	// 2. If SkipIfAlreadyTerminated is false, or if SkipIfAlreadyTerminated is true and there is no DONE/FAILED/CANCELED check run. If this is the case,
 	//    then returns that terminated check run.
 	CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*TaskCheckRun, error)
-	CreateTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *TaskCheckRunCreate) (*TaskCheckRun, error)
 	FindTaskCheckRunList(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
 	FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
+	PgFindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
 	FindTaskCheckRunTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) (*TaskCheckRun, error)
 	PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*TaskCheckRun, error)
 	PatchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskCheckRunStatusPatch) (*TaskCheckRun, error)

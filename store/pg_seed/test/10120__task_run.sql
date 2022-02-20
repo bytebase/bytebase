@@ -1,8 +1,7 @@
-ALTER SEQUENCE task_run_id_seq RESTART WITH 100;
-
 -- Task run for task 11002
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -17,6 +16,7 @@ INSERT INTO
     )
 VALUES
     (
+        101,
         1,
         1624873710,
         1,
@@ -33,6 +33,7 @@ VALUES
 -- Task run for task 11003
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -47,6 +48,7 @@ INSERT INTO
     )
 VALUES
     (
+        102,
         1,
         1624883710,
         1,
@@ -75,7 +77,7 @@ INSERT INTO
     )
 VALUES
     (
-        12001,
+        103,
         101,
         101,
         11006,
@@ -89,6 +91,7 @@ VALUES
 -- Task run for task 11008
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -103,6 +106,7 @@ INSERT INTO
     )
 VALUES
     (
+        104,
         1,
         1624865387,
         1,
@@ -119,6 +123,7 @@ VALUES
 -- Task run for task 11009
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -133,6 +138,7 @@ INSERT INTO
     )
 VALUES
     (
+        105,
         1,
         1624866790,
         1,
@@ -149,6 +155,7 @@ VALUES
 -- Task run for task 11010
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -163,6 +170,7 @@ INSERT INTO
     )
 VALUES
     (
+        106,
         1,
         1624868407,
         1,
@@ -179,6 +187,7 @@ VALUES
 -- Task run for task 11011
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -193,6 +202,7 @@ INSERT INTO
     )
 VALUES
     (
+        107,
         1,
         1624868680,
         1,
@@ -209,6 +219,7 @@ VALUES
 -- Failed task run for task 11012 create table
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -223,6 +234,7 @@ INSERT INTO
     )
 VALUES
     (
+        108,
         1,
         1624869944,
         1,
@@ -239,6 +251,7 @@ VALUES
 -- Successful task run for task 10013 create table
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -253,6 +266,7 @@ INSERT INTO
     )
 VALUES
     (
+        109,
         102,
         1624879944,
         102,
@@ -269,6 +283,7 @@ VALUES
 -- Successful task run for task 10014 create table
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -282,6 +297,7 @@ INSERT INTO
     )
 VALUES
     (
+        110,
         102,
         1624879944,
         102,
@@ -297,6 +313,7 @@ VALUES
 -- Failed task run for task 10015 create table
 INSERT INTO
     task_run (
+        id,
         creator_id,
         created_ts,
         updater_id,
@@ -311,6 +328,7 @@ INSERT INTO
     )
 VALUES
     (
+        111,
         102,
         1624879944,
         102,
@@ -323,3 +341,5 @@ VALUES
         '{"detail":"table \"tbl2\" already exists"}',
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT)"}'
     );
+
+ALTER SEQUENCE task_run_id_seq RESTART WITH 112;
