@@ -35,11 +35,11 @@ func (s *ActivityService) CreateActivity(ctx context.Context, create *api.Activi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	activity, err := createActivity(ctx, tx.Tx, create)
+	activity, err := pgCreateActivity(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateActivity(ctx, tx.PTx, create); err != nil {
+	if _, err := createActivity(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -103,11 +103,11 @@ func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.Activity
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	activity, err := patchActivity(ctx, tx.Tx, patch)
+	activity, err := pgPatchActivity(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchActivity(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchActivity(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -130,10 +130,10 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteActivity(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteActivity(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteActivity(ctx, tx.PTx, delete); err != nil {
+	if err := deleteActivity(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

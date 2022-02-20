@@ -35,11 +35,11 @@ func (s *VCSService) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	vcs, err := createVCS(ctx, tx.Tx, create)
+	vcs, err := pgCreateVCS(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateVCS(ctx, tx.PTx, create); err != nil {
+	if _, err := createVCS(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -103,11 +103,11 @@ func (s *VCSService) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VC
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	vcs, err := patchVCS(ctx, tx.Tx, patch)
+	vcs, err := pgPatchVCS(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchVCS(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchVCS(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -130,10 +130,10 @@ func (s *VCSService) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteVCS(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteVCS(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteVCS(ctx, tx.PTx, delete); err != nil {
+	if err := deleteVCS(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

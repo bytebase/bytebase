@@ -35,11 +35,11 @@ func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectWebhook, err := createProjectWebhook(ctx, tx.Tx, create)
+	projectWebhook, err := pgCreateProjectWebhook(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateProjectWebhook(ctx, tx.PTx, create); err != nil {
+	if _, err := createProjectWebhook(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -103,11 +103,11 @@ func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectWebhook, err := patchProjectWebhook(ctx, tx.Tx, patch)
+	projectWebhook, err := pgPatchProjectWebhook(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchProjectWebhook(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchProjectWebhook(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -130,10 +130,10 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectWebhook(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteProjectWebhook(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteProjectWebhook(ctx, tx.PTx, delete); err != nil {
+	if err := deleteProjectWebhook(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 
