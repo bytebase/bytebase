@@ -62,7 +62,7 @@ func (s *VCSService) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSList(ctx, tx, find)
+	list, err := findVCSList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.VCS{}, err
 	}
@@ -80,7 +80,7 @@ func (s *VCSService) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, 
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSList(ctx, tx, find)
+	list, err := findVCSList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -253,20 +253,20 @@ func pgCreateVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.V
 	return &vcs, nil
 }
 
-func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, err error) {
+func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) (_ []*api.VCS, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, "id = $1"), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			name,
 			type,
 			instance_url,

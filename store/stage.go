@@ -62,7 +62,7 @@ func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) (
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findStageList(ctx, tx, find)
+	list, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Stage{}, err
 	}
@@ -80,7 +80,7 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findStageList(ctx, tx, find)
+	list, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -179,26 +179,26 @@ func (s *StageService) pgCreateStage(ctx context.Context, tx *sql.Tx, create *ap
 	return &stage, nil
 }
 
-func (s *StageService) findStageList(ctx context.Context, tx *Tx, find *api.StageFind) (_ []*api.Stage, err error) {
+func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) (_ []*api.Stage, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, "pipeline_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			pipeline_id,
 			environment_id,
-		    name
+			name
 		FROM stage
 		WHERE `+strings.Join(where, " AND "),
 		args...,

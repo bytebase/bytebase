@@ -62,7 +62,7 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectWebhookList(ctx, tx, find)
+	list, err := findProjectWebhookList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.ProjectWebhook{}, err
 	}
@@ -80,7 +80,7 @@ func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectWebhookList(ctx, tx, find)
+	list, err := findProjectWebhookList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -251,26 +251,26 @@ func pgCreateProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.Project
 	return &projectWebhook, nil
 }
 
-func findProjectWebhookList(ctx context.Context, tx *Tx, find *api.ProjectWebhookFind) (_ []*api.ProjectWebhook, err error) {
+func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) (_ []*api.ProjectWebhook, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			project_id,
 			type,
-		    name,
+			name,
 			url,
 			activity_list
 		FROM project_webhook

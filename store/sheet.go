@@ -89,7 +89,7 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findSheetList(ctx, tx, find)
+	list, err := findSheetList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Sheet{}, err
 	}
@@ -107,7 +107,7 @@ func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findSheetList(ctx, tx, find)
+	list, err := findSheetList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -373,38 +373,38 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
 }
 
-func findSheetList(ctx context.Context, tx *Tx, find *api.SheetFind) (_ []*api.Sheet, err error) {
+func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*api.Sheet, err error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	// Standard fields
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
-		where, args = append(where, "creator_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Related fields
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, "instance_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 		if find.InstanceOnly {
 			where = append(where, "database_id is NULL")
 		}
 	}
 	if find.InstanceID == nil || !find.InstanceOnly {
 		if v := find.DatabaseID; v != nil {
-			where, args = append(where, "database_id = ?"), append(args, *v)
+			where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 		}
 	}
 
 	// Domain fields
 	if v := find.Visibility; v != nil {
-		where, args = append(where, "visibility = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,

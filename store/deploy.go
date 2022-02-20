@@ -38,13 +38,13 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -52,7 +52,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 			updater_id,
 			updated_ts,
 			project_id,
-		    name,
+			name,
 			config
 		FROM deployment_config
 		WHERE `+strings.Join(where, " AND "),

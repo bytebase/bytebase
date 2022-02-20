@@ -60,7 +60,7 @@ func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findInstanceUserList(ctx, tx, find)
+	list, err := findInstanceUserList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.InstanceUser{}, err
 	}
@@ -180,17 +180,17 @@ func pgUpsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceU
 	return nil, err
 }
 
-func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFind) (_ []*api.InstanceUser, err error) {
+func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) (_ []*api.InstanceUser, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	where, args = append(where, "instance_id = ?"), append(args, find.InstanceID)
+	where, args = append(where, "instance_id = $1"), append(args, find.InstanceID)
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			instance_id,
 			name,
-			grant
+			"grant"
 		FROM instance_user
 		WHERE `+strings.Join(where, " AND ")+`
 		ORDER BY name ASC
