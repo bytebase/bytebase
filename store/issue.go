@@ -35,20 +35,13 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	issue, err := s.pgCreateIssue(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createIssue(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -66,7 +59,6 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findIssueList(ctx, tx.PTx, find)
@@ -92,7 +84,6 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findIssueList(ctx, tx.PTx, find)
@@ -118,20 +109,13 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	issue, err := s.pgPatchIssue(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchIssue(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -141,63 +125,6 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	}
 
 	return issue, nil
-}
-
-// createIssue creates a new issue.
-func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.Issue, error) {
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO issue (
-			creator_id,
-			updater_id,
-			project_id,
-			pipeline_id,
-			name,
-			status,
-			type,
-			description,
-			assignee_id,
-			payload
-		)
-		VALUES (?, ?, ?, ?, ?, 'OPEN', ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.PipelineID,
-		create.Name,
-		create.Type,
-		create.Description,
-		create.AssigneeID,
-		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var issue api.Issue
-	if err := row.Scan(
-		&issue.ID,
-		&issue.CreatorID,
-		&issue.CreatedTs,
-		&issue.UpdaterID,
-		&issue.UpdatedTs,
-		&issue.ProjectID,
-		&issue.PipelineID,
-		&issue.Name,
-		&issue.Status,
-		&issue.Type,
-		&issue.Description,
-		&issue.AssigneeID,
-		&issue.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &issue, nil
 }
 
 // pgCreateIssue creates a new issue.
@@ -340,72 +267,6 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 
 	return list, nil
-}
-
-// patchIssue updates a issue by ID. Returns the new state of the issue after update.
-func (s *IssueService) patchIssue(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*api.Issue, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Name; v != nil {
-		set, args = append(set, "name = ?"), append(args, *v)
-	}
-	if v := patch.Status; v != nil {
-		set, args = append(set, "status = ?"), append(args, api.IssueStatus(*v))
-	}
-	if v := patch.Description; v != nil {
-		set, args = append(set, "description = ?"), append(args, *v)
-	}
-	if v := patch.AssigneeID; v != nil {
-		set, args = append(set, "assignee_id = ?"), append(args, *v)
-	}
-	if v := patch.Payload; v != nil {
-		payload, err := json.Marshal(*patch.Payload)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		set, args = append(set, "`payload` = ?"), append(args, payload)
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE issue
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var issue api.Issue
-		if err := row.Scan(
-			&issue.ID,
-			&issue.CreatorID,
-			&issue.CreatedTs,
-			&issue.UpdaterID,
-			&issue.UpdatedTs,
-			&issue.ProjectID,
-			&issue.PipelineID,
-			&issue.Name,
-			&issue.Status,
-			&issue.Type,
-			&issue.Description,
-			&issue.AssigneeID,
-			&issue.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &issue, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
 }
 
 // pgPatchIssue updates a issue by ID. Returns the new state of the issue after update.

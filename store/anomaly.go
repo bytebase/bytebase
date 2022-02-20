@@ -34,7 +34,6 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	status := api.Normal
@@ -55,9 +54,6 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		if err != nil {
 			return nil, err
 		}
-		if _, err := createAnomaly(ctx, tx.Tx, upsert); err != nil {
-			return nil, err
-		}
 	} else if len(list) == 1 {
 		// Even if field value does not change, we still patch to update the updated_ts
 		patch := &anomalyPatch{
@@ -69,16 +65,10 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		if err != nil {
 			return nil, err
 		}
-		if _, err = patchAnomaly(ctx, tx.Tx, patch); err != nil {
-			return nil, err
-		}
 	} else {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -92,7 +82,6 @@ func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findAnomalyList(ctx, tx.PTx, find)
@@ -110,77 +99,17 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	if err := pgArchiveAnomaly(ctx, tx.PTx, archive); err != nil {
 		return FormatError(err)
 	}
-	if err := archiveAnomaly(ctx, tx.Tx, archive); err != nil {
-		return FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
 	return nil
-}
-
-// createAnomaly creates a new anomaly.
-func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
-	// Inserts row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO anomaly (
-			creator_id,
-			updater_id,
-			instance_id,
-			database_id,
-			type,
-			payload
-		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
-	`,
-		upsert.CreatorID,
-		upsert.CreatorID,
-		upsert.InstanceID,
-		upsert.DatabaseID,
-		upsert.Type,
-		upsert.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var anomaly api.Anomaly
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&anomaly.ID,
-		&anomaly.CreatorID,
-		&anomaly.CreatedTs,
-		&anomaly.UpdaterID,
-		&anomaly.UpdatedTs,
-		&anomaly.InstanceID,
-		&databaseID,
-		&anomaly.Type,
-		&anomaly.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		anomaly.DatabaseID = &value
-	}
-	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
-
-	return nil, err
 }
 
 // pgCreateAnomaly creates a new anomaly.
@@ -321,57 +250,6 @@ type anomalyPatch struct {
 	Payload string
 }
 
-// patchAnomaly patches an anomaly
-func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	set, args = append(set, "payload = ?"), append(args, patch.Payload)
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE anomaly
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var anomaly api.Anomaly
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&anomaly.ID,
-		&anomaly.CreatorID,
-		&anomaly.CreatedTs,
-		&anomaly.UpdaterID,
-		&anomaly.UpdatedTs,
-		&anomaly.InstanceID,
-		&anomaly.DatabaseID,
-		&anomaly.Type,
-		&anomaly.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		anomaly.DatabaseID = &value
-	}
-	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
-
-	return &anomaly, err
-}
-
 // pgPatchAnomaly patches an anomaly
 func pgPatchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
 	// Build UPDATE clause.
@@ -421,50 +299,6 @@ func pgPatchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.
 	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
 
 	return &anomaly, err
-}
-
-// archiveAnomaly archives an anomaly by ID.
-func archiveAnomaly(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
-	if archive.InstanceID == nil && archive.DatabaseID == nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
-	}
-	if archive.InstanceID != nil && archive.DatabaseID != nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
-	}
-	// Remove row from database.
-	if archive.InstanceID != nil {
-		result, err := tx.ExecContext(ctx,
-			`UPDATE anomaly SET row_status = ? WHERE instance_id = ? AND database_id IS NULL AND type = ?`,
-			api.Archived,
-			*archive.InstanceID,
-			archive.Type,
-		)
-		if err != nil {
-			return FormatError(err)
-		}
-
-		rows, _ := result.RowsAffected()
-		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
-		}
-	} else if archive.DatabaseID != nil {
-		result, err := tx.ExecContext(ctx,
-			`UPDATE anomaly SET row_status = ? WHERE database_id = ? AND type = ?`,
-			api.Archived,
-			*archive.DatabaseID,
-			archive.Type,
-		)
-		if err != nil {
-			return FormatError(err)
-		}
-
-		rows, _ := result.RowsAffected()
-		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseID, archive.Type)}
-		}
-	}
-
-	return nil
 }
 
 // pgArchiveAnomaly archives an anomaly by ID.

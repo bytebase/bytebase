@@ -213,7 +213,6 @@ type BackupService interface {
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
 	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSetting, error)
 	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSetting, error)
-	UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSetting, error)
 	PgUpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSetting, error)
 	FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSetting, error)
 }
