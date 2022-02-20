@@ -24,7 +24,7 @@ var postgresDarwin []byte
 var postgresLinux []byte
 
 // InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, dataDir string) (string, error) {
+func InstallPostgres(resourceDir, pgDataDir string) (string, error) {
 	var version string
 	var data []byte
 	switch runtime.GOOS {
@@ -37,26 +37,28 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	}
 
 	pgBinDir := path.Join(resourceDir, version)
-	_, err := os.Stat(pgBinDir)
-	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
-	}
-	// Skip installation if installed already.
-	if err == nil {
-		return pgBinDir, nil
+	if _, err := os.Stat(pgBinDir); err != nil {
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
+		}
+		// Install if not exist yet.
+		// The ordering below made Postgres installation atomic.
+		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+		if err := os.RemoveAll(tmpDir); err != nil {
+			return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
+		}
+		if err := extractTXZ(tmpDir, data); err != nil {
+			return "", fmt.Errorf("failed to extract txz file")
+		}
+		if err := os.Rename(tmpDir, pgBinDir); err != nil {
+			return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
+		}
 	}
 
-	// The ordering below made Postgres installation atomic.
-	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
+	if err := initDB(pgBinDir, pgDataDir); err != nil {
+		return "", err
 	}
-	if err := extractTXZ(tmpDir, data); err != nil {
-		return "", fmt.Errorf("failed to extract txz file")
-	}
-	if err := os.Rename(tmpDir, pgBinDir); err != nil {
-		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
-	}
+
 	return pgBinDir, nil
 }
 
@@ -106,25 +108,25 @@ func extractTXZ(directory string, data []byte) error {
 	}
 }
 
-// InitDB inits a postgres database.
-func InitDB(pgBinDir, pgdataDir string) error {
-	_, err := os.Stat(pgdataDir)
+// initDB inits a postgres database.
+func initDB(pgBinDir, pgDataDir string) error {
+	_, err := os.Stat(pgDataDir)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to check data directory path %q, error: %w", pgdataDir, err)
+		return fmt.Errorf("failed to check data directory path %q, error: %w", pgDataDir, err)
 	}
 	// Skip initDB if setup already.
 	if err == nil {
 		return nil
 	}
 
-	if err := os.MkdirAll(pgdataDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgdataDir, err)
+	if err := os.MkdirAll(pgDataDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
 	}
 
 	user := "postgres"
 	args := []string{
 		"-U", user,
-		"-D", pgdataDir,
+		"-D", pgDataDir,
 	}
 	initDBBinary := filepath.Join(pgBinDir, "bin", "initdb")
 	p := exec.Command(initDBBinary, args...)

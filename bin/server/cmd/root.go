@@ -272,7 +272,7 @@ func start() {
 // NewMain creates a main server based on profile.
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgdataDir := path.Join(activeProfile.dataDir, "pgdata")
+	pgDataDir := path.Join(activeProfile.dataDir, "pgdata")
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -280,18 +280,15 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgdataDir)
+	fmt.Printf("pgdataDir=%s\n", pgDataDir)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgBinDir, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir)
 	if err != nil {
-		return nil, err
-	}
-	if err := resources.InitDB(pgBinDir, pgdataDir); err != nil {
 		return nil, err
 	}
 
