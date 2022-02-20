@@ -32,20 +32,13 @@ func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCrea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	column, err := s.pgCreateColumn(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createColumn(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,7 +52,6 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findColumnList(ctx, tx.PTx, find)
@@ -77,7 +69,6 @@ func (s *ColumnService) FindColumn(ctx context.Context, find *api.ColumnFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findColumnList(ctx, tx.PTx, find)
@@ -100,102 +91,18 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	column, err := s.pgPatchColumn(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchColumn(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	return column, nil
-}
-
-// createColumn creates a new column.
-func (s *ColumnService) createColumn(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
-	defaultStr := sql.NullString{}
-	if create.Default != nil {
-		defaultStr = sql.NullString{
-			String: *create.Default,
-			Valid:  true,
-		}
-	}
-
-	// Insert row into column.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO col (
-			creator_id,
-			updater_id,
-			database_id,
-			table_id,
-			name,
-			position,
-			`+"`default`,"+`
-			nullable,
-			type,
-			character_set,
-			collation,
-			comment
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `+"`default`, "+`nullable, type, character_set, collation, comment
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.DatabaseID,
-		create.TableID,
-		create.Name,
-		create.Position,
-		defaultStr,
-		create.Nullable,
-		create.Type,
-		create.CharacterSet,
-		create.Collation,
-		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var column api.Column
-	if err := row.Scan(
-		&column.ID,
-		&column.CreatorID,
-		&column.CreatedTs,
-		&column.UpdaterID,
-		&column.UpdatedTs,
-		&column.DatabaseID,
-		&column.TableID,
-		&column.Name,
-		&column.Position,
-		&defaultStr,
-		&column.Nullable,
-		&column.Type,
-		&column.CharacterSet,
-		&column.Collation,
-		&column.Comment,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if defaultStr.Valid {
-		column.Default = &defaultStr.String
-	}
-
-	return &column, nil
 }
 
 // pgCreateColumn creates a new column.
@@ -354,60 +261,6 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *ap
 	}
 
 	return list, nil
-}
-
-// patchColumn updates a column by ID. Returns the new state of the column after update.
-func (s *ColumnService) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE col
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, `default`, nullable, type, character_set, collation, comment"+`
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var column api.Column
-		defaultStr := sql.NullString{}
-		if err := row.Scan(
-			&column.ID,
-			&column.CreatorID,
-			&column.CreatedTs,
-			&column.UpdaterID,
-			&column.UpdatedTs,
-			&column.DatabaseID,
-			&column.TableID,
-			&column.Name,
-			&column.Position,
-			&defaultStr,
-			&column.Nullable,
-			&column.Type,
-			&column.CharacterSet,
-			&column.Collation,
-			&column.Comment,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if defaultStr.Valid {
-			column.Default = &defaultStr.String
-		}
-
-		return &column, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("column ID not found: %d", patch.ID)}
 }
 
 // pgPatchColumn updates a column by ID. Returns the new state of the column after update.

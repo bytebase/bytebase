@@ -34,20 +34,13 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	pipeline, err := s.pgCreatePipeline(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createPipeline(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -65,7 +58,6 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findPipelineList(ctx, tx.PTx, find)
@@ -102,7 +94,6 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findPipelineList(ctx, tx.PTx, find)
@@ -128,20 +119,13 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	pipeline, err := s.pgPatchPipeline(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchPipeline(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -151,45 +135,6 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	}
 
 	return pipeline, nil
-}
-
-// createPipeline creates a new pipeline.
-func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO pipeline (
-			creator_id,
-			updater_id,
-			name,
-			status
-		)
-		VALUES (?, ?, ?, 'OPEN')
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.Name,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var pipeline api.Pipeline
-	if err := row.Scan(
-		&pipeline.ID,
-		&pipeline.CreatorID,
-		&pipeline.CreatedTs,
-		&pipeline.UpdaterID,
-		&pipeline.UpdatedTs,
-		&pipeline.Name,
-		&pipeline.Status,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &pipeline, nil
 }
 
 // createPipeline creates a new pipeline.
@@ -282,49 +227,6 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	}
 
 	return list, nil
-}
-
-// patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Status; v != nil {
-		set, args = append(set, "status = ?"), append(args, api.PipelineStatus(*v))
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE pipeline
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var pipeline api.Pipeline
-		if err := row.Scan(
-			&pipeline.ID,
-			&pipeline.CreatorID,
-			&pipeline.CreatedTs,
-			&pipeline.UpdaterID,
-			&pipeline.UpdatedTs,
-			&pipeline.Name,
-			&pipeline.Status,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		return &pipeline, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
 }
 
 // pgPatchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.

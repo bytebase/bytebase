@@ -34,20 +34,13 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	inbox, err := s.pgCreateInbox(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createInbox(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -61,7 +54,6 @@ func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findInboxList(ctx, tx.PTx, find)
@@ -79,7 +71,6 @@ func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findInboxList(ctx, tx.PTx, find)
@@ -102,20 +93,13 @@ func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	inbox, err := s.pgPatchInbox(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchInbox(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -129,7 +113,6 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	row, err := tx.PTx.QueryContext(ctx, `
@@ -153,7 +136,7 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	}
 
 	if inboxSummary.HasUnread {
-		row2, err := tx.Tx.QueryContext(ctx, `
+		row2, err := tx.PTx.QueryContext(ctx, `
 		SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')
 	`,
 			principalID,
@@ -175,50 +158,6 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	}
 
 	return &inboxSummary, nil
-}
-
-// createInbox creates a new inbox.
-func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.Inbox, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO inbox (
-			receiver_id,
-			activity_id,
-			status
-		)
-		VALUES (?, ?, 'UNREAD')
-		RETURNING id, receiver_id, activity_id, status
-	`,
-		create.ReceiverID,
-		create.ActivityID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var inbox api.Inbox
-	var activityID int
-	if err := row.Scan(
-		&inbox.ID,
-		&inbox.ReceiverID,
-		&activityID,
-		&inbox.Status,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	activityFind := &api.ActivityFind{
-		ID: &activityID,
-	}
-	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &inbox, nil
 }
 
 // pgCreateInbox creates a new inbox.
@@ -334,52 +273,6 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) (_ []*a
 	}
 
 	return list, nil
-}
-
-// patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.Inbox, error) {
-	// Build UPDATE clause.
-	set, args := []string{"status = ?"}, []interface{}{patch.Status}
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE inbox
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, receiver_id, activity_id, `+"status"+`
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var inbox api.Inbox
-		var activityID int
-		if err := row.Scan(
-			&inbox.ID,
-			&inbox.ReceiverID,
-			&activityID,
-			&inbox.Status,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		activityFind := &api.ActivityFind{
-			ID: &activityID,
-		}
-		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &inbox, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("inbox ID not found: %d", patch.ID)}
 }
 
 // pgPatchInbox updates a inbox by ID. Returns the new state of the inbox after update.

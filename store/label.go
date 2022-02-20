@@ -32,7 +32,6 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx.PTx, find)
@@ -40,9 +39,6 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 		return nil, err
 	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -145,7 +141,6 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	ret, err := s.findLabelKeyList(ctx, tx.PTx, &api.LabelKeyFind{})
@@ -193,47 +188,14 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 		if err := s.pgUpsertLabelValue(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
-		if err := s.upsertLabelValue(ctx, tx.Tx, upsert); err != nil {
-			return nil, err
-		}
 	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
 	labelKey.ValueList = patch.ValueList
 	return labelKey, nil
-}
-
-func (s *LabelService) upsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
-	// Upsert row into label_value
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO label_value (
-			row_status,
-			creator_id,
-			updater_id,
-			key,
-			value
-		)
-		VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(key, value) DO UPDATE SET
-				row_status = excluded.row_status,
-				creator_id = excluded.creator_id,
-				updater_id = excluded.updater_id
-		`,
-		upsert.rowStatus,
-		upsert.updaterID,
-		upsert.updaterID,
-		upsert.key,
-		upsert.value,
-	); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 func (s *LabelService) pgUpsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
@@ -269,7 +231,6 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	databaseLabelList, err := s.findDatabaseLabels(ctx, tx.PTx, find)
@@ -277,9 +238,6 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 		return nil, err
 	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -346,57 +304,6 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find 
 	return ret, nil
 }
 
-func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
-	// Upsert row into db_label
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO db_label (
-			row_status,
-			creator_id,
-			updater_id,
-			database_id,
-			key,
-			value
-		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT(database_id, key) DO UPDATE SET
-				row_status = excluded.row_status,
-				creator_id = excluded.creator_id,
-				updater_id = excluded.updater_id,
-				value = excluded.value
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
-		`,
-		upsert.RowStatus,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
-		upsert.DatabaseID,
-		upsert.Key,
-		upsert.Value,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var databaseLabel api.DatabaseLabel
-	if err := row.Scan(
-		&databaseLabel.ID,
-		&databaseLabel.RowStatus,
-		&databaseLabel.CreatorID,
-		&databaseLabel.CreatedTs,
-		&databaseLabel.UpdaterID,
-		&databaseLabel.UpdatedTs,
-		&databaseLabel.DatabaseID,
-		&databaseLabel.Key,
-		&databaseLabel.Value,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &databaseLabel, nil
-}
-
 func (s *LabelService) pgUpsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
@@ -461,7 +368,6 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	var ret []*api.DatabaseLabel
@@ -480,9 +386,6 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Value:      oldLabel.Value,
 		}
 		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
-			return nil, err
-		}
-		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -504,15 +407,9 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 		if err != nil {
 			return nil, err
 		}
-		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
-			return nil, err
-		}
 		ret = append(ret, label)
 	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
