@@ -34,20 +34,13 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	member, err := pgCreateMember(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createMember(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -65,7 +58,6 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findMemberList(ctx, tx.PTx, find)
@@ -102,7 +94,6 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findMemberList(ctx, tx.PTx, find)
@@ -128,20 +119,13 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	member, err := pgPatchMember(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchMember(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -151,51 +135,6 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	}
 
 	return member, nil
-}
-
-// createMember creates a new member.
-func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO member (
-			creator_id,
-			updater_id,
-			status,
-			role,
-			principal_id
-		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.Status,
-		create.Role,
-		create.PrincipalID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var member api.Member
-	if err := row.Scan(
-		&member.ID,
-		&member.RowStatus,
-		&member.CreatorID,
-		&member.CreatedTs,
-		&member.UpdaterID,
-		&member.UpdatedTs,
-		&member.Status,
-		&member.Role,
-		&member.PrincipalID,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &member, nil
 }
 
 // pgCreateMember creates a new member.
@@ -301,55 +240,6 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) (_ []
 	}
 
 	return list, nil
-}
-
-// patchMember updates a member by ID. Returns the new state of the member after update.
-func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Role; v != nil {
-		set, args = append(set, "role = ?"), append(args, api.Role(*v))
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE member
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var member api.Member
-		if err := row.Scan(
-			&member.ID,
-			&member.RowStatus,
-			&member.CreatorID,
-			&member.CreatedTs,
-			&member.UpdaterID,
-			&member.UpdatedTs,
-			&member.Status,
-			&member.Role,
-			&member.PrincipalID,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &member, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
 }
 
 // pgPatchMember updates a member by ID. Returns the new state of the member after update.
