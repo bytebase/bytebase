@@ -34,20 +34,13 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	project, err := pgCreateProject(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createProject(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -65,7 +58,6 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findProjectList(ctx, tx.PTx, find)
@@ -102,7 +94,6 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findProjectList(ctx, tx.PTx, find)
@@ -128,37 +119,14 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	project, err := pgPatchProject(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchProject(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
-		return nil, err
-	}
-
-	return project, nil
-}
-
-// PatchProjectTx updates an existing project by ID.
-// Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
-	project, err := patchProject(ctx, tx, patch)
-
-	if err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -183,58 +151,6 @@ func (s *ProjectService) PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch
 	}
 
 	return project, nil
-}
-
-// createProject creates a new project.
-func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO project (
-			creator_id,
-			updater_id,
-			name,
-			key,
-			workflow_type,
-			visibility,
-			tenant_mode,
-			db_name_template
-		)
-		VALUES (?, ?, ?, ?, 'UI', 'PUBLIC', ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.Name,
-		strings.ToUpper(create.Key),
-		create.TenantMode,
-		create.DBNameTemplate,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var project api.Project
-	if err := row.Scan(
-		&project.ID,
-		&project.RowStatus,
-		&project.CreatorID,
-		&project.CreatedTs,
-		&project.UpdaterID,
-		&project.UpdatedTs,
-		&project.Name,
-		&project.Key,
-		&project.WorkflowType,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.DBNameTemplate,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &project, nil
 }
 
 // pgCreateProject creates a new project.
@@ -353,64 +269,6 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 	}
 
 	return list, nil
-}
-
-// patchProject updates a project by ID. Returns the new state of the project after update.
-func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Name; v != nil {
-		set, args = append(set, "name = ?"), append(args, *v)
-	}
-	if v := patch.Key; v != nil {
-		set, args = append(set, "key = ?"), append(args, strings.ToUpper(*v))
-	}
-	if v := patch.WorkflowType; v != nil {
-		set, args = append(set, "`workflow_type` = ?"), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE project
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var project api.Project
-		if err := row.Scan(
-			&project.ID,
-			&project.RowStatus,
-			&project.CreatorID,
-			&project.CreatedTs,
-			&project.UpdaterID,
-			&project.UpdatedTs,
-			&project.Name,
-			&project.Key,
-			&project.WorkflowType,
-			&project.Visibility,
-			&project.TenantMode,
-			&project.DBNameTemplate,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &project, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
 }
 
 // pgPatchProject updates a project by ID. Returns the new state of the project after update.

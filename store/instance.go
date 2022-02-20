@@ -37,14 +37,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	instance, err := pgCreateInstance(ctx, tx.PTx, create)
 	if err != nil {
-		return nil, err
-	}
-	if _, err := createInstance(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -62,9 +58,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate); err != nil {
-		return nil, err
-	}
 
 	// Create admin data source
 	adminDataSourceCreate := &api.DataSourceCreate{
@@ -79,13 +72,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
-	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -103,7 +90,6 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findInstanceList(ctx, tx.PTx, find)
@@ -128,7 +114,6 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 	if err != nil {
 		return 0, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	where, args := findInstanceQuery(find)
@@ -172,7 +157,6 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findInstanceList(ctx, tx.PTx, find)
@@ -198,20 +182,13 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	instance, err := pgPatchInstance(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchInstance(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -221,61 +198,6 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	}
 
 	return instance, nil
-}
-
-// createInstance creates a new instance.
-func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO instance (
-			creator_id,
-			updater_id,
-			environment_id,
-			name,
-			engine,
-			external_link,
-			host,
-			port
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.EnvironmentID,
-		create.Name,
-		create.Engine,
-		create.ExternalLink,
-		create.Host,
-		create.Port,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var instance api.Instance
-	if err := row.Scan(
-		&instance.ID,
-		&instance.RowStatus,
-		&instance.CreatorID,
-		&instance.CreatedTs,
-		&instance.UpdaterID,
-		&instance.UpdatedTs,
-		&instance.EnvironmentID,
-		&instance.Name,
-		&instance.Engine,
-		&instance.EngineVersion,
-		&instance.ExternalLink,
-		&instance.Host,
-		&instance.Port,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &instance, nil
 }
 
 // pgCreateInstance creates a new instance.
@@ -389,71 +311,6 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	}
 
 	return list, nil
-}
-
-// patchInstance updates a instance by ID. Returns the new state of the instance after update.
-func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, "row_status = ?"), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Name; v != nil {
-		set, args = append(set, "name = ?"), append(args, *v)
-	}
-	if v := patch.EngineVersion; v != nil {
-		set, args = append(set, "engine_version = ?"), append(args, *v)
-	}
-	if v := patch.ExternalLink; v != nil {
-		set, args = append(set, "external_link = ?"), append(args, *v)
-	}
-	if v := patch.Host; v != nil {
-		set, args = append(set, "host = ?"), append(args, *v)
-	}
-	if v := patch.Port; v != nil {
-		set, args = append(set, "port = ?"), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE instance
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var instance api.Instance
-		if err := row.Scan(
-			&instance.ID,
-			&instance.RowStatus,
-			&instance.CreatorID,
-			&instance.CreatedTs,
-			&instance.UpdaterID,
-			&instance.UpdatedTs,
-			&instance.EnvironmentID,
-			&instance.Name,
-			&instance.Engine,
-			&instance.EngineVersion,
-			&instance.ExternalLink,
-			&instance.Host,
-			&instance.Port,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &instance, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
 }
 
 // pgPatchInstance updates a instance by ID. Returns the new state of the instance after update.
