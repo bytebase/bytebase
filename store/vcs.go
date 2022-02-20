@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,11 @@ func (s *VCSService) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	vcs, err := createVCS(ctx, tx, create)
+	vcs, err := createVCS(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgCreateVCS(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -99,8 +103,11 @@ func (s *VCSService) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VC
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	vcs, err := patchVCS(ctx, tx, patch)
+	vcs, err := patchVCS(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := pgPatchVCS(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -123,8 +130,10 @@ func (s *VCSService) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	err = deleteVCS(ctx, tx, delete)
-	if err != nil {
+	if err := deleteVCS(ctx, tx.Tx, delete); err != nil {
+		return FormatError(err)
+	}
+	if err := pgDeleteVCS(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -139,9 +148,9 @@ func (s *VCSService) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error
 }
 
 // createVCS creates a new vcs.
-func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, error) {
+func createVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCS, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO vcs (
 			creator_id,
 			updater_id,
@@ -153,6 +162,59 @@ func createVCS(ctx context.Context, tx *Tx, create *api.VCSCreate) (*api.VCS, er
 			secret
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+		create.Type,
+		create.InstanceURL,
+		create.APIURL,
+		create.ApplicationID,
+		create.Secret,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var vcs api.VCS
+	if err := row.Scan(
+		&vcs.ID,
+		&vcs.CreatorID,
+		&vcs.CreatedTs,
+		&vcs.UpdaterID,
+		&vcs.UpdatedTs,
+		&vcs.Name,
+		&vcs.Type,
+		&vcs.InstanceURL,
+		&vcs.APIURL,
+		&vcs.ApplicationID,
+		&vcs.Secret,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &vcs, nil
+}
+
+// pgCreateVCS creates a new vcs.
+func pgCreateVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCS, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO vcs (
+			creator_id,
+			updater_id,
+			name,
+			type,
+			instance_url,
+			api_url,
+			application_id,
+			secret
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`,
 		create.CreatorID,
@@ -250,7 +312,7 @@ func findVCSList(ctx context.Context, tx *Tx, find *api.VCSFind) (_ []*api.VCS, 
 }
 
 // patchVCS updates a vcs by ID. Returns the new state of the vcs after update.
-func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error) {
+func patchVCS(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*api.VCS, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -265,7 +327,7 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -302,10 +364,72 @@ func patchVCS(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*api.VCS, error
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 }
 
+// pgPatchVCS updates a vcs by ID. Returns the new state of the vcs after update.
+func pgPatchVCS(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*api.VCS, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.ApplicationID; v != nil {
+		set, args = append(set, fmt.Sprintf("application_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Secret; v != nil {
+		set, args = append(set, fmt.Sprintf("secret = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE vcs
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
+	`, len(args)),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var vcs api.VCS
+		if err := row.Scan(
+			&vcs.ID,
+			&vcs.CreatorID,
+			&vcs.CreatedTs,
+			&vcs.UpdaterID,
+			&vcs.UpdatedTs,
+			&vcs.Name,
+			&vcs.Type,
+			&vcs.InstanceURL,
+			&vcs.APIURL,
+			&vcs.ApplicationID,
+			&vcs.Secret,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &vcs, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+}
+
 // deleteVCS permanently deletes a vcs by ID.
-func deleteVCS(ctx context.Context, tx *Tx, delete *api.VCSDelete) error {
+func deleteVCS(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
-	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = ?`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+// pgDeleteVCS permanently deletes a vcs by ID.
+func pgDeleteVCS(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
+	// Remove row from database.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

@@ -394,13 +394,13 @@ func (s *EnvironmentService) pgPatchEnvironment(ctx context.Context, tx *sql.Tx,
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(set)+1)), append(args, api.RowStatus(*v))
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Order; v != nil {
-		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -411,7 +411,7 @@ func (s *EnvironmentService) pgPatchEnvironment(ctx context.Context, tx *sql.Tx,
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
-	`, len(set)+1),
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -146,8 +147,11 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	policy, err := s.upsertPolicy(ctx, tx, upsert)
+	policy, err := s.upsertPolicy(ctx, tx.Tx, upsert)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := s.pgUpsertPolicy(ctx, tx.PTx, upsert); err != nil {
 		return nil, err
 	}
 
@@ -162,10 +166,9 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 }
 
 // upsertPolicy updates an existing policy.
-func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
+func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	// Upsert row into policy.
-	// TODO(spinningbot): fix the query.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
@@ -175,7 +178,53 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *Tx, upsert *api.Po
 		)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
-				payload = excluded.payload
+			payload = excluded.payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, type, payload
+		`,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
+		upsert.EnvironmentID,
+		upsert.Type,
+		upsert.Payload,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var policy api.Policy
+	if err := row.Scan(
+		&policy.ID,
+		&policy.CreatorID,
+		&policy.CreatedTs,
+		&policy.UpdaterID,
+		&policy.UpdatedTs,
+		&policy.EnvironmentID,
+		&policy.Type,
+		&policy.Payload,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &policy, nil
+}
+
+// upsertPolicy updates an existing policy.
+func (s *PolicyService) pgUpsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
+	// Upsert row into policy.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO policy (
+			creator_id,
+			updater_id,
+			environment_id,
+			type,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(environment_id, type) DO UPDATE SET
+			payload = excluded.payload
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, type, payload
 		`,
 		upsert.UpdaterID,

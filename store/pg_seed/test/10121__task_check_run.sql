@@ -1,8 +1,7 @@
-ALTER SEQUENCE task_check_run_id_seq RESTART WITH 100;
-
 -- Task run for task 11004
 INSERT INTO
     task_check_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -15,6 +14,7 @@ INSERT INTO
     )
 VALUES
     (
+        101,
         1,
         1,
         11004,
@@ -28,6 +28,7 @@ VALUES
 
 INSERT INTO
     task_check_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -40,6 +41,7 @@ INSERT INTO
     )
 VALUES
     (
+        102,
         1,
         1,
         11004,
@@ -50,3 +52,5 @@ VALUES
         '{"resultList":[{"status":"SUCCESS","code":0,"title":"Syntax OK","content":"OK"}]}',
         '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","dbType":"MYSQL","charset":"utf8mb4","collation":"utf8mb4_general_ci"}'
     );
+
+ALTER SEQUENCE task_check_run_id_seq RESTART WITH 103;

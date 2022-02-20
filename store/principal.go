@@ -357,10 +357,10 @@ func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) 
 func pgPatchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.PasswordHash; v != nil {
-		set, args = append(set, fmt.Sprintf("password_hash = $%d", len(set)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("password_hash = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -371,7 +371,7 @@ func pgPatchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`, len(set)+1),
+	`, len(args)),
 		args...,
 	)
 	if err != nil {

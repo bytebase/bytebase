@@ -82,6 +82,9 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	if err != nil {
 		return nil, err
 	}
+	if _, err := s.PgCreateTaskCheckRunTx(ctx, tx.PTx, create); err != nil {
+		return nil, err
+	}
 
 	if err := tx.Tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -143,6 +146,60 @@ func (s *TaskCheckRunService) CreateTaskCheckRunTx(ctx context.Context, tx *sql.
 	return &taskCheckRun, nil
 }
 
+// PgCreateTaskCheckRunTx creates a new taskCheckRun.
+func (s *TaskCheckRunService) PgCreateTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
+	rows, err := tx.QueryContext(ctx, `
+		INSERT INTO task_check_run (
+			creator_id,
+			updater_id,
+			task_id,
+			status,
+			type,
+			comment,
+			payload
+		)
+		VALUES ($1, $2, $3, 'RUNNING', $4, $5, $6)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.TaskID,
+		create.Type,
+		create.Comment,
+		create.Payload,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var t *api.TaskCheckRun
+	for rows.Next() {
+		var taskCheckRun api.TaskCheckRun
+		if err := rows.Scan(
+			&taskCheckRun.ID,
+			&taskCheckRun.CreatorID,
+			&taskCheckRun.CreatedTs,
+			&taskCheckRun.UpdaterID,
+			&taskCheckRun.UpdatedTs,
+			&taskCheckRun.TaskID,
+			&taskCheckRun.Status,
+			&taskCheckRun.Type,
+			&taskCheckRun.Code,
+			&taskCheckRun.Comment,
+			&taskCheckRun.Result,
+			&taskCheckRun.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		t = &taskCheckRun
+	}
+	if t != nil {
+		return t, nil
+	}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run cannot be created for task ID %v", create.TaskID)}
+}
+
 // FindTaskCheckRunList retrieves a list of taskCheckRuns based on find.
 func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -163,6 +220,16 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 // FindTaskCheckRunListTx retrieves a list of taskCheckRuns based on find.
 func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	list, err := s.findTaskCheckRunList(ctx, tx, find)
+	if err != nil {
+		return []*api.TaskCheckRun{}, err
+	}
+
+	return list, nil
+}
+
+// PgFindTaskCheckRunListTx retrieves a list of taskCheckRuns based on find.
+func (s *TaskCheckRunService) PgFindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+	list, err := s.pgFindTaskCheckRunList(ctx, tx, find)
 	if err != nil {
 		return []*api.TaskCheckRun{}, err
 	}
@@ -197,6 +264,9 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 
 	taskCheckRun, err := s.PatchTaskCheckRunStatusTx(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := s.PgPatchTaskCheckRunStatusTx(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -260,6 +330,60 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatusTx(ctx context.Context, tx 
 	return &taskCheckRun, nil
 }
 
+// PgPatchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
+func (s *TaskCheckRunService) PgPatchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args = append(set, "status = $2"), append(args, patch.Status)
+	set, args = append(set, "code = $3"), append(args, patch.Code)
+	set, args = append(set, "result = $4"), append(args, patch.Result)
+
+	// Build WHERE clause.
+	where := []string{"1 = 1"}
+	if v := patch.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		UPDATE task_check_run
+		SET `+strings.Join(set, ", ")+`
+		WHERE `+strings.Join(where, " AND ")+`
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var t *api.TaskCheckRun
+	for rows.Next() {
+		var taskCheckRun api.TaskCheckRun
+		if err := rows.Scan(
+			&taskCheckRun.ID,
+			&taskCheckRun.CreatorID,
+			&taskCheckRun.CreatedTs,
+			&taskCheckRun.UpdaterID,
+			&taskCheckRun.UpdatedTs,
+			&taskCheckRun.TaskID,
+			&taskCheckRun.Status,
+			&taskCheckRun.Type,
+			&taskCheckRun.Code,
+			&taskCheckRun.Comment,
+			&taskCheckRun.Result,
+			&taskCheckRun.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		t = &taskCheckRun
+	}
+	if t != nil {
+		return t, nil
+	}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run ID not found: %d", *patch.ID)}
+}
+
 func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) (_ []*api.TaskCheckRun, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -293,6 +417,85 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 		    created_ts,
 			updater_id,
 		    updated_ts,
+			task_id,
+			status,
+			type,
+			code,
+			comment,
+			result,
+			payload
+		FROM task_check_run
+		WHERE `+strings.Join(where, " AND ")+orderAndLimit,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into list.
+	list := make([]*api.TaskCheckRun, 0)
+	for rows.Next() {
+		var taskCheckRun api.TaskCheckRun
+		if err := rows.Scan(
+			&taskCheckRun.ID,
+			&taskCheckRun.CreatorID,
+			&taskCheckRun.CreatedTs,
+			&taskCheckRun.UpdaterID,
+			&taskCheckRun.UpdatedTs,
+			&taskCheckRun.TaskID,
+			&taskCheckRun.Status,
+			&taskCheckRun.Type,
+			&taskCheckRun.Code,
+			&taskCheckRun.Comment,
+			&taskCheckRun.Result,
+			&taskCheckRun.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		list = append(list, &taskCheckRun)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return list, nil
+}
+
+func (s *TaskCheckRunService) pgFindTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) (_ []*api.TaskCheckRun, err error) {
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.TaskID; v != nil {
+		where, args = append(where, fmt.Sprintf("task_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.StatusList; v != nil {
+		list := []string{}
+		for _, status := range *v {
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
+			args = append(args, status)
+		}
+		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+	}
+
+	orderAndLimit := ""
+	if find.Latest {
+		orderAndLimit = " ORDER BY updated_ts DESC LIMIT 1"
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			task_id,
 			status,
 			type,
