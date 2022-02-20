@@ -68,7 +68,7 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, &api.PrincipalFind{})
+	list, err := findPrincipalList(ctx, tx.PTx, &api.PrincipalFind{})
 	if err != nil {
 		return []*api.Principal{}, err
 	}
@@ -105,7 +105,7 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findPrincipalList(ctx, tx, find)
+	list, err := findPrincipalList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -248,26 +248,26 @@ func pgCreatePrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCre
 	return &principal, nil
 }
 
-func findPrincipalList(ctx context.Context, tx *Tx, find *api.PrincipalFind) (_ []*api.Principal, err error) {
+func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) (_ []*api.Principal, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		where, args = append(where, "email = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
-		    type,
-		    name,
-		    email,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			type,
+			name,
+			email,
 			password_hash
 		FROM principal
 		WHERE `+strings.Join(where, " AND "),

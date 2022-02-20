@@ -62,7 +62,7 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findViewList(ctx, tx, find)
+	list, err := s.findViewList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.View{}, err
 	}
@@ -80,7 +80,7 @@ func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.Vi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findViewList(ctx, tx, find)
+	list, err := s.findViewList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -221,20 +221,20 @@ func (s *ViewService) pgCreateView(ctx context.Context, tx *sql.Tx, create *api.
 	return &view, nil
 }
 
-func (s *ViewService) findViewList(ctx context.Context, tx *Tx, find *api.ViewFind) (_ []*api.View, err error) {
+func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.ViewFind) (_ []*api.View, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,

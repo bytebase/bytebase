@@ -62,7 +62,7 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIndexList(ctx, tx, find)
+	list, err := s.findIndexList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Index{}, err
 	}
@@ -80,7 +80,7 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIndexList(ctx, tx, find)
+	list, err := s.findIndexList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -217,26 +217,26 @@ func (s *IndexService) pgCreateIndex(ctx context.Context, tx *sql.Tx, create *ap
 	return &index, nil
 }
 
-func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.IndexFind) (_ []*api.Index, err error) {
+func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.IndexFind) (_ []*api.Index, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.TableID; v != nil {
-		where, args = append(where, "table_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("table_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Expression; v != nil {
-		where, args = append(where, "expression = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -248,8 +248,8 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *Tx, find *api.Inde
 			name,
 			expression,
 			position,
-			`+"type,"+`
-			`+"`unique`,"+`
+			type,
+			"unique",
 			visible,
 			comment
 		FROM idx

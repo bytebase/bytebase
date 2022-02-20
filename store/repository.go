@@ -64,7 +64,7 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findRepositoryList(ctx, tx, find)
+	list, err := findRepositoryList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Repository{}, err
 	}
@@ -82,7 +82,7 @@ func (s *RepositoryService) FindRepository(ctx context.Context, find *api.Reposi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findRepositoryList(ctx, tx, find)
+	list, err := findRepositoryList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +165,8 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO repository (
-		    creator_id,
-		    updater_id,
+			creator_id,
+			updater_id,
 			vcs_id,
 			project_id,
 			name,
@@ -262,8 +262,8 @@ func (s *RepositoryService) pgCreateRepository(ctx context.Context, tx *sql.Tx, 
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO repository (
-		    creator_id,
-		    updater_id,
+			creator_id,
+			updater_id,
 			vcs_id,
 			project_id,
 			name,
@@ -343,29 +343,29 @@ func (s *RepositoryService) pgCreateRepository(ctx context.Context, tx *sql.Tx, 
 	return &repository, nil
 }
 
-func findRepositoryList(ctx context.Context, tx *Tx, find *api.RepositoryFind) (_ []*api.Repository, err error) {
+func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) (_ []*api.Repository, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.VCSID; v != nil {
-		where, args = append(where, "vcs_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.WebhookEndpointID; v != nil {
-		where, args = append(where, "webhook_endpoint_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			vcs_id,
 			project_id,
 			name,

@@ -62,7 +62,7 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findActivityList(ctx, tx, find)
+	list, err := findActivityList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Activity{}, err
 	}
@@ -80,7 +80,7 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findActivityList(ctx, tx, find)
+	list, err := findActivityList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -247,20 +247,20 @@ func pgCreateActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreat
 	return &activity, nil
 }
 
-func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []*api.Activity, err error) {
+func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (_ []*api.Activity, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ContainerID; v != nil {
-		where, args = append(where, "container_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("container_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
-		where, args = append(where, "creator_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "type = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 
 	var query = `
@@ -281,7 +281,7 @@ func findActivityList(ctx context.Context, tx *Tx, find *api.ActivityFind) (_ []
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, query,
+	rows, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {

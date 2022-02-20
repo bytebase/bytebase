@@ -106,7 +106,7 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findInstanceList(ctx, tx, find)
+	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Instance{}, err
 	}
@@ -133,7 +133,7 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 
 	where, args := findInstanceQuery(find)
 
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.PTx.QueryContext(ctx, `
 		SELECT COUNT(*)
 		FROM instance
 		WHERE `+where,
@@ -175,7 +175,7 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findInstanceList(ctx, tx, find)
+	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -333,17 +333,17 @@ func pgCreateInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreat
 	return &instance, nil
 }
 
-func findInstanceList(ctx context.Context, tx *Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
+func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
 	where, args := findInstanceQuery(find)
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
+			id,
 			row_status,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			environment_id,
 			name,
 			engine,
@@ -525,10 +525,10 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 
 	return strings.Join(where, " AND "), args
