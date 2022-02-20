@@ -37,19 +37,17 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	}
 
 	// Skip installation if installed already.
-	pgBinDir := path.Join(resourceDir, version)
-	_, err := os.Stat(pgBinDir)
+	_, err := os.Stat(dataDir)
 	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check binary path %q, error: %w", pgBinDir, err)
+		return "", fmt.Errorf("failed to check data directory path %q, error: %w", dataDir, err)
 	}
+
+	// The ordering below made Postgres installation atomic.
+	pgBinDir := path.Join(resourceDir, version)
 	if err == nil {
 		return pgBinDir, nil
 	}
 
-	// The ordering below made Postgres installation atomic.
-	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
-	}
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
@@ -59,6 +57,9 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	}
 	if err := os.Rename(tmpDir, pgBinDir); err != nil {
 		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
+	}
+	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
 	}
 	if err := initDB(pgBinDir, dataDir, "postgres"); err != nil {
 		return "", err
