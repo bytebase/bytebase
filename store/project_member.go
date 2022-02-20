@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,11 @@ func (s *ProjectMemberService) CreateProjectMember(ctx context.Context, create *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectMember, err := createProjectMember(ctx, tx, create)
+	projectMember, err := createProjectMember(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgCreateProjectMember(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -98,8 +102,11 @@ func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectMember, err := patchProjectMember(ctx, tx, patch)
+	projectMember, err := patchProjectMember(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := pgPatchProjectMember(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -122,8 +129,10 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	err = deleteProjectMember(ctx, tx, delete)
-	if err != nil {
+	if err := deleteProjectMember(ctx, tx.Tx, delete); err != nil {
+		return FormatError(err)
+	}
+	if err := pgDeleteProjectMember(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -138,9 +147,9 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 }
 
 // createProjectMember creates a new projectMember.
-func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
+func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
@@ -149,6 +158,50 @@ func createProjectMember(ctx context.Context, tx *Tx, create *api.ProjectMemberC
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.ProjectID,
+		create.Role,
+		create.PrincipalID,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var projectMember api.ProjectMember
+	if err := row.Scan(
+		&projectMember.ID,
+		&projectMember.CreatorID,
+		&projectMember.CreatedTs,
+		&projectMember.UpdaterID,
+		&projectMember.UpdatedTs,
+		&projectMember.ProjectID,
+		&projectMember.Role,
+		&projectMember.PrincipalID,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &projectMember, nil
+}
+
+// pgCreateProjectMember creates a new projectMember.
+func pgCreateProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO project_member (
+			creator_id,
+			updater_id,
+			project_id,
+			role,
+			principal_id
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`,
 		create.CreatorID,
@@ -237,7 +290,7 @@ func findProjectMemberList(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 }
 
 // patchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.
-func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
+func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.Role; v != nil {
@@ -247,7 +300,7 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
@@ -281,10 +334,64 @@ func patchProjectMember(ctx context.Context, tx *Tx, patch *api.ProjectMemberPat
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
 }
 
+// pgPatchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.
+func pgPatchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.Role; v != nil {
+		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, api.Role(*v))
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE project_member
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
+	`, len(args)),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var projectMember api.ProjectMember
+		if err := row.Scan(
+			&projectMember.ID,
+			&projectMember.CreatorID,
+			&projectMember.CreatedTs,
+			&projectMember.UpdaterID,
+			&projectMember.UpdatedTs,
+			&projectMember.ProjectID,
+			&projectMember.Role,
+			&projectMember.PrincipalID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &projectMember, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
+}
+
 // deleteProjectMember permanently deletes a projectMember by ID.
-func deleteProjectMember(ctx context.Context, tx *Tx, delete *api.ProjectMemberDelete) error {
+func deleteProjectMember(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
 	// Remove row from database.
-	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+// pgDeleteProjectMember permanently deletes a projectMember by ID.
+func pgDeleteProjectMember(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
+	// Remove row from database.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil
