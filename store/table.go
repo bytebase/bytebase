@@ -32,20 +32,13 @@ func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	table, err := s.pgCreateTable(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createTable(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,10 +52,9 @@ func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTableList(ctx, tx, find)
+	list, err := s.findTableList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Table{}, err
 	}
@@ -77,10 +69,9 @@ func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTableList(ctx, tx, find)
+	list, err := s.findTableList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -99,96 +90,17 @@ func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	if err := pgDeleteTable(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteTable(ctx, tx.Tx, delete); err != nil {
-		return FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
 	return nil
-}
-
-// createTable creates a new table.
-func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*api.Table, error) {
-	// Insert row into table.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO tbl (
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			database_id,
-			name,
-			type,
-			engine,
-			collation,
-			row_count,
-			data_size,
-			index_size,
-			data_free,
-			create_options,
-			comment
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, collation, row_count, data_size, index_size, data_free, create_options, comment
-	`,
-		create.CreatorID,
-		create.CreatedTs,
-		create.CreatorID,
-		create.UpdatedTs,
-		create.DatabaseID,
-		create.Name,
-		create.Type,
-		create.Engine,
-		create.Collation,
-		create.RowCount,
-		create.DataSize,
-		create.IndexSize,
-		create.DataFree,
-		create.CreateOptions,
-		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var table api.Table
-	if err := row.Scan(
-		&table.ID,
-		&table.CreatorID,
-		&table.CreatedTs,
-		&table.UpdaterID,
-		&table.UpdatedTs,
-		&table.DatabaseID,
-		&table.Name,
-		&table.Type,
-		&table.Engine,
-		&table.Collation,
-		&table.RowCount,
-		&table.DataSize,
-		&table.IndexSize,
-		&table.DataFree,
-		&table.CreateOptions,
-		&table.Comment,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &table, nil
 }
 
 // pgCreateTable creates a new table.
@@ -263,7 +175,7 @@ func (s *TableService) pgCreateTable(ctx context.Context, tx *sql.Tx, create *ap
 	return &table, nil
 }
 
-func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.TableFind) (_ []*api.Table, err error) {
+func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.TableFind) (_ []*api.Table, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -276,7 +188,7 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -335,15 +247,6 @@ func (s *TableService) findTableList(ctx context.Context, tx *Tx, find *api.Tabl
 	}
 
 	return list, nil
-}
-
-// deleteTable permanently deletes tables from a database.
-func deleteTable(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = ?`, delete.DatabaseID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 // pgDeleteTable permanently deletes tables from a database.

@@ -43,61 +43,15 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	database, err := s.PgCreateDatabaseTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.CreateDatabaseTx(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
-	}
-
-	return database, nil
-}
-
-// CreateDatabaseTx creates a database with a transaction.
-func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	database, err := s.createDatabase(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
-		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:  api.SystemBotID,
-			DatabaseID: database.ID,
-			Enabled:    true,
-			Hour:       rand.Intn(24),
-			HookURL:    "",
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			backupSettingUpsert.DayOfWeek = -1
-		case api.BackupPlanPolicyScheduleWeekly:
-			backupSettingUpsert.DayOfWeek = rand.Intn(7)
-		}
-		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
-		return nil, err
 	}
 
 	return database, nil
@@ -148,7 +102,6 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findDatabaseList(ctx, tx.PTx, find)
@@ -185,7 +138,6 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findDatabaseList(ctx, tx.PTx, find)
@@ -213,20 +165,13 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	database, err := s.pgPatchDatabase(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchDatabase(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -236,76 +181,6 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	}
 
 	return database, nil
-}
-
-// createDatabase creates a new database.
-func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO db (
-			creator_id,
-			updater_id,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			collation,
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', (strftime('%s', 'now')), ?)
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			collation,
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.ProjectID,
-		create.Name,
-		create.CharacterSet,
-		create.Collation,
-		create.SchemaVersion,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var database api.Database
-	if err := row.Scan(
-		&database.ID,
-		&database.CreatorID,
-		&database.CreatedTs,
-		&database.UpdaterID,
-		&database.UpdatedTs,
-		&database.InstanceID,
-		&database.ProjectID,
-		&database.Name,
-		&database.CharacterSet,
-		&database.Collation,
-		&database.SyncStatus,
-		&database.LastSuccessfulSyncTs,
-		&database.SchemaVersion,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &database, nil
 }
 
 // pgCreateDatabase creates a new database.
@@ -455,86 +330,6 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 	}
 
 	return list, nil
-}
-
-// patchDatabase updates a database by ID. Returns the new state of the database after update.
-func (s *DatabaseService) patchDatabase(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*api.Database, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.ProjectID; v != nil {
-		set, args = append(set, "project_id = ?"), append(args, *v)
-	}
-	if v := patch.SourceBackupID; v != nil {
-		set, args = append(set, "source_backup_id = ?"), append(args, *v)
-	}
-	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, "schema_version = ?"), append(args, *v)
-	}
-	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, "sync_status = ?"), append(args, api.SyncStatus(*v))
-	}
-	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, "last_successful_sync_ts = ?"), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE db
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			source_backup_id,
-			name,
-			character_set,
-			collation,
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var database api.Database
-		var nullSourceBackupID sql.NullInt64
-		if err := row.Scan(
-			&database.ID,
-			&database.CreatorID,
-			&database.CreatedTs,
-			&database.UpdaterID,
-			&database.UpdatedTs,
-			&database.InstanceID,
-			&database.ProjectID,
-			&nullSourceBackupID,
-			&database.Name,
-			&database.CharacterSet,
-			&database.Collation,
-			&database.SyncStatus,
-			&database.LastSuccessfulSyncTs,
-			&database.SchemaVersion,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if nullSourceBackupID.Valid {
-			database.SourceBackupID = int(nullSourceBackupID.Int64)
-		}
-		return &database, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
 }
 
 // pgPatchDatabase updates a database by ID. Returns the new state of the database after update.

@@ -32,20 +32,13 @@ func (s *ProjectMemberService) CreateProjectMember(ctx context.Context, create *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	projectMember, err := pgCreateProjectMember(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createProjectMember(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,7 +52,6 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findProjectMemberList(ctx, tx.PTx, find)
@@ -76,7 +68,6 @@ func (s *ProjectMemberService) FindProjectMember(ctx context.Context, find *api.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findProjectMemberList(ctx, tx.PTx, find)
@@ -99,20 +90,13 @@ func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	projectMember, err := pgPatchProjectMember(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchProjectMember(ctx, tx.Tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -126,68 +110,17 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	if err := pgDeleteProjectMember(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteProjectMember(ctx, tx.Tx, delete); err != nil {
-		return FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
 	return nil
-}
-
-// createProjectMember creates a new projectMember.
-func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO project_member (
-			creator_id,
-			updater_id,
-			project_id,
-			role,
-			principal_id
-		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.Role,
-		create.PrincipalID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var projectMember api.ProjectMember
-	if err := row.Scan(
-		&projectMember.ID,
-		&projectMember.CreatorID,
-		&projectMember.CreatedTs,
-		&projectMember.UpdaterID,
-		&projectMember.UpdatedTs,
-		&projectMember.ProjectID,
-		&projectMember.Role,
-		&projectMember.PrincipalID,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &projectMember, nil
 }
 
 // pgCreateProjectMember creates a new projectMember.
@@ -289,51 +222,6 @@ func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	return list, nil
 }
 
-// patchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.
-func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Role; v != nil {
-		set, args = append(set, "role = ?"), append(args, api.Role(*v))
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
-		UPDATE project_member
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectMember api.ProjectMember
-		if err := row.Scan(
-			&projectMember.ID,
-			&projectMember.CreatorID,
-			&projectMember.CreatedTs,
-			&projectMember.UpdaterID,
-			&projectMember.UpdatedTs,
-			&projectMember.ProjectID,
-			&projectMember.Role,
-			&projectMember.PrincipalID,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &projectMember, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
-}
-
 // pgPatchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.
 func pgPatchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	// Build UPDATE clause.
@@ -377,15 +265,6 @@ func pgPatchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMem
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
-}
-
-// deleteProjectMember permanently deletes a projectMember by ID.
-func deleteProjectMember(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = ?`, delete.ID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 // pgDeleteProjectMember permanently deletes a projectMember by ID.
