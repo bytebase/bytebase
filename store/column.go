@@ -62,7 +62,7 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findColumnList(ctx, tx, find)
+	list, err := s.findColumnList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Column{}, err
 	}
@@ -80,7 +80,7 @@ func (s *ColumnService) FindColumn(ctx context.Context, find *api.ColumnFind) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findColumnList(ctx, tx, find)
+	list, err := s.findColumnList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -275,23 +275,23 @@ func (s *ColumnService) pgCreateColumn(ctx context.Context, tx *sql.Tx, create *
 	return &column, nil
 }
 
-func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.ColumnFind) (_ []*api.Column, err error) {
+func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) (_ []*api.Column, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.TableID; v != nil {
-		where, args = append(where, "table_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("table_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -302,11 +302,11 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *Tx, find *api.Co
 			table_id,
 			name,
 			position,
-			`+"`default`,"+`
+			"default",
 			nullable,
 			type,
 			character_set,
-			collation,
+			"collation",
 			comment
 		FROM col
 		WHERE `+strings.Join(where, " AND ")+`

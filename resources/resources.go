@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -86,8 +85,6 @@ func extractTXZ(directory string, data []byte) error {
 		}
 
 		targetPath := filepath.Join(directory, header.Name)
-		log.Printf("Extracting path: %s\n", targetPath)
-
 		if err := os.MkdirAll(filepath.Dir(targetPath), os.ModePerm); err != nil {
 			return err
 		}

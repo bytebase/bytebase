@@ -75,7 +75,7 @@ func (s *SettingService) FindSettingList(ctx context.Context, find *api.SettingF
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findSettingList(ctx, tx, find)
+	list, err := findSettingList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Setting{}, err
 	}
@@ -92,7 +92,7 @@ func (s *SettingService) FindSetting(ctx context.Context, find *api.SettingFind)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findSettingList(ctx, tx, find)
+	list, err := findSettingList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -211,21 +211,21 @@ func pgCreateSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate)
 	return &setting, nil
 }
 
-func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*api.Setting, err error) {
+func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) (_ []*api.Setting, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, "name = $1"), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			creator_id,
 			created_ts,
 			updater_id,
 			updated_ts,
-		    name,
-		    value,
+			name,
+			value,
 			description
 		FROM setting
 		WHERE `+strings.Join(where, " AND "),

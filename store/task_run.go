@@ -323,9 +323,9 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 		SELECT
 			id,
 			creator_id,
-		    created_ts,
+			created_ts,
 			updater_id,
-		    updated_ts,
+			updated_ts,
 			task_id,
 			name,
 			status,

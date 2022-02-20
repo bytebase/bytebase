@@ -44,7 +44,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPolicy(ctx, tx, find)
+	list, err := s.findPolicy(ctx, tx.PTx, find)
 	var ret *api.Policy
 	if err != nil {
 		return nil, err
@@ -74,20 +74,20 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	return ret, nil
 }
 
-func (s *PolicyService) findPolicy(ctx context.Context, tx *Tx, find *api.PolicyFind) (_ []*api.Policy, err error) {
+func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) (_ []*api.Policy, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, "environment_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "type = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
