@@ -37,33 +37,33 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	}
 
 	// Skip installation if installed already.
-	binPath := path.Join(resourceDir, version)
-	_, err := os.Stat(binPath)
+	pgBinDir := path.Join(resourceDir, version)
+	_, err := os.Stat(pgBinDir)
 	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check binary path %q, error: %w", binPath, err)
+		return "", fmt.Errorf("failed to check binary path %q, error: %w", pgBinDir, err)
 	}
 	if err == nil {
-		return binPath, nil
+		return pgBinDir, nil
 	}
 
 	// The ordering below made Postgres installation atomic.
 	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
 	}
-	tmpPath := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err := os.RemoveAll(tmpPath); err != nil {
-		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpPath, err)
+	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+	if err := os.RemoveAll(tmpDir); err != nil {
+		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 	}
-	if err := extractTXZ(tmpPath, data); err != nil {
+	if err := extractTXZ(tmpDir, data); err != nil {
 		return "", fmt.Errorf("failed to extract txz file")
 	}
-	if err := os.Rename(tmpPath, binPath); err != nil {
-		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpPath, binPath, err)
+	if err := os.Rename(tmpDir, pgBinDir); err != nil {
+		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
 	}
-	if err := initDB(binPath, dataDir, "postgres"); err != nil {
+	if err := initDB(pgBinDir, dataDir, "postgres"); err != nil {
 		return "", err
 	}
-	return binPath, nil
+	return pgBinDir, nil
 }
 
 func extractTXZ(directory string, data []byte) error {
