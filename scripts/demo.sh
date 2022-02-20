@@ -4,7 +4,7 @@
 # by changing the ENTRYPOINT and CMD at the dockerfile to this.
 
 # example usages:
-# ./demo.sh 
+# ./demo.sh
 # ./demo.sh https://example.com
 # ./demo.sh https://example.com:8080
 
@@ -25,21 +25,25 @@ fi
 
 function seedDemoData(){
     echo 'Seeding data for online demo'
-    
-    bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
-    
-    echo 'Sleep 10 seconds for bytebase to finish migration...'
 
+    bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
+
+    until [ -d /var/opt/bytebase/pgdata/ ]
+    do
+        echo "waiting..."
+        sleep 1
+    done
+    echo 'Sleep 10 seconds for bytebase to finish migration...'
     sleep 10
 
     echo 'Killing seeding program'
-    
+
     ps | grep 'bytebase'  | grep -v grep | xargs kill -9
 }
 
 function startReadonly(){
     echo "Starting Bytebase in readonly and demo mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
-    
+
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --readonly --demo --data /var/opt/bytebase
 }
 
