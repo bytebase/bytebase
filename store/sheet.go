@@ -32,20 +32,13 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	sheet, err := pgCreateSheet(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createSheet(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,20 +52,13 @@ func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	sheet, err := pgPatchSheet(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := patchSheet(ctx, tx.Tx, patch); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -86,7 +72,6 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findSheetList(ctx, tx.PTx, find)
@@ -104,7 +89,6 @@ func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findSheetList(ctx, tx.PTx, find)
@@ -127,79 +111,17 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	if err := pgDeleteSheet(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteSheet(ctx, tx.Tx, delete); err != nil {
-		return FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
 	return nil
-}
-
-// createSheet creates a new sheet.
-func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.Sheet, error) {
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO sheet (
-			creator_id,
-			updater_id,
-			instance_id,
-			database_id,
-			name,
-			statement,
-			visibility
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.DatabaseID,
-		create.Name,
-		create.Statement,
-		create.Visibility,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var sheet api.Sheet
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&sheet.ID,
-		&sheet.CreatorID,
-		&sheet.CreatedTs,
-		&sheet.UpdaterID,
-		&sheet.UpdatedTs,
-		&sheet.InstanceID,
-		&databaseID,
-		&sheet.Name,
-		&sheet.Statement,
-		&sheet.Visibility,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheet.DatabaseID = &value
-	}
-
-	return &sheet, nil
 }
 
 // pgCreateSheet creates a new sheet.
@@ -255,64 +177,6 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 	}
 
 	return &sheet, nil
-}
-
-// patchSheet creates a new sheet.
-func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Name; v != nil {
-		set, args = append(set, "name = ?"), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Statement; v != nil {
-		set, args = append(set, "statement = ?"), append(args, *v)
-	}
-	if v := patch.Visibility; v != nil {
-		set, args = append(set, "visibility = ?"), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	row, err := tx.QueryContext(ctx, `
-		UPDATE sheet
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
-	`,
-		args...,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var sheet api.Sheet
-		databaseID := sql.NullInt32{}
-		if err := row.Scan(
-			&sheet.ID,
-			&sheet.CreatorID,
-			&sheet.CreatedTs,
-			&sheet.UpdaterID,
-			&sheet.UpdatedTs,
-			&sheet.InstanceID,
-			&databaseID,
-			&sheet.Name,
-			&sheet.Statement,
-			&sheet.Visibility,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if databaseID.Valid {
-			value := int(databaseID.Int32)
-			sheet.DatabaseID = &value
-		}
-
-		return &sheet, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
 }
 
 // pgPatchSheet creates a new sheet.
@@ -456,21 +320,6 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 	}
 
 	return list, nil
-}
-
-// deleteSheet permanently deletes a sheet by ID.
-func deleteSheet(ctx context.Context, tx *sql.Tx, delete *api.SheetDelete) error {
-	result, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = ?`, delete.ID)
-	if err != nil {
-		return FormatError(err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", delete.ID)}
-	}
-
-	return nil
 }
 
 // pgDeleteSheet permanently deletes a sheet by ID.

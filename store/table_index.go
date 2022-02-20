@@ -32,20 +32,13 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	index, err := s.pgCreateIndex(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createIndex(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,7 +52,6 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findIndexList(ctx, tx.PTx, find)
@@ -77,7 +69,6 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findIndexList(ctx, tx.PTx, find)
@@ -91,68 +82,6 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
-}
-
-// createIndex creates a new index.
-func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
-	// Insert row into index.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO idx (
-			creator_id,
-			updater_id,
-			database_id,
-			table_id,
-			name,
-			expression,
-			position,
-			type,
-			`+"`unique`,"+`
-			visible,
-			comment
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, `unique`, visible, comment"+`
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.DatabaseID,
-		create.TableID,
-		create.Name,
-		create.Expression,
-		create.Position,
-		create.Type,
-		create.Unique,
-		create.Visible,
-		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var index api.Index
-	if err := row.Scan(
-		&index.ID,
-		&index.CreatorID,
-		&index.CreatedTs,
-		&index.UpdaterID,
-		&index.UpdatedTs,
-		&index.DatabaseID,
-		&index.TableID,
-		&index.Name,
-		&index.Expression,
-		&index.Position,
-		&index.Type,
-		&index.Unique,
-		&index.Visible,
-		&index.Comment,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &index, nil
 }
 
 // pgCreateIndex creates a new index.

@@ -141,7 +141,6 @@ type DatabasePatch struct {
 type DatabaseService interface {
 	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*Database, error)
 	// This is specifically used to create the * database when creating the instance.
-	CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *DatabaseCreate) (*Database, error)
 	PgCreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *DatabaseCreate) (*Database, error)
 	FindDatabaseList(ctx context.Context, find *DatabaseFind) ([]*Database, error)
 	FindDatabase(ctx context.Context, find *DatabaseFind) (*Database, error)

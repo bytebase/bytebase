@@ -31,20 +31,13 @@ func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, crea
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	issueSubscriber, err := pgCreateIssueSubscriber(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createIssueSubscriber(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -58,7 +51,6 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := findIssueSubscriberList(ctx, tx.PTx, find)
@@ -75,56 +67,17 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	if err := pgDeleteIssueSubscriber(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteIssueSubscriber(ctx, tx.Tx, delete); err != nil {
-		return FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
 	return nil
-}
-
-// createIssueSubscriber creates a new issueSubscriber.
-func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
-	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO issue_subscriber (
-			issue_id,
-			subscriber_id
-		)
-		VALUES (?, ?)
-		RETURNING issue_id, subscriber_id
-	`,
-		create.IssueID,
-		create.SubscriberID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var issueSubscriber api.IssueSubscriber
-	if err := row.Scan(
-		&issueSubscriber.IssueID,
-		&issueSubscriber.SubscriberID,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &issueSubscriber, nil
 }
 
 // pgCreateIssueSubscriber creates a new issueSubscriber.
@@ -200,15 +153,6 @@ func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 	}
 
 	return list, nil
-}
-
-// deleteIssueSubscriber permanently deletes a issueSubscriber by ID.
-func deleteIssueSubscriber(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = ? AND subscriber_id = ?`, delete.IssueID, delete.SubscriberID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 // pgDeleteIssueSubscriber permanently deletes a issueSubscriber by ID.

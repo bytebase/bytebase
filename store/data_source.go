@@ -32,20 +32,13 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	dataSource, err := s.pgCreateDataSource(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createDataSource(ctx, tx.Tx, create); err != nil {
-		return nil, err
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -69,7 +62,6 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findDataSourceList(ctx, tx.PTx, find)
@@ -87,7 +79,6 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
 	list, err := s.findDataSourceList(ctx, tx.PTx, find)
@@ -110,20 +101,13 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.pgPatchDataSource(ctx, tx, patch)
+	dataSource, err := s.pgPatchDataSource(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchDataSource(ctx, tx, patch); err != nil {
-		return nil, FormatError(err)
-	}
 
-	if err := tx.Tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -301,58 +285,8 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	return list, nil
 }
 
-// patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *DataSourceService) patchDataSource(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
-	if v := patch.Username; v != nil {
-		set, args = append(set, "username = ?"), append(args, *v)
-	}
-	if v := patch.Password; v != nil {
-		set, args = append(set, "password = ?"), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
-		UPDATE data_source
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var dataSource api.DataSource
-		if err := row.Scan(
-			&dataSource.ID,
-			&dataSource.CreatorID,
-			&dataSource.CreatedTs,
-			&dataSource.UpdaterID,
-			&dataSource.UpdatedTs,
-			&dataSource.InstanceID,
-			&dataSource.DatabaseID,
-			&dataSource.Name,
-			&dataSource.Type,
-			&dataSource.Username,
-			&dataSource.Password,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		return &dataSource, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("dataSource ID not found: %d", patch.ID)}
-}
-
 // pgPatchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
+func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
@@ -365,7 +299,7 @@ func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *Tx, patch
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, fmt.Sprintf(`
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		UPDATE data_source
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
