@@ -291,6 +291,9 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := resources.InitDB(pgBinDir, pgdataDir); err != nil {
+		return nil, err
+	}
 
 	return &Main{
 		profile:  &activeProfile,

@@ -36,18 +36,17 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 
-	// Skip installation if installed already.
-	_, err := os.Stat(dataDir)
-	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check data directory path %q, error: %w", dataDir, err)
-	}
-
-	// The ordering below made Postgres installation atomic.
 	pgBinDir := path.Join(resourceDir, version)
+	_, err := os.Stat(pgBinDir)
+	if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
+	}
+	// Skip installation if installed already.
 	if err == nil {
 		return pgBinDir, nil
 	}
 
+	// The ordering below made Postgres installation atomic.
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
@@ -57,12 +56,6 @@ func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	}
 	if err := os.Rename(tmpDir, pgBinDir); err != nil {
 		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
-	}
-	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to make postgres data directory %q, error: %w", dataDir, err)
-	}
-	if err := initDB(pgBinDir, dataDir, "postgres"); err != nil {
-		return "", err
 	}
 	return pgBinDir, nil
 }
@@ -113,13 +106,26 @@ func extractTXZ(directory string, data []byte) error {
 	}
 }
 
-// initDB inits a postgres database.
-func initDB(pgBinDir, pgdataDir, username string) error {
-	args := []string{
-		"-U", username,
-		"-D", pgdataDir,
+// InitDB inits a postgres database.
+func InitDB(pgBinDir, pgdataDir string) error {
+	_, err := os.Stat(pgdataDir)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check data directory path %q, error: %w", pgdataDir, err)
+	}
+	// Skip initDB if setup already.
+	if err == nil {
+		return nil
 	}
 
+	if err := os.MkdirAll(pgdataDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgdataDir, err)
+	}
+
+	user := "postgres"
+	args := []string{
+		"-U", user,
+		"-D", pgdataDir,
+	}
 	initDBBinary := filepath.Join(pgBinDir, "bin", "initdb")
 	p := exec.Command(initDBBinary, args...)
 	p.Stderr = os.Stderr
