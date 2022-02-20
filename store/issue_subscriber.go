@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -60,7 +61,7 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findIssueSubscriberList(ctx, tx, find)
+	list, err := findIssueSubscriberList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.IssueSubscriber{}, err
 	}
@@ -158,17 +159,17 @@ func pgCreateIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueS
 	return &issueSubscriber, nil
 }
 
-func findIssueSubscriberList(ctx context.Context, tx *Tx, find *api.IssueSubscriberFind) (_ []*api.IssueSubscriber, err error) {
+func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) (_ []*api.IssueSubscriber, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.IssueID; v != nil {
-		where, args = append(where, "issue_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {
-		where, args = append(where, "subscriber_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("subscriber_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			issue_id,
 			subscriber_id

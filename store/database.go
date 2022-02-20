@@ -151,7 +151,7 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseList(ctx, tx, find)
+	list, err := s.findDatabaseList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Database{}, err
 	}
@@ -188,7 +188,7 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseList(ctx, tx, find)
+	list, err := s.findDatabaseList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -377,26 +377,26 @@ func (s *DatabaseService) pgCreateDatabase(ctx context.Context, tx *sql.Tx, crea
 	return &database, nil
 }
 
-func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *api.DatabaseFind) (_ []*api.Database, err error) {
+func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) (_ []*api.Database, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, "instance_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.AllDatabaseName+"'")
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -408,7 +408,7 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *Tx, find *ap
 			source_backup_id,
 			name,
 			character_set,
-			collation,
+			"collation",
 			sync_status,
 			last_successful_sync_ts,
 			schema_version

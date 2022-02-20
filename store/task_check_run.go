@@ -47,7 +47,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 		StatusList: &statusList,
 	}
 
-	taskCheckRunList, err := s.FindTaskCheckRunListTx(ctx, tx.Tx, taskCheckRunFind)
+	taskCheckRunList, err := s.PgFindTaskCheckRunListTx(ctx, tx.PTx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTaskCheckRunList(ctx, tx.Tx, find)
+	list, err := s.pgFindTaskCheckRunList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.TaskCheckRun{}, err
 	}
@@ -235,22 +235,6 @@ func (s *TaskCheckRunService) PgFindTaskCheckRunListTx(ctx context.Context, tx *
 	}
 
 	return list, nil
-}
-
-// FindTaskCheckRunTx retrieves a single taskCheckRun based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *TaskCheckRunService) FindTaskCheckRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) (*api.TaskCheckRun, error) {
-	list, err := s.findTaskCheckRunList(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d task runs with filter %+v, expect 1", len(list), find)}
-	}
-	return list[0], nil
 }
 
 // PatchTaskCheckRunStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
@@ -414,9 +398,9 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 		SELECT
 			id,
 			creator_id,
-		    created_ts,
+			created_ts,
 			updater_id,
-		    updated_ts,
+			updated_ts,
 			task_id,
 			status,
 			type,

@@ -64,7 +64,7 @@ func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findBackupList(ctx, tx, find)
+	list, err := s.findBackupList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findBackupList(ctx, tx, find)
+	list, err := s.findBackupList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Backup{}, err
 	}
@@ -234,23 +234,23 @@ func (s *BackupService) pgCreateBackup(ctx context.Context, tx *sql.Tx, create *
 	return &backup, nil
 }
 
-func (s *BackupService) findBackupList(ctx context.Context, tx *Tx, find *api.BackupFind) (_ []*api.Backup, err error) {
+func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) (_ []*api.Backup, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "database_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Name; v != nil {
-		where, args = append(where, "name = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Status; v != nil {
-		where, args = append(where, "status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
