@@ -189,10 +189,10 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	}
 
 	for _, upsert := range upserts {
-		if err := s.upsertLabelValue(ctx, tx.Tx, upsert); err != nil {
+		if err := s.pgUpsertLabelValue(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
-		if err := s.pgUpsertLabelValue(ctx, tx.PTx, upsert); err != nil {
+		if err := s.upsertLabelValue(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -478,10 +478,10 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Key:        oldLabel.Key,
 			Value:      oldLabel.Value,
 		}
-		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
+		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
-		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
+		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -499,11 +499,11 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Key:        label.Key,
 			Value:      label.Value,
 		}
-		label, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert)
+		label, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
+		if _, err := s.upsertDatabaseLabel(ctx, tx.Tx, upsert); err != nil {
 			return nil, err
 		}
 		ret = append(ret, label)

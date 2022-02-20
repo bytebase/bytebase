@@ -431,8 +431,8 @@ CREATE TABLE idx (
     expression TEXT NOT NULL,
     position INTEGER NOT NULL,
     type TEXT NOT NULL,
-    "unique" INTEGER NOT NULL,
-    visible INTEGER NOT NULL,
+    "unique" BOOLEAN NOT NULL,
+    visible BOOLEAN NOT NULL,
     comment TEXT NOT NULL,
     UNIQUE(database_id, table_id, name, expression)
 );
