@@ -35,11 +35,11 @@ func (s *ProjectMemberService) CreateProjectMember(ctx context.Context, create *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectMember, err := createProjectMember(ctx, tx.Tx, create)
+	projectMember, err := pgCreateProjectMember(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateProjectMember(ctx, tx.PTx, create); err != nil {
+	if _, err := createProjectMember(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -102,11 +102,11 @@ func (s *ProjectMemberService) PatchProjectMember(ctx context.Context, patch *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	projectMember, err := patchProjectMember(ctx, tx.Tx, patch)
+	projectMember, err := pgPatchProjectMember(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchProjectMember(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchProjectMember(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -129,10 +129,10 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectMember(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteProjectMember(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteProjectMember(ctx, tx.PTx, delete); err != nil {
+	if err := deleteProjectMember(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 

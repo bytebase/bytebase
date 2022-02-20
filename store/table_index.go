@@ -35,11 +35,11 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	index, err := s.createIndex(ctx, tx.Tx, create)
+	index, err := s.pgCreateIndex(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateIndex(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createIndex(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 

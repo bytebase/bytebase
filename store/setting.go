@@ -45,11 +45,11 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 		defer tx.Tx.Rollback()
 		defer tx.PTx.Rollback()
 
-		setting, err := createSetting(ctx, tx.Tx, create)
+		setting, err := pgCreateSetting(ctx, tx.Tx, create)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := pgCreateSetting(ctx, tx.PTx, create); err != nil {
+		if _, err := createSetting(ctx, tx.PTx, create); err != nil {
 			return nil, err
 		}
 
@@ -115,11 +115,11 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	setting, err := patchSetting(ctx, tx.Tx, patch)
+	setting, err := pgPatchSetting(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchSetting(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchSetting(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

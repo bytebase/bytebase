@@ -33,11 +33,11 @@ func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, crea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	issueSubscriber, err := createIssueSubscriber(ctx, tx.Tx, create)
+	issueSubscriber, err := pgCreateIssueSubscriber(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateIssueSubscriber(ctx, tx.PTx, create); err != nil {
+	if _, err := createIssueSubscriber(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -77,10 +77,10 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteIssueSubscriber(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteIssueSubscriber(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteIssueSubscriber(ctx, tx.PTx, delete); err != nil {
+	if err := deleteIssueSubscriber(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 

@@ -39,11 +39,11 @@ func (s *TaskService) CreateTask(ctx context.Context, create *api.TaskCreate) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	task, err := s.createTask(ctx, tx.Tx, create)
+	task, err := s.pgCreateTask(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateTask(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createTask(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -97,11 +97,11 @@ func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	task, err := s.patchTask(ctx, tx.Tx, patch)
+	task, err := s.pgPatchTask(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchTask(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchTask(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -125,11 +125,11 @@ func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatus
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	task, err := s.patchTaskStatus(ctx, tx.Tx, patch)
+	task, err := s.pgPatchTaskStatus(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchTaskStatus(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchTaskStatus(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

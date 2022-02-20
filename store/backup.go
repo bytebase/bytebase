@@ -36,11 +36,11 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	backup, err := s.createBackup(ctx, tx.Tx, create)
+	backup, err := s.pgCreateBackup(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateBackup(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createBackup(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -104,11 +104,11 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	backup, err := s.patchBackup(ctx, tx.Tx, patch)
+	backup, err := s.pgPatchBackup(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchBackup(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchBackup(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

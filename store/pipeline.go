@@ -37,11 +37,11 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.createPipeline(ctx, tx.Tx, create)
+	pipeline, err := s.pgCreatePipeline(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreatePipeline(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createPipeline(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -131,11 +131,11 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.patchPipeline(ctx, tx.Tx, patch)
+	pipeline, err := s.pgPatchPipeline(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchPipeline(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchPipeline(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

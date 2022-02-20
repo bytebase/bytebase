@@ -35,11 +35,11 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.createDataSource(ctx, tx.Tx, create)
+	dataSource, err := s.pgCreateDataSource(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateDataSource(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createDataSource(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -113,11 +113,11 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.patchDataSource(ctx, tx, patch)
+	dataSource, err := s.pgPatchDataSource(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchDataSource(ctx, tx, patch); err != nil {
+	if _, err := s.patchDataSource(ctx, tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

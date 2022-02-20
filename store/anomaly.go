@@ -51,11 +51,11 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 
 	var anomaly *api.Anomaly
 	if len(list) == 0 {
-		anomaly, err = createAnomaly(ctx, tx.Tx, upsert)
+		anomaly, err = pgCreateAnomaly(ctx, tx.Tx, upsert)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := pgCreateAnomaly(ctx, tx.PTx, upsert); err != nil {
+		if _, err := createAnomaly(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	} else if len(list) == 1 {
@@ -65,11 +65,11 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			UpdaterID: upsert.CreatorID,
 			Payload:   upsert.Payload,
 		}
-		anomaly, err = patchAnomaly(ctx, tx.Tx, patch)
+		anomaly, err = pgPatchAnomaly(ctx, tx.Tx, patch)
 		if err != nil {
 			return nil, err
 		}
-		if _, err = pgPatchAnomaly(ctx, tx.PTx, patch); err != nil {
+		if _, err = patchAnomaly(ctx, tx.PTx, patch); err != nil {
 			return nil, err
 		}
 	} else {
@@ -113,10 +113,10 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := archiveAnomaly(ctx, tx.Tx, archive); err != nil {
+	if err := pgArchiveAnomaly(ctx, tx.Tx, archive); err != nil {
 		return FormatError(err)
 	}
-	if err := pgArchiveAnomaly(ctx, tx.Tx, archive); err != nil {
+	if err := archiveAnomaly(ctx, tx.Tx, archive); err != nil {
 		return FormatError(err)
 	}
 

@@ -35,11 +35,11 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	stage, err := s.createStage(ctx, tx.Tx, create)
+	stage, err := s.pgCreateStage(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateStage(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createStage(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 

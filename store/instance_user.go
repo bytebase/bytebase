@@ -33,11 +33,11 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instanceUser, err := upsertInstanceUser(ctx, tx.Tx, upsert)
+	instanceUser, err := pgUpsertInstanceUser(ctx, tx.Tx, upsert)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgUpsertInstanceUser(ctx, tx.PTx, upsert); err != nil {
+	if _, err := upsertInstanceUser(ctx, tx.PTx, upsert); err != nil {
 		return nil, err
 	}
 
@@ -77,10 +77,10 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteInstanceUser(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteInstanceUser(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteInstanceUser(ctx, tx.PTx, delete); err != nil {
+	if err := deleteInstanceUser(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 

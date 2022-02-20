@@ -38,11 +38,11 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	issue, err := s.createIssue(ctx, tx.Tx, create)
+	issue, err := s.pgCreateIssue(ctx, tx.Tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateIssue(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createIssue(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -121,11 +121,11 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	issue, err := s.patchIssue(ctx, tx.Tx, patch)
+	issue, err := s.pgPatchIssue(ctx, tx.Tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.pgPatchIssue(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchIssue(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
