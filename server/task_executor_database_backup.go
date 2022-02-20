@@ -110,7 +110,7 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, inst
 func getAndCreateBackupDirectory(dataDir string, database *api.Database) (string, error) {
 	dir := filepath.Join("backup", "db", fmt.Sprintf("%d", database.ID))
 	absDir := filepath.Join(dataDir, dir)
-	if err := os.MkdirAll(absDir, 0700); err != nil {
+	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
 		return "", nil
 	}
 

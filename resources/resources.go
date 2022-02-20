@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -85,8 +86,9 @@ func extractTXZ(directory string, data []byte) error {
 		}
 
 		targetPath := filepath.Join(directory, header.Name)
+		log.Printf("Extracting path: %s\n", targetPath)
 
-		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(targetPath), os.ModePerm); err != nil {
 			return err
 		}
 
@@ -126,7 +128,7 @@ func initDB(pgBinDir, pgdataDir, username string) error {
 	p.Stdout = os.Stdout
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("unable to init database using: %s, error %v", p.String(), err)
+		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
 	}
 
 	return nil
@@ -142,7 +144,7 @@ func StartPostgres(pgBinDir, pgdataDir string, port int, stdout, stderr *os.File
 	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("could not start postgres using %s, error %v", p.String(), err)
+		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
 	}
 
 	return nil
