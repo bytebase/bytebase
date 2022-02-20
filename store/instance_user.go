@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -32,8 +33,11 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instanceUser, err := upsertInstanceUser(ctx, tx, upsert)
+	instanceUser, err := upsertInstanceUser(ctx, tx.Tx, upsert)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgUpsertInstanceUser(ctx, tx.PTx, upsert); err != nil {
 		return nil, err
 	}
 
@@ -73,8 +77,10 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	err = deleteInstanceUser(ctx, tx, delete)
-	if err != nil {
+	if err := deleteInstanceUser(ctx, tx.Tx, delete); err != nil {
+		return FormatError(err)
+	}
+	if err := pgDeleteInstanceUser(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -89,9 +95,9 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 }
 
 // upsertInstanceUser upserts a new instanceUser.
-func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+func upsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance_user (
 			creator_id,
 			updater_id,
@@ -104,6 +110,49 @@ func upsertInstanceUser(ctx context.Context, tx *Tx, upsert *api.InstanceUserUps
 			updater_id = excluded.updater_id,
 			grant = excluded.grant
 		RETURNING id, instance_id, name, grant
+	`,
+		upsert.CreatorID,
+		upsert.CreatorID,
+		upsert.InstanceID,
+		upsert.Name,
+		upsert.Grant,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var instanceUser api.InstanceUser
+	if err := row.Scan(
+		&instanceUser.ID,
+		&instanceUser.InstanceID,
+		&instanceUser.Name,
+		&instanceUser.Grant,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return nil, err
+}
+
+// pgUpsertInstanceUser upserts a new instanceUser.
+func pgUpsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+	// Upsert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO instance_user (
+			creator_id,
+			updater_id,
+			instance_id,
+			name,
+			"grant"
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			updater_id = excluded.updater_id,
+			grant = excluded.grant
+		RETURNING id, instance_id, name, "grant"
 	`,
 		upsert.CreatorID,
 		upsert.CreatorID,
@@ -176,9 +225,18 @@ func findInstanceUserList(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 }
 
 // deleteInstanceUser permanently deletes a instance user by ID.
-func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDelete) error {
+func deleteInstanceUser(ctx context.Context, tx *sql.Tx, delete *api.InstanceUserDelete) error {
 	// Remove row from database.
-	if _, err := tx.Tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = ?`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+// pgDeleteInstanceUser permanently deletes a instance user by ID.
+func pgDeleteInstanceUser(ctx context.Context, tx *sql.Tx, delete *api.InstanceUserDelete) error {
+	// Remove row from database.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

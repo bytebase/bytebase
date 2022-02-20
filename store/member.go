@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -36,8 +37,11 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	member, err := createMember(ctx, tx, create)
+	member, err := createMember(ctx, tx.Tx, create)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := pgCreateMember(ctx, tx.PTx, create); err != nil {
 		return nil, err
 	}
 
@@ -127,8 +131,11 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	member, err := patchMember(ctx, tx, patch)
+	member, err := patchMember(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := pgPatchMember(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -147,9 +154,9 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 }
 
 // createMember creates a new member.
-func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.Member, error) {
+func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
@@ -158,6 +165,51 @@ func createMember(ctx context.Context, tx *Tx, create *api.MemberCreate) (*api.M
 			principal_id
 		)
 		VALUES (?, ?, ?, ?, ?)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Status,
+		create.Role,
+		create.PrincipalID,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var member api.Member
+	if err := row.Scan(
+		&member.ID,
+		&member.RowStatus,
+		&member.CreatorID,
+		&member.CreatedTs,
+		&member.UpdaterID,
+		&member.UpdatedTs,
+		&member.Status,
+		&member.Role,
+		&member.PrincipalID,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &member, nil
+}
+
+// pgCreateMember creates a new member.
+func pgCreateMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO member (
+			creator_id,
+			updater_id,
+			status,
+			role,
+			principal_id
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`,
 		create.CreatorID,
@@ -252,7 +304,7 @@ func findMemberList(ctx context.Context, tx *Tx, find *api.MemberFind) (_ []*api
 }
 
 // patchMember updates a member by ID. Returns the new state of the member after update.
-func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Member, error) {
+func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -265,12 +317,61 @@ func patchMember(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*api.Memb
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = ?
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var member api.Member
+		if err := row.Scan(
+			&member.ID,
+			&member.RowStatus,
+			&member.CreatorID,
+			&member.CreatedTs,
+			&member.UpdaterID,
+			&member.UpdatedTs,
+			&member.Status,
+			&member.Role,
+			&member.PrincipalID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &member, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
+}
+
+// pgPatchMember updates a member by ID. Returns the new state of the member after update.
+func pgPatchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+	}
+	if v := patch.Role; v != nil {
+		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, api.Role(*v))
+	}
+
+	args = append(args, patch.ID)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE member
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
+	`, len(args)),
 		args...,
 	)
 	if err != nil {
