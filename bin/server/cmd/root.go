@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/resources"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
-	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -174,8 +173,8 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	// pginstance is an embeded Postgres instance for storing Bytebase data.
-	pgInstance *embeddedpostgres.EmbeddedPostgres
+	pgBinDir  string
+	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
@@ -274,7 +273,6 @@ func start() {
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
 	pgdataDir := path.Join(activeProfile.dataDir, "pgdata")
-	pgruntimeDir := path.Join(activeProfile.dataDir, "pgruntime")
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -283,31 +281,21 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgdataDir)
-	fmt.Printf("pgruntimeDir=%s\n", pgruntimeDir)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgbinPath, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	pgBinDir, err := resources.InstallPostgres(resourceDir, pgdataDir)
 	if err != nil {
 		return nil, err
 	}
-	pgInstance := embeddedpostgres.NewDatabase(
-		embeddedpostgres.
-			DefaultConfig().
-			Port(uint32(activeProfile.datastorePort)).
-			Version(embeddedpostgres.V14).
-			BinariesPath(pgbinPath).
-			RuntimePath(pgruntimeDir).
-			DataPath(pgdataDir),
-	)
 
 	return &Main{
-		profile:    &activeProfile,
-		l:          logger,
-		pgInstance: pgInstance,
+		profile:  &activeProfile,
+		l:        logger,
+		pgBinDir: pgBinDir,
 	}, nil
 }
 
@@ -335,11 +323,13 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	if err := m.pgInstance.Start(); err != nil {
-		return fmt.Errorf("cannot start postgresql server: %w", err)
+	pgDataDir := path.Join(m.profile.dataDir, "pgdata")
+	if err := resources.StartPostgres(m.pgBinDir, pgDataDir, m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+		return err
 	}
+	m.pgStarted = true
 
-	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres password=postgres dbname=postgres sslmode=disable", m.profile.datastorePort)
+	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres dbname=postgres sslmode=disable", m.profile.datastorePort)
 	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
@@ -426,11 +416,14 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if m.pgInstance != nil {
+	if m.pgStarted {
 		m.l.Info("Trying to shutdown postgresql server...")
-		if err := m.pgInstance.Stop(); err != nil {
+
+		pgDataDir := path.Join(m.profile.dataDir, "pgdata")
+		if err := resources.StopPostgres(m.pgBinDir, pgDataDir, os.Stdout, os.Stderr); err != nil {
 			return err
 		}
+		m.pgStarted = false
 	}
 	m.l.Info("Bytebase stopped properly.")
 	return nil
