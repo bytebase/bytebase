@@ -66,7 +66,7 @@ func (s *TaskService) FindTaskList(ctx context.Context, find *api.TaskFind) ([]*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTaskList(ctx, tx.Tx, find)
+	list, err := s.pgFindTaskList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Task{}, err
 	}
@@ -84,7 +84,7 @@ func (s *TaskService) FindTask(ctx context.Context, find *api.TaskFind) (*api.Ta
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	return s.findTask(ctx, tx.Tx, find)
+	return s.pgFindTask(ctx, tx.PTx, find)
 }
 
 // PatchTask updates an existing task.
@@ -398,17 +398,17 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			pipeline_id,
 			stage_id,
 			instance_id,
 			database_id,
-		    name,
-		    status,
+			name,
+			status,
 			type,
 			payload,
 			earliest_allowed_ts
@@ -491,17 +491,17 @@ func (s *TaskService) pgFindTaskList(ctx context.Context, tx *sql.Tx, find *api.
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			pipeline_id,
 			stage_id,
 			instance_id,
 			database_id,
-		    name,
-		    status,
+			name,
+			status,
 			type,
 			payload,
 			earliest_allowed_ts

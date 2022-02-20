@@ -68,7 +68,7 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPipelineList(ctx, tx, find)
+	list, err := s.findPipelineList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Pipeline{}, err
 	}
@@ -105,7 +105,7 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPipelineList(ctx, tx, find)
+	list, err := s.findPipelineList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -231,25 +231,25 @@ func (s *PipelineService) pgCreatePipeline(ctx context.Context, tx *sql.Tx, crea
 	return &pipeline, nil
 }
 
-func (s *PipelineService) findPipelineList(ctx context.Context, tx *Tx, find *api.PipelineFind) (_ []*api.Pipeline, err error) {
+func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) (_ []*api.Pipeline, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Status; v != nil {
-		where, args = append(where, "status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
-		    name,
-		    status
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			name,
+			status
 		FROM pipeline
 		WHERE `+strings.Join(where, " AND "),
 		args...,

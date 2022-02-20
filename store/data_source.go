@@ -72,7 +72,7 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDataSourceList(ctx, tx, find)
+	list, err := s.findDataSourceList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.DataSource{}, err
 	}
@@ -90,7 +90,7 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDataSourceList(ctx, tx, find)
+	list, err := s.findDataSourceList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -237,30 +237,30 @@ func (s *DataSourceService) pgCreateDataSource(ctx context.Context, tx *sql.Tx, 
 	return &dataSource, nil
 }
 
-func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
+func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, "instance_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, "`database_id` = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, "type = ?"), append(args, api.DataSourceType(*v))
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, api.DataSourceType(*v))
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			instance_id,
 			database_id,
-		    name,
-		    type,
+			name,
+			type,
 			username,
 			password
 		FROM data_source
