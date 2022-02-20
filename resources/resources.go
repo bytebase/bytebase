@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -25,7 +24,7 @@ var postgresDarwin []byte
 var postgresLinux []byte
 
 // InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, runtimeDir, dataDir string) (string, error) {
+func InstallPostgres(resourceDir, dataDir string) (string, error) {
 	var version string
 	var data []byte
 	switch runtime.GOOS {
@@ -61,7 +60,7 @@ func InstallPostgres(resourceDir, runtimeDir, dataDir string) (string, error) {
 	if err := os.Rename(tmpPath, binPath); err != nil {
 		return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpPath, binPath, err)
 	}
-	if err := initDB(binPath, runtimeDir, dataDir, "postgres", "postgres"); err != nil {
+	if err := initDB(binPath, dataDir, "postgres"); err != nil {
 		return "", err
 	}
 	return binPath, nil
@@ -115,23 +114,13 @@ func extractTXZ(directory string, data []byte) error {
 }
 
 // initDB inits a postgres database.
-func initDB(pgbinPath, pgruntimeDir, pgdataDir, username, password string) error {
-	if err := os.MkdirAll(pgruntimeDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgruntimeDir, err)
-	}
-	passwordPath, err := writePasswordFile(pgruntimeDir, password)
-	if err != nil {
-		return err
-	}
-
+func initDB(pgBinDir, pgdataDir, username string) error {
 	args := []string{
-		"-A", "password",
 		"-U", username,
 		"-D", pgdataDir,
-		fmt.Sprintf("--pwfile=%s", passwordPath),
 	}
 
-	initDBBinary := filepath.Join(pgbinPath, "bin/initdb")
+	initDBBinary := filepath.Join(pgBinDir, "bin", "initdb")
 	p := exec.Command(initDBBinary, args...)
 	p.Stderr = os.Stderr
 	p.Stdout = os.Stdout
@@ -140,47 +129,34 @@ func initDB(pgbinPath, pgruntimeDir, pgdataDir, username, password string) error
 		return fmt.Errorf("unable to init database using: %s, error %v", p.String(), err)
 	}
 
-	if err = os.Remove(passwordPath); err != nil {
-		return fmt.Errorf("unable to remove password file %q, error %v", passwordPath, err)
-	}
-
 	return nil
 }
 
-func writePasswordFile(pgRuntimePath, password string) (string, error) {
-	path := filepath.Join(pgRuntimePath, "pwfile")
-	if err := ioutil.WriteFile(path, []byte(password), 0600); err != nil {
-		return "", fmt.Errorf("unable to write password file to %s", path)
-	}
-
-	return path, nil
-}
-
 // StartPostgres starts postgres process.
-func StartPostgres(pgbinPath, pgdataDir string, port int, stdout, stderr *os.File) error {
-	postgresBinary := filepath.Join(pgbinPath, "bin", "pg_ctl")
-	postgresProcess := exec.Command(postgresBinary, "start", "-w",
+func StartPostgres(pgBinDir, pgdataDir string, port int, stdout, stderr *os.File) error {
+	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
+	p := exec.Command(pgbin, "start", "-w",
 		"-D", pgdataDir,
 		"-o", fmt.Sprintf(`"-p %d"`, port))
-	postgresProcess.Stdout = stdout
-	postgresProcess.Stderr = stderr
+	p.Stdout = stdout
+	p.Stderr = stderr
 
-	if err := postgresProcess.Run(); err != nil {
-		return fmt.Errorf("could not start postgres using %s", postgresProcess.String())
+	if err := p.Run(); err != nil {
+		return fmt.Errorf("could not start postgres using %s, error %v", p.String(), err)
 	}
 
 	return nil
 }
 
 // StopPostgres stops postgres process.
-func StopPostgres(pgbinPath, pgdataDir string, stdout, stderr *os.File) error {
-	postgresBinary := filepath.Join(pgbinPath, "bin", "pg_ctl")
-	postgresProcess := exec.Command(postgresBinary, "stop", "-w",
-		"-D", pgdataDir)
-	postgresProcess.Stderr = stderr
-	postgresProcess.Stdout = stdout
+func StopPostgres(pgBinDir, pgDataDir string, stdout, stderr *os.File) error {
+	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
+	p := exec.Command(pgbin, "stop", "-w",
+		"-D", pgDataDir)
+	p.Stderr = stderr
+	p.Stdout = stdout
 
-	if err := postgresProcess.Run(); err != nil {
+	if err := p.Run(); err != nil {
 		return err
 	}
 
