@@ -37,11 +37,11 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	environment, err := s.pgCreateEnvironment(ctx, tx.Tx, create)
+	environment, err := s.pgCreateEnvironment(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createEnvironment(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createEnvironment(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -131,11 +131,11 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	environment, err := s.pgPatchEnvironment(ctx, tx.Tx, patch)
+	environment, err := s.pgPatchEnvironment(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchEnvironment(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchEnvironment(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

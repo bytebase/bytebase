@@ -35,11 +35,11 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.Bookma
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	bookmark, err := pgCreateBookmark(ctx, tx.Tx, create)
+	bookmark, err := pgCreateBookmark(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createBookmark(ctx, tx.PTx, create); err != nil {
+	if _, err := createBookmark(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -103,10 +103,10 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteBookmark(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteBookmark(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteBookmark(ctx, tx.PTx, delete); err != nil {
+	if err := deleteBookmark(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

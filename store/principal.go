@@ -37,11 +37,11 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	principal, err := pgCreatePrincipal(ctx, tx.Tx, create)
+	principal, err := pgCreatePrincipal(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createPrincipal(ctx, tx.PTx, create); err != nil {
+	if _, err := createPrincipal(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -132,11 +132,11 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	principal, err := pgPatchPrincipal(ctx, tx.Tx, patch)
+	principal, err := pgPatchPrincipal(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchPrincipal(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchPrincipal(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

@@ -35,11 +35,11 @@ func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	view, err := s.pgCreateView(ctx, tx.Tx, create)
+	view, err := s.pgCreateView(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createView(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createView(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -102,10 +102,10 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteView(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteView(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteView(ctx, tx.PTx, delete); err != nil {
+	if err := deleteView(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

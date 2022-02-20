@@ -35,11 +35,11 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.pgCreateDataSource(ctx, tx.Tx, create)
+	dataSource, err := s.pgCreateDataSource(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createDataSource(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createDataSource(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 

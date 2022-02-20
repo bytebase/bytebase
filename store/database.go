@@ -46,11 +46,11 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	database, err := s.PgCreateDatabaseTx(ctx, tx.Tx, create)
+	database, err := s.PgCreateDatabaseTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.CreateDatabaseTx(ctx, tx.PTx, create); err != nil {
+	if _, err := s.CreateDatabaseTx(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -216,11 +216,11 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	database, err := s.pgPatchDatabase(ctx, tx.Tx, patch)
+	database, err := s.pgPatchDatabase(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchDatabase(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchDatabase(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

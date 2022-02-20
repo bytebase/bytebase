@@ -35,11 +35,11 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	sheet, err := pgCreateSheet(ctx, tx.Tx, create)
+	sheet, err := pgCreateSheet(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createSheet(ctx, tx.PTx, create); err != nil {
+	if _, err := createSheet(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -62,11 +62,11 @@ func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	sheet, err := pgPatchSheet(ctx, tx.Tx, patch)
+	sheet, err := pgPatchSheet(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := patchSheet(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchSheet(ctx, tx.Tx, patch); err != nil {
 		return nil, err
 	}
 
@@ -130,10 +130,10 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteSheet(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteSheet(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := deleteSheet(ctx, tx.PTx, delete); err != nil {
+	if err := deleteSheet(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

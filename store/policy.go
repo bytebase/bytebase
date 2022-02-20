@@ -147,11 +147,11 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	policy, err := s.pgUpsertPolicy(ctx, tx.Tx, upsert)
+	policy, err := s.pgUpsertPolicy(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.upsertPolicy(ctx, tx.PTx, upsert); err != nil {
+	if _, err := s.upsertPolicy(ctx, tx.Tx, upsert); err != nil {
 		return nil, err
 	}
 

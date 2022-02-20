@@ -110,11 +110,11 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	cfg, err := s.pgUpsertDeploymentConfig(ctx, tx.Tx, upsert)
+	cfg, err := s.pgUpsertDeploymentConfig(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.upsertDeploymentConfig(ctx, tx.PTx, upsert); err != nil {
+	if _, err := s.upsertDeploymentConfig(ctx, tx.Tx, upsert); err != nil {
 		return nil, FormatError(err)
 	}
 

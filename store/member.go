@@ -37,11 +37,11 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	member, err := pgCreateMember(ctx, tx.Tx, create)
+	member, err := pgCreateMember(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createMember(ctx, tx.PTx, create); err != nil {
+	if _, err := createMember(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -131,11 +131,11 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	member, err := pgPatchMember(ctx, tx.Tx, patch)
+	member, err := pgPatchMember(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchMember(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchMember(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

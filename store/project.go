@@ -37,11 +37,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	project, err := pgCreateProject(ctx, tx.Tx, create)
+	project, err := pgCreateProject(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := createProject(ctx, tx.PTx, create); err != nil {
+	if _, err := createProject(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -131,11 +131,11 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	project, err := pgPatchProject(ctx, tx.Tx, patch)
+	project, err := pgPatchProject(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := patchProject(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchProject(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

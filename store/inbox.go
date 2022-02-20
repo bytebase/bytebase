@@ -37,11 +37,11 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	inbox, err := s.pgCreateInbox(ctx, tx.Tx, create)
+	inbox, err := s.pgCreateInbox(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.createInbox(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createInbox(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -105,11 +105,11 @@ func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	inbox, err := s.pgPatchInbox(ctx, tx.Tx, patch)
+	inbox, err := s.pgPatchInbox(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.patchInbox(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.patchInbox(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
