@@ -1,6 +1,7 @@
 -- Task run for task 11004
 INSERT INTO
     task_check_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -13,6 +14,7 @@ INSERT INTO
     )
 VALUES
     (
+        101,
         1,
         1,
         11004,
@@ -26,6 +28,7 @@ VALUES
 
 INSERT INTO
     task_check_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -38,6 +41,7 @@ INSERT INTO
     )
 VALUES
     (
+        102,
         1,
         1,
         11004,

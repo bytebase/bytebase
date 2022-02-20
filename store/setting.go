@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -44,8 +45,11 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 		defer tx.Tx.Rollback()
 		defer tx.PTx.Rollback()
 
-		setting, err = createSetting(ctx, tx, create)
+		setting, err := createSetting(ctx, tx.Tx, create)
 		if err != nil {
+			return nil, err
+		}
+		if _, err := pgCreateSetting(ctx, tx.PTx, create); err != nil {
 			return nil, err
 		}
 
@@ -111,8 +115,11 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	setting, err := patchSetting(ctx, tx, patch)
+	setting, err := patchSetting(ctx, tx.Tx, patch)
 	if err != nil {
+		return nil, FormatError(err)
+	}
+	if _, err := pgPatchSetting(ctx, tx.PTx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -127,9 +134,9 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 }
 
 // createSetting creates a new setting.
-func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api.Setting, error) {
+func createSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
 	// Insert row into database.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO setting (
 			creator_id,
 			updater_id,
@@ -138,6 +145,45 @@ func createSetting(ctx context.Context, tx *Tx, create *api.SettingCreate) (*api
 			description
 		)
 		VALUES (?, ?, ?, ?, ?)
+		RETURNING name, value, description
+	`,
+		create.CreatorID,
+		create.CreatorID,
+		create.Name,
+		create.Value,
+		create.Description,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	row.Next()
+	var setting api.Setting
+	if err := row.Scan(
+		&setting.Name,
+		&setting.Value,
+		&setting.Description,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &setting, nil
+}
+
+// pgCreateSetting creates a new setting.
+func pgCreateSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
+	// Insert row into database.
+	row, err := tx.QueryContext(ctx, `
+		INSERT INTO setting (
+			creator_id,
+			updater_id,
+			name,
+			value,
+			description
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING name, value, description
 	`,
 		create.CreatorID,
@@ -216,7 +262,7 @@ func findSettingList(ctx context.Context, tx *Tx, find *api.SettingFind) (_ []*a
 }
 
 // patchSetting updates a setting by name. Returns the new state of the setting after update.
-func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Setting, error) {
+func patchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = ?"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "value = ?"), append(args, patch.Value)
@@ -224,10 +270,52 @@ func patchSetting(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*api.Se
 	args = append(args, patch.Name)
 
 	// Execute update query with RETURNING.
-	row, err := tx.Tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE setting
 		SET `+strings.Join(set, ", ")+`
 		WHERE name = ?
+		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
+	`,
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
+		var setting api.Setting
+		if err := row.Scan(
+			&setting.CreatorID,
+			&setting.CreatedTs,
+			&setting.UpdaterID,
+			&setting.UpdatedTs,
+			&setting.Name,
+			&setting.Value,
+			&setting.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return &setting, nil
+	}
+
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+}
+
+// pgPatchSetting updates a setting by name. Returns the new state of the setting after update.
+func pgPatchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
+	// Build UPDATE clause.
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	set, args = append(set, "value = $2"), append(args, patch.Value)
+
+	args = append(args, patch.Name)
+
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, `
+		UPDATE setting
+		SET `+strings.Join(set, ", ")+`
+		WHERE name = $3
 		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
 	`,
 		args...,
