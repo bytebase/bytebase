@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/resources"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
-	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -174,8 +173,8 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	// pginstance is an embeded Postgres instance for storing Bytebase data.
-	pgInstance *embeddedpostgres.EmbeddedPostgres
+	pgbinPath string
+	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
@@ -290,24 +289,15 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgbinPath, err := resources.InstallPostgres(resourceDir, pgdataDir)
+	pgbinPath, err := resources.InstallPostgres(resourceDir, pgruntimeDir, pgdataDir)
 	if err != nil {
 		return nil, err
 	}
-	pgInstance := embeddedpostgres.NewDatabase(
-		embeddedpostgres.
-			DefaultConfig().
-			Port(uint32(activeProfile.datastorePort)).
-			Version(embeddedpostgres.V14).
-			BinariesPath(pgbinPath).
-			RuntimePath(pgruntimeDir).
-			DataPath(pgdataDir),
-	)
 
 	return &Main{
-		profile:    &activeProfile,
-		l:          logger,
-		pgInstance: pgInstance,
+		profile:   &activeProfile,
+		l:         logger,
+		pgbinPath: pgbinPath,
 	}, nil
 }
 
@@ -335,9 +325,11 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	if err := m.pgInstance.Start(); err != nil {
-		return fmt.Errorf("cannot start postgresql server: %w", err)
+	pgdataDir := path.Join(m.profile.dataDir, "pgdata")
+	if err := resources.StartPostgres(m.pgbinPath, pgdataDir, m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+		return err
 	}
+	m.pgStarted = true
 
 	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres password=postgres dbname=postgres sslmode=disable", m.profile.datastorePort)
 	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
@@ -426,11 +418,14 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if m.pgInstance != nil {
+	if m.pgStarted {
 		m.l.Info("Trying to shutdown postgresql server...")
-		if err := m.pgInstance.Stop(); err != nil {
+
+		pgdataDir := path.Join(m.profile.dataDir, "pgdata")
+		if err := resources.StopPostgres(m.pgbinPath, pgdataDir, os.Stdout, os.Stderr); err != nil {
 			return err
 		}
+		m.pgStarted = false
 	}
 	m.l.Info("Bytebase stopped properly.")
 	return nil
