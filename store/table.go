@@ -35,11 +35,11 @@ func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	table, err := s.createTable(ctx, tx.Tx, create)
+	table, err := s.pgCreateTable(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateTable(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createTable(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -102,10 +102,10 @@ func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	if err := deleteTable(ctx, tx.Tx, delete); err != nil {
+	if err := pgDeleteTable(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
-	if err := pgDeleteTable(ctx, tx.PTx, delete); err != nil {
+	if err := deleteTable(ctx, tx.Tx, delete); err != nil {
 		return FormatError(err)
 	}
 

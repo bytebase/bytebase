@@ -40,11 +40,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instance, err := createInstance(ctx, tx.Tx, create)
+	instance, err := pgCreateInstance(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pgCreateInstance(ctx, tx.PTx, create); err != nil {
+	if _, err := createInstance(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -58,11 +58,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		CharacterSet:  api.DefaultCharactorSetName,
 		Collation:     api.DefaultCollationName,
 	}
-	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate)
+	allDatabase, err := s.databaseService.PgCreateDatabaseTx(ctx, tx.PTx, databaseCreate)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.databaseService.PgCreateDatabaseTx(ctx, tx.PTx, databaseCreate); err != nil {
+	if _, err := s.databaseService.CreateDatabaseTx(ctx, tx.Tx, databaseCreate); err != nil {
 		return nil, err
 	}
 
@@ -76,10 +76,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate); err != nil {
+	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
-	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.Tx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
@@ -201,11 +201,11 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	instance, err := patchInstance(ctx, tx.Tx, patch)
+	instance, err := pgPatchInstance(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := pgPatchInstance(ctx, tx.PTx, patch); err != nil {
+	if _, err := patchInstance(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 

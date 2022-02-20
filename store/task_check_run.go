@@ -78,11 +78,11 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 		return taskCheckRunList[0], nil
 	}
 
-	taskCheckRun, err := s.CreateTaskCheckRunTx(ctx, tx.Tx, create)
+	taskCheckRun, err := s.PgCreateTaskCheckRunTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.PgCreateTaskCheckRunTx(ctx, tx.PTx, create); err != nil {
+	if _, err := s.CreateTaskCheckRunTx(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -262,11 +262,11 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	taskCheckRun, err := s.PatchTaskCheckRunStatusTx(ctx, tx.Tx, patch)
+	taskCheckRun, err := s.PgPatchTaskCheckRunStatusTx(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	if _, err := s.PgPatchTaskCheckRunStatusTx(ctx, tx.PTx, patch); err != nil {
+	if _, err := s.PatchTaskCheckRunStatusTx(ctx, tx.Tx, patch); err != nil {
 		return nil, FormatError(err)
 	}
 
