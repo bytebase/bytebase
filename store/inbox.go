@@ -64,7 +64,7 @@ func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) (
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findInboxList(ctx, tx, find)
+	list, err := findInboxList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Inbox{}, err
 	}
@@ -82,7 +82,7 @@ func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findInboxList(ctx, tx, find)
+	list, err := findInboxList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -132,16 +132,14 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	row, err := tx.Tx.QueryContext(ctx, `
-		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = ? AND status = 'UNREAD')
+	row, err := tx.PTx.QueryContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD')
 	`,
 		principalID,
 	)
-
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer row.Close()
 
 	row.Next()
 	var inboxSummary api.InboxSummary
@@ -150,10 +148,13 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := row.Close(); err != nil {
+		return nil, FormatError(err)
+	}
 
 	if inboxSummary.HasUnread {
 		row2, err := tx.Tx.QueryContext(ctx, `
-		SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = ? AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')
+		SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')
 	`,
 			principalID,
 		)
@@ -264,21 +265,21 @@ func (s *InboxService) pgCreateInbox(ctx context.Context, tx *sql.Tx, create *ap
 	return &inbox, nil
 }
 
-func findInboxList(ctx context.Context, tx *Tx, find *api.InboxFind) (_ []*api.Inbox, err error) {
+func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) (_ []*api.Inbox, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
 	if v := find.ID; v != nil {
-		where, args = append(where, "inbox.id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("inbox.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ReceiverID; v != nil {
-		where, args = append(where, "receiver_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("receiver_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ReadCreatedAfterTs; v != nil {
-		where, args = append(where, "(status != 'READ' OR created_ts >= ?)"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("(status != 'READ' OR created_ts >= $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			inbox.id,
 			receiver_id,
@@ -392,7 +393,7 @@ func (s *InboxService) pgPatchInbox(ctx context.Context, tx *sql.Tx, patch *api.
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $2
-		RETURNING id, receiver_id, activity_id, `+"status"+`
+		RETURNING id, receiver_id, activity_id, status
 	`,
 		args...,
 	)

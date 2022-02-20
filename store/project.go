@@ -68,7 +68,7 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectList(ctx, tx, find)
+	list, err := findProjectList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Project{}, err
 	}
@@ -105,7 +105,7 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := findProjectList(ctx, tx, find)
+	list, err := findProjectList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -289,27 +289,27 @@ func pgCreateProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate)
 	return &project, nil
 }
 
-func findProjectList(ctx context.Context, tx *Tx, find *api.ProjectFind) (_ []*api.Project, err error) {
+func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ []*api.Project, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
-		where, args = append(where, "id IN (SELECT project_id FROM project_member WHERE principal_id = ?)"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
+			id,
 			row_status,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			name,
 			key,
 			workflow_type,

@@ -68,7 +68,7 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findEnvironmentList(ctx, tx, find)
+	list, err := s.findEnvironmentList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Environment{}, err
 	}
@@ -105,7 +105,7 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findEnvironmentList(ctx, tx, find)
+	list, err := s.findEnvironmentList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -284,26 +284,26 @@ func (s *EnvironmentService) pgCreateEnvironment(ctx context.Context, tx *sql.Tx
 	return &environment, nil
 }
 
-func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
+func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, "row_status = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
-		    id,
+			id,
 			row_status,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
-		    name,
-		    `+"`order`"+`
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			name,
+			"order"
 		FROM environment
 		WHERE `+strings.Join(where, " AND "),
 		args...,

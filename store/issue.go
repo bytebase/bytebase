@@ -69,7 +69,7 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIssueList(ctx, tx, find)
+	list, err := s.findIssueList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Issue{}, err
 	}
@@ -95,7 +95,7 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIssueList(ctx, tx, find)
+	list, err := s.findIssueList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -257,20 +257,20 @@ func (s *IssueService) pgCreateIssue(ctx context.Context, tx *sql.Tx, create *ap
 	return &issue, nil
 }
 
-func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.IssueFind) (_ []*api.Issue, err error) {
+func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.IssueFind) (_ []*api.Issue, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
-		where, args = append(where, "pipeline_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, "project_id = ?"), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
-		where = append(where, "(creator_id = ? OR assignee_id = ? OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = ?))")
+		where = append(where, fmt.Sprintf("(creator_id = $%d OR assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
 		args = append(args, *v)
 		args = append(args, *v)
 		args = append(args, *v)
@@ -278,7 +278,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 	if v := find.StatusList; v != nil {
 		list := []string{}
 		for _, status := range *v {
-			list = append(list, "?")
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
@@ -286,14 +286,14 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 
 	var query = `
 		SELECT
-		    id,
-		    creator_id,
-		    created_ts,
-		    updater_id,
-		    updated_ts,
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
 			project_id,
 			pipeline_id,
-		    name,
+			name,
 			status,
 			type,
 			description,
@@ -305,7 +305,7 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *Tx, find *api.Issu
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}
 
-	rows, err := tx.Tx.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
