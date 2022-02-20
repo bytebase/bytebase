@@ -25,8 +25,8 @@ VALUES
         'col1',
         1,
         'BTREE',
-        0,
-        1,
+        false,
+        true,
         ''
     );
 
@@ -57,8 +57,8 @@ VALUES
         'col1',
         1,
         'BTREE',
-        0,
-        1,
+        false,
+        true,
         ''
     );
 
@@ -89,8 +89,8 @@ VALUES
         'col1',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -121,8 +121,8 @@ VALUES
         'col1',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -153,8 +153,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -185,8 +185,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -217,8 +217,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -249,8 +249,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -281,8 +281,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -313,8 +313,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -345,8 +345,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -377,8 +377,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -409,8 +409,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -441,8 +441,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -473,8 +473,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -505,8 +505,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -537,8 +537,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 
@@ -569,8 +569,8 @@ VALUES
         'id',
         1,
         'BTREE',
-        1,
-        1,
+        true,
+        true,
         ''
     );
 

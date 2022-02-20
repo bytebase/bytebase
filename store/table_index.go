@@ -35,11 +35,11 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	defer tx.Tx.Rollback()
 	defer tx.PTx.Rollback()
 
-	index, err := s.createIndex(ctx, tx.Tx, create)
+	index, err := s.pgCreateIndex(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.pgCreateIndex(ctx, tx.PTx, create); err != nil {
+	if _, err := s.createIndex(ctx, tx.Tx, create); err != nil {
 		return nil, err
 	}
 
@@ -168,12 +168,12 @@ func (s *IndexService) pgCreateIndex(ctx context.Context, tx *sql.Tx, create *ap
 			expression,
 			position,
 			type,
-			unique,
+			"unique",
 			visible,
 			comment
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, "unique", visible, comment
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, "unique", visible, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
