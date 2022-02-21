@@ -21,6 +21,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		mode:                 "release",
 		port:                 port,
 		datastorePort:        datastorePort,
+		pgUser:               "bb",
 		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              seedDir,
