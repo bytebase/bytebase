@@ -15,16 +15,16 @@ Prerequisite:
     ```
     docker compose -f mysql-quickstart.docker-compose.yml up
     ```
-    After services are ready. Open localhost:8080 in brower.
+    After services are ready, open localhost:8080 in the browser.
 
-1. In `Instances`, there are 2 prepared MySQL instances both connect to `host.docker.internal:3306`. Choose `MySQL Test`.
+1. In `Instances`, there are 2 prepared MySQL instances both connecting to `host.docker.internal:3306`. Choose `MySQL Test`.
 
-    Find `Connection info`, check `Empty` password, and `Test Connection`. You should see `Successfully connected instance.`.
+    Find `Connection info`, check `Empty` password, and `Test Connection`. You will see `Successfully connected instance`.
     `Update` password.
 
-    Next `Create migration schema` (in the top), and choose `Create`.
+    Next `Create migration schema` (on top), and choose `Create`.
 
-    Finally `Sync Now` (in the bottom). You should see some test databases.
+    Finally `Sync Now` (at the bottom). You should see some test databases.
 
 ## Clickhouse
 1. 
@@ -37,11 +37,11 @@ Prerequisite:
     ```
     docker compose -f clickhouse-quickstart.docker-compose.yml up
     ```
-    After services are ready. Open localhost:8080 in brower.
+    After services are ready, open localhost:8080 in the browser.
 
 1. `Add instance` and choose `ClickHouse`.
-    Click `Test Connection`, then you should see `Successfully connected instance.`.
+    Click `Test Connection`, and then you will see `Successfully connected instance`.
     
     \[Optional\] Set up `Instance Name` or `Environment`.
 
-    Finially `Create` instance. You should see some test databases have been prepared.
+    Finially `Create` instance. You will see some test databases prepared.
