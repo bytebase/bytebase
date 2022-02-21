@@ -969,6 +969,7 @@ sql-editor:
   table-schema-placeholder: 选择一个表进行查看 Schema
   notify-empty-statement: 请在编辑器中输入 SQL 语句
   notify-multiple-statements: 检测到您输入了多条 SQL 语句。SQL 编辑器只支持执行第一条语句。您可以选择其他语句单独执行。
+  notify-invalid-sql-statement: 请检查您的 SQL 语句。
   goto-alter-schema-hint: 请从编辑器顶部选择一个数据库连接
   can-not-execute-query: 加载数据时无法执行查询
   rows: 条记录
