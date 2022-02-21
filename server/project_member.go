@@ -73,7 +73,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		// check whether principal exists in our system.
-		// If not exist, create one.
+		// If the principal does not exist, create one.
 		for _, projectMember := range vcsProjectMemberList {
 			if vcs.Type != projectMember.RoleProvider {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
@@ -90,7 +90,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
 					Email: projectMember.Email,
-					// Principal created via this method would have not chance to set their password,
+					// Principal created via this method would have no chance to set their password,
 					// To prevent potential safe issue, we use random string to set up her password.
 					// This is another safety measure since we already disallow user login via password
 					// if the principal uses external auth provider
@@ -118,6 +118,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						roleProvider := api.ProjectRoleProvider(projectMember.RoleProvider)
 						payload := string(providerPayloadBytes)
 						patchProjectMember := &api.ProjectMemberPatch{
+							UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
 							ID:           bytebaseProjectMember.ID,
 							RoleProvider: &roleProvider,
 							Payload:      &payload,

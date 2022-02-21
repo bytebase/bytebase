@@ -136,7 +136,7 @@ func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMem
 			role_provider,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7,)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`,
 		create.CreatorID,
@@ -240,10 +240,10 @@ func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMembe
 		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
 	if v := patch.RoleProvider; v != nil {
-		set, args = append(set, "role_provider = ?"), append(args, api.Role(*v))
+		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, "payload = ?"), append(args, api.Role(*v))
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
 
 	args = append(args, patch.ID)
