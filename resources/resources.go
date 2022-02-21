@@ -23,6 +23,9 @@ var postgresDarwin []byte
 //go:embed postgres-linux-x86_64.txz
 var postgresLinux []byte
 
+// go:embed postgres-linux-x86_64-alpine_linux.txz
+var postgresAlpineLinux []byte
+
 // InstallPostgres returns the postgres binary depending on the OS.
 func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	var version string
@@ -31,7 +34,11 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	case "darwin":
 		version, data = "postgres-darwin-amd64-14.2.0", postgresDarwin
 	case "linux":
-		version, data = "postgres-linux-amd64-14.2.0", postgresLinux
+		if isAlpineLinux() {
+			version, data = "postgres-linux-amd64-alpine-14.2.0", postgresAlpineLinux
+		} else {
+			version, data = "postgres-linux-amd64-14.2.0", postgresLinux
+		}
 	default:
 		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
@@ -60,6 +67,11 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	}
 
 	return pgBinDir, nil
+}
+
+func isAlpineLinux() bool {
+	_, err := os.Stat("/etc/alpine-release")
+	return err == nil
 }
 
 func extractTXZ(directory string, data []byte) error {
