@@ -119,8 +119,10 @@ type FileMeta struct {
 	LastCommitID string `json:"last_commit_id"`
 }
 
+// ProjectRole is the role of the project member
 type ProjectRole string
 
+// Gitlab Role type
 const (
 	ProjectRoleOwner         ProjectRole = "Owner"
 	ProjectRoleMaintainer    ProjectRole = "Maintainer"
@@ -236,8 +238,9 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 	return "", ""
 }
 
+// FetchRepositoryActiveMemberList fetch all active members of a repository
 func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
-	resp, err := httpGet(
+	code, body, err := httpGet(
 		instanceURL,
 		fmt.Sprintf("projects/%s/members", repositoryID),
 		&oauthCtx.AccessToken,
@@ -252,22 +255,17 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 		return nil, err
 	}
 
-	if resp.StatusCode == 404 {
+	if code == 404 {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
-	} else if resp.StatusCode >= 300 {
+	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
 			instanceURL,
-			resp.StatusCode,
+			code,
 		)
 	}
 
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var gitLabrepositoryMember []gitLabRepositoryMember
-	if err := json.Unmarshal(b, &gitLabrepositoryMember); err != nil {
+	if err := json.Unmarshal([]byte(body), &gitLabrepositoryMember); err != nil {
 		return nil, err
 	}
 

@@ -188,14 +188,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 }
 
-func trySignup(ctx context.Context, s *Server, signup *api.Signup, creatorId int) (*api.Principal, *echo.HTTPError) {
+func trySignup(ctx context.Context, s *Server, signup *api.Signup, CreatorID int) (*api.Principal, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
 	principalCreate := &api.PrincipalCreate{
-		CreatorID:    creatorId,
+		CreatorID:    CreatorID,
 		Type:         api.EndUser,
 		Name:         signup.Name,
 		Email:        signup.Email,
@@ -224,7 +224,7 @@ func trySignup(ctx context.Context, s *Server, signup *api.Signup, creatorId int
 		role = api.Owner
 	}
 	memberCreate := &api.MemberCreate{
-		CreatorID:   creatorId,
+		CreatorID:   CreatorID,
 		Status:      api.Active,
 		Role:        role,
 		PrincipalID: user.ID,
