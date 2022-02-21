@@ -24,7 +24,7 @@ var postgresDarwin []byte
 var postgresLinux []byte
 
 // InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, pgDataDir string) (string, error) {
+func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	var version string
 	var data []byte
 	switch runtime.GOOS {
@@ -55,7 +55,7 @@ func InstallPostgres(resourceDir, pgDataDir string) (string, error) {
 		}
 	}
 
-	if err := initDB(pgBinDir, pgDataDir); err != nil {
+	if err := initDB(pgBinDir, pgDataDir, pgUser); err != nil {
 		return "", err
 	}
 
@@ -109,7 +109,7 @@ func extractTXZ(directory string, data []byte) error {
 }
 
 // initDB inits a postgres database.
-func initDB(pgBinDir, pgDataDir string) error {
+func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	_, err := os.Stat(pgDataDir)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to check data directory path %q, error: %w", pgDataDir, err)
@@ -123,9 +123,8 @@ func initDB(pgBinDir, pgDataDir string) error {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
 	}
 
-	user := "postgres"
 	args := []string{
-		"-U", user,
+		"-U", pgUser,
 		"-D", pgDataDir,
 	}
 	initDBBinary := filepath.Join(pgBinDir, "bin", "initdb")

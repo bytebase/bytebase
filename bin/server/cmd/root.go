@@ -173,7 +173,10 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pgBinDir  string
+	pgBinDir string
+	// pgUser is the user we use to connect to bytebase's Postgres database.
+	// The name of the database storing metadata is the same as pgUser.
+	pgUser    string
 	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
@@ -287,7 +290,11 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir)
+	pgUser := "bb"
+	if activeProfile.mode != "release" {
+		pgUser = "bb-dev"
+	}
+	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir, pgUser)
 	if err != nil {
 		return nil, err
 	}
@@ -296,6 +303,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 		profile:  &activeProfile,
 		l:        logger,
 		pgBinDir: pgBinDir,
+		pgUser:   pgUser,
 	}, nil
 }
 
@@ -329,7 +337,7 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 	m.pgStarted = true
 
-	pgDSN := fmt.Sprintf("host=localhost port=%d user=postgres dbname=postgres sslmode=disable", m.profile.datastorePort)
+	pgDSN := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", m.profile.datastorePort, m.pgUser)
 	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
