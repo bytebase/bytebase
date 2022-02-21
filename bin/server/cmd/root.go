@@ -142,6 +142,9 @@ type Profile struct {
 	port int
 	// datastorePort is the binding port for database instance for storing Bytebase data.
 	datastorePort int
+	// pgUser is the user we use to connect to bytebase's Postgres database.
+	// The name of the database storing metadata is the same as pgUser.
+	pgUser string
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
 	// dsn points to where Bytebase stores its own data
@@ -173,10 +176,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pgBinDir string
-	// pgUser is the user we use to connect to bytebase's Postgres database.
-	// The name of the database storing metadata is the same as pgUser.
-	pgUser    string
+	pgBinDir  string
 	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
@@ -290,11 +290,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgUser := "bb"
-	if activeProfile.mode != "release" {
-		pgUser = "bb-dev"
-	}
-	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir, pgUser)
+	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +299,6 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 		profile:  &activeProfile,
 		l:        logger,
 		pgBinDir: pgBinDir,
-		pgUser:   pgUser,
 	}, nil
 }
 
@@ -337,7 +332,7 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 	m.pgStarted = true
 
-	pgDSN := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", m.profile.datastorePort, m.pgUser)
+	pgDSN := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", m.profile.datastorePort, m.profile.pgUser)
 	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
 	if err := db.Open(); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
