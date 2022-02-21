@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -30,6 +31,7 @@ var postgresAlpineLinux []byte
 func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	var version string
 	var data []byte
+	log.Printf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH)
 	switch runtime.GOOS {
 	case "darwin":
 		version, data = "postgres-darwin-amd64-14.2.0", postgresDarwin
