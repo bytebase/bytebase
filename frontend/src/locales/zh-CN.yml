@@ -169,6 +169,7 @@ common:
   loading: 加载中
   copied: 已拷贝
   copy: 拷贝
+  manage: 管理
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -1010,6 +1011,8 @@ label:
     select-key: 选择 Key…
     select-value: 选择值…
     select-values: 选择值…
+  setting:
+    description: 标签是一组可用于标识数据库租户的键值对。{link}。
 oauth:
   unknown-event: 未知的事件类型，认证失败
 subscription:
