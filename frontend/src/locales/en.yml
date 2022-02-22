@@ -294,7 +294,9 @@ settings:
       role-provider: This role is mapped from {rawRole} provided by {roleProvider}
     toggle-role-provider:
       title: Are you sure?
-      content: Changing role provider to VCS will first delete all existing members.
+      content: >-
+        Changing role provider to VCS will first delete all existing members.
+        You can not restore this change.
 activity:
   name: Name
   comment: Comment

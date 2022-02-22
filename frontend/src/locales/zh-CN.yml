@@ -288,7 +288,7 @@ settings:
       role-provider: 该角色同步自 {roleProvider} 的 {rawRole}
     toggle-role-provider:
       title: 您确认吗？
-      content: 将角色权限提供方切换至 VCS 将会先清空现存的所有成员。
+      content: 将角色权限提供方切换至 VCS 将会先清空现存的所有成员。并且您将无法将角色提供方切换回 Bytebas。
 activity:
   name: 名称
   comment: 评论
