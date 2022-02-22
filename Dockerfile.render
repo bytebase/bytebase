@@ -66,7 +66,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY ./scripts /usr/local/bin/
 
 # Create bb user for running Postgres database and server.
-RUN addgroup -g 100 -S bb && adduser -u 100 -S -G bb bb
+RUN addgroup -g 113 -S bb && adduser -u 113 -S -G bb bb
 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
