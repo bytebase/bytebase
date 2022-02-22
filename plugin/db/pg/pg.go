@@ -228,16 +228,17 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if err != nil {
 		return nil, err
 	}
+	if config.ReadOnly {
+		dsn = fmt.Sprintf("%s default_transaction_read_only=true", dsn)
+	}
+	driver.baseDSN = dsn
+	driver.connectionCtx = connCtx
 
-	// db is closed in the dumper closer.
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 	driver.db = db
-	driver.baseDSN = dsn
-	driver.connectionCtx = connCtx
-
 	return driver, nil
 }
 
@@ -1087,8 +1088,8 @@ func (driver *Driver) switchDatabase(dbName string) error {
 		}
 	}
 
-	dns := driver.baseDSN + " dbname=" + dbName
-	db, err := sql.Open("postgres", dns)
+	dsn := driver.baseDSN + " dbname=" + dbName
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return err
 	}
@@ -1814,7 +1815,7 @@ func getSequences(txn *sql.Tx) ([]*sequencePgSchema, error) {
 	caches := make(map[string]string)
 	query := "SELECT seqclass.relnamespace::regnamespace::text, seqclass.relname, seq.seqcache " +
 		"FROM pg_catalog.pg_class AS seqclass " +
-		"JOIN pg_catalog.pg_sequence AS seq ON (seq.seqrelid = seqclass.relfilenode);"
+		"JOIN pg_catalog.pg_sequence AS seq ON (seq.seqrelid = seqclass.oid);"
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err

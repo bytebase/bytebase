@@ -354,6 +354,8 @@ type ConnectionConfig struct {
 	Password  string
 	Database  string
 	TLSConfig TLSConfig
+	// ReadOnly is only supported for Postgres at the moment.
+	ReadOnly bool
 }
 
 // ConnectionContext is the context for connection.

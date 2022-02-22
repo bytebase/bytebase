@@ -12,14 +12,15 @@ import (
 	"strings"
 	"time"
 
+	dbdriver "github.com/bytebase/bytebase/plugin/db"
+
 	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
 const (
-	// We use SQLite "PRAGMA user_version" to manage the schema version. The schema version consists of
-	// major version and minor version. Backward compatible schema change increases the minor version,
-	// while backward non-compatible schema change increase the majar version.
+	// The schema version consists of major version and minor version.
+	// Backward compatible schema change increases the minor version, while backward non-compatible schema change increase the majar version.
 	// majorSchemaVervion and majorSchemaVervion defines the schema version this version of code can handle.
 	// We reserve 4 least significant digits for minor version.
 	// e.g.
@@ -27,8 +28,7 @@ const (
 	// 11001 -> Major verion 1, minor version 1001
 	// 20001 -> Major verion 2, minor version 1
 	//
-	// The migration file follows the name pattern of {{version_number}}__{{description}}, and inside each migration
-	// file, the first line is: PRAGMA user_version = {{version_number}};
+	// The migration file follows the name pattern of {{version_number}}__{{description}}.
 	//
 	// Though minor version is backward compatible, we require the schema version must match both the MAJOR and MINOR version,
 	// otherwise, Bytebase will fail to start. We choose this because otherwise failed minor migration changes like adding an
@@ -38,19 +38,9 @@ const (
 	// will require a separate process to upgrade the schema.
 	// If the new release requires a higher MINOR version than the schema file, then it will apply the migration upon
 	// startup.
-	majorSchemaVervion = 1
-	minorSchemaVersion = 1
+	majorSchemaVervion          = 1
+	createDatabaseSchemaVersion = "10000"
 )
-
-// If both debug and sqlite_trace build tags are enabled, then sqliteDriver will be set to "sqlite3_trace" in sqlite_trace.go
-var sqliteDriver = "sqlite3"
-var postgresDriver = "postgres"
-
-// Allocate 32MB cache
-var pragmaList = []string{"_foreign_keys=1", "_journal_mode=WAL", "_cache_size=33554432"}
-
-//go:embed migration
-var migrationFS embed.FS
 
 //go:embed pg_migration
 var pgMigrationFS embed.FS
@@ -60,14 +50,13 @@ var pgSeedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	Db   *sql.DB
 	PgDB *sql.DB
 
 	l *zap.Logger
 
-	// Datasource name.
-	DSN   string
-	PgDSN string
+	// db.connCfg is the connection configuration to a Postgres database.
+	// The user has superuser privilege to the database.
+	connCfg dbdriver.ConnectionConfig
 
 	// Dir to load seed data
 	seedDir string
@@ -87,15 +76,10 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn, pgDSN string, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
-	if readonly {
-		pragmaList = append(pragmaList, "mode=ro")
-		pgDSN = fmt.Sprintf("%s default_transaction_read_only=true", pgDSN)
-	}
+func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
 	db := &DB{
 		l:              logger,
-		DSN:            strings.Join([]string{dsn, strings.Join(pragmaList, "&")}, "?"),
-		PgDSN:          pgDSN,
+		connCfg:        connCfg,
 		seedDir:        seedDir,
 		forceResetSeed: forceResetSeed,
 		readonly:       readonly,
@@ -106,60 +90,82 @@ func NewDB(logger *zap.Logger, dsn, pgDSN string, seedDir string, forceResetSeed
 }
 
 // Open opens the database connection.
-func (db *DB) Open() (err error) {
-	// Ensure a DSN is set before attempting to open the database.
-	if db.DSN == "" {
-		return fmt.Errorf("dsn required")
+func (db *DB) Open(ctx context.Context) (err error) {
+	d, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{Logger: db.l},
+		db.connCfg,
+		dbdriver.ConnectionContext{},
+	)
+	if err != nil {
+		return err
 	}
+	databaseName := db.connCfg.Username
 
-	// Connect to the database.
-	if db.Db, err = sql.Open(sqliteDriver, db.DSN); err != nil {
-		return err
-	}
-	if db.PgDB, err = sql.Open(postgresDriver, db.PgDSN); err != nil {
-		return err
-	}
 	if db.readonly {
 		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
-	} else {
-		verBefore, err := db.version()
+		// The database storing metadata is the same as user name.
+		db.PgDB, err = d.GetDbConnection(ctx, databaseName)
 		if err != nil {
-			return fmt.Errorf("failed to get current schema version: %w", err)
+			return fmt.Errorf("failed to connect to database %q which may not be setup yet, error: %v", databaseName, err)
 		}
+		return nil
+	}
 
-		if err := db.migrate(); err != nil {
-			return fmt.Errorf("failed to migrate: %w", err)
-		}
+	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
+		return err
+	}
+	verBefore, err := getLatestVersion(ctx, d, databaseName)
+	if err != nil {
+		return fmt.Errorf("failed to get current schema version: %w", err)
+	}
 
-		verAfter, err := db.version()
-		if err != nil {
-			return fmt.Errorf("failed to get current schema version: %w", err)
-		}
+	if err := db.migrate(ctx, d, verBefore, databaseName); err != nil {
+		return fmt.Errorf("failed to migrate: %w", err)
+	}
 
-		if err := db.pgSeed(verBefore, verAfter); err != nil {
-			return fmt.Errorf("failed to seed: %w."+
-				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-				" directory under the same directory where the bytebase binary resides. and restart again to let"+
-				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
-				err)
-		}
+	verAfter, err := getLatestVersion(ctx, d, databaseName)
+	if err != nil {
+		return fmt.Errorf("failed to get current schema version: %w", err)
+	}
+	db.l.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
+
+	db.PgDB, err = d.GetDbConnection(ctx, databaseName)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
+	}
+
+	if err := db.pgSeed(verBefore, verAfter); err != nil {
+		return fmt.Errorf("failed to seed: %w."+
+			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
+			" directory under the same directory where the bytebase binary resides. and restart again to let"+
+			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
+			err)
 	}
 
 	return nil
 }
 
-func (db *DB) version() (ver version, err error) {
-	row := db.Db.QueryRow("PRAGMA user_version")
-	if err = row.Err(); err != nil {
-		return
+func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (ver version, err error) {
+	limit := 1
+	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &database,
+		Limit:    &limit,
+	})
+	if err != nil {
+		return version{}, fmt.Errorf("failed to get migration history, error: %v", err)
+	}
+	if len(history) == 0 {
+		return version{major: 0, minor: 0}, nil
 	}
 
-	var version int
-	if err = row.Scan(&version); err != nil {
-		return
+	v, err := strconv.Atoi(history[0].Version)
+	if err != nil {
+		return version{}, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
 	}
 
-	return versionFromInt(version), nil
+	return versionFromInt(v), nil
 }
 
 // pgSeed loads the seed data for testing
@@ -218,19 +224,13 @@ func (db *DB) pgSeedFile(name string) error {
 
 // migrate sets up migration tracking and executes pending migration files.
 //
-// Migration files are embedded in the sqlite/migration folder and are executed
+// Migration files are embedded in the migration folder and are executed
 // in lexicographical order.
 //
-// We prepend each migration file with PRAGMA user_version = xxx; Each migration
+// We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
-func (db *DB) migrate() error {
+func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, databaseName string) error {
 	db.l.Info("Apply database migration if needed...")
-
-	curVer, err := db.version()
-	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
-	}
-
 	db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
 	// major version is 0 when the store isn't yet setup for the first time.
@@ -238,21 +238,36 @@ func (db *DB) migrate() error {
 		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, majorSchemaVervion, db.releaseVersion)
 	}
 
-	// Apply migrations
-	names, err := fs.Glob(migrationFS, "migration/*.sql")
-	if err != nil {
-		return err
+	if curVer.major == 0 && curVer.minor == 0 {
+		createDatabaseStatement := fmt.Sprintf("CREATE DATABASE %s", databaseName)
+		if _, _, err := d.ExecuteMigration(
+			ctx,
+			&dbdriver.MigrationInfo{
+				ReleaseVersion: db.releaseVersion,
+				Version:        createDatabaseSchemaVersion,
+				Namespace:      databaseName,
+				Database:       databaseName,
+				Environment:    "bb.environment.internal",
+				Engine:         dbdriver.UI,
+				Type:           dbdriver.Baseline,
+				Description:    fmt.Sprintf("Create database %s.", databaseName),
+				CreateDatabase: true,
+			},
+			createDatabaseStatement,
+		); err != nil {
+			return fmt.Errorf("failed to migrate create database schema, error: %v", err)
+		}
 	}
+
+	// Apply migrations
 	pgNames, err := fs.Glob(pgMigrationFS, "pg_migration/*.sql")
 	if err != nil {
 		return err
 	}
-
 	// Sort the migration up file in ascending order.
-	sort.Strings(names)
 	sort.Strings(pgNames)
 
-	for _, name := range names {
+	for _, name := range pgNames {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
 		version, err := strconv.Atoi(versionPrefix)
 		if err != nil {
@@ -260,103 +275,46 @@ func (db *DB) migrate() error {
 		}
 		v := versionFromInt(version)
 		if v.biggerThan(curVer) {
-			if err := db.migrateFile(name, true); err != nil {
-				return fmt.Errorf("migration error: name=%q err=%w", name, err)
-			}
 			// Migrate pg migration files.
-			if err := db.pgMigrateFile(fmt.Sprintf("pg_%s", name), true); err != nil {
-				return fmt.Errorf("migration error: name=%q err=%w", name, err)
+			db.l.Info(fmt.Sprintf("Migrating %s...", name))
+			buf, err := fs.ReadFile(pgMigrationFS, name)
+			if err != nil {
+				return err
+			}
+			if _, _, err := d.ExecuteMigration(
+				ctx,
+				&dbdriver.MigrationInfo{
+					ReleaseVersion: db.releaseVersion,
+					Version:        fmt.Sprintf("%d", version),
+					Namespace:      databaseName,
+					Database:       databaseName,
+					Environment:    "bb.environment.internal",
+					Engine:         dbdriver.UI,
+					Type:           dbdriver.Migrate,
+					Description:    fmt.Sprintf("Migrate %s.", filepath.Base(name)),
+				},
+				string(buf),
+			); err != nil {
+				return fmt.Errorf("failed to migrate schema version %q, error: %v", filepath.Base(name), err)
 			}
 		} else {
 			db.l.Info(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %s has already been applied.", name, v))
 		}
 	}
 
-	curVer, err = db.version()
-	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
-	}
-	db.l.Info(fmt.Sprintf("Current schema version after migration: %s", curVer))
-
-	// This is a sanity check to prevent us setting the incorrect user_version in the migration script.
-	// e.g. We set PRAGMA user_version = 20001 for migration script 20002__add_foo.sql
-	if curVer.major != majorSchemaVervion {
-		return fmt.Errorf("current schema major version %d does not match the expected schema major version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.major, majorSchemaVervion)
-	}
-
-	if curVer.minor != minorSchemaVersion {
-		return fmt.Errorf("current schema minor version %d does not match the expected schema minor version %d after migration, make sure to set the correct PRAGMA user_version in the migration script", curVer.minor, minorSchemaVersion)
-	}
-
 	db.l.Info("Completed database migration.")
 	return nil
-}
-
-// migrateFile runs a migration file within a transaction.
-func (db *DB) migrateFile(name string, up bool) error {
-	if up {
-		db.l.Info(fmt.Sprintf("Migrating %s...", name))
-	} else {
-		db.l.Info(fmt.Sprintf("Migrating %s...", name))
-	}
-
-	tx, err := db.Db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Read and execute migration file.
-	if buf, err := fs.ReadFile(migrationFS, name); err != nil {
-		return err
-	} else if _, err := tx.Exec(string(buf)); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// pgMigrateFile runs a migration file within a transaction.
-func (db *DB) pgMigrateFile(name string, up bool) error {
-	if up {
-		db.l.Info(fmt.Sprintf("Migrating %s...", name))
-	} else {
-		db.l.Info(fmt.Sprintf("Migrating %s...", name))
-	}
-
-	tx, err := db.PgDB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Read and execute migration file.
-	buf, err := fs.ReadFile(pgMigrationFS, name)
-	if err != nil {
-		return err
-	}
-	if _, err := tx.Exec(string(buf)); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }
 
 // Close closes the database connection.
 func (db *DB) Close() error {
 	// Close database.
-	var e error
-	if db.Db != nil {
-		if err := db.Db.Close(); err != nil {
-			e = err
-		}
-	}
 	if db.PgDB != nil {
 		if err := db.PgDB.Close(); err != nil {
-			e = err
+			return err
 		}
 	}
-	return e
+	return nil
 }
 
 // BeginTx starts a transaction and returns a wrapper Tx type. This type
