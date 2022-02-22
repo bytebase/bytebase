@@ -169,6 +169,7 @@ common:
   loading: Loading
   copy: Copy
   copied: Copied
+  manage: Manage
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1141,6 +1142,8 @@ label:
     select-key: Select key...
     select-value: Select value...
     select-values: Select values...
+  setting:
+    description: A label is a key-value pair that helps you identify the tenant for a database. {link}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
