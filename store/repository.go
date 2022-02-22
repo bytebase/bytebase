@@ -344,7 +344,7 @@ func pgPatchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPat
 	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = ?
+		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`, len(args)),
 		args...,
