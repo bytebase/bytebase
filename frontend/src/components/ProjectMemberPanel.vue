@@ -12,7 +12,13 @@
       "
       @click.prevent="
         () => {
-          if (allowSyncVCS) {
+          if (!allowSyncVCS) {
+            return;
+          }
+          // if it is the first time user try to sync role from VCS, we will prompt the user with a modal
+          if (isRoleProvidedByBytebase) {
+            state.showModal = true;
+          } else {
             syncFromVCS();
           }
         }
@@ -22,7 +28,31 @@
       {{ $t("project.settings.sync-from-vcs") }}
     </span>
 
-    <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
+    <n-modal
+      v-model:show="state.showModal"
+      :mask-closable="true"
+      preset="dialog"
+      :title="$t('settings.members.toggle-role-provider.title')"
+      :content="$t('settings.members.toggle-role-provider.content')"
+      :positive-text="$t('common.confirm')"
+      :negative-text="$t('common.cancel')"
+      @positive-click="
+        () => {
+          syncFromVCS();
+          state.showModal = false;
+        }
+      "
+      @negative-click="
+        () => {
+          state.showModal = false;
+        }
+      "
+    />
+
+    <div
+      v-if="allowAddMember && isRoleProvidedByBytebase"
+      class="mt-4 w-full flex justify-start"
+    >
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
         <div class="space-y-2">
@@ -118,6 +148,7 @@ interface LocalState {
   principalId: PrincipalId;
   role: ProjectRoleType;
   error: string;
+  showModal: boolean;
 }
 
 export default defineComponent({
@@ -139,14 +170,18 @@ export default defineComponent({
       principalId: UNKNOWN_ID,
       role: "DEVELOPER",
       error: "",
+      showModal: false,
     });
 
     const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
-    const allowSyncVCS = computed(() => {
-      return props.project.workflowType === "VCS" && allowAddMember;
+    const isRoleProvidedByBytebase = computed(() => {
+      return (
+        props.project.memberList[0].roleProvider === "BYTEBASE" ||
+        props.project.workflowType !== "VCS"
+      );
     });
 
     const allowAddMember = computed(() => {
@@ -169,6 +204,13 @@ export default defineComponent({
             return true;
           }
         }
+      }
+      return false;
+    });
+
+    const allowSyncVCS = computed(() => {
+      if (props.project.workflowType === "VCS" && allowAddMember.value) {
+        return true;
       }
       return false;
     });
@@ -246,6 +288,7 @@ export default defineComponent({
     return {
       state,
       hasRBACFeature,
+      isRoleProvidedByBytebase,
       allowSyncVCS,
       allowAddMember,
       validateMember,
