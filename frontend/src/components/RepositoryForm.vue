@@ -191,7 +191,7 @@
               type="radio"
               class="btn"
               value="BYTEBASE"
-              :disabled="!allowEdit || state.curRoleProvider !== 'BYTEBASE'"
+              :disabled="!allowEdit || roleProvider !== 'BYTEBASE'"
             />
             Bytebase
           </label>
@@ -205,7 +205,7 @@
               type="radio"
               class="btn"
               value="GITLAB_SELF_HOST"
-              :disabled="!allowEdit || state.curRoleProvider !== 'BYTEBASE'"
+              :disabled="!allowEdit || roleProvider !== 'BYTEBASE'"
             />
             GitLab
           </label>

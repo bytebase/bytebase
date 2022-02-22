@@ -114,7 +114,7 @@ function convertMember(
       includedList
     ),
     roleProvider: attrs.roleProvider,
-    payload: attrs.payload,
+    payload: JSON.parse((attrs.payload as unknown as string) || "{}"),
   };
 }
 
