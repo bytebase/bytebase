@@ -3,6 +3,7 @@ package resources
 import (
 	"archive/tar"
 	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	// Embeded postgres binaries.
 	_ "embed"
@@ -18,32 +20,30 @@ import (
 	"github.com/xi2/xz"
 )
 
-//go:embed postgres-darwin-x86_64.txz
-var postgresDarwin []byte
-
-//go:embed postgres-linux-x86_64.txz
-var postgresLinux []byte
-
-// go:embed postgres-linux-x86_64-alpine_linux.txz
-var postgresAlpineLinux []byte
+//go:embed postgres-darwin-x86_64.txz postgres-linux-x86_64-alpine_linux.txz postgres-linux-x86_64.txz
+var postgresResources embed.FS
 
 // InstallPostgres returns the postgres binary depending on the OS.
 func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
-	var version string
-	var data []byte
-	log.Printf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH)
+	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
-		version, data = "postgres-darwin-amd64-14.2.0", postgresDarwin
+		tarName = "postgres-darwin-x86_64.txz"
 	case "linux":
 		if isAlpineLinux() {
-			version, data = "postgres-linux-amd64-alpine-14.2.0", postgresAlpineLinux
+			tarName = "postgres-linux-x86_64-alpine_linux.txz"
 		} else {
-			version, data = "postgres-linux-amd64-14.2.0", postgresLinux
+			tarName = "postgres-linux-x86_64.txz"
 		}
 	default:
 		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
+	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
+	data, err := postgresResources.ReadFile(tarName)
+	if err != nil {
+		return "", err
+	}
+	version := strings.TrimRight(tarName, ".txz")
 
 	pgBinDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(pgBinDir); err != nil {
@@ -79,7 +79,7 @@ func isAlpineLinux() bool {
 func extractTXZ(directory string, data []byte) error {
 	xzReader, err := xz.NewReader(bytes.NewReader(data), 0)
 	if err != nil {
-		return nil
+		return err
 	}
 	tarReader := tar.NewReader(xzReader)
 	reader := func() io.Reader {
