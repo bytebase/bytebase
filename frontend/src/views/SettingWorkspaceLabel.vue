@@ -1,6 +1,19 @@
 <template>
-  <div class="mt-2 space-y-6 divide-y divide-block-border">
-    <div class="mt-4">
+  <div class="space-y-4">
+    <div class="textinfolabel mt-2">
+      <i18n-t keypath="label.setting.description">
+        <template #link>
+          <a
+            class="normal-link inline-flex items-center"
+            href="https://docs.bytebase.com/features/tenant-database-management#labels"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+          </a>
+        </template>
+      </i18n-t>
+    </div>
+    <div>
       <BBTable
         class="mt-2"
         :column-list="COLUMN_LIST"
@@ -9,7 +22,7 @@
         :row-clickable="false"
       >
         <template #body="{ rowData: label }">
-          <BBTableCell :left-padding="4" class="w-36 table-cell">
+          <BBTableCell :left-padding="4" class="w-36 table-cell capitalize">
             <!-- will not capitalize label.key here due to it may be editable in the future -->
             <!-- capitalizing editable things may be confusing -->
             <!-- capitalizing only bb.prefixed things makes it inconsistent with others -->
@@ -28,11 +41,20 @@
                   <heroicons-solid:x class="w-3 h-3" />
                 </span>
               </div>
-              <AddLabelValue
-                v-if="allowEdit"
-                :label="label"
-                @add="(v) => addValue(label, v)"
-              />
+              <template v-if="allowEdit">
+                <router-link
+                  v-if="label.key === 'bb.environment'"
+                  :to="{ name: 'workspace.environment' }"
+                  class="h-6 px-1 py-1 inline-flex items-center rounded bg-white border border-control-border hover:bg-control-bg-hover cursor-pointer"
+                >
+                  {{ $t("common.manage") }}
+                </router-link>
+                <AddLabelValue
+                  v-else
+                  :label="label"
+                  @add="(v) => addValue(label, v)"
+                />
+              </template>
             </div>
           </BBTableCell>
         </template>
