@@ -179,7 +179,7 @@ export default defineComponent({
               databaseId: task.database?.id,
               migrationType: payload.migrationType,
               statement: payload.statement,
-              rollbackStatement: payload.rollbackStatement,
+              rollbackStatement: "",
               earliestAllowedTs: task.earliestAllowedTs,
             };
           }),
@@ -226,238 +226,69 @@ export default defineComponent({
       }
 
       var newIssue: IssueCreate;
-      // Create rollback issue
-      if (router.currentRoute.value.query.rollbackIssue) {
-        const rollbackIssue: Issue = store.getters["issue/issueById"](
-          parseInt(router.currentRoute.value.query.rollbackIssue as string)
-        );
 
-        let validState = false;
-        let title = "";
-
-        // We expect user to create rollback from the original issue, which should have already fetched
-        // issue remotely. Otherwise, this will return UNKNOWN_ID
-        if (rollbackIssue.id == UNKNOWN_ID) {
-          title =
-            "INVALID STATE, please create rollback from the original issue.";
-        } else {
-          if (
-            rollbackIssue.type != "bb.issue.database.schema.update" &&
-            rollbackIssue.type != "bb.issue.database.data.update"
-          ) {
-            title =
-              "INVALID STATE, only support to rollback update schema or change data issue.";
-          } else if (
-            rollbackIssue.status != "DONE" &&
-            rollbackIssue.status != "CANCELED"
-          ) {
-            title =
-              "INVALID STATE, only support to rollback issue in closed state.";
-          } else {
-            for (const stage of rollbackIssue.pipeline.stageList) {
-              for (const task of stage.taskList) {
-                if (task.status == "DONE") {
-                  if (
-                    task.type == "bb.task.database.schema.update" &&
-                    !isEmpty(
-                      (task.payload as TaskDatabaseSchemaUpdatePayload)
-                        .rollbackStatement
-                    )
-                  ) {
-                    validState = true;
-                    break;
-                  } else if (
-                    task.type == "bb.task.database.data.update" &&
-                    !isEmpty(
-                      (task.payload as TaskDatabaseDataUpdatePayload)
-                        .rollbackStatement
-                    )
-                  ) {
-                    validState = true;
-                    break;
-                  }
-                }
-              }
-
-              if (validState) {
-                break;
-              }
-            }
-
-            if (!validState) {
-              title =
-                "INVALID STATE, no applicable update schema task to rollback.";
-            }
-          }
-        }
-
-        if (validState) {
-          let environmentList: Environment[] = [];
-          const approvalPolicyList: Policy[] = [];
-          const databaseList: Database[] = [];
-          const statementList: string[] = [];
-          const rollbackStatementList: string[] = [];
-          for (
-            let i = rollbackIssue.pipeline.stageList.length - 1;
-            i >= 0;
-            i--
-          ) {
-            const stage = rollbackIssue.pipeline.stageList[i];
-            for (let j = stage.taskList.length - 1; j >= 0; j--) {
-              const task = stage.taskList[j];
-              let allowRollback = false;
-
-              if (task.status == "DONE") {
-                if (
-                  task.type == "bb.task.database.schema.update" &&
-                  !isEmpty(
-                    (task.payload as TaskDatabaseSchemaUpdatePayload)
-                      .rollbackStatement
-                  )
-                ) {
-                  allowRollback = true;
-                } else if (
-                  task.type == "bb.task.database.data.update" &&
-                  !isEmpty(
-                    (task.payload as TaskDatabaseDataUpdatePayload)
-                      .rollbackStatement
-                  )
-                ) {
-                  allowRollback = true;
-                }
-              }
-
-              if (allowRollback) {
-                environmentList.push(stage.environment);
-                approvalPolicyList.push(
-                  store.getters["policy/policyByEnvironmentIdAndType"](
-                    stage.environment.id,
-                    "bb.policy.pipeline-approval"
-                  )
-                );
-                databaseList.push(task.database!);
-                statementList.push(
-                  (task.payload as TaskDatabaseSchemaUpdatePayload)
-                    .rollbackStatement
-                );
-                rollbackStatementList.push(
-                  (task.payload as TaskDatabaseSchemaUpdatePayload).statement
-                );
-              }
-            }
-          }
-
-          if (environmentList.length == 0) {
-            newIssue = {
-              ...defaultTemplate().buildIssue({
-                environmentList: [],
-                approvalPolicyList: [],
-                databaseList: [],
-                currentUser: currentUser.value,
-              }),
-              name: "INVALID STATE, no applicable update schema task to rollback.",
-              projectId: UNKNOWN_ID,
-            };
-          } else {
-            newIssue = {
-              ...newIssueTemplate.value.buildIssue({
-                environmentList,
-                approvalPolicyList,
-                databaseList,
-                statementList,
-                rollbackStatementList,
-                currentUser: currentUser.value,
-              }),
-              projectId: rollbackIssue.project.id,
-              name: `[Rollback] issue/${rollbackIssue.id} - ${rollbackIssue.name}`,
-              description: rollbackIssue.description
-                ? `====Original issue description BEGIN====\n\n${rollbackIssue.description}\n\n====Original issue description END====\n\n`
-                : "",
-              assigneeId: rollbackIssue.assignee.id,
-            };
-          }
-        } else {
-          newIssue = {
-            ...defaultTemplate().buildIssue({
-              environmentList: [],
-              approvalPolicyList: [],
-              databaseList: [],
-              currentUser: currentUser.value,
-            }),
-            name: title,
-            projectId: UNKNOWN_ID,
-          };
-        }
-        newIssue.rollbackIssueId = rollbackIssue.id;
-      }
       // Create issue from normal query parameter
-      else {
-        const databaseList: Database[] = [];
-        if (router.currentRoute.value.query.databaseList) {
-          for (const databaseId of (
-            router.currentRoute.value.query.databaseList as string
-          ).split(","))
-            databaseList.push(
-              store.getters["database/databaseById"](databaseId)
-            );
-        }
+      const databaseList: Database[] = [];
+      if (router.currentRoute.value.query.databaseList) {
+        for (const databaseId of (
+          router.currentRoute.value.query.databaseList as string
+        ).split(","))
+          databaseList.push(store.getters["database/databaseById"](databaseId));
+      }
 
-        const environmentList: Environment[] = [];
-        const approvalPolicyList: Policy[] = [];
-        if (router.currentRoute.value.query.environment) {
-          environmentList.push(
-            store.getters["environment/environmentById"](
-              router.currentRoute.value.query.environment
-            )
-          );
-        } else if (databaseList.length > 0) {
-          for (const database of databaseList) {
-            environmentList.push(database.instance.environment);
-          }
-        } else {
-          environmentList.push(
-            ...store.getters["environment/environmentList"]()
-          );
+      const environmentList: Environment[] = [];
+      const approvalPolicyList: Policy[] = [];
+      if (router.currentRoute.value.query.environment) {
+        environmentList.push(
+          store.getters["environment/environmentById"](
+            router.currentRoute.value.query.environment
+          )
+        );
+      } else if (databaseList.length > 0) {
+        for (const database of databaseList) {
+          environmentList.push(database.instance.environment);
         }
+      } else {
+        environmentList.push(...store.getters["environment/environmentList"]());
+      }
 
-        for (const environment of environmentList) {
-          approvalPolicyList.push(
-            store.getters["policy/policyByEnvironmentIdAndType"](
-              environment.id,
-              "bb.policy.pipeline-approval"
-            )
-          );
-        }
+      for (const environment of environmentList) {
+        approvalPolicyList.push(
+          store.getters["policy/policyByEnvironmentIdAndType"](
+            environment.id,
+            "bb.policy.pipeline-approval"
+          )
+        );
+      }
 
-        newIssue = {
-          ...newIssueTemplate.value.buildIssue({
-            environmentList,
-            approvalPolicyList,
-            databaseList,
-            currentUser: currentUser.value,
-          }),
-          projectId: router.currentRoute.value.query.project
-            ? parseInt(router.currentRoute.value.query.project as string)
-            : UNKNOWN_ID,
-        };
+      newIssue = {
+        ...newIssueTemplate.value.buildIssue({
+          environmentList,
+          approvalPolicyList,
+          databaseList,
+          currentUser: currentUser.value,
+        }),
+        projectId: router.currentRoute.value.query.project
+          ? parseInt(router.currentRoute.value.query.project as string)
+          : UNKNOWN_ID,
+      };
 
-        // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
-        if (store.getters["actuator/isDemo"]()) {
-          newIssue.assigneeId = currentUser.value.id;
-        }
+      // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
+      if (store.getters["actuator/isDemo"]()) {
+        newIssue.assigneeId = currentUser.value.id;
+      }
 
-        if (router.currentRoute.value.query.name) {
-          newIssue.name = router.currentRoute.value.query.name as string;
-        }
-        if (router.currentRoute.value.query.description) {
-          newIssue.description = router.currentRoute.value.query
-            .description as string;
-        }
-        if (router.currentRoute.value.query.assignee) {
-          newIssue.assigneeId = parseInt(
-            router.currentRoute.value.query.assignee as string
-          );
-        }
+      if (router.currentRoute.value.query.name) {
+        newIssue.name = router.currentRoute.value.query.name as string;
+      }
+      if (router.currentRoute.value.query.description) {
+        newIssue.description = router.currentRoute.value.query
+          .description as string;
+      }
+      if (router.currentRoute.value.query.assignee) {
+        newIssue.assigneeId = parseInt(
+          router.currentRoute.value.query.assignee as string
+        );
       }
       for (const field of newIssueTemplate.value.inputFieldList) {
         const value = router.currentRoute.value.query[field.slug] as string;

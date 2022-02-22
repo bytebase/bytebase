@@ -72,11 +72,6 @@
             {{ $t(transition.buttonName) }}
           </button>
         </template>
-        <template v-if="allowRollback">
-          <button type="button" class="btn-primary" @click.prevent="doRollback">
-            {{ $t("common.rollback") }}
-          </button>
-        </template>
       </div>
     </template>
   </template>
@@ -172,10 +167,6 @@ export default defineComponent({
       required: true,
       type: Boolean,
     },
-    allowRollback: {
-      required: true,
-      type: Boolean,
-    },
     issue: {
       required: true,
       type: Object as PropType<Issue | IssueCreate>,
@@ -185,7 +176,7 @@ export default defineComponent({
       type: Object as PropType<IssueTemplate>,
     },
   },
-  emits: ["create", "rollback", "change-issue-status", "change-task-status"],
+  emits: ["create", "change-issue-status", "change-task-status"],
 
   setup(props, { emit }) {
     const { t } = useI18n();
@@ -440,10 +431,6 @@ export default defineComponent({
       emit("create");
     };
 
-    const doRollback = () => {
-      emit("rollback");
-    };
-
     return {
       menu,
       updateStatusModalState,
@@ -457,7 +444,6 @@ export default defineComponent({
       doIssueStatusTransition,
       allowCreate,
       doCreate,
-      doRollback,
     };
   },
 });
