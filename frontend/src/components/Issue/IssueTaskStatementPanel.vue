@@ -3,17 +3,11 @@
     <div class="flex space-x-4">
       <div
         class="text-sm font-medium"
-        :class="
-          !rollback && isEmpty(state.editStatement)
-            ? 'text-red-600'
-            : 'text-control'
-        "
+        :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
       >
-        {{ rollback ? $t("issue.rollback-sql") : $t("common.sql") }}
-        <span v-if="create && !rollback" class="text-red-600">*</span>
-        <span v-if="sqlHint && !rollback" class="text-accent">{{
-          `(${sqlHint})`
-        }}</span>
+        {{ $t("common.sql") }}
+        <span v-if="create" class="text-red-600">*</span>
+        <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
         v-if="showApplyStatement"
@@ -38,7 +32,7 @@
         <!-- Use h-5 to avoid flickering when show/hide icon -->
         <heroicons-solid:pencil class="h-5 w-5" />
       </button>
-      <!-- mt-0.5 is to prevent jiggling betweening switching edit/none-edit -->
+      <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
       <button
         v-if="state.editing"
         type="button"
@@ -65,11 +59,7 @@
       v-model="state.editStatement"
       class="whitespace-pre-wrap mt-2 w-full resize-none border-white focus:border-white outline-none"
       :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
-      :placeholder="
-        create && rollback
-          ? $t('issue.optional-add-sql-statement')
-          : $t('issue.add-sql-statement')
-      "
+      :placeholder="$t('issue.add-sql-statement')"
       @input="
         (e) => {
           sizeToFit(e.target as HTMLTextAreaElement);
@@ -91,12 +81,8 @@
     <div v-if="state.editStatement" v-highlight class="whitespace-pre-wrap">
       {{ state.editStatement }}
     </div>
-    <div v-else-if="state.create" class="ml-2 text-control-light">
-      {{
-        rollback
-          ? $t("issue.add-rollback-sql-statement")
-          : $t("issue.add-sql-statement")
-      }}
+    <div v-else-if="create" class="ml-2 text-control-light">
+      {{ $t("issue.add-sql-statement") }}
     </div>
     <div v-else class="ml-2 text-control-light">None</div>
   </div>
@@ -132,10 +118,6 @@ export default defineComponent({
       type: Boolean,
     },
     allowEdit: {
-      required: true,
-      type: Boolean,
-    },
-    rollback: {
       required: true,
       type: Boolean,
     },
