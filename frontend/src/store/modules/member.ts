@@ -70,8 +70,7 @@ const actions = {
 
     // sort the member list
     memberList.sort((a: Member, b: Member) => {
-      // We use auto incremental id. A smaller id suggests this member is created at a earlier time.
-      return a.id - b.id;
+      return a.createdTs - b.createdTs;
     });
 
     commit("setMemberList", memberList);
