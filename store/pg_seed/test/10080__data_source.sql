@@ -144,8 +144,8 @@ VALUES
         7018,
         'Admin data source',
         'ADMIN',
-        'root',
-        ''
+        'postgres-demo',
+        '3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG'
     );
 
 INSERT INTO
@@ -169,7 +169,7 @@ VALUES
         7019,
         'Admin data source',
         'ADMIN',
-        '',
+        'root',
         ''
     );
 
@@ -216,11 +216,36 @@ VALUES
         1,
         1,
         6009,
-        7027,
+        7021,
+        'Admin data source',
+        'ADMIN',
+        '',
+        ''
+    );
+
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        PASSWORD
+    )
+VALUES
+    (
+        8010,
+        1,
+        1,
+        6010,
+        7028,
         'Admin data source',
         'ADMIN',
         'admin',
         'Prod12345'
     );
 
-ALTER SEQUENCE data_source_id_seq RESTART WITH 8010;
+ALTER SEQUENCE data_source_id_seq RESTART WITH 8011;

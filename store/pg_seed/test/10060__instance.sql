@@ -152,6 +152,33 @@ VALUES
         101,
         101,
         5001,
+        'Demo PostgreSQL on Render',
+        'POSTGRES',
+        '13.0',
+        'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo',
+        '5432',
+        'bytebase.com/database/postgres'
+    );
+
+INSERT INTO
+    instance (
+        id,
+        creator_id,
+        updater_id,
+        environment_id,
+        name,
+        engine,
+        engine_version,
+        host,
+        port,
+        external_link
+    )
+VALUES
+    (
+        6007,
+        101,
+        101,
+        5001,
         'Localhost Dev TiDB',
         'TIDB',
         '5.7.25-TiDB-v5.2.1',
@@ -175,7 +202,7 @@ INSERT INTO
     )
 VALUES
     (
-        6007,
+        6008,
         101,
         101,
         5001,
@@ -202,7 +229,7 @@ INSERT INTO
     )
 VALUES
     (
-        6008,
+        6009,
         101,
         101,
         5001,
@@ -230,7 +257,7 @@ INSERT INTO
     )
 VALUES
     (
-        6009,
+        6010,
         'ARCHIVED',
         101,
         101,
@@ -243,4 +270,4 @@ VALUES
         'bytebase.com/database/mysql'
     );
 
-ALTER SEQUENCE instance_id_seq RESTART WITH 6010;
+ALTER SEQUENCE instance_id_seq RESTART WITH 6011;
