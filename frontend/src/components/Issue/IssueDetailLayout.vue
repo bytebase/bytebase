@@ -16,11 +16,9 @@
       >
         <IssueStatusTransitionButtonGroup
           :create="create"
-          :allow-rollback="allowRollback"
           :issue="issue"
           :issue-template="issueTemplate"
           @create="doCreate"
-          @rollback="doRollback"
           @change-issue-status="changeIssueStatus"
           @change-task-status="changeTaskStatus"
         />
@@ -132,15 +130,13 @@
                 <!--
                   For tenant deploy mode, we provide only one statement panel.
                   It's editable only when creating an issue.
-                  It will never show Rollback SQL.
                   It is not allowed to "Apply to other stages".
                 -->
                 <IssueTaskStatementPanel
-                  :sql-hint="sqlHint(false)"
+                  :sql-hint="sqlHint()"
                   :statement="selectedStatement"
                   :create="create"
                   :allow-edit="create"
-                  :rollback="false"
                   :show-apply-statement="false"
                   @update-statement="updateStatement"
                 />
@@ -153,11 +149,10 @@
                 list every IssueTaskStatementPanel for each stage and use v-if to show the active one.-->
                 <template v-if="create">
                   <IssueTaskStatementPanel
-                    :sql-hint="sqlHint(false)"
+                    :sql-hint="sqlHint()"
                     :statement="selectedStatement"
                     :create="create"
                     :allow-edit="true"
-                    :rollback="false"
                     :show-apply-statement="showIssueTaskStatementApply"
                     @update-statement="updateStatement"
                     @apply-statement-to-other-stages="
@@ -172,11 +167,10 @@
                 >
                   <template v-if="selectedStage.id == stage.id">
                     <IssueTaskStatementPanel
-                      :sql-hint="sqlHint(false)"
+                      :sql-hint="sqlHint()"
                       :statement="statement(stage)"
                       :create="create"
                       :allow-edit="allowEditStatement"
-                      :rollback="false"
                       :show-apply-statement="showIssueTaskStatementApply"
                       @update-statement="updateStatement"
                     />
@@ -184,42 +178,7 @@
                 </template>
               </template>
             </section>
-            <section
-              v-if="showIssueTaskRollbackStatementPanel"
-              class="border-b mb-4"
-            >
-              <template v-if="create">
-                <IssueTaskStatementPanel
-                  :sql-hint="sqlHint(true)"
-                  :statement="selectedRollbackStatement"
-                  :create="create"
-                  :allow-edit="false"
-                  :rollback="true"
-                  :show-apply-statement="showIssueTaskStatementApply"
-                  @update-statement="updateRollbackStatement"
-                  @apply-statement-to-other-stages="
-                    applyRollbackStatementToOtherStages
-                  "
-                />
-              </template>
-              <template
-                v-for="(stage, index) in issue.pipeline.stageList"
-                v-else
-                :key="index"
-              >
-                <template v-if="selectedStage.id == stage.id">
-                  <IssueTaskStatementPanel
-                    :sql-hint="sqlHint(true)"
-                    :statement="rollbackStatement(stage)"
-                    :create="create"
-                    :allow-edit="false"
-                    :rollback="true"
-                    :show-apply-statement="showIssueTaskStatementApply"
-                    @update-statement="updateRollbackStatement"
-                  />
-                </template>
-              </template>
-            </section>
+
             <IssueDescriptionPanel
               :issue="issue"
               :create="create"
@@ -445,24 +404,6 @@ export default defineComponent({
       }
     };
 
-    const updateRollbackStatement = (newStatement: string) => {
-      const stage = selectedStage.value as StageCreate;
-      stage.taskList[0].rollbackStatement = newStatement;
-    };
-
-    const applyRollbackStatementToOtherStages = (newStatement: string) => {
-      for (const stage of (props.issue as IssueCreate).pipeline!.stageList) {
-        for (const task of stage.taskList) {
-          if (
-            task.type == "bb.task.database.schema.update" ||
-            task.type == "bb.task.database.data.update"
-          ) {
-            task.rollbackStatement = newStatement;
-          }
-        }
-      }
-    };
-
     const updateDescription = (
       newDescription: string,
       postUpdated: (updatedIssue: Issue) => void
@@ -541,19 +482,6 @@ export default defineComponent({
         router.replace(
           `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
         );
-      });
-    };
-
-    const doRollback = () => {
-      router.push({
-        name: "workspace.issue.detail",
-        params: {
-          issueSlug: "new",
-        },
-        query: {
-          template: props.issue.type,
-          rollbackIssue: (props.issue as Issue).id,
-        },
       });
     };
 
@@ -775,24 +703,6 @@ export default defineComponent({
       }
     };
 
-    const rollbackStatement = (stage: Stage): string => {
-      const task = stage.taskList[0];
-      switch (task.type) {
-        case "bb.task.database.schema.update":
-          return (
-            (task.payload as TaskDatabaseSchemaUpdatePayload)
-              .rollbackStatement || ""
-          );
-        case "bb.task.database.data.update":
-          return (
-            (task.payload as TaskDatabaseDataUpdatePayload).rollbackStatement ||
-            ""
-          );
-        default:
-          return "";
-      }
-    };
-
     const isTenantDeployMode = computed((): boolean => {
       if (
         props.issue.type === "bb.issue.database.schema.update" &&
@@ -843,11 +753,6 @@ export default defineComponent({
         const task = (selectedStage.value as StageCreate).taskList[0];
         return task.statement;
       }
-    });
-
-    const selectedRollbackStatement = computed((): string => {
-      const task = (selectedStage.value as StageCreate).taskList[0];
-      return task.rollbackStatement;
     });
 
     const selectedMigrateType = computed((): MigrationType => {
@@ -930,52 +835,6 @@ export default defineComponent({
       }
     });
 
-    // For now, we only support rollback for schema update issue when all below conditions met:
-    // 0. NOT tenant deploy mode
-    // 1. Issue is in DONE or CANCELED state
-    // 2. There is at least one completed schema update task and the task contains the rollback statement.
-    const allowRollback = computed(() => {
-      if (isTenantDeployMode.value) {
-        return false;
-      }
-      if (!props.create) {
-        if (
-          props.issue.type == "bb.issue.database.schema.update" ||
-          props.issue.type == "bb.issue.database.data.update"
-        ) {
-          if (
-            (props.issue as Issue).status == "DONE" ||
-            (props.issue as Issue).status == "CANCELED"
-          ) {
-            for (const stage of (props.issue as Issue).pipeline.stageList) {
-              for (const task of stage.taskList) {
-                if (task.status == "DONE") {
-                  if (
-                    task.type == "bb.task.database.schema.update" &&
-                    !isEmpty(
-                      (task.payload as TaskDatabaseSchemaUpdatePayload)
-                        .rollbackStatement
-                    )
-                  ) {
-                    return true;
-                  } else if (
-                    task.type == "bb.task.database.data.update" &&
-                    !isEmpty(
-                      (task.payload as TaskDatabaseDataUpdatePayload)
-                        .rollbackStatement
-                    )
-                  ) {
-                    return true;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      return false;
-    });
-
     const showCancelBanner = computed(() => {
       return !props.create && (props.issue as Issue).status == "CANCELED";
     });
@@ -1009,19 +868,6 @@ export default defineComponent({
         task.type == "bb.task.database.schema.update" ||
         task.type == "bb.task.database.data.update"
       );
-    });
-
-    const showIssueTaskRollbackStatementPanel = computed(() => {
-      if (isTenantDeployMode.value) return false;
-      if (project.value.workflowType == "UI") {
-        if (
-          props.issue.type == "bb.issue.database.schema.update" ||
-          props.issue.type == "bb.issue.database.data.update"
-        ) {
-          return true;
-        }
-      }
-      return false;
     });
 
     const showIssueTaskStatementApply = computed(() => {
@@ -1071,15 +917,11 @@ export default defineComponent({
       return (selectedTask.value as Task).instance;
     });
 
-    const sqlHint = (isRollBack: boolean): string | undefined => {
-      if (
-        !isRollBack &&
-        !props.create &&
-        selectedMigrateType.value == "BASELINE"
-      ) {
+    const sqlHint = (): string | undefined => {
+      if (!props.create && selectedMigrateType.value == "BASELINE") {
         return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
       }
-      if (!isRollBack && instance.value.engine === "SNOWFLAKE") {
+      if (instance.value.engine === "SNOWFLAKE") {
         return `Use <<schema>>.<<table>> to specify a Snowflake table`;
       }
       return undefined;
@@ -1113,14 +955,11 @@ export default defineComponent({
       updateStatement,
       updateEarliestAllowedTime,
       applyStatementToOtherStages,
-      updateRollbackStatement,
-      applyRollbackStatementToOtherStages,
       updateAssigneeId,
       addSubscriberId,
       removeSubscriberId,
       updateCustomField,
       doCreate,
-      doRollback,
       changeIssueStatus,
       changeTaskStatus,
       runTaskChecks,
@@ -1135,22 +974,18 @@ export default defineComponent({
       selectTask,
       selectTaskId,
       statement,
-      rollbackStatement,
       selectedStatement,
-      selectedRollbackStatement,
       selectedMigrateType,
       allowEditSidebar,
       allowEditOutput,
       allowEditNameAndDescription,
       allowEditStatement,
-      allowRollback,
       showCancelBanner,
       showSuccessBanner,
       showPendingApproval,
       showPipelineFlowBar,
       showIssueOutputPanel,
       showIssueTaskStatementPanel,
-      showIssueTaskRollbackStatementPanel,
       showIssueTaskStatementApply,
       hasBackwardCompatibilityFeature,
       supportBackwardCompatibilityFeature,
