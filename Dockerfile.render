@@ -69,6 +69,7 @@ COPY ./scripts /usr/local/bin/
 RUN addgroup -S bb && adduser -S -G bb bb
 
 # Directory to store the data, which can be referenced as the mounting point.
-RUN sudo -u bb -- mkdir -p /var/opt/bytebase
+RUN mkdir -p /var/opt/bytebase
+RUN chown -R bb:bb /var/opt/bytebase
 
 USER bb
