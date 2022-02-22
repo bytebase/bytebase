@@ -61,12 +61,18 @@ LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 
-# Directory to store the data, which can be referenced as the mounting point.
-RUN mkdir -p /var/opt/bytebase
-
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
+
+# Create bb user for running Postgres database and server.
+RUN addgroup -g 100 -S bb && adduser -u 100 -S -G bb bb
+
+# Directory to store the data, which can be referenced as the mounting point.
+RUN mkdir -p /var/opt/bytebase
+RUN chown -R bb:bb /var/opt/bytebase
+
+USER bb
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
