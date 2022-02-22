@@ -16,7 +16,6 @@
     <div class="databases-tree--tree overflow-y-auto">
       <NTree
         block-line
-        leaf-only
         :data="connectionTree"
         :pattern="searchPattern"
         :default-expanded-keys="defaultExpanedKeys"
@@ -36,12 +35,21 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
+import { cloneDeep, omit } from "lodash-es";
+import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 
-import type {
+import {
   SqlEditorState,
   ConnectionAtom,
   SqlEditorActions,
+  ConnectionContext,
+  UNKNOWN_ID,
 } from "../../../types";
+import { connectionSlug } from "../../../utils";
+
+const store = useStore();
+const router = useRouter();
 
 const searchPattern = ref();
 const { connectionTree, connectionContext } =
@@ -72,15 +80,100 @@ const defaultSelectedKeys = computed(() => {
   }
 });
 
+const getFlattenConnectionTree = () => {
+  const tree = connectionTree.value;
+  if (!tree) {
+    return {};
+  }
+
+  const instanceList = tree
+    .filter((node) => node.type === "instance")
+    .map((item) => omit(item, "children"));
+
+  const allDatabaseList = tree.flatMap((node) => {
+    if (node.children && node.children.length > 0) {
+      return node.children.filter((node) => node.type === "database");
+    }
+  }) as ConnectionAtom[];
+
+  const databaseList = allDatabaseList.map((item) => omit(item, "children"));
+
+  const tableList = allDatabaseList
+    .filter((item) => item.children && item.children.length > 0)
+    .flatMap((db: ConnectionAtom) => {
+      if (db.children) {
+        return db.children.filter((node) => node.type === "table");
+      }
+    });
+
+  return {
+    instanceList,
+    databaseList,
+    tableList,
+  };
+};
+
 const handleSelectedKeysChange = (
   keys: number[],
   options: Array<ConnectionAtom>
 ) => {
   const [selectedItem] = options;
+  let ctx: ConnectionContext = cloneDeep(connectionContext.value);
+  const { instanceList, databaseList } = getFlattenConnectionTree();
+
+  const getInstanceNameByInstanceId = (id: number) => {
+    const instance = instanceList?.find((item) => item.id === id);
+    return instance ? instance.label : "";
+  };
+
+  // If selected item is instance node
+  if (selectedItem.type === "instance") {
+    ctx.instanceId = selectedItem.id;
+    ctx.instanceName = selectedItem.label;
+    ctx.databaseId = UNKNOWN_ID;
+    ctx.databaseName = "";
+    ctx.tableId = UNKNOWN_ID;
+    ctx.tableName = "";
+  }
+
+  // If selected item is database node
+  if (selectedItem.type === "database") {
+    const instanceId = selectedItem.parentId;
+    ctx.instanceId = instanceId;
+    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+    ctx.databaseId = selectedItem.id;
+    ctx.databaseName = selectedItem.label;
+    ctx.tableId = UNKNOWN_ID;
+    ctx.tableName = "";
+  }
+
+  // If selected item is table node
   if (selectedItem.type === "table") {
-    setConnectionContext({
-      selectedDatabaseId: selectedItem.parentId,
-      selectedTableName: selectedItem.label,
+    const databaseId = selectedItem.parentId;
+    const databaseInfo = databaseList?.find((item) => item.id === databaseId);
+    const databaseName = databaseInfo?.label || "";
+    const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
+    ctx.instanceId = instanceId;
+    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+    ctx.databaseId = databaseId;
+    ctx.databaseName = databaseName;
+    ctx.tableId = selectedItem.id;
+    ctx.tableName = selectedItem.label;
+  }
+
+  ctx.hasSlug = true;
+  setConnectionContext(ctx);
+
+  if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
+    const database = store.getters["database/databaseById"](
+      ctx.databaseId,
+      ctx.instanceId
+    );
+    router.replace({
+      name: "sql-editor.detail",
+      params: {
+        connectionSlug: connectionSlug(database),
+      },
     });
   }
 };

@@ -57,7 +57,7 @@ const handleCloseTableSchemaPane = () => {
 };
 
 watch(
-  () => connectionContext.value.selectedTableName,
+  () => connectionContext.value.tableName,
   () => {
     databasePaneSzie.value = DATABASE_PANE_SIZE;
   }
