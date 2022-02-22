@@ -72,8 +72,22 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository member in bytebase: %d", projectID)).SetInternal(err)
 		}
 
-		// check whether principal exists in our system.
-		// If the principal does not exist, create one.
+		// drop all existing members
+		{
+			for _, member := range bytebaseProjectMemberList {
+				memberDelete := &api.ProjectMemberDelete{
+					ID:        member.ID,
+					DeleterID: c.Get(getPrincipalIDContextKey()).(int),
+				}
+				err := s.ProjectMemberService.DeleteProjectMember(ctx, memberDelete)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to dump existing project member, ID: %d, user name: %s", member.ID, member.Principal.Name)).SetInternal(err)
+				}
+			}
+		}
+
+		// The following block will check whether the relevant principal exists in our system.
+		// If the principal does not exist, we will try to create one out of the vcs member info.
 		for _, projectMember := range vcsProjectMemberList {
 			if vcs.Type != projectMember.RoleProvider {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
@@ -85,13 +99,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
 
-			isPrincipalNewlyCreated := false
-			if principal == nil {
+			if principal == nil { // try to create principal
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
 					Email: projectMember.Email,
-					// Principal created via this method would have no chance to set their password,
-					// To prevent potential safe issue, we use random string to set up her password.
+					// Principal created via this method would have no chance to set their password.
+					// To prevent potential security issues, we use random string to set up her password.
 					// This is another safety measure since we already disallow user login via password
 					// if the principal uses external auth provider
 					Password: common.RandomString(20),
@@ -102,49 +115,25 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					return httpErr
 				}
 				principal = createdPrincipal
-				isPrincipalNewlyCreated = true
 			}
 
-			isProjectMemberExist := false
 			providerPayload := &api.ProjectRoleProviderPayload{
 				VCSRole: projectMember.VCSRole,
 				SyncTs:  time.Now().UTC().Unix(),
 			}
 			providerPayloadBytes, _ := json.Marshal(providerPayload)
-			// If the principal is newly created, there should not have such a repository member of this newly created principal
-			if !isPrincipalNewlyCreated {
-				for _, bytebaseProjectMember := range bytebaseProjectMemberList {
-					if bytebaseProjectMember.PrincipalID == principal.ID {
-						roleProvider := api.ProjectRoleProvider(projectMember.RoleProvider)
-						payload := string(providerPayloadBytes)
-						patchProjectMember := &api.ProjectMemberPatch{
-							UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
-							ID:           bytebaseProjectMember.ID,
-							RoleProvider: &roleProvider,
-							Payload:      &payload,
-						}
-						_, err := s.ProjectMemberService.PatchProjectMember(ctx, patchProjectMember)
-						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch existing repository member after syncing VCS membership info").SetInternal(err)
-						}
-						isProjectMemberExist = true
-					}
-				}
-			}
 
-			if !isProjectMemberExist {
-				createProjectMember := &api.ProjectMemberCreate{
-					ProjectID:    projectID,
-					CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
-					PrincipalID:  principal.ID,
-					Role:         projectMember.Role,
-					RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
-					Payload:      string(providerPayloadBytes),
-				}
-				_, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping repository member from VCS").SetInternal(err)
-				}
+			createProjectMember := &api.ProjectMemberCreate{
+				ProjectID:    projectID,
+				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
+				PrincipalID:  principal.ID,
+				Role:         projectMember.Role,
+				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
+				Payload:      string(providerPayloadBytes),
+			}
+			_, err = s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping repository member from VCS").SetInternal(err)
 			}
 		}
 
