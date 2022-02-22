@@ -70,6 +70,9 @@ const actions = {
 
     // sort the member list
     memberList.sort((a: Member, b: Member) => {
+      if (a.createdTs === b.createdTs) {
+        return a.id - b.id;
+      }
       return a.createdTs - b.createdTs;
     });
 
