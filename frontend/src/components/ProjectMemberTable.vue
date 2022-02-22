@@ -240,6 +240,12 @@ export default {
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
       }
+      if (
+        props.project.workflowType === "VCS" &&
+        props.project.memberList[0].roleProvider !== "BYTEBASE"
+      ) {
+        return false;
+      }
 
       if (role == "OWNER" && dataSource.value[0].list.length <= 1) {
         return false;
