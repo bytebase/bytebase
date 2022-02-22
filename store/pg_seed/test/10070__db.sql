@@ -496,7 +496,7 @@ VALUES
         ''
     );
 
--- Database for dev environment TiDB instance 6006
+-- Database for dev environment PostgreSQL instance 6006
 INSERT INTO
     db (
         id,
@@ -517,8 +517,8 @@ VALUES
         101,
         101,
         6006,
-        1,
-        '*',
+        3001,
+        'postgre_demo',
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
@@ -526,7 +526,7 @@ VALUES
         ''
     );
 
--- Database for dev environment ClickHouse instance 6007
+-- Database for dev environment TiDB instance 6007
 INSERT INTO
     db (
         id,
@@ -556,7 +556,7 @@ VALUES
         ''
     );
 
--- Database for dev environment Snowflake instance 6008
+-- Database for dev environment ClickHouse instance 6008
 INSERT INTO
     db (
         id,
@@ -577,6 +577,36 @@ VALUES
         101,
         101,
         6008,
+        1,
+        '*',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        0,
+        ''
+    );
+
+-- Database for dev environment Snowflake instance 6009
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        "collation",
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7021,
+        101,
+        101,
+        6009,
         1,
         '*',
         '',
@@ -603,38 +633,10 @@ INSERT INTO
     )
 VALUES
     (
-        7021,
-        101,
-        101,
-        6001,
-        3005,
-        'tenant_db1',
-        'utf8mb4',
-        'utf8mb4_general_ci',
-        'OK',
-        1624558090,
-        'v1'
-    );
-INSERT INTO
-    db (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        project_id,
-        name,
-        character_set,
-        "collation",
-        sync_status,
-        last_successful_sync_ts,
-        schema_version
-    )
-VALUES
-    (
         7022,
         101,
         101,
-        6002,
+        6001,
         3005,
         'tenant_db1',
         'utf8mb4',
@@ -662,14 +664,14 @@ VALUES
         7023,
         101,
         101,
-        6001,
-        3006,
-        'tenant_db2',
+        6002,
+        3005,
+        'tenant_db1',
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
         1624558090,
-        '2021v1'
+        'v1'
     );
 INSERT INTO
     db (
@@ -690,7 +692,7 @@ VALUES
         7024,
         101,
         101,
-        6002,
+        6001,
         3006,
         'tenant_db2',
         'utf8mb4',
@@ -718,6 +720,34 @@ VALUES
         7025,
         101,
         101,
+        6002,
+        3006,
+        'tenant_db2',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2021v1'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        "collation",
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7026,
+        101,
+        101,
         6001,
         3007,
         'db3_tenant1',
@@ -743,7 +773,7 @@ INSERT INTO
     )
 VALUES
     (
-        7026,
+        7027,
         101,
         101,
         6002,
@@ -756,7 +786,7 @@ VALUES
         '2022v0'
     );
 
--- Database for prod environment archived mysql instance 6009
+-- Database for prod environment archived mysql instance 6010
 INSERT INTO
     db (
         id,
@@ -773,10 +803,10 @@ INSERT INTO
     )
 VALUES
     (
-        7027,
+        7028,
         101,
         101,
-        6009,
+        6010,
         3001,
         '*',
         'utf8mb4',
@@ -786,4 +816,4 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE db_id_seq RESTART WITH 7028;
+ALTER SEQUENCE db_id_seq RESTART WITH 7029;
