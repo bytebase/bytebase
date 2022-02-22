@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   empty,
   EMPTY_ID,
+  Member,
   MemberId,
   PrincipalId,
   Project,
@@ -66,6 +67,14 @@ function convert(
       }
     }
   }
+
+  // sort the member list
+  memberList.sort((a: ProjectMember, b: ProjectMember) => {
+    if (a.createdTs === b.createdTs) {
+      return a.id - b.id;
+    }
+    return a.createdTs - b.createdTs;
+  });
 
   return {
     ...(projectWithoutMemberList as Omit<Project, "memberList">),

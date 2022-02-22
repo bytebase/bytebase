@@ -82,6 +82,14 @@ const actions = {
       return convert(member, data.included, rootGetters);
     });
 
+    // sort the member list
+    memberList.sort((a: Member, b: Member) => {
+      if (a.createdTs === b.createdTs) {
+        return a.id - b.id;
+      }
+      return a.createdTs - b.createdTs;
+    });
+
     commit("setMemberList", memberList);
     return memberList;
   },

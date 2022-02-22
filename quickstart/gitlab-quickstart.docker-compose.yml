@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  bb:
+    image: bytebase/bytebase:0.13.0
+    init: true
+    container_name: bytebase
+    restart: always
+    ports:
+      - 8080:8080
+    # # Uncomment the following lines to persist data
+    # volumes:
+    #   - ~/.bytebase/data:/var/opt/bytebase
+    command:
+      [
+        "--data",
+        "/var/opt/bytebase",
+        "--host",
+        "http://localhost",
+        "--port",
+        "8080"
+      ]
+
+  gitlab:
+    image: yrzr/gitlab-ce-arm64v8
+    restart: always
+    container_name: gitlab-ce
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          memory: 4096M
+    ports:
+      - 1022:22
+      - 1080:80
+      - 1443:443
+    hostname: gitlab.example.com
+    environment:
+      - GITLAB_OMNIBUS_CONFIG="nginx['redirect_http_to_https'] = true; "
+      - GITLAB_ROOT_PASSWORD=bytebase
+    # # Uncomment the following lines to persist GitLab data
+    # volumes:
+    #   - $GITLAB_HOME/conf:/etc/gitlab:z
+    #   - $GITLAB_HOME/logs:/var/log/gitlab:z
+    #   - $GITLAB_HOME/data:/var/opt/gitlab:z

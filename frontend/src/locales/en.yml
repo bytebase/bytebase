@@ -891,7 +891,7 @@ project:
     fail-tested-title: Test webhook event failed.
     add-a-webhook: Add a webhook
     create-webhook: Create webhook
-    last-updated-by: Last updated bu
+    last-updated-by: Last updated by
     destination: Destination
     webhook-url: Webhook url
     triggering-activity: Triggering activities
