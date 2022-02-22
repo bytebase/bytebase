@@ -64,9 +64,14 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 
+# Create bb user for running Postgres database and server.
+RUN addgroup -S bb && adduser -S -G bb bb
+
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
+
+USER bb
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
