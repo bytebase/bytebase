@@ -69,7 +69,7 @@ const actions = {
   ) {
     let url = `/api/inbox/user/${userId}`;
     if (readCreatedAfterTs) {
-      url += `&created=${readCreatedAfterTs}`;
+      url += `?created=${readCreatedAfterTs}`;
     }
     const data = (await axios.get(url)).data;
     const inboxList = data.data.map((inbox: ResourceObject) => {
