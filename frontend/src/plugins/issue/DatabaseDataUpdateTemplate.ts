@@ -31,9 +31,7 @@ const template: IssueTemplate = {
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
             statement: ctx.statementList ? ctx.statementList[i] : "",
-            rollbackStatement: ctx.rollbackStatementList
-              ? ctx.rollbackStatementList[i]
-              : "",
+            rollbackStatement: "",
             migrationType: "MIGRATE",
             earliestAllowedTs: 0,
           },
