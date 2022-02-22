@@ -191,7 +191,7 @@
               type="radio"
               class="btn"
               value="BYTEBASE"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || state.curRoleProvider !== 'BYTEBASE'"
             />
             Bytebase
           </label>
@@ -205,11 +205,15 @@
               type="radio"
               class="btn"
               value="GITLAB_SELF_HOST"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || state.curRoleProvider !== 'BYTEBASE'"
             />
             GitLab
           </label>
         </div>
+      </div>
+      <div class="mt-2 textinfolabel">
+        <span class="text-red-600">*</span>
+        {{ $t("common.tips") + ":  " + $t("repository.role-provider-tips") }}
       </div>
     </div>
   </div>

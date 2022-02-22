@@ -732,6 +732,7 @@ repository:
   linked: 关联的仓库
   role-provider: 项目角色权限提供方
   role-provider-description: Bytebase 将会从选定的角色提供方同步角色权限，所有此前存在的角色将会在同步前被删除。
+  role-provider-tips: 一旦您选择了 VCS 作为您的角色权限提供方，您将不能重新选择 Bytebase 作为您的角色权限提供方。
 workflow:
   current-workflow: 当前工作流
   ui-workflow: UI 工作流

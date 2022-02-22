@@ -814,6 +814,9 @@ repository:
   role-provider-description: >-
     Bytebase will sync role from selected provider, all the existing members
     will be deleted before syncing.
+  role-provider-tips: >-
+    Once switch to a VCS as your role provider, you can not switch back to
+    bytebase.
 workflow:
   current-workflow: Current workflow
   ui-workflow: UI workflow

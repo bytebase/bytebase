@@ -96,7 +96,6 @@ import {
 } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { patternMatched } from "naive-ui/lib/select/src/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
