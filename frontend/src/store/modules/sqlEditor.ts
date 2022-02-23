@@ -29,8 +29,6 @@ export const getDefaultConnectionContext = () => ({
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
-  selectedDatabaseId: UNKNOWN_ID,
-  selectedTableName: "",
 });
 
 const state: () => SqlEditorState = () => ({
