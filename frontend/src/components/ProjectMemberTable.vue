@@ -283,7 +283,7 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: t("project.settings.success-menber-deleted-prompt", {
+          title: t("project.settings.success-member-deleted-prompt", {
             name: member.principal.name,
           }),
         });

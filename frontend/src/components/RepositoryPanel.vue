@@ -223,16 +223,16 @@ export default defineComponent({
       const promiseList = [];
       console.log("repositoryPatch", !repositoryPatch);
       // need to patch repository
-      // if (repositoryPatch) {
-      //   promiseList.push(
-      //     store.dispatch("repository/updateRepositoryByProjectId", {
-      //       projectId: props.project.id,
-      //       repositoryPatch,
-      //     })
-      //   );
-      // }
+      if (Object.getOwnPropertyNames(repositoryPatch).length > 0) {
+        promiseList.push(
+          store.dispatch("repository/updateRepositoryByProjectId", {
+            projectId: props.project.id,
+            repositoryPatch,
+          })
+        );
+      }
 
-      if (projectPatch) {
+      if (Object.getOwnPropertyNames(projectPatch).length > 0) {
         promiseList.push(
           store.dispatch("project/syncMemberRoleFromVCS", {
             projectId: props.project.id,

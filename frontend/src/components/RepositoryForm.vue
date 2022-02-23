@@ -211,10 +211,6 @@
           </label>
         </div>
       </div>
-      <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span>
-        {{ $t("common.tips") + ":  " + $t("repository.role-provider-tips") }}
-      </div>
     </div>
   </div>
 </template>
