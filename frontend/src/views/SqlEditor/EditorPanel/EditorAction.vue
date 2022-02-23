@@ -39,11 +39,11 @@
         <section>
           <div class="space-y-2">
             <div v-if="connectionContext.instanceName" class="flex flex-col">
-              <h1 class="text-gray-400">Instance:</h1>
+              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
               <span>{{ connectionContext.instanceName }}</span>
             </div>
             <div v-if="connectionContext.databaseName" class="flex flex-col">
-              <h1 class="text-gray-400">Database:</h1>
+              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
               <span>{{ connectionContext.databaseName }}</span>
             </div>
             <div v-if="connectionContext.tableName" class="flex flex-col">
