@@ -172,7 +172,7 @@ CREATE TABLE project (
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    -- allowed workflow types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
+    -- allowed role_provider types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE'
 );
 
