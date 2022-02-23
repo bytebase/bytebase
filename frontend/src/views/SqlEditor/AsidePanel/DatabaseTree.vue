@@ -16,7 +16,7 @@
     <div class="databases-tree--tree overflow-y-auto">
       <NTree
         block-line
-        :data="connectionTree"
+        :data="treeData"
         :pattern="searchPattern"
         :default-expanded-keys="defaultExpanedKeys"
         :default-selected-keys="defaultSelectedKeys"
@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from "vue";
+import { ref, computed, h } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -47,6 +47,9 @@ import {
   UNKNOWN_ID,
 } from "../../../types";
 import { connectionSlug } from "../../../utils";
+import InstanceEngineIconVue from "../../../components/InstanceEngineIcon.vue";
+import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
+import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 
 const store = useStore();
 const router = useRouter();
@@ -61,6 +64,35 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setConnectionContext"]
 );
+
+const treeData = computed(() => {
+  const tree = cloneDeep(connectionTree.value);
+
+  // mapping the prefix icons
+  return tree.map((instanceItem) => {
+    const instance = store.getters["instance/instanceById"](instanceItem.id);
+
+    return {
+      ...instanceItem,
+      children: instanceItem?.children?.map((databaseItem) => {
+        return {
+          ...databaseItem,
+          children: databaseItem?.children?.map((tableItem) => {
+            return {
+              ...tableItem,
+              prefix: () => h(HeroiconsOutlineTable, { class: "h-4 w-4" }),
+            };
+          }),
+          prefix: () =>
+            h(HeroiconsOutlineDatabase, {
+              class: "h-4 w-4",
+            }),
+        };
+      }),
+      prefix: () => h(InstanceEngineIconVue, { instance }),
+    };
+  });
+});
 
 const defaultExpanedKeys = computed(() => {
   const ctx = connectionContext.value;
@@ -118,63 +150,66 @@ const handleSelectedKeysChange = (
   options: Array<ConnectionAtom>
 ) => {
   const [selectedItem] = options;
-  let ctx: ConnectionContext = cloneDeep(connectionContext.value);
-  const { instanceList, databaseList } = getFlattenConnectionTree();
 
-  const getInstanceNameByInstanceId = (id: number) => {
-    const instance = instanceList?.find((item) => item.id === id);
-    return instance ? instance.label : "";
-  };
+  if (selectedItem) {
+    let ctx: ConnectionContext = cloneDeep(connectionContext.value);
+    const { instanceList, databaseList } = getFlattenConnectionTree();
 
-  // If selected item is instance node
-  if (selectedItem.type === "instance") {
-    ctx.instanceId = selectedItem.id;
-    ctx.instanceName = selectedItem.label;
-    ctx.databaseId = UNKNOWN_ID;
-    ctx.databaseName = "";
-    ctx.tableId = UNKNOWN_ID;
-    ctx.tableName = "";
-  }
+    const getInstanceNameByInstanceId = (id: number) => {
+      const instance = instanceList?.find((item) => item.id === id);
+      return instance ? instance.label : "";
+    };
 
-  // If selected item is database node
-  if (selectedItem.type === "database") {
-    const instanceId = selectedItem.parentId;
-    ctx.instanceId = instanceId;
-    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-    ctx.databaseId = selectedItem.id;
-    ctx.databaseName = selectedItem.label;
-    ctx.tableId = UNKNOWN_ID;
-    ctx.tableName = "";
-  }
+    // If selected item is instance node
+    if (selectedItem.type === "instance") {
+      ctx.instanceId = selectedItem.id;
+      ctx.instanceName = selectedItem.label;
+      ctx.databaseId = UNKNOWN_ID;
+      ctx.databaseName = "";
+      ctx.tableId = UNKNOWN_ID;
+      ctx.tableName = "";
+    }
 
-  // If selected item is table node
-  if (selectedItem.type === "table") {
-    const databaseId = selectedItem.parentId;
-    const databaseInfo = databaseList?.find((item) => item.id === databaseId);
-    const databaseName = databaseInfo?.label || "";
-    const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
-    ctx.instanceId = instanceId;
-    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-    ctx.databaseId = databaseId;
-    ctx.databaseName = databaseName;
-    ctx.tableId = selectedItem.id;
-    ctx.tableName = selectedItem.label;
-  }
+    // If selected item is database node
+    if (selectedItem.type === "database") {
+      const instanceId = selectedItem.parentId;
+      ctx.instanceId = instanceId;
+      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+      ctx.databaseId = selectedItem.id;
+      ctx.databaseName = selectedItem.label;
+      ctx.tableId = UNKNOWN_ID;
+      ctx.tableName = "";
+    }
 
-  ctx.hasSlug = true;
-  setConnectionContext(ctx);
+    // If selected item is table node
+    if (selectedItem.type === "table") {
+      const databaseId = selectedItem.parentId;
+      const databaseInfo = databaseList?.find((item) => item.id === databaseId);
+      const databaseName = databaseInfo?.label || "";
+      const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
+      ctx.instanceId = instanceId;
+      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+      ctx.databaseId = databaseId;
+      ctx.databaseName = databaseName;
+      ctx.tableId = selectedItem.id;
+      ctx.tableName = selectedItem.label;
+    }
 
-  if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
-    const database = store.getters["database/databaseById"](
-      ctx.databaseId,
-      ctx.instanceId
-    );
-    router.replace({
-      name: "sql-editor.detail",
-      params: {
-        connectionSlug: connectionSlug(database),
-      },
-    });
+    ctx.hasSlug = true;
+    setConnectionContext(ctx);
+
+    if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
+      const database = store.getters["database/databaseById"](
+        ctx.databaseId,
+        ctx.instanceId
+      );
+      router.replace({
+        name: "sql-editor.detail",
+        params: {
+          connectionSlug: connectionSlug(database),
+        },
+      });
+    }
   }
 };
 </script>

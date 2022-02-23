@@ -15,7 +15,7 @@
           <label class="flex items-center text-sm space-x-1">
             <div class="flex items-center">
               <InstanceEngineIcon
-                v-if="connectionContext.instanceId"
+                v-if="connectionContext.instanceId !== UNKNOWN_ID"
                 :instance="selectedInstance"
                 show-status
               />
@@ -97,6 +97,7 @@ import {
   TabGetters,
   SheetActions,
   TabActions,
+  UNKNOWN_ID,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
