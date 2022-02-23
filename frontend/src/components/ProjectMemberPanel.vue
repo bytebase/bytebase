@@ -16,7 +16,7 @@
             return;
           }
           // if it is the first time user try to sync role from VCS, we will prompt the user with a modal
-          if (isRoleProvidedByBytebase) {
+          if (project.roleProvider === 'BYTEBASE') {
             state.showModal = true;
           } else {
             syncFromVCS();
@@ -50,7 +50,7 @@
     />
 
     <div
-      v-if="allowAddMember && isRoleProvidedByBytebase"
+      v-if="allowAddMember && project.roleProvider === 'BYTEBASE'"
       class="mt-4 w-full flex justify-start"
     >
       <!-- To prevent jiggling when showing the error text -->
@@ -138,6 +138,7 @@ import {
   Project,
   ProjectMember,
   ProjectMemberCreate,
+  ProjectPatch,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
@@ -176,13 +177,6 @@ export default defineComponent({
     const hasRBACFeature = computed(() =>
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
-
-    const isRoleProvidedByBytebase = computed(() => {
-      return (
-        props.project.memberList[0].roleProvider === "BYTEBASE" ||
-        props.project.workflowType !== "VCS"
-      );
-    });
 
     const allowAddMember = computed(() => {
       if (props.project.id == DEFAULT_PROJECT_ID) {
@@ -247,6 +241,7 @@ export default defineComponent({
       const projectMember: ProjectMemberCreate = {
         principalId: state.principalId,
         role: hasRBACFeature.value ? state.role : "OWNER",
+        roleProvider: "BYTEBASE",
       };
       const member = store.getters["member/memberByPrincipalId"](
         state.principalId
@@ -272,23 +267,36 @@ export default defineComponent({
     };
 
     const syncFromVCS = () => {
-      store
-        .dispatch("project/syncMemberRoleFromVCS", {
+      // update project's role provider
+      const projectPatch: ProjectPatch = { roleProvider: "GITLAB_SELF_HOST" };
+
+      const promiseList = [];
+
+      promiseList.push(
+        store.dispatch("project/syncMemberRoleFromVCS", {
           projectId: props.project.id,
         })
-        .then(() => {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("project.settings.success-member-sync-prompt"),
-          });
+      );
+
+      promiseList.push(
+        store.dispatch("project/patchProject", {
+          projectId: props.project.id,
+          projectPatch,
+        })
+      );
+
+      Promise.all(promiseList).then(() => {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("project.settings.success-member-sync-prompt"),
         });
+      });
     };
 
     return {
       state,
       hasRBACFeature,
-      isRoleProvidedByBytebase,
       allowSyncVCS,
       allowAddMember,
       validateMember,

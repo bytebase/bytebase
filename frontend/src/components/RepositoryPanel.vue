@@ -54,7 +54,6 @@
     :vcs-name="repository.vcs.name"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
-    :role-provider="project.memberList[0].roleProvider"
     :project="project"
     @change-repository="$emit('change-repository')"
     @change-role-provider="onRoleProviderChanged"
@@ -93,6 +92,7 @@ import {
   RepositoryConfig,
   Project,
   ProjectRoleProvider,
+  ProjectPatch,
 } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -131,7 +131,7 @@ export default defineComponent({
         filePathTemplate: props.repository.filePathTemplate,
         schemaPathTemplate: props.repository.schemaPathTemplate,
       },
-      roleProvider: props.project.memberList[0].roleProvider,
+      roleProvider: props.project.roleProvider,
     });
 
     const onRoleProviderChanged = (cur: ProjectRoleProvider) => {
@@ -170,7 +170,7 @@ export default defineComponent({
             state.repositoryConfig.filePathTemplate ||
           props.repository.schemaPathTemplate !=
             state.repositoryConfig.schemaPathTemplate ||
-          props.project.memberList[0].roleProvider != state.roleProvider)
+          props.project.roleProvider != state.roleProvider)
       );
     });
 
@@ -188,6 +188,7 @@ export default defineComponent({
 
     const doUpdate = () => {
       const repositoryPatch: RepositoryPatch = {};
+      // repositoryPatch
       if (
         props.repository.branchFilter != state.repositoryConfig.branchFilter
       ) {
@@ -213,6 +214,12 @@ export default defineComponent({
           state.repositoryConfig.schemaPathTemplate;
       }
 
+      // projectPatch
+      const projectPatch: ProjectPatch = {};
+      if (props.project.roleProvider != state.roleProvider) {
+        projectPatch.roleProvider = state.roleProvider;
+      }
+
       const promiseList = [];
       console.log("repositoryPatch", !repositoryPatch);
       // need to patch repository
@@ -225,10 +232,16 @@ export default defineComponent({
       //   );
       // }
 
-      if (props.project.memberList[0].roleProvider != state.roleProvider) {
+      if (projectPatch) {
         promiseList.push(
           store.dispatch("project/syncMemberRoleFromVCS", {
             projectId: props.project.id,
+          })
+        );
+        promiseList.push(
+          store.dispatch("project/patchProject", {
+            projectId: props.project.id,
+            projectPatch,
           })
         );
       }

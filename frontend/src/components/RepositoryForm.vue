@@ -191,7 +191,7 @@
               type="radio"
               class="btn"
               value="BYTEBASE"
-              :disabled="!create && (!allowEdit || roleProvider !== 'BYTEBASE')"
+              :disabled="!create && !allowEdit"
             />
             Bytebase
           </label>
@@ -205,7 +205,7 @@
               type="radio"
               class="btn"
               value="GITLAB_SELF_HOST"
-              :disabled="!create && (!allowEdit || roleProvider !== 'BYTEBASE')"
+              :disabled="!create && !allowEdit"
             />
             GitLab
           </label>
@@ -260,10 +260,6 @@ export default defineComponent({
       required: true,
       type: Object as PropType<ExternalRepositoryInfo>,
     },
-    roleProvider: {
-      required: true,
-      type: String as PropType<ProjectRoleProvider>,
-    },
     repositoryConfig: {
       required: true,
       type: Object as PropType<RepositoryConfig>,
@@ -276,7 +272,7 @@ export default defineComponent({
   emits: ["change-repository", "change-role-provider"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      curRoleProvider: props.create ? "BYTEBASE" : props.roleProvider,
+      curRoleProvider: props.create ? "BYTEBASE" : props.project.roleProvider,
     });
 
     watch(

@@ -164,6 +164,10 @@ export default {
         // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
         iconPath: new URL("../assets/gitlab-logo.svg", import.meta.url).href,
       },
+      BYTEBASE: {
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: "",
+      },
     };
 
     const dataSource = computed(
@@ -240,10 +244,7 @@ export default {
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
       }
-      if (
-        props.project.workflowType === "VCS" &&
-        props.project.memberList[0].roleProvider !== "BYTEBASE"
-      ) {
+      if (props.project.roleProvider !== "BYTEBASE") {
         return false;
       }
 
