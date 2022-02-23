@@ -105,7 +105,7 @@ export type TaskCreate = {
   instanceId: InstanceId;
   databaseId?: DatabaseId;
   statement: string;
-  rollbackStatement: string;
+  rollbackStatement?: string;
   databaseName?: string;
   characterSet?: string;
   collation?: string;
