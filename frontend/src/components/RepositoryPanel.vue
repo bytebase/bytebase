@@ -150,16 +150,19 @@ export default defineComponent({
     });
 
     const allowUpdate = computed(() => {
+      let isRepositoryConfigChanged = false;
+      // Comparing all the kv in `state.repositoryConfig` with that of `props.repository`
+      Object.entries(state.repositoryConfig).forEach((newKV) => {
+        const oldValue = Reflect.get(props.repository, newKV[0]);
+        if (oldValue !== newKV[1]) {
+          isRepositoryConfigChanged = true;
+        }
+      });
+
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
         !isEmpty(state.repositoryConfig.filePathTemplate) &&
-        (props.repository.branchFilter != state.repositoryConfig.branchFilter ||
-          props.repository.baseDirectory !=
-            state.repositoryConfig.baseDirectory ||
-          props.repository.filePathTemplate !=
-            state.repositoryConfig.filePathTemplate ||
-          props.repository.schemaPathTemplate !=
-            state.repositoryConfig.schemaPathTemplate)
+        isRepositoryConfigChanged
       );
     });
 
