@@ -19,9 +19,9 @@ CREATE TABLE bytebase.public.migration_history (
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence BIGINT NOT NULL,
-    -- We call it engine because maybe we could load history from other migration tool.
-    -- Current allowed values are UI, VCS.
-    engine TEXT NOT NULL,
+    -- We call it source because maybe we could load history from other migration tool.
+    -- Current allowed values are UI, VCS, LIBRARY.
+    source TEXT NOT NULL,
     -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
     type TEXT NOT NULL,
     -- Current allowed values are PENDING, DONE, FAILED.
