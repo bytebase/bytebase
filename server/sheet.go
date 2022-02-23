@@ -69,6 +69,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.RowStatus = &rowStatus
 		}
 
+		if projectIDStr := c.QueryParams().Get("projectId"); projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
+			}
+			sheetFind.ProjectID = &projectID
+		}
+
 		if instanceIDStr := c.QueryParams().Get("instanceId"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
 			if err != nil {
@@ -83,14 +91,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.QueryParam("databaseId"))).SetInternal(err)
 			}
 			sheetFind.DatabaseID = &databaseID
-		}
-
-		if projectIDStr := c.QueryParams().Get("projectId"); projectIDStr != "" {
-			projectID, err := strconv.Atoi(projectIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
-			}
-			sheetFind.ProjectID = &projectID
 		}
 
 		if visibility := api.SheetVisibility(c.QueryParam("visibiliy")); visibility != "" {

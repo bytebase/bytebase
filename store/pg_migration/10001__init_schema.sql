@@ -1085,7 +1085,6 @@ CREATE INDEX idx_sheet_instance_id_row_status ON sheet(instance_id, row_status);
 
 CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
-
 ALTER SEQUENCE sheet_id_seq RESTART WITH 100;
 
 CREATE TRIGGER trigger_update_sheet_modification_time
