@@ -24,6 +24,22 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
 		}
 
+		_, err := s.composeProjectByID(ctx, sheetCreate.ProjectID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", sheetCreate.ProjectID)).SetInternal(err)
+		}
+
+		_, err = s.composeInstanceByID(ctx, sheetCreate.InstanceID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sheetCreate.InstanceID))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sheetCreate.InstanceID)).SetInternal(err)
+		}
+
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		sheet, err := s.SheetService.CreateSheet(ctx, sheetCreate)
@@ -198,6 +214,11 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 		return err
 	}
 
+	sheet.Project, err = s.composeProjectByID(ctx, sheet.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	sheet.Instance, err = s.composeInstanceByID(ctx, sheet.InstanceID)
 	if err != nil {
 		return err
@@ -206,19 +227,6 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 	if sheet.DatabaseID != nil {
 		sheet.Database, err = s.composeDatabaseByID(ctx, *sheet.DatabaseID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %v", *sheet.DatabaseID))
-			}
-			return err
-		}
-	}
-
-	if sheet.ProjectID != nil {
-		sheet.Project, err = s.composeProjectByID(ctx, *sheet.ProjectID)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %v", *sheet.ProjectID))
-			}
 			return err
 		}
 	}

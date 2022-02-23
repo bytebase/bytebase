@@ -42,12 +42,12 @@ type Sheet struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
+	ProjectID  int       `jsonapi:"attr,projectId"`
+	Project    *Project  `jsonapi:"relation,project"`
 	InstanceID int       `jsonapi:"attr,instanceId"`
 	Instance   *Instance `jsonapi:"relation,instance"`
 	DatabaseID *int      `jsonapi:"attr,databaseId"`
 	Database   *Database `jsonapi:"relation,database"`
-	ProjectID  *int      `jsonapi:"attr,projectId"`
-	Project    *Project  `jsonapi:"relation,project"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
@@ -62,9 +62,9 @@ type SheetCreate struct {
 	CreatorID int
 
 	// Related fields
+	ProjectID  int  `jsonapi:"attr,projectId"`
 	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
-	ProjectID  *int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
@@ -81,6 +81,7 @@ type SheetPatch struct {
 	UpdaterID int
 
 	// Related fields
+	ProjectID  int  `jsonapi:"attr,projectId"`
 	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
@@ -99,9 +100,9 @@ type SheetFind struct {
 	CreatorID *int
 
 	// Related fields
+	ProjectID  *int
 	InstanceID *int
 	DatabaseID *int
-	ProjectID  *int
 
 	// Domain fields
 	Visibility *SheetVisibility
