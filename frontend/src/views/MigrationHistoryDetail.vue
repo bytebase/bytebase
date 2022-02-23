@@ -14,7 +14,7 @@
             </h1>
           </div>
           <p class="text-control">
-            {{ migrationHistory.engine }} {{ migrationHistory.type }} -
+            {{ migrationHistory.source }} {{ migrationHistory.type }} -
             {{ migrationHistory.description }}
           </p>
           <dl

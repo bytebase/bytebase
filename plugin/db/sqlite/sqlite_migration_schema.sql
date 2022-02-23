@@ -13,9 +13,9 @@ CREATE TABLE bytebase_migration_history (
     namespace TEXT NOT NULL,
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence INTEGER UNSIGNED NOT NULL,
-    -- We call it engine because maybe we could load history from other migration tool.
-    -- Current allowed values are UI, VCS.
-    engine TEXT NOT NULL,
+    -- We call it source because maybe we could load history from other migration tool.
+    -- Current allowed values are UI, VCS, LIBRARY.
+    source TEXT NOT NULL,
     -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
     type TEXT NOT NULL,
     -- Current allowed values are PENDING, DONE, FAILED.
@@ -38,8 +38,8 @@ CREATE TABLE bytebase_migration_history (
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase_migration_history (namespace, sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_engine_version ON bytebase_migration_history (namespace, engine, version);
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_source_version ON bytebase_migration_history (namespace, source, version);
 
-CREATE INDEX bytebase_idx_migration_history_namespace_engine_type ON bytebase_migration_history(namespace, engine, type);
+CREATE INDEX bytebase_idx_migration_history_namespace_source_type ON bytebase_migration_history(namespace, source, type);
 
 CREATE INDEX bytebase_idx_migration_history_namespace_created ON bytebase_migration_history(namespace, created_ts);
