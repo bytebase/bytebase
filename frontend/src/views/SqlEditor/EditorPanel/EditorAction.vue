@@ -1,6 +1,6 @@
 <template>
   <div class="sqleditor-editor-actions">
-    <div class="actions-left w-1/2">
+    <div class="actions-left w-1/3">
       <NButton
         type="primary"
         :disabled="isEmptyStatement || executeState.isLoadingData"
@@ -9,18 +9,50 @@
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
     </div>
-    <div class="actions-right space-x-2 flex w-1/2 justify-end">
-      <NCascader
-        v-model:value="selectedConnection"
-        expand-trigger="hover"
-        label-field="label"
-        value-field="id"
-        filterable
-        :options="connectionTree"
-        :placeholder="$t('sql-editor.select-connection')"
-        :style="{ width: '400px' }"
-        @update:value="handleConnectionChange"
-      />
+    <div class="actions-right space-x-2 flex w-2/3 justify-end">
+      <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
+        <template #trigger>
+          <label class="flex items-center text-sm space-x-1">
+            <div class="flex items-center">
+              <InstanceEngineIcon
+                v-if="connectionContext.instanceId !== UNKNOWN_ID"
+                :instance="selectedInstance"
+                show-status
+              />
+              <span class="ml-2">{{ connectionContext.instanceName }}</span>
+            </div>
+            <div
+              v-if="connectionContext.databaseName"
+              class="flex items-center"
+            >
+              &nbsp; / &nbsp;
+              <heroicons-outline:database />
+              <span class="ml-2">{{ connectionContext.databaseName }}</span>
+            </div>
+            <div v-if="connectionContext.tableName" class="flex items-center">
+              &nbsp; / &nbsp;
+              <heroicons-outline:table />
+              <span class="ml-2">{{ connectionContext.tableName }}</span>
+            </div>
+          </label>
+        </template>
+        <section>
+          <div class="space-y-2">
+            <div v-if="connectionContext.instanceName" class="flex flex-col">
+              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
+              <span>{{ connectionContext.instanceName }}</span>
+            </div>
+            <div v-if="connectionContext.databaseName" class="flex flex-col">
+              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
+              <span>{{ connectionContext.databaseName }}</span>
+            </div>
+            <div v-if="connectionContext.tableName" class="flex flex-col">
+              <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
+              <span>{{ connectionContext.tableName }}</span>
+            </div>
+          </div>
+        </section>
+      </NPopover>
       <NButton
         secondary
         strong
@@ -51,20 +83,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch, onMounted } from "vue";
-import { cloneDeep } from "lodash-es";
-import { CascaderOption } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
+import { useStore } from "vuex";
 
 import {
   SqlEditorState,
   SqlEditorGetters,
-  SqlEditorActions,
-  ConnectionContext,
   TabGetters,
   SheetActions,
   TabActions,
@@ -73,11 +102,11 @@ import {
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 
-const { connectionTree, connectionContext } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "connectionTree",
-    "connectionContext",
-  ]);
+const store = useStore();
+
+const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
+  "connectionContext",
+]);
 const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
   "isDisconnected",
 ]);
@@ -85,11 +114,6 @@ const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 // actions
-const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setConnectionContext"]
-);
-
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
   "upsertSheet",
 ]);
@@ -98,62 +122,19 @@ const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
   "updateCurrentTab",
 ]);
 
-const selectedConnection = ref();
-const isSeletedDatabase = ref(false);
 const isShowSharePopover = ref(false);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
+const selectedInstance = computed(() => {
+  const ctx = connectionContext.value;
+  return store.getters["instance/instanceById"](ctx.instanceId);
+});
 
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
   execute();
-};
-
-const setSelectedConnection = (ctx: ConnectionContext) => {
-  if (ctx) {
-    selectedConnection.value = ctx.hasSlug
-      ? (ctx.tableId !== UNKNOWN_ID && ctx.tableId) ||
-        (ctx.databaseId !== UNKNOWN_ID && ctx.databaseId) ||
-        (ctx.instanceId !== UNKNOWN_ID && ctx.instanceId)
-      : null;
-  }
-};
-
-const handleConnectionChange = (
-  value: number,
-  option: CascaderOption,
-  pathValues: Array<CascaderOption>
-) => {
-  isSeletedDatabase.value = pathValues.length >= 2;
-
-  if (pathValues.length >= 1) {
-    let ctx: ConnectionContext = cloneDeep(connectionContext.value);
-    const [instanceInfo, databaseInfo, tableInfo] = pathValues;
-
-    if (pathValues.length >= 1) {
-      ctx.instanceId = instanceInfo.id as number;
-      ctx.instanceName = instanceInfo.label as string;
-    }
-    if (pathValues.length >= 2) {
-      ctx.databaseId = databaseInfo.id as number;
-      ctx.databaseName = databaseInfo.label as string;
-    }
-    if (pathValues.length >= 3) {
-      ctx.tableId = tableInfo.id as number;
-      ctx.tableName = tableInfo.label as string;
-    }
-
-    setConnectionContext({
-      instanceId: ctx.instanceId,
-      instanceName: ctx.instanceName,
-      databaseId: ctx.databaseId,
-      databaseName: ctx.databaseName,
-      tableId: ctx.tableId,
-      tableName: ctx.tableName,
-    });
-  }
 };
 
 const handleUpsertSheet = async () => {
@@ -165,16 +146,6 @@ const handleUpsertSheet = async () => {
   });
 };
 
-watch(
-  () => connectionTree.value,
-  (newVal) => {
-    if (newVal) {
-      setSelectedConnection(connectionContext.value);
-    }
-  },
-  { deep: true }
-);
-
 // selected a new connection
 watch(
   () => isDisconnected.value,
@@ -185,15 +156,9 @@ watch(
         sheetId: newSheet.id,
         isSaved: true,
       });
-    } else {
-      setSelectedConnection(connectionContext.value);
     }
   }
 );
-
-onMounted(() => {
-  setSelectedConnection(connectionContext.value);
-});
 </script>
 
 <style scoped>

@@ -170,6 +170,7 @@ common:
   copy: Copy
   copied: Copied
   manage: Manage
+  table: Table
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
