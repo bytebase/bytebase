@@ -76,7 +76,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
-		Engine:         db.UI,
+		Source:         db.UI,
 		Type:           db.Baseline,
 		Description:    "Create database",
 		CreateDatabase: true,

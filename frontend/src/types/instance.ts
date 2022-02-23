@@ -103,7 +103,7 @@ export type InstanceMigration = {
   error: string;
 };
 
-export type MigrationEngine = "UI" | "VCS";
+export type MigrationSource = "UI" | "VCS" | "LIBRARY";
 
 export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH" | "DATA";
 
@@ -121,7 +121,7 @@ export type MigrationHistory = {
   updatedTs: number;
   releaseVersion: string;
   database: string;
-  engine: MigrationEngine;
+  source: MigrationSource;
   type: MigrationType;
   status: MigrationStatus;
   version: string;
