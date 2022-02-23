@@ -33,13 +33,29 @@
 </a>
 </p>
 
-[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for developers and DBAs.
+[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for DBAs and developers.
+
+## For DBA - 10x operational efficiency
+
+A collaborative web-console to allow DBAs to manage database tasks and handle developer tickets much more efficiently than traditonal tools.
+
+## For Tech Lead - Improve team velocity and reduce risk
+
+Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
+
+## For Developer - Holistic view of database schema changes
+
+Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
+
+
+## Features
 
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
 - [x] Classic UI based schema migraiton (SQL Review)
 - [x] Built-in SQL Editor
 - [x] Detailed migration history
+- [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
 - [x] Backup and restore
 - [x] Anomaly center
 - [x] Environment policy
@@ -183,8 +199,8 @@ Bytebase should now be running at https://localhost:3000 and change either front
 
 ## Notice
 
-> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema by the end of Jan 2022. In the mean time, if you are eager to try Bytebase for your business and encounter
-> issue when upgrading to the new version. Please contact support@bytebase.com or join our Discord server, and we will help you manually upgrade the schema.
+> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema by the end of Mar 2022. In the mean time, if you are eager to try Bytebase for your business and encounter
+> issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
 
 ## Star History
 

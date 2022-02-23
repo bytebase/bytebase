@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
+	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
@@ -332,9 +333,14 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 	m.pgStarted = true
 
-	pgDSN := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", m.profile.datastorePort, m.profile.pgUser)
-	db := store.NewDB(m.l, m.profile.dsn, pgDSN, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
-	if err := db.Open(); err != nil {
+	connCfg := dbdriver.ConnectionConfig{
+		Username: m.profile.pgUser,
+		Password: "",
+		Host:     "localhost",
+		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
+	}
+	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
+	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
 
