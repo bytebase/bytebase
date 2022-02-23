@@ -51,6 +51,7 @@ function convert(
     visibility: attrs.visibility,
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
+    roleProvider: attrs.roleProvider,
   };
 
   const memberList: ProjectMember[] = [];
@@ -285,7 +286,7 @@ const actions = {
     });
 
     const updatedProject = await dispatch("fetchProjectById", projectId);
-
+    console.log("updatedProject", updatedProject);
     return updatedProject;
   },
 
