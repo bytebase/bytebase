@@ -247,8 +247,8 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 				Version:        createDatabaseSchemaVersion,
 				Namespace:      databaseName,
 				Database:       databaseName,
-				Environment:    "bb.environment.internal",
-				Engine:         dbdriver.UI,
+				Environment:    "", /* unused in execute migration */
+				Engine:         dbdriver.LIBRARY,
 				Type:           dbdriver.Baseline,
 				Description:    fmt.Sprintf("Create database %s.", databaseName),
 				CreateDatabase: true,
@@ -288,8 +288,8 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 					Version:        fmt.Sprintf("%d", version),
 					Namespace:      databaseName,
 					Database:       databaseName,
-					Environment:    "bb.environment.internal",
-					Engine:         dbdriver.UI,
+					Environment:    "", /* unused in execute migration */
+					Engine:         dbdriver.LIBRARY,
 					Type:           dbdriver.Migrate,
 					Description:    fmt.Sprintf("Migrate %s.", filepath.Base(name)),
 				},
