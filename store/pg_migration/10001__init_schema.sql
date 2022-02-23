@@ -171,7 +171,9 @@ CREATE TABLE project (
     tenant_mode TEXT NOT NULL DEFAULT 'DISABLED',
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
-    db_name_template TEXT NOT NULL
+    db_name_template TEXT NOT NULL,
+    -- allowed role_provider types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
+    role_provider TEXT NOT NULL DEFAULT 'BYTEBASE'
 );
 
 INSERT INTO

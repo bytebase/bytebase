@@ -105,7 +105,7 @@ export type InstanceMigration = {
 
 export type MigrationSource = "UI" | "VCS" | "LIBRARY";
 
-export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH";
+export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH" | "DATA";
 
 export type MigrationStatus = "PENDING" | "DONE" | "FAILED";
 
