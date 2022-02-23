@@ -156,7 +156,6 @@ export default defineComponent({
           {
             databaseName: route.query.databaseName,
             statement: "/* YOUR_SQL_HERE */",
-            rollbackStatement: "",
           },
         ],
       };
@@ -191,7 +190,6 @@ export default defineComponent({
           return {
             databaseId: db.id,
             statement: "/* YOUR_SQL_HERE */",
-            rollbackStatement: "",
           };
         }),
       };
@@ -427,7 +425,6 @@ class IssueCreateHelper {
             databaseId: task.database?.id,
             migrationType: payload.migrationType,
             statement: payload.statement || "",
-            rollbackStatement: "",
             earliestAllowedTs: task.earliestAllowedTs,
           };
         }),
