@@ -135,7 +135,7 @@ type MigrationSource string
 const (
 	// UI is the migration source type for UI.
 	UI MigrationSource = "UI"
-	// VCS is the migration source type for VCSUI.
+	// VCS is the migration source type for VCS.
 	VCS MigrationSource = "VCS"
 	// LIBRARY is the migration source type for LIBRARY.
 	LIBRARY MigrationSource = "LIBRARY"
