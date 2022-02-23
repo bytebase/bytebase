@@ -7,7 +7,6 @@
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
-    "lint:summary": "SORT_BY=rule DESC=true eslint -f summary --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
     "test": "vitest",
     "coverage": "vitest --coverage"
@@ -61,7 +60,6 @@
     "@vue/eslint-config-typescript": "^9.1.0",
     "eslint": "^8.3.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-formatter-summary": "^1.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-vue": "^8.1.1",
     "prettier": "^2.4.1",
