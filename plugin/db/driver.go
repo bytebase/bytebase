@@ -137,6 +137,8 @@ const (
 	UI MigrationEngine = "UI"
 	// VCS is the migration engine type for VCSUI.
 	VCS MigrationEngine = "VCS"
+	// LIBRARY is the migration engine type for LIBRARY.
+	LIBRARY MigrationEngine = "LIBRARY"
 )
 
 func (e MigrationEngine) String() string {
@@ -145,6 +147,8 @@ func (e MigrationEngine) String() string {
 		return "UI"
 	case VCS:
 		return "VCS"
+	case LIBRARY:
+		return "LIBRARY"
 	}
 	return "UNKNOWN"
 }
@@ -354,6 +358,8 @@ type ConnectionConfig struct {
 	Password  string
 	Database  string
 	TLSConfig TLSConfig
+	// ReadOnly is only supported for Postgres at the moment.
+	ReadOnly bool
 }
 
 // ConnectionContext is the context for connection.
