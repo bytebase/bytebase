@@ -32,14 +32,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", sheetCreate.ProjectID)).SetInternal(err)
 		}
 
-		_, err = s.composeInstanceByID(ctx, sheetCreate.InstanceID)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sheetCreate.InstanceID))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sheetCreate.InstanceID)).SetInternal(err)
-		}
-
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		sheet, err := s.SheetService.CreateSheet(ctx, sheetCreate)
@@ -75,14 +67,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
 			}
 			sheetFind.ProjectID = &projectID
-		}
-
-		if instanceIDStr := c.QueryParams().Get("instanceId"); instanceIDStr != "" {
-			instanceID, err := strconv.Atoi(instanceIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.QueryParam("instanceId"))).SetInternal(err)
-			}
-			sheetFind.InstanceID = &instanceID
 		}
 
 		if databaseIDStr := c.QueryParams().Get("databaseId"); databaseIDStr != "" {
@@ -215,11 +199,6 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 	}
 
 	sheet.Project, err = s.composeProjectByID(ctx, sheet.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	sheet.Instance, err = s.composeInstanceByID(ctx, sheet.InstanceID)
 	if err != nil {
 		return err
 	}

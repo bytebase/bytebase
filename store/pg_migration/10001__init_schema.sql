@@ -1059,7 +1059,7 @@ UPDATE
     ON deployment_config FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
 
--- sheet table stores the query for the user
+-- sheet table stores general statements.
 CREATE TABLE sheet (
     id SERIAL PRIMARY KEY,
     -- allowed row status are 'NORMAL', 'ARCHIVED'.
@@ -1069,7 +1069,6 @@ CREATE TABLE sheet (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
@@ -1080,8 +1079,6 @@ CREATE TABLE sheet (
 CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
 
 CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
-
-CREATE INDEX idx_sheet_instance_id_row_status ON sheet(instance_id, row_status);
 
 CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
