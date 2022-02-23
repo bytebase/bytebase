@@ -129,19 +129,19 @@ type DriverConfig struct {
 
 type driverFunc func(DriverConfig) Driver
 
-// MigrationEngine is the migration engine.
-type MigrationEngine string
+// MigrationSource is the migration engine.
+type MigrationSource string
 
 const (
-	// UI is the migration engine type for UI.
-	UI MigrationEngine = "UI"
-	// VCS is the migration engine type for VCSUI.
-	VCS MigrationEngine = "VCS"
-	// LIBRARY is the migration engine type for LIBRARY.
-	LIBRARY MigrationEngine = "LIBRARY"
+	// UI is the migration source type for UI.
+	UI MigrationSource = "UI"
+	// VCS is the migration source type for VCSUI.
+	VCS MigrationSource = "VCS"
+	// LIBRARY is the migration source type for LIBRARY.
+	LIBRARY MigrationSource = "LIBRARY"
 )
 
-func (e MigrationEngine) String() string {
+func (e MigrationSource) String() string {
 	switch e {
 	case UI:
 		return "UI"
@@ -223,7 +223,7 @@ type MigrationInfo struct {
 	Namespace      string
 	Database       string
 	Environment    string
-	Engine         MigrationEngine
+	Source         MigrationSource
 	Type           MigrationType
 	Status         MigrationStatus
 	Description    string
@@ -257,7 +257,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 
 	mi := &MigrationInfo{
-		Engine: VCS,
+		Source: VCS,
 		Type:   Migrate,
 	}
 	matchList := myRegex.FindStringSubmatch(filePath)
@@ -327,7 +327,7 @@ type MigrationHistory struct {
 	ReleaseVersion      string
 	Namespace           string
 	Sequence            int
-	Engine              MigrationEngine
+	Source              MigrationSource
 	Type                MigrationType
 	Status              MigrationStatus
 	Version             string

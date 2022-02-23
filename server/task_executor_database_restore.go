@@ -183,7 +183,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,
-		Engine:         db.MigrationEngine(targetDatabase.Project.WorkflowType),
+		Source:         db.MigrationSource(targetDatabase.Project.WorkflowType),
 		Type:           db.Branch,
 		Description:    description,
 		Creator:        task.Creator.Name,
