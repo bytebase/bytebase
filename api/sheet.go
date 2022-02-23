@@ -46,6 +46,8 @@ type Sheet struct {
 	Instance   *Instance `jsonapi:"relation,instance"`
 	DatabaseID *int      `jsonapi:"attr,databaseId"`
 	Database   *Database `jsonapi:"relation,database"`
+	ProjectID  *int      `jsonapi:"attr,projectId"`
+	Project    *Project  `jsonapi:"relation,project"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
@@ -62,6 +64,7 @@ type SheetCreate struct {
 	// Related fields
 	InstanceID int  `jsonapi:"attr,instanceId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
+	ProjectID  *int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Name       string          `jsonapi:"attr,name"`
@@ -98,6 +101,7 @@ type SheetFind struct {
 	// Related fields
 	InstanceID *int
 	DatabaseID *int
+	ProjectID  *int
 
 	// Domain fields
 	Visibility *SheetVisibility

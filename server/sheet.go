@@ -69,6 +69,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.DatabaseID = &databaseID
 		}
 
+		if projectIDStr := c.QueryParams().Get("projectId"); projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
+			}
+			sheetFind.ProjectID = &projectID
+		}
+
 		if visibility := api.SheetVisibility(c.QueryParam("visibiliy")); visibility != "" {
 			sheetFind.Visibility = &visibility
 		}
@@ -196,15 +204,22 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 	}
 
 	if sheet.DatabaseID != nil {
-		databaseFind := &api.DatabaseFind{
-			ID: sheet.DatabaseID,
-		}
-		sheet.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
+		sheet.Database, err = s.composeDatabaseByID(ctx, *sheet.DatabaseID)
 		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %v", *sheet.DatabaseID))
+			}
 			return err
 		}
-		if sheet.Database == nil {
-			return fmt.Errorf("database ID not found %v", sheet.DatabaseID)
+	}
+
+	if sheet.ProjectID != nil {
+		sheet.Project, err = s.composeProjectByID(ctx, *sheet.ProjectID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %v", *sheet.ProjectID))
+			}
+			return err
 		}
 	}
 

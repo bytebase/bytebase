@@ -132,17 +132,19 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 			updater_id,
 			instance_id,
 			database_id,
+			project_id,
 			name,
 			statement,
 			visibility
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, project_id, name, statement, visibility
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
 		create.DatabaseID,
+		create.ProjectID,
 		create.Name,
 		create.Statement,
 		create.Visibility,
@@ -156,6 +158,7 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 	row.Next()
 	var sheet api.Sheet
 	databaseID := sql.NullInt32{}
+	projectID := sql.NullInt32{}
 	if err := row.Scan(
 		&sheet.ID,
 		&sheet.CreatorID,
@@ -164,6 +167,7 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 		&sheet.UpdatedTs,
 		&sheet.InstanceID,
 		&databaseID,
+		&projectID,
 		&sheet.Name,
 		&sheet.Statement,
 		&sheet.Visibility,
@@ -176,10 +180,15 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 		sheet.DatabaseID = &value
 	}
 
+	if projectID.Valid {
+		value := int(projectID.Int32)
+		sheet.ProjectID = &value
+	}
+
 	return &sheet, nil
 }
 
-// pgPatchSheet creates a new sheet.
+// pgPatchSheet updates a sheet's name/statement/visibility.
 func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -198,7 +207,7 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, project_id, name, statement, visibility
 	`, len(args)),
 		args...,
 	)
@@ -211,6 +220,7 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 	if row.Next() {
 		var sheet api.Sheet
 		databaseID := sql.NullInt32{}
+		projectID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheet.ID,
 			&sheet.CreatorID,
@@ -219,6 +229,7 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 			&sheet.UpdatedTs,
 			&sheet.InstanceID,
 			&databaseID,
+			&projectID,
 			&sheet.Name,
 			&sheet.Statement,
 			&sheet.Visibility,
@@ -229,6 +240,11 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
 			sheet.DatabaseID = &value
+		}
+
+		if projectID.Valid {
+			value := int(projectID.Int32)
+			sheet.ProjectID = &value
 		}
 
 		return &sheet, nil
@@ -262,6 +278,9 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 			where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 		}
 	}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	// Domain fields
 	if v := find.Visibility; v != nil {
@@ -277,6 +296,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 			updated_ts,
 			instance_id,
 			database_id,
+			project_id,
 			name,
 			statement,
 			visibility
@@ -293,6 +313,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 	for rows.Next() {
 		var sheet api.Sheet
 		databaseID := sql.NullInt32{}
+		projectID := sql.NullInt32{}
 		if err := rows.Scan(
 			&sheet.ID,
 			&sheet.CreatorID,
@@ -301,6 +322,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 			&sheet.UpdatedTs,
 			&sheet.InstanceID,
 			&databaseID,
+			&projectID,
 			&sheet.Name,
 			&sheet.Statement,
 			&sheet.Visibility,
@@ -311,6 +333,11 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
 			sheet.DatabaseID = &value
+		}
+
+		if projectID.Valid {
+			value := int(projectID.Int32)
+			sheet.ProjectID = &value
 		}
 
 		list = append(list, &sheet)
