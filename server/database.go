@@ -755,25 +755,6 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	return nil
 }
 
-func (s *Server) composeDatabaseByID(ctx context.Context, id int) (*api.Database, error) {
-	databaseFind := &api.DatabaseFind{
-		ID: &id,
-	}
-	database, err := s.DatabaseService.FindDatabase(ctx, databaseFind)
-	if err != nil {
-		return nil, err
-	}
-	if database == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", id)}
-	}
-
-	if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-		return nil, err
-	}
-
-	return database, nil
-}
-
 func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	database, err := s.DatabaseService.FindDatabase(ctx, find)
 	if err != nil {

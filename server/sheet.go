@@ -24,12 +24,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
 		}
 
-		_, err := s.composeProjectByID(ctx, sheetCreate.ProjectID)
+		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{
+			ID: &sheetCreate.ProjectID,
+		})
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", sheetCreate.ProjectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
 		}
 
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -204,7 +206,9 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 	}
 
 	if sheet.DatabaseID != nil {
-		sheet.Database, err = s.composeDatabaseByID(ctx, *sheet.DatabaseID)
+		sheet.Database, err = s.composeDatabaseByFind(ctx, &api.DatabaseFind{
+			ID: sheet.DatabaseID,
+		})
 		if err != nil {
 			return err
 		}
