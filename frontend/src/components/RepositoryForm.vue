@@ -174,44 +174,6 @@
         }}
       </div>
     </div>
-    <div>
-      <div class="textlabel">
-        {{ $t("repository.role-provider") }}
-      </div>
-      <div class="mt-1 textinfolabel">
-        {{ $t("repository.role-provider-description") }}
-      </div>
-      <div class="radio-set-row mt-2">
-        <div class="radio">
-          <label class="label">
-            <input
-              v-model="state.curRoleProvider"
-              :name="`member_role_provider`"
-              tabindex="-1"
-              type="radio"
-              class="btn"
-              value="BYTEBASE"
-              :disabled="!create && !allowEdit"
-            />
-            Bytebase
-          </label>
-        </div>
-        <div v-if="vcsType.startsWith('GITLAB')" class="radio">
-          <label class="label">
-            <input
-              v-model="state.curRoleProvider"
-              :name="`member_role_provider`"
-              tabindex="-1"
-              type="radio"
-              class="btn"
-              value="GITLAB_SELF_HOST"
-              :disabled="!create && !allowEdit"
-            />
-            GitLab
-          </label>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -222,16 +184,13 @@ import {
   Project,
   RepositoryConfig,
   VCSType,
-  ProjectRoleProvider,
 } from "../types";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {
-  curRoleProvider: ProjectRoleProvider;
-}
+interface LocalState {}
 
 export default defineComponent({
   name: "RepositoryForm",
@@ -265,18 +224,9 @@ export default defineComponent({
       type: Object as PropType<Project>,
     },
   },
-  emits: ["change-repository", "change-role-provider"],
+  emits: ["change-repository"],
   setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      curRoleProvider: props.create ? "BYTEBASE" : props.project.roleProvider,
-    });
-
-    watch(
-      () => state.curRoleProvider,
-      (cur) => {
-        emit("change-role-provider", cur);
-      }
-    );
+    const state = reactive<LocalState>({});
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";

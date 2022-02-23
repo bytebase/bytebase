@@ -56,7 +56,6 @@
     :repository-config="state.repositoryConfig"
     :project="project"
     @change-repository="$emit('change-repository')"
-    @change-role-provider="onRoleProviderChanged"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
     <BBButtonConfirm
@@ -91,7 +90,6 @@ import {
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
-  ProjectRoleProvider,
   ProjectPatch,
 } from "../types";
 import { useStore } from "vuex";
@@ -99,7 +97,6 @@ import { useI18n } from "vue-i18n";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  roleProvider: ProjectRoleProvider;
 }
 
 export default defineComponent({
@@ -131,12 +128,7 @@ export default defineComponent({
         filePathTemplate: props.repository.filePathTemplate,
         schemaPathTemplate: props.repository.schemaPathTemplate,
       },
-      roleProvider: props.project.roleProvider,
     });
-
-    const onRoleProviderChanged = (cur: ProjectRoleProvider) => {
-      state.roleProvider = cur;
-    };
 
     watch(
       () => props.repository,
@@ -169,8 +161,7 @@ export default defineComponent({
           props.repository.filePathTemplate !=
             state.repositoryConfig.filePathTemplate ||
           props.repository.schemaPathTemplate !=
-            state.repositoryConfig.schemaPathTemplate ||
-          props.project.roleProvider != state.roleProvider)
+            state.repositoryConfig.schemaPathTemplate)
       );
     });
 
@@ -188,7 +179,6 @@ export default defineComponent({
 
     const doUpdate = () => {
       const repositoryPatch: RepositoryPatch = {};
-      // repositoryPatch
       if (
         props.repository.branchFilter != state.repositoryConfig.branchFilter
       ) {
@@ -214,52 +204,24 @@ export default defineComponent({
           state.repositoryConfig.schemaPathTemplate;
       }
 
-      // projectPatch
-      const projectPatch: ProjectPatch = {};
-      if (props.project.roleProvider != state.roleProvider) {
-        projectPatch.roleProvider = state.roleProvider;
-      }
-
-      const promiseList = [];
-      console.log("repositoryPatch", !repositoryPatch);
-      // need to patch repository
-      if (Object.getOwnPropertyNames(repositoryPatch).length > 0) {
-        promiseList.push(
-          store.dispatch("repository/updateRepositoryByProjectId", {
-            projectId: props.project.id,
-            repositoryPatch,
-          })
-        );
-      }
-
-      if (Object.getOwnPropertyNames(projectPatch).length > 0) {
-        promiseList.push(
-          store.dispatch("project/syncMemberRoleFromVCS", {
-            projectId: props.project.id,
-          })
-        );
-        promiseList.push(
-          store.dispatch("project/patchProject", {
-            projectId: props.project.id,
-            projectPatch,
-          })
-        );
-      }
-
-      Promise.all(promiseList).then(() => {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("repository.update-version-control-config-success"),
+      store
+        .dispatch("repository/updateRepositoryByProjectId", {
+          projectId: props.project.id,
+          repositoryPatch,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("repository.update-version-control-config-success"),
+          });
         });
-      });
     };
 
     return {
       state,
       repositoryInfo,
       allowUpdate,
-      onRoleProviderChanged,
       restoreToUIWorkflowType,
       doUpdate,
     };
