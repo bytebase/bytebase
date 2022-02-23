@@ -45,7 +45,8 @@ type Sheet struct {
 	ProjectID int      `jsonapi:"attr,projectId"`
 	Project   *Project `jsonapi:"relation,project"`
 	// The DatabaseID is optional.
-	// If not NULL, the sheet ProjectID is always equal to the id of the database related project.
+	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
+	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
 	DatabaseID *int      `jsonapi:"attr,databaseId"`
 	Database   *Database `jsonapi:"relation,database"`
 
