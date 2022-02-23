@@ -47,7 +47,7 @@
               <span>{{ connectionContext.databaseName }}</span>
             </div>
             <div v-if="connectionContext.tableName" class="flex flex-col">
-              <h1 class="text-gray-400">Table:</h1>
+              <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
               <span>{{ connectionContext.tableName }}</span>
             </div>
           </div>
