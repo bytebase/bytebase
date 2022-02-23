@@ -177,30 +177,19 @@ export default defineComponent({
 
     const doUpdate = () => {
       const repositoryPatch: RepositoryPatch = {};
-      if (
-        props.repository.branchFilter != state.repositoryConfig.branchFilter
-      ) {
-        repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
-      }
-      if (
-        props.repository.baseDirectory != state.repositoryConfig.baseDirectory
-      ) {
-        repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-      }
-      if (
-        props.repository.filePathTemplate !=
-        state.repositoryConfig.filePathTemplate
-      ) {
-        repositoryPatch.filePathTemplate =
-          state.repositoryConfig.filePathTemplate;
-      }
-      if (
-        props.repository.schemaPathTemplate !=
-        state.repositoryConfig.schemaPathTemplate
-      ) {
-        repositoryPatch.schemaPathTemplate =
-          state.repositoryConfig.schemaPathTemplate;
-      }
+      // Comparing all the kv in `state.repositoryConfig` with that of `props.repository`
+      // and storing all different values in `repositoryPatch`
+      Object.entries(state.repositoryConfig).forEach((newKV) => {
+        Object.entries(props.repository).forEach((oldKV) => {
+          if (oldKV[0] === newKV[0] && oldKV[1] !== newKV[1]) {
+            Object.defineProperty(repositoryPatch, oldKV[0], {
+              value: newKV[1],
+              enumerable: true, // allowing this attr to be expended
+            });
+          }
+        });
+      });
+
       store
         .dispatch("repository/updateRepositoryByProjectId", {
           projectId: props.project.id,
