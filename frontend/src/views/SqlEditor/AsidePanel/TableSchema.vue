@@ -71,11 +71,13 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
+import { isEmpty } from "lodash-es";
 
 import type {
   SqlEditorState,
   SqlEditorGetters,
   Database,
+  DatabaseId,
 } from "../../../types";
 
 const emit = defineEmits<{
@@ -99,11 +101,12 @@ const ctx = connectionContext.value;
 const router = useRouter();
 
 const gotoAlterSchema = () => {
-  const projectId = findProjectIdByDatabaseId.value(ctx.selectedDatabaseId);
+  const databaseId = ctx.databaseId as DatabaseId;
+  const projectId = findProjectIdByDatabaseId.value(databaseId);
   const databaseList =
     connectionInfo.value.databaseListByProjectId.get(projectId);
   const databaseName = databaseList.find(
-    (database: Database) => database.id === ctx.selectedDatabaseId
+    (database: Database) => database.id === databaseId
   ).name;
   router.push({
     name: "workspace.issue.detail",
@@ -114,8 +117,8 @@ const gotoAlterSchema = () => {
       template: "bb.issue.database.schema.update",
       name: `[${databaseName}] Alter schema`,
       project: projectId,
-      databaseList: ctx.selectedDatabaseId,
-      sql: `ALTER TABLE ${ctx.selectedTableName}`,
+      databaseList: databaseId,
+      sql: `ALTER TABLE ${ctx.tableName}`,
     },
   });
 };
@@ -125,14 +128,16 @@ const handleClosePane = () => {
 };
 
 watch(
-  () => connectionContext.value.selectedTableName,
+  () => connectionContext.value.tableName,
   async (newVal, oldVal) => {
-    const res = await fetchTableByDatabaseIdAndTableName({
-      databaseId: ctx.selectedDatabaseId,
-      tableName: ctx.selectedTableName,
-    });
+    if (!isEmpty(newVal)) {
+      const res = await fetchTableByDatabaseIdAndTableName({
+        databaseId: ctx.databaseId,
+        tableName: ctx.tableName,
+      });
 
-    tableInfo.value = res;
+      tableInfo.value = res;
+    }
   }
 );
 </script>

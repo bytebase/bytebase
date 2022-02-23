@@ -1,20 +1,33 @@
 <template>
-  <div class="tooltip-wrapper">
-    <span class="tooltip">{{ instance.engineVersion }}</span>
-    <img class="h-4 w-auto" :src="SelectedEngineIconPath" />
-  </div>
+  <NTooltip>
+    <template #trigger>
+      <div class="relative">
+        <img class="h-4 w-auto" :src="SelectedEngineIconPath" />
+        <div
+          v-if="showStatus"
+          class="bg-green-400 border-surface-high rounded-full absolute border-2"
+          style="bottom: -3px; height: 9px; right: -3px; width: 9px"
+        />
+      </div>
+    </template>
+    <span>{{ instance.engineVersion }}</span>
+  </NTooltip>
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, PropType, defineComponent } from "vue";
 import { Instance } from "../types";
 
-export default {
+export default defineComponent({
   name: "InstanceEngineIcon",
   props: {
     instance: {
       required: true,
       type: Object as PropType<Instance>,
+    },
+    showStatus: {
+      type: Boolean,
+      default: false,
     },
   },
   setup(props) {
@@ -30,5 +43,5 @@ export default {
     });
     return { SelectedEngineIconPath };
   },
-};
+});
 </script>
