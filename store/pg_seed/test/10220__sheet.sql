@@ -15,7 +15,7 @@ VALUES
         101,
         3001,
         'my-sheet',
-        'SELECT "demo"'
+        'SELECT * FROM demo'
     );
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 22002;
