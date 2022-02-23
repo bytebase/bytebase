@@ -4,33 +4,45 @@
       {{ $t("project.settings.manage-member") }}
     </span>
 
-    <span
-      :class="
-        allowSyncVCS
-          ? 'ml-4 text-sm select-none normal-link'
-          : 'ml-4 text-sm select-none cursor-not-allowed'
-      "
-      @click.prevent="
-        () => {
-          if (!allowSyncVCS) {
-            return;
+    <div v-if="allowSyncVCS" class="inline-block float-right">
+      <span class="text-sm text-control">
+        {{ $t("project.settings.sync-from-vcs") }}
+      </span>
+      <heroicons-outline:refresh
+        v-if="project.roleProvider !== 'BYTEBASE'"
+        class="ml-1 inline text-sm normal-link"
+        @click.prevent="
+          () => {
+            if (!allowSyncVCS) {
+              return;
+            }
+            // if it is the first time user try to sync role from VCS, we will prompt the user with a modal
+            if (project.roleProvider === 'BYTEBASE') {
+              state.showModal = true;
+            } else {
+              syncFromVCS();
+            }
           }
-          // if it is the first time user try to sync role from VCS, we will prompt the user with a modal
-          if (project.roleProvider === 'BYTEBASE') {
-            state.showModal = true;
-          } else {
-            syncFromVCS();
-          }
-        }
-      "
-    >
-      <heroicons-outline:refresh class="inline align-text-top" />
-      {{ $t("project.settings.sync-from-vcs") }}
-    </span>
+        "
+      />
+      <div class="w-auto ml-3 inline-block align-middle">
+        <BBSwitch
+          :value="project.roleProvider !== 'BYTEBASE'"
+          @toggle="
+            (on) => {
+              if (on) {
+                state.roleProvider = false;
+              } else {
+              }
+            }
+          "
+        />
+      </div>
+    </div>
 
     <n-modal
       v-model:show="state.showModal"
-      :mask-closable="true"
+      :mask-closable="false"
       preset="dialog"
       :title="$t('settings.members.toggle-role-provider.title')"
       :content="$t('settings.members.toggle-role-provider.content')"
@@ -40,11 +52,15 @@
         () => {
           syncFromVCS();
           state.showModal = false;
+          state.roleProvider = true;
+          console.log('state.roleProvider', state.roleProvider);
         }
       "
       @negative-click="
         () => {
           state.showModal = false;
+          state.roleProvider = false;
+          console.log('state.roleProvider', state.roleProvider);
         }
       "
     />
@@ -150,6 +166,7 @@ interface LocalState {
   role: ProjectRoleType;
   error: string;
   showModal: boolean;
+  roleProvider: boolean;
 }
 
 export default defineComponent({
@@ -172,6 +189,7 @@ export default defineComponent({
       role: "DEVELOPER",
       error: "",
       showModal: false,
+      roleProvider: false,
     });
 
     const hasRBACFeature = computed(() =>
