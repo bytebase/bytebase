@@ -1,6 +1,13 @@
 import * as monaco from "monaco-editor";
 
-import { InstanceId, DatabaseId, TableId, ViewId, ActivityId } from "../types";
+import {
+  ProjectId,
+  InstanceId,
+  DatabaseId,
+  TableId,
+  ViewId,
+  ActivityId,
+} from "../types";
 import { Principal } from "./principal";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -29,6 +36,8 @@ export enum SortText {
 
 export type ConnectionContext = {
   hasSlug: boolean;
+  projectId: ProjectId;
+  projectName: string;
   instanceId: InstanceId;
   instanceName: string;
   databaseId?: DatabaseId;
@@ -36,8 +45,6 @@ export type ConnectionContext = {
   tableId?: TableId;
   tableName?: string;
   isLoadingTree: boolean;
-  selectedDatabaseId: number;
-  selectedTableName: string;
 };
 
 export interface QueryHistory {
