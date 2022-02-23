@@ -57,6 +57,14 @@ const useExecuteSQL = () => {
     }
 
     if (data !== null && !isSelectStatement(data)) {
+      if (isMultipleStatements(data)) {
+        notify(
+          "INFO",
+          t("common.tips"),
+          t("sql-editor.notify-multiple-statements")
+        );
+        return;
+      }
       // only DDL and DML statements are allowed
       if (isDDLStatement(data) || isDMLStatement(data)) {
         store.dispatch("sqlEditor/setSqlEditorState", {
