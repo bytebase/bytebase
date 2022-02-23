@@ -194,7 +194,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			ID:         3,
 			Database:   databaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Data,
 			Status:     db.Done,
 			Schema:     dumpedSchema,
@@ -203,7 +203,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			ID:         2,
 			Database:   databaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Migrate,
 			Status:     db.Done,
 			Schema:     dumpedSchema,
@@ -212,7 +212,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			ID:         1,
 			Database:   databaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Baseline,
 			Status:     db.Done,
 			Schema:     "",
@@ -226,7 +226,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		got := api.MigrationHistory{
 			ID:         history.ID,
 			Database:   history.Database,
-			Engine:     history.Engine,
+			Source:     history.Source,
 			Type:       history.Type,
 			Status:     history.Status,
 			Schema:     history.Schema,
@@ -284,7 +284,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			ID:         5,
 			Database:   cloneDatabaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Branch,
 			Status:     db.Done,
 			Schema:     dumpedSchema,
@@ -293,7 +293,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			ID:         4,
 			Database:   cloneDatabaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Baseline,
 			Status:     db.Done,
 			Schema:     "",
@@ -307,7 +307,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		got := api.MigrationHistory{
 			ID:         history.ID,
 			Database:   history.Database,
-			Engine:     history.Engine,
+			Source:     history.Source,
 			Type:       history.Type,
 			Status:     history.Status,
 			Schema:     history.Schema,
@@ -535,7 +535,7 @@ func TestVCS(t *testing.T) {
 		{
 			ID:         3,
 			Database:   databaseName,
-			Engine:     db.VCS,
+			Source:     db.VCS,
 			Type:       db.Data,
 			Status:     db.Done,
 			Schema:     dumpedSchema,
@@ -544,7 +544,7 @@ func TestVCS(t *testing.T) {
 		{
 			ID:         2,
 			Database:   databaseName,
-			Engine:     db.VCS,
+			Source:     db.VCS,
 			Type:       db.Migrate,
 			Status:     db.Done,
 			Schema:     dumpedSchema,
@@ -553,7 +553,7 @@ func TestVCS(t *testing.T) {
 		{
 			ID:         1,
 			Database:   databaseName,
-			Engine:     db.UI,
+			Source:     db.UI,
 			Type:       db.Baseline,
 			Status:     db.Done,
 			Schema:     "",
@@ -567,7 +567,7 @@ func TestVCS(t *testing.T) {
 		got := api.MigrationHistory{
 			ID:         history.ID,
 			Database:   history.Database,
-			Engine:     history.Engine,
+			Source:     history.Source,
 			Type:       history.Type,
 			Status:     history.Status,
 			Schema:     history.Schema,

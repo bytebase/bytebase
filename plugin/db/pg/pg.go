@@ -651,13 +651,13 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (bool, error) {
+func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
 	const checkDuplicateVersionQuery = `
 		SELECT 1 FROM migration_history
-		WHERE namespace = $1 AND engine = $2 AND version = $3
+		WHERE namespace = $1 AND source = $2 AND version = $3
 	`
 	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, engine.String(), version,
+		namespace, source.String(), version,
 	)
 	if err != nil {
 		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
@@ -671,13 +671,13 @@ func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace s
 }
 
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
-func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error) {
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
 	const checkOutofOrderVersionQuery = `
 		SELECT MIN(version) FROM migration_history
-		WHERE namespace = $1 AND engine = $2 AND version > $3
+		WHERE namespace = $1 AND source = $2 AND version > $3
 	`
 	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, engine.String(), version,
+		namespace, source.String(), version,
 	)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
@@ -762,7 +762,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		release_version,
 		namespace,
 		sequence,
-		engine,
+		source,
 		type,
 		status,
 		version,
@@ -784,7 +784,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		m.ReleaseVersion,
 		m.Namespace,
 		sequence,
-		m.Engine,
+		m.Source,
 		m.Type,
 		m.Version,
 		m.Description,
@@ -845,7 +845,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		release_version,
 		namespace,
 		sequence,
-		engine,
+		source,
 		type,
 		status,
 		version,

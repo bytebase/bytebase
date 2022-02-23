@@ -137,7 +137,7 @@ type MigrationHistory struct {
 	// Domain specific fields
 	ReleaseVersion      string             `jsonapi:"attr,releaseVersion"`
 	Database            string             `jsonapi:"attr,database"`
-	Engine              db.MigrationEngine `jsonapi:"attr,engine"`
+	Source              db.MigrationSource `jsonapi:"attr,source"`
 	Type                db.MigrationType   `jsonapi:"attr,type"`
 	Status              db.MigrationStatus `jsonapi:"attr,status"`
 	Version             string             `jsonapi:"attr,version"`

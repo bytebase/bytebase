@@ -113,9 +113,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 type MigrationExecutor interface {
 	db.Driver
 	// CheckDuplicateVersion will check whether the version is already applied.
-	CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (isDuplicate bool, err error)
+	CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (isDuplicate bool, err error)
 	// CheckOutOfOrderVersion will return versions that are higher than the given version.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, engine db.MigrationEngine, version string) (minVersionIfValid *string, err error)
+	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error)
 	// FindBaseline retruns true if any baseline is found.
 	FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error)
 	// FindNextSequence will return the highest sequence number plus one.
@@ -201,14 +201,14 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	if duplicate, err := executor.CheckDuplicateVersion(ctx, tx, m.Namespace, m.Engine, m.Version); err != nil {
+	if duplicate, err := executor.CheckDuplicateVersion(ctx, tx, m.Namespace, m.Source, m.Version); err != nil {
 		return -1, err
 	} else if duplicate {
 		return -1, common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 	}
 
 	// Check if there is any higher version already been applied
-	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, m.Engine, m.Version); err != nil {
+	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, m.Source, m.Version); err != nil {
 		return -1, err
 	} else if version != nil && len(*version) > 0 {
 		// Clickhouse will always return non-nil version with empty string.
@@ -217,7 +217,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
 	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Engine == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
+	if m.Source == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
 		if hasBaseline, err := executor.FindBaseline(ctx, tx, m.Namespace); err != nil {
 			return -1, err
 		} else if !hasBaseline {
@@ -226,7 +226,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 
 	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Engine == db.VCS && m.Type == db.Migrate
+	requireBaseline := m.Source == db.VCS && m.Type == db.Migrate
 	sequence, err := executor.FindNextSequence(ctx, tx, m.Namespace, requireBaseline)
 	if err != nil {
 		return -1, err
@@ -388,7 +388,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			&history.ReleaseVersion,
 			&history.Namespace,
 			&history.Sequence,
-			&history.Engine,
+			&history.Source,
 			&history.Type,
 			&history.Status,
 			&history.Version,
