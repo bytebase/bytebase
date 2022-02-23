@@ -413,7 +413,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
 	const checkDuplicateVersionQuery = `
 		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = $1 AND source= $2  AND version = $3
+		WHERE namespace = $1 AND source = $2  AND version = $3
 	`
 	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
 		namespace, source.String(), version,
