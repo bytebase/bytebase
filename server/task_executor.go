@@ -50,7 +50,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		Type:           migrationType,
 	}
 	if vcsPushEvent == nil {
-		mi.Engine = db.UI
+		mi.Source = db.UI
 		creator, err := server.composePrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
@@ -143,7 +143,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	l.Debug("Start sql migration...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
-		zap.String("engine", mi.Engine.String()),
+		zap.String("source", mi.Source.String()),
 		zap.String("type", mi.Type.String()),
 		zap.String("statement", statement),
 	)
