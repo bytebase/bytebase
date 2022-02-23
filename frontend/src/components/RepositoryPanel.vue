@@ -180,14 +180,10 @@ export default defineComponent({
       // Comparing all the kv in `state.repositoryConfig` with that of `props.repository`
       // and storing all different values in `repositoryPatch`
       Object.entries(state.repositoryConfig).forEach((newKV) => {
-        Object.entries(props.repository).forEach((oldKV) => {
-          if (oldKV[0] === newKV[0] && oldKV[1] !== newKV[1]) {
-            Object.defineProperty(repositoryPatch, oldKV[0], {
-              value: newKV[1],
-              enumerable: true, // allowing this attr to be expended
-            });
-          }
-        });
+        const oldValue = Reflect.get(props.repository, newKV[0]);
+        if (oldValue !== newKV[1]) {
+          Reflect.set(repositoryPatch, newKV[0], newKV[1]);
+        }
       });
 
       store
