@@ -1,72 +1,91 @@
 <template>
-  <NPopover trigger="hover">
+  <NPopover
+    trigger="hover"
+    :theme-overrides="{
+      borderRadius: '0.375rem',
+      padding: '0',
+    }"
+  >
     <template #trigger>
-      <div class="bb-database-matrix-item" @click="clickDatabase">
-        <div
-          v-if="database.project.dbNameTemplate"
-          class="whitespace-nowrap font-bold text-md"
-        >
-          <!-- display db name if project has tenant dbNameTemplate -->
-          {{ database.name }}
+      <div
+        class="border rounded-sm flex items-center p-1 select-none space-x-1"
+      >
+        <div class="sync-status">
+          <heroicons-solid:check
+            v-if="database.syncStatus === 'OK'"
+            class="w-9 h-9 text-success"
+          />
+          <heroicons-outline:exclamation v-else class="w-9 h-9 text-warning" />
         </div>
-        <div class="sync-status whitespace-nowrap">
-          <span class="tooltip-wrapper">
-            <heroicons-solid:check
-              v-if="database.syncStatus === 'OK'"
-              class="w-4 h-4 text-success"
-            />
-            <heroicons-outline:exclamation
-              v-else
-              class="w-4 h-4 text-warning"
-            />
-          </span>
-          <span class="flex-1">{{ database.syncStatus }}</span>
-        </div>
+        <div class="flex flex-col items-start">
+          <router-link
+            :to="databaseDetailUrl"
+            class="whitespace-nowrap hover:underline"
+          >
+            {{ database.name }}
+          </router-link>
 
-        <div>{{ $t("common.version") }}: {{ database.schemaVersion }}</div>
+          <router-link :to="schemaVersionUrl" class="hover:underline">
+            {{ database.schemaVersion }}
+          </router-link>
+        </div>
       </div>
     </template>
 
-    <div class="popover">
-      <div class="instance flex items-center whitespace-pre-wrap">
+    <div class="rounded-md bg-white divide-y">
+      <div class="px-4 py-2 flex items-center whitespace-nowrap space-x-1">
+        <span>
+          <heroicons-solid:check
+            v-if="database.syncStatus === 'OK'"
+            class="w-4 h-4 text-success"
+          />
+          <heroicons-outline:exclamation v-else class="w-4 h-4 text-warning" />
+        </span>
+        <span class="flex-1">{{ database.syncStatus }}</span>
+      </div>
+      <div class="px-4 py-2 flex items-center whitespace-pre-wrap space-x-1">
         <InstanceEngineIcon :instance="database.instance" />
         <span class="flex-1">{{ instanceName(database.instance) }}</span>
       </div>
 
-      <div class="last-sync flex items-center">
-        {{ $t("db.last-successful-sync") }}
-        {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+      <div class="px-4 py-2 flex items-center justify-between space-x-1">
+        <span>{{ $t("db.last-successful-sync") }}</span>
+        <span>{{ humanizeTs(database.lastSuccessfulSyncTs) }}</span>
       </div>
 
       <div
-        v-if="database.labels.length > 0"
-        class="labels whitespace-nowrap flex-col items-start"
+        v-if="displayLabelList.length > 0"
+        class="px-4 py-2 labels whitespace-nowrap flex-col items-start"
       >
-        <div class="mb-2">{{ $t("common.labels") }}</div>
-        <DatabaseLabels
-          :label-list="database.labels"
-          :editable="false"
-          class="flex-col items-start"
-        />
+        <div
+          v-for="label in displayLabelList"
+          :key="label.key"
+          class="flex items-center space-y-1"
+        >
+          <span class="capitalize text-left">
+            {{ hidePrefix(label.key) }}
+          </span>
+          <span
+            class="flex-1 h-px mx-2 border-b border-control-border border-dashed"
+          ></span>
+          <span class="text-right">{{ label.value }}</span>
+        </div>
       </div>
     </div>
   </NPopover>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { useRouter } from "vue-router";
-import { Database } from "../../types";
-import { databaseSlug } from "../../utils";
+import { computed, defineComponent, PropType } from "vue";
+import { Database, Label } from "../../types";
+import { databaseSlug, isReservedDatabaseLabel, hidePrefix } from "../../utils";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
-import DatabaseLabels from "../DatabaseLabels";
 import { NPopover } from "naive-ui";
 
 export default defineComponent({
   name: "DatabaseMatrixItem",
   components: {
     InstanceEngineIcon,
-    DatabaseLabels,
     NPopover,
   },
   props: {
@@ -74,46 +93,34 @@ export default defineComponent({
       type: Object as PropType<Database>,
       required: true,
     },
-    clickable: {
-      type: Boolean,
-      default: true,
-    },
-    customClick: {
-      type: Boolean,
-      default: false,
+    labelList: {
+      type: Array as PropType<Label[]>,
+      default: () => [],
     },
   },
-  emits: ["select-database"],
-  setup(props, { emit }) {
-    const router = useRouter();
+  setup(props) {
+    const displayLabelList = computed(() => {
+      return props.database.labels.filter((dbLabel) => {
+        if (!dbLabel.value) return false;
+        if (isReservedDatabaseLabel(dbLabel, props.labelList)) return false;
+        return true;
+      });
+    });
 
-    const clickDatabase = () => {
-      const { clickable, customClick, database } = props;
-      if (!clickable) return;
+    const databaseDetailUrl = computed((): string => {
+      return `/db/${databaseSlug(props.database)}`;
+    });
 
-      if (customClick) {
-        emit("select-database", database);
-      } else {
-        router.push(`/db/${databaseSlug(database)}`);
-      }
+    const schemaVersionUrl = computed((): string => {
+      return `/db/${databaseSlug(props.database)}#migration-history`;
+    });
+
+    return {
+      databaseDetailUrl,
+      schemaVersionUrl,
+      displayLabelList,
+      hidePrefix,
     };
-
-    return { clickDatabase };
   },
 });
 </script>
-
-<style scoped lang="postcss">
-.bb-database-matrix-item {
-  @apply border-gray-300 border rounded px-2 py-0 divide-y cursor-pointer select-none hover:bg-gray-50;
-}
-.bb-database-matrix-item > * {
-  @apply flex items-center py-1 gap-1;
-}
-.popover {
-  @apply bg-white divide-y cursor-pointer select-none;
-}
-.popover > * {
-  @apply py-1 gap-1;
-}
-</style>
