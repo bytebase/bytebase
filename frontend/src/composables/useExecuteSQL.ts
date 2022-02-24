@@ -8,6 +8,8 @@ import {
   transformSQL,
   isSelectStatement,
   isMultipleStatements,
+  isDDLStatement,
+  isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
@@ -49,11 +51,27 @@ const useExecuteSQL = () => {
       return;
     }
 
-    if (data !== null && !isSelectStatement(data)) {
-      store.dispatch("sqlEditor/setSqlEditorState", {
-        isShowExecutingHint: true,
-      });
+    if (data === undefined) {
+      notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
       return;
+    }
+
+    if (data !== null && !isSelectStatement(data)) {
+      if (isMultipleStatements(data)) {
+        notify(
+          "INFO",
+          t("common.tips"),
+          t("sql-editor.notify-multiple-statements")
+        );
+        return;
+      }
+      // only DDL and DML statements are allowed
+      if (isDDLStatement(data) || isDMLStatement(data)) {
+        store.dispatch("sqlEditor/setSqlEditorState", {
+          isShowExecutingHint: true,
+        });
+        return;
+      }
     }
 
     if (isMultipleStatements(data)) {
