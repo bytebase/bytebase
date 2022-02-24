@@ -83,6 +83,27 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to dump existing project member, ID: %d, user name: %s", member.ID, member.Principal.Name)).SetInternal(err)
 				}
+				// create activity for member deletion
+				{
+					activityCreate := &api.ActivityCreate{
+						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+						ContainerID: projectID,
+						Type:        api.ActivityProjectMemberDelete,
+						Level:       api.ActivityInfo,
+						Comment: fmt.Sprintf("Revoked %s from %s (%s).",
+							member.Principal.Name, member.Principal.Email, member.Role),
+					}
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					if err != nil {
+						s.l.Warn("Failed to create project activity after creating member",
+							zap.Int("project_id", projectID),
+							zap.Int("principal_id", member.Principal.ID),
+							zap.String("principal_name", member.Principal.Name),
+							zap.String("role", member.Role),
+							zap.Error(err))
+					}
+				}
+
 			}
 		}
 
@@ -131,9 +152,29 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
 				Payload:      string(providerPayloadBytes),
 			}
-			_, err = s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
+			createdMember, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping repository member from VCS").SetInternal(err)
+			}
+			// create activity for member creation
+			{
+				activityCreate := &api.ActivityCreate{
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+					ContainerID: projectID,
+					Type:        api.ActivityProjectMemberCreate,
+					Level:       api.ActivityInfo,
+					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
+						createdMember.Principal.Name, createdMember.Principal.Email, createdMember.Role),
+				}
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				if err != nil {
+					s.l.Warn("Failed to create project activity after creating member",
+						zap.Int("project_id", projectID),
+						zap.Int("principal_id", createdMember.Principal.ID),
+						zap.String("principal_name", createdMember.Principal.Name),
+						zap.String("role", createdMember.Role),
+						zap.Error(err))
+				}
 			}
 		}
 
