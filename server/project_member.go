@@ -30,7 +30,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		if project.WorkflowType == api.UIWorkflow {
+		if project.WorkflowType != api.VCSWorkflow {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 		}
 

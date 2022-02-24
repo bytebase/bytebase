@@ -286,7 +286,6 @@ const actions = {
     });
 
     const updatedProject = await dispatch("fetchProjectById", projectId);
-    console.log("updatedProject", updatedProject);
     return updatedProject;
   },
 

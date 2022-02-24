@@ -814,9 +814,6 @@ repository:
   role-provider: Project role provider
   role-provider-description: >-
     Bytebase will sync members from the selected provider and replace the existing members in the project.
-  role-provider-tips: >-
-    Once switch to a VCS as your role provider, you can not switch back to
-    bytebase.
 workflow:
   current-workflow: Current workflow
   ui-workflow: UI workflow
