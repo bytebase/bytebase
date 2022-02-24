@@ -21,10 +21,11 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of bb",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("bb version: %s\n", version)
-		fmt.Printf("Golang version: %s\n", goversion)
-		fmt.Printf("Git commit hash: %s\n", gitcommit)
-		fmt.Printf("Built on: %s\n", buildtime)
-		fmt.Printf("Built by: %s\n", builduser)
+		out := cmd.OutOrStdout()
+		fmt.Fprintf(out, "bb version: %s\n", version)
+		fmt.Fprintf(out, "Golang version: %s\n", goversion)
+		fmt.Fprintf(out, "Git commit hash: %s\n", gitcommit)
+		fmt.Fprintf(out, "Built on: %s\n", buildtime)
+		fmt.Fprintf(out, "Built by: %s\n", builduser)
 	},
 }
