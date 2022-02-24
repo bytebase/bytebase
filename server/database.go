@@ -942,13 +942,17 @@ func (s *Server) composeBackupRelationship(ctx context.Context, backup *api.Back
 // Retrieve db.Driver connection.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+	adminDataSource := getAdminDataSourceFromInstance(ctx, instance)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to find data source"))
+	}
 	driver, err := db.Open(
 		ctx,
 		instance.Engine,
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
+			Username: adminDataSource.Username,
+			Password: adminDataSource.Password,
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
@@ -959,7 +963,7 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 		},
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, instance.Username, err))
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, adminDataSource.Username, err))
 	}
 	return driver, nil
 }

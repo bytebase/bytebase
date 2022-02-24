@@ -156,22 +156,22 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 
-			dataSourceType := api.Admin
+			dataSourceType := instancePatch.DataSourceType
 			dataSourceFind := &api.DataSourceFind{
 				InstanceID: &instance.ID,
 				Type:       &dataSourceType,
 			}
-			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+			dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
 			}
-			if adminDataSource == nil {
+			if dataSource == nil {
 				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSource.ID,
+				ID:        dataSource.ID,
 				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 				Username:  instancePatch.Username,
 			}
@@ -251,21 +251,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := db.Open(
-			ctx,
-			instance.Engine,
-			db.DriverConfig{Logger: s.l},
-			db.ConnectionConfig{
-				Username: instance.Username,
-				Password: instance.Password,
-				Host:     instance.Host,
-				Port:     instance.Port,
-			},
-			db.ConnectionContext{
-				EnvironmentName: instance.Environment.Name,
-				InstanceName:    instance.Name,
-			},
-		)
+		db, err := getDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -514,24 +500,6 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 	}
 
-	return s.composeInstanceAdminDataSource(ctx, instance)
-}
-
-func (s *Server) composeInstanceAdminDataSource(ctx context.Context, instance *api.Instance) error {
-	dataSourceFind := &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	}
-	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
-	if err != nil {
-		return err
-	}
-	for _, dataSource := range dataSourceList {
-		if dataSource.Type == api.Admin {
-			instance.Username = dataSource.Username
-			instance.Password = dataSource.Password
-			break
-		}
-	}
 	return nil
 }
 
@@ -568,4 +536,23 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func getAdminDataSourceFromInstance(ctx context.Context, instance *api.Instance) *api.DataSource {
+	return getDataSourceFromInstanceWithType(ctx, instance, api.Admin)
+}
+
+func getReadOnlyDataSourceFromInstance(ctx context.Context, instance *api.Instance) *api.DataSource {
+	return getDataSourceFromInstanceWithType(ctx, instance, api.RO)
+}
+
+func getDataSourceFromInstanceWithType(ctx context.Context, instance *api.Instance, dataSourceType api.DataSourceType) *api.DataSource {
+	var dataSource *api.DataSource = nil
+	for _, item := range instance.DataSourceList {
+		if item.Type == dataSourceType {
+			dataSource = item
+			break
+		}
+	}
+	return dataSource
 }

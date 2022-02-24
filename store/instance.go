@@ -77,6 +77,14 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, FormatError(err)
 	}
 
+	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	instance.DataSourceList = dataSourceList
+
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
@@ -99,6 +107,14 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 
 	if err == nil {
 		for _, instance := range list {
+			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+				InstanceID: &instance.ID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			instance.DataSourceList = dataSourceList
+
 			if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 				return nil, err
 			}
@@ -192,6 +208,14 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+
+	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	instance.DataSourceList = dataSourceList
 
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err

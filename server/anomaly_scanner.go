@@ -97,13 +97,6 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 					}
 
-					if err := s.server.composeInstanceAdminDataSource(ctx, instance); err != nil {
-						s.l.Error("Failed to retrieve instance admin connection info",
-							zap.String("instance", instance.Name),
-							zap.Error(err))
-						return
-					}
-
 					if instance.Environment == nil {
 						continue
 					}

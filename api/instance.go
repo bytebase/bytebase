@@ -24,7 +24,8 @@ type Instance struct {
 	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 	// Anomalies are stored in a separate table, but just return here for convenience
-	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
+	AnomalyList    []*Anomaly    `jsonapi:"relation,anomaly"`
+	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 
 	// Domain specific fields
 	Name          string  `jsonapi:"attr,name"`
@@ -33,9 +34,6 @@ type Instance struct {
 	ExternalLink  string  `jsonapi:"attr,externalLink"`
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
-	Username      string  `jsonapi:"attr,username"`
-	// Password is not returned to the client
-	Password string
 }
 
 // InstanceCreate is the API message for creating an instance.
@@ -53,8 +51,9 @@ type InstanceCreate struct {
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
-	Username     string  `jsonapi:"attr,username"`
-	Password     string  `jsonapi:"attr,password"`
+	// Creating an instance must with use admin username and password.
+	Username string `jsonapi:"attr,username"`
+	Password string `jsonapi:"attr,password"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -91,6 +90,8 @@ type InstancePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
+	// Update a data source of the specified type.
+	DataSourceType DataSourceType `jsonapi:"attr,dataSourceType"`
 }
 
 // InstanceMigrationSchemaStatus is the schema status for instance migration.
