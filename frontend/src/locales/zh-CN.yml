@@ -858,6 +858,7 @@ project:
     sync-from-vcs: 从 VCS 同步
     success-member-sync-prompt: 从 VCS 同步成功
     view-vcs-member: 在 VCS 中查看成员
+    switch-role-provider-to-bytebase-success-prompt: 成功将角色权限提供方切换为 Bytebase
   mode:
     standard: 标准
     tenant: 多租户

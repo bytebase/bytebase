@@ -965,6 +965,7 @@ project:
     sync-from-vcs: Sync from VCS
     success-member-sync-prompt: Sync member from VCS Succeeded
     view-vcs-member: view member at VCS
+    switch-role-provider-to-bytebase-success-prompt: Successfully switching project role provider to Bytebase.
   mode:
     standard: Standard
     tenant: Tenant
@@ -1164,7 +1165,9 @@ label:
     select-value: Select value...
     select-values: Select values...
   setting:
-    description: A label is a key-value pair that helps you identify the tenant for a database. {link}.
+    description: >-
+      A label is a key-value pair that helps you identify the tenant for a
+      database. {link}.
   db-name-template-tips: Allow you to group databases with the same {placeholder} from different tenants. {link}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.

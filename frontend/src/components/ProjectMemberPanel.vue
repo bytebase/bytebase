@@ -5,7 +5,7 @@
     </span>
 
     <div v-if="allowSyncVCS" class="inline-block float-right">
-      <span class="normal-link text-sm mr-5" @click="openWindowForVCS">
+      <span class="normal-link text-sm mr-5" @click="openWindowForVCSMember">
         {{ $t("project.settings.view-vcs-member") }}
       </span>
 
@@ -17,15 +17,7 @@
         class="ml-1 inline text-sm normal-link"
         @click.prevent="
           () => {
-            if (!allowSyncVCS) {
-              return;
-            }
-            // if it is the first time user try to sync role from VCS, we will prompt the user with a modal
-            if (project.roleProvider === 'BYTEBASE') {
-              state.showModal = true;
-            } else {
-              syncFromVCS();
-            }
+            syncFromVCS();
           }
         "
       />
@@ -35,8 +27,12 @@
           @toggle="
             (on) => {
               if (on) {
-                state.roleProvider = false;
+                // switching role provider to VCS may result in the deletion of all the existing members.
+                // so we prompt a modal to let user double confirm this.
+                state.showModal = true;
               } else {
+                // switching role provider back to BYTEBASE will not bring any side effect, so we will prompt nothing.
+                switchRoleProviderToBytebase();
               }
             }
           "
@@ -56,15 +52,11 @@
         () => {
           syncFromVCS();
           state.showModal = false;
-          state.roleProvider = true;
-          console.log('state.roleProvider', state.roleProvider);
         }
       "
       @negative-click="
         () => {
           state.showModal = false;
-          state.roleProvider = false;
-          console.log('state.roleProvider', state.roleProvider);
         }
       "
     />
@@ -160,7 +152,6 @@ import {
   ProjectMemberCreate,
   ProjectPatch,
   ProjectRoleType,
-  Repository,
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
@@ -317,12 +308,32 @@ export default defineComponent({
       });
     };
 
-    const openWindowForVCS = () => {
+    const switchRoleProviderToBytebase = () => {
+      const projectPatch: ProjectPatch = { roleProvider: "BYTEBASE" };
+
+      store
+        .dispatch("project/patchProject", {
+          projectId: props.project.id,
+          projectPatch,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t(
+              "project.settings.switch-role-provider-to-bytebase-success-prompt"
+            ),
+          });
+        });
+    };
+
+    const openWindowForVCSMember = () => {
       // currently we only support Gitlab, so the following redirect URL is fixed
       store
         .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
         .then((repository) => {
-          console.log(`${repository.webUrl}/-/project_members`);
+          // this uri format is for GitLab
+          window.open(`${repository.webUrl}/-/project_members`);
         });
     };
 
@@ -336,7 +347,8 @@ export default defineComponent({
       hasValidMember,
       addMember,
       syncFromVCS,
-      openWindowForVCS,
+      openWindowForVCSMember,
+      switchRoleProviderToBytebase,
     };
   },
 });
