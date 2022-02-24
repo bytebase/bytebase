@@ -99,7 +99,8 @@ type SheetFind struct {
 	CreatorID *int
 
 	// Related fields
-	ProjectID  *int
+	ProjectID *int
+	// Query all related sheets with databaseId can be used for database transfer checking.
 	DatabaseID *int
 
 	// Domain fields

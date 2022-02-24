@@ -71,7 +71,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.ProjectID = &projectID
 		}
 
-		// Query all related sheets with databaseId can be used for database transfer checking.
 		if databaseIDStr := c.QueryParams().Get("databaseId"); databaseIDStr != "" {
 			databaseID, err := strconv.Atoi(databaseIDStr)
 			if err != nil {
