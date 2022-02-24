@@ -9,7 +9,6 @@ func TestVersion(t *testing.T) {
 		{
 			args: []string{"version"},
 			expected: `bb version: development
-bb version: development
 Golang version: unknown
 Git commit hash: unknown
 Built on: unknown

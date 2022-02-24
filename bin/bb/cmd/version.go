@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/spf13/cobra"
 )
@@ -23,11 +22,10 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version of bb",
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
-		io.WriteString(out, fmt.Sprintf("bb version: %s\n", version))
-		io.WriteString(out, fmt.Sprintf("bb version: %s\n", version))
-		io.WriteString(out, fmt.Sprintf("Golang version: %s\n", goversion))
-		io.WriteString(out, fmt.Sprintf("Git commit hash: %s\n", gitcommit))
-		io.WriteString(out, fmt.Sprintf("Built on: %s\n", buildtime))
-		io.WriteString(out, fmt.Sprintf("Built by: %s\n", builduser))
+		fmt.Fprintf(out, "bb version: %s\n", version)
+		fmt.Fprintf(out, "Golang version: %s\n", goversion)
+		fmt.Fprintf(out, "Git commit hash: %s\n", gitcommit)
+		fmt.Fprintf(out, "Built on: %s\n", buildtime)
+		fmt.Fprintf(out, "Built by: %s\n", builduser)
 	},
 }
