@@ -50,9 +50,9 @@ type Database struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	ProjectID      int
-	Project        *Project `jsonapi:"relation,project"`
-	InstanceID     int
+	ProjectID      int           `jsonapi:"attr,projectId"`
+	Project        *Project      `jsonapi:"relation,project"`
+	InstanceID     int           `jsonapi:"attr,instanceId"`
 	Instance       *Instance     `jsonapi:"relation,instance"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 	SourceBackupID int

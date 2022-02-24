@@ -31,7 +31,7 @@ export enum SortText {
   COLUMN = "1",
   KEYWORD = "2",
   DATABASE = "3",
-  INSTASNCE = "4",
+  INSTANCE = "4",
 }
 
 export type ConnectionContext = {
