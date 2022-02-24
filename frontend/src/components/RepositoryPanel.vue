@@ -90,7 +90,6 @@ import {
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
-  ProjectPatch,
 } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";

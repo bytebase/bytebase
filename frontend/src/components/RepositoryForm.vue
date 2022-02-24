@@ -178,7 +178,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, defineComponent, computed, watch } from "vue";
+import { reactive, PropType, defineComponent, computed } from "vue";
 import {
   ExternalRepositoryInfo,
   Project,
