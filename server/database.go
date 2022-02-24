@@ -185,10 +185,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		targetProject := database.Project
-		if databasePatch.ProjectID != nil {
+		if databasePatch.ProjectID != nil && *databasePatch.ProjectID != database.ProjectID {
+			// Before updating the database projectID, we first need to check if there are still bound sheets.
+			sheetList, err := s.SheetService.FindSheetList(ctx, &api.SheetFind{
+				DatabaseID: &database.ID,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
+			}
+			if len(sheetList) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transfering database has %d bound sheets, unbind them first", len(sheetList)))
+			}
+
 			toProject, err := s.composeProjectByID(ctx, *databasePatch.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project ID: %d", *databasePatch.ProjectID))
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project ID: %d", *databasePatch.ProjectID)).SetInternal(err)
 			}
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *databasePatch.ProjectID))
