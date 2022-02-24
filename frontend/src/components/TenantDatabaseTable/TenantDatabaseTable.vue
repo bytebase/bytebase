@@ -46,10 +46,6 @@ export default defineComponent({
       default: "ALL",
       type: String as PropType<Mode>,
     },
-    customClick: {
-      default: false,
-      type: Boolean,
-    },
     labelList: {
       type: Array as PropType<Label[]>,
       required: true,
@@ -71,7 +67,6 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ["select-database"],
   setup(props) {
     const store = useStore();
 
