@@ -136,7 +136,7 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 			statement,
 			visibility
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 	`,
 		create.CreatorID,
