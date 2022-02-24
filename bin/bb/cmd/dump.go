@@ -12,8 +12,8 @@ import (
 
 func init() {
 	dumpCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
-	dumpCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
-	dumpCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
+	dumpCmd.Flags().StringVar(&username, "username", username, "Username to login database. (default mysql:root pg:postgres).")
+	dumpCmd.Flags().StringVar(&password, "password", password, "Password to login database.")
 	dumpCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	dumpCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	dumpCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")

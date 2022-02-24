@@ -13,8 +13,8 @@ import (
 
 func init() {
 	restoreCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql, or pg).")
-	restoreCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
-	restoreCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
+	restoreCmd.Flags().StringVar(&username, "username", username, "Username to login database. (default mysql:root pg:postgres).")
+	restoreCmd.Flags().StringVar(&password, "password", password, "Password to login database.")
 	restoreCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
 	restoreCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	restoreCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")

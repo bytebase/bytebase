@@ -1,7 +1,11 @@
 // Package cmd is the command surface of Bytebase bb tool provided by bytebase.com.
 package cmd
 
-import "go.uber.org/zap"
+import (
+	"os"
+
+	"go.uber.org/zap"
+)
 
 var (
 	databaseType string
@@ -22,3 +26,14 @@ var (
 
 	logger *zap.Logger
 )
+
+var envKeyToFlag = map[string]*string{
+	"BB_USERNAME": &username,
+	"BB_PASSWORD": &password,
+}
+
+func init() {
+	for env, v := range envKeyToFlag {
+		*v = os.Getenv(env)
+	}
+}
