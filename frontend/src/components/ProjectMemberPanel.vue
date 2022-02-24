@@ -5,6 +5,10 @@
     </span>
 
     <div v-if="allowSyncVCS" class="inline-block float-right">
+      <span class="normal-link text-sm mr-5" @click="openWindowForVCS">
+        {{ $t("project.settings.view-vcs-member") }}
+      </span>
+
       <span class="text-sm text-control">
         {{ $t("project.settings.sync-from-vcs") }}
       </span>
@@ -156,6 +160,7 @@ import {
   ProjectMemberCreate,
   ProjectPatch,
   ProjectRoleType,
+  Repository,
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
@@ -312,6 +317,15 @@ export default defineComponent({
       });
     };
 
+    const openWindowForVCS = () => {
+      // currently we only support Gitlab, so the following redirect URL is fixed
+      store
+        .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
+        .then((repository) => {
+          console.log(`${repository.webUrl}/-/project_members`);
+        });
+    };
+
     return {
       state,
       hasRBACFeature,
@@ -322,6 +336,7 @@ export default defineComponent({
       hasValidMember,
       addMember,
       syncFromVCS,
+      openWindowForVCS,
     };
   },
 });

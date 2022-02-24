@@ -295,7 +295,9 @@ settings:
       role-provider: This role is mapped from {rawRole} provided by {roleProvider}
     toggle-role-provider:
       title: Are you sure?
-      content: Changing role provider to VCS will replace all existing members with the members from the corresponding VCS project.
+      content: >-
+        Changing role provider to VCS will replace all existing members with the
+        members from the corresponding VCS project.
 activity:
   name: Name
   comment: Comment
@@ -813,7 +815,8 @@ repository:
   linked: Linked repositories
   role-provider: Project role provider
   role-provider-description: >-
-    Bytebase will sync members from the selected provider and replace the existing members in the project.
+    Bytebase will sync members from the selected provider and replace the
+    existing members in the project.
 workflow:
   current-workflow: Current workflow
   ui-workflow: UI workflow
@@ -961,6 +964,7 @@ project:
       btn-text: Restore this @.lower:{'common.project'}
     sync-from-vcs: Sync from VCS
     success-member-sync-prompt: Sync member from VCS Succeeded
+    view-vcs-member: view member at VCS
   mode:
     standard: Standard
     tenant: Tenant
