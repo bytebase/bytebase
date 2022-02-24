@@ -21,7 +21,13 @@
         <p>
           <i18n-t keypath="sql-editor.go-to-alter-schema">
             <template #alterschema>
-              <strong>{{ $t("database.alter-schema") }}</strong>
+              <strong>
+                {{
+                  isDDLSQLStatement
+                    ? $t("database.alter-schema")
+                    : $t("database.change-data")
+                }}
+              </strong>
             </template>
           </i18n-t>
         </p>
@@ -31,7 +37,11 @@
     <div class="execute-hint-content mt-4 flex justify-end space-x-2">
       <NButton @click="handleColse">{{ $t("common.close") }}</NButton>
       <NButton type="primary" @click="gotoAlterSchema">
-        {{ $t("database.alter-schema") }}
+        {{
+          isDDLSQLStatement
+            ? $t("database.alter-schema")
+            : $t("database.change-data")
+        }}
       </NButton>
     </div>
   </div>
@@ -57,6 +67,7 @@ import type {
 import {
   parseSQL,
   transformSQL,
+  isDDLStatement,
 } from "../../../components/MonacoEditor/sqlParser";
 
 const emit = defineEmits<{
@@ -76,11 +87,20 @@ const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
 ]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-const parsedStatement = computed(() => {
-  const sqlStatement =
-    currentTab.value.selectedStatement || currentTab.value.statement;
-  const { data } = parseSQL(sqlStatement);
-  return data !== null ? transformSQL(data) : sqlStatement;
+const sqlStatement = computed(
+  () => currentTab.value.selectedStatement || currentTab.value.statement
+);
+
+const getParsedStatement = () => {
+  const statement = sqlStatement.value;
+  const { data } = parseSQL(statement);
+  return data !== null ? transformSQL(data) : statement;
+};
+
+const isDDLSQLStatement = computed(() => {
+  const statement = getParsedStatement();
+  const { data } = parseSQL(statement);
+  return data !== null ? isDDLStatement(data) : false;
 });
 
 const ctx = connectionContext.value;
@@ -105,6 +125,8 @@ const gotoAlterSchema = () => {
   emit("close");
 
   const projectId = findProjectIdByDatabaseId.value(ctx.databaseId as number);
+  const DDLIssueTemplate = "bb.issue.database.schema.update";
+  const DMLIssueTemplate = "bb.issue.database.data.update";
 
   router.push({
     name: "workspace.issue.detail",
@@ -112,11 +134,13 @@ const gotoAlterSchema = () => {
       issueSlug: "new",
     },
     query: {
-      template: "bb.issue.database.schema.update",
-      name: `[${ctx.databaseName}] Alter schema`,
+      template: isDDLSQLStatement.value ? DDLIssueTemplate : DMLIssueTemplate,
+      name: `[${ctx.databaseName}] ${
+        isDDLSQLStatement.value ? "Alter schema" : "Change Data"
+      }`,
       project: projectId,
       databaseList: ctx.databaseId,
-      sql: parsedStatement.value,
+      sql: getParsedStatement(),
     },
   });
 };

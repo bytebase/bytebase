@@ -6,6 +6,10 @@ type ParseResult = {
   error: Error | null;
 };
 
+const DDL_TYPE = ["create", "alter", "drop"];
+const DML_TYPE = ["insert", "update", "delete"];
+const SELECT = "select";
+
 export const parseSQL = (sql: string): ParseResult => {
   if (sql === "") {
     return { data: [], error: null };
@@ -29,17 +33,43 @@ export const isValidStatement = (data: ParseResult["data"]) => {
 export const isSelectStatement = (data: ParseResult["data"]) => {
   // if the sql statement is an object, it's a single sql statement
   if (isObject(data) && !isArray(data)) {
-    return data.type.toLowerCase() === "select";
+    return data.type.toLowerCase() === SELECT;
   }
   // if the sql statement is an array, it's a multiple sql statements
   if (isArray(data)) {
-    return data.every((statement) => statement.type.toLowerCase() === "select");
+    return data.every((statement) => statement.type.toLowerCase() === SELECT);
   }
 };
 
 export const isMultipleStatements = (data: ParseResult["data"]) => {
   // if the sql statement is an array and it's more than one statement
   return isArray(data) && data.length > 1;
+};
+
+export const isDDLStatement = (data: ParseResult["data"]) => {
+  // if the sql statement is an object, it's a single sql statement
+  if (isObject(data) && !isArray(data)) {
+    return DDL_TYPE.includes(data.type.toLowerCase());
+  }
+  // if the sql statement is an array, it's a multiple sql statements
+  if (isArray(data)) {
+    return data.every((statement) =>
+      DDL_TYPE.includes(statement.type.toLowerCase())
+    );
+  }
+};
+
+export const isDMLStatement = (data: ParseResult["data"]) => {
+  // if the sql statement is an object, it's a single sql statement
+  if (isObject(data) && !isArray(data)) {
+    return DML_TYPE.includes(data.type.toLowerCase());
+  }
+  // if the sql statement is an array, it's a multiple sql statements
+  if (isArray(data)) {
+    return data.every((statement) =>
+      DML_TYPE.includes(statement.type.toLowerCase())
+    );
+  }
 };
 
 export const transformSQL = (data: AST | AST[], database = "MySQL") => {
