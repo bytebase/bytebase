@@ -76,20 +76,21 @@
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
-        <SharePopover @close="isShowSharePopover = false" />
+        <SharePopover ref="sharePopover" @close="isShowSharePopover = false" />
       </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
+import { onClickOutside } from "@vueuse/core";
 
 import {
   SqlEditorState,
@@ -123,6 +124,7 @@ const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
 ]);
 
 const isShowSharePopover = ref(false);
+const sharePopover = ref(null);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
@@ -159,6 +161,10 @@ watch(
     }
   }
 );
+
+onMounted(() => {
+  onClickOutside(sharePopover, (event) => (isShowSharePopover.value = false));
+});
 </script>
 
 <style scoped>
