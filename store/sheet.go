@@ -130,18 +130,18 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
-			instance_id,
+			project_id,
 			database_id,
 			name,
 			statement,
 			visibility
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 	`,
 		create.CreatorID,
 		create.CreatorID,
-		create.InstanceID,
+		create.ProjectID,
 		create.DatabaseID,
 		create.Name,
 		create.Statement,
@@ -162,7 +162,7 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 		&sheet.CreatedTs,
 		&sheet.UpdaterID,
 		&sheet.UpdatedTs,
-		&sheet.InstanceID,
+		&sheet.ProjectID,
 		&databaseID,
 		&sheet.Name,
 		&sheet.Statement,
@@ -179,7 +179,7 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 	return &sheet, nil
 }
 
-// pgPatchSheet creates a new sheet.
+// pgPatchSheet updates a sheet's name/statement/visibility.
 func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -198,7 +198,7 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, statement, visibility
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 	`, len(args)),
 		args...,
 	)
@@ -217,7 +217,7 @@ func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.
 			&sheet.CreatedTs,
 			&sheet.UpdaterID,
 			&sheet.UpdatedTs,
-			&sheet.InstanceID,
+			&sheet.ProjectID,
 			&databaseID,
 			&sheet.Name,
 			&sheet.Statement,
@@ -251,16 +251,11 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 	}
 
 	// Related fields
-	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
-		if find.InstanceOnly {
-			where = append(where, "database_id is NULL")
-		}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if find.InstanceID == nil || !find.InstanceOnly {
-		if v := find.DatabaseID; v != nil {
-			where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
-		}
+	if v := find.DatabaseID; v != nil {
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Domain fields
@@ -275,7 +270,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 			created_ts,
 			updater_id,
 			updated_ts,
-			instance_id,
+			project_id,
 			database_id,
 			name,
 			statement,
@@ -299,7 +294,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 			&sheet.CreatedTs,
 			&sheet.UpdaterID,
 			&sheet.UpdatedTs,
-			&sheet.InstanceID,
+			&sheet.ProjectID,
 			&databaseID,
 			&sheet.Name,
 			&sheet.Statement,
