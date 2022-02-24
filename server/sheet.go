@@ -24,6 +24,31 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
 		}
 
+		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
+		if sheetCreate.DatabaseID != nil {
+			database, err := s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
+				ID: sheetCreate.DatabaseID,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %d", *sheetCreate.DatabaseID)).SetInternal(err)
+			}
+			if database == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sheetCreate.DatabaseID))
+			}
+
+			sheetCreate.ProjectID = database.ProjectID
+		}
+
+		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{
+			ID: &sheetCreate.ProjectID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %d", sheetCreate.ProjectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
+		}
+
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		sheet, err := s.SheetService.CreateSheet(ctx, sheetCreate)
@@ -53,12 +78,12 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.RowStatus = &rowStatus
 		}
 
-		if instanceIDStr := c.QueryParams().Get("instanceId"); instanceIDStr != "" {
-			instanceID, err := strconv.Atoi(instanceIDStr)
+		if projectIDStr := c.QueryParams().Get("projectId"); projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.QueryParam("instanceId"))).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
 			}
-			sheetFind.InstanceID = &instanceID
+			sheetFind.ProjectID = &projectID
 		}
 
 		if databaseIDStr := c.QueryParams().Get("databaseId"); databaseIDStr != "" {
@@ -190,21 +215,17 @@ func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet)
 		return err
 	}
 
-	sheet.Instance, err = s.composeInstanceByID(ctx, sheet.InstanceID)
+	sheet.Project, err = s.composeProjectByID(ctx, sheet.ProjectID)
 	if err != nil {
 		return err
 	}
 
 	if sheet.DatabaseID != nil {
-		databaseFind := &api.DatabaseFind{
+		sheet.Database, err = s.composeDatabaseByFind(ctx, &api.DatabaseFind{
 			ID: sheet.DatabaseID,
-		}
-		sheet.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
+		})
 		if err != nil {
 			return err
-		}
-		if sheet.Database == nil {
-			return fmt.Errorf("database ID not found %v", sheet.DatabaseID)
 		}
 	}
 

@@ -319,6 +319,23 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
 	}
+
+	// Create a sheet to mock SQL editor new tab action with UNKNOWN ProjectID.
+	_, err = ctl.createSheet(api.SheetCreate{
+		ProjectID:  -1,
+		DatabaseID: &database.ID,
+		Name:       "my-sheet",
+		Statement:  "SELECT * FROM demo",
+		Visibility: api.PrivateSheet,
+	})
+	if err != nil {
+		t.Fatalf("failed to create sheet, error %v", err)
+	}
+
+	_, err = ctl.listSheets(database.ID)
+	if err != nil {
+		t.Fatalf("failed to list sheet, error %v", err)
+	}
 }
 
 func TestVCS(t *testing.T) {
