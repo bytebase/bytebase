@@ -211,7 +211,11 @@ const actions = {
   },
   // retrieve
   async fetchSheetList({ commit, dispatch, state, rootGetters }: any) {
-    dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: true });
+    dispatch(
+      "sqlEditor/setSqlEditorState",
+      { isFetchingSheet: true },
+      { root: true }
+    );
     const data = (await axios.get(`/api/sheet`)).data;
     const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
       const sheet = convertSheet(rawData, data.included, rootGetters);
@@ -226,7 +230,11 @@ const actions = {
       types.SET_SHEET_LIST,
       sheetList.sort((a, b) => b.createdTs - a.createdTs)
     );
-    dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: false });
+    dispatch(
+      "sqlEditor/setSqlEditorState",
+      { isFetchingSheet: false },
+      { root: true }
+    );
   },
   async fetchSheetById(
     { commit, dispatch, state, rootGetters }: any,
