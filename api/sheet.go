@@ -42,8 +42,11 @@ type Sheet struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	InstanceID int       `jsonapi:"attr,instanceId"`
-	Instance   *Instance `jsonapi:"relation,instance"`
+	ProjectID int      `jsonapi:"attr,projectId"`
+	Project   *Project `jsonapi:"relation,project"`
+	// The DatabaseID is optional.
+	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
+	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
 	DatabaseID *int      `jsonapi:"attr,databaseId"`
 	Database   *Database `jsonapi:"relation,database"`
 
@@ -60,7 +63,7 @@ type SheetCreate struct {
 	CreatorID int
 
 	// Related fields
-	InstanceID int  `jsonapi:"attr,instanceId"`
+	ProjectID  int  `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
@@ -78,7 +81,7 @@ type SheetPatch struct {
 	UpdaterID int
 
 	// Related fields
-	InstanceID int  `jsonapi:"attr,instanceId"`
+	ProjectID  int  `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
@@ -96,14 +99,12 @@ type SheetFind struct {
 	CreatorID *int
 
 	// Related fields
-	InstanceID *int
+	ProjectID *int
+	// Query all related sheets with databaseId can be used for database transfer checking.
 	DatabaseID *int
 
 	// Domain fields
 	Visibility *SheetVisibility
-
-	// Only applicable if InstanceID is specified, if true, then we only return instanceId (database_id is NULL)
-	InstanceOnly bool
 }
 
 func (find *SheetFind) String() string {
