@@ -50,8 +50,7 @@
             v-for="db in dbList"
             :key="db.id"
             :database="db"
-            :custom-click="customClick"
-            @select-database="(db) => $emit('select-database', db)"
+            :label-list="labelList"
           />
           <span v-if="dbList.length === 0">-</span>
         </div>
@@ -86,10 +85,6 @@ export default defineComponent({
       default: true,
       type: Boolean,
     },
-    customClick: {
-      default: false,
-      type: Boolean,
-    },
     name: {
       type: String,
       default: "",
@@ -119,7 +114,6 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ["select-database"],
   setup(props) {
     /**
      * databases are grouped by `yAxisLabel` then by `xAxisLabel`
