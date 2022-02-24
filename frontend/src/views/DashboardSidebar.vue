@@ -1,6 +1,27 @@
 <template>
   <!-- Navigation -->
   <nav class="px-2">
+    <button
+      class="mb-1 w-full flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover px-2 py-2 outline-none"
+      @click="onClickSearchButton"
+    >
+      <span class="text-control-placeholder">{{ $t("common.search") }}</span>
+      <span class="flex items-center space-x-1">
+        <kbd
+          class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-black tracking-tighter"
+        >
+          <img
+            v-if="isMac"
+            src="../assets/kbd-cmd.svg"
+            class="w-5 h-5 mr-px -mt-px transform scale-95"
+          />
+          <img v-else src="../assets/kbd-ctrl.svg" class="w-5 h-5 mr-1 mt-px" />
+          <span class="w-1 h-0 border-b border-black"></span>
+          <span class="mx-1 mr-0.5">k</span>
+        </kbd>
+      </span>
+    </button>
+
     <router-link to="/" class="outline-item group flex items-center px-2 py-2">
       <heroicons-outline:home class="w-5 h-5 mr-2" />
       {{ $t("common.home") }}
@@ -35,4 +56,13 @@
 import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
 import ProjectListSidePanel from "../components/ProjectListSidePanel.vue";
 import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
+import { useKBarHandler } from "@bytebase/vue-kbar";
+
+const isMac = navigator.platform.match(/mac/i);
+
+const handler = useKBarHandler();
+
+const onClickSearchButton = () => {
+  handler.value.show();
+};
 </script>
