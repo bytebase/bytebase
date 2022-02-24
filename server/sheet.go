@@ -24,11 +24,26 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
 		}
 
+		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
+		if sheetCreate.DatabaseID != nil {
+			database, err := s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
+				ID: sheetCreate.DatabaseID,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %d", *sheetCreate.DatabaseID)).SetInternal(err)
+			}
+			if database == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sheetCreate.DatabaseID))
+			}
+
+			sheetCreate.ProjectID = database.ProjectID
+		}
+
 		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{
 			ID: &sheetCreate.ProjectID,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", sheetCreate.ProjectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %d", sheetCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))

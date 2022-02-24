@@ -1059,3 +1059,44 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
 	return fmt.Errorf("failed to wait for backup as this condition should never be reached")
 }
+
+// createSheet creates a sheet.
+func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sheetCreate); err != nil {
+		return nil, fmt.Errorf("failed to marshal sheetCreate, error: %w", err)
+	}
+
+	body, err := ctl.post("/sheet", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sheet := new(api.Sheet)
+	if err = jsonapi.UnmarshalPayload(body, sheet); err != nil {
+		return nil, fmt.Errorf("fail to unmarshal sheet response, error: %w", err)
+	}
+	return sheet, nil
+}
+
+// listSheets lists sheets for a database.
+func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
+	body, err := ctl.get(fmt.Sprintf("/sheet?databaseId=%d", databaseID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var sheets []*api.Sheet
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Sheet)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get sheet response, error: %w", err)
+	}
+	for _, p := range ps {
+		sheet, ok := p.(*api.Sheet)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert sheet")
+		}
+		sheets = append(sheets, sheet)
+	}
+	return sheets, nil
+}
