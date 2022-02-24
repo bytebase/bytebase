@@ -1101,6 +1101,7 @@ sql-editor:
     Multiple SQL statements detected. SQL Editor only executes the first
     statement. You can select another statement and execute it individually.
   goto-alter-schema-hint: Please select a database connection from the top of the editor
+  notify-invalid-sql-statement: Invalid SQL statement.
   can-not-execute-query: Can not execute query when loading data.
   rows: row | rows
   no-history-found: No history found
