@@ -1,8 +1,6 @@
 <template>
   <div v-if="label" class="flex items-center space-x-2">
-    <slot name="title">
-      <label for="group-by">Group by</label>
-    </slot>
+    <slot name="title"> </slot>
 
     <label v-for="lbl in labelList" :key="lbl.key">
       <input
