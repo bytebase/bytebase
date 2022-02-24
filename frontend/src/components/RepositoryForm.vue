@@ -225,7 +225,7 @@ export default defineComponent({
     },
   },
   emits: ["change-repository"],
-  setup(props, { emit }) {
+  setup(props) {
     const state = reactive<LocalState>({});
 
     const isTenantProject = computed(() => {

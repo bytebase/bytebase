@@ -119,7 +119,6 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const store = useStore();
-
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -202,7 +201,6 @@ export default defineComponent({
         repositoryPatch.schemaPathTemplate =
           state.repositoryConfig.schemaPathTemplate;
       }
-
       store
         .dispatch("repository/updateRepositoryByProjectId", {
           projectId: props.project.id,
