@@ -732,7 +732,7 @@ repository:
   select-repository-search: 搜索仓库
   linked: 关联的仓库
   role-provider: 项目角色权限提供方
-  role-provider-description: Bytebase 将会从选定的角色提供方同步角色权限，所有此前存在的角色将会在同步前被删除。
+  role-provider-description: Bytebase 将会从选定的角色提供方同步成员角色，所有此前存在的成员将会被替换。
 workflow:
   current-workflow: 当前工作流
   ui-workflow: UI 工作流
