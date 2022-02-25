@@ -87,6 +87,13 @@ func TestTenant(t *testing.T) {
 			Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          stagingInstanceDir,
+			DataSourceList: []*api.DataSourceCreate{
+				{
+					Type:     api.Admin,
+					Username: "root",
+					Password: "",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatalf("failed to add instance, error: %v", err)
@@ -99,6 +106,13 @@ func TestTenant(t *testing.T) {
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
+			DataSourceList: []*api.DataSourceCreate{
+				{
+					Type:     api.Admin,
+					Username: "root",
+					Password: "",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatalf("failed to add instance, error: %v", err)
@@ -335,6 +349,13 @@ func TestTenantVCS(t *testing.T) {
 			Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          stagingInstanceDir,
+			DataSourceList: []*api.DataSourceCreate{
+				{
+					Type:     api.Admin,
+					Username: "root",
+					Password: "",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatalf("failed to add instance, error: %v", err)
@@ -347,6 +368,13 @@ func TestTenantVCS(t *testing.T) {
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
+			DataSourceList: []*api.DataSourceCreate{
+				{
+					Type:     api.Admin,
+					Username: "root",
+					Password: "",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatalf("failed to add instance, error: %v", err)
@@ -540,6 +568,13 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Name:          stagingInstanceName,
 		Engine:        db.SQLite,
 		Host:          stagingInstanceDir,
+		DataSourceList: []*api.DataSourceCreate{
+			{
+				Type:     api.Admin,
+				Username: "root",
+				Password: "",
+			},
+		},
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)
@@ -549,6 +584,13 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Name:          prodInstanceName,
 		Engine:        db.SQLite,
 		Host:          prodInstanceDir,
+		DataSourceList: []*api.DataSourceCreate{
+			{
+				Type:     api.Admin,
+				Username: "root",
+				Password: "",
+			},
+		},
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)

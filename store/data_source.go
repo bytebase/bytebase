@@ -56,6 +56,11 @@ func (s *DataSourceService) PgCreateDataSourceTx(ctx context.Context, tx *sql.Tx
 	return s.pgCreateDataSource(ctx, tx, create)
 }
 
+// PgPatchDataSourceTx updates a data source with a transaction.
+func (s *DataSourceService) PgPatchDataSourceTx(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
+	return s.pgPatchDataSource(ctx, tx, patch)
+}
+
 // FindDataSourceList retrieves a list of data sources based on find.
 func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

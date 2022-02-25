@@ -9,7 +9,26 @@ import (
 const (
 	// AdminDataSourceName is the name for administrative data source.
 	AdminDataSourceName = "Admin data source"
+	// ReadWriteDataSourceName is the name for read/write data source.
+	ReadWriteDataSourceName = "Read/Write data source"
+	// ReadOnlyDataSourceName is the name for read-only data source.
+	ReadOnlyDataSourceName = "ReadOnly data source"
+	// UnknownDataSourceName is the name for unknown data source.
+	UnknownDataSourceName = "Unknown data source"
 )
+
+// DataSourceNameFromType maps the name from a data source type.
+func DataSourceNameFromType(dataSourceType DataSourceType) string {
+	switch dataSourceType {
+	case Admin:
+		return AdminDataSourceName
+	case RO:
+		return ReadOnlyDataSourceName
+	case RW:
+		return ReadWriteDataSourceName
+	}
+	return UnknownDataSourceName
+}
 
 // DataSourceType is the type of data source.
 type DataSourceType string
@@ -103,17 +122,20 @@ type DataSourcePatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Username *string `jsonapi:"attr,username"`
-	Password *string `jsonapi:"attr,password"`
+	Username         *string `jsonapi:"attr,username"`
+	Password         *string `jsonapi:"attr,password"`
+	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
 }
 
 // DataSourceService is the service for data source.
 type DataSourceService interface {
 	CreateDataSource(ctx context.Context, create *DataSourceCreate) (*DataSource, error)
-	// This is specifically used to create the admin data source when creating the instance.
+	// This is specifically used to create data source when creating the instance.
 	CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *DataSourceCreate) (*DataSource, error)
 	PgCreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *DataSourceCreate) (*DataSource, error)
 	FindDataSourceList(ctx context.Context, find *DataSourceFind) ([]*DataSource, error)
 	FindDataSource(ctx context.Context, find *DataSourceFind) (*DataSource, error)
 	PatchDataSource(ctx context.Context, patch *DataSourcePatch) (*DataSource, error)
+	// This is specifically used to patch data source when updating the instance.
+	PgPatchDataSourceTx(ctx context.Context, tx *sql.Tx, patch *DataSourcePatch) (*DataSource, error)
 }

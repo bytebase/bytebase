@@ -144,55 +144,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
-			instanceFind := &api.InstanceFind{
-				ID: &id,
-			}
-			instance, err = s.InstanceService.FindInstance(ctx, instanceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-			}
-			if instance == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
-
-			dataSourceType := instancePatch.DataSourceType
-			dataSourceFind := &api.DataSourceFind{
-				InstanceID: &instance.ID,
-				Type:       &dataSourceType,
-			}
-			dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-			if dataSource == nil {
-				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
-			}
-
-			dataSourcePatch := &api.DataSourcePatch{
-				ID:        dataSource.ID,
-				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-				Username:  instancePatch.Username,
-			}
-			if instancePatch.Password != nil {
-				dataSourcePatch.Password = instancePatch.Password
-			} else if instancePatch.UseEmptyPassword {
-				password := ""
-				dataSourcePatch.Password = &password
-			}
-			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-		}
-
 		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
+		if instancePatch.Host != nil || instancePatch.Port != nil {
 			db, err := getDatabaseDriver(ctx, instance, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
@@ -538,15 +495,15 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	return nil
 }
 
-func getAdminDataSourceFromInstance(ctx context.Context, instance *api.Instance) *api.DataSource {
-	return getDataSourceFromInstanceWithType(ctx, instance, api.Admin)
+func getAdminDataSourceFromInstance(instance *api.Instance) *api.DataSource {
+	return getDataSourceFromInstanceWithType(instance, api.Admin)
 }
 
-func getReadOnlyDataSourceFromInstance(ctx context.Context, instance *api.Instance) *api.DataSource {
-	return getDataSourceFromInstanceWithType(ctx, instance, api.RO)
+func getReadOnlyDataSourceFromInstance(instance *api.Instance) *api.DataSource {
+	return getDataSourceFromInstanceWithType(instance, api.RO)
 }
 
-func getDataSourceFromInstanceWithType(ctx context.Context, instance *api.Instance, dataSourceType api.DataSourceType) *api.DataSource {
+func getDataSourceFromInstanceWithType(instance *api.Instance, dataSourceType api.DataSourceType) *api.DataSource {
 	var dataSource *api.DataSource = nil
 	for _, item := range instance.DataSourceList {
 		if item.Type == dataSourceType {

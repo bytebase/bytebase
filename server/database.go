@@ -942,9 +942,9 @@ func (s *Server) composeBackupRelationship(ctx context.Context, backup *api.Back
 // Retrieve db.Driver connection.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
-	adminDataSource := getAdminDataSourceFromInstance(ctx, instance)
+	adminDataSource := getAdminDataSourceFromInstance(instance)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to find data source"))
+		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to find admin data source"))
 	}
 	driver, err := db.Open(
 		ctx,

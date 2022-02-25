@@ -43,7 +43,8 @@ type InstanceCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID int `jsonapi:"attr,environmentId"`
+	EnvironmentID  int                 `jsonapi:"attr,environmentId"`
+	DataSourceList []*DataSourceCreate `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
@@ -51,9 +52,6 @@ type InstanceCreate struct {
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
-	// Creating an instance must with use admin username and password.
-	Username string `jsonapi:"attr,username"`
-	Password string `jsonapi:"attr,password"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -81,17 +79,15 @@ type InstancePatch struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
+	// Related fields
+	DataSourceList []*DataSourcePatch `jsonapi:"relation,dataSourceList"`
+
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
-	EngineVersion    *string
-	ExternalLink     *string `jsonapi:"attr,externalLink"`
-	Host             *string `jsonapi:"attr,host"`
-	Port             *string `jsonapi:"attr,port"`
-	Username         *string `jsonapi:"attr,username"`
-	Password         *string `jsonapi:"attr,password"`
-	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
-	// Update a data source of the specified type.
-	DataSourceType DataSourceType `jsonapi:"attr,dataSourceType"`
+	Name          *string `jsonapi:"attr,name"`
+	EngineVersion *string
+	ExternalLink  *string `jsonapi:"attr,externalLink"`
+	Host          *string `jsonapi:"attr,host"`
+	Port          *string `jsonapi:"attr,port"`
 }
 
 // InstanceMigrationSchemaStatus is the schema status for instance migration.

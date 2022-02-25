@@ -59,18 +59,19 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, err
 	}
 
-	// Create admin data source
-	adminDataSourceCreate := &api.DataSourceCreate{
-		CreatorID:  create.CreatorID,
-		InstanceID: instance.ID,
-		DatabaseID: allDatabase.ID,
-		Name:       api.AdminDataSourceName,
-		Type:       api.Admin,
-		Username:   create.Username,
-		Password:   create.Password,
-	}
-	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
-		return nil, err
+	for _, dataSourceCreate := range create.DataSourceList {
+		dataSourceCreate = &api.DataSourceCreate{
+			CreatorID:  create.CreatorID,
+			InstanceID: instance.ID,
+			DatabaseID: allDatabase.ID,
+			Name:       api.DataSourceNameFromType(dataSourceCreate.Type),
+			Type:       dataSourceCreate.Type,
+			Username:   dataSourceCreate.Name,
+			Password:   dataSourceCreate.Password,
+		}
+		if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, dataSourceCreate); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -203,6 +204,22 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	instance, err := pgPatchInstance(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
+	}
+
+	for _, dataSourcePatch := range patch.DataSourceList {
+		dataSourcePatch := &api.DataSourcePatch{
+			ID:        dataSourcePatch.ID,
+			UpdaterID: patch.UpdaterID,
+			Username:  dataSourcePatch.Username,
+			Password:  dataSourcePatch.Password,
+		}
+		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
+			password := ""
+			dataSourcePatch.Password = &password
+		}
+		if _, err = s.dataSourceService.PgPatchDataSourceTx(ctx, tx.PTx, dataSourcePatch); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
