@@ -871,7 +871,6 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
-    db-name-template-tips: 'Allow you to group databases with the same {placeholder} from different tenants.'
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -1147,6 +1146,7 @@ label:
     select-values: Select values...
   setting:
     description: A label is a key-value pair that helps you identify the tenant for a database. {link}.
+  db-name-template-tips: Allow you to group databases with the same {placeholder} from different tenants. {link}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
