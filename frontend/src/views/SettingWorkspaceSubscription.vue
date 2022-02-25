@@ -2,7 +2,11 @@
   <div class="mx-auto">
     <div class="textinfolabel">
       {{ $t("subscription.description") }}
-      <a class="text-accent" href="https://hub.bytebase.com" target="__blank">
+      <a
+        class="text-accent"
+        href="https://hub.bytebase.com/pricing"
+        target="__blank"
+      >
         {{ $t("subscription.description-highlight") }}
       </a>
     </div>
@@ -44,7 +48,6 @@
           'btn-primary inline-flex justify-center ml-auto mt-3',
         ]"
         target="_blank"
-        href="https://hub.bytebase.com"
         @click="uploadLicense"
       >
         {{ $t("subscription.upload-license") }}
