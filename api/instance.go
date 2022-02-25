@@ -55,8 +55,7 @@ type InstanceCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID  int                 `jsonapi:"attr,environmentId"`
-	DataSourceList []*DataSourceCreate `jsonapi:"relation,dataSourceList"`
+	EnvironmentID int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
 	Name         string  `jsonapi:"attr,name"`
@@ -64,6 +63,8 @@ type InstanceCreate struct {
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
+	Username     string  `jsonapi:"attr,username"`
+	Password     string  `jsonapi:"attr,password"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -90,9 +91,6 @@ type InstancePatch struct {
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
-
-	// Related fields
-	DataSourceList []*DataSourcePatch `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
 	Name          *string `jsonapi:"attr,name"`

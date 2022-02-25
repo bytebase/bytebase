@@ -718,6 +718,50 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.PATCH("/database/:id/datasource", func(c echo.Context) error {
+		ctx := context.Background()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourcePatch := &api.DataSourcePatch{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch data source request").SetInternal(err)
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourcePatch.ID,
+			DatabaseID: &id,
+		}
+		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Not found data source by id %d and databaseId %d", dataSourcePatch.ID, id))
+		}
+
+		dataSourcePatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
+			password := ""
+			dataSourcePatch.Password = &password
+		}
+
+		dataSource, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
+		}
+		return nil
+	})
+
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {

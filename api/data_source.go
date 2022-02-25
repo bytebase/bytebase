@@ -97,6 +97,8 @@ type DataSourceCreate struct {
 
 // DataSourceFind is the API message for finding data sources.
 type DataSourceFind struct {
+	ID *int
+
 	// Related fields
 	InstanceID *int
 	DatabaseID *int

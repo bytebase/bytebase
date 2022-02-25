@@ -63,13 +63,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,
-		DataSourceList: []*api.DataSourceCreate{
-			{
-				Type:     api.Admin,
-				Username: "root",
-				Password: "",
-			},
-		},
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)
@@ -435,13 +428,6 @@ func TestVCS(t *testing.T) {
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,
-		DataSourceList: []*api.DataSourceCreate{
-			{
-				Type:     api.Admin,
-				Username: "root",
-				Password: "",
-			},
-		},
 	})
 	if err != nil {
 		t.Fatalf("failed to add instance, error: %v", err)
