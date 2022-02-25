@@ -58,7 +58,7 @@ export default {
       "Hi bytebase support,\n",
       "I request to extend the trialing time for another 14 days.",
       "{please implement your reason to extend here}\n",
-      "My email in bytebase hub account: {email}",
+      "My email in the bytebase hub account: {email}",
       "My organization key: {orgKey}",
     ].join("\n");
 
