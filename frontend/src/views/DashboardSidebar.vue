@@ -8,16 +8,11 @@
       <span class="text-control-placeholder">{{ $t("common.search") }}</span>
       <span class="flex items-center space-x-1">
         <kbd
-          class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-black tracking-tighter"
+          class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control space-x-1 overflow-y-hidden"
         >
-          <img
-            v-if="isMac"
-            src="../assets/kbd-cmd.svg"
-            class="w-5 h-5 mr-px -mt-px transform scale-95"
-          />
-          <img v-else src="../assets/kbd-ctrl.svg" class="w-5 h-5 mr-1 mt-px" />
-          <span class="w-1 h-0 border-b border-black"></span>
-          <span class="mx-1 mr-0.5">k</span>
+          <span v-if="isMac" class="text-lg px-0.5">⌘</span>
+          <span v-else class="tracking-tighter transform scale-x-90">Ctrl</span>
+          <span>K</span>
         </kbd>
       </span>
     </button>
