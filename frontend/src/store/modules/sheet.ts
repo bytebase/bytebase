@@ -107,12 +107,17 @@ const getters = {
     rootGetters: any
   ) => {
     const currentUser = rootGetters["auth/currentUser"]();
+    const sharedSheet = rootState.sqlEditor.sharedSheet;
     const currentSheet = getters.currentSheet;
+    const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
     if (!currentSheet) return true;
+    // normal sheet can be edit by anyone
+    if (!isSharedByOthers) return false;
+
+    // if the sheet is shared by others, will be checked the visibility of the sheet.
     // creator always can edit
     if (getters.isCreator) return false;
-
     const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
     const isProject = currentSheet?.visibility === "PROJECT" ?? false;
     const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
