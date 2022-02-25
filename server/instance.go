@@ -494,22 +494,3 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 
 	return nil
 }
-
-func getAdminDataSourceFromInstance(instance *api.Instance) *api.DataSource {
-	return getDataSourceFromInstanceWithType(instance, api.Admin)
-}
-
-func getReadOnlyDataSourceFromInstance(instance *api.Instance) *api.DataSource {
-	return getDataSourceFromInstanceWithType(instance, api.RO)
-}
-
-func getDataSourceFromInstanceWithType(instance *api.Instance, dataSourceType api.DataSourceType) *api.DataSource {
-	var dataSource *api.DataSource = nil
-	for _, item := range instance.DataSourceList {
-		if item.Type == dataSourceType {
-			dataSource = item
-			break
-		}
-	}
-	return dataSource
-}
