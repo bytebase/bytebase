@@ -55,7 +55,7 @@ export default {
     const show = ref(true);
 
     const emailBody = [
-      "Hi bytebas support,\n",
+      "Hi bytebase support,\n",
       "I request to extend the trialing time for another 14 days.",
       "{please implement your reason to extend here}\n",
       "My email in bytebase hub account: {email}",
