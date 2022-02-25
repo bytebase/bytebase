@@ -15,10 +15,12 @@ var validPlans = []api.PlanType{
 
 // License is the API message for enterprise license.
 type License struct {
-	Audience      string       `jsonapi:"attr,audience"`
-	InstanceCount int          `jsonapi:"attr,instanceCount"`
-	ExpiresTs     int64        `jsonapi:"attr,expiresTs"`
-	Plan          api.PlanType `jsonapi:"attr,plan"`
+	Audience      string
+	InstanceCount int
+	ExpiresTs     int64
+	IssuedTs      int64
+	Plan          api.PlanType
+	Trialing      bool
 }
 
 // Valid will check if license expired or has correct plan type.
