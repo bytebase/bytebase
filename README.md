@@ -47,7 +47,6 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 
 Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
 
-
 ## Features
 
 - [x] Web-based schema change and management workspace for teams
@@ -141,7 +140,7 @@ working on the code:
 
 **Tech Stack**
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/techstack.svg)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/techstack.webp)
 
 **Data Model**
 
