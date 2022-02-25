@@ -75,7 +75,7 @@ export default class AutoCompletion {
         kind: monaco.languages.CompletionItemKind.Method,
         detail: "<Instance>",
         documentation: instance.name,
-        sortText: SortText.INSTASNCE,
+        sortText: SortText.INSTANCE,
         insertText: instance.name,
         range,
       });
