@@ -83,7 +83,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
@@ -97,7 +97,6 @@ import {
   SqlEditorGetters,
   TabGetters,
   SheetActions,
-  TabActions,
   UNKNOWN_ID,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
@@ -117,10 +116,6 @@ const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 // actions
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
   "upsertSheet",
-]);
-
-const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
-  "updateCurrentTab",
 ]);
 
 const isShowSharePopover = ref(false);
@@ -147,20 +142,6 @@ const handleUpsertSheet = async () => {
     statement,
   });
 };
-
-// selected a new connection
-watch(
-  () => isDisconnected.value,
-  async (newVal) => {
-    if (!newVal) {
-      const newSheet = await handleUpsertSheet();
-      updateCurrentTab({
-        sheetId: newSheet.id,
-        isSaved: true,
-      });
-    }
-  }
-);
 
 onMounted(() => {
   onClickOutside(sharePopover, (event) => (isShowSharePopover.value = false));

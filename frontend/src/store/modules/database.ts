@@ -337,14 +337,9 @@ const actions = {
 
   async fetchDatabaseById(
     { commit, rootGetters }: any,
-    {
-      databaseId,
-      instanceId,
-    }: { databaseId: DatabaseId; instanceId?: InstanceId }
+    { databaseId }: { databaseId: DatabaseId }
   ) {
-    const url = instanceId
-      ? `/api/instance/${instanceId}/database/${databaseId}`
-      : `/api/database/${databaseId}`;
+    const url = `/api/database/${databaseId}`;
     const data = (await axios.get(url)).data;
     const database = convert(data.data, data.included, rootGetters);
 
