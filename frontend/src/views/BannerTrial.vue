@@ -20,7 +20,7 @@
           <a
             :href="extendTrialingEmail"
             target="_self"
-            class="flex items-center justify-center pl-4 pr-2 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
+            class="flex items-center justify-center p-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
           >
             {{ $t("banner.extend-trial") }}
           </a>
