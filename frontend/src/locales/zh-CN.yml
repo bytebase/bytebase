@@ -218,6 +218,8 @@ task:
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
+  trial-expires: 您的{plan}试用仅剩 {days} 天
+  extend-trial: 申请延长试用
   action: 5 秒部署您自己的服务
 intro:
   content: >-
@@ -1044,6 +1046,7 @@ subscription:
   buy: 购买{plan}
   cancel: 取消订阅
   announcement: 您可以随时升级、降级或{cancel}。没有任何隐藏费用。
+  trialing: 试用期
   update:
     success:
       title: 证书更新成功

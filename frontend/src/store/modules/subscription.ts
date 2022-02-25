@@ -1,4 +1,5 @@
 import axios from "axios";
+import dayjs from "dayjs";
 import {
   Subscription,
   FeatureType,
@@ -24,6 +25,30 @@ const getters = {
     (state: SubscriptionState, getters: any) =>
     (type: FeatureType): boolean => {
       return FEATURE_MATRIX.get(type)![getters["currentPlan"]()];
+    },
+
+  nextPaymentDays: (state: SubscriptionState) => (): number => {
+    if (!state.subscription || state.subscription.expiresTs <= 0) {
+      return -1;
+    }
+
+    const expiresTime = dayjs(state.subscription.expiresTs * 1000);
+    return expiresTime.diff(new Date(), "day");
+  },
+
+  isNearTrialExpireTime:
+    (state: SubscriptionState, getters: any) => (): boolean => {
+      if (!state.subscription || !state.subscription?.trialing) return false;
+
+      const nextPaymentDays = getters["nextPaymentDays"]();
+      if (nextPaymentDays <= 0) return false;
+
+      const trialEndTime = dayjs(state.subscription.expiresTs * 1000);
+      const total = trialEndTime.diff(
+        state.subscription.startedTs * 1000,
+        "day"
+      );
+      return nextPaymentDays / total < 0.5;
     },
 };
 

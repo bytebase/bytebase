@@ -221,6 +221,8 @@ task:
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
+  trial-expires: Your trial for {plan} plan will expires in {days} days.
+  extend-trial: Extend trialing time
   action: Deploy yours in 5 seconds
 intro:
   content: >-
@@ -1176,6 +1178,7 @@ subscription:
   cancel: cancel your subscription
   announcement: You can upgrade, downgrade, or {cancel} anytime. No
         hidden charges.
+  trialing: trialing
   update:
     success:
       title: Successfully updated license
