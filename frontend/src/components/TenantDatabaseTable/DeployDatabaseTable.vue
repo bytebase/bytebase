@@ -35,6 +35,7 @@
                   :allow-edit="false"
                   :show-header="false"
                   :deployment="deployment.schedule.deployments[i]"
+                  layout="compact"
                 />
               </div>
             </NPopover>

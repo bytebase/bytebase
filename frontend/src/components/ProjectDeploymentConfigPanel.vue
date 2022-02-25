@@ -4,7 +4,25 @@
       <div class="text-lg font-medium leading-7 text-main">
         {{ $t("project.db-name-template") }}
       </div>
-      <div>
+      <div class="textinfolabel">
+        <i18n-t keypath="label.db-name-template-tips">
+          <template #placeholder>
+            <!-- prettier-ignore -->
+            <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
+          </template>
+          <template #link>
+            <a
+              class="normal-link inline-flex items-center"
+              href="https://docs.bytebase.com/features/tenant-database-management#database-name-template"
+              target="__BLANK"
+            >
+              {{ $t("common.learn-more") }}
+              <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+            </a>
+          </template>
+        </i18n-t>
+      </div>
+      <div class="mt-3">
         <input
           disabled
           type="text"
@@ -13,7 +31,7 @@
         />
       </div>
 
-      <div class="text-lg font-medium leading-7 text-main mt-4">
+      <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
         {{ $t("common.deployment-config") }}
       </div>
     </template>
@@ -25,6 +43,7 @@
       :description="$t('deployment-config.this-is-example-deployment-config')"
     >
     </BBAttention>
+
     <div class="divide-y">
       <DeploymentConfigTool
         v-if="deployment"
@@ -237,6 +256,12 @@ export default defineComponent({
       { deep: true }
     );
 
+    const dbNameTemplateTips = computed(() =>
+      t("label.db-name-template-tips", {
+        placeholder: "{{DB_NAME}}",
+      })
+    );
+
     return {
       EMPTY_ID,
       state,
@@ -247,6 +272,7 @@ export default defineComponent({
       deployment,
       addStage,
       update,
+      dbNameTemplateTips,
     };
   },
 });

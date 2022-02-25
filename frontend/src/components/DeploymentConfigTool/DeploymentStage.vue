@@ -1,34 +1,36 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-
   <div class="deployment-stage flex w-full relative">
     <div
       v-if="allowEdit"
-      class="reorder flex flex-col items-center justify-between pr-2 py-0"
+      class="reorder flex flex-col items-center justify-start pr-2 py-4"
     >
       <button
+        v-if="index > 0"
         class="text-control hover:text-control-hover"
-        :class="[index > 0 ? 'visible' : 'invisible']"
         @click="$emit('prev')"
       >
         <heroicons-solid:arrow-circle-up class="w-6 h-6" />
       </button>
       <button
+        v-if="index < max - 1"
         class="text-control hover:text-control-hover"
-        :class="[index < max - 1 ? 'visible' : 'invisible']"
         @click="$emit('next')"
       >
         <heroicons-solid:arrow-circle-down class="w-6 h-6" />
       </button>
     </div>
-    <div class="main flex-1 space-y-2 py-2 w-full">
-      <h3 v-if="showHeader" class="text-lg leading-6 font-medium text-main">
+    <div
+      class="main flex-1 space-y-2 w-full"
+      :class="[layout === 'compact' ? 'py-2' : 'py-4']"
+    >
+      <h3 v-if="showHeader">
         <template v-if="allowEdit">
           <input
             v-model="deployment.name"
             type="text"
             :placeholder="$t('deployment-config.name-placeholder')"
-            class="text-main rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
+            class="rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50 h-8 py-0 text-sm"
           />
         </template>
         <template v-else>
@@ -105,6 +107,10 @@ export default defineComponent({
     showHeader: {
       type: Boolean,
       default: true,
+    },
+    layout: {
+      type: String as PropType<"default" | "compact">,
+      default: "default",
     },
   },
   emits: ["remove", "prev", "next"],
