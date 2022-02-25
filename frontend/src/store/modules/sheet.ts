@@ -149,6 +149,10 @@ const mutations = {
     state: SheetState,
     { sheetId, sheet }: { sheetId: SheetId; sheet: Sheet }
   ) {
+    const item = state.sheetList.find((sheet) => sheet.id === sheetId);
+    if (item !== undefined) {
+      Object.assign(item, sheet);
+    }
     state.sheetById.set(sheetId, sheet);
   },
   [types.DELETE_SHEET](state: SheetState, sheetId: SheetId) {
