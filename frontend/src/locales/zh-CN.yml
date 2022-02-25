@@ -1046,6 +1046,7 @@ subscription:
   buy: 购买{plan}
   cancel: 取消订阅
   announcement: 您可以随时升级、降级或{cancel}。没有任何隐藏费用。
+  trialing: 试用期
   update:
     success:
       title: 证书更新成功

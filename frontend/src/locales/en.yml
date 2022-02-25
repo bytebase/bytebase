@@ -1178,6 +1178,7 @@ subscription:
   cancel: cancel your subscription
   announcement: You can upgrade, downgrade, or {cancel} anytime. No
         hidden charges.
+  trialing: trialing
   update:
     success:
       title: Successfully updated license

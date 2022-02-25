@@ -16,7 +16,15 @@
           {{ $t("subscription.current") }}
         </dt>
         <dd class="text-indigo-600 mt-1 text-4xl">
-          {{ currentPlan }}
+          <div class="flex items-center">
+            {{ currentPlan }}
+            <span
+              v-if="subscription.trialing"
+              class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
+            >
+              {{ $t("subscription.trialing") }}
+            </span>
+          </div>
         </dd>
       </div>
       <div class="my-3">
