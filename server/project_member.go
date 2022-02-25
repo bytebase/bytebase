@@ -128,7 +128,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberDelete,
 				Level:       api.ActivityInfo,
-				Comment: fmt.Sprintf("Revoked %s from %s (%s).",
+				Comment: fmt.Sprintf("Revoked %s from %s (%s). Because this member does not belong to the VCS.",
 					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
