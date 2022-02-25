@@ -85,6 +85,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				}
 				// create activity for member deletion
 				{
+					member.Principal, err = s.composePrincipalByID(ctx, member.PrincipalID)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", member.PrincipalID)).SetInternal(err)
+					}
+
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 						ContainerID: projectID,
@@ -103,7 +108,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 							zap.Error(err))
 					}
 				}
-
 			}
 		}
 
@@ -139,8 +143,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 
 			providerPayload := &api.ProjectRoleProviderPayload{
-				VCSRole: projectMember.VCSRole,
-				SyncTs:  time.Now().UTC().Unix(),
+				VCSRole:    projectMember.VCSRole,
+				LastSyncTs: time.Now().UTC().Unix(),
 			}
 			providerPayloadBytes, _ := json.Marshal(providerPayload)
 
@@ -158,6 +162,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 			// create activity for member creation
 			{
+				createdMember.Principal, err = s.composePrincipalByID(ctx, createdMember.PrincipalID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", createdMember.PrincipalID)).SetInternal(err)
+				}
+
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 					ContainerID: projectID,
@@ -168,7 +177,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				}
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 				if err != nil {
-					s.l.Warn("Failed to create project activity after creating member",
+					s.l.Warn("Failed to create project activity after deleting member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", createdMember.Principal.ID),
 						zap.String("principal_name", createdMember.Principal.Name),

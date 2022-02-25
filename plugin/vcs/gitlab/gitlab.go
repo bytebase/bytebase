@@ -155,11 +155,11 @@ func (e ProjectRole) String() string {
 
 // gitLabRepositoryMember is the API message for repository member
 type gitLabRepositoryMember struct {
-	Email           string        `json:"email"`
-	Name            string        `json:"name"`
-	State           vcs.UserState `json:"state"`
-	MembershipState vcs.UserState `json:"membership_state"`
-	AccessLevel     int32         `json:"access_level"`
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	State           vcs.State `json:"state"`
+	MembershipState vcs.State `json:"membership_state"`
+	AccessLevel     int32     `json:"access_level"`
 }
 
 func init() {
@@ -272,14 +272,14 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	// we only return active member (both state and membership_state is active)
 	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
 	for _, gitLabMember := range gitLabrepositoryMember {
-		if gitLabMember.State == vcs.UserStateActive && gitLabMember.MembershipState == vcs.UserStateActive {
+		if gitLabMember.State == vcs.StateActive && gitLabMember.MembershipState == vcs.StateActive {
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
 			repositoryMember := &vcs.RepositoryMember{
 				Name:         gitLabMember.Name,
 				Email:        gitLabMember.Email,
 				Role:         bytebaseRole,
 				VCSRole:      gitLabRole.String(),
-				State:        vcs.UserStateActive,
+				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			}
 			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)

@@ -217,10 +217,7 @@ export default defineComponent({
     });
 
     const allowSyncVCS = computed(() => {
-      if (props.project.workflowType === "VCS" && allowAddMember.value) {
-        return true;
-      }
-      return false;
+      return props.project.workflowType === "VCS" && allowAddMember.value;
     });
 
     const hasValidMember = computed(() => {

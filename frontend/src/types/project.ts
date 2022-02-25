@@ -17,7 +17,7 @@ export type ProjectRoleProvider = "GITLAB_SELF_HOST" | "BYTEBASE";
 
 export type ProjectRoleProviderPayload = {
   vcsRole: string;
-  syncTs: number;
+  lastSyncTs: number;
 };
 
 // Project

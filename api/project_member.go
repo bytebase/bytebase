@@ -27,9 +27,10 @@ func (e ProjectRoleProvider) String() string {
 	return ""
 }
 
+//ProjectRoleProviderPayload is the payload for role provider
 type ProjectRoleProviderPayload struct {
-	VCSRole string `json:"vcsRole"`
-	SyncTs  int64  `json:"syncTs"`
+	VCSRole    string `json:"vcsRole"`
+	LastSyncTs int64  `json:"lastSyncTs"`
 }
 
 // ProjectMember is the API message for project members.
