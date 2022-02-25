@@ -8,11 +8,11 @@
       <span class="text-control-placeholder">{{ $t("common.search") }}</span>
       <span class="flex items-center space-x-1">
         <kbd
-          class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control space-x-1 overflow-y-hidden"
+          class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
         >
           <span v-if="isMac" class="text-xl px-0.5">⌘</span>
           <span v-else class="tracking-tighter transform scale-x-90">Ctrl</span>
-          <span>K</span>
+          <span class="ml-0.5 mr-0.5">K</span>
         </kbd>
       </span>
     </button>
