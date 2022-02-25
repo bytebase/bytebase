@@ -34,12 +34,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 		}
 
+		// fetch project member from VCS
 		repoFind := &api.RepositoryFind{ProjectID: &projectID}
 		repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
 		}
-
 		vcsFind := &api.VCSFind{
 			ID: &repo.VCSID,
 		}
@@ -50,7 +50,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if vcs == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
 		}
-
 		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryActiveMemberList(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
@@ -66,53 +65,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository member from VCS, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
 		}
 
-		findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
-		bytebaseProjectMemberList, err := s.ProjectMemberService.FindProjectMemberList(ctx, findProjectMember)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository member in bytebase: %d", projectID)).SetInternal(err)
-		}
-
-		// drop all existing members
-		{
-			for _, member := range bytebaseProjectMemberList {
-				memberDelete := &api.ProjectMemberDelete{
-					ID:        member.ID,
-					DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-				}
-				err := s.ProjectMemberService.DeleteProjectMember(ctx, memberDelete)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to dump existing project member, ID: %d, user name: %s", member.ID, member.Principal.Name)).SetInternal(err)
-				}
-				// create activity for member deletion
-				{
-					member.Principal, err = s.composePrincipalByID(ctx, member.PrincipalID)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", member.PrincipalID)).SetInternal(err)
-					}
-
-					activityCreate := &api.ActivityCreate{
-						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-						ContainerID: projectID,
-						Type:        api.ActivityProjectMemberDelete,
-						Level:       api.ActivityInfo,
-						Comment: fmt.Sprintf("Revoked %s from %s (%s).",
-							member.Principal.Name, member.Principal.Email, member.Role),
-					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-					if err != nil {
-						s.l.Warn("Failed to create project activity after creating member",
-							zap.Int("project_id", projectID),
-							zap.Int("principal_id", member.Principal.ID),
-							zap.String("principal_name", member.Principal.Name),
-							zap.String("role", member.Role),
-							zap.Error(err))
-					}
-				}
-			}
-		}
-
 		// The following block will check whether the relevant principal exists in our system.
 		// If the principal does not exist, we will try to create one out of the vcs member info.
+		createList := make([]*api.ProjectMemberCreate, 0)
 		for _, projectMember := range vcsProjectMemberList {
 			if vcs.Type != projectMember.RoleProvider {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
@@ -123,7 +78,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
-
+			// TODO(zilong): the creation of principal is not within the transaction. Need to move this block to the same transaction of creating & deleting members
 			if principal == nil { // try to create principal
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
@@ -134,7 +89,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// if the principal uses external auth provider
 					Password: common.RandomString(20),
 				}
-				// for now we only support GITLAB_SELF_HOST
 				createdPrincipal, httpErr := trySignup(ctx, s, signupInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
@@ -147,7 +101,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				LastSyncTs: time.Now().UTC().Unix(),
 			}
 			providerPayloadBytes, _ := json.Marshal(providerPayload)
-
 			createProjectMember := &api.ProjectMemberCreate{
 				ProjectID:    projectID,
 				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
@@ -156,34 +109,63 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
 				Payload:      string(providerPayloadBytes),
 			}
-			createdMember, err := s.ProjectMemberService.CreateProjectMember(ctx, createProjectMember)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to mapping repository member from VCS").SetInternal(err)
-			}
-			// create activity for member creation
-			{
-				createdMember.Principal, err = s.composePrincipalByID(ctx, createdMember.PrincipalID)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", createdMember.PrincipalID)).SetInternal(err)
-				}
+			createList = append(createList, createProjectMember)
+		}
 
-				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-					ContainerID: projectID,
-					Type:        api.ActivityProjectMemberCreate,
-					Level:       api.ActivityInfo,
-					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
-						createdMember.Principal.Name, createdMember.Principal.Email, createdMember.Role),
-				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-				if err != nil {
-					s.l.Warn("Failed to create project activity after deleting member",
-						zap.Int("project_id", projectID),
-						zap.Int("principal_id", createdMember.Principal.ID),
-						zap.String("principal_name", createdMember.Principal.Name),
-						zap.String("role", createdMember.Role),
-						zap.Error(err))
-				}
+		oldProjectMemberList, err := s.ProjectMemberService.GetSetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
+		}
+
+		// create activity for member deletion
+		for _, projectMember := range oldProjectMemberList {
+			projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerID: projectID,
+				Type:        api.ActivityProjectMemberDelete,
+				Level:       api.ActivityInfo,
+				Comment: fmt.Sprintf("Revoked %s from %s (%s).",
+					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
+			}
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			if err != nil {
+				s.l.Warn("Failed to create project activity after creating member",
+					zap.Int("project_id", projectID),
+					zap.Int("principal_id", projectMember.Principal.ID),
+					zap.String("principal_name", projectMember.Principal.Name),
+					zap.String("role", projectMember.Role),
+					zap.Error(err))
+			}
+		}
+
+		// create activity for member creation
+		for _, projectMember := range createList {
+			principalFind := &api.PrincipalFind{ID: &projectMember.PrincipalID}
+			principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
+			}
+
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerID: projectID,
+				Type:        api.ActivityProjectMemberCreate,
+				Level:       api.ActivityInfo,
+				Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
+					principal.Name, principal.Email, projectMember.Role),
+			}
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			if err != nil {
+				s.l.Warn("Failed to create project activity after deleting member",
+					zap.Int("project_id", projectID),
+					zap.Int("principal_id", principal.ID),
+					zap.String("principal_name", principal.Name),
+					zap.String("role", string(projectMember.Role)),
+					zap.Error(err))
 			}
 		}
 
