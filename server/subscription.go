@@ -55,7 +55,9 @@ func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 		subscription = &enterpriseAPI.Subscription{
 			Plan:          license.Plan,
 			ExpiresTs:     license.ExpiresTs,
+			StartedTs:     license.IssuedTs,
 			InstanceCount: license.InstanceCount,
+			Trialing:      license.Trialing,
 		}
 	}
 

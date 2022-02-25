@@ -3,6 +3,9 @@
     <template v-if="isDemo">
       <BannerDemo />
     </template>
+    <template v-else-if="isNearTrialExpireTime">
+      <BannerTrial />
+    </template>
     <template v-else-if="isReadonly">
       <div
         class="h-12 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
@@ -43,12 +46,18 @@ import { useStore } from "vuex";
 import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
+import BannerTrial from "../views/BannerTrial.vue";
 import { ServerInfo } from "../types";
 import { computed } from "vue";
 
 export default {
   name: "DashboardLayout",
-  components: { ProvideDashboardContext, DashboardHeader, BannerDemo },
+  components: {
+    ProvideDashboardContext,
+    DashboardHeader,
+    BannerDemo,
+    BannerTrial,
+  },
   setup() {
     const store = useStore();
 
@@ -63,6 +72,9 @@ export default {
     };
 
     const isDemo = computed(() => store.getters["actuator/isDemo"]());
+    const isNearTrialExpireTime = computed(() =>
+      store.getters["subscription/isNearTrialExpireTime"]()
+    );
 
     const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
 
@@ -70,6 +82,7 @@ export default {
       ping,
       isDemo,
       isReadonly,
+      isNearTrialExpireTime,
     };
   },
 };
