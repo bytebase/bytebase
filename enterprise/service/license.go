@@ -96,6 +96,11 @@ func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
 	}
 
+	iat, ok := claims["iat"].(float64)
+	if !ok {
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("iat is not valid, found '%v'", claims["iat"]))
+	}
+
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
@@ -111,6 +116,11 @@ func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan is not valid, found '%v'", claims["plan"]))
 	}
 
+	trialing, ok := claims["trialing"].(bool)
+	if !ok {
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("trialing is not valid, found '%v'", claims["trialing"]))
+	}
+
 	planType, err := convertPlanType(plan)
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan type %q is not valid", planType))
@@ -124,8 +134,10 @@ func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.Licen
 	license := &enterpriseAPI.License{
 		InstanceCount: int(instance),
 		ExpiresTs:     int64(exp),
+		IssuedTs:      int64(iat),
 		Plan:          planType,
 		Audience:      aud,
+		Trialing:      trialing,
 	}
 
 	if err := license.Valid(); err != nil {
