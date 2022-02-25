@@ -171,6 +171,7 @@ common:
   copy: 拷贝
   manage: 管理
   table: 表
+  search: 搜索
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
