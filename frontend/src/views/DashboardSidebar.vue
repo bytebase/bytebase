@@ -10,7 +10,7 @@
         <kbd
           class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control space-x-1 overflow-y-hidden"
         >
-          <span v-if="isMac" class="text-lg px-0.5">⌘</span>
+          <span v-if="isMac" class="text-xl px-0.5">⌘</span>
           <span v-else class="tracking-tighter transform scale-x-90">Ctrl</span>
           <span>K</span>
         </kbd>
