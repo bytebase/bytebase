@@ -1134,8 +1134,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
-    const [instanceSlug, instanceId, databaseSlug, databaseId] =
-      connectionSlug.split("_");
+    const [, instanceId, , databaseId] = connectionSlug.split("_");
     store
       .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
         instanceId: Number(instanceId),

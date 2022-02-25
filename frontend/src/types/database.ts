@@ -19,8 +19,10 @@ export type Database = {
   id: DatabaseId;
 
   // Related fields
-  instance: Instance;
+  projectId: ProjectId;
   project: Project;
+  instanceId: InstanceId;
+  instance: Instance;
   dataSourceList: DataSource[];
   sourceBackup?: Backup;
   anomalyList: Anomaly[];
