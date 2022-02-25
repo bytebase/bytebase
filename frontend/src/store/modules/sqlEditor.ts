@@ -13,6 +13,7 @@ import {
   QueryHistory,
   UNKNOWN_ID,
   Sheet,
+  DEFAULT_PROJECT_ID,
 } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
@@ -20,7 +21,7 @@ import { unknown } from "../../types";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
-  projectId: UNKNOWN_ID,
+  projectId: DEFAULT_PROJECT_ID,
   projectName: "",
   instanceId: UNKNOWN_ID,
   instanceName: "",
@@ -208,22 +209,21 @@ const actions = {
     { commit, dispatch }: any,
     { instanceId, databaseId }: Partial<SqlEditorState["connectionContext"]>
   ) {
-    const instanceInfo = (await dispatch(
-      "instance/fetchInstanceById",
-      instanceId,
-      { root: true }
-    )) as Instance;
-    const databaseInfo = (await dispatch(
+    const instance = (await dispatch("instance/fetchInstanceById", instanceId, {
+      root: true,
+    })) as Instance;
+    const database = (await dispatch(
       "database/fetchDatabaseById",
       { databaseId },
       { root: true }
     )) as Database;
+
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
       instanceId,
-      instanceName: instanceInfo.name,
+      instanceName: instance.name,
       databaseId,
-      databaseName: databaseInfo.name,
+      databaseName: database.name,
     });
   },
   async fetchQueryHistoryList({ commit, dispatch }: any) {
