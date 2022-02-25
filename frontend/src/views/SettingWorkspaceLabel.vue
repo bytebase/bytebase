@@ -6,6 +6,7 @@
           <a
             class="normal-link inline-flex items-center"
             href="https://docs.bytebase.com/features/tenant-database-management#labels"
+            target="__BLANK"
           >
             {{ $t("common.learn-more") }}
             <heroicons-outline:external-link class="w-4 h-4 ml-1" />
