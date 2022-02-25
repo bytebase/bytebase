@@ -3,7 +3,7 @@ import { isEmpty } from "lodash-es";
 
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import type {
+import {
   Sheet,
   SheetId,
   SheetState,
@@ -11,13 +11,12 @@ import type {
   CreateSheetState,
   Principal,
   ResourceObject,
-  ResourceIdentifier,
   ConnectionContext,
   TabInfo,
-  Instance,
   Database,
   Project,
   ProjectMember,
+  UNKNOWN_ID,
 } from "../../types";
 import { unknown } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -27,31 +26,18 @@ function convertSheet(
   includedList: ResourceObject[],
   rootGetters: any
 ): Sheet {
-  const instanceId = (sheet.relationships!.instance.data as ResourceIdentifier)
-    .id;
+  let project = unknown("PROJECT") as Project;
+  let database = unknown("DATABASE") as Database;
 
-  let instance: Instance = unknown("INSTANCE") as Instance;
-
-  const databaseId = (sheet.relationships!.database.data as ResourceIdentifier)
-    .id;
-
-  let database: Database = unknown("DATABASE") as Database;
-
-  const projectId = rootGetters["sqlEditor/findProjectIdByDatabaseId"](
-    Number(databaseId)
-  );
-
-  let project: Project = unknown("PROJECT") as Project;
+  const projectId = sheet.attributes.projectId;
+  const databaseId = sheet.attributes.databaseId || UNKNOWN_ID;
 
   for (const item of includedList || []) {
-    if (item.type == "instance" && item.id == instanceId) {
-      instance = rootGetters["instance/convert"](item, includedList);
-    }
-    if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item, includedList);
-    }
     if (item.type == "project" && Number(item.id) === Number(projectId)) {
       project = rootGetters["project/convert"](item, includedList);
+    }
+    if (item.type == "database" && Number(item.id) == Number(databaseId)) {
+      database = rootGetters["database/convert"](item, includedList);
     }
   }
 
@@ -66,9 +52,8 @@ function convertSheet(
       sheet.relationships!.updater.data,
       includedList
     ) as Principal,
-    instance,
-    database,
     project,
+    database,
   };
 }
 
@@ -122,12 +107,17 @@ const getters = {
     rootGetters: any
   ) => {
     const currentUser = rootGetters["auth/currentUser"]();
+    const sharedSheet = rootState.sqlEditor.sharedSheet;
     const currentSheet = getters.currentSheet;
+    const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
     if (!currentSheet) return true;
+    // normal sheet can be edit by anyone
+    if (!isSharedByOthers) return false;
+
+    // if the sheet is shared by others, will be checked the visibility of the sheet.
     // creator always can edit
     if (getters.isCreator) return false;
-
     const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
     const isProject = currentSheet?.visibility === "PROJECT" ?? false;
     const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
@@ -164,6 +154,10 @@ const mutations = {
     state: SheetState,
     { sheetId, sheet }: { sheetId: SheetId; sheet: Sheet }
   ) {
+    const item = state.sheetList.find((sheet) => sheet.id === sheetId);
+    if (item !== undefined) {
+      Object.assign(item, sheet);
+    }
     state.sheetById.set(sheetId, sheet);
   },
   [types.DELETE_SHEET](state: SheetState, sheetId: SheetId) {
@@ -199,7 +193,7 @@ const actions = {
         data: {
           type: "createSheet",
           attributes: {
-            instanceId: ctx.instanceId,
+            projectId: ctx.projectId,
             databaseId: ctx.databaseId,
             name: tab.name,
             statement: tab.statement,
@@ -208,37 +202,47 @@ const actions = {
         },
       })
     ).data;
-    const newSheet = convertSheet(result.data, result.included, rootGetters);
+    const sheet = convertSheet(result.data, result.included, rootGetters);
 
     commit(
       types.SET_SHEET_LIST,
       (state.sheetList as Sheet[])
-        .concat(newSheet)
+        .concat(sheet)
         .sort((a, b) => b.createdTs - a.createdTs)
     );
 
     commit(types.SET_SHEET_BY_ID, {
-      sheetId: newSheet.id,
-      sheet: newSheet,
+      sheetId: sheet.id,
+      sheet: sheet,
     });
 
-    return newSheet;
+    return sheet;
   },
   // retrieve
   async fetchSheetList({ commit, dispatch, state, rootGetters }: any) {
+    dispatch(
+      "sqlEditor/setSqlEditorState",
+      { isFetchingSheet: true },
+      { root: true }
+    );
     const data = (await axios.get(`/api/sheet`)).data;
-    const sheetList: Sheet[] = data.data.map((sheet: ResourceObject) => {
-      const newSheet = convertSheet(sheet, data.included, rootGetters);
+    const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
+      const sheet = convertSheet(rawData, data.included, rootGetters);
       commit(types.SET_SHEET_BY_ID, {
-        sheetId: newSheet.id,
-        sheet: newSheet,
+        sheetId: sheet.id,
+        sheet: sheet,
       });
-      return newSheet;
+      return sheet;
     });
 
     commit(
       types.SET_SHEET_LIST,
       sheetList.sort((a, b) => b.createdTs - a.createdTs)
+    );
+    dispatch(
+      "sqlEditor/setSqlEditorState",
+      { isFetchingSheet: false },
+      { root: true }
     );
   },
   async fetchSheetById(
@@ -256,7 +260,7 @@ const actions = {
   },
   // update
   async patchSheetById(
-    { dispatch, rootGetters }: any,
+    { commit, dispatch, rootGetters }: any,
     { id, name, statement, visibility }: SheetPatch
   ): Promise<Sheet> {
     const attributes: Omit<SheetPatch, "id"> = {};
@@ -279,11 +283,14 @@ const actions = {
       })
     ).data;
 
-    const newSheet = convertSheet(result.data, result.included, rootGetters);
+    const sheet = convertSheet(result.data, result.included, rootGetters);
 
-    dispatch("fetchSheetList");
+    commit(types.SET_SHEET_BY_ID, {
+      sheetId: sheet.id,
+      sheet: sheet,
+    });
 
-    return newSheet;
+    return sheet;
   },
   // delete
   async deleteSheet({ commit, state }: any, id: number) {

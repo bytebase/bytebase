@@ -1,11 +1,10 @@
 import {
   SheetId,
-  Instance,
-  InstanceId,
   Database,
   DatabaseId,
   Principal,
   Project,
+  ProjectId,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -20,11 +19,10 @@ export interface Sheet {
   updatedTs: number;
 
   // Related fields
-  instanceId: InstanceId;
-  instance: Instance;
+  projectId: ProjectId;
+  project: Project;
   databaseId?: DatabaseId;
   database?: Database;
-  project?: Project;
 
   // Domain fields
   name: string;
@@ -42,7 +40,7 @@ export type SheetPatch = Partial<
 >;
 
 export type SheetFind = Partial<
-  Pick<Sheet, "databaseId" | "instanceId" | "visibility">
+  Pick<Sheet, "projectId" | "databaseId" | "visibility">
 >;
 
 export type AccessOption = {
