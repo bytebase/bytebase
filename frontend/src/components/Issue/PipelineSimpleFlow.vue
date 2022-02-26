@@ -1,7 +1,7 @@
 <template>
   <nav aria-label="Pipeline">
     <ol
-      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0"
+      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0 overflow-auto py-4"
     >
       <li
         v-for="(item, index) in itemList"
@@ -52,18 +52,21 @@
               </template>
             </div>
             <div
-              class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col"
+              class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col pipeline-item"
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
               <span class="text-xs">{{ item.stageName }}</span>
-              <span class="text-sm">{{ item.taskName }}</span>
+              <span class="text-sm line-clamp-2">{{ item.taskName }}</span>
             </div>
             <div
               class="ml-4 w-full group cursor-pointer grid grid-cols-3 lg:hidden"
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
+              <span class="col-span-1 text-sm">{{ item.stageName }}</span>
+              <span class="col-span-2 text-sm ml-4">{{ item.taskName }}</span>
+
               <span class="col-span-1 text-sm">{{ item.stageName }}</span>
               <span class="col-span-2 text-sm ml-4">{{ item.taskName }}</span>
             </div>
@@ -267,3 +270,9 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.pipeline-item {
+  flex-basis: 80%;
+}
+</style>
