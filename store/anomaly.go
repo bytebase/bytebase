@@ -50,7 +50,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 
 	var anomaly *api.Anomaly
 	if len(list) == 0 {
-		anomaly, err = pgCreateAnomaly(ctx, tx.PTx, upsert)
+		anomaly, err = createAnomaly(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			UpdaterID: upsert.CreatorID,
 			Payload:   upsert.Payload,
 		}
-		anomaly, err = pgPatchAnomaly(ctx, tx.PTx, patch)
+		anomaly, err = patchAnomaly(ctx, tx.PTx, patch)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +101,7 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgArchiveAnomaly(ctx, tx.PTx, archive); err != nil {
+	if err := archiveAnomaly(ctx, tx.PTx, archive); err != nil {
 		return FormatError(err)
 	}
 
@@ -112,8 +112,8 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	return nil
 }
 
-// pgCreateAnomaly creates a new anomaly.
-func pgCreateAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+// createAnomaly creates a new anomaly.
+func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	// Inserts row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO anomaly (
@@ -250,8 +250,8 @@ type anomalyPatch struct {
 	Payload string
 }
 
-// pgPatchAnomaly patches an anomaly
-func pgPatchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
+// patchAnomaly patches an anomaly
+func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "payload = $2"), append(args, patch.Payload)
@@ -301,8 +301,8 @@ func pgPatchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.
 	return &anomaly, err
 }
 
-// pgArchiveAnomaly archives an anomaly by ID.
-func pgArchiveAnomaly(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
+// archiveAnomaly archives an anomaly by ID.
+func archiveAnomaly(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
 	if archive.InstanceID == nil && archive.DatabaseID == nil {
 		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}

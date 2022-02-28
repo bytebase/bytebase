@@ -34,7 +34,7 @@ func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*
 	}
 	defer tx.PTx.Rollback()
 
-	view, err := s.pgCreateView(ctx, tx.PTx, create)
+	view, err := s.createView(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteView(ctx, tx.PTx, delete); err != nil {
+	if err := deleteView(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -103,8 +103,8 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 	return nil
 }
 
-// pgCreateView creates a new view.
-func (s *ViewService) pgCreateView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.View, error) {
+// createView creates a new view.
+func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.View, error) {
 	// Insert row into view.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO vw (
@@ -215,8 +215,8 @@ func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.Vi
 	return list, nil
 }
 
-// pgDeleteView permanently deletes views from a database.
-func pgDeleteView(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
+// deleteView permanently deletes views from a database.
+func deleteView(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = $1`, delete.DatabaseID); err != nil {
 		return FormatError(err)

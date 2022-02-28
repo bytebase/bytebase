@@ -32,7 +32,7 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	}
 	defer tx.PTx.Rollback()
 
-	instanceUser, err := pgUpsertInstanceUser(ctx, tx.PTx, upsert)
+	instanceUser, err := upsertInstanceUser(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteInstanceUser(ctx, tx.PTx, delete); err != nil {
+	if err := deleteInstanceUser(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -79,8 +79,8 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	return nil
 }
 
-// pgUpsertInstanceUser upserts a new instanceUser.
-func pgUpsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+// upsertInstanceUser upserts a new instanceUser.
+func upsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance_user (
@@ -166,8 +166,8 @@ func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUse
 	return list, nil
 }
 
-// pgDeleteInstanceUser permanently deletes a instance user by ID.
-func pgDeleteInstanceUser(ctx context.Context, tx *sql.Tx, delete *api.InstanceUserDelete) error {
+// deleteInstanceUser permanently deletes a instance user by ID.
+func deleteInstanceUser(ctx context.Context, tx *sql.Tx, delete *api.InstanceUserDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
