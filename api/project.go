@@ -310,5 +310,5 @@ type ProjectService interface {
 	FindProject(ctx context.Context, find *ProjectFind) (*Project, error)
 	PatchProject(ctx context.Context, patch *ProjectPatch) (*Project, error)
 	// This is specifically used to update the ProjectWorkflowType when linking/unlinking the repository.
-	PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*Project, error)
+	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*Project, error)
 }

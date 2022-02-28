@@ -37,7 +37,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	issue, err := s.pgCreateIssue(ctx, tx.PTx, create)
+	issue, err := s.createIssue(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	}
 	defer tx.PTx.Rollback()
 
-	issue, err := s.pgPatchIssue(ctx, tx.PTx, patch)
+	issue, err := s.patchIssue(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -127,8 +127,8 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 	return issue, nil
 }
 
-// pgCreateIssue creates a new issue.
-func (s *IssueService) pgCreateIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.Issue, error) {
+// createIssue creates a new issue.
+func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.Issue, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,
@@ -269,8 +269,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.
 	return list, nil
 }
 
-// pgPatchIssue updates a issue by ID. Returns the new state of the issue after update.
-func (s *IssueService) pgPatchIssue(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*api.Issue, error) {
+// patchIssue updates a issue by ID. Returns the new state of the issue after update.
+func (s *IssueService) patchIssue(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*api.Issue, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
