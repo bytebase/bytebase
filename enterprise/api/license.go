@@ -15,7 +15,7 @@ var validPlans = []api.PlanType{
 
 // License is the API message for enterprise license.
 type License struct {
-	Audience      string
+	Subject       string
 	InstanceCount int
 	ExpiresTs     int64
 	IssuedTs      int64
