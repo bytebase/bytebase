@@ -2,7 +2,7 @@
   <!-- Navigation -->
   <nav class="px-2">
     <button
-      class="mb-4 w-full flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
+      class="mb-2 w-full flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
       @click="onClickSearchButton"
     >
       <span class="text-control-placeholder">{{ $t("common.search") }}</span>
