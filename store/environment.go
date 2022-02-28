@@ -36,7 +36,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 	}
 	defer tx.PTx.Rollback()
 
-	environment, err := s.pgCreateEnvironment(ctx, tx.PTx, create)
+	environment, err := s.createEnvironment(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 	}
 	defer tx.PTx.Rollback()
 
-	environment, err := s.pgPatchEnvironment(ctx, tx.PTx, patch)
+	environment, err := s.patchEnvironment(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -138,7 +138,7 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 }
 
 // createEnvironment creates a new environment.
-func (s *EnvironmentService) pgCreateEnvironment(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
 	// The order is the MAX(order) + 1
 	row1, err1 := tx.QueryContext(ctx, `
 		SELECT "order"
@@ -260,8 +260,8 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx
 	return list, nil
 }
 
-// pgPatchEnvironment updates a environment by ID. Returns the new state of the environment after update.
-func (s *EnvironmentService) pgPatchEnvironment(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
+// patchEnvironment updates a environment by ID. Returns the new state of the environment after update.
+func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

@@ -33,7 +33,7 @@ func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, crea
 	}
 	defer tx.PTx.Rollback()
 
-	issueSubscriber, err := pgCreateIssueSubscriber(ctx, tx.PTx, create)
+	issueSubscriber, err := createIssueSubscriber(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteIssueSubscriber(ctx, tx.PTx, delete); err != nil {
+	if err := deleteIssueSubscriber(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -80,8 +80,8 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 	return nil
 }
 
-// pgCreateIssueSubscriber creates a new issueSubscriber.
-func pgCreateIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
+// createIssueSubscriber creates a new issueSubscriber.
+func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue_subscriber (
@@ -155,8 +155,8 @@ func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 	return list, nil
 }
 
-// pgDeleteIssueSubscriber permanently deletes a issueSubscriber by ID.
-func pgDeleteIssueSubscriber(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
+// deleteIssueSubscriber permanently deletes a issueSubscriber by ID.
+func deleteIssueSubscriber(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id = $2`, delete.IssueID, delete.SubscriberID); err != nil {
 		return FormatError(err)

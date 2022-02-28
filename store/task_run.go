@@ -26,8 +26,8 @@ func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 	return &TaskRunService{l: logger, db: db}
 }
 
-// PgCreateTaskRunTx creates a new taskRun.
-func (s *TaskRunService) PgCreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
+// CreateTaskRunTx creates a new taskRun.
+func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
 			creator_id,
@@ -77,9 +77,9 @@ func (s *TaskRunService) PgCreateTaskRunTx(ctx context.Context, tx *sql.Tx, crea
 	return &taskRun, nil
 }
 
-// PgFindTaskRunListTx retrieves a list of taskRuns based on find.
-func (s *TaskRunService) PgFindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
-	list, err := s.pgFindTaskRunList(ctx, tx, find)
+// FindTaskRunListTx retrieves a list of taskRuns based on find.
+func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
+	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return []*api.TaskRun{}, err
 	}
@@ -87,10 +87,10 @@ func (s *TaskRunService) PgFindTaskRunListTx(ctx context.Context, tx *sql.Tx, fi
 	return list, nil
 }
 
-// PgFindTaskRunTx retrieves a single taskRun based on find.
+// FindTaskRunTx retrieves a single taskRun based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *TaskRunService) PgFindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
-	list, err := s.pgFindTaskRunList(ctx, tx, find)
+func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
+	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func (s *TaskRunService) PgFindTaskRunTx(ctx context.Context, tx *sql.Tx, find *
 	return list[0], nil
 }
 
-// PgPatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
-func (s *TaskRunService) PgPatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
+// PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
+func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -163,7 +163,7 @@ func (s *TaskRunService) PgPatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx,
 	return &taskRun, nil
 }
 
-func (s *TaskRunService) pgFindTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (_ []*api.TaskRun, err error) {
+func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (_ []*api.TaskRun, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

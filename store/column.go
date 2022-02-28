@@ -34,7 +34,7 @@ func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCrea
 	}
 	defer tx.PTx.Rollback()
 
-	column, err := s.pgCreateColumn(ctx, tx.PTx, create)
+	column, err := s.createColumn(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	}
 	defer tx.PTx.Rollback()
 
-	column, err := s.pgPatchColumn(ctx, tx.PTx, patch)
+	column, err := s.patchColumn(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -105,8 +105,8 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	return column, nil
 }
 
-// pgCreateColumn creates a new column.
-func (s *ColumnService) pgCreateColumn(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
+// createColumn creates a new column.
+func (s *ColumnService) createColumn(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
 	defaultStr := sql.NullString{}
 	if create.Default != nil {
 		defaultStr = sql.NullString{
@@ -263,8 +263,8 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *ap
 	return list, nil
 }
 
-// pgPatchColumn updates a column by ID. Returns the new state of the column after update.
-func (s *ColumnService) pgPatchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
+// patchColumn updates a column by ID. Returns the new state of the column after update.
+func (s *ColumnService) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 
