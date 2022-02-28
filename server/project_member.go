@@ -78,7 +78,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
-			// TODO(zilong): the creation of principal is not within the transaction. Need to move this block to the same transaction of creating & deleting members
 			if principal == nil { // try to create principal
 				signupInfo := &api.Signup{
 					Name:  projectMember.Name,
@@ -100,7 +99,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				VCSRole:    projectMember.VCSRole,
 				LastSyncTs: time.Now().UTC().Unix(),
 			}
-			providerPayloadBytes, _ := json.Marshal(providerPayload)
+			providerPayloadBytes, err := json.Marshal(providerPayload)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal providerPayload").SetInternal(err)
+			}
 			createProjectMember := &api.ProjectMemberCreate{
 				ProjectID:    projectID,
 				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
@@ -112,13 +114,39 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
-		oldProjectMemberList, err := s.ProjectMemberService.GetSetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
+		createdMember, deletedMember, updatedMemberBefore, updatedMemberAfter, err := s.ProjectMemberService.SetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
 		}
 
-		// create activity for member deletion
-		for _, projectMember := range oldProjectMemberList {
+		// create activity for member CREATION
+		for _, projectMember := range createdMember {
+			principalFind := &api.PrincipalFind{ID: &projectMember.PrincipalID}
+			principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				ContainerID: projectID,
+				Type:        api.ActivityProjectMemberCreate,
+				Level:       api.ActivityInfo,
+				Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
+					principal.Name, principal.Email, projectMember.Role),
+			}
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			if err != nil {
+				s.l.Warn("Failed to create project activity after deleting member",
+					zap.Int("project_id", projectID),
+					zap.Int("principal_id", principal.ID),
+					zap.String("principal_name", principal.Name),
+					zap.String("role", string(projectMember.Role)),
+					zap.Error(err))
+			}
+		}
+
+		// create activity for member DELETION
+		for _, projectMember := range deletedMember {
 			projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
@@ -142,29 +170,32 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 		}
 
-		// create activity for member creation
-		for _, projectMember := range createList {
-			principalFind := &api.PrincipalFind{ID: &projectMember.PrincipalID}
-			principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
+		// create activity for member UPDATE
+		for i := 0; i < len(updatedMemberBefore); i++ {
+			memberBefore := updatedMemberBefore[i]
+			memberAfter := updatedMemberAfter[i]
+
+			principal, err := s.composePrincipalByID(ctx, memberBefore.PrincipalID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
 			}
 
 			activityCreate := &api.ActivityCreate{
 				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
-				Type:        api.ActivityProjectMemberCreate,
+				Type:        api.ActivityProjectMemberRoleUpdate,
 				Level:       api.ActivityInfo,
-				Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
-					principal.Name, principal.Email, projectMember.Role),
+				Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by BYTEBASE) to %s (provided by VCS).",
+					principal.Name, principal.Email, memberBefore.Role, memberAfter.Role),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
-				s.l.Warn("Failed to create project activity after deleting member",
+				s.l.Warn("Failed to create project activity after updating member role",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", principal.ID),
 					zap.String("principal_name", principal.Name),
-					zap.String("role", string(projectMember.Role)),
+					zap.String("old_role", memberBefore.Role),
+					zap.String("new_role", memberAfter.Role),
 					zap.Error(err))
 			}
 		}

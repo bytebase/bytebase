@@ -33,13 +33,15 @@
               } else {
                 // switching role provider back to BYTEBASE will not bring any side effect, so we will prompt nothing.
                 patchProjectRoleProvider('BYTEBASE').then(() => {
-                  store.dispatch('notification/pushNotification', {
-                    module: 'bytebase',
-                    style: 'SUCCESS',
-                    title: t(
-                      'project.settings.switch-role-provider-to-bytebase-success-prompt'
-                    ),
-                  });
+                  store
+                    .dispatch('notification/pushNotification', {
+                      module: 'bytebase',
+                      style: 'SUCCESS',
+                      title: t(
+                        'project.settings.switch-role-provider-to-bytebase-success-prompt'
+                      ),
+                    })
+                    .catch(() => {}); // mute error at browser
                 });
               }
             }
@@ -58,9 +60,11 @@
       :negative-text="$t('common.cancel')"
       @positive-click="
         () => {
-          patchProjectRoleProvider('GITLAB_SELF_HOST').then(() => {
-            syncMemberFromVCS();
-          });
+          patchProjectRoleProvider('GITLAB_SELF_HOST')
+            .then(() => {
+              syncMemberFromVCS();
+            })
+            .catch(() => {}); // mute error at browser
 
           state.showModal = false;
         }
@@ -294,7 +298,7 @@ export default defineComponent({
       roleProvider: ProjectRoleProvider
     ): Promise<boolean> =>
       new Promise((resolve, reject) => {
-        const projectPatch: ProjectPatch = { roleProvider };
+        const projectPatch: ProjectPatch = { roleProvider: roleProvider };
         store
           .dispatch("project/patchProject", {
             projectId: props.project.id,
@@ -302,9 +306,6 @@ export default defineComponent({
           })
           .then((res) => {
             resolve(true);
-          })
-          .catch((e) => {
-            reject(false);
           });
       });
 

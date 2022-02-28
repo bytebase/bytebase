@@ -123,6 +123,76 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	return nil
 }
 
+// SetProjectMember set the project member with provided project member list
+func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID int, operatorID int, setList []*api.ProjectMemberCreate) (createdMember, deletedMember, updatedMemberBefore, updatedMemberAfter []*api.ProjectMember, err error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, nil, nil, nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
+	existingProjectMemberList, err := findProjectMemberList(ctx, tx.PTx, findProjectMember)
+	if err != nil {
+		return nil, nil, nil, nil, FormatError(err)
+	}
+
+	memberMap := make(map[int]*api.ProjectMember)
+	for _, existingMember := range existingProjectMemberList {
+		memberMap[existingMember.PrincipalID] = existingMember
+	}
+
+	createdMemberList := make([]*api.ProjectMember, 0)
+	updatedMemberBeforeList := make([]*api.ProjectMember, 0)
+	updatedMemberAfterList := make([]*api.ProjectMember, 0)
+	for _, memberCreate := range setList {
+		// if the member exists, we will try to update its field
+		if memberBefore, ok := memberMap[memberCreate.PrincipalID]; ok {
+			updatedMember, err := pgPatchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
+				ID:           memberBefore.ID,
+				UpdaterID:    memberCreate.CreatorID,
+				Role:         (*string)(&memberCreate.Role),
+				RoleProvider: &memberCreate.RoleProvider,
+				Payload:      &memberCreate.Payload,
+			})
+			if err != nil {
+				return nil, nil, nil, nil, FormatError(err)
+			}
+
+			updatedMemberBeforeList = append(updatedMemberBeforeList, memberBefore)
+			updatedMemberAfterList = append(updatedMemberAfterList, updatedMember)
+		} else {
+			createdMember, err := pgCreateProjectMember(ctx, tx.PTx, memberCreate)
+			if err != nil {
+				return nil, nil, nil, nil, FormatError(err)
+			}
+			createdMemberList = append(createdMemberList, createdMember)
+		}
+	}
+
+	deletedMemberList := make([]*api.ProjectMember, 0)
+	for _, member := range existingProjectMemberList {
+		// if the member exists, we will try to update
+		if _, ok := memberMap[member.PrincipalID]; ok {
+			continue
+		}
+		memberDelete := &api.ProjectMemberDelete{
+			ID:        member.ID,
+			DeleterID: operatorID,
+		}
+		if err := pgDeleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
+			return nil, nil, nil, nil, FormatError(err)
+		}
+		deletedMemberList = append(deletedMemberList, member)
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, nil, nil, nil, FormatError(err)
+	}
+
+	return createdMemberList, deletedMemberList, updatedMemberBeforeList, updatedMemberAfterList, nil
+}
+
 // createProjectMember creates a new projectMember.
 func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	// Insert row into database.

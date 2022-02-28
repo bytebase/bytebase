@@ -70,8 +70,8 @@ type State string
 const (
 	// StateActive is the active state for VCS user state.
 	StateActive State = "active"
-	// UserStateArchived is the archived state for VCS user state.
-	UserStateArchived State = "archived"
+	// StateArchived is the archived state for VCS user state.
+	StateArchived State = "archived"
 )
 
 // UserInfo is the API message for user info.
