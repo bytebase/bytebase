@@ -17,7 +17,7 @@
         class="ml-1 inline text-sm normal-link"
         @click.prevent="
           () => {
-            syncFromVCS();
+            syncMemberFromVCS();
           }
         "
       />
@@ -32,7 +32,15 @@
                 state.showModal = true;
               } else {
                 // switching role provider back to BYTEBASE will not bring any side effect, so we will prompt nothing.
-                switchRoleProviderToBytebase();
+                patchProjectRoleProvider('BYTEBASE').then(() => {
+                  store.dispatch('notification/pushNotification', {
+                    module: 'bytebase',
+                    style: 'SUCCESS',
+                    title: t(
+                      'project.settings.switch-role-provider-to-bytebase-success-prompt'
+                    ),
+                  });
+                });
               }
             }
           "
@@ -50,7 +58,10 @@
       :negative-text="$t('common.cancel')"
       @positive-click="
         () => {
-          syncFromVCS();
+          patchProjectRoleProvider('GITLAB_SELF_HOST').then(() => {
+            syncMemberFromVCS();
+          });
+
           state.showModal = false;
         }
       "
@@ -151,6 +162,7 @@ import {
   ProjectMember,
   ProjectMemberCreate,
   ProjectPatch,
+  ProjectRoleProvider,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
@@ -277,49 +289,35 @@ export default defineComponent({
       state.error = "";
     };
 
-    const syncFromVCS = () => {
-      // update project's role provider
-      const projectPatch: ProjectPatch = { roleProvider: "GITLAB_SELF_HOST" };
-
-      const promiseList = [];
-
-      promiseList.push(
-        store.dispatch("project/syncMemberRoleFromVCS", {
-          projectId: props.project.id,
-        })
-      );
-
-      promiseList.push(
-        store.dispatch("project/patchProject", {
-          projectId: props.project.id,
-          projectPatch,
-        })
-      );
-
-      Promise.all(promiseList).then(() => {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("project.settings.success-member-sync-prompt"),
-        });
+    // update project's role provider
+    const patchProjectRoleProvider = (
+      roleProvider: ProjectRoleProvider
+    ): Promise<boolean> =>
+      new Promise((resolve, reject) => {
+        const projectPatch: ProjectPatch = { roleProvider };
+        store
+          .dispatch("project/patchProject", {
+            projectId: props.project.id,
+            projectPatch,
+          })
+          .then((res) => {
+            resolve(true);
+          })
+          .catch((e) => {
+            reject(false);
+          });
       });
-    };
 
-    const switchRoleProviderToBytebase = () => {
-      const projectPatch: ProjectPatch = { roleProvider: "BYTEBASE" };
-
+    const syncMemberFromVCS = () => {
       store
-        .dispatch("project/patchProject", {
+        .dispatch("project/syncMemberRoleFromVCS", {
           projectId: props.project.id,
-          projectPatch,
         })
         .then(() => {
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
             style: "SUCCESS",
-            title: t(
-              "project.settings.switch-role-provider-to-bytebase-success-prompt"
-            ),
+            title: t("project.settings.success-member-sync-prompt"),
           });
         });
     };
@@ -343,9 +341,9 @@ export default defineComponent({
       clearValidationError,
       hasValidMember,
       addMember,
-      syncFromVCS,
+      syncMemberFromVCS,
       openWindowForVCSMember,
-      switchRoleProviderToBytebase,
+      patchProjectRoleProvider,
     };
   },
 });
