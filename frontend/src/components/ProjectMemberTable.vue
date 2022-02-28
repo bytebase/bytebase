@@ -270,6 +270,7 @@ export default {
     const changeRole = (id: MemberId, role: ProjectRoleType) => {
       const projectMemberPatch: ProjectMemberPatch = {
         role,
+        roleProvider: "BYTEBASE",
       };
       store.dispatch("project/patchMember", {
         projectId: props.project.id,

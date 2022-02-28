@@ -157,7 +157,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 				ID:           memberBefore.ID,
 				UpdaterID:    memberCreate.CreatorID,
 				Role:         (*string)(&memberCreate.Role),
-				RoleProvider: &memberCreate.RoleProvider,
+				RoleProvider: (*string)(&memberCreate.RoleProvider),
 				Payload:      &memberCreate.Payload,
 			})
 			if err != nil {

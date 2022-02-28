@@ -93,6 +93,7 @@ export type ProjectMemberCreate = {
 export type ProjectMemberPatch = {
   // Domain specific fields
   role: ProjectRoleType;
+  roleProvider: ProjectRoleProvider;
 };
 
 export type ProjectRepositoryConfig = {

@@ -98,9 +98,9 @@ type ProjectMemberPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Role         *string              `jsonapi:"attr,role"`
-	RoleProvider *ProjectRoleProvider `jsonapi:"attr,roleProvider"`
-	Payload      *string              `jsonapi:"attr,payload"`
+	Role         *string `jsonapi:"attr,role"`
+	RoleProvider *string `jsonapi:"attr,roleProvider"`
+	Payload      *string `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberDelete is the API message for deleting a project member.

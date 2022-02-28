@@ -175,6 +175,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			memberBefore := updatedMemberBefore[i]
 			memberAfter := updatedMemberAfter[i]
 
+			if memberBefore.Role == memberAfter.Role && memberBefore.RoleProvider == memberAfter.RoleProvider {
+				continue
+			}
+
 			principal, err := s.composePrincipalByID(ctx, memberBefore.PrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
@@ -185,8 +189,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberRoleUpdate,
 				Level:       api.ActivityInfo,
-				Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by BYTEBASE) to %s (provided by VCS).",
-					principal.Name, principal.Email, memberBefore.Role, memberAfter.Role),
+				Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
+					principal.Name, principal.Email, memberBefore.Role, memberBefore.RoleProvider, memberAfter.Role, memberAfter.RoleProvider),
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
