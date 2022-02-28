@@ -57,7 +57,9 @@
               @click.prevent="clickItem(item)"
             >
               <span class="text-xs">{{ item.stageName }}</span>
-              <span class="text-sm line-clamp-2">{{ item.taskName }}</span>
+              <n-ellipsis class="text-sm" :line-clamp="2" :tooltip="true">
+                {{ item.taskName }}
+              </n-ellipsis>
             </div>
             <div
               class="ml-4 w-full group cursor-pointer grid grid-cols-3 lg:hidden"
@@ -124,7 +126,7 @@ import {
 } from "../../types";
 import { activeTask, activeTaskInStage } from "../../utils";
 import { isEmpty } from "lodash-es";
-
+import { NEllipsis } from "naive-ui";
 interface FlowItem {
   stageId: StageId;
   stageName: string;
@@ -136,6 +138,7 @@ interface FlowItem {
 
 export default defineComponent({
   name: "PipelineSimpleFlow",
+  components: { NEllipsis },
   props: {
     create: {
       required: true,
