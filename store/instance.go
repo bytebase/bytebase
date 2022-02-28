@@ -39,7 +39,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 	}
 	defer tx.PTx.Rollback()
 
-	instance, err := pgCreateInstance(ctx, tx.PTx, create)
+	instance, err := createInstance(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		CharacterSet:  api.DefaultCharactorSetName,
 		Collation:     api.DefaultCollationName,
 	}
-	allDatabase, err := s.databaseService.PgCreateDatabaseTx(ctx, tx.PTx, databaseCreate)
+	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.PTx, databaseCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	if _, err = s.dataSourceService.PgCreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +200,7 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	}
 	defer tx.PTx.Rollback()
 
-	instance, err := pgPatchInstance(ctx, tx.PTx, patch)
+	instance, err := patchInstance(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -224,8 +224,8 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	return instance, nil
 }
 
-// pgCreateInstance creates a new instance.
-func pgCreateInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
+// createInstance creates a new instance.
+func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance (
@@ -337,8 +337,8 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	return list, nil
 }
 
-// pgPatchInstance updates a instance by ID. Returns the new state of the instance after update.
-func pgPatchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
+// patchInstance updates a instance by ID. Returns the new state of the instance after update.
+func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

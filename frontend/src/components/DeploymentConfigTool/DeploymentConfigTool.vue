@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!!schedule" class="bb-deployment-config divide-y py-2">
+  <div v-if="!!schedule" class="bb-deployment-config divide-y">
     <DeploymentStage
       v-for="(deployment, i) in schedule.deployments"
       :key="i"

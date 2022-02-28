@@ -70,12 +70,27 @@
             @toggle="(on: boolean) => state.enableDbNameTemplate = on"
           />
         </label>
-        <p class="mt-1 text-sm font-normal">
-          {{ dbNameTemplateTips }}
+        <p class="mt-1 textinfolabel">
+          <i18n-t keypath="label.db-name-template-tips">
+            <template #placeholder>
+              <!-- prettier-ignore -->
+              <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
+            </template>
+            <template #link>
+              <a
+                class="normal-link inline-flex items-center"
+                href="https://docs.bytebase.com/features/tenant-database-management#database-name-template"
+                target="__BLANK"
+              >
+                {{ $t("common.learn-more") }}
+                <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+              </a>
+            </template>
+          </i18n-t>
         </p>
         <BBTextField
           v-if="state.enableDbNameTemplate"
-          class="mt-4 w-full placeholder-gray-300"
+          class="mt-2 w-full placeholder-gray-300"
           :required="true"
           :value="state.project.dbNameTemplate"
           placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
@@ -220,18 +235,11 @@ export default defineComponent({
       emit("dismiss");
     };
 
-    const dbNameTemplateTips = computed(() =>
-      t("project.create-modal.db-name-template-tips", {
-        placeholder: "{{DB_NAME}}",
-      })
-    );
-
     return {
       state,
       allowCreate,
       cancel,
       create,
-      dbNameTemplateTips,
     };
   },
 });

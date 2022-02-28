@@ -34,7 +34,7 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.pgCreateDataSource(ctx, tx.PTx, create)
+	dataSource, err := s.createDataSource(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -49,16 +49,6 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 // CreateDataSourceTx creates a data source with a transaction.
 func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
 	return s.createDataSource(ctx, tx, create)
-}
-
-// PgCreateDataSourceTx creates a data source with a transaction.
-func (s *DataSourceService) PgCreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
-	return s.pgCreateDataSource(ctx, tx, create)
-}
-
-// PgPatchDataSourceTx updates a data source with a transaction.
-func (s *DataSourceService) PgPatchDataSourceTx(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
-	return s.pgPatchDataSource(ctx, tx, patch)
 }
 
 // FindDataSourceList retrieves a list of data sources based on find.
@@ -108,7 +98,7 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.pgPatchDataSource(ctx, tx.PTx, patch)
+	dataSource, err := s.patchDataSource(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -122,59 +112,6 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 
 // createDataSource creates a new dataSource.
 func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
-	// Insert row into dataSource.
-	row, err := tx.QueryContext(ctx, `
-		INSERT INTO data_source (
-			creator_id,
-			updater_id,
-			instance_id,
-			database_id,
-			name,
-			type,
-			username,
-			password
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
-	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.DatabaseID,
-		create.Name,
-		create.Type,
-		create.Username,
-		create.Password,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var dataSource api.DataSource
-	if err := row.Scan(
-		&dataSource.ID,
-		&dataSource.CreatorID,
-		&dataSource.CreatedTs,
-		&dataSource.UpdaterID,
-		&dataSource.UpdatedTs,
-		&dataSource.InstanceID,
-		&dataSource.DatabaseID,
-		&dataSource.Name,
-		&dataSource.Type,
-		&dataSource.Username,
-		&dataSource.Password,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &dataSource, nil
-}
-
-// pgCreateDataSource creates a new dataSource.
-func (s *DataSourceService) pgCreateDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
 	// Insert row into dataSource.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO data_source (
@@ -290,8 +227,8 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	return list, nil
 }
 
-// pgPatchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *DataSourceService) pgPatchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
+// patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
+func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {

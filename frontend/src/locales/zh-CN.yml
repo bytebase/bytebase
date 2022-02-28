@@ -171,6 +171,7 @@ common:
   copy: 拷贝
   manage: 管理
   table: 表
+  search: 搜索
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -217,6 +218,8 @@ task:
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
+  trial-expires: 您的{plan}试用仅剩 {days} 天
+  extend-trial: 申请延长试用
   action: 5 秒部署您自己的服务
 intro:
   content: >-
@@ -781,7 +784,6 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: 成功创建 {name}.
-    db-name-template-tips: '让您能够把属于不同租户但是有相同 {placeholder} 的数据库组在一起'
   overview:
     view-all: 查看所有
     view-all-closed: 查看所有结束的工单
@@ -1015,6 +1017,7 @@ label:
     select-values: 选择值…
   setting:
     description: 标签是一组可用于标识数据库租户的键值对。{link}。
+  db-name-template-tips: 让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。
 oauth:
   unknown-event: 未知的事件类型，认证失败
 subscription:
@@ -1043,6 +1046,7 @@ subscription:
   buy: 购买{plan}
   cancel: 取消订阅
   announcement: 您可以随时升级、降级或{cancel}。没有任何隐藏费用。
+  trialing: 试用期
   update:
     success:
       title: 证书更新成功

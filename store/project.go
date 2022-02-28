@@ -36,7 +36,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 	}
 	defer tx.PTx.Rollback()
 
-	project, err := pgCreateProject(ctx, tx.PTx, create)
+	project, err := createProject(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	}
 	defer tx.PTx.Rollback()
 
-	project, err := pgPatchProject(ctx, tx.PTx, patch)
+	project, err := patchProject(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -137,10 +137,10 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 	return project, nil
 }
 
-// PgPatchProjectTx updates an existing project by ID.
+// PatchProjectTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
-	project, err := pgPatchProject(ctx, tx, patch)
+func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+	project, err := patchProject(ctx, tx, patch)
 
 	if err != nil {
 		return nil, FormatError(err)
@@ -153,8 +153,8 @@ func (s *ProjectService) PgPatchProjectTx(ctx context.Context, tx *sql.Tx, patch
 	return project, nil
 }
 
-// pgCreateProject creates a new project.
-func pgCreateProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
+// createProject creates a new project.
+func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project (
@@ -271,8 +271,8 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 	return list, nil
 }
 
-// pgPatchProject updates a project by ID. Returns the new state of the project after update.
-func pgPatchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+// patchProject updates a project by ID. Returns the new state of the project after update.
+func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

@@ -164,13 +164,13 @@ const state = reactive<State>({
 const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
-  const newSheetList =
+  const filterSheetList =
     sharedSheet.value.id !== UNKNOWN_ID
       ? [...sheetList.value, sharedSheet.value]
       : sheetList.value;
   const tempData =
-    newSheetList && newSheetList.length > 0
-      ? newSheetList.filter((sheet) => {
+    filterSheetList && filterSheetList.length > 0
+      ? filterSheetList.filter((sheet) => {
           let t = false;
 
           if (sheet.name.includes(state.search)) {
