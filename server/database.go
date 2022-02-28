@@ -719,6 +719,64 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/database/:databaseID/datasource/:dataSourceID", func(c echo.Context) error {
+		ctx := context.Background()
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourceID,
+			DatabaseID: &databaseID,
+		}
+		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find data source by database ID %d and data source ID %d", databaseID, dataSourceID)).SetInternal(err)
+		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Not found data source by database ID %d and data source ID %d", databaseID, dataSourceID))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/database/:id/datasource", func(c echo.Context) error {
+		ctx := context.Background()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceCreate := &api.DataSourceCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create data source request").SetInternal(err)
+		}
+
+		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		dataSourceCreate.DatabaseID = id
+
+		dataSource, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/database/:id/datasource", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
@@ -761,7 +819,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
