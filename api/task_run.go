@@ -124,8 +124,8 @@ type TaskRunStatusPatch struct {
 
 // TaskRunService is the service for task runs.
 type TaskRunService interface {
-	PgCreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
-	PgFindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
-	PgFindTaskRunTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
-	PgPatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
+	CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
+	FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
+	FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
+	PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
 }

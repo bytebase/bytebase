@@ -45,7 +45,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	}
 	defer tx.PTx.Rollback()
 
-	database, err := s.PgCreateDatabaseTx(ctx, tx.PTx, create)
+	database, err := s.CreateDatabaseTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +57,14 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	return database, nil
 }
 
-// PgCreateDatabaseTx creates a database with a transaction.
-func (s *DatabaseService) PgCreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
+// CreateDatabaseTx creates a database with a transaction.
+func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
 	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	database, err := s.pgCreateDatabase(ctx, tx, create)
+	database, err := s.createDatabase(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *DatabaseService) PgCreateDatabaseTx(ctx context.Context, tx *sql.Tx, cr
 		case api.BackupPlanPolicyScheduleWeekly:
 			backupSettingUpsert.DayOfWeek = rand.Intn(7)
 		}
-		if _, err := s.backupService.PgUpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
+		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
 			return nil, err
 		}
 	}
@@ -167,7 +167,7 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	}
 	defer tx.PTx.Rollback()
 
-	database, err := s.pgPatchDatabase(ctx, tx.PTx, patch)
+	database, err := s.patchDatabase(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -183,8 +183,8 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	return database, nil
 }
 
-// pgCreateDatabase creates a new database.
-func (s *DatabaseService) pgCreateDatabase(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
+// createDatabase creates a new database.
+func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.Database, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db (
@@ -332,8 +332,8 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 	return list, nil
 }
 
-// pgPatchDatabase updates a database by ID. Returns the new state of the database after update.
-func (s *DatabaseService) pgPatchDatabase(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*api.Database, error) {
+// patchDatabase updates a database by ID. Returns the new state of the database after update.
+func (s *DatabaseService) patchDatabase(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*api.Database, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {

@@ -34,7 +34,7 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	stage, err := s.pgCreateStage(ctx, tx.PTx, create)
+	stage, err := s.createStage(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api
 	return list[0], nil
 }
 
-// pgCreateStage creates a new stage.
-func (s *StageService) pgCreateStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.Stage, error) {
+// createStage creates a new stage.
+func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.Stage, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO stage (
 			creator_id,

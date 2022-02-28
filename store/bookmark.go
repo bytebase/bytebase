@@ -34,7 +34,7 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.Bookma
 	}
 	defer tx.PTx.Rollback()
 
-	bookmark, err := pgCreateBookmark(ctx, tx.PTx, create)
+	bookmark, err := createBookmark(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteBookmark(ctx, tx.PTx, delete); err != nil {
+	if err := deleteBookmark(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -104,8 +104,8 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 	return nil
 }
 
-// pgCreateBookmark creates a new bookmark.
-func pgCreateBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
+// createBookmark creates a new bookmark.
+func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO bookmark (
@@ -198,8 +198,8 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 	return list, nil
 }
 
-// pgDeleteBookmark permanently deletes a bookmark by ID.
-func pgDeleteBookmark(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
+// deleteBookmark permanently deletes a bookmark by ID.
+func deleteBookmark(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
 	// Remove row from database.
 	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = $1`, delete.ID)
 	if err != nil {

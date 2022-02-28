@@ -34,7 +34,7 @@ func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	table, err := s.pgCreateTable(ctx, tx.PTx, create)
+	table, err := s.createTable(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteTable(ctx, tx.PTx, delete); err != nil {
+	if err := deleteTable(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -103,8 +103,8 @@ func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete)
 	return nil
 }
 
-// pgCreateTable creates a new table.
-func (s *TableService) pgCreateTable(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*api.Table, error) {
+// createTable creates a new table.
+func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*api.Table, error) {
 	// Insert row into table.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO tbl (
@@ -249,8 +249,8 @@ func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.
 	return list, nil
 }
 
-// pgDeleteTable permanently deletes tables from a database.
-func pgDeleteTable(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
+// deleteTable permanently deletes tables from a database.
+func deleteTable(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = $1`, delete.DatabaseID); err != nil {
 		return FormatError(err)

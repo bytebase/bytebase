@@ -36,7 +36,7 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	inbox, err := s.pgCreateInbox(ctx, tx.PTx, create)
+	inbox, err := s.createInbox(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*
 	}
 	defer tx.PTx.Rollback()
 
-	inbox, err := s.pgPatchInbox(ctx, tx.PTx, patch)
+	inbox, err := s.patchInbox(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -160,8 +160,8 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	return &inboxSummary, nil
 }
 
-// pgCreateInbox creates a new inbox.
-func (s *InboxService) pgCreateInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.Inbox, error) {
+// createInbox creates a new inbox.
+func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.Inbox, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO inbox (
@@ -275,8 +275,8 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) (_ []*a
 	return list, nil
 }
 
-// pgPatchInbox updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *InboxService) pgPatchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.Inbox, error) {
+// patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
+func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.Inbox, error) {
 	// Build UPDATE clause.
 	set, args := []string{"status = $1"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)
