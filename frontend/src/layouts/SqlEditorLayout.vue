@@ -3,6 +3,9 @@
     <template v-if="isDemo">
       <BannerDemo />
     </template>
+    <template v-else-if="isNearTrialExpireTime">
+      <BannerTrial />
+    </template>
 
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-4">
@@ -38,6 +41,7 @@ import { computed } from "vue";
 import ProvideSqlEditorContext from "@/components/ProvideSqlEditorContext.vue";
 import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
+import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";
 
 const store = useStore();
@@ -53,6 +57,10 @@ const ping = () => {
 };
 
 const isDemo = computed(() => store.getters["actuator/isDemo"]());
+
+const isNearTrialExpireTime = computed(() =>
+  store.getters["subscription/isNearTrialExpireTime"]()
+);
 
 const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
 </script>

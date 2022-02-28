@@ -332,16 +332,7 @@ watch(
 onMounted(async () => {
   if (!hasTabs.value) {
     addTab(getDefaultTab());
-    if (!isDisconnected.value) {
-      // make a relation between the new sheet and the current tab
-      const newSheet = await createSheet();
-
-      updateCurrentTab({
-        sheetId: newSheet.id,
-      });
-
-      recalculateScrollWidth();
-    }
+    recalculateScrollWidth();
   }
 });
 </script>

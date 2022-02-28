@@ -108,7 +108,7 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	}
 	defer tx.PTx.Rollback()
 
-	cfg, err := s.pgUpsertDeploymentConfig(ctx, tx.PTx, upsert)
+	cfg, err := s.upsertDeploymentConfig(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -120,7 +120,7 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 	return cfg, nil
 }
 
-func (s *DeploymentConfigService) pgUpsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
+func (s *DeploymentConfigService) upsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	row, err := tx.QueryContext(ctx, `
 	INSERT INTO deployment_config (
 		creator_id,

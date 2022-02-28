@@ -36,7 +36,7 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 	}
 	defer tx.PTx.Rollback()
 
-	member, err := pgCreateMember(ctx, tx.PTx, create)
+	member, err := createMember(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	}
 	defer tx.PTx.Rollback()
 
-	member, err := pgPatchMember(ctx, tx.PTx, patch)
+	member, err := patchMember(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -137,8 +137,8 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 	return member, nil
 }
 
-// pgCreateMember creates a new member.
-func pgCreateMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
+// createMember creates a new member.
+func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO member (
@@ -242,8 +242,8 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) (_ []
 	return list, nil
 }
 
-// pgPatchMember updates a member by ID. Returns the new state of the member after update.
-func pgPatchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
+// patchMember updates a member by ID. Returns the new state of the member after update.
+func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

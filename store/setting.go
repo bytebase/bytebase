@@ -44,7 +44,7 @@ func (s *SettingService) CreateSettingIfNotExist(ctx context.Context, create *ap
 		}
 		defer tx.PTx.Rollback()
 
-		setting, err := pgCreateSetting(ctx, tx.PTx, create)
+		setting, err := createSetting(ctx, tx.PTx, create)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 	}
 	defer tx.PTx.Rollback()
 
-	setting, err := pgPatchSetting(ctx, tx.PTx, patch)
+	setting, err := patchSetting(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -117,8 +117,8 @@ func (s *SettingService) PatchSetting(ctx context.Context, patch *api.SettingPat
 	return setting, nil
 }
 
-// pgCreateSetting creates a new setting.
-func pgCreateSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
+// createSetting creates a new setting.
+func createSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*api.Setting, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO setting (
@@ -206,8 +206,8 @@ func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) (_ 
 	return list, nil
 }
 
-// pgPatchSetting updates a setting by name. Returns the new state of the setting after update.
-func pgPatchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
+// patchSetting updates a setting by name. Returns the new state of the setting after update.
+func patchSetting(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*api.Setting, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "value = $2"), append(args, patch.Value)

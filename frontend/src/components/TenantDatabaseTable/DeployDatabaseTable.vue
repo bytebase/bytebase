@@ -35,6 +35,7 @@
                   :allow-edit="false"
                   :show-header="false"
                   :deployment="deployment.schedule.deployments[i]"
+                  layout="compact"
                 />
               </div>
             </NPopover>
@@ -77,7 +78,7 @@
               v-for="db in dbList"
               :key="db.id"
               :database="db"
-              :clickable="false"
+              :label-list="labelList"
             />
             <span v-if="dbList.length === 0">-</span>
           </div>
@@ -89,7 +90,7 @@
               v-for="db in matrix.rest"
               :key="db.id"
               :database="db"
-              :clickable="false"
+              :label-list="labelList"
             />
             <span v-if="matrix.rest.length === 0">-</span>
           </div>

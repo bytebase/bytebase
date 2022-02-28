@@ -11,5 +11,7 @@ type SubscriptionPatch struct {
 type Subscription struct {
 	InstanceCount int          `jsonapi:"attr,instanceCount"`
 	ExpiresTs     int64        `jsonapi:"attr,expiresTs"`
+	StartedTs     int64        `jsonapi:"attr,startedTs"`
 	Plan          api.PlanType `jsonapi:"attr,plan"`
+	Trialing      bool         `jsonapi:"attr,trialing"`
 }

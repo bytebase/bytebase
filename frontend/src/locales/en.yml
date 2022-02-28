@@ -171,6 +171,7 @@ common:
   copied: Copied
   manage: Manage
   table: Table
+  search: Search
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -220,6 +221,8 @@ task:
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
+  trial-expires: Your trial for {plan} plan will expires in {days} days.
+  extend-trial: Extend trialing time
   action: Deploy yours in 5 seconds
 intro:
   content: >-
@@ -870,7 +873,6 @@ project:
     cancel: '@:common.cancel'
     confirm: '@:common.create'
     success-prompt: Successfully created project {name}.
-    db-name-template-tips: 'Allow you to group databases with the same {placeholder} from different tenants.'
   overview:
     view-all: View all
     view-all-closed: View all closed
@@ -1146,6 +1148,7 @@ label:
     select-values: Select values...
   setting:
     description: A label is a key-value pair that helps you identify the tenant for a database. {link}.
+  db-name-template-tips: Allow you to group databases with the same {placeholder} from different tenants. {link}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
@@ -1175,6 +1178,7 @@ subscription:
   cancel: cancel your subscription
   announcement: You can upgrade, downgrade, or {cancel} anytime. No
         hidden charges.
+  trialing: trialing
   update:
     success:
       title: Successfully updated license

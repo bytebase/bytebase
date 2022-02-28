@@ -112,9 +112,7 @@ const prepareSqlEdtiorContext = async () => {
   store.dispatch("sqlEditor/setConnectionTree", connectionTree);
   store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: false });
   store.dispatch("sqlEditor/fetchQueryHistoryList");
-  store.dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: true });
   store.dispatch("sheet/fetchSheetList");
-  store.dispatch("sqlEditor/setSqlEditorState", { isFetchingSheet: false });
 };
 
 onMounted(async () => {

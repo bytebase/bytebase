@@ -1,7 +1,7 @@
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 
-import { SheetState } from "../types";
+import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
 import { getDefaultConnectionContext } from "../store/modules/sqlEditor";
 
@@ -21,23 +21,26 @@ const useSQLEditorConnection = () => {
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
       const sheet = sheetById.get(currentTab.sheetId);
 
-      const database = store.getters["database/databaseById"](
-        sheet?.databaseId,
-        sheet?.instanceId
-      );
-
       store.dispatch("sqlEditor/setConnectionContext", {
         hasSlug: true,
-        databaseId: sheet?.databaseId,
-        instanceId: sheet?.instanceId,
+        projectId: sheet?.database?.projectId || DEFAULT_PROJECT_ID,
+        instanceId: sheet?.database?.instanceId || UNKNOWN_ID,
+        databaseId: sheet?.databaseId || UNKNOWN_ID,
       });
 
-      router.replace({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database),
-        },
-      });
+      // deal with the sheet is without databaseId
+      if (sheet?.databaseId) {
+        const database = store.getters["database/databaseById"](
+          sheet?.databaseId
+        );
+
+        router.replace({
+          name: "sql-editor.detail",
+          params: {
+            connectionSlug: connectionSlug(database),
+          },
+        });
+      }
     } else {
       store.dispatch(
         "sqlEditor/setConnectionContext",
