@@ -36,7 +36,7 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	}
 	defer tx.PTx.Rollback()
 
-	repository, err := s.pgCreateRepository(ctx, tx.PTx, create)
+	repository, err := s.createRepository(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.Repo
 	}
 	defer tx.PTx.Rollback()
 
-	repository, err := pgPatchRepository(ctx, tx.PTx, patch)
+	repository, err := patchRepository(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -115,7 +115,7 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 	}
 	defer tx.PTx.Rollback()
 
-	if err := s.pgDeleteRepository(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteRepository(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -126,8 +126,8 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 	return nil
 }
 
-// pgCreateRepository creates a new repository.
-func (s *RepositoryService) pgCreateRepository(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*api.Repository, error) {
+// createRepository creates a new repository.
+func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*api.Repository, error) {
 	// Updates the project workflow_type to "VCS"
 	workflowType := api.VCSWorkflow
 	projectPatch := api.ProjectPatch{
@@ -135,7 +135,7 @@ func (s *RepositoryService) pgCreateRepository(ctx context.Context, tx *sql.Tx, 
 		UpdaterID:    create.CreatorID,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.projectService.PgPatchProjectTx(ctx, tx, &projectPatch); err != nil {
+	if _, err := s.projectService.PatchProjectTx(ctx, tx, &projectPatch); err != nil {
 		return nil, err
 	}
 
@@ -312,8 +312,8 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 	return list, nil
 }
 
-// pgPatchRepository updates a repository by ID. Returns the new state of the repository after update.
-func pgPatchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*api.Repository, error) {
+// patchRepository updates a repository by ID. Returns the new state of the repository after update.
+func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*api.Repository, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
@@ -389,8 +389,8 @@ func pgPatchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPat
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
 }
 
-// pgDeleteRepository permanently deletes a repository by ID.
-func (s *RepositoryService) pgDeleteRepository(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
+// deleteRepository permanently deletes a repository by ID.
+func (s *RepositoryService) deleteRepository(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
 	workflowType := api.UIWorkflow
 	projectPatch := api.ProjectPatch{
@@ -398,7 +398,7 @@ func (s *RepositoryService) pgDeleteRepository(ctx context.Context, tx *sql.Tx, 
 		UpdaterID:    delete.DeleterID,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.projectService.PgPatchProjectTx(ctx, tx, &projectPatch); err != nil {
+	if _, err := s.projectService.PatchProjectTx(ctx, tx, &projectPatch); err != nil {
 		return err
 	}
 

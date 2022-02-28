@@ -34,7 +34,7 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	index, err := s.pgCreateIndex(ctx, tx.PTx, create)
+	index, err := s.createIndex(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	return list[0], nil
 }
 
-// pgCreateIndex creates a new index.
-func (s *IndexService) pgCreateIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
+// createIndex creates a new index.
+func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO idx (

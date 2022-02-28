@@ -145,7 +145,7 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 	}
 	defer tx.PTx.Rollback()
 
-	policy, err := s.pgUpsertPolicy(ctx, tx.PTx, upsert)
+	policy, err := s.upsertPolicy(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 }
 
 // upsertPolicy updates an existing policy.
-func (s *PolicyService) pgUpsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
+func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	// Upsert row into policy.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO policy (

@@ -34,7 +34,7 @@ func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create
 	}
 	defer tx.PTx.Rollback()
 
-	projectWebhook, err := pgCreateProjectWebhook(ctx, tx.PTx, create)
+	projectWebhook, err := createProjectWebhook(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *
 	}
 	defer tx.PTx.Rollback()
 
-	projectWebhook, err := pgPatchProjectWebhook(ctx, tx.PTx, patch)
+	projectWebhook, err := patchProjectWebhook(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -113,7 +113,7 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteProjectWebhook(ctx, tx.PTx, delete); err != nil {
+	if err := deleteProjectWebhook(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -124,8 +124,8 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 	return nil
 }
 
-// pgCreateProjectWebhook creates a new projectWebhook.
-func pgCreateProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
+// createProjectWebhook creates a new projectWebhook.
+func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_webhook (
@@ -246,8 +246,8 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 	return list, nil
 }
 
-// pgPatchProjectWebhook updates a projectWebhook by ID. Returns the new state of the projectWebhook after update.
-func pgPatchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
+// patchProjectWebhook updates a projectWebhook by ID. Returns the new state of the projectWebhook after update.
+func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -301,8 +301,8 @@ func pgPatchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWe
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
 }
 
-// pgDeleteProjectWebhook permanently deletes a projectWebhook by ID.
-func pgDeleteProjectWebhook(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
+// deleteProjectWebhook permanently deletes a projectWebhook by ID.
+func deleteProjectWebhook(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

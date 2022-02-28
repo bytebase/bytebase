@@ -36,7 +36,7 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	}
 	defer tx.PTx.Rollback()
 
-	principal, err := pgCreatePrincipal(ctx, tx.PTx, create)
+	principal, err := createPrincipal(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 	}
 	defer tx.PTx.Rollback()
 
-	principal, err := pgPatchPrincipal(ctx, tx.PTx, patch)
+	principal, err := patchPrincipal(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -138,8 +138,8 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 	return principal, nil
 }
 
-// pgCreatePrincipal creates a new principal.
-func pgCreatePrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*api.Principal, error) {
+// createPrincipal creates a new principal.
+func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*api.Principal, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO principal (
@@ -242,8 +242,8 @@ func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind)
 	return list, nil
 }
 
-// pgPatchPrincipal updates a principal by ID. Returns the new state of the principal after update.
-func pgPatchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
+// patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
+func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)

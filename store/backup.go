@@ -35,7 +35,7 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.pgCreateBackup(ctx, tx.PTx, create)
+	backup, err := s.createBackup(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.pgPatchBackup(ctx, tx.PTx, patch)
+	backup, err := s.patchBackup(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -106,8 +106,8 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	return backup, nil
 }
 
-// pgCreateBackup creates a new backup.
-func (s *BackupService) pgCreateBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.Backup, error) {
+// createBackup creates a new backup.
+func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.Backup, error) {
 	// Insert row into backup.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup (
@@ -233,8 +233,8 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 	return list, nil
 }
 
-// pgPatchBackup updates a backup by ID. Returns the new state of the backup after update.
-func (s *BackupService) pgPatchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.Backup, error) {
+// patchBackup updates a backup by ID. Returns the new state of the backup after update.
+func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.Backup, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -391,7 +391,7 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.PgUpsertBackupSettingTx(ctx, tx.PTx, upsert)
+	backup, err := s.UpsertBackupSettingTx(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -403,8 +403,8 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	return backup, nil
 }
 
-// PgUpsertBackupSettingTx updates an existing backup setting.
-func (s *BackupService) PgUpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+// UpsertBackupSettingTx updates an existing backup setting.
+func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup_setting (
