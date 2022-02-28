@@ -153,7 +153,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 	for _, memberCreate := range setList {
 		// if the member exists, we will try to update its field
 		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
-			updatedMember, err := pgPatchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
+			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
 				UpdaterID:    memberCreate.CreatorID,
 				Role:         (*string)(&memberCreate.Role),
@@ -167,7 +167,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 			updatedMemberBeforeList = append(updatedMemberBeforeList, memberBefore)
 			updatedMemberAfterList = append(updatedMemberAfterList, updatedMember)
 		} else {
-			createdMember, err := pgCreateProjectMember(ctx, tx.PTx, memberCreate)
+			createdMember, err := createProjectMember(ctx, tx.PTx, memberCreate)
 			if err != nil {
 				return nil, nil, nil, nil, FormatError(err)
 			}
@@ -185,7 +185,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 			ID:        member.ID,
 			DeleterID: operatorID,
 		}
-		if err := pgDeleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
+		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, nil, nil, FormatError(err)
 		}
 		deletedMemberList = append(deletedMemberList, member)
