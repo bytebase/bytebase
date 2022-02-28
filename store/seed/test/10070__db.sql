@@ -750,7 +750,7 @@ VALUES
         101,
         6001,
         3007,
-        'db3_tenant1',
+        'game_dev',
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
@@ -776,9 +776,65 @@ VALUES
         7027,
         101,
         101,
-        6002,
+        6003,
         3007,
-        'db3_tenant2',
+        'game_public_test',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2022v0'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        "collation",
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7028,
+        101,
+        101,
+        6004,
+        3007,
+        'game_turtle_rock',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        1624558090,
+        '2022v0'
+    );
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        "collation",
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        7029,
+        101,
+        101,
+        6004,
+        3007,
+        'game_echo_island',
         'utf8mb4',
         'utf8mb4_general_ci',
         'OK',
@@ -803,7 +859,7 @@ INSERT INTO
     )
 VALUES
     (
-        7028,
+        7030,
         101,
         101,
         6010,
@@ -816,4 +872,4 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE db_id_seq RESTART WITH 7029;
+ALTER SEQUENCE db_id_seq RESTART WITH 7031;
