@@ -105,7 +105,7 @@ export default defineComponent({
 }
 
 .modal-container {
-  @apply px-0.5 max-h-screen overflow-auto w-full;
+  @apply px-0.5 pt-4 max-h-screen overflow-auto w-full;
 
   margin-top: 0.5rem !important;
 }

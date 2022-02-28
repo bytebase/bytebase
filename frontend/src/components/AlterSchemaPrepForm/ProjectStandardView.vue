@@ -37,7 +37,7 @@
     </div>
     <div class="space-y-4">
       <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
-        <div class="mb-2">{{ environment.name }}</div>
+        <div class="mb-2 mt-4">{{ environment.name }}</div>
         <div class="relative bg-white rounded-md -space-y-px">
           <template
             v-for="(database, dbIndex) in databaseList.filter(
