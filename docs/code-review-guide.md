@@ -1,6 +1,6 @@
 # Code Review Guide
 
-Please read and follow [Google's Code Review Guideline](https://google.github.io/eng-practices/). There is additional guide below because open-source project has contributors
+Please read and follow [Google's Code Review Guideline](https://google.github.io/eng-practices/). There is additional guide below because this is an open-source project and we'd like to have effective communications on GitHub.
 
 # Additional Guide
 
