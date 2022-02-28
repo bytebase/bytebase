@@ -1,6 +1,6 @@
 # Code Review Guide
 
-Please read and follow [Google's Code Review Guideline](https://google.github.io/eng-practices/). There is additional guide below because open-source project has contributors
+Please read and follow [Google's Code Review Guideline](https://google.github.io/eng-practices/). There is additional guide below because this is an open-source project and we'd like to have effective communications on GitHub.
 
 # Additional Guide
 
@@ -29,6 +29,6 @@ Please read and follow [Google's Code Review Guideline](https://google.github.io
 
 - You can also try [graphite](https://graphite.dev/) which is a new code review tool for GitHub. One nice feature is it displays who should take the turn for each ongoing PR.
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/codereview2.png)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/codereview2.png)
 
 - [Reviewbunny](https://reviewbunny.app/) has been installed to Bytebase repositories. You will receive daily email with pull requests which need to be reviewed.
