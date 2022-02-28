@@ -36,7 +36,7 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.pgCreatePipeline(ctx, tx.PTx, create)
+	pipeline, err := s.createPipeline(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.pgPatchPipeline(ctx, tx.PTx, patch)
+	pipeline, err := s.patchPipeline(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -138,7 +138,7 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 }
 
 // createPipeline creates a new pipeline.
-func (s *PipelineService) pgCreatePipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
+func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO pipeline (
 			creator_id,
@@ -229,8 +229,8 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	return list, nil
 }
 
-// pgPatchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *PipelineService) pgPatchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
+// patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
+func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {

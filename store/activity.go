@@ -34,7 +34,7 @@ func (s *ActivityService) CreateActivity(ctx context.Context, create *api.Activi
 	}
 	defer tx.PTx.Rollback()
 
-	activity, err := pgCreateActivity(ctx, tx.PTx, create)
+	activity, err := createActivity(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.Activity
 	}
 	defer tx.PTx.Rollback()
 
-	activity, err := pgPatchActivity(ctx, tx.PTx, patch)
+	activity, err := patchActivity(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -113,7 +113,7 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteActivity(ctx, tx.PTx, delete); err != nil {
+	if err := deleteActivity(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -124,8 +124,8 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 	return nil
 }
 
-// pgCreateActivity creates a new activity.
-func pgCreateActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*api.Activity, error) {
+// createActivity creates a new activity.
+func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*api.Activity, error) {
 	// Insert row into activity.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO activity (
@@ -244,8 +244,8 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 	return list, nil
 }
 
-// pgPatchActivity updates a activity by ID. Returns the new state of the activity after update.
-func pgPatchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*api.Activity, error) {
+// patchActivity updates a activity by ID. Returns the new state of the activity after update.
+func patchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*api.Activity, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Comment; v != nil {
@@ -291,8 +291,8 @@ func pgPatchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}
 }
 
-// pgDeleteActivity permanently deletes a activity by ID.
-func pgDeleteActivity(ctx context.Context, tx *sql.Tx, delete *api.ActivityDelete) error {
+// deleteActivity permanently deletes a activity by ID.
+func deleteActivity(ctx context.Context, tx *sql.Tx, delete *api.ActivityDelete) error {
 	// Remove row from activity.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
