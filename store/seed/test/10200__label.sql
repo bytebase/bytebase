@@ -79,8 +79,8 @@ VALUES
         20012,
         1,
         1,
-        'bb.tenant',
-        'tenant1'
+        'bb.location',
+        'east'
     );
 
 INSERT INTO
@@ -96,11 +96,79 @@ VALUES
         20013,
         1,
         1,
-        'bb.tenant',
-        'tenant2'
+        'bb.location',
+        'west'
     );
 
-ALTER SEQUENCE label_value_id_seq RESTART WITH 20014;
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20014,
+        1,
+        1,
+        'bb.tenant',
+        'turtle_rock'
+    );
+
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20015,
+        1,
+        1,
+        'bb.tenant',
+        'echo_island'
+    );
+
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20016,
+        1,
+        1,
+        'bb.tenant',
+        'public_test'
+    );
+
+INSERT INTO
+    label_value (
+        id,
+        creator_id,
+        updater_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20017,
+        1,
+        1,
+        'bb.tenant',
+        'dev'
+    );
+
+ALTER SEQUENCE label_value_id_seq RESTART WITH 20018;
 
 -- Database labels for database in tenant mode disabled project.
 INSERT INTO
@@ -230,9 +298,9 @@ VALUES
         20027,
         1,
         1,
-        7025,
+        7026,
         'bb.tenant',
-        'tenant1'
+        'dev'
     );
 
 INSERT INTO
@@ -249,9 +317,85 @@ VALUES
         20028,
         1,
         1,
-        7026,
+        7027,
         'bb.tenant',
-        'tenant2'
+        'public_test'
     );
 
-ALTER SEQUENCE db_label_id_seq RESTART WITH 20029;
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20029,
+        1,
+        1,
+        7028,
+        'bb.tenant',
+        'turtle_rock'
+    );
+
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20030,
+        1,
+        1,
+        7028,
+        'bb.location',
+        'east'
+    );
+
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20031,
+        1,
+        1,
+        7029,
+        'bb.tenant',
+        'echo_island'
+    );
+
+INSERT INTO
+    db_label (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        key,
+        value
+    )
+VALUES
+    (
+        20032,
+        1,
+        1,
+        7029,
+        'bb.location',
+        'west'
+    );
+
+ALTER SEQUENCE db_label_id_seq RESTART WITH 20033;
