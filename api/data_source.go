@@ -137,6 +137,4 @@ type DataSourceService interface {
 	FindDataSourceList(ctx context.Context, find *DataSourceFind) ([]*DataSource, error)
 	FindDataSource(ctx context.Context, find *DataSourceFind) (*DataSource, error)
 	PatchDataSource(ctx context.Context, patch *DataSourcePatch) (*DataSource, error)
-	// This is specifically used to patch data source when updating the instance.
-	PgPatchDataSourceTx(ctx context.Context, tx *sql.Tx, patch *DataSourcePatch) (*DataSource, error)
 }
