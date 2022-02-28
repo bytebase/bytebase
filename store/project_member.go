@@ -137,9 +137,14 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 		return nil, nil, nil, nil, FormatError(err)
 	}
 
-	memberMap := make(map[int]*api.ProjectMember)
+	oldMemberMap := make(map[int]*api.ProjectMember)
 	for _, existingMember := range existingProjectMemberList {
-		memberMap[existingMember.PrincipalID] = existingMember
+		oldMemberMap[existingMember.PrincipalID] = existingMember
+	}
+
+	newMemberMap := make(map[int]bool)
+	for _, createMember := range setList {
+		newMemberMap[createMember.PrincipalID] = true
 	}
 
 	createdMemberList := make([]*api.ProjectMember, 0)
@@ -147,7 +152,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 	updatedMemberAfterList := make([]*api.ProjectMember, 0)
 	for _, memberCreate := range setList {
 		// if the member exists, we will try to update its field
-		if memberBefore, ok := memberMap[memberCreate.PrincipalID]; ok {
+		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
 			updatedMember, err := pgPatchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
 				UpdaterID:    memberCreate.CreatorID,
@@ -173,7 +178,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 	deletedMemberList := make([]*api.ProjectMember, 0)
 	for _, member := range existingProjectMemberList {
 		// if the member exists, we will try to update
-		if _, ok := memberMap[member.PrincipalID]; ok {
+		if _, ok := newMemberMap[member.PrincipalID]; ok {
 			continue
 		}
 		memberDelete := &api.ProjectMemberDelete{
