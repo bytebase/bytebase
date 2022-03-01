@@ -18,6 +18,15 @@ type LicenseService struct {
 	config *config.Config
 }
 
+// Claims creates a struct that will be encoded to a JWT.
+// We add jwt.StandardClaims as an embedded type, to provide fields like name.
+type Claims struct {
+	InstanceCount int    `json:"instanceCount"`
+	Trialing      bool   `json:"trialing"`
+	Plan          string `json:"plan"`
+	jwt.StandardClaims
+}
+
 // NewLicenseService will create a new enterprise license service.
 func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*LicenseService, error) {
 	config, err := config.NewConfig(l, dataDir, mode)
@@ -55,7 +64,8 @@ func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
 }
 
 func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
-	token, err := jwt.Parse(license, func(token *jwt.Token) (interface{}, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(license, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, common.Errorf(common.Invalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 		}
@@ -76,8 +86,7 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 		return nil, common.Errorf(common.Invalid, err)
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	if !token.Valid {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid token"))
 	}
 
@@ -85,59 +94,39 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (s *LicenseService) parseClaims(claims jwt.MapClaims) (*enterpriseAPI.License, error) {
+func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, err)
 	}
 
-	exp, ok := claims["exp"].(float64)
-	if !ok {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("exp is not valid, found '%v'", claims["exp"]))
-	}
-
-	iat, ok := claims["iat"].(float64)
-	if !ok {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("iat is not valid, found '%v'", claims["iat"]))
-	}
-
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims["iss"]))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer))
 	}
 
-	instance, ok := claims["instance"].(float64)
-	if !ok || int(instance) < s.config.MinimumInstance {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", claims["instance"], s.config.MinimumInstance))
+	verifyAudience := claims.VerifyAudience(s.config.Audience, true)
+	if !verifyAudience {
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("aud is not valid, expect %s but found '%v'", s.config.Audience, claims.Audience))
 	}
 
-	plan, ok := claims["plan"].(string)
-	if !ok {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan is not valid, found '%v'", claims["plan"]))
+	instanceCount := claims.InstanceCount
+	if instanceCount < s.config.MinimumInstance {
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", instanceCount, s.config.MinimumInstance))
 	}
 
-	trialing, ok := claims["trialing"].(bool)
-	if !ok {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("trialing is not valid, found '%v'", claims["trialing"]))
-	}
-
-	planType, err := convertPlanType(plan)
+	planType, err := convertPlanType(claims.Plan)
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan type %q is not valid", planType))
 	}
 
-	aud, ok := claims["aud"].(string)
-	if !ok || aud == "" {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("aud is not valid, found '%v'", claims["aud"]))
-	}
-
 	license := &enterpriseAPI.License{
-		InstanceCount: int(instance),
-		ExpiresTs:     int64(exp),
-		IssuedTs:      int64(iat),
+		InstanceCount: instanceCount,
+		ExpiresTs:     claims.ExpiresAt,
+		IssuedTs:      claims.IssuedAt,
 		Plan:          planType,
-		Audience:      aud,
-		Trialing:      trialing,
+		Subject:       claims.Subject,
+		Trialing:      claims.Trialing,
 	}
 
 	if err := license.Valid(); err != nil {
