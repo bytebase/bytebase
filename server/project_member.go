@@ -147,8 +147,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
 						principal.Name, principal.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &ActivityMeta{})
-				if err != nil {
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &ActivityMeta{}); err != nil {
 					s.l.Warn("Failed to create project activity after updating member role",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
@@ -172,8 +171,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
 						principal.Name, principal.Email, createdMember.Role),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{})
-				if err != nil {
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{}); err != nil {
 					s.l.Warn("Failed to create project activity after deleting member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
@@ -202,8 +200,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Revoked %s from %s (%s). Because this member does not belong to the VCS.",
 					principal.Name, principal.Email, deletedMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &ActivityMeta{})
-			if err != nil {
+			if _, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &ActivityMeta{}); err != nil {
 				s.l.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", principal.ID),
