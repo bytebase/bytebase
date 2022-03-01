@@ -48,7 +48,7 @@ func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 		Plan: api.FREE,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
-		InstanceCount: 9999,
+		InstanceCount: 5,
 	}
 	license, _ := s.loadLicense()
 	if license != nil {
