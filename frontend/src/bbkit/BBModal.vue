@@ -7,14 +7,13 @@
       :data-bb-modal-index="index"
       :data-bb-modal-active="active"
     >
-      <div>
-        <div class="absolute left-0 top-0 my-4 mx-8 text-xl text-main">
+      <div class="relative -mt-4 -ml-4">
+        <div class="ml-4 text-xl text-main">
           {{ title }}
-          <div
-            v-if="subtitle"
-            class="pr-1 bg-white text-sm text-control whitespace-nowrap"
-          >
-            {{ subtitle }}
+          <div v-if="subtitle" class="text-sm text-control whitespace-nowrap">
+            <span class="inline-block">
+              {{ subtitle }}
+            </span>
           </div>
         </div>
         <button
@@ -28,7 +27,7 @@
           <heroicons-solid:x class="w-6 h-6" />
         </button>
       </div>
-      <div class="pt-4 px-0.5 max-h-screen overflow-auto w-full">
+      <div class="modal-container">
         <slot />
       </div>
     </div>
@@ -99,6 +98,15 @@ export default defineComponent({
 
 <style scoped>
 .bb-modal {
-  @apply absolute max-h-screen w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border pointer-events-auto;
+  @apply absolute m-auto w-full max-w-max bg-white shadow-lg rounded-lg p-8 flex space-y-6 divide-y divide-block-border pointer-events-auto;
+  @apply flex-col;
+
+  max-height: calc(100vh - 80px);
+}
+
+.modal-container {
+  @apply px-0.5 pt-4 max-h-screen overflow-auto w-full;
+
+  margin-top: 0.5rem !important;
 }
 </style>
