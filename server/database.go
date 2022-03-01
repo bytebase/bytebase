@@ -719,11 +719,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:databaseID/datasource/:dataSourceID", func(c echo.Context) error {
+	g.GET("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
 		ctx := context.Background()
-		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
 		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
@@ -777,11 +777,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id/datasource", func(c echo.Context) error {
+	g.PATCH("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
 		dataSourcePatch := &api.DataSourcePatch{}
@@ -790,7 +795,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		dataSourceFind := &api.DataSourceFind{
-			ID:         &dataSourcePatch.ID,
+			ID:         &dataSourceID,
 			DatabaseID: &id,
 		}
 		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
@@ -801,6 +806,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Not found data source by id %d and databaseId %d", dataSourcePatch.ID, id))
 		}
 
+		dataSourcePatch.ID = dataSourceID
 		dataSourcePatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {

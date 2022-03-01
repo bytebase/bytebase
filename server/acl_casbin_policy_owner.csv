@@ -52,7 +52,7 @@ p, OWNER, /database/{id}/backupsetting, GET
 p, OWNER, /database/{id}/backupsetting, PATCH
 p, OWNER, /database/{id}/datasource/{dataSourceID}, GET
 p, OWNER, /database/{id}/datasource, POST
-p, OWNER, /database/{id}/datasource, PATCH
+p, OWNER, /database/{id}/datasource/{dataSourceID}, PATCH
 p, OWNER, /issue, POST
 p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
