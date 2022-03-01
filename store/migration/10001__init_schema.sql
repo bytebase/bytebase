@@ -27,7 +27,7 @@ CREATE INDEX idx_principal_email ON principal(email);
 
 ALTER SEQUENCE principal_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_principal_updated_ts
+CREATE TRIGGER update_principal_updated_ts
 AFTER
 UPDATE
     ON principal FOR EACH ROW
@@ -71,7 +71,7 @@ CREATE TABLE setting (
 
 ALTER SEQUENCE setting_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_setting_updated_ts
+CREATE TRIGGER update_setting_updated_ts
 AFTER
 UPDATE
     ON setting FOR EACH ROW
@@ -96,7 +96,7 @@ CREATE TABLE member (
 
 ALTER SEQUENCE member_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_member_updated_ts
+CREATE TRIGGER update_member_updated_ts
 AFTER
 UPDATE
     ON member FOR EACH ROW
@@ -117,7 +117,7 @@ CREATE TABLE environment (
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_environment_updated_ts
+CREATE TRIGGER update_environment_updated_ts
 AFTER
 UPDATE
     ON environment FOR EACH ROW
@@ -146,7 +146,7 @@ CREATE UNIQUE INDEX idx_policy_environment_id_type ON policy(environment_id, typ
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_policy_updated_ts
+CREATE TRIGGER update_policy_updated_ts
 AFTER
 UPDATE
     ON policy FOR EACH ROW
@@ -203,7 +203,7 @@ VALUES
 
 ALTER SEQUENCE project_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_updated_ts
+CREATE TRIGGER update_project_updated_ts
 AFTER
 UPDATE
     ON project FOR EACH ROW
@@ -231,7 +231,7 @@ CREATE TABLE project_member (
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_member_updated_ts
+CREATE TRIGGER update_project_member_updated_ts
 AFTER
 UPDATE
     ON project_member FOR EACH ROW
@@ -260,7 +260,7 @@ CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
 
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_webhook_updated_ts
+CREATE TRIGGER update_project_webhook_updated_ts
 AFTER
 UPDATE
     ON project_webhook FOR EACH ROW
@@ -287,7 +287,7 @@ CREATE TABLE instance (
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_instance_updated_ts
+CREATE TRIGGER update_instance_updated_ts
 AFTER
 UPDATE
     ON instance FOR EACH ROW
@@ -310,7 +310,7 @@ CREATE TABLE instance_user (
 
 ALTER SEQUENCE instance_user_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_instance_user_updated_ts
+CREATE TRIGGER update_instance_user_updated_ts
 AFTER
 UPDATE
     ON instance_user FOR EACH ROW
@@ -344,7 +344,7 @@ CREATE INDEX idx_db_instance_id ON db(instance_id);
 
 ALTER SEQUENCE db_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_db_updated_ts
+CREATE TRIGGER update_db_updated_ts
 AFTER
 UPDATE
     ON db FOR EACH ROW
@@ -378,7 +378,7 @@ CREATE INDEX idx_tbl_database_id ON tbl(database_id);
 
 ALTER SEQUENCE tbl_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_tbl_updated_ts
+CREATE TRIGGER update_tbl_updated_ts
 AFTER
 UPDATE
     ON tbl FOR EACH ROW
@@ -411,7 +411,7 @@ CREATE INDEX idx_col_database_id_table_id ON col(database_id, table_id);
 
 ALTER SEQUENCE col_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_col_updated_ts
+CREATE TRIGGER update_col_updated_ts
 AFTER
 UPDATE
     ON col FOR EACH ROW
@@ -443,7 +443,7 @@ CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
 
 ALTER SEQUENCE idx_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_idx_updated_ts
+CREATE TRIGGER update_idx_updated_ts
 AFTER
 UPDATE
     ON idx FOR EACH ROW
@@ -470,7 +470,7 @@ CREATE INDEX idx_vw_database_id ON vw(database_id);
 
 ALTER SEQUENCE vw_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_vw_updated_ts
+CREATE TRIGGER update_vw_updated_ts
 AFTER
 UPDATE
     ON vw FOR EACH ROW
@@ -502,7 +502,7 @@ CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_data_source_updated_ts
+CREATE TRIGGER update_data_source_updated_ts
 AFTER
 UPDATE
     ON data_source FOR EACH ROW
@@ -535,7 +535,7 @@ CREATE INDEX idx_backup_database_id ON backup(database_id);
 
 ALTER SEQUENCE backup_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_backup_updated_ts
+CREATE TRIGGER update_backup_updated_ts
 AFTER
 UPDATE
     ON backup FOR EACH ROW
@@ -567,7 +567,7 @@ CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
 
 ALTER SEQUENCE backup_setting_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_backup_setting_updated_ts
+CREATE TRIGGER update_backup_setting_updated_ts
 AFTER
 UPDATE
     ON backup_setting FOR EACH ROW
@@ -593,7 +593,7 @@ CREATE INDEX idx_pipeline_status ON pipeline(status);
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_pipeline_updated_ts
+CREATE TRIGGER update_pipeline_updated_ts
 AFTER
 UPDATE
     ON pipeline FOR EACH ROW
@@ -617,7 +617,7 @@ CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
 
 ALTER SEQUENCE stage_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_stage_updated_ts
+CREATE TRIGGER update_stage_updated_ts
 AFTER
 UPDATE
     ON stage FOR EACH ROW
@@ -654,7 +654,7 @@ CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_updated_ts
+CREATE TRIGGER update_task_updated_ts
 AFTER
 UPDATE
     ON task FOR EACH ROW
@@ -684,7 +684,7 @@ CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_run_updated_ts
+CREATE TRIGGER update_task_run_updated_ts
 AFTER
 UPDATE
     ON task_run FOR EACH ROW
@@ -713,7 +713,7 @@ CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
 
 ALTER SEQUENCE task_check_run_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_check_run_updated_ts
+CREATE TRIGGER update_task_check_run_updated_ts
 AFTER
 UPDATE
     ON task_check_run FOR EACH ROW
@@ -756,7 +756,7 @@ CREATE INDEX idx_issue_created_ts ON issue(created_ts);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_issue_updated_ts
+CREATE TRIGGER update_issue_updated_ts
 AFTER
 UPDATE
     ON issue FOR EACH ROW
@@ -798,7 +798,7 @@ CREATE INDEX idx_activity_created_ts ON activity(created_ts);
 
 ALTER SEQUENCE activity_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_activity_updated_ts
+CREATE TRIGGER update_activity_updated_ts
 AFTER
 UPDATE
     ON activity FOR EACH ROW
@@ -839,7 +839,7 @@ CREATE TABLE bookmark (
 
 ALTER SEQUENCE bookmark_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_bookmark_updated_ts
+CREATE TRIGGER update_bookmark_updated_ts
 AFTER
 UPDATE
     ON bookmark FOR EACH ROW
@@ -867,7 +867,7 @@ CREATE TABLE vcs (
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_vcs_updated_ts
+CREATE TRIGGER update_vcs_updated_ts
 AFTER
 UPDATE
     ON vcs FOR EACH ROW
@@ -925,7 +925,7 @@ CREATE TABLE repository (
 
 ALTER SEQUENCE repository_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_repository_updated_ts
+CREATE TRIGGER update_repository_updated_ts
 AFTER
 UPDATE
     ON repository FOR EACH ROW
@@ -955,7 +955,7 @@ CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_anomaly_updated_ts
+CREATE TRIGGER update_anomaly_updated_ts
 AFTER
 UPDATE
     ON anomaly FOR EACH ROW
@@ -979,7 +979,7 @@ CREATE UNIQUE INDEX idx_label_key_key ON label_key(key);
 
 ALTER SEQUENCE label_key_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_label_key_updated_ts
+CREATE TRIGGER update_label_key_updated_ts
 AFTER
 UPDATE
     ON label_key FOR EACH ROW
@@ -1004,7 +1004,7 @@ CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
 
 ALTER SEQUENCE label_value_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_label_value_updated_ts
+CREATE TRIGGER update_label_value_updated_ts
 AFTER
 UPDATE
     ON label_value FOR EACH ROW
@@ -1030,7 +1030,7 @@ CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
 
 ALTER SEQUENCE db_label_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_db_label_updated_ts
+CREATE TRIGGER update_db_label_updated_ts
 AFTER
 UPDATE
     ON db_label FOR EACH ROW
@@ -1055,7 +1055,7 @@ CREATE UNIQUE INDEX idx_deployment_config_project_id ON deployment_config(projec
 
 ALTER SEQUENCE deployment_config_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_deployment_config_updated_ts
+CREATE TRIGGER update_deployment_config_updated_ts
 AFTER
 UPDATE
     ON deployment_config FOR EACH ROW
@@ -1086,7 +1086,7 @@ CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_sheet_updated_ts
+CREATE TRIGGER update_sheet_updated_ts
 AFTER
 UPDATE
     ON sheet FOR EACH ROW
