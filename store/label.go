@@ -185,7 +185,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	}
 
 	for _, upsert := range upserts {
-		if err := s.pgUpsertLabelValue(ctx, tx.PTx, upsert); err != nil {
+		if err := s.upsertLabelValue(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -198,7 +198,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	return labelKey, nil
 }
 
-func (s *LabelService) pgUpsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
+func (s *LabelService) upsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO label_value (
@@ -304,7 +304,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find 
 	return ret, nil
 }
 
-func (s *LabelService) pgUpsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
 	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db_label (
@@ -385,7 +385,7 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Key:        oldLabel.Key,
 			Value:      oldLabel.Value,
 		}
-		if _, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
+		if _, err := s.upsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -403,7 +403,7 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Key:        label.Key,
 			Value:      label.Value,
 		}
-		label, err := s.pgUpsertDatabaseLabel(ctx, tx.PTx, upsert)
+		label, err := s.upsertDatabaseLabel(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}

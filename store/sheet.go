@@ -34,7 +34,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	sheet, err := pgCreateSheet(ctx, tx.PTx, create)
+	sheet, err := createSheet(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*
 	}
 	defer tx.PTx.Rollback()
 
-	sheet, err := pgPatchSheet(ctx, tx.PTx, patch)
+	sheet, err := patchSheet(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := pgDeleteSheet(ctx, tx.PTx, delete); err != nil {
+	if err := deleteSheet(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -124,8 +124,8 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	return nil
 }
 
-// pgCreateSheet creates a new sheet.
-func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.Sheet, error) {
+// createSheet creates a new sheet.
+func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.Sheet, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
@@ -179,8 +179,8 @@ func pgCreateSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*a
 	return &sheet, nil
 }
 
-// pgPatchSheet updates a sheet's name/statement/visibility.
-func pgPatchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
+// patchSheet updates a sheet's name/statement/visibility.
+func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, api.RowStatus(*v))
@@ -317,8 +317,8 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*a
 	return list, nil
 }
 
-// pgDeleteSheet permanently deletes a sheet by ID.
-func pgDeleteSheet(ctx context.Context, tx *sql.Tx, delete *api.SheetDelete) error {
+// deleteSheet permanently deletes a sheet by ID.
+func deleteSheet(ctx context.Context, tx *sql.Tx, delete *api.SheetDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}

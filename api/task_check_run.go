@@ -197,6 +197,5 @@ type TaskCheckRunService interface {
 	CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*TaskCheckRun, error)
 	FindTaskCheckRunList(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
 	FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
-	PgFindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) ([]*TaskCheckRun, error)
 	PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*TaskCheckRun, error)
 }

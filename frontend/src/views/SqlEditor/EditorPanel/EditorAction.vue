@@ -1,12 +1,18 @@
 <template>
   <div class="sqleditor-editor-actions">
-    <div class="actions-left w-1/3">
+    <div class="actions-left w-1/3 space-x-2">
       <NButton
         type="primary"
         :disabled="isEmptyStatement || executeState.isLoadingData"
         @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
+      </NButton>
+      <NButton
+        :disabled="isEmptyStatement || executeState.isLoadingData"
+        @click="handleExplainQuery"
+      >
+        <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
     </div>
     <div class="actions-right space-x-2 flex w-2/3 justify-end">
@@ -132,6 +138,10 @@ const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
   execute();
+};
+
+const handleExplainQuery = () => {
+  execute({ explain: true });
 };
 
 const handleUpsertSheet = async () => {

@@ -42,15 +42,15 @@ const (
 	createDatabaseSchemaVersion = "10000"
 )
 
-//go:embed pg_migration
-var pgMigrationFS embed.FS
+//go:embed migration
+var migrationFS embed.FS
 
-//go:embed pg_seed
-var pgSeedFS embed.FS
+//go:embed seed
+var seedFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
-	PgDB *sql.DB
+	db *sql.DB
 
 	l *zap.Logger
 
@@ -106,7 +106,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if db.readonly {
 		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
 		// The database storing metadata is the same as user name.
-		db.PgDB, err = d.GetDbConnection(ctx, databaseName)
+		db.db, err = d.GetDbConnection(ctx, databaseName)
 		if err != nil {
 			return fmt.Errorf("failed to connect to database %q which may not be setup yet, error: %v", databaseName, err)
 		}
@@ -131,12 +131,12 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	}
 	db.l.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	db.PgDB, err = d.GetDbConnection(ctx, databaseName)
+	db.db, err = d.GetDbConnection(ctx, databaseName)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
 	}
 
-	if err := db.pgSeed(verBefore, verAfter); err != nil {
+	if err := db.seed(verBefore, verAfter); err != nil {
 		return fmt.Errorf("failed to seed: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the bytebase binary resides. and restart again to let"+
@@ -168,10 +168,10 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 	return versionFromInt(v), nil
 }
 
-// pgSeed loads the seed data for testing
-func (db *DB) pgSeed(verBefore, verAfter version) error {
-	db.l.Info(fmt.Sprintf("Seeding database from pg_%s, force: %t ...", db.seedDir, db.forceResetSeed))
-	names, err := fs.Glob(pgSeedFS, fmt.Sprintf("pg_%s/*.sql", db.seedDir))
+// seed loads the seed data for testing
+func (db *DB) seed(verBefore, verAfter version) error {
+	db.l.Info(fmt.Sprintf("Seeding database from %s, force: %t ...", db.seedDir, db.forceResetSeed))
+	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (db *DB) pgSeed(verBefore, verAfter version) error {
 		}
 		ver := versionFromInt(version)
 		if db.forceResetSeed || ver.biggerThan(verBefore) && !ver.biggerThan(verAfter) {
-			if err := db.pgSeedFile(name); err != nil {
+			if err := db.seedFile(name); err != nil {
 				return fmt.Errorf("seed error: name=%q err=%w", name, err)
 			}
 		} else {
@@ -203,17 +203,17 @@ func (db *DB) pgSeed(verBefore, verAfter version) error {
 	return nil
 }
 
-// pgSeedFile runs a single seed file within a transaction.
-func (db *DB) pgSeedFile(name string) error {
+// seedFile runs a single seed file within a transaction.
+func (db *DB) seedFile(name string) error {
 	db.l.Info(fmt.Sprintf("Seeding %s...", name))
-	tx, err := db.PgDB.Begin()
+	tx, err := db.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
 	// Read and execute migration file.
-	if buf, err := fs.ReadFile(pgSeedFS, name); err != nil {
+	if buf, err := fs.ReadFile(seedFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
@@ -260,14 +260,14 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 	}
 
 	// Apply migrations
-	pgNames, err := fs.Glob(pgMigrationFS, "pg_migration/*.sql")
+	names, err := fs.Glob(migrationFS, "migration/*.sql")
 	if err != nil {
 		return err
 	}
 	// Sort the migration up file in ascending order.
-	sort.Strings(pgNames)
+	sort.Strings(names)
 
-	for _, name := range pgNames {
+	for _, name := range names {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
 		version, err := strconv.Atoi(versionPrefix)
 		if err != nil {
@@ -275,9 +275,9 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 		}
 		v := versionFromInt(version)
 		if v.biggerThan(curVer) {
-			// Migrate pg migration files.
+			// Migrate migration files.
 			db.l.Info(fmt.Sprintf("Migrating %s...", name))
-			buf, err := fs.ReadFile(pgMigrationFS, name)
+			buf, err := fs.ReadFile(migrationFS, name)
 			if err != nil {
 				return err
 			}
@@ -309,8 +309,8 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 // Close closes the database connection.
 func (db *DB) Close() error {
 	// Close database.
-	if db.PgDB != nil {
-		if err := db.PgDB.Close(); err != nil {
+	if db.db != nil {
+		if err := db.db.Close(); err != nil {
 			return err
 		}
 	}
@@ -321,7 +321,7 @@ func (db *DB) Close() error {
 // provides a reference to the database and a fixed timestamp at the start of
 // the transaction. The timestamp allows us to mock time during tests as well.
 func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
-	ptx, err := db.PgDB.BeginTx(ctx, opts)
+	ptx, err := db.db.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -348,32 +348,33 @@ func FormatError(err error) error {
 		return nil
 	}
 
-	switch err.Error() {
-	case "UNIQUE constraint failed: principal.email":
-		return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
-	case "UNIQUE constraint failed: member.principal_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
-	case "UNIQUE constraint failed: environment.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
-	case "UNIQUE constraint failed: project.key":
-		return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
-	case "UNIQUE constraint failed: project_webhook.project_id, project_webhook.url":
-		return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
-	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
-	case "UNIQUE constraint failed: db.instance_id, db.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
-	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
-	case "UNIQUE constraint failed: backup.database_id, backup.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
-	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
-		return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
-	case "UNIQUE constraint failed: repository.project_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
-	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
-	default:
-		return err
+	if strings.Contains(err.Error(), "unique constraint") {
+		switch {
+		case strings.Contains(err.Error(), "principal_email_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
+		case strings.Contains(err.Error(), "member_principal_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
+		case strings.Contains(err.Error(), "environment_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
+		case strings.Contains(err.Error(), "project_key_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
+		case strings.Contains(err.Error(), "project_webhook_project_id_url_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
+		case strings.Contains(err.Error(), "project_member_project_id_principal_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
+		case strings.Contains(err.Error(), "db_instance_id_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
+		case strings.Contains(err.Error(), "idx_data_source_instance_id"):
+			return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
+		case strings.Contains(err.Error(), "backup_database_id_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
+		case strings.Contains(err.Error(), "bookmark_creator_id_link_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
+		case strings.Contains(err.Error(), "repository_project_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
+		case strings.Contains(err.Error(), "issue_subscriber_pkey"):
+			return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
+		}
 	}
+	return err
 }
