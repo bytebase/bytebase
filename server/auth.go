@@ -96,7 +96,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				// we only allow active user to login via gitlab
-				if GitlabUserInfo.State != vcsPlugin.UserStateActive {
+				if GitlabUserInfo.State != vcsPlugin.StateActive {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
 				}
 
@@ -119,7 +119,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						Name:     GitlabUserInfo.Name,
 					}
 					var httpError *echo.HTTPError
-					user, httpError = trySignup(ctx, s, signup)
+					user, httpError = trySignup(ctx, s, signup, api.SystemBotID)
 					if httpError != nil {
 						return httpError
 					}
@@ -171,7 +171,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request").SetInternal(err)
 		}
 
-		user, err := trySignup(ctx, s, signup)
+		user, err := trySignup(ctx, s, signup, api.SystemBotID)
 		if err != nil {
 			return err
 		}
@@ -188,14 +188,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 }
 
-func trySignup(ctx context.Context, s *Server, signup *api.Signup) (*api.Principal, *echo.HTTPError) {
+func trySignup(ctx context.Context, s *Server, signup *api.Signup, CreatorID int) (*api.Principal, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
 	principalCreate := &api.PrincipalCreate{
-		CreatorID:    api.SystemBotID,
+		CreatorID:    CreatorID,
 		Type:         api.EndUser,
 		Name:         signup.Name,
 		Email:        signup.Email,
@@ -224,7 +224,7 @@ func trySignup(ctx context.Context, s *Server, signup *api.Signup) (*api.Princip
 		role = api.Owner
 	}
 	memberCreate := &api.MemberCreate{
-		CreatorID:   user.ID,
+		CreatorID:   CreatorID,
 		Status:      api.Active,
 		Role:        role,
 		PrincipalID: user.ID,
