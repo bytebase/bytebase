@@ -97,7 +97,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// we only allow active user to login via gitlab
 				if GitlabUserInfo.State != vcsPlugin.StateActive {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to login via Gitlab, user is Archived")
+					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via Gitlab, user is Archived")
 				}
 
 				principalFind := &api.PrincipalFind{
