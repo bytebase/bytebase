@@ -59,7 +59,13 @@ const handleSave = async (statement: string) => {
   });
 };
 
-const handleRunQuery = () => {
-  execute();
+const handleRunQuery = ({
+  explain,
+  query,
+}: {
+  explain: boolean;
+  query: string;
+}) => {
+  execute({ explain });
 };
 </script>
