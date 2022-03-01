@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <n-modal
+    <NModal
       v-model:show="state.showModal"
       :mask-closable="false"
       preset="dialog"
