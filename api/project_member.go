@@ -119,5 +119,5 @@ type ProjectMemberService interface {
 	FindProjectMember(ctx context.Context, find *ProjectMemberFind) (*ProjectMember, error)
 	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
 	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
-	SetProjectMember(ctx context.Context, projectID int, operatorID int, setList []*ProjectMemberCreate) (createdMember, deletedMember, updatedMemberBefore, updatedMemberAfter []*ProjectMember, err error)
+	SetProjectMember(ctx context.Context, projectID int, operatorID int, setList []*ProjectMemberCreate) (createdMember, deletedMember []*ProjectMember, err error)
 }

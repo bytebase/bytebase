@@ -114,92 +114,101 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
-		createdMember, deletedMember, updatedMemberBefore, updatedMemberAfter, err := s.ProjectMemberService.SetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
+		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
 		}
 
-		// create activity for member CREATION
-		for _, projectMember := range createdMember {
-			principalFind := &api.PrincipalFind{ID: &projectMember.PrincipalID}
-			principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
-			}
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: projectID,
-				Type:        api.ActivityProjectMemberCreate,
-				Level:       api.ActivityInfo,
-				Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
-					principal.Name, principal.Email, projectMember.Role),
-			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-			if err != nil {
-				s.l.Warn("Failed to create project activity after deleting member",
-					zap.Int("project_id", projectID),
-					zap.Int("principal_id", principal.ID),
-					zap.String("principal_name", principal.Name),
-					zap.String("role", string(projectMember.Role)),
-					zap.Error(err))
+		createdIDMemberMap := make(map[int]*api.ProjectMember)
+		for _, createdMember := range createdMemberList {
+			createdIDMemberMap[createdMember.PrincipalID] = createdMember
+		}
+		deletedIDMemberMap := make(map[int]*api.ProjectMember)
+		for _, deletedMember := range deletedMemberList {
+			deletedIDMemberMap[deletedMember.PrincipalID] = deletedMember
+		}
+
+		// create ROLE CREATE/ MEMBER UPDATE activity
+		for id, createdMember := range createdIDMemberMap {
+			if deletedMember, ok := deletedIDMemberMap[id]; ok {
+				// if the same member exist before, we will create a ROLE UPDATE activity
+				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
+					continue
+				}
+				principal, err := s.composePrincipalByID(ctx, createdMember.PrincipalID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
+				}
+				activityUpdateMember := &api.ActivityCreate{
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+					ContainerID: projectID,
+					Type:        api.ActivityProjectMemberRoleUpdate,
+					Level:       api.ActivityInfo,
+					Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
+						principal.Name, principal.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
+				}
+				_, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &ActivityMeta{})
+				if err != nil {
+					s.l.Warn("Failed to create project activity after updating member role",
+						zap.Int("project_id", projectID),
+						zap.Int("principal_id", principal.ID),
+						zap.String("principal_name", principal.Name),
+						zap.String("old_role", deletedMember.Role),
+						zap.String("new_role", createdMember.Role),
+						zap.Error(err))
+				}
+			} else {
+				// elsewise, we will create a MEMBER CREATE activity
+				principalFind := &api.PrincipalFind{ID: &createdMember.PrincipalID}
+				principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", principal.ID)).SetInternal(err)
+				}
+				activityCreateMember := &api.ActivityCreate{
+					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+					ContainerID: projectID,
+					Type:        api.ActivityProjectMemberCreate,
+					Level:       api.ActivityInfo,
+					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
+						principal.Name, principal.Email, createdMember.Role),
+				}
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{})
+				if err != nil {
+					s.l.Warn("Failed to create project activity after deleting member",
+						zap.Int("project_id", projectID),
+						zap.Int("principal_id", principal.ID),
+						zap.String("principal_name", principal.Name),
+						zap.String("role", string(createdMember.Role)),
+						zap.Error(err))
+				}
 			}
 		}
 
-		// create activity for member DELETION
-		for _, projectMember := range deletedMember {
-			projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", projectMember.PrincipalID)).SetInternal(err)
+		// create MEMBER DELETE activity
+		for id, deletedMember := range deletedIDMemberMap {
+			if _, ok := createdIDMemberMap[id]; ok {
+				// if the member does exist in createdMemberList, meaning we need to update this member(already done above).
+				continue
 			}
-			activityCreate := &api.ActivityCreate{
+			principal, err := s.composePrincipalByID(ctx, deletedMember.PrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", deletedMember.PrincipalID)).SetInternal(err)
+			}
+			activityDeleteMember := &api.ActivityCreate{
 				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 				ContainerID: projectID,
 				Type:        api.ActivityProjectMemberDelete,
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Revoked %s from %s (%s). Because this member does not belong to the VCS.",
-					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
+					principal.Name, principal.Email, deletedMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &ActivityMeta{})
 			if err != nil {
 				s.l.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
-					zap.Int("principal_id", projectMember.Principal.ID),
-					zap.String("principal_name", projectMember.Principal.Name),
-					zap.String("role", projectMember.Role),
-					zap.Error(err))
-			}
-		}
-
-		// create activity for member UPDATE
-		for i := 0; i < len(updatedMemberBefore); i++ {
-			memberBefore := updatedMemberBefore[i]
-			memberAfter := updatedMemberAfter[i]
-
-			if memberBefore.Role == memberAfter.Role && memberBefore.RoleProvider == memberAfter.RoleProvider {
-				continue
-			}
-
-			principal, err := s.composePrincipalByID(ctx, memberBefore.PrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
-			}
-
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				ContainerID: projectID,
-				Type:        api.ActivityProjectMemberRoleUpdate,
-				Level:       api.ActivityInfo,
-				Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
-					principal.Name, principal.Email, memberBefore.Role, memberBefore.RoleProvider, memberAfter.Role, memberAfter.RoleProvider),
-			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-			if err != nil {
-				s.l.Warn("Failed to create project activity after updating member role",
-					zap.Int("project_id", projectID),
 					zap.Int("principal_id", principal.ID),
 					zap.String("principal_name", principal.Name),
-					zap.String("old_role", memberBefore.Role),
-					zap.String("new_role", memberAfter.Role),
+					zap.String("role", deletedMember.Role),
 					zap.Error(err))
 			}
 		}
