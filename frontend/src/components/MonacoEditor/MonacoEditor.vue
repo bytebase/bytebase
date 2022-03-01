@@ -48,7 +48,13 @@ const emit = defineEmits<{
   (e: "update:value", content: string): void;
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
-  (e: "run-query", content: string): void;
+  (
+    e: "run-query",
+    content: {
+      explain: boolean;
+      query: string;
+    }
+  ): void;
   (e: "save", content: string): void;
 }>();
 
@@ -115,7 +121,27 @@ const init = async () => {
         ?.getValueInRange(editorInstance.getSelection()) as string;
 
       const query = selectedValue || typedValue;
-      emit("run-query", query);
+      emit("run-query", { explain: false, query });
+    },
+  });
+
+  // add the run query action in context menu
+  editorInstance.addAction({
+    id: "ExplainQuery",
+    label: "Explain Query",
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 0,
+    run: async () => {
+      const typedValue = editorInstance.getValue();
+      const selectedValue = editorInstance
+        .getModel()
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ?.getValueInRange(editorInstance.getSelection()) as string;
+
+      const query = selectedValue || typedValue;
+      emit("run-query", { explain: true, query });
     },
   });
 
