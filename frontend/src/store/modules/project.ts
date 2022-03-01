@@ -51,6 +51,7 @@ function convert(
     visibility: attrs.visibility,
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
+    roleProvider: attrs.roleProvider,
   };
 
   const memberList: ProjectMember[] = [];
@@ -113,6 +114,8 @@ function convertMember(
       projectMember.relationships!.principal.data,
       includedList
     ),
+    roleProvider: attrs.roleProvider,
+    payload: JSON.parse((attrs.payload as unknown as string) || "{}"),
   };
 }
 
@@ -252,6 +255,17 @@ const actions = {
     return updatedProject;
   },
 
+  // sync member role from vcs
+  async syncMemberRoleFromVCS(
+    { dispatch }: any,
+    { projectId }: { projectId: ProjectId }
+  ) {
+    await axios.post(`/api/project/${projectId}/syncmember`);
+    const updatedProject = await dispatch("fetchProjectById", projectId);
+
+    return updatedProject;
+  },
+
   // Project Role Mapping
   // Returns existing member if the principalId has already been created.
   async createdMember(
@@ -272,7 +286,6 @@ const actions = {
     });
 
     const updatedProject = await dispatch("fetchProjectById", projectId);
-
     return updatedProject;
   },
 
