@@ -348,32 +348,33 @@ func FormatError(err error) error {
 		return nil
 	}
 
-	switch err.Error() {
-	case "UNIQUE constraint failed: principal.email":
-		return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
-	case "UNIQUE constraint failed: member.principal_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
-	case "UNIQUE constraint failed: environment.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
-	case "UNIQUE constraint failed: project.key":
-		return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
-	case "UNIQUE constraint failed: project_webhook.project_id, project_webhook.url":
-		return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
-	case "UNIQUE constraint failed: project_member.project_id, project_member.principal_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
-	case "UNIQUE constraint failed: db.instance_id, db.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
-	case "UNIQUE constraint failed: data_source.instance_id, data_source.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
-	case "UNIQUE constraint failed: backup.database_id, backup.name":
-		return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
-	case "UNIQUE constraint failed: bookmark.creator_id, bookmark.link":
-		return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
-	case "UNIQUE constraint failed: repository.project_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
-	case "UNIQUE constraint failed: issue_subscriber.issue_id, issue_subscriber.subscriber_id":
-		return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
-	default:
-		return err
+	if strings.Contains(err.Error(), "unique constraint") {
+		switch {
+		case strings.Contains(err.Error(), "principal_email_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
+		case strings.Contains(err.Error(), "member_principal_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
+		case strings.Contains(err.Error(), "environment_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
+		case strings.Contains(err.Error(), "project_key_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
+		case strings.Contains(err.Error(), "project_webhook_project_id_url_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
+		case strings.Contains(err.Error(), "project_member_project_id_principal_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
+		case strings.Contains(err.Error(), "db_instance_id_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
+		case strings.Contains(err.Error(), "idx_data_source_instance_id"):
+			return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
+		case strings.Contains(err.Error(), "backup_database_id_name_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
+		case strings.Contains(err.Error(), "bookmark_creator_id_link_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
+		case strings.Contains(err.Error(), "repository_project_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
+		case strings.Contains(err.Error(), "issue_subscriber_pkey"):
+			return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
+		}
 	}
+	return err
 }
