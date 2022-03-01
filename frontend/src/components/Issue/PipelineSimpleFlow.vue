@@ -11,7 +11,7 @@
         <div
           class="cursor-default group flex items-center justify-between w-full"
         >
-          <span class="pl-4 py-2 flex items-center text-sm font-medium">
+          <span class="w-full pl-4 py-2 flex items-center text-sm font-medium">
             <div
               class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="flowItemIconClass(item)"
@@ -60,12 +60,12 @@
               <span class="text-sm">{{ item.taskName }}</span>
             </div>
             <div
-              class="ml-4 group cursor-pointer grid grid-cols-2 lg:hidden"
+              class="ml-4 w-full group cursor-pointer grid grid-cols-3 lg:hidden"
               :class="flowItemTextClass(item)"
               @click.prevent="clickItem(item)"
             >
-              <span class="col-span-1 text-sm w-32">{{ item.stageName }}</span>
-              <span class="col-span-1 text-sm">{{ item.taskName }}</span>
+              <span class="col-span-1 text-sm">{{ item.stageName }}</span>
+              <span class="col-span-2 text-sm ml-4">{{ item.taskName }}</span>
             </div>
             <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
               <span class="tooltip">Missing SQL statement</span>
