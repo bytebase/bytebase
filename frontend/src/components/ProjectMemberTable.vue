@@ -86,6 +86,24 @@
           <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
             member.updater.name
           }}</router-link>
+          <!-- we only show user's role provider if hers is not Bytebase -->
+          <template v-if="member.roleProvider !== 'BYTEBASE'">
+            <span>{{ $t("common.from") }}</span>
+            <div class="tooltip-wrapper">
+              <span class="tooltip w-60">
+                {{
+                  $t("settings.members.tooltip.role-provider", {
+                    roleProvider: member.roleProvider,
+                    rawRole: member.payload.vcsRole,
+                  })
+                }}
+              </span>
+              <img
+                class="w-4 ml-1"
+                :src="RoleProviderConfig[member.roleProvider].iconPath"
+              />
+            </div>
+          </template>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -140,6 +158,17 @@ export default {
     );
 
     const state = reactive<LocalState>({});
+
+    const RoleProviderConfig = {
+      GITLAB_SELF_HOST: {
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+      BYTEBASE: {
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: "",
+      },
+    };
 
     const dataSource = computed(
       (): BBTableSectionDataSource<ProjectMember>[] => {
@@ -215,6 +244,9 @@ export default {
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
       }
+      if (props.project.roleProvider !== "BYTEBASE") {
+        return false;
+      }
 
       if (role == "OWNER" && dataSource.value[0].list.length <= 1) {
         return false;
@@ -238,6 +270,7 @@ export default {
     const changeRole = (id: MemberId, role: ProjectRoleType) => {
       const projectMemberPatch: ProjectMemberPatch = {
         role,
+        roleProvider: "BYTEBASE",
       };
       store.dispatch("project/patchMember", {
         projectId: props.project.id,
@@ -251,7 +284,7 @@ export default {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
-          title: t("project.settings.success-menber-deleted-prompt", {
+          title: t("project.settings.success-member-deleted-prompt", {
             name: member.principal.name,
           }),
         });
@@ -260,6 +293,7 @@ export default {
 
     return {
       state,
+      RoleProviderConfig,
       currentUser,
       hasRBACFeature,
       columnList,

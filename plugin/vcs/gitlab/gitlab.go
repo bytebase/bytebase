@@ -119,6 +119,49 @@ type FileMeta struct {
 	LastCommitID string `json:"last_commit_id"`
 }
 
+// ProjectRole is the role of the project member
+type ProjectRole string
+
+// Gitlab Role type
+const (
+	ProjectRoleOwner         ProjectRole = "Owner"
+	ProjectRoleMaintainer    ProjectRole = "Maintainer"
+	ProjectRoleDeveloper     ProjectRole = "Developer"
+	ProjectRoleReporter      ProjectRole = "Reporter"
+	ProjectRoleGuest         ProjectRole = "Guest"
+	ProjectRoleMinimalAccess ProjectRole = "MinimalAccess"
+	ProjectRoleNoAccess      ProjectRole = "NoAccess"
+)
+
+func (e ProjectRole) String() string {
+	switch e {
+	case ProjectRoleOwner:
+		return "Owner"
+	case ProjectRoleMaintainer:
+		return "Maintainer"
+	case ProjectRoleDeveloper:
+		return "Developer"
+	case ProjectRoleReporter:
+		return "Reporter"
+	case ProjectRoleGuest:
+		return "Guest"
+	case ProjectRoleMinimalAccess:
+		return "MinimalAccess"
+	case ProjectRoleNoAccess:
+		return "NoAccess"
+	}
+	return ""
+}
+
+// gitLabRepositoryMember is the API message for repository member
+type gitLabRepositoryMember struct {
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	State           vcs.State `json:"state"`
+	MembershipState vcs.State `json:"membership_state"`
+	AccessLevel     int32     `json:"access_level"`
+}
+
 func init() {
 	vcs.Register(vcs.GitLabSelfHost, newProvider)
 }
@@ -171,6 +214,79 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	return UserInfo, err
+}
+
+func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
+	// see https://docs.gitlab.com/ee/api/members.html for the detailed role type at GitLab
+	switch accessLevel {
+	case 50 /* Owner */ :
+		return ProjectRoleOwner, common.ProjectOwner
+	case 40 /* Maintainer */ :
+		return ProjectRoleMaintainer, common.ProjectOwner
+	case 30 /* Developer */ :
+		return ProjectRoleDeveloper, common.ProjectDeveloper
+	case 20 /* Reporter */ :
+		return ProjectRoleReporter, common.ProjectDeveloper
+	case 10 /* Guest */ :
+		return ProjectRoleGuest, common.ProjectDeveloper
+	case 5 /* Minimal access */ :
+		return ProjectRoleMinimalAccess, common.ProjectDeveloper
+	case 0 /* No access */ :
+		return ProjectRoleNoAccess, common.ProjectDeveloper
+	}
+
+	return "", ""
+}
+
+// FetchRepositoryActiveMemberList fetch all active members of a repository
+func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/members", repositoryID),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if code == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var gitLabrepositoryMember []gitLabRepositoryMember
+	if err := json.Unmarshal([]byte(body), &gitLabrepositoryMember); err != nil {
+		return nil, err
+	}
+
+	// we only return active member (both state and membership_state is active)
+	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
+	for _, gitLabMember := range gitLabrepositoryMember {
+		if gitLabMember.State == vcs.StateActive && gitLabMember.MembershipState == vcs.StateActive {
+			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
+			repositoryMember := &vcs.RepositoryMember{
+				Name:         gitLabMember.Name,
+				Email:        gitLabMember.Email,
+				Role:         bytebaseRole,
+				VCSRole:      gitLabRole.String(),
+				State:        vcs.StateActive,
+				RoleProvider: vcs.GitLabSelfHost,
+			}
+			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
+		}
+	}
+
+	return activeRepositoryMember, nil
 }
 
 // CreateFile creates a file.

@@ -64,21 +64,31 @@ type PushEvent struct {
 	FileCommit         FileCommit `json:"fileCommit"`
 }
 
-// UserState is the state of a VCS user account.
-type UserState string
+// State is the state of a VCS user account.
+type State string
 
 const (
-	// UserStateActive is the active state for VCS user state.
-	UserStateActive UserState = "active"
-	// UserStateArchived is the archived state for VCS user state.
-	UserStateArchived UserState = "archived"
+	// StateActive is the active state for VCS user state.
+	StateActive State = "active"
+	// StateArchived is the archived state for VCS user state.
+	StateArchived State = "archived"
 )
 
 // UserInfo is the API message for user info.
 type UserInfo struct {
-	Email string    `json:"email"`
-	Name  string    `json:"name"`
-	State UserState `json:"state"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	State State  `json:"state"`
+}
+
+// RepositoryMember is the API message for  repository member info.
+type RepositoryMember struct {
+	Email        string             `json:"email"`
+	Name         string             `json:"name"`
+	State        State              `json:"state"`
+	Role         common.ProjectRole `json:"role"`
+	VCSRole      string             `json:"vcsRole"`
+	RoleProvider Type               `json:"roleProvider"`
 }
 
 // Provider is the interface for VCS provider.
@@ -91,6 +101,13 @@ type Provider interface {
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+
+	// Fetch all active members of a given repository
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
 
 	// Commits a new file
 	//
