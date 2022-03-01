@@ -336,6 +336,20 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to list sheet, error %v", err)
 	}
+
+	err = ctl.createDataSource(api.DataSourceCreate{
+		InstanceID: instance.ID,
+		DatabaseID: database.ID,
+		CreatorID:  project.Creator.ID,
+		Name:       "ADMIN data source",
+		Type:       "ADMIN",
+		Username:   "root",
+		Password:   "",
+	})
+
+	if err != nil {
+		t.Fatalf("failed to create data source, error %v", err)
+	}
 }
 
 func TestVCS(t *testing.T) {

@@ -1100,3 +1100,21 @@ func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
 	}
 	return sheets, nil
 }
+
+func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &dataSourceCreate); err != nil {
+		return fmt.Errorf("failed to marshal dataSourceCreate, error: %w", err)
+	}
+
+	body, err := ctl.post(fmt.Sprintf("/database/%d/datasource", dataSourceCreate.DatabaseID), buf)
+	if err != nil {
+		return err
+	}
+
+	dataSource := new(api.DataSource)
+	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
+		return fmt.Errorf("fail to unmarshal dataSource response, error: %w", err)
+	}
+	return nil
+}

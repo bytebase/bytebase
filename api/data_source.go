@@ -85,8 +85,8 @@ type DataSourceCreate struct {
 	CreatorID int
 
 	// Related fields
-	InstanceID int
-	DatabaseID int
+	InstanceID int `jsonapi:"attr,instanceId"`
+	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
