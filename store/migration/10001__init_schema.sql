@@ -141,8 +141,7 @@ CREATE TABLE policy (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    -- allowed types are in the format of 'bb.policy.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -256,8 +255,7 @@ CREATE TABLE project_webhook (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    -- allowed types are in the format of 'bb.plugin.webhook.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
@@ -658,8 +656,7 @@ CREATE TABLE task (
     name TEXT NOT NULL,
     -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
@@ -689,8 +686,7 @@ CREATE TABLE task_run (
     name TEXT NOT NULL,
     -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
@@ -718,8 +714,7 @@ CREATE TABLE task_check_run (
     task_id INTEGER NOT NULL REFERENCES task (id),
     -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task-check.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
@@ -754,8 +749,7 @@ CREATE TABLE issue (
     name TEXT NOT NULL,
     -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.issue.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
@@ -802,8 +796,7 @@ CREATE TABLE activity (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     -- container_id is not zero.
     container_id INTEGER NOT NULL,
-    -- allowed types are in the format of 'bb.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     -- allowed levels are 'INFO', 'WARN', 'ERROR'.
     level TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
@@ -876,10 +869,8 @@ CREATE TABLE vcs (
     name TEXT NOT NULL,
     -- allowed types are 'GITLAB_SELF_HOST'.
     type TEXT NOT NULL,
-    -- instance_url follows (instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')
-    instance_url TEXT NOT NULL,
-    -- api_url follows (api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/').
-    api_url TEXT NOT NULL,
+    instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
+    api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
     secret TEXT NOT NULL
 );
@@ -968,8 +959,7 @@ CREATE TABLE anomaly (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),
-    -- allowed types are in the format of 'bb.anomaly.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
