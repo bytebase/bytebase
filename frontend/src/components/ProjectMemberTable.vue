@@ -150,7 +150,7 @@ export default {
     activeRoleProvider: {
       require: false,
       default: null,
-      type: Object as PropType<ProjectRoleProvider>,
+      type: String as PropType<ProjectRoleProvider>,
     },
   },
   setup(props) {
