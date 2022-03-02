@@ -30,7 +30,7 @@
               state.showModal = true;
               if (!on) {
                 // we preview member if user try to switch role provider to Bytebase
-                previewMember = true;
+                state.previewMember = true;
               }
             }
           "
@@ -47,7 +47,7 @@
       :content="$t('settings.members.change-role-provider-to-vcs.content')"
       :on-after-leave="
         () => {
-          previewMember = false;
+          state.previewMember = false;
         }
       "
       :positive-text="$t('common.confirm')"
@@ -84,7 +84,7 @@
         }
       "
     >
-      <template v-if="previewMember">
+      <template v-if="state.previewMember">
         <div class="mx-1">
           {{ $t("settings.members.change-role-provider-to-bytebase.content") }}
         </div>
