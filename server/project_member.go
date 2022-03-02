@@ -68,6 +68,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		// The following block will check whether the relevant principal exists in our system.
 		// If the principal does not exist, we will try to create one out of the vcs member info.
 		createList := make([]*api.ProjectMemberCreate, 0)
+		// we declare latSyncTs to ensure that every projectMember would have the same sync time.
+		lastSyncTs := time.Now().UTC().Unix()
 		for _, projectMember := range vcsProjectMemberList {
 			if vcs.Type != projectMember.RoleProvider {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
@@ -97,7 +99,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 			providerPayload := &api.ProjectRoleProviderPayload{
 				VCSRole:    projectMember.VCSRole,
-				LastSyncTs: time.Now().UTC().Unix(),
+				LastSyncTs: lastSyncTs,
 			}
 			providerPayloadBytes, err := json.Marshal(providerPayload)
 			if err != nil {
