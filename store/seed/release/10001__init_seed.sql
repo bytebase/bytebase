@@ -37,6 +37,7 @@ ALTER SEQUENCE environment_id_seq RESTART WITH 103;
 
 INSERT INTO
     policy (
+        id,
         creator_id,
         updater_id,
         environment_id,
@@ -45,6 +46,7 @@ INSERT INTO
     )
 VALUES
     (
+        101,
         1,
         1,
         101,
@@ -54,6 +56,7 @@ VALUES
 
 INSERT INTO
     policy (
+        id,
         creator_id,
         updater_id,
         environment_id,
@@ -62,6 +65,7 @@ INSERT INTO
     )
 VALUES
     (
+        102,
         1,
         1,
         102,
@@ -71,6 +75,7 @@ VALUES
 
 INSERT INTO
     policy (
+        id,
         creator_id,
         updater_id,
         environment_id,
@@ -79,12 +84,15 @@ INSERT INTO
     )
 VALUES
     (
+        103,
         1,
         1,
         102,
         'bb.policy.backup-plan',
         '{"schedule":"WEEKLY"}'
     );
+
+ALTER SEQUENCE policy_id_seq RESTART WITH 104;
 
 -- Create label keys for `bb.location` and `bb.tenant`.
 INSERT INTO
@@ -290,7 +298,7 @@ VALUES
         'testpwd1'
     );
 
-ALTER SEQUENCE db_id_seq RESTART WITH 103;
+ALTER SEQUENCE data_source_id_seq RESTART WITH 103;
 
 -- Create pipeline/stage/task/issue for onboarding
 -- Create pipeline 101 "Hello world"
@@ -419,6 +427,7 @@ ALTER SEQUENCE task_id_seq RESTART WITH 103;
 -- Create task_run for task 101
 INSERT INTO
     task_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -431,6 +440,7 @@ INSERT INTO
     )
 VALUES
     (
+        101,
         1,
         1,
         101,
@@ -444,6 +454,7 @@ VALUES
 
 INSERT INTO
     task_run (
+        id,
         creator_id,
         updater_id,
         task_id,
@@ -455,6 +466,7 @@ INSERT INTO
     )
 VALUES
     (
+        102,
         1,
         1,
         101,
@@ -464,6 +476,8 @@ VALUES
         'Let''s give another try',
         '{}'
     );
+
+ALTER SEQUENCE task_run_id_seq RESTART WITH 103;
 
 -- Create issue 101 "Hello world"
 INSERT INTO
