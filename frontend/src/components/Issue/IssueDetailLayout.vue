@@ -108,6 +108,7 @@
               :task="selectedTask"
               :input-field-list="issueTemplate.inputFieldList"
               :allow-edit="allowEditSidebar"
+              :is-tenant-deploy-mode="isTenantDeployMode"
               @update-assignee-id="updateAssigneeId"
               @update-earliest-allowed-time="updateEarliestAllowedTime"
               @add-subscriber-id="addSubscriberId"
