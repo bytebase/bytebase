@@ -439,7 +439,7 @@ VALUES
         'bb.task.general',
         '',
         '{"detail":"Something is not right..."}',
-        ''
+        '{}'
     );
 
 INSERT INTO
@@ -462,7 +462,7 @@ VALUES
         'RUNNING',
         'bb.task.general',
         'Let''s give another try',
-        ''
+        '{}'
     );
 
 -- Create issue 101 "Hello world"

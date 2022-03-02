@@ -146,7 +146,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		create.Type,
 		create.Name,
 		create.URL,
-		strings.Join(create.ActivityList, ","),
+		create.ActivityList,
 	)
 
 	if err != nil {
@@ -211,7 +211,6 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 	list := make([]*api.ProjectWebhook, 0)
 	for rows.Next() {
 		var projectWebhook api.ProjectWebhook
-		var activityList string
 		if err := rows.Scan(
 			&projectWebhook.ID,
 			&projectWebhook.CreatorID,
@@ -222,11 +221,10 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 			&projectWebhook.Type,
 			&projectWebhook.Name,
 			&projectWebhook.URL,
-			&activityList,
+			&projectWebhook.ActivityList,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		projectWebhook.ActivityList = strings.Split(activityList, ",")
 
 		if v := find.ActivityType; v != nil {
 			for _, activity := range projectWebhook.ActivityList {
@@ -257,7 +255,8 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 		set, args = append(set, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ActivityList; v != nil {
-		set, args = append(set, fmt.Sprintf("activity_list = $%d", len(args)+1)), append(args, *v)
+		activities := strings.Split(*v, ",")
+		set, args = append(set, fmt.Sprintf("activity_list = $%d", len(args)+1)), append(args, activities)
 	}
 
 	args = append(args, patch.ID)

@@ -81,7 +81,7 @@ const (
 	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 )
 
-// TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time
+// TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time.
 type TaskCheckEarliestAllowedTimePayload struct {
 	EarliestAllowedTs int64 `json:"earliestAllowedTs,omitempty"`
 }

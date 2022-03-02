@@ -40,8 +40,10 @@ export type CreateDatabaseContext = {
 
 export type UpdateSchemaDetail = {
   databaseId: DatabaseId;
+  databaseName: string;
   statement: string;
   rollbackStatement: string;
+  earliestAllowedTs: number;
 };
 
 export type UpdateSchemaContext = {
