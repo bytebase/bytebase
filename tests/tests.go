@@ -34,9 +34,9 @@ var (
 		name TEXT NOT NULL
 	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
-	bookSchemaSQLResult = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],[["table","book","book","2","CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)"]]]`
 	bookDataQuery       = `SELECT * FROM book;`
-	bookDataSQLResult   = `[{"id":"1","name":"byte"},{"id":"2","name":"base"}]`
+	bookDataSQLResult   = `[["id","name"],[["1","byte"],["2","base"]]]`
 
 	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES

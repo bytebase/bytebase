@@ -97,31 +97,42 @@ const tableViewRef = ref<HTMLDivElement>();
 const tableMaxHeight = ref(0);
 
 const columns = computed(() => {
-  return queryResult.value && queryResult.value.length > 0
-    ? Object.keys(queryResult.value[0]).map((item) => {
-        return {
-          title: item.toUpperCase(),
-          key: item,
-        };
-      })
-    : [];
+  if (!queryResult.value) {
+    return [];
+  }
+
+  const [columns] = queryResult.value;
+  return columns.map((d) => {
+    return {
+      title: d,
+      key: d,
+    };
+  });
 });
 const data = computed(() => {
-  const temp =
-    queryResult.value && queryResult.value.length > 0
-      ? queryResult.value.filter((d) => {
-          let t = false;
+  if (!queryResult.value) {
+    return [];
+  }
 
-          for (const k in d) {
-            if (String(d[k]).includes(state.search)) {
-              t = true;
-              break;
-            }
-          }
-
-          return t;
-        })
-      : [];
+  const [_, data] = queryResult.value;
+  const temp = data
+    .filter((d) => {
+      let t = false;
+      for (const k of d) {
+        if (String(k).includes(state.search)) {
+          t = true;
+          break;
+        }
+      }
+      return t;
+    })
+    .map((d) => {
+      let t: any = {};
+      for (let i = 0; i < d.length; i++) {
+        t[columns.value[i].key] = d[i];
+      }
+      return t;
+    });
   return temp;
 });
 const notifyMessage = computed(() => {
@@ -131,7 +142,8 @@ const notifyMessage = computed(() => {
   if (isExecuting.value) {
     return t("sql-editor.loading-data");
   }
-  if (queryResult.value.length === 0) {
+  const [_, data] = queryResult.value;
+  if (data.length === 0) {
     return t("sql-editor.no-rows-found");
   }
 
