@@ -146,7 +146,7 @@ type UpdateSchemaDetail struct {
 	Statement string `json:"statement"`
 	// RollbackStatement is the rollback statement of the statement.
 	RollbackStatement string `json:"rollbackStatement"`
-	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in nanoseconds.
+	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 

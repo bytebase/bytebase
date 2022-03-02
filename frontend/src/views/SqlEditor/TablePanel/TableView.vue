@@ -54,7 +54,7 @@
     </NDataTable>
     <div
       v-show="notifyMessage"
-      class="absolute w-full h-full flex justify-center items-center transition-all bg-transparent"
+      class="absolute top-0 left-0 z-10 w-full h-full flex justify-center items-center transition-all bg-transparent"
       :class="notifyMessage ? 'bg-white bg-opacity-90' : ''"
     >
       {{ notifyMessage }}
