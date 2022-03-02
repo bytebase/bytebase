@@ -304,8 +304,7 @@ settings:
         role provider to Bytebase to restore this change.
     change-role-provider-to-bytebase:
       content: >-
-        You are about to restore the following member. All member provided by
-        VCS will be put into an inactive state.
+        You are about to restore the following members. All existing members synced from VCS will be removed.
 activity:
   name: Name
   comment: Comment
