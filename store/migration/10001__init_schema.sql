@@ -53,7 +53,7 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE principal_id_seq RESTART WITH 100;
+ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 -- Setting
 CREATE TABLE setting (
@@ -71,7 +71,7 @@ CREATE TABLE setting (
 
 CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
 
-ALTER SEQUENCE setting_id_seq RESTART WITH 100;
+ALTER SEQUENCE setting_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_setting_updated_ts
 BEFORE
@@ -98,7 +98,7 @@ CREATE TABLE member (
 
 CREATE UNIQUE INDEX idx_member_unique_principal_id ON member(principal_id);
 
-ALTER SEQUENCE member_id_seq RESTART WITH 100;
+ALTER SEQUENCE member_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_member_updated_ts
 BEFORE
@@ -121,7 +121,7 @@ CREATE TABLE environment (
 
 CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
 
-ALTER SEQUENCE environment_id_seq RESTART WITH 100;
+ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_environment_updated_ts
 BEFORE
@@ -150,7 +150,7 @@ CREATE INDEX idx_policy_environment_id ON policy(environment_id);
 
 CREATE UNIQUE INDEX idx_policy_unique_environment_id_type ON policy(environment_id, type);
 
-ALTER SEQUENCE policy_id_seq RESTART WITH 100;
+ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_policy_updated_ts
 BEFORE
@@ -209,7 +209,7 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE project_id_seq RESTART WITH 100;
+ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_project_updated_ts
 BEFORE
@@ -238,7 +238,7 @@ CREATE TABLE project_member (
 
 CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
 
-ALTER SEQUENCE project_member_id_seq RESTART WITH 100;
+ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_project_member_updated_ts
 BEFORE
@@ -268,7 +268,7 @@ CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
 
 CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON project_webhook(project_id, url);
 
-ALTER SEQUENCE project_webhook_id_seq RESTART WITH 100;
+ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_project_webhook_updated_ts
 BEFORE
@@ -295,7 +295,7 @@ CREATE TABLE instance (
     external_link TEXT NOT NULL DEFAULT ''
 );
 
-ALTER SEQUENCE instance_id_seq RESTART WITH 100;
+ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_instance_updated_ts
 BEFORE
@@ -317,7 +317,7 @@ CREATE TABLE instance_user (
     "grant" TEXT NOT NULL
 );
 
-ALTER SEQUENCE instance_user_id_seq RESTART WITH 100;
+ALTER SEQUENCE instance_user_id_seq RESTART WITH 101;
 
 CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON instance_user(instance_id, name);
 
@@ -354,7 +354,7 @@ CREATE INDEX idx_db_instance_id ON db(instance_id);
 
 CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON db(instance_id, name);
 
-ALTER SEQUENCE db_id_seq RESTART WITH 100;
+ALTER SEQUENCE db_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_db_updated_ts
 BEFORE
@@ -389,7 +389,7 @@ CREATE INDEX idx_tbl_database_id ON tbl(database_id);
 
 CREATE UNIQUE INDEX idx_tbl_unique_database_id_name ON tbl(database_id, name);
 
-ALTER SEQUENCE tbl_id_seq RESTART WITH 100;
+ALTER SEQUENCE tbl_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_tbl_updated_ts
 BEFORE
@@ -423,7 +423,7 @@ CREATE INDEX idx_col_database_id_table_id ON col(database_id, table_id);
 
 CREATE UNIQUE INDEX idx_col_unique_database_id_table_id_name ON col(database_id, table_id, name);
 
-ALTER SEQUENCE col_id_seq RESTART WITH 100;
+ALTER SEQUENCE col_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_col_updated_ts
 BEFORE
@@ -456,7 +456,7 @@ CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
 
 CREATE UNIQUE INDEX idx_idx_unique_database_id_table_id_name_expression ON idx(database_id, table_id, name, expression);
 
-ALTER SEQUENCE idx_id_seq RESTART WITH 100;
+ALTER SEQUENCE idx_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_idx_updated_ts
 BEFORE
@@ -484,7 +484,7 @@ CREATE INDEX idx_vw_database_id ON vw(database_id);
 
 CREATE UNIQUE INDEX idx_vw_unique_database_id_name ON vw(database_id, name);
 
-ALTER SEQUENCE vw_id_seq RESTART WITH 100;
+ALTER SEQUENCE vw_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_vw_updated_ts
 BEFORE
@@ -517,7 +517,7 @@ CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
 
 CREATE UNIQUE INDEX idx_data_source_unique_database_id_name ON data_source(database_id, name);
 
-ALTER SEQUENCE data_source_id_seq RESTART WITH 100;
+ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_data_source_updated_ts
 BEFORE
@@ -551,7 +551,7 @@ CREATE INDEX idx_backup_database_id ON backup(database_id);
 
 CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON backup(database_id, name);
 
-ALTER SEQUENCE backup_id_seq RESTART WITH 100;
+ALTER SEQUENCE backup_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_backup_updated_ts
 BEFORE
@@ -583,7 +583,7 @@ CREATE TABLE backup_setting (
 
 CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON backup_setting(database_id);
 
-ALTER SEQUENCE backup_setting_id_seq RESTART WITH 100;
+ALTER SEQUENCE backup_setting_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_backup_setting_updated_ts
 BEFORE
@@ -609,7 +609,7 @@ CREATE TABLE pipeline (
 
 CREATE INDEX idx_pipeline_status ON pipeline(status);
 
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 100;
+ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_pipeline_updated_ts
 BEFORE
@@ -633,7 +633,7 @@ CREATE TABLE stage (
 
 CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
 
-ALTER SEQUENCE stage_id_seq RESTART WITH 100;
+ALTER SEQUENCE stage_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_stage_updated_ts
 BEFORE
@@ -670,7 +670,7 @@ CREATE INDEX idx_task_status ON task(status);
 
 CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
-ALTER SEQUENCE task_id_seq RESTART WITH 100;
+ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_task_updated_ts
 BEFORE
@@ -700,7 +700,7 @@ CREATE TABLE task_run (
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
-ALTER SEQUENCE task_run_id_seq RESTART WITH 100;
+ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_task_run_updated_ts
 BEFORE
@@ -729,7 +729,7 @@ CREATE TABLE task_check_run (
 
 CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
 
-ALTER SEQUENCE task_check_run_id_seq RESTART WITH 100;
+ALTER SEQUENCE task_check_run_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_task_check_run_updated_ts
 BEFORE
@@ -772,7 +772,7 @@ CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_created_ts ON issue(created_ts);
 
-ALTER SEQUENCE issue_id_seq RESTART WITH 100;
+ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_issue_updated_ts
 BEFORE
@@ -814,7 +814,7 @@ CREATE INDEX idx_activity_container_id ON activity(container_id);
 
 CREATE INDEX idx_activity_created_ts ON activity(created_ts);
 
-ALTER SEQUENCE activity_id_seq RESTART WITH 100;
+ALTER SEQUENCE activity_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_activity_updated_ts
 BEFORE
@@ -839,7 +839,7 @@ CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id
 
 CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, status);
 
-ALTER SEQUENCE inbox_id_seq RESTART WITH 100;
+ALTER SEQUENCE inbox_id_seq RESTART WITH 101;
 
 -- bookmark table stores the bookmark for the user
 CREATE TABLE bookmark (
@@ -856,7 +856,7 @@ CREATE TABLE bookmark (
 
 CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON bookmark(creator_id, link);
 
-ALTER SEQUENCE bookmark_id_seq RESTART WITH 100;
+ALTER SEQUENCE bookmark_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_bookmark_updated_ts
 BEFORE
@@ -884,7 +884,7 @@ CREATE TABLE vcs (
     secret TEXT NOT NULL
 );
 
-ALTER SEQUENCE vcs_id_seq RESTART WITH 100;
+ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_vcs_updated_ts
 BEFORE
@@ -946,7 +946,7 @@ CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
 
 CREATE UNIQUE INDEX idx_repository_unique_webhook_endpoint_id ON repository(webhook_endpoint_id);
 
-ALTER SEQUENCE repository_id_seq RESTART WITH 100;
+ALTER SEQUENCE repository_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_repository_updated_ts
 BEFORE
@@ -976,7 +976,7 @@ CREATE TABLE anomaly (
 CREATE INDEX idx_anomaly_instance_id_row_status_type ON anomaly(instance_id, row_status, type);
 CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row_status, type);
 
-ALTER SEQUENCE anomaly_id_seq RESTART WITH 100;
+ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_anomaly_updated_ts
 BEFORE
@@ -1000,7 +1000,7 @@ CREATE TABLE label_key (
 -- key's are unique within the label_key table.
 CREATE UNIQUE INDEX idx_label_key_unique_key ON label_key(key);
 
-ALTER SEQUENCE label_key_id_seq RESTART WITH 100;
+ALTER SEQUENCE label_key_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_label_key_updated_ts
 BEFORE
@@ -1024,7 +1024,7 @@ CREATE TABLE label_value (
 -- key/value's are unique within the label_value table.
 CREATE UNIQUE INDEX idx_label_value_unique_key_value ON label_value(key, value);
 
-ALTER SEQUENCE label_value_id_seq RESTART WITH 100;
+ALTER SEQUENCE label_value_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_label_value_updated_ts
 BEFORE
@@ -1050,7 +1050,7 @@ CREATE TABLE db_label (
 -- database_id/key's are unique within the db_label table.
 CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON db_label(database_id, key);
 
-ALTER SEQUENCE db_label_id_seq RESTART WITH 100;
+ALTER SEQUENCE db_label_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_db_label_updated_ts
 BEFORE
@@ -1075,7 +1075,7 @@ CREATE TABLE deployment_config (
 
 CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON deployment_config(project_id);
 
-ALTER SEQUENCE deployment_config_id_seq RESTART WITH 100;
+ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_deployment_config_updated_ts
 BEFORE
@@ -1106,7 +1106,7 @@ CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
 
 CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
-ALTER SEQUENCE sheet_id_seq RESTART WITH 100;
+ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_sheet_updated_ts
 BEFORE
