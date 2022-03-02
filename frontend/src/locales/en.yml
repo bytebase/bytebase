@@ -972,7 +972,7 @@ project:
       btn-text: Restore this @.lower:{'common.project'}
     sync-from-vcs: Sync from VCS
     success-member-sync-prompt: Sync member from VCS Succeeded
-    view-vcs-member: view member at VCS
+    view-vcs-member: view members at VCS
     switch-role-provider-to-bytebase-success-prompt: Successfully switching project role provider to Bytebase.
   mode:
     standard: Standard
