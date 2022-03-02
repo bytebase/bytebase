@@ -148,7 +148,7 @@ func getBatchUpdatePrincipalIDList(ctx context.Context, oldPrincipalIDList []int
 
 	deletePrincipalIDList = make([]int, 0)
 	for _, oldID := range oldPrincipalIDList {
-		// if the ID dose exist on the create list we will update it (done above)
+		// if the old ID also exists on the new id list, then it has already been added to the patch list above.
 		if _, ok := newPrincipalIDSet[oldID]; ok {
 			continue
 		}
