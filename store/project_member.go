@@ -142,11 +142,6 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.Pr
 		oldMemberMap[existingMember.PrincipalID] = existingMember
 	}
 
-	newMemberMap := make(map[int]bool)
-	for _, createMember := range set.List {
-		newMemberMap[createMember.PrincipalID] = true
-	}
-
 	createdMemberList := make([]*api.ProjectMember, 0)
 	deletedMemberList := make([]*api.ProjectMember, 0)
 	for _, memberCreate := range set.List {
