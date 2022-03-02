@@ -159,7 +159,7 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 		// if the member exists (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
 		//  we will try to update its field
 		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
-			// if we update a member, we will the member in both createdMemberList and deletedMemberList
+			// if we update a member, we will add the member in both createdMemberList and deletedMemberList
 			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
 				UpdaterID:    memberCreate.CreatorID,
