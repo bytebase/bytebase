@@ -75,17 +75,16 @@
           <Quickstart />
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
-          <a
-            href="https://docs.bytebase.com"
-            target="_blank"
-            class="flex justify-between items-center flex-shrink-0 w-full text-main group"
+          <span
+            class="flex justify-between items-center flex-shrink-0 w-full text-main group cursor-pointer"
+            @click.prevent="state.showHelpPanel = true"
           >
             <div class="flex items-center py-1">
               <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
               <span class="text-sm">{{ $t("common.help") }}</span>
             </div>
             <div class="text-sm">{{ version }}</div>
-          </a>
+          </span>
         </div>
       </div>
     </aside>
@@ -134,31 +133,36 @@
         <!-- End main area -->
       </div>
     </div>
+
+    <HelpPanel v-model:visible="state.showHelpPanel" />
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import IntroBanner from "../components/IntroBanner.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
+import HelpPanel from "../components/HelpPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 
 interface LocalState {
   showMobileOverlay: boolean;
+  showHelpPanel: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "BodyLayout",
   components: {
     Breadcrumb,
     IntroBanner,
     Quickstart,
     QuickActionPanel,
+    HelpPanel,
   },
   setup() {
     const store = useStore();
@@ -166,6 +170,7 @@ export default {
 
     const state = reactive<LocalState>({
       showMobileOverlay: false,
+      showHelpPanel: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -247,5 +252,5 @@ export default {
       version,
     };
   },
-};
+});
 </script>
