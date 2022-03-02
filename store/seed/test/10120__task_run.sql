@@ -16,7 +16,7 @@ INSERT INTO
     )
 VALUES
     (
-        101,
+        12001,
         1,
         1624873710,
         1,
@@ -48,7 +48,7 @@ INSERT INTO
     )
 VALUES
     (
-        102,
+        12002,
         1,
         1624883710,
         1,
@@ -77,7 +77,7 @@ INSERT INTO
     )
 VALUES
     (
-        103,
+        12003,
         101,
         101,
         11006,
@@ -106,7 +106,7 @@ INSERT INTO
     )
 VALUES
     (
-        104,
+        12004,
         1,
         1624865387,
         1,
@@ -138,7 +138,7 @@ INSERT INTO
     )
 VALUES
     (
-        105,
+        12005,
         1,
         1624866790,
         1,
@@ -170,7 +170,7 @@ INSERT INTO
     )
 VALUES
     (
-        106,
+        12006,
         1,
         1624868407,
         1,
@@ -202,7 +202,7 @@ INSERT INTO
     )
 VALUES
     (
-        107,
+        12007,
         1,
         1624868680,
         1,
@@ -234,7 +234,7 @@ INSERT INTO
     )
 VALUES
     (
-        108,
+        12008,
         1,
         1624869944,
         1,
@@ -266,7 +266,7 @@ INSERT INTO
     )
 VALUES
     (
-        109,
+        12009,
         102,
         1624879944,
         102,
@@ -297,7 +297,7 @@ INSERT INTO
     )
 VALUES
     (
-        110,
+        12010,
         102,
         1624879944,
         102,
@@ -328,7 +328,7 @@ INSERT INTO
     )
 VALUES
     (
-        111,
+        12011,
         102,
         1624879944,
         102,
@@ -342,4 +342,4 @@ VALUES
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT)"}'
     );
 
-ALTER SEQUENCE task_run_id_seq RESTART WITH 112;
+ALTER SEQUENCE task_run_id_seq RESTART WITH 12012;
