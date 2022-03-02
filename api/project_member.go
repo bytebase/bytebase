@@ -7,6 +7,32 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+// ProjectRoleProvider is the role provider for a user in projects.
+type ProjectRoleProvider string
+
+const (
+	// ProjectRoleProviderBytebase is the role provider of a project.
+	ProjectRoleProviderBytebase ProjectRoleProvider = "BYTEBASE"
+	// ProjectRoleProviderGitLabSelfHost is the role provider of a project.
+	ProjectRoleProviderGitLabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
+)
+
+func (e ProjectRoleProvider) String() string {
+	switch e {
+	case ProjectRoleProviderBytebase:
+		return "BYTEBASE"
+	case ProjectRoleProviderGitLabSelfHost:
+		return "GITLAB_SELF_HOST"
+	}
+	return ""
+}
+
+//ProjectRoleProviderPayload is the payload for role provider
+type ProjectRoleProviderPayload struct {
+	VCSRole    string `json:"vcsRole"`
+	LastSyncTs int64  `json:"lastSyncTs"`
+}
+
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
@@ -24,9 +50,11 @@ type ProjectMember struct {
 	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Role        string `jsonapi:"attr,role"`
-	PrincipalID int
-	Principal   *Principal `jsonapi:"relation,principal"`
+	Role         string `jsonapi:"attr,role"`
+	PrincipalID  int
+	Principal    *Principal          `jsonapi:"relation,principal"`
+	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Payload      string              `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.
@@ -39,8 +67,10 @@ type ProjectMemberCreate struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role        common.ProjectRole `jsonapi:"attr,role"`
-	PrincipalID int                `jsonapi:"attr,principalId"`
+	Role         common.ProjectRole  `jsonapi:"attr,role"`
+	PrincipalID  int                 `jsonapi:"attr,principalId"`
+	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	Payload      string              `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberFind is the API message for finding project members.
@@ -68,7 +98,9 @@ type ProjectMemberPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Role *string `jsonapi:"attr,role"`
+	Role         *string `jsonapi:"attr,role"`
+	RoleProvider *string `jsonapi:"attr,roleProvider"`
+	Payload      *string `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberDelete is the API message for deleting a project member.
@@ -80,6 +112,17 @@ type ProjectMemberDelete struct {
 	DeleterID int
 }
 
+// ProjectMemberSet is the API message for seting project member.
+type ProjectMemberSet struct {
+	ID int
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterID int
+
+	List []*ProjectMemberCreate
+}
+
 // ProjectMemberService is the service for project members.
 type ProjectMemberService interface {
 	CreateProjectMember(ctx context.Context, create *ProjectMemberCreate) (*ProjectMember, error)
@@ -87,4 +130,5 @@ type ProjectMemberService interface {
 	FindProjectMember(ctx context.Context, find *ProjectMemberFind) (*ProjectMember, error)
 	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
 	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
+	SetProjectMember(ctx context.Context, set *ProjectMemberSet) (createdMember, deletedMember []*ProjectMember, err error)
 }
