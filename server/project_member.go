@@ -30,6 +30,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
+		}
 		if project.WorkflowType != api.VCSWorkflow {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 		}
@@ -137,8 +140,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		// create ROLE CREATE/ MEMBER UPDATE activity
 		for id, createdMember := range createdIDMemberMap {
+			// if the same member exist before, we will create a ROLE UPDATE activity
 			if deletedMember, ok := deletedIDMemberMap[id]; ok {
-				// if the same member exist before, we will create a ROLE UPDATE activity
+				// do nothing if nothing changed
 				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
 					continue
 				}
@@ -179,7 +183,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						principal.Name, principal.Email, createdMember.Role),
 				}
 				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{}); err != nil {
-					s.l.Warn("Failed to create project activity after deleting member",
+					s.l.Warn("Failed to create project activity after creating member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
 						zap.String("principal_name", principal.Name),
