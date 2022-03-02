@@ -350,28 +350,54 @@ func FormatError(err error) error {
 
 	if strings.Contains(err.Error(), "unique constraint") {
 		switch {
-		case strings.Contains(err.Error(), "principal_email_key"):
+		case strings.Contains(err.Error(), "idx_principal_unique_email"):
 			return common.Errorf(common.Conflict, fmt.Errorf("email already exists"))
-		case strings.Contains(err.Error(), "member_principal_id_key"):
+		case strings.Contains(err.Error(), "idx_setting_unique_name"):
+			return common.Errorf(common.Conflict, fmt.Errorf("setting name already exists"))
+		case strings.Contains(err.Error(), "idx_member_unique_principal_id"):
 			return common.Errorf(common.Conflict, fmt.Errorf("member already exists"))
-		case strings.Contains(err.Error(), "environment_name_key"):
+		case strings.Contains(err.Error(), "idx_environment_unique_name"):
 			return common.Errorf(common.Conflict, fmt.Errorf("environment name already exists"))
-		case strings.Contains(err.Error(), "project_key_key"):
+		case strings.Contains(err.Error(), "idx_policy_unique_environment_id_type"):
+			return common.Errorf(common.Conflict, fmt.Errorf("policy environment and type already exists"))
+		case strings.Contains(err.Error(), "idx_project_unique_key"):
 			return common.Errorf(common.Conflict, fmt.Errorf("project key already exists"))
-		case strings.Contains(err.Error(), "project_webhook_project_id_url_key"):
-			return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
-		case strings.Contains(err.Error(), "project_member_project_id_principal_id_key"):
+		case strings.Contains(err.Error(), "idx_project_member_unique_project_id_principal_id"):
 			return common.Errorf(common.Conflict, fmt.Errorf("project member already exists"))
-		case strings.Contains(err.Error(), "db_instance_id_name_key"):
+		case strings.Contains(err.Error(), "idx_project_webhook_unique_project_id_url"):
+			return common.Errorf(common.Conflict, fmt.Errorf("webhook url already exists"))
+		case strings.Contains(err.Error(), "idx_instance_user_unique_instance_id_name"):
+			return common.Errorf(common.Conflict, fmt.Errorf("instance id and name already exists"))
+		case strings.Contains(err.Error(), "idx_db_unique_instance_id_name"):
 			return common.Errorf(common.Conflict, fmt.Errorf("database name already exists"))
-		case strings.Contains(err.Error(), "idx_data_source_instance_id"):
+		case strings.Contains(err.Error(), "idx_tbl_unique_database_id_name"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id and name already exists"))
+		case strings.Contains(err.Error(), "idx_col_unique_database_id_table_id_name"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id, table id and name already exists"))
+		case strings.Contains(err.Error(), "idx_idx_unique_database_id_table_id_name_expression"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id, table id, name and expression already exists"))
+		case strings.Contains(err.Error(), "idx_vw_unique_database_id_name"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id and name already exists"))
+		case strings.Contains(err.Error(), "idx_data_source_unique_database_id_name"):
 			return common.Errorf(common.Conflict, fmt.Errorf("data source name already exists"))
-		case strings.Contains(err.Error(), "backup_database_id_name_key"):
+		case strings.Contains(err.Error(), "idx_backup_unique_database_id_name"):
 			return common.Errorf(common.Conflict, fmt.Errorf("backup name already exists"))
-		case strings.Contains(err.Error(), "bookmark_creator_id_link_key"):
+		case strings.Contains(err.Error(), "idx_backup_setting_unique_database_id"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id already exists"))
+		case strings.Contains(err.Error(), "idx_bookmark_unique_creator_id_link"):
 			return common.Errorf(common.Conflict, fmt.Errorf("bookmark already exists"))
-		case strings.Contains(err.Error(), "repository_project_id_key"):
+		case strings.Contains(err.Error(), "idx_repository_unique_project_id"):
 			return common.Errorf(common.Conflict, fmt.Errorf("project has already linked repository"))
+		case strings.Contains(err.Error(), "idx_repository_unique_webhook_endpoint_id"):
+			return common.Errorf(common.Conflict, fmt.Errorf("webhook endpoint already exists"))
+		case strings.Contains(err.Error(), "idx_label_key_unique_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("label key already exists"))
+		case strings.Contains(err.Error(), "idx_label_value_unique_key_value"):
+			return common.Errorf(common.Conflict, fmt.Errorf("label key value already exists"))
+		case strings.Contains(err.Error(), "idx_db_label_unique_database_id_key"):
+			return common.Errorf(common.Conflict, fmt.Errorf("database id and key already exists"))
+		case strings.Contains(err.Error(), "idx_deployment_config_unique_project_id"):
+			return common.Errorf(common.Conflict, fmt.Errorf("project deployment configuration already exists"))
 		case strings.Contains(err.Error(), "issue_subscriber_pkey"):
 			return common.Errorf(common.Conflict, fmt.Errorf("issue subscriber already exists"))
 		}
