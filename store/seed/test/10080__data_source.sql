@@ -144,7 +144,7 @@ VALUES
         7018,
         'Admin data source',
         'ADMIN',
-        'postgres-demo',
+        'postgre_demo_user',
         '3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG'
     );
 
