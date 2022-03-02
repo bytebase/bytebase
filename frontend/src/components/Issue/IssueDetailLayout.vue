@@ -108,6 +108,7 @@
               :task="selectedTask"
               :input-field-list="issueTemplate.inputFieldList"
               :allow-edit="allowEditSidebar"
+              :is-tenant-deploy-mode="isTenantDeployMode"
               @update-assignee-id="updateAssigneeId"
               @update-earliest-allowed-time="updateEarliestAllowedTime"
               @add-subscriber-id="addSubscriberId"
@@ -265,6 +266,7 @@ import {
   MigrationType,
   TaskPatch,
   UpdateSchemaContext,
+  UpdateSchemaDetail,
 } from "../../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -471,12 +473,36 @@ export default defineComponent({
 
     const doCreate = () => {
       const issue = cloneDeep(props.issue) as IssueCreate;
-      if (isTenantDeployMode.value) {
-        // multi-tenancy issue's pipeline is generated on server-side
-        // so empty the local pipeline
-        delete issue.pipeline;
-        issue.payload = {};
+      if (!isTenantDeployMode.value) {
+        // for standard issue pipeline (1 * 1 or M * 1)
+        // copy user edited tasks back to issue.createContext
+        const taskList = issue.pipeline!.stageList.map(
+          (stage) => stage.taskList[0]
+        );
+        const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
+          return {
+            databaseId: task.databaseId!,
+            databaseName: task.databaseName!,
+            statement: task.statement,
+            rollbackStatement: "",
+            earliestAllowedTs: task.earliestAllowedTs,
+          };
+        });
+        issue.createContext = {
+          migrationType: taskList[0].migrationType!,
+          updateSchemaDetailList: detailList,
+        };
+      } else {
+        // for multi-tenancy issue pipeline (M * N)
+        // createContext is up-to-date already
+        // so nothing to do
       }
+      // then empty issue.pipeline and issue.payload
+      // because we are no longer passing parameters via issue.pipeline
+      // we are using issue.createContext instead
+      delete issue.pipeline;
+      issue.payload = {};
+
       store.dispatch("issue/createIssue", issue).then((createdIssue) => {
         // Use replace to omit the new issue url in the navigation history.
         router.replace(

@@ -7,7 +7,7 @@ import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
 import DatabaseDataUpdateTemplate from "./DatabaseDataUpdateTemplate";
 import DefaultTemplate from "./DefaultTemplate";
 
-type TemplateType = IssueType | "bb.issue.database.schema.baseline";
+export type TemplateType = IssueType | "bb.issue.database.schema.baseline";
 
 const allIssueTemplateList: IssueTemplate[] = [
   DefaultTemplate,

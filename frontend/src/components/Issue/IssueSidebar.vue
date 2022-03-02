@@ -96,43 +96,49 @@
         </div>
       </template>
 
-      <div>
-        <h2 class="textlabel flex items-center">
-          <span class="mr-1">{{ $t("common.when") }}</span>
-          <div class="tooltip-wrapper">
-            <span class="tooltip w-60">{{
-              $t("task.earliest-allowed-time-hint")
-            }}</span>
-            <!-- Heroicons name: outline/question-mark-circle -->
-            <heroicons-outline:question-mark-circle class="h-4 w-4" />
-          </div>
-        </h2>
-        <h2 class="text-gray-600 text-sm">
-          <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
-        </h2>
-      </div>
+      <template v-if="!isTenantDeployMode">
+        <!--
+          earliest-allowed-time is disabled in tenant mode for now
+          we will provide more powerful deployment schedule in deployment config
+         -->
+        <div>
+          <h2 class="textlabel flex items-center">
+            <span class="mr-1">{{ $t("common.when") }}</span>
+            <div class="tooltip-wrapper">
+              <span class="tooltip w-60">{{
+                $t("task.earliest-allowed-time-hint")
+              }}</span>
+              <!-- Heroicons name: outline/question-mark-circle -->
+              <heroicons-outline:question-mark-circle class="h-4 w-4" />
+            </div>
+          </h2>
+          <h2 class="text-gray-600 text-sm">
+            <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
+          </h2>
+        </div>
 
-      <div class="col-span-2">
-        <n-date-picker
-          v-if="allowEditEarliestAllowedTime"
-          :value="
-            state.earliestAllowedTs ? state.earliestAllowedTs * 1000 : null
-          "
-          :is-date-disabled="isDayPassed"
-          :placeholder="$t('task.earliest-allowed-time-unset')"
-          class="w-full"
-          type="datetime"
-          clearable
-          @update:value="updateEarliestAllowedTs"
-        />
-        <span v-else class="textfield col-span-2">
-          {{
-            task.earliestAllowedTs === 0
-              ? $t("task.earliest-allowed-time-unset")
-              : dayjs(task.earliestAllowedTs * 1000).format("LLL")
-          }}</span
-        >
-      </div>
+        <div class="col-span-2">
+          <n-date-picker
+            v-if="allowEditEarliestAllowedTime"
+            :value="
+              state.earliestAllowedTs ? state.earliestAllowedTs * 1000 : null
+            "
+            :is-date-disabled="isDayPassed"
+            :placeholder="$t('task.earliest-allowed-time-unset')"
+            class="w-full"
+            type="datetime"
+            clearable
+            @update:value="updateEarliestAllowedTs"
+          />
+          <span v-else class="textfield col-span-2">
+            {{
+              task.earliestAllowedTs === 0
+                ? $t("task.earliest-allowed-time-unset")
+                : dayjs(task.earliestAllowedTs * 1000).format("LLL")
+            }}</span
+          >
+        </div>
+      </template>
 
       <template v-if="databaseName">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -348,6 +354,10 @@ export default defineComponent({
     allowEdit: {
       required: true,
       type: Boolean,
+    },
+    isTenantDeployMode: {
+      type: Boolean,
+      default: false,
     },
     database: {
       required: true,
