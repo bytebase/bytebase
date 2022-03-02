@@ -114,7 +114,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
-		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
+		setProjectMEmber := &api.ProjectMemberSet{
+			ID:        projectID,
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			List:      createList,
+		}
+		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, setProjectMEmber)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
 		}
