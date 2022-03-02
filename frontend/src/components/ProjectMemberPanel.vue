@@ -88,7 +88,7 @@
         <div class="mx-1">
           {{ $t("settings.members.change-role-provider-to-bytebase.content") }}
         </div>
-        <div class="overflow-y-auto h-64">
+        <div class="overflow-y-auto max-h-72">
           <ProjectMemberTable
             :project="project"
             :active-role-provider="'BYTEBASE'"
