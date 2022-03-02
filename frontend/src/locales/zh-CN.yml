@@ -289,7 +289,12 @@ settings:
       role-provider: 该角色同步自 {roleProvider} 的 {rawRole}
     toggle-role-provider:
       title: 您确认吗？
-      content: 将角色权限提供方切换至 VCS 将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
+    change-role-provider-to-vcs:
+      content: |-
+        将角色权限提供方切换至 VCS 将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
+        原来的成员将会被设置成闲置状态。您可以切换回 Bytebase 来撤销这一操作。
+    change-role-provider-to-bytebase:
+      content: 你将会恢复以下成员的权限。所有由 VCS 提供的成员将会被闲置。
 activity:
   name: 名称
   comment: 评论

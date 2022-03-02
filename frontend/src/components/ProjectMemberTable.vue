@@ -130,6 +130,7 @@ import {
   ProjectRoleType,
   MemberId,
   ProjectMemberPatch,
+  ProjectRoleProvider,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
@@ -145,6 +146,11 @@ export default {
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    activeRoleProvider: {
+      require: false,
+      default: null,
+      type: Object as PropType<ProjectRoleProvider>,
     },
   },
   setup(props) {
@@ -175,6 +181,18 @@ export default {
         const ownerList: ProjectMember[] = [];
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
+          if (
+            !props.activeRoleProvider &&
+            member.roleProvider !== props.project.roleProvider
+          ) {
+            continue;
+          } else if (
+            props.activeRoleProvider &&
+            member.roleProvider !== props.activeRoleProvider
+          ) {
+            continue;
+          }
+
           if (member.role == "OWNER") {
             ownerList.push(member);
           }
@@ -206,7 +224,6 @@ export default {
         return dataSource;
       }
     );
-
     const columnList = computed((): BBTableColumn[] => {
       return hasRBACFeature.value
         ? [

@@ -26,23 +26,11 @@
           :value="project.roleProvider !== 'BYTEBASE'"
           @toggle="
             (on) => {
-              if (on) {
-                // switching role provider to VCS may result in the deletion of all the existing members.
-                // so we prompt a modal to let user double confirm this.
-                state.showModal = true;
-              } else {
-                // switching role provider back to BYTEBASE will not bring any side effect, so we will prompt nothing.
-                patchProjectRoleProvider('BYTEBASE').then(() => {
-                  store
-                    .dispatch('notification/pushNotification', {
-                      module: 'bytebase',
-                      style: 'SUCCESS',
-                      title: t(
-                        'project.settings.switch-role-provider-to-bytebase-success-prompt'
-                      ),
-                    })
-                    .catch(() => {}); // mute error at browser
-                });
+              // we prompt a modal to let user double confirm this change
+              state.showModal = true;
+              if (!on) {
+                // we preview member if user try to switch role provider to Bytebase
+                previewMember = true;
               }
             }
           "
@@ -52,21 +40,50 @@
 
     <NModal
       v-model:show="state.showModal"
+      :style="project.roleProvider === 'BYTEBASE' ? '' : 'width:800px'"
       :mask-closable="false"
       preset="dialog"
       :title="$t('settings.members.toggle-role-provider.title')"
-      :content="$t('settings.members.toggle-role-provider.content')"
+      :content="modalContent"
+      :on-after-enter="
+        () => {
+          modalContent =
+            project.roleProvider === 'BYTEBASE'
+              ? $t('settings.members.change-role-provider-to-vcs.content')
+              : '';
+        }
+      "
+      :on-after-leave="
+        () => {
+          previewMember = false;
+        }
+      "
       :positive-text="$t('common.confirm')"
       :negative-text="$t('common.cancel')"
       @positive-click="
         () => {
-          patchProjectRoleProvider('GITLAB_SELF_HOST')
-            .then(() => {
-              syncMemberFromVCS();
-            })
-            .catch(() => {}); // mute error at browser
-
           state.showModal = false;
+          // the current role provider is BYTEBASE, meaning switching role provider to VCS
+          if (project.roleProvider === 'BYTEBASE') {
+            patchProjectRoleProvider('GITLAB_SELF_HOST')
+              .then(() => {
+                syncMemberFromVCS();
+              })
+              .catch(() => {}); // mute error at browser
+          } else if (project.roleProvider === 'GITLAB_SELF_HOST') {
+            // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
+            patchProjectRoleProvider('BYTEBASE').then(() => {
+              store
+                .dispatch('notification/pushNotification', {
+                  module: 'bytebase',
+                  style: 'SUCCESS',
+                  title: t(
+                    'project.settings.switch-role-provider-to-bytebase-success-prompt'
+                  ),
+                })
+                .catch(() => {}); // mute error at browser
+            });
+          }
         }
       "
       @negative-click="
@@ -74,7 +91,19 @@
           state.showModal = false;
         }
       "
-    />
+    >
+      <template v-if="previewMember">
+        <div class="mx-1">
+          {{ $t("settings.members.change-role-provider-to-bytebase.content") }}
+        </div>
+        <div class="overflow-y-auto h-64">
+          <ProjectMemberTable
+            :project="project"
+            :active-role-provider="'BYTEBASE'"
+          />
+        </div>
+      </template>
+    </NModal>
 
     <div
       v-if="allowAddMember && project.roleProvider === 'BYTEBASE'"
@@ -179,6 +208,8 @@ interface LocalState {
   error: string;
   showModal: boolean;
   roleProvider: boolean;
+  previewMember: boolean;
+  modalContent: string;
 }
 
 export default defineComponent({
@@ -202,6 +233,8 @@ export default defineComponent({
       error: "",
       showModal: false,
       roleProvider: false,
+      previewMember: false,
+      modalContent: "",
     });
 
     const hasRBACFeature = computed(() =>
@@ -223,7 +256,10 @@ export default defineComponent({
       }
 
       for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
+        if (
+          member.principal.id == currentUser.value.id &&
+          member.roleProvider === props.project.roleProvider
+        ) {
           if (isProjectOwner(member.role)) {
             return true;
           }

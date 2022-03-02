@@ -295,9 +295,17 @@ settings:
       role-provider: This role is mapped from {rawRole} provided by {roleProvider}
     toggle-role-provider:
       title: Are you sure?
+    change-role-provider-to-vcs:
       content: >-
         Changing role provider to VCS will replace all existing members with the
         members from the corresponding VCS project.
+
+        The existing members will be set to an inactive state. You can reset
+        role provider to Bytebase to restore this change.
+    change-role-provider-to-bytebase:
+      content: >-
+        You are about to restore the following member. All member provided by
+        VCS will be put into an inactive state.
 activity:
   name: Name
   comment: Comment
@@ -1168,7 +1176,9 @@ label:
     description: >-
       A label is a key-value pair that helps you identify the tenant for a
       database. {link}.
-  db-name-template-tips: Allow you to group databases with the same {placeholder} from different tenants. {link}.
+  db-name-template-tips: >-
+    Allow you to group databases with the same {placeholder} from different
+    tenants. {link}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
