@@ -1,3 +1,6 @@
+-- Type
+CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
+
 -- updated_ts trigger.
 CREATE OR REPLACE FUNCTION trigger_after_update_updated_ts()
 RETURNS TRIGGER AS $$
@@ -10,8 +13,7 @@ $$ LANGUAGE plpgsql;
 -- principal
 CREATE TABLE principal (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -58,8 +60,7 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 -- Setting
 CREATE TABLE setting (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -83,8 +84,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
 CREATE TABLE member (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -109,8 +109,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Environment
 CREATE TABLE environment (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -134,15 +133,13 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
-    -- allowed types are in the format of 'bb.policy.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -161,8 +158,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Project
 CREATE TABLE project (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -220,8 +216,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Project member
 CREATE TABLE project_member (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -249,15 +244,13 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Project Hook
 CREATE TABLE project_webhook (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    -- allowed types are in the format of 'bb.plugin.webhook.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
@@ -279,8 +272,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Instance
 CREATE TABLE instance (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -306,8 +298,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Instance user stores the users for a particular instance
 CREATE TABLE instance_user (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -331,8 +322,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data is synced periodically from the instance
 CREATE TABLE db (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -366,8 +356,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data is synced periodically from the instance
 CREATE TABLE tbl (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -401,8 +390,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data is synced periodically from the instance
 CREATE TABLE col (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -435,8 +423,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data is synced periodically from the instance
 CREATE TABLE idx (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -468,8 +455,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data is synced periodically from the instance
 CREATE TABLE vw (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -495,8 +481,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -528,8 +513,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- backup stores the backups for a particular database.
 CREATE TABLE backup (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -563,8 +547,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- This is a strict version of cron expression using UTC timezone uniformly.
 CREATE TABLE backup_setting (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -596,8 +579,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- pipeline table
 CREATE TABLE pipeline (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -620,8 +602,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -644,8 +625,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- task table stores the task for the stage
 CREATE TABLE task (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -658,8 +638,7 @@ CREATE TABLE task (
     name TEXT NOT NULL,
     -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
@@ -689,8 +668,7 @@ CREATE TABLE task_run (
     name TEXT NOT NULL,
     -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
@@ -718,8 +696,7 @@ CREATE TABLE task_check_run (
     task_id INTEGER NOT NULL REFERENCES task (id),
     -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.task-check.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
@@ -743,8 +720,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- Each issue links a pipeline driving the resolution.
 CREATE TABLE issue (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -754,8 +730,7 @@ CREATE TABLE issue (
     name TEXT NOT NULL,
     -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
     status TEXT NOT NULL,
-    -- allowed types are in the format of 'bb.issue.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
@@ -794,16 +769,14 @@ CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_i
 -- activity table stores the activity for the container such as issue
 CREATE TABLE activity (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     -- container_id is not zero.
     container_id INTEGER NOT NULL,
-    -- allowed types are in the format of 'bb.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     -- allowed levels are 'INFO', 'WARN', 'ERROR'.
     level TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
@@ -844,8 +817,7 @@ ALTER SEQUENCE inbox_id_seq RESTART WITH 101;
 -- bookmark table stores the bookmark for the user
 CREATE TABLE bookmark (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -867,8 +839,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -876,10 +847,8 @@ CREATE TABLE vcs (
     name TEXT NOT NULL,
     -- allowed types are 'GITLAB_SELF_HOST'.
     type TEXT NOT NULL,
-    -- instance_url follows (instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')
-    instance_url TEXT NOT NULL,
-    -- api_url follows (api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/').
-    api_url TEXT NOT NULL,
+    instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
+    api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
     secret TEXT NOT NULL
 );
@@ -897,8 +866,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- A project can only link one repository (at least for now).
 CREATE TABLE repository (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -959,8 +927,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -968,8 +935,7 @@ CREATE TABLE anomaly (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),
-    -- allowed types are in the format of 'bb.anomaly.*'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -988,8 +954,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- label_key stores available label keys at workspace level.
 CREATE TABLE label_key (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1011,8 +976,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- label_value stores available label key values at workspace level.
 CREATE TABLE label_value (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1035,8 +999,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- db_label stores labels asscociated with databases.
 CREATE TABLE db_label (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1062,8 +1025,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- deployment_config stores deployment configurations at project level.
 CREATE TABLE deployment_config (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1086,8 +1048,7 @@ EXECUTE FUNCTION trigger_after_update_updated_ts();
 -- sheet table stores general statements.
 CREATE TABLE sheet (
     id SERIAL PRIMARY KEY,
-    -- allowed row status are 'NORMAL', 'ARCHIVED'.
-    row_status TEXT NOT NULL DEFAULT 'NORMAL',
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
