@@ -125,6 +125,9 @@ func (s *TaskService) createTask(ctx context.Context, tx *sql.Tx, create *api.Ta
 	var row *sql.Rows
 	var err error
 
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	if create.DatabaseID == nil {
 		row, err = tx.QueryContext(ctx, `
 		INSERT INTO task (
@@ -338,7 +341,11 @@ func (s *TaskService) patchTask(ctx context.Context, tx *sql.Tx, patch *api.Task
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+		payload := "{}"
+		if *v != "" {
+			payload = *v
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 	if v := patch.EarliestAllowedTs; v != nil {
 		set, args = append(set, fmt.Sprintf("earliest_allowed_ts = $%d", len(args)+1)), append(args, *v)

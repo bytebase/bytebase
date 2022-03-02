@@ -160,6 +160,9 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 // upsertPolicy updates an existing policy.
 func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	// Upsert row into policy.
+	if upsert.Payload == "" {
+		upsert.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO policy (
 			creator_id,
