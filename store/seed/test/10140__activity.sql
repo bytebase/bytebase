@@ -1052,7 +1052,7 @@ VALUES
         'bb.project.member.role.update',
         'INFO',
         'Changed Demo Owner (demo@example.com) from OWNER to DEVELOPER.',
-        ''
+        '{}'
     );
 
 -- Project activity for 3002
@@ -1080,7 +1080,7 @@ VALUES
         'bb.project.member.create',
         'INFO',
         'Granted Jerry DBA to jerry@example.com (DEVELOPER).',
-        ''
+        '{}'
     );
 
 INSERT INTO
@@ -1135,7 +1135,7 @@ VALUES
         'bb.project.member.create',
         'INFO',
         'Granted Tom Dev to tom@example.com (DEVELOPER).',
-        ''
+        '{}'
     );
 
 INSERT INTO
