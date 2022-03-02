@@ -56,13 +56,10 @@ const actions = {
   ) {
     // API only returns bookmark for the requesting user.
     // User info is retrieved from the context.
-    const bookmarkList = (
-      await axios.get(`/api/bookmark/user/${userId}`)
-    ).data.data.map(
-      (bookmark: ResourceObject, includedList: ResourceObject[]) => {
-        return convert(bookmark, includedList, rootGetters);
-      }
-    );
+    const data = (await axios.get(`/api/bookmark/user/${userId}`)).data;
+    const bookmarkList = data.data.map((bookmark: ResourceObject) => {
+      return convert(bookmark, data.included, rootGetters);
+    });
     commit("setBookmarkListByPrincipalId", { userId, bookmarkList });
     return bookmarkList;
   },
