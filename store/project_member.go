@@ -124,7 +124,7 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 }
 
 // getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested)
-func getBatchUpdatePrincipalIDList(ctx context.Context, oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int, err error) {
+func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int, err error) {
 	oldPrincipalIDSet := make(map[int]bool)
 	for _, id := range oldPrincipalIDList {
 		oldPrincipalIDSet[id] = true
@@ -192,7 +192,7 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 		newPrincipalIDList = append(newPrincipalIDList, newMember.PrincipalID)
 	}
 
-	createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList, err := getBatchUpdatePrincipalIDList(ctx, oldPrincipalIDList, newPrincipalIDList)
+	createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList, err := getBatchUpdatePrincipalIDList(oldPrincipalIDList, newPrincipalIDList)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}

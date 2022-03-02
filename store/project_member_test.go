@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -101,33 +100,34 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 		},
 	}
 
-	opt := cmp.Comparer(func(x, y Result) bool {
-		compareTwoList := func(l1, l2 []int) bool {
-			if len(l1) != len(l2) {
+	opt := cmp.Comparer(func(l1, l2 []int) bool {
+		if len(l1) != len(l2) {
+			return false
+		}
+		set1 := make(map[int]bool)
+		for _, i := range l1 {
+			set1[i] = true
+		}
+		for _, i := range l2 {
+			if _, ok := set1[i]; !ok {
 				return false
 			}
-			set1 := make(map[int]bool)
-			for _, i := range l1 {
-				set1[i] = true
-			}
-			for _, i := range l2 {
-				if _, ok := set1[i]; !ok {
-					return false
-				}
-			}
-			return true
 		}
-		return compareTwoList(x.createIDList, y.createIDList) && compareTwoList(x.deleteIDList, y.deleteIDList) && compareTwoList(x.patchIDList, y.patchIDList)
-
+		return true
 	})
 
-	ctx := context.Background()
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			var got Result
-			got.createIDList, got.patchIDList, got.deleteIDList, _ = getBatchUpdatePrincipalIDList(ctx, tc.input.oldIDList, tc.input.newIDList)
-			if diff := cmp.Diff(tc.expect, got, opt); diff != "" {
-				t.Fatalf(diff)
+			got.createIDList, got.patchIDList, got.deleteIDList, _ = getBatchUpdatePrincipalIDList(tc.input.oldIDList, tc.input.newIDList)
+			if diff := cmp.Diff(tc.expect.createIDList, got.createIDList, opt); diff != "" {
+				t.Errorf("\ncreateIDList: %v", diff)
+			}
+			if diff := cmp.Diff(tc.expect.patchIDList, got.patchIDList, opt); diff != "" {
+				t.Errorf("\npatchIDList: %v", diff)
+			}
+			if diff := cmp.Diff(tc.expect.deleteIDList, got.deleteIDList, opt); diff != "" {
+				t.Errorf("\ndeleteIDList: %v", diff)
 			}
 		})
 	}
