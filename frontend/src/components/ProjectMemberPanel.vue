@@ -44,15 +44,7 @@
       :mask-closable="false"
       preset="dialog"
       :title="$t('settings.members.toggle-role-provider.title')"
-      :content="modalContent"
-      :on-after-enter="
-        () => {
-          modalContent =
-            project.roleProvider === 'BYTEBASE'
-              ? $t('settings.members.change-role-provider-to-vcs.content')
-              : '';
-        }
-      "
+      :content="$t('settings.members.change-role-provider-to-vcs.content')"
       :on-after-leave="
         () => {
           previewMember = false;
@@ -209,7 +201,6 @@ interface LocalState {
   showModal: boolean;
   roleProvider: boolean;
   previewMember: boolean;
-  modalContent: string;
 }
 
 export default defineComponent({
@@ -234,7 +225,6 @@ export default defineComponent({
       showModal: false,
       roleProvider: false,
       previewMember: false,
-      modalContent: "",
     });
 
     const hasRBACFeature = computed(() =>
