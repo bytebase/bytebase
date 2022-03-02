@@ -85,7 +85,7 @@ export default defineComponent({
     const introList: IntroItem[] = reactive([
       {
         name: computed(() => t("quick-start.bookmark-an-issue")),
-        link: "/issue/hello-world-101",
+        link: "/issue/hello-world-13001",
         allowDBA: true,
         allowDeveloper: true,
         done: computed(() => {
@@ -94,7 +94,7 @@ export default defineComponent({
       },
       {
         name: computed(() => t("quick-start.add-a-comment")),
-        link: "/issue/hello-world-101#activity101",
+        link: "/issue/hello-world-13001#activity101",
         allowDBA: true,
         allowDeveloper: true,
         done: computed(() => {
