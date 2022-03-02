@@ -91,6 +91,9 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 
 // createTaskCheckRunTx creates a new taskCheckRun.
 func (s *TaskCheckRunService) createTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO task_check_run (
 			creator_id,
@@ -192,6 +195,9 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 // patchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
 func (s *TaskCheckRunService) patchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	// Build UPDATE clause.
+	if patch.Result == "" {
+		patch.Result = "{}"
+	}
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	set, args = append(set, "code = $3"), append(args, patch.Code)
