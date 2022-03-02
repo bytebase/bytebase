@@ -129,6 +129,9 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 
 // createIssue creates a new issue.
 func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.Issue, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue (
 			creator_id,

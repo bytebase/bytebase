@@ -143,7 +143,7 @@ CREATE TABLE policy (
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     -- allowed types are in the format of 'bb.policy.*'.
     type TEXT NOT NULL,
-    payload TEXT NOT NULL
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_policy_environment_id ON policy(environment_id);
@@ -233,7 +233,7 @@ CREATE TABLE project_member (
     -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
-    payload TEXT NOT NULL DEFAULT ''
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
@@ -660,7 +660,7 @@ CREATE TABLE task (
     status TEXT NOT NULL,
     -- allowed types are in the format of 'bb.task.*'.
     type TEXT NOT NULL,
-    payload TEXT NOT NULL DEFAULT '',
+    payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
 
@@ -694,8 +694,8 @@ CREATE TABLE task_run (
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
-    result  TEXT NOT NULL DEFAULT '',
-    payload TEXT NOT NULL DEFAULT ''
+    result  JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
@@ -723,8 +723,8 @@ CREATE TABLE task_check_run (
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
     -- result saves the task check run result in json format
-    result  TEXT NOT NULL DEFAULT '',
-    payload TEXT NOT NULL DEFAULT ''
+    result  JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
@@ -759,7 +759,7 @@ CREATE TABLE issue (
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
-    payload TEXT NOT NULL DEFAULT ''
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
@@ -807,7 +807,7 @@ CREATE TABLE activity (
     -- allowed levels are 'INFO', 'WARN', 'ERROR'.
     level TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
-    payload TEXT NOT NULL DEFAULT ''
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_activity_container_id ON activity(container_id);
@@ -970,7 +970,7 @@ CREATE TABLE anomaly (
     database_id INTEGER NULL REFERENCES db (id),
     -- allowed types are in the format of 'bb.anomaly.*'.
     type TEXT NOT NULL,
-    payload TEXT NOT NULL DEFAULT ''
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_anomaly_instance_id_row_status_type ON anomaly(instance_id, row_status, type);
@@ -1070,7 +1070,7 @@ CREATE TABLE deployment_config (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
-    config TEXT NOT NULL
+    config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON deployment_config(project_id);
