@@ -124,14 +124,14 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 }
 
 // SetProjectMember set the project member with provided project member list
-func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID int, operatorID int, setList []*api.ProjectMemberCreate) (createdMember, deletedMember []*api.ProjectMember, err error) {
+func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.ProjectMemberSet) (createdMember, deletedMember []*api.ProjectMember, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	findProjectMember := &api.ProjectMemberFind{ProjectID: &projectID}
+	findProjectMember := &api.ProjectMemberFind{ProjectID: &set.ID}
 	existingProjectMemberList, err := findProjectMemberList(ctx, tx.PTx, findProjectMember)
 	if err != nil {
 		return nil, nil, FormatError(err)
@@ -143,13 +143,13 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 	}
 
 	newMemberMap := make(map[int]bool)
-	for _, createMember := range setList {
+	for _, createMember := range set.List {
 		newMemberMap[createMember.PrincipalID] = true
 	}
 
 	createdMemberList := make([]*api.ProjectMember, 0)
 	deletedMemberList := make([]*api.ProjectMember, 0)
-	for _, memberCreate := range setList {
+	for _, memberCreate := range set.List {
 		// if the member exists, we will try to update its field
 		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
 			// if we update a member, we will the member in both createdMemberList and deletedMemberList
@@ -181,7 +181,7 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, projectID i
 		}
 		memberDelete := &api.ProjectMemberDelete{
 			ID:        member.ID,
-			DeleterID: operatorID,
+			DeleterID: set.UpdaterID,
 		}
 		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, FormatError(err)

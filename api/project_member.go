@@ -112,6 +112,17 @@ type ProjectMemberDelete struct {
 	DeleterID int
 }
 
+// ProjectMemberSet is the API message for seting project member.
+type ProjectMemberSet struct {
+	ID int
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterID int
+
+	List []*ProjectMemberCreate
+}
+
 // ProjectMemberService is the service for project members.
 type ProjectMemberService interface {
 	CreateProjectMember(ctx context.Context, create *ProjectMemberCreate) (*ProjectMember, error)
@@ -119,5 +130,5 @@ type ProjectMemberService interface {
 	FindProjectMember(ctx context.Context, find *ProjectMemberFind) (*ProjectMember, error)
 	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
 	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
-	SetProjectMember(ctx context.Context, projectID int, operatorID int, setList []*ProjectMemberCreate) (createdMember, deletedMember []*ProjectMember, err error)
+	SetProjectMember(ctx context.Context, set *ProjectMemberSet) (createdMember, deletedMember []*ProjectMember, err error)
 }
