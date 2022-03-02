@@ -295,6 +295,11 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	}
 	defer rows.Close()
 
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, formatError(err)
+	}
+
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, formatError(err)
@@ -302,7 +307,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 
 	colCount := len(columnTypes)
 	rowCount := 0
-	resultSet := []interface{}{}
+	data := []interface{}{}
 	for rows.Next() {
 		scanArgs := make([]interface{}, colCount)
 		for i, v := range columnTypes {
@@ -322,39 +327,40 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 			return nil, formatError(err)
 		}
 
-		rowData := map[string]interface{}{}
-		for i, v := range columnTypes {
-			if z, ok := (scanArgs[i]).(*sql.NullBool); ok {
-				rowData[v.Name()] = z.Bool
+		rowData := []interface{}{}
+		for i := range columnTypes {
+			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
+				rowData = append(rowData, v.Bool)
 				continue
 			}
-			if z, ok := (scanArgs[i]).(*sql.NullString); ok {
-				rowData[v.Name()] = z.String
+			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
+				rowData = append(rowData, v.String)
 				continue
 			}
-			if z, ok := (scanArgs[i]).(*sql.NullInt64); ok {
-				rowData[v.Name()] = z.Int64
+			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
+				rowData = append(rowData, v.Int64)
 				continue
 			}
-			if z, ok := (scanArgs[i]).(*sql.NullFloat64); ok {
-				rowData[v.Name()] = z.Float64
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData = append(rowData, v.Float64)
 				continue
 			}
-			if z, ok := (scanArgs[i]).(*sql.NullInt32); ok {
-				rowData[v.Name()] = z.Int32
+			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
+				rowData = append(rowData, v.Int32)
 				continue
 			}
-			rowData[v.Name()] = scanArgs[i]
+			// If none of them match, set nil to its value.
+			rowData = append(rowData, nil)
 		}
 
-		resultSet = append(resultSet, rowData)
+		data = append(data, rowData)
 		rowCount++
 		if rowCount == limit {
 			break
 		}
 	}
 
-	return resultSet, nil
+	return []interface{}{columns, data}, nil
 }
 
 // FindMigrationHistoryList will find the list of migration history.
