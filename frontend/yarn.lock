@@ -79,17 +79,15 @@
     match-sorter "^6.3.1"
     tiny-invariant "^1.2.0"
 
-"@css-render/plugin-bem@^0.15.6":
-  version "0.15.6"
-  resolved "https://registry.yarnpkg.com/@css-render/plugin-bem/-/plugin-bem-0.15.6.tgz#f7fea474df4f3262ef9fb8017ada1cb9712cd78a"
-  integrity sha512-tz6PgYyP8CDa30JsaqK8q5MSg8/dICDi8QifzURlrWGIfAcLrToNX7Hum6lAvtD2rNHTKF9g12Hto4NVg/fdZA==
-  dependencies:
-    css-render "~0.15.6"
+"@css-render/plugin-bem@^0.15.8":
+  version "0.15.8"
+  resolved "https://registry.yarnpkg.com/@css-render/plugin-bem/-/plugin-bem-0.15.8.tgz#02df62ec0a16f5c07687e64f1ee595e8509d04ce"
+  integrity sha512-rJMFBaqZGrezs1d0vPB7hZTSkfFEgcdWxPMtLUmm9PAOioWtw+Knb9A0xU0bYazPKDo0SoNVVcd1Qd1LXD9x4Q==
 
-"@css-render/vue3-ssr@^0.15.6":
-  version "0.15.6"
-  resolved "https://registry.yarnpkg.com/@css-render/vue3-ssr/-/vue3-ssr-0.15.6.tgz#4edc294bda7e6ca215f6c7ec9e2c8385645069c3"
-  integrity sha512-aBb5tIezKlM7PycXoek/46oGO3kRg5Y+FgE3RGGKwvv8CAnLhdk5b3UM0LDIRfXdI+vxA/kSgk4pz9f7nDqGjA==
+"@css-render/vue3-ssr@^0.15.7", "@css-render/vue3-ssr@^0.15.8":
+  version "0.15.8"
+  resolved "https://registry.yarnpkg.com/@css-render/vue3-ssr/-/vue3-ssr-0.15.8.tgz#76f36fd52c4e53b8f553e00032c378c0ae59bab3"
+  integrity sha512-zPFyOH47hEcyRgoIjNEwzYqZEq/LEXPafDXY/9EMpvgCmsPhW1bpC3w8YwAISaP519QesJ/8aNDL/xWKpwXBvQ==
 
 "@emmetio/abbreviation@^2.2.2":
   version "2.2.2"
@@ -1129,10 +1127,10 @@ css-color-names@^0.0.4:
   resolved "https://registry.yarnpkg.com/css-color-names/-/css-color-names-0.0.4.tgz#808adc2e79cf84738069b646cb20ec27beb629e0"
   integrity sha1-gIrcLnnPhHOAabZGyyDsJ762KeA=
 
-css-render@^0.15.3, css-render@^0.15.6, css-render@~0.15.6:
-  version "0.15.6"
-  resolved "https://registry.yarnpkg.com/css-render/-/css-render-0.15.6.tgz#93b778ffc38120f8cd4e135941f0d76ee4c1b783"
-  integrity sha512-YTfTgDtR+BIqtVWRTkzjQ8RROp1IbZsm1ihzO8FUw2LMi76TaFRBchy2VEyU7ltdvjQs+W0a4YRPqdntU21kig==
+css-render@^0.15.7, css-render@^0.15.8:
+  version "0.15.8"
+  resolved "https://registry.yarnpkg.com/css-render/-/css-render-0.15.8.tgz#29965c42af4302a5ce26d8c1ed90ca7a01db3be2"
+  integrity sha512-k1gp1MgYDPrFZhzheQkSwm6dmP6nPe2XE6WYpJBPwEc3GbMANPJZfxl7ofZlTl8/+tpMRiGTTgUkTlXaVbLxog==
   dependencies:
     "@emotion/hash" "~0.8.0"
     "@types/node" "~14.14.31"
@@ -2320,17 +2318,17 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-naive-ui@^2.23.1:
-  version "2.23.1"
-  resolved "https://registry.yarnpkg.com/naive-ui/-/naive-ui-2.23.1.tgz#3c9c6a5b9ec758006e8cc071920b4b6a1cc9f3ce"
-  integrity sha512-Hi/I8YWn+tK0iieSNLfOtcqr9ml+2tMNsKjD3HRB18nwDBNEOstnk/vcpKhCtI0IfTOSn8l1BSX4622HcF3dMw==
+naive-ui@^2.25.1:
+  version "2.26.0"
+  resolved "https://registry.yarnpkg.com/naive-ui/-/naive-ui-2.26.0.tgz#a55d8c821f8f18f4a21b136f340a560a91bca655"
+  integrity sha512-4+78iqpQs1t8Xlq3Hrk1eSsm17d6ZScMNvnyo+KAiYdAWCfEsIdKb6ulkPGu7T0hpWL5A3TctJ5ioSbNlbN4LA==
   dependencies:
-    "@css-render/plugin-bem" "^0.15.6"
-    "@css-render/vue3-ssr" "^0.15.6"
+    "@css-render/plugin-bem" "^0.15.8"
+    "@css-render/vue3-ssr" "^0.15.8"
     "@types/lodash" "^4.14.170"
     "@types/lodash-es" "^4.17.4"
     async-validator "^4.0.1"
-    css-render "^0.15.6"
+    css-render "^0.15.8"
     date-fns "^2.27.0"
     date-fns-tz "^1.1.6"
     evtd "^0.2.3"
@@ -2339,10 +2337,10 @@ naive-ui@^2.23.1:
     lodash-es "^4.17.21"
     seemly "^0.3.3"
     treemate "^0.3.9"
-    vdirs "^0.1.4"
-    vfonts "^0.1.0"
-    vooks "^0.2.10"
-    vueuc "^0.4.18"
+    vdirs "^0.1.7"
+    vfonts "^0.0.3"
+    vooks "^0.2.12"
+    vueuc "^0.4.27"
 
 nanoid@^3.2.0:
   version "3.3.1"
@@ -3192,10 +3190,17 @@ vdirs@^0.1.4:
     "@types/node" "^14.14.10"
     evtd "^0.2.2"
 
-vfonts@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/vfonts/-/vfonts-0.1.0.tgz#c16af37ca044b2725ae55553049280efbe6222a9"
-  integrity sha512-vQBcvntBlnAPonAkGNM8iJ9NxE3PucA+V2W95xiN75YJKxirLJvOws2kEyOEO45T4N+YTbQOCR2m77Y05pfVhQ==
+vdirs@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/vdirs/-/vdirs-0.1.7.tgz#388cda8d1916349ed2ea3b56e31d0493eaf4c15b"
+  integrity sha512-MEUaLhV1jJyUqA2Ar4DfvlQx8jWs+PpCZ2dbM0ILelpMWGOybzt8ddL456VxeIbY/tkuDGT/Wzb8GG4LCuLuHw==
+  dependencies:
+    evtd "^0.2.2"
+
+vfonts@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/vfonts/-/vfonts-0.0.3.tgz#999d66fecea18efee3f2b966c81101ae8ce01a29"
+  integrity sha512-nguyw8L6Un8eelg1vQ31vIU2ESxqid7EYmy8V+MDeMaHBqaRSkg3dTBToC1PR00D89UzS/SLkfYPnx0Wf23IQQ==
 
 vite@>=2.7.10:
   version "2.7.10"
@@ -3239,7 +3244,14 @@ void-elements@^3.1.0:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-3.1.0.tgz#614f7fbf8d801f0bb5f0661f5b2f5785750e4f09"
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
 
-vooks@^0.2.10, vooks@^0.2.4:
+vooks@^0.2.12:
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/vooks/-/vooks-0.2.12.tgz#2b6e23330b77bac81c7f7a344c4ca3e9f4f6c373"
+  integrity sha512-iox0I3RZzxtKlcgYaStQYKEzWWGAduMmq+jS7OrNdQo1FgGfPMubGL3uGHOU9n97NIvfFDBGnpSvkWyb/NSn/Q==
+  dependencies:
+    evtd "^0.2.2"
+
+vooks@^0.2.4:
   version "0.2.10"
   resolved "https://registry.yarnpkg.com/vooks/-/vooks-0.2.10.tgz#2656f4c025758ed97edc4a9584c9cc15ecffb70b"
   integrity sha512-clZkEndDEUyUFP7u1dL0iijcW0p04Hhj50IVcakRrLjQkuZIr7sx6EX9oMyWgrYVjmfdX6vysnCg3OxsYl67jA==
@@ -3439,12 +3451,13 @@ vue@^3.2.30:
     "@vue/server-renderer" "3.2.31"
     "@vue/shared" "3.2.31"
 
-vueuc@^0.4.18:
-  version "0.4.18"
-  resolved "https://registry.yarnpkg.com/vueuc/-/vueuc-0.4.18.tgz#6d6895e96ecea0abf3f1c2d415d95f23ef84899d"
-  integrity sha512-fHoMFbwfaVs4S3U5tCSu2i4Xm5GZDNw9FuFNjRwCXiLB1S3rYTYuhjUWdX/+38SL5d9ivEkpsvfve/Msp2lwwg==
+vueuc@^0.4.27:
+  version "0.4.27"
+  resolved "https://registry.yarnpkg.com/vueuc/-/vueuc-0.4.27.tgz#ac9fba71e33bed7e51ee59962e260371293119d6"
+  integrity sha512-wkIM6F1VT9cuzC2YOIzktPcTJ3eI8FoQ39KazAKwcdPv3GcXZGO1vBZc3TspBwap0AIn9eF8dxvQAW80yxhbHg==
   dependencies:
-    css-render "^0.15.3"
+    "@css-render/vue3-ssr" "^0.15.7"
+    css-render "^0.15.7"
     evtd "^0.2.2"
     resize-observer-polyfill "^1.5.1"
     seemly "^0.3.1"
