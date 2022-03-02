@@ -300,8 +300,8 @@ settings:
         Changing role provider to VCS will replace all existing members with the
         members from the corresponding VCS project.
 
-        The existing members will be set to an inactive state. You can reset
-        role provider to Bytebase to restore this change.
+        The existing members will become inactive. You can reset
+        role provider to Bytebase to restore those members.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members synced from VCS will be removed.
