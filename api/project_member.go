@@ -112,15 +112,17 @@ type ProjectMemberDelete struct {
 	DeleterID int
 }
 
-// ProjectMemberSet is the API message for seting project member.
-type ProjectMemberSet struct {
+// ProjectMemberBatchUpdate is the API message for batch updating project member.
+type ProjectMemberBatchUpdate struct {
 	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
-	List []*ProjectMemberCreate
+	// All the Member to be update should have the same role provider as this field
+	RoleProvider ProjectRoleProvider
+	List         []*ProjectMemberCreate
 }
 
 // ProjectMemberService is the service for project members.
@@ -130,5 +132,5 @@ type ProjectMemberService interface {
 	FindProjectMember(ctx context.Context, find *ProjectMemberFind) (*ProjectMember, error)
 	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMember, error)
 	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
-	SetProjectMember(ctx context.Context, set *ProjectMemberSet) (createdMember, deletedMember []*ProjectMember, err error)
+	BatchUpdateProjectMember(ctx context.Context, set *ProjectMemberBatchUpdate) (createdMember, deletedMember []*ProjectMember, err error)
 }

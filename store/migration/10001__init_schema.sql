@@ -234,7 +234,6 @@ CREATE TABLE project_member (
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload TEXT NOT NULL DEFAULT '',
-    UNIQUE(project_id, principal_id, role_provider)
 );
 
 CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role_provider ON project_member(project_id, principal_id, role_provider));

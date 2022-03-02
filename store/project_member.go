@@ -123,31 +123,36 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	return nil
 }
 
-// SetProjectMember set the project member with provided project member list
-func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.ProjectMemberSet) (createdMember, deletedMember []*api.ProjectMember, err error) {
+// BatchUpdateProjectMember update the project member with provided project member list
+func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) (createdMember, deletedMember []*api.ProjectMember, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	findProjectMember := &api.ProjectMemberFind{ProjectID: &set.ID}
+	findProjectMember := &api.ProjectMemberFind{ProjectID: &batchUpdate.ID}
 	existingProjectMemberList, err := findProjectMemberList(ctx, tx.PTx, findProjectMember)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
 
-	oldMemberMap := make(map[int]*api.ProjectMember)
+	oldMemberMap := make(map[string]*api.ProjectMember)
 	for _, existingMember := range existingProjectMemberList {
-		oldMemberMap[existingMember.PrincipalID] = existingMember
+		oldMemberMap[fmt.Sprintf("%v-%v", existingMember.PrincipalID, existingMember.RoleProvider)] = existingMember
+	}
+
+	newMemberMap := make(map[string]*api.ProjectMemberCreate)
+	for _, newMember := range batchUpdate.List {
+		newMemberMap[fmt.Sprintf("%v-%v", newMember.PrincipalID, newMember.RoleProvider)] = newMember
 	}
 
 	createdMemberList := make([]*api.ProjectMember, 0)
 	deletedMemberList := make([]*api.ProjectMember, 0)
-	for _, memberCreate := range set.List {
-		// if the member exists (NOTICE: a member with the same principal ID but different role provider will be considered as two member)
+	for _, memberCreate := range batchUpdate.List {
+		// if the member exists (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
 		//  we will try to update its field
-		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok && memberBefore.RoleProvider == memberCreate.RoleProvider {
+		if memberBefore, ok := oldMemberMap[fmt.Sprintf("%v-%v", memberCreate.PrincipalID, memberCreate.RoleProvider)]; ok {
 			// if we update a member, we will the member in both createdMemberList and deletedMemberList
 			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
@@ -169,6 +174,25 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.Pr
 			}
 			createdMemberList = append(createdMemberList, createdMember)
 		}
+	}
+
+	for _, member := range existingProjectMemberList {
+		// if the member dose exist on the create list we will update it (done above)
+		if _, ok := newMemberMap[fmt.Sprintf("%v-%v", member.PrincipalID, member.RoleProvider)]; ok {
+			continue
+		}
+		if member.RoleProvider != batchUpdate.RoleProvider {
+			continue
+		}
+
+		memberDelete := &api.ProjectMemberDelete{
+			ID:        member.ID,
+			DeleterID: batchUpdate.UpdaterID,
+		}
+		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
+			return nil, nil, FormatError(err)
+		}
+		deletedMemberList = append(deletedMemberList, member)
 	}
 
 	if err := tx.PTx.Commit(); err != nil {

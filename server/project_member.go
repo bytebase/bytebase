@@ -119,12 +119,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
-		setProjectMEmber := &api.ProjectMemberSet{
-			ID:        projectID,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-			List:      createList,
+		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
+			ID:           projectID,
+			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
+			RoleProvider: "GITLAB_SELF_HOST", /* we only support gitlab for now */
+			List:         createList,
 		}
-		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, setProjectMEmber)
+		createdMemberList, deletedMemberList, err := s.ProjectMemberService.BatchUpdateProjectMember(ctx, batchUpdateProjectMember)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
 		}
