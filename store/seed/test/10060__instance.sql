@@ -155,9 +155,9 @@ VALUES
         'Demo PostgreSQL on Render',
         'POSTGRES',
         '13.0',
-        'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo',
+        'dpg-c8a7pcd0mal7gtod05p0',
         '5432',
-        'bytebase.com/database/postgres'
+        'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo'
     );
 
 INSERT INTO
