@@ -196,7 +196,7 @@ export default defineComponent({
         shortcut: ["g", "m"],
         section: t("kbar.navigation"),
         keywords: "navigation",
-        perform: () => router.push({ name: "setting.inbox" }),
+        perform: () => router.push({ name: "workspace.inbox" }),
       }),
     ]);
     useRegisterActions(kbarActions);
