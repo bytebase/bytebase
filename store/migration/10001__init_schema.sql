@@ -237,7 +237,7 @@ CREATE TABLE project_member (
     UNIQUE(project_id, principal_id, role_provider)
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
+CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role_provider ON project_member(project_id, principal_id, role_provider));
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 100;
 
