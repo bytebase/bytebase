@@ -205,6 +205,9 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 // createProjectMember creates a new projectMember.
 func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	// Insert row into database.
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_member (
 			creator_id,
@@ -322,7 +325,11 @@ func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMembe
 		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, api.Role(*v))
+		payload := "{}"
+		if *v == "" {
+			payload = *v
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, api.Role(payload))
 	}
 
 	args = append(args, patch.ID)

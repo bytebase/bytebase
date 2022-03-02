@@ -28,6 +28,9 @@ func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 
 // CreateTaskRunTx creates a new taskRun.
 func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO task_run (
 			creator_id,
@@ -114,7 +117,11 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Result; v != nil {
-		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, *v)
+		result := "{}"
+		if *v != "" {
+			result = *v
+		}
+		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
 	}
 
 	// Build WHERE clause.
