@@ -127,6 +127,9 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 // createActivity creates a new activity.
 func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*api.Activity, error) {
 	// Insert row into activity.
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO activity (
 			creator_id,
