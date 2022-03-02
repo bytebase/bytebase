@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -146,7 +147,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		create.Type,
 		create.Name,
 		create.URL,
-		create.ActivityList,
+		pq.StringArray(create.ActivityList),
 	)
 
 	if err != nil {
@@ -156,7 +157,6 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 
 	row.Next()
 	var projectWebhook api.ProjectWebhook
-	var activityList string
 	if err := row.Scan(
 		&projectWebhook.ID,
 		&projectWebhook.CreatorID,
@@ -167,11 +167,10 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		&projectWebhook.Type,
 		&projectWebhook.Name,
 		&projectWebhook.URL,
-		&activityList,
+		pq.Array(&projectWebhook.ActivityList),
 	); err != nil {
 		return nil, FormatError(err)
 	}
-	projectWebhook.ActivityList = strings.Split(activityList, ",")
 
 	return &projectWebhook, nil
 }
@@ -221,7 +220,7 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 			&projectWebhook.Type,
 			&projectWebhook.Name,
 			&projectWebhook.URL,
-			&projectWebhook.ActivityList,
+			pq.Array(&projectWebhook.ActivityList),
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -255,7 +254,7 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 		set, args = append(set, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ActivityList; v != nil {
-		activities := strings.Split(*v, ",")
+		activities := pq.StringArray(strings.Split(*v, ","))
 		set, args = append(set, fmt.Sprintf("activity_list = $%d", len(args)+1)), append(args, activities)
 	}
 
@@ -277,7 +276,6 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 
 	if row.Next() {
 		var projectWebhook api.ProjectWebhook
-		var activityList string
 		if err := row.Scan(
 			&projectWebhook.ID,
 			&projectWebhook.CreatorID,
@@ -288,11 +286,10 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 			&projectWebhook.Type,
 			&projectWebhook.Name,
 			&projectWebhook.URL,
-			&activityList,
+			pq.Array(&projectWebhook.ActivityList),
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		projectWebhook.ActivityList = strings.Split(activityList, ",")
 
 		return &projectWebhook, nil
 	}
