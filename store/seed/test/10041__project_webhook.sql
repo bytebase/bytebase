@@ -19,7 +19,7 @@ VALUES
         'bb.plugin.webhook.wecom',
         'WeCom',
         'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 INSERT INTO
@@ -42,7 +42,7 @@ VALUES
         'bb.plugin.webhook.dingtalk',
         'DingTalk',
         'https://oapi.dingtalk.com/robot/send?access_token=12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 -- Project 3002 hook
@@ -66,7 +66,7 @@ VALUES
         'bb.plugin.webhook.feishu',
         'Feishu',
         'https://open.feishu.cn/open-apis/bot/v2/hook/12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 INSERT INTO
@@ -89,7 +89,7 @@ VALUES
         'bb.plugin.webhook.slack',
         'Slack',
         'https://hooks.slack.com/services/12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 -- Project 3003 hook
@@ -113,7 +113,7 @@ VALUES
         'bb.plugin.webhook.discord',
         'Discord',
         'https://discord.com/api/webhooks/12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 INSERT INTO
@@ -136,7 +136,7 @@ VALUES
         'bb.plugin.webhook.teams',
         'Teams',
         'https://foo.webhook.office.com/webhookb2/12345',
-        'bb.issue.create,bb.issue.status.update,bb.pipeline.task.status.update,bb.issue.field.update,bb.issue.comment.create'
+        '{"bb.issue.create", "bb.issue.status.update", "bb.pipeline.task.status.update", "bb.issue.field.update", "bb.issue.comment.create"}'
     );
 
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 4107;
