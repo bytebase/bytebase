@@ -368,12 +368,13 @@ onMounted(async () => {
   }
 });
 
+// add listener to confirm confrim if close the tab.
 onMounted(() => {
   window.onbeforeunload = () => {
     return "false";
   };
 });
-
+// remove if unmount view
 onUnmounted(() => {
   window.onbeforeunload = null;
 });
