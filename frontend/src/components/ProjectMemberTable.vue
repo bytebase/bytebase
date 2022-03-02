@@ -137,7 +137,9 @@ import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  activeRoleProvider: ProjectRoleProvider;
+}
 
 export default {
   name: "ProjectMemberTable",
@@ -163,7 +165,11 @@ export default {
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      activeRoleProvider: props.activeRoleProvider
+        ? props.activeRoleProvider
+        : props.project.roleProvider,
+    });
 
     const RoleProviderConfig = {
       GITLAB_SELF_HOST: {
@@ -181,15 +187,7 @@ export default {
         const ownerList: ProjectMember[] = [];
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
-          if (
-            !props.activeRoleProvider &&
-            member.roleProvider !== props.project.roleProvider
-          ) {
-            continue;
-          } else if (
-            props.activeRoleProvider &&
-            member.roleProvider !== props.activeRoleProvider
-          ) {
+          if (member.roleProvider !== state.activeRoleProvider) {
             continue;
           }
 
