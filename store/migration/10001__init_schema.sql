@@ -19,16 +19,14 @@ CREATE TABLE principal (
     -- allowed types are 'END_USER', 'SYSTEM_BOT'.
     type TEXT NOT NULL,
     name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
     password_hash TEXT NOT NULL
 );
 
-CREATE INDEX idx_principal_email ON principal(email);
+CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
 
-ALTER SEQUENCE principal_id_seq RESTART WITH 100;
-
-CREATE TRIGGER trigger_update_principal_modification_time
-AFTER
+CREATE TRIGGER update_principal_updated_ts
+BEFORE
 UPDATE
     ON principal FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -55,6 +53,8 @@ VALUES
         ''
     );
 
+ALTER SEQUENCE principal_id_seq RESTART WITH 100;
+
 -- Setting
 CREATE TABLE setting (
     id SERIAL PRIMARY KEY,
@@ -64,15 +64,17 @@ CREATE TABLE setting (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
     value TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT ''
 );
 
+CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
+
 ALTER SEQUENCE setting_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_setting_modification_time
-AFTER
+CREATE TRIGGER update_setting_updated_ts
+BEFORE
 UPDATE
     ON setting FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -91,13 +93,15 @@ CREATE TABLE member (
     status TEXT NOT NULL,
     -- allowed roles are 'OWNER', 'DBA', 'DEVELOPER'.
     role TEXT NOT NULL,
-    principal_id INTEGER NOT NULL REFERENCES principal (id) UNIQUE
+    principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON member(principal_id);
 
 ALTER SEQUENCE member_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_member_modification_time
-AFTER
+CREATE TRIGGER update_member_updated_ts
+BEFORE
 UPDATE
     ON member FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -111,14 +115,16 @@ CREATE TABLE environment (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
     "order" INTEGER NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
+
 ALTER SEQUENCE environment_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_environment_modification_time
-AFTER
+CREATE TRIGGER update_environment_updated_ts
+BEFORE
 UPDATE
     ON environment FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -142,12 +148,12 @@ CREATE TABLE policy (
 
 CREATE INDEX idx_policy_environment_id ON policy(environment_id);
 
-CREATE UNIQUE INDEX idx_policy_environment_id_type ON policy(environment_id, type);
+CREATE UNIQUE INDEX idx_policy_unique_environment_id_type ON policy(environment_id, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_policy_modification_time
-AFTER
+CREATE TRIGGER update_policy_updated_ts
+BEFORE
 UPDATE
     ON policy FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -162,7 +168,7 @@ CREATE TABLE project (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    key TEXT NOT NULL UNIQUE,
+    key TEXT NOT NULL,
     -- allowed workflow types are 'UI', 'VCS'.
     workflow_type TEXT NOT NULL,
     -- allowed visibilities are 'PUBLIC', 'PRIVATE'.
@@ -175,6 +181,8 @@ CREATE TABLE project (
     -- allowed role_provider types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE'
 );
+
+CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
 
 INSERT INTO
     project (
@@ -203,8 +211,8 @@ VALUES
 
 ALTER SEQUENCE project_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_modification_time
-AFTER
+CREATE TRIGGER update_project_updated_ts
+BEFORE
 UPDATE
     ON project FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -225,14 +233,15 @@ CREATE TABLE project_member (
     -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
-    payload TEXT NOT NULL DEFAULT '',
-    UNIQUE(project_id, principal_id)
+    payload TEXT NOT NULL DEFAULT ''
 );
+
+CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_member_modification_time
-AFTER
+CREATE TRIGGER update_project_member_updated_ts
+BEFORE
 UPDATE
     ON project_member FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -252,16 +261,17 @@ CREATE TABLE project_webhook (
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
-    activity_list TEXT NOT NULL,
-    UNIQUE(project_id, url)
+    activity_list TEXT NOT NULL
 );
 
 CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
 
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON project_webhook(project_id, url);
+
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_project_webhook_modification_time
-AFTER
+CREATE TRIGGER update_project_webhook_updated_ts
+BEFORE
 UPDATE
     ON project_webhook FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -287,8 +297,8 @@ CREATE TABLE instance (
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_instance_modification_time
-AFTER
+CREATE TRIGGER update_instance_updated_ts
+BEFORE
 UPDATE
     ON instance FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -304,14 +314,15 @@ CREATE TABLE instance_user (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     name TEXT NOT NULL,
-    "grant" TEXT NOT NULL,
-    UNIQUE(instance_id, name)
+    "grant" TEXT NOT NULL
 );
 
 ALTER SEQUENCE instance_user_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_instance_user_modification_time
-AFTER
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON instance_user(instance_id, name);
+
+CREATE TRIGGER update_instance_user_updated_ts
+BEFORE
 UPDATE
     ON instance_user FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -336,16 +347,17 @@ CREATE TABLE db (
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     character_set TEXT NOT NULL,
-    "collation" TEXT NOT NULL,
-    UNIQUE(instance_id, name)
+    "collation" TEXT NOT NULL
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
 
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON db(instance_id, name);
+
 ALTER SEQUENCE db_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_db_modification_time
-AFTER
+CREATE TRIGGER update_db_updated_ts
+BEFORE
 UPDATE
     ON db FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -370,16 +382,17 @@ CREATE TABLE tbl (
     index_size BIGINT NOT NULL,
     data_free BIGINT NOT NULL,
     create_options TEXT NOT NULL,
-    comment TEXT NOT NULL,
-    UNIQUE(database_id, name)
+    comment TEXT NOT NULL
 );
 
 CREATE INDEX idx_tbl_database_id ON tbl(database_id);
 
+CREATE UNIQUE INDEX idx_tbl_unique_database_id_name ON tbl(database_id, name);
+
 ALTER SEQUENCE tbl_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_tbl_modification_time
-AFTER
+CREATE TRIGGER update_tbl_updated_ts
+BEFORE
 UPDATE
     ON tbl FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -403,16 +416,17 @@ CREATE TABLE col (
     type TEXT NOT NULL,
     character_set TEXT NOT NULL,
     "collation" TEXT NOT NULL,
-    comment TEXT NOT NULL,
-    UNIQUE(database_id, table_id, name)
+    comment TEXT NOT NULL
 );
 
 CREATE INDEX idx_col_database_id_table_id ON col(database_id, table_id);
 
+CREATE UNIQUE INDEX idx_col_unique_database_id_table_id_name ON col(database_id, table_id, name);
+
 ALTER SEQUENCE col_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_col_modification_time
-AFTER
+CREATE TRIGGER update_col_updated_ts
+BEFORE
 UPDATE
     ON col FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -435,16 +449,17 @@ CREATE TABLE idx (
     type TEXT NOT NULL,
     "unique" BOOLEAN NOT NULL,
     visible BOOLEAN NOT NULL,
-    comment TEXT NOT NULL,
-    UNIQUE(database_id, table_id, name, expression)
+    comment TEXT NOT NULL
 );
 
 CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
 
+CREATE UNIQUE INDEX idx_idx_unique_database_id_table_id_name_expression ON idx(database_id, table_id, name, expression);
+
 ALTER SEQUENCE idx_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_idx_modification_time
-AFTER
+CREATE TRIGGER update_idx_updated_ts
+BEFORE
 UPDATE
     ON idx FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -462,16 +477,17 @@ CREATE TABLE vw (
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     definition TEXT NOT NULL,
-    comment TEXT NOT NULL,
-    UNIQUE(database_id, name)
+    comment TEXT NOT NULL
 );
 
 CREATE INDEX idx_vw_database_id ON vw(database_id);
 
+CREATE UNIQUE INDEX idx_vw_unique_database_id_name ON vw(database_id, name);
+
 ALTER SEQUENCE vw_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_vw_modification_time
-AFTER
+CREATE TRIGGER update_vw_updated_ts
+BEFORE
 UPDATE
     ON vw FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -494,16 +510,17 @@ CREATE TABLE data_source (
     password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
     ssl_cert TEXT NOT NULL DEFAULT '',
-    ssl_ca TEXT NOT NULL DEFAULT '',
-    UNIQUE(database_id, name)
+    ssl_ca TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
 
+CREATE UNIQUE INDEX idx_data_source_unique_database_id_name ON data_source(database_id, name);
+
 ALTER SEQUENCE data_source_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_data_source_modification_time
-AFTER
+CREATE TRIGGER update_data_source_updated_ts
+BEFORE
 UPDATE
     ON data_source FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -527,16 +544,17 @@ CREATE TABLE backup (
     storage_backend TEXT NOT NULL,
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
-    UNIQUE(database_id, name)
+    comment TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);
 
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON backup(database_id, name);
+
 ALTER SEQUENCE backup_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_backup_modification_time
-AFTER
+CREATE TRIGGER update_backup_updated_ts
+BEFORE
 UPDATE
     ON backup FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -551,7 +569,7 @@ CREATE TABLE backup_setting (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL UNIQUE REFERENCES db (id),
+    database_id INTEGER NOT NULL REFERENCES db (id),
     -- allowed enabled values are 0, 1.
     enabled BOOLEAN NOT NULL,
     -- allowed hour is from 0 to 23 (included).
@@ -563,12 +581,12 @@ CREATE TABLE backup_setting (
     hook_url TEXT NOT NULL
 );
 
-CREATE INDEX idx_backup_setting_database_id ON backup_setting(database_id);
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON backup_setting(database_id);
 
 ALTER SEQUENCE backup_setting_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_backup_setting_modification_time
-AFTER
+CREATE TRIGGER update_backup_setting_updated_ts
+BEFORE
 UPDATE
     ON backup_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -593,8 +611,8 @@ CREATE INDEX idx_pipeline_status ON pipeline(status);
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_pipeline_modification_time
-AFTER
+CREATE TRIGGER update_pipeline_updated_ts
+BEFORE
 UPDATE
     ON pipeline FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -617,8 +635,8 @@ CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
 
 ALTER SEQUENCE stage_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_stage_modification_time
-AFTER
+CREATE TRIGGER update_stage_updated_ts
+BEFORE
 UPDATE
     ON stage FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -654,8 +672,8 @@ CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_modification_time
-AFTER
+CREATE TRIGGER update_task_updated_ts
+BEFORE
 UPDATE
     ON task FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -684,8 +702,8 @@ CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_run_modification_time
-AFTER
+CREATE TRIGGER update_task_run_updated_ts
+BEFORE
 UPDATE
     ON task_run FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -713,8 +731,8 @@ CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
 
 ALTER SEQUENCE task_check_run_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_task_check_run_modification_time
-AFTER
+CREATE TRIGGER update_task_check_run_updated_ts
+BEFORE
 UPDATE
     ON task_check_run FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -756,8 +774,8 @@ CREATE INDEX idx_issue_created_ts ON issue(created_ts);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_issue_modification_time
-AFTER
+CREATE TRIGGER update_issue_updated_ts
+BEFORE
 UPDATE
     ON issue FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -798,8 +816,8 @@ CREATE INDEX idx_activity_created_ts ON activity(created_ts);
 
 ALTER SEQUENCE activity_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_activity_modification_time
-AFTER
+CREATE TRIGGER update_activity_updated_ts
+BEFORE
 UPDATE
     ON activity FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -833,14 +851,15 @@ CREATE TABLE bookmark (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    link TEXT NOT NULL,
-    UNIQUE(creator_id, link)
+    link TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON bookmark(creator_id, link);
 
 ALTER SEQUENCE bookmark_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_bookmark_modification_time
-AFTER
+CREATE TRIGGER update_bookmark_updated_ts
+BEFORE
 UPDATE
     ON bookmark FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -867,8 +886,8 @@ CREATE TABLE vcs (
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_vcs_modification_time
-AFTER
+CREATE TRIGGER update_vcs_updated_ts
+BEFORE
 UPDATE
     ON vcs FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -885,7 +904,7 @@ CREATE TABLE repository (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
-    project_id INTEGER NOT NULL UNIQUE REFERENCES project (id),
+    project_id INTEGER NOT NULL REFERENCES project (id),
     -- Name from the corresponding VCS provider.
     -- For GitLab, this is the project name. e.g. project 1
     name TEXT NOT NULL,
@@ -914,7 +933,7 @@ CREATE TABLE repository (
     -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --host.
     webhook_url_host TEXT NOT NULL,
     -- Identify the target repository receiving the webhook event. This is a random string.
-    webhook_endpoint_id TEXT NOT NULL UNIQUE,
+    webhook_endpoint_id TEXT NOT NULL,
     -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
     webhook_secret_token TEXT NOT NULL,
     -- access_token, expires_ts, refresh_token belongs to the user linking the project to the VCS repository.
@@ -923,10 +942,14 @@ CREATE TABLE repository (
     refresh_token TEXT NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
+
+CREATE UNIQUE INDEX idx_repository_unique_webhook_endpoint_id ON repository(webhook_endpoint_id);
+
 ALTER SEQUENCE repository_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_repository_modification_time
-AFTER
+CREATE TRIGGER update_repository_updated_ts
+BEFORE
 UPDATE
     ON repository FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -955,8 +978,8 @@ CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_anomaly_modification_time
-AFTER
+CREATE TRIGGER update_anomaly_updated_ts
+BEFORE
 UPDATE
     ON anomaly FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -975,12 +998,12 @@ CREATE TABLE label_key (
 );
 
 -- key's are unique within the label_key table.
-CREATE UNIQUE INDEX idx_label_key_key ON label_key(key);
+CREATE UNIQUE INDEX idx_label_key_unique_key ON label_key(key);
 
 ALTER SEQUENCE label_key_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_label_key_modification_time
-AFTER
+CREATE TRIGGER update_label_key_updated_ts
+BEFORE
 UPDATE
     ON label_key FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -994,18 +1017,17 @@ CREATE TABLE label_value (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    key TEXT NOT NULL,
-    value TEXT NOT NULL,
-    FOREIGN KEY(key) REFERENCES label_key(key)
+    key TEXT NOT NULL REFERENCES label_key(key),
+    value TEXT NOT NULL
 );
 
 -- key/value's are unique within the label_value table.
-CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
+CREATE UNIQUE INDEX idx_label_value_unique_key_value ON label_value(key, value);
 
 ALTER SEQUENCE label_value_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_label_value_modification_time
-AFTER
+CREATE TRIGGER update_label_value_updated_ts
+BEFORE
 UPDATE
     ON label_value FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -1026,12 +1048,12 @@ CREATE TABLE db_label (
 );
 
 -- database_id/key's are unique within the db_label table.
-CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
+CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON db_label(database_id, key);
 
 ALTER SEQUENCE db_label_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_db_label_modification_time
-AFTER
+CREATE TRIGGER update_db_label_updated_ts
+BEFORE
 UPDATE
     ON db_label FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -1051,12 +1073,12 @@ CREATE TABLE deployment_config (
     config TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_deployment_config_project_id ON deployment_config(project_id);
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON deployment_config(project_id);
 
 ALTER SEQUENCE deployment_config_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_deployment_config_modification_time
-AFTER
+CREATE TRIGGER update_deployment_config_updated_ts
+BEFORE
 UPDATE
     ON deployment_config FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
@@ -1086,8 +1108,8 @@ CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 100;
 
-CREATE TRIGGER trigger_update_sheet_modification_time
-AFTER
+CREATE TRIGGER update_sheet_updated_ts
+BEFORE
 UPDATE
     ON sheet FOR EACH ROW
 EXECUTE FUNCTION trigger_after_update_updated_ts();
