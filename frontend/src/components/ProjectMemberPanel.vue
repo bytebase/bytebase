@@ -65,11 +65,11 @@
           } else if (project.roleProvider === 'GITLAB_SELF_HOST') {
             // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
             patchProjectRoleProvider('BYTEBASE').then(() => {
-              store
+              $store
                 .dispatch('notification/pushNotification', {
                   module: 'bytebase',
                   style: 'SUCCESS',
-                  title: t(
+                  title: $t(
                     'project.settings.switch-role-provider-to-bytebase-success-prompt'
                   ),
                 })
