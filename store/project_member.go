@@ -136,15 +136,21 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
-
-	oldMemberMap := make(map[string]*api.ProjectMember)
-	for _, existingMember := range existingProjectMemberList {
-		oldMemberMap[fmt.Sprintf("%v-%v", existingMember.PrincipalID, existingMember.RoleProvider)] = existingMember
+	fileredProjectMemberList := make([]*api.ProjectMember, 0)
+	for _, member := range existingProjectMemberList {
+		if member.RoleProvider == batchUpdate.RoleProvider {
+			fileredProjectMemberList = append(fileredProjectMemberList, member)
+		}
 	}
 
-	newMemberMap := make(map[string]*api.ProjectMemberCreate)
+	oldMemberMap := make(map[int]*api.ProjectMember)
+	for _, existingMember := range fileredProjectMemberList {
+		oldMemberMap[existingMember.PrincipalID] = existingMember
+	}
+
+	newMemberMap := make(map[int]*api.ProjectMemberCreate)
 	for _, newMember := range batchUpdate.List {
-		newMemberMap[fmt.Sprintf("%v-%v", newMember.PrincipalID, newMember.RoleProvider)] = newMember
+		newMemberMap[newMember.PrincipalID] = newMember
 	}
 
 	createdMemberList := make([]*api.ProjectMember, 0)
@@ -152,7 +158,7 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 	for _, memberCreate := range batchUpdate.List {
 		// if the member exists (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
 		//  we will try to update its field
-		if memberBefore, ok := oldMemberMap[fmt.Sprintf("%v-%v", memberCreate.PrincipalID, memberCreate.RoleProvider)]; ok {
+		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
 			// if we update a member, we will the member in both createdMemberList and deletedMemberList
 			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
@@ -176,9 +182,9 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 		}
 	}
 
-	for _, member := range existingProjectMemberList {
+	for _, member := range fileredProjectMemberList {
 		// if the member dose exist on the create list we will update it (done above)
-		if _, ok := newMemberMap[fmt.Sprintf("%v-%v", member.PrincipalID, member.RoleProvider)]; ok {
+		if _, ok := newMemberMap[member.PrincipalID]; ok {
 			continue
 		}
 		if member.RoleProvider != batchUpdate.RoleProvider {

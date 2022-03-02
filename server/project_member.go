@@ -122,7 +122,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
 			ID:           projectID,
 			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
-			RoleProvider: "GITLAB_SELF_HOST", /* we only support gitlab for now */
+			RoleProvider: api.ProjectRoleProviderGitLabSelfHost, /* we only support gitlab for now */
 			List:         createList,
 		}
 		createdMemberList, deletedMemberList, err := s.ProjectMemberService.BatchUpdateProjectMember(ctx, batchUpdateProjectMember)
