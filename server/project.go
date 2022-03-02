@@ -77,6 +77,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
+
 			projectFind.PrincipalID = &userID
 		}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
@@ -88,14 +89,24 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
+		activeProjectList := make([]*api.Project, 0)
 		for _, project := range list {
 			if err := s.composeProjectRelationship(ctx, project); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
+			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
+			if projectFind.PrincipalID != nil {
+				for _, projectMember := range project.ProjectMemberList {
+					if projectMember.PrincipalID == *projectFind.PrincipalID &&
+						projectMember.RoleProvider == project.RoleProvider {
+						activeProjectList = append(activeProjectList, project)
+						break
+					}
+				}
+			}
 		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, activeProjectList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
 		}
 		return nil

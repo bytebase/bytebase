@@ -150,8 +150,9 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.Pr
 	createdMemberList := make([]*api.ProjectMember, 0)
 	deletedMemberList := make([]*api.ProjectMember, 0)
 	for _, memberCreate := range set.List {
-		// if the member exists, we will try to update its field
-		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
+		// if the member exists (NOTICE: a member with the same principal ID but different role provider will be considered as two member)
+		//  we will try to update its field
+		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok && memberBefore.RoleProvider == memberCreate.RoleProvider {
 			// if we update a member, we will the member in both createdMemberList and deletedMemberList
 			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
 				ID:           memberBefore.ID,
@@ -173,20 +174,6 @@ func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.Pr
 			}
 			createdMemberList = append(createdMemberList, createdMember)
 		}
-	}
-	for _, member := range existingProjectMemberList {
-		// if the member exists, we will try to update
-		if _, ok := newMemberMap[member.PrincipalID]; ok {
-			continue
-		}
-		memberDelete := &api.ProjectMemberDelete{
-			ID:        member.ID,
-			DeleterID: set.UpdaterID,
-		}
-		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
-			return nil, nil, FormatError(err)
-		}
-		deletedMemberList = append(deletedMemberList, member)
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
