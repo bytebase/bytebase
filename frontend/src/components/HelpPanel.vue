@@ -53,10 +53,11 @@
           target="_blank"
           class="flex justify-between items-center flex-shrink-0 w-full text-main group"
         >
-          <div class="flex items-center py-1">
+          <div class="flex items-center flex-1 py-1">
             <heroicons-outline:document-text class="w-5 h-5 mr-2" />
             <span class="text-sm">{{ $t("common.documents") }}</span>
           </div>
+          <heroicons-outline:external-link class="w-4 h-4 text-gray-500" />
         </a>
       </template>
     </NDrawerContent>

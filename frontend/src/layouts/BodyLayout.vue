@@ -77,7 +77,7 @@
         <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
           <span
             class="flex justify-between items-center flex-shrink-0 w-full text-main group cursor-pointer"
-            @click.prevent="state.showHelpPanel = true"
+            @click.prevent.stop="state.showHelpPanel = true"
           >
             <div class="flex items-center py-1">
               <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
