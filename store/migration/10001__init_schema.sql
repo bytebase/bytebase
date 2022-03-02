@@ -261,7 +261,7 @@ CREATE TABLE project_webhook (
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     -- Comma separated list of activity triggers.
-    activity_list TEXT NOT NULL
+    activity_list TEXT ARRAY NOT NULL
 );
 
 CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
