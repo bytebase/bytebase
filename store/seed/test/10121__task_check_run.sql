@@ -22,8 +22,8 @@ VALUES
         'bb.task-check.database.connect',
         101,
         'failed to connect database "shop": failed to connect database On-premises Staging MySQL/shop at "mysql.staging.example.com":"3306" with user "admin": dial tcp: lookup mysql.staging.example.com: no such host',
-        '',
-        ''
+        '{}',
+        '{}'
     );
 
 INSERT INTO

@@ -115,6 +115,9 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 // createAnomaly creates a new anomaly.
 func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	// Inserts row into database.
+	if upsert.Payload == "" {
+		upsert.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO anomaly (
 			creator_id,
@@ -253,6 +256,9 @@ type anomalyPatch struct {
 // patchAnomaly patches an anomaly
 func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
 	// Build UPDATE clause.
+	if patch.Payload == "" {
+		patch.Payload = "{}"
+	}
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "payload = $2"), append(args, patch.Payload)
 	args = append(args, patch.ID)
