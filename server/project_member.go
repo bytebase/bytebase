@@ -30,6 +30,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
+		}
 		if project.WorkflowType != api.VCSWorkflow {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 		}
@@ -68,6 +71,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		// The following block will check whether the relevant principal exists in our system.
 		// If the principal does not exist, we will try to create one out of the vcs member info.
 		createList := make([]*api.ProjectMemberCreate, 0)
+		// we declare latSyncTs to ensure that every projectMember would have the same sync time.
+		lastSyncTs := time.Now().UTC().Unix()
 		for _, projectMember := range vcsProjectMemberList {
 			if vcs.Type != projectMember.RoleProvider {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
@@ -97,7 +102,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 			providerPayload := &api.ProjectRoleProviderPayload{
 				VCSRole:    projectMember.VCSRole,
-				LastSyncTs: time.Now().UTC().Unix(),
+				LastSyncTs: lastSyncTs,
 			}
 			providerPayloadBytes, err := json.Marshal(providerPayload)
 			if err != nil {
@@ -114,7 +119,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
-		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), createList)
+		setProjectMEmber := &api.ProjectMemberSet{
+			ID:        projectID,
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			List:      createList,
+		}
+		createdMemberList, deletedMemberList, err := s.ProjectMemberService.SetProjectMember(ctx, setProjectMEmber)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
 		}
@@ -130,8 +140,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		// create ROLE CREATE/ MEMBER UPDATE activity
 		for id, createdMember := range createdIDMemberMap {
+			// if the same member exist before, we will create a ROLE UPDATE activity
 			if deletedMember, ok := deletedIDMemberMap[id]; ok {
-				// if the same member exist before, we will create a ROLE UPDATE activity
+				// do nothing if nothing changed
 				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
 					continue
 				}
@@ -172,7 +183,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						principal.Name, principal.Email, createdMember.Role),
 				}
 				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{}); err != nil {
-					s.l.Warn("Failed to create project activity after deleting member",
+					s.l.Warn("Failed to create project activity after creating member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
 						zap.String("principal_name", principal.Name),
