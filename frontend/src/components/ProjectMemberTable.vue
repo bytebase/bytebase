@@ -137,9 +137,7 @@ import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {
-  activeRoleProvider: ProjectRoleProvider;
-}
+interface LocalState {}
 
 export default {
   name: "ProjectMemberTable",
@@ -165,10 +163,12 @@ export default {
       store.getters["subscription/feature"]("bb.feature.rbac")
     );
 
-    const state = reactive<LocalState>({
-      activeRoleProvider: props.activeRoleProvider
+    const state = reactive<LocalState>({});
+
+    const activeRoleProvider = computed(() => {
+      return props.activeRoleProvider
         ? props.activeRoleProvider
-        : props.project.roleProvider,
+        : props.project.roleProvider;
     });
 
     const activeRoleProvider = computed(() => {
@@ -195,7 +195,7 @@ export default {
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
           // only member with the same role provider as the active one would be consider a valid member
-          if (member.roleProvider !== state.activeRoleProvider.value) {
+          if (member.roleProvider !== activeRoleProvider.value) {
             continue;
           }
 
