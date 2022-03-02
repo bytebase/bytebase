@@ -138,8 +138,7 @@ func getBatchUpdatePrincipalIDList(ctx context.Context, oldPrincipalIDList []int
 	createPrincipalIDList = make([]int, 0)
 	patchPrincipalIDList = make([]int, 0)
 	for _, newID := range newPrincipalIDList {
-		// if the ID exists (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
-		// 	we will try to update it
+		// if the ID exists, we will try to update it (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
 		if _, ok := oldPrincipalIDSet[newID]; ok {
 			patchPrincipalIDList = append(patchPrincipalIDList, newID)
 		} else {
