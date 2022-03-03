@@ -2,7 +2,7 @@
 CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
 
 -- updated_ts trigger.
-CREATE OR REPLACE FUNCTION trigger_after_update_updated_ts()
+CREATE OR REPLACE FUNCTION trigger_update_updated_ts()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_ts = extract(epoch from now());
@@ -18,8 +18,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    -- allowed types are 'END_USER', 'SYSTEM_BOT'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL
@@ -31,7 +30,7 @@ CREATE TRIGGER update_principal_updated_ts
 BEFORE
 UPDATE
     ON principal FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Default bytebase system account id is 1
 INSERT INTO
@@ -78,7 +77,7 @@ CREATE TRIGGER update_setting_updated_ts
 BEFORE
 UPDATE
     ON setting FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Member
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
@@ -89,10 +88,8 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    -- allowed status are 'INVITED', 'ACTIVE'.
-    status TEXT NOT NULL,
-    -- allowed roles are 'OWNER', 'DBA', 'DEVELOPER'.
-    role TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
+    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DBA', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
 
@@ -104,7 +101,7 @@ CREATE TRIGGER update_member_updated_ts
 BEFORE
 UPDATE
     ON member FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Environment
 CREATE TABLE environment (
@@ -126,7 +123,7 @@ CREATE TRIGGER update_environment_updated_ts
 BEFORE
 UPDATE
     ON environment FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Policy
 -- policy stores the policies for each environment.
@@ -153,7 +150,7 @@ CREATE TRIGGER update_policy_updated_ts
 BEFORE
 UPDATE
     ON policy FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project
 CREATE TABLE project (
@@ -165,17 +162,13 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    -- allowed workflow types are 'UI', 'VCS'.
-    workflow_type TEXT NOT NULL,
-    -- allowed visibilities are 'PUBLIC', 'PRIVATE'.
-    visibility TEXT NOT NULL,
-    -- allowed tenant modes are 'DISABLED', 'TENANT'.
-    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED',
+    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
+    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
+    tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    -- allowed role_provider types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    role_provider TEXT NOT NULL DEFAULT 'BYTEBASE'
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -211,7 +204,7 @@ CREATE TRIGGER update_project_updated_ts
 BEFORE
 UPDATE
     ON project FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project member
 CREATE TABLE project_member (
@@ -222,16 +215,14 @@ CREATE TABLE project_member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    -- allowed roles are 'OWNER', 'DEVELOPER'.
-    role TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
+CREATE UNIQUE INDEX idx_project_member_unique_project_id_role_provider_principal_id ON project_member(project_id, role_provider, principal_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 
@@ -239,7 +230,7 @@ CREATE TRIGGER update_project_member_updated_ts
 BEFORE
 UPDATE
     ON project_member FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project Hook
 CREATE TABLE project_webhook (
@@ -267,7 +258,7 @@ CREATE TRIGGER update_project_webhook_updated_ts
 BEFORE
 UPDATE
     ON project_webhook FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Instance
 CREATE TABLE instance (
@@ -279,8 +270,7 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    -- allowed engines are 'MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE'.
-    engine TEXT NOT NULL,
+    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
@@ -293,7 +283,7 @@ CREATE TRIGGER update_instance_updated_ts
 BEFORE
 UPDATE
     ON instance FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Instance user stores the users for a particular instance
 CREATE TABLE instance_user (
@@ -316,7 +306,7 @@ CREATE TRIGGER update_instance_user_updated_ts
 BEFORE
 UPDATE
     ON instance_user FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
@@ -331,8 +321,7 @@ CREATE TABLE db (
     project_id INTEGER NOT NULL REFERENCES project (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER,
-    -- allowed sync status are 'OK', 'NOT_FOUND'.
-    sync_status TEXT NOT NULL,
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -350,7 +339,7 @@ CREATE TRIGGER update_db_updated_ts
 BEFORE
 UPDATE
     ON db FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- tbl stores the table for a particular database
 -- data is synced periodically from the instance
@@ -384,7 +373,7 @@ CREATE TRIGGER update_tbl_updated_ts
 BEFORE
 UPDATE
     ON tbl FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- col stores the column for a particular table from a particular database
 -- data is synced periodically from the instance
@@ -417,7 +406,7 @@ CREATE TRIGGER update_col_updated_ts
 BEFORE
 UPDATE
     ON col FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- idx stores the index for a particular table from a particular database
 -- data is synced periodically from the instance
@@ -449,7 +438,7 @@ CREATE TRIGGER update_idx_updated_ts
 BEFORE
 UPDATE
     ON idx FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- vw stores the view for a particular database
 -- data is synced periodically from the instance
@@ -476,7 +465,7 @@ CREATE TRIGGER update_vw_updated_ts
 BEFORE
 UPDATE
     ON vw FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
@@ -489,8 +478,7 @@ CREATE TABLE data_source (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed types are 'ADMIN', 'RW', 'RO'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
@@ -508,7 +496,7 @@ CREATE TRIGGER update_data_source_updated_ts
 BEFORE
 UPDATE
     ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- backup stores the backups for a particular database.
 CREATE TABLE backup (
@@ -520,12 +508,9 @@ CREATE TABLE backup (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed status are 'PENDING_CREATE', 'DONE', 'FAILED'.
-    status TEXT NOT NULL,
-    -- allowed types are 'MANUAL', 'AUTOMATIC'.
-    type TEXT NOT NULL,
-    -- allowed storage backends are 'LOCAL'.
-    storage_backend TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
+    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT ''
@@ -541,7 +526,7 @@ CREATE TRIGGER update_backup_updated_ts
 BEFORE
 UPDATE
     ON backup FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- backup_setting stores the backup settings for a particular database.
 -- This is a strict version of cron expression using UTC timezone uniformly.
@@ -553,13 +538,10 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
-    -- allowed enabled values are 0, 1.
     enabled BOOLEAN NOT NULL,
-    -- allowed hour is from 0 to 23 (included).
-    hour INTEGER NOT NULL,
-    -- allowed day_of_week is from -1 to 6.
+    hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
@@ -572,7 +554,7 @@ CREATE TRIGGER update_backup_setting_updated_ts
 BEFORE
 UPDATE
     ON backup_setting FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -----------------------
 -- Pipeline related BEGIN
@@ -585,8 +567,7 @@ CREATE TABLE pipeline (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
-    status TEXT NOT NULL
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED'))
 );
 
 CREATE INDEX idx_pipeline_status ON pipeline(status);
@@ -597,7 +578,7 @@ CREATE TRIGGER update_pipeline_updated_ts
 BEFORE
 UPDATE
     ON pipeline FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
@@ -620,7 +601,7 @@ CREATE TRIGGER update_stage_updated_ts
 BEFORE
 UPDATE
     ON stage FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task table stores the task for the stage
 CREATE TABLE task (
@@ -636,8 +617,7 @@ CREATE TABLE task (
     -- Could be empty for creating database task when the task isn't yet completed successfully.
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
@@ -655,7 +635,7 @@ CREATE TRIGGER update_task_updated_ts
 BEFORE
 UPDATE
     ON task FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task run table stores the task run
 CREATE TABLE task_run (
@@ -666,8 +646,7 @@ CREATE TABLE task_run (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
-    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
@@ -684,7 +663,7 @@ CREATE TRIGGER update_task_run_updated_ts
 BEFORE
 UPDATE
     ON task_run FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task check run table stores the task check run
 CREATE TABLE task_check_run (
@@ -694,8 +673,7 @@ CREATE TABLE task_check_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
-    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
@@ -712,7 +690,7 @@ CREATE TRIGGER update_task_check_run_updated_ts
 BEFORE
 UPDATE
     ON task_check_run FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Pipeline related END
 -----------------------
@@ -728,8 +706,7 @@ CREATE TABLE issue (
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
-    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
@@ -753,7 +730,7 @@ CREATE TRIGGER update_issue_updated_ts
 BEFORE
 UPDATE
     ON issue FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stores the issue subscribers. Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
 -- We use a separate table mainly because we can't leverage indexed query if the subscriber id is stored
@@ -777,8 +754,7 @@ CREATE TABLE activity (
     -- container_id is not zero.
     container_id INTEGER NOT NULL,
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
-    -- allowed levels are 'INFO', 'WARN', 'ERROR'.
-    level TEXT NOT NULL,
+    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -793,7 +769,7 @@ CREATE TRIGGER update_activity_updated_ts
 BEFORE
 UPDATE
     ON activity FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- inbox table stores the inbox entry for the corresponding activity.
 -- Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
@@ -804,8 +780,7 @@ CREATE TABLE inbox (
     id SERIAL PRIMARY KEY,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    -- allowed status are 'UNREAD', 'READ'.
-    status TEXT NOT NULL
+    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
@@ -834,7 +809,7 @@ CREATE TRIGGER update_bookmark_updated_ts
 BEFORE
 UPDATE
     ON bookmark FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
@@ -845,8 +820,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    -- allowed types are 'GITLAB_SELF_HOST'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -859,7 +833,7 @@ CREATE TRIGGER update_vcs_updated_ts
 BEFORE
 UPDATE
     ON vcs FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- repository table stores the repository setting for a project
 -- A vcs is associated with many repositories.
@@ -920,7 +894,7 @@ CREATE TRIGGER update_repository_updated_ts
 BEFORE
 UPDATE
     ON repository FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly
 -- anomaly stores various anomalies found by the scanner.
@@ -948,7 +922,7 @@ CREATE TRIGGER update_anomaly_updated_ts
 BEFORE
 UPDATE
     ON anomaly FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Label
 -- label_key stores available label keys at workspace level.
@@ -971,7 +945,7 @@ CREATE TRIGGER update_label_key_updated_ts
 BEFORE
 UPDATE
     ON label_key FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- label_value stores available label key values at workspace level.
 CREATE TABLE label_value (
@@ -994,7 +968,7 @@ CREATE TRIGGER update_label_value_updated_ts
 BEFORE
 UPDATE
     ON label_value FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- db_label stores labels asscociated with databases.
 CREATE TABLE db_label (
@@ -1019,7 +993,7 @@ CREATE TRIGGER update_db_label_updated_ts
 BEFORE
 UPDATE
     ON db_label FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Deployment Configuration.
 -- deployment_config stores deployment configurations at project level.
@@ -1043,7 +1017,7 @@ CREATE TRIGGER update_deployment_config_updated_ts
 BEFORE
 UPDATE
     ON deployment_config FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- sheet table stores general statements.
 CREATE TABLE sheet (
@@ -1057,8 +1031,7 @@ CREATE TABLE sheet (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    -- allowed visibilities are 'PRIVATE', 'PROJECT', 'PUBLIC'.
-    visibility TEXT NOT NULL DEFAULT 'PRIVATE'
+    visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE'
 );
 
 CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
@@ -1073,4 +1046,4 @@ CREATE TRIGGER update_sheet_updated_ts
 BEFORE
 UPDATE
     ON sheet FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
