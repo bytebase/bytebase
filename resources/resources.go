@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -14,8 +15,66 @@ import (
 	_ "embed"
 )
 
+// PostgresInstance is a postgres instance installed by bytebase
+// for backend storage or testing.
+type PostgresInstance struct {
+	// basedir is the directory where the postgres binary is installed.
+	basedir string
+
+	// datadir is the directory where the postgres data is stored.
+	datadir string
+
+	// port is the port number of the postgres instance.
+	port int
+}
+
+// Port returns the port number of the postgres instance.
+func (i PostgresInstance) Port() int {
+	return i.port
+}
+
+// Start starts a postgres instance on given port, outputs to stdout and stderr.
+// If port is 0, then it will choose a random unused port.
+func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer) (err error) {
+	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
+
+	i.port = port
+	if port == 0 {
+		if i.port, err = randomUnusedPort(); err != nil {
+			return fmt.Errorf("Cannot find a random port: %v", err)
+		}
+	}
+
+	p := exec.Command(pgbin, "start", "-w",
+		"-D", i.datadir,
+		"-o", fmt.Sprintf(`"-p %d"`, i.port))
+	p.Stdout = stdout
+	p.Stderr = stderr
+
+	if err := p.Run(); err != nil {
+		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+	}
+
+	return nil
+}
+
+// Stop stops a postgres instance, outputs to stdout and stderr.
+func (i *PostgresInstance) Stop(stdout, stderr io.Writer) error {
+	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
+	p := exec.Command(pgbin, "stop", "-w",
+		"-D", i.datadir)
+	p.Stderr = stderr
+	p.Stdout = stdout
+
+	if err := p.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
+func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*PostgresInstance, error) {
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
@@ -27,12 +86,12 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 			tarName = "postgres-linux-x86_64.txz"
 		}
 	default:
-		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
+		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
 	f, err := postgresResources.Open(tarName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer f.Close()
 	version := strings.TrimRight(tarName, ".txz")
@@ -40,27 +99,30 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 	pgBinDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(pgBinDir); err != nil {
 		if !os.IsNotExist(err) {
-			return "", fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
+			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := os.RemoveAll(tmpDir); err != nil {
-			return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
+			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
 		if err := extractTarXz(f, tmpDir); err != nil {
-			return "", fmt.Errorf("failed to extract txz file, error: %w", err)
+			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
-			return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
+			return nil, fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
 		}
 	}
 
 	if err := initDB(pgBinDir, pgDataDir, pgUser); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return pgBinDir, nil
+	return &PostgresInstance{
+		basedir: pgBinDir,
+		datadir: pgDataDir,
+	}, nil
 }
 
 func isAlpineLinux() bool {
@@ -94,37 +156,6 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
-	}
-
-	return nil
-}
-
-// StartPostgres starts postgres process.
-func StartPostgres(pgBinDir, pgdataDir string, port int, stdout, stderr *os.File) error {
-	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
-	p := exec.Command(pgbin, "start", "-w",
-		"-D", pgdataDir,
-		"-o", fmt.Sprintf(`"-p %d"`, port))
-	p.Stdout = stdout
-	p.Stderr = stderr
-
-	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
-	}
-
-	return nil
-}
-
-// StopPostgres stops postgres process.
-func StopPostgres(pgBinDir, pgDataDir string, stdout, stderr *os.File) error {
-	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
-	p := exec.Command(pgbin, "stop", "-w",
-		"-D", pgDataDir)
-	p.Stderr = stderr
-	p.Stdout = stdout
-
-	if err := p.Run(); err != nil {
-		return err
 	}
 
 	return nil

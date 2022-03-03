@@ -177,7 +177,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pgBinDir  string
+	pg        *resources.PostgresInstance
 	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
@@ -291,15 +291,15 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgBinDir, err := resources.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
+	pgInstance, err := resources.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Main{
-		profile:  &activeProfile,
-		l:        logger,
-		pgBinDir: pgBinDir,
+		profile: &activeProfile,
+		l:       logger,
+		pg:      pgInstance,
 	}, nil
 }
 
@@ -327,8 +327,7 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	pgDataDir := path.Join(m.profile.dataDir, "pgdata")
-	if err := resources.StartPostgres(m.pgBinDir, pgDataDir, m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
 		return err
 	}
 	m.pgStarted = true
@@ -428,8 +427,7 @@ func (m *Main) Close() error {
 	if m.pgStarted {
 		m.l.Info("Trying to shutdown postgresql server...")
 
-		pgDataDir := path.Join(m.profile.dataDir, "pgdata")
-		if err := resources.StopPostgres(m.pgBinDir, pgDataDir, os.Stdout, os.Stderr); err != nil {
+		if err := m.pg.Stop(os.Stdout, os.Stderr); err != nil {
 			return err
 		}
 		m.pgStarted = false
