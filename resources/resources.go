@@ -1,10 +1,7 @@
 package resources
 
 import (
-	"archive/tar"
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -15,8 +12,6 @@ import (
 
 	// Embeded postgres binaries.
 	_ "embed"
-
-	"github.com/ulikunitz/xz"
 )
 
 // InstallPostgres returns the postgres binary depending on the OS.
@@ -35,10 +30,11 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 		return "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
-	data, err := postgresResources.ReadFile(tarName)
+	f, err := postgresResources.Open(tarName)
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 	version := strings.TrimRight(tarName, ".txz")
 
 	pgBinDir := path.Join(resourceDir, version)
@@ -52,7 +48,7 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 		if err := os.RemoveAll(tmpDir); err != nil {
 			return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
-		if err := extractTXZ(tmpDir, data); err != nil {
+		if err := extractTarXz(f, tmpDir); err != nil {
 			return "", fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
@@ -70,52 +66,6 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 func isAlpineLinux() bool {
 	_, err := os.Stat("/etc/alpine-release")
 	return err == nil
-}
-
-func extractTXZ(directory string, data []byte) error {
-	xzReader, err := xz.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-	tarReader := tar.NewReader(xzReader)
-	reader := func() io.Reader {
-		return tarReader
-	}
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(directory, header.Name)
-		if err := os.MkdirAll(filepath.Dir(targetPath), os.ModePerm); err != nil {
-			return err
-		}
-
-		switch header.Typeflag {
-		case tar.TypeReg:
-			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			defer outFile.Close()
-
-			if _, err := io.Copy(outFile, reader()); err != nil {
-				return err
-			}
-		case tar.TypeSymlink:
-			// We need to remove existing file and redo the symlink.
-			if err := os.RemoveAll(targetPath); err != nil {
-				return err
-			}
-			if err := os.Symlink(header.Linkname, targetPath); err != nil {
-				return err
-			}
-		}
-	}
 }
 
 // initDB inits a postgres database.

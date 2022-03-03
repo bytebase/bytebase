@@ -1,16 +1,12 @@
 package resources
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"database/sql"
 	"embed"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -92,56 +88,6 @@ func installMysql8() (string, error) {
 	}
 
 	return filepath.Join(tempDir, distName), nil
-}
-
-// extractTarGz extracts the given file as .tar.gz format to the given directory.
-func extractTarGz(tarGzF io.Reader, targetDir string) error {
-	gzipR, err := gzip.NewReader(tarGzF)
-	if err != nil {
-		return err
-	}
-	defer gzipR.Close()
-	tarR := tar.NewReader(gzipR)
-
-	for {
-		header, err := tarR.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(targetDir, header.Name)
-		if err := os.MkdirAll(path.Dir(targetPath), os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %q, error: %w", header.Name, err)
-		}
-
-		switch header.Typeflag {
-		case tar.TypeReg:
-			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			defer outFile.Close()
-
-			if _, err := io.Copy(outFile, tarR); err != nil {
-				return err
-			}
-		case tar.TypeDir:
-			if err := os.MkdirAll(targetPath, os.FileMode(header.Mode)); err != nil {
-				return err
-			}
-		case tar.TypeSymlink:
-			if err := os.Symlink(header.Linkname, targetPath); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unsupported type flag %d", header.Typeflag)
-		}
-	}
-
-	return nil
 }
 
 const configFmt = `[mysqld]
