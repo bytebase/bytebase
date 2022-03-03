@@ -541,7 +541,7 @@ CREATE TABLE backup_setting (
     enabled BOOLEAN NOT NULL,
     hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND hour <= 6),
+    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
