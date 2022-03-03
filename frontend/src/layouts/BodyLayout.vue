@@ -39,6 +39,7 @@
               to="/setting/subscription"
               exact-active-class
               class="text-sm text-accent flex"
+              :class="isFreePlan ? 'text-accent' : ''"
             >
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
@@ -76,9 +77,10 @@
           <router-link
             to="/setting/subscription"
             exact-active-class
-            class="text-sm text-accent flex"
+            class="text-sm flex"
+            :class="isFreePlan ? 'text-accent' : ''"
           >
-            <heroicons-solid:sparkles class="w-5 h-5" />
+            <heroicons-outline:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
           </router-link>
           <div class="text-sm ml-auto">{{ version }}</div>
@@ -247,6 +249,11 @@ export default {
       }
     });
 
+    const isFreePlan = computed((): boolean => {
+      const plan = store.getters["subscription/currentPlan"]();
+      return plan === PlanType.FREE;
+    });
+
     return {
       state,
       quickActionList,
@@ -255,6 +262,7 @@ export default {
       showQuickstart,
       version,
       currentPlan,
+      isFreePlan,
     };
   },
 };
