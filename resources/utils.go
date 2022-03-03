@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/ulikunitz/xz"
 )
@@ -45,7 +46,17 @@ func extractTar(tarReader *tar.Reader, targetDir string) error {
 			return err
 		}
 
-		targetPath := filepath.Join(targetDir, header.Name)
+		targetPath, err := filepath.Abs(filepath.Join(targetDir, header.Name))
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %q, error: %w", header.Name, err)
+		}
+
+		// Ensure that output paths constructed from zip archive entries
+		// are validated to prevent writing files to unexpected locations.
+		if strings.Contains(targetPath, "..") {
+			return fmt.Errorf("invalid path %q", targetPath)
+		}
+
 		if err := os.MkdirAll(path.Dir(targetPath), os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create directory %q, error: %w", header.Name, err)
 		}
