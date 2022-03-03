@@ -166,6 +166,7 @@ export default {
     const state = reactive<LocalState>({});
 
     const activeRoleProvider = computed(() => {
+      // if props.activeRoleProvider is not passed as a property, we will use props.project.roleProvider by default
       return props.activeRoleProvider
         ? props.activeRoleProvider
         : props.project.roleProvider;

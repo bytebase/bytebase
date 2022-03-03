@@ -224,8 +224,7 @@ func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, bat
 			ID:        deletedMember.ID,
 			DeleterID: batchUpdate.UpdaterID,
 		}
-		err := deleteProjectMember(ctx, tx.PTx, memberDelete)
-		if err != nil {
+		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, FormatError(err)
 		}
 		deletedMemberList = append(deletedMemberList, deletedMember)
