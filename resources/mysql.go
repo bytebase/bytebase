@@ -50,7 +50,7 @@ func (instance *MysqlInstance) Purge() error {
 	return os.RemoveAll(instance.dir)
 }
 
-//go:embed mysql-8.0.28-macos11-arm64.tar.gz
+//go:embed mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
 var mysqlResources embed.FS
 
 // installMysql8 extracts mysql distrubution to a temporary directory,
@@ -60,6 +60,8 @@ func installMysql8() (string, error) {
 	switch runtime.GOOS {
 	case "darwin":
 		_os = "macos11"
+	case "linux":
+		_os = "linux-glibc2.17"
 	default:
 		return "", fmt.Errorf("unsupported os %q", runtime.GOOS)
 	}
@@ -67,6 +69,8 @@ func installMysql8() (string, error) {
 	switch runtime.GOARCH {
 	case "arm64":
 		arch = "arm64"
+	case "amd64":
+		arch = "x86_64-minimal"
 	default:
 		return "", fmt.Errorf("unsupported arch %q", runtime.GOARCH)
 	}
