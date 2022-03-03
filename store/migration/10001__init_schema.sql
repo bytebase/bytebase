@@ -510,7 +510,7 @@ CREATE TABLE backup (
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
     type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
-    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
+    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', "S3", "GCS", "OSS")),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT ''
