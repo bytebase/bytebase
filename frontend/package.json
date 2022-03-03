@@ -12,7 +12,7 @@
     "coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@bytebase/vue-kbar": "^0.1.5",
+    "@bytebase/vue-kbar": "^0.1.6",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.4.0",
     "@tailwindcss/line-clamp": "^0.3.1",
