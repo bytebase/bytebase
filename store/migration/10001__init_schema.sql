@@ -112,7 +112,7 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    "order" INTEGER NOT NULL
+    "order" INTEGER NOT NULL CHECK ("order" >= 0)
 );
 
 CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
