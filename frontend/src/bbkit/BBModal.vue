@@ -7,7 +7,7 @@
       :data-bb-modal-index="index"
       :data-bb-modal-active="active"
     >
-      <div class="relative -mt-4 -ml-4">
+      <div class="relative -mt-4 -ml-4 flex items-center justify-between">
         <div class="ml-4 text-xl text-main">
           {{ title }}
           <div v-if="subtitle" class="text-sm text-control whitespace-nowrap">
@@ -18,7 +18,7 @@
         </div>
         <button
           v-if="showClose"
-          class="absolute right-0 top-0 my-4 mx-4 text-control-light"
+          class="text-control-light"
           aria-label="close"
           @click.prevent="close"
         >
