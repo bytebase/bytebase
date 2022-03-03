@@ -76,7 +76,9 @@
       >
         <template #trigger>
           <NButton
-            :disabled="isEmptyStatement || isDisconnected"
+            :disabled="
+              isEmptyStatement || isDisconnected || !currentTab.isSaved
+            "
             @click="isShowSharePopover = !isShowSharePopover"
           >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
