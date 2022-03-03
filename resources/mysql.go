@@ -2,7 +2,6 @@ package resources
 
 import (
 	"database/sql"
-	"embed"
 	"fmt"
 	"io"
 	"net"
@@ -75,9 +74,6 @@ func (i *MysqlInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (
 // Stop stops the mysql instance, outputs to stdout and stderr.
 func (i *MysqlInstance) Stop(stdout, stderr io.Writer) error { return i.proc.Kill() }
 
-//go:embed mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
-var mysqlResources embed.FS
-
 // InstallMysql installs mysql on basedir, prepares the data directory and default user.
 func InstallMysql(basedir, datadir, user string) (*MysqlInstance, error) {
 	var tarName, version string
@@ -96,7 +92,7 @@ func InstallMysql(basedir, datadir, user string) (*MysqlInstance, error) {
 		return nil, fmt.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
 
-	tarF, err := mysqlResources.Open(tarName)
+	tarF, err := resources.Open(tarName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open mysql dist %q, error: %w", tarName, err)
 	}

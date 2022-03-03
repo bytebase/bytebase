@@ -15,6 +15,9 @@ import (
 	_ "embed"
 )
 
+//go:embed postgres-darwin-x86_64.txz postgres-linux-x86_64-alpine_linux.txz postgres-linux-x86_64.txz mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
+var resources embed.FS
+
 // PostgresInstance is a postgres instance installed by bytebase
 // for backend storage or testing.
 type PostgresInstance struct {
@@ -94,7 +97,7 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*PostgresInstance, 
 		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
-	f, err := postgresResources.Open(tarName)
+	f, err := resources.Open(tarName)
 	if err != nil {
 		return nil, err
 	}
