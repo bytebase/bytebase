@@ -259,8 +259,10 @@ export default defineComponent({
       return false;
     });
 
+    // this function is not fully ready go online
     const allowSyncVCS = computed(() => {
-      return props.project.workflowType === "VCS" && allowAddMember.value;
+      return false;
+      // return props.project.workflowType === "VCS" && allowAddMember.value;
     });
 
     const hasValidMember = computed(() => {
