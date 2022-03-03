@@ -117,7 +117,7 @@ export default defineComponent({
     const prepareProjectList = () => {
       store.dispatch("project/fetchProjectListByUser", {
         userId: currentUser.value.id,
-        rowStatusList: ["NORMAL"],
+        rowStatusList: [],
       });
     };
 
@@ -130,7 +130,7 @@ export default defineComponent({
     const projectList = computed((): Project[] => {
       let list = store.getters["project/projectListByUser"](
         currentUser.value.id,
-        ["NORMAL"]
+        ["NORMAL", "ARCHIVED"]
       ) as Project[];
 
       if (props.includeDefaultProject) {
