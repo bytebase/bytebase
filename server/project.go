@@ -104,6 +104,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				}
 			}
 		}
+
+		// if principalID is not passed, we will disable the filter logic
+		if projectFind.PrincipalID == nil {
+			activeProjectList = list
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, activeProjectList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
