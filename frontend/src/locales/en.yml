@@ -1138,6 +1138,7 @@ sql-editor:
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
     confirm-to-delete-this-sheet: Confirm to delete this sheet?
+    confirm-to-close-unsaved-tab: Confirm to close unsaved tab?
   please-input-the-tab-label: Please input the tab label!
   copy-code: Copy code
   notify:
