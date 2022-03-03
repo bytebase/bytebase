@@ -726,14 +726,24 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
+		databaseFind := &api.DatabaseFind{
+			ID: &databaseID,
+		}
+		database, err := s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+		}
+
 		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
 		dataSourceFind := &api.DataSourceFind{
-			ID:         &dataSourceID,
-			DatabaseID: &databaseID,
+			ID: &dataSourceID,
 		}
 		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 		if err != nil {
