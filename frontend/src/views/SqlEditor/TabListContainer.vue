@@ -122,7 +122,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
+import {
+  ref,
+  watch,
+  reactive,
+  nextTick,
+  computed,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
@@ -141,6 +149,7 @@ import {
   TabActions,
   SheetActions,
 } from "../../types";
+import { useDialog } from "naive-ui";
 import { getDefaultTab } from "../../store/modules/tab";
 import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
 
@@ -288,16 +297,39 @@ const handleAddTab = (tab: AnyTabInfo) => {
     recalculateScrollWidth();
   });
 };
-const handleRemoveTab = async (tab: TabInfo) => {
-  await removeTab(tab);
-  const tabsLength = tabList.value.length;
 
-  if (tabsLength > 0) {
-    handleSelectTab(tabList.value[tabsLength - 1]);
+const modal = useDialog();
+
+const handleRemoveTab = async (tab: TabInfo) => {
+  if (!tab.isSaved) {
+    const $modal = modal.create({
+      title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
+      type: "warning",
+      onPositiveClick() {
+        $modal.destroy();
+      },
+      async onNegativeClick() {
+        await remove();
+        $modal.destroy();
+      },
+      negativeText: t("common.confirm"),
+      positiveText: t("common.cancel"),
+    });
+  } else {
+    await remove();
   }
-  nextTick(() => {
-    recalculateScrollWidth();
-  });
+
+  async function remove() {
+    await removeTab(tab);
+    const tabsLength = tabList.value.length;
+
+    if (tabsLength > 0) {
+      handleSelectTab(tabList.value[tabsLength - 1]);
+    }
+    nextTick(() => {
+      recalculateScrollWidth();
+    });
+  }
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setCurrentTabId(tabId);
@@ -334,6 +366,17 @@ onMounted(async () => {
     addTab(getDefaultTab());
     recalculateScrollWidth();
   }
+});
+
+// add listener to confirm confrim if close the tab.
+onMounted(() => {
+  window.onbeforeunload = () => {
+    return "false";
+  };
+});
+// remove if unmount view
+onUnmounted(() => {
+  window.onbeforeunload = null;
 });
 </script>
 

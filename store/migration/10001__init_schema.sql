@@ -112,7 +112,7 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    "order" INTEGER NOT NULL
+    "order" INTEGER NOT NULL CHECK ("order" >= 0)
 );
 
 CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
@@ -244,7 +244,6 @@ CREATE TABLE project_webhook (
     type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,
-    -- Comma separated list of activity triggers.
     activity_list TEXT ARRAY NOT NULL
 );
 
@@ -751,8 +750,7 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    -- container_id is not zero.
-    container_id INTEGER NOT NULL,
+    container_id INTEGER NOT NULL CHECK (container_id > 0),
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',

@@ -5,18 +5,20 @@
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
   >
-    <BBModalStack>
-      <KBarWrapper>
-        <router-view />
-        <template v-if="state.notificationList.length > 0">
-          <BBNotification
-            :placement="'BOTTOM_RIGHT'"
-            :notification-list="state.notificationList"
-            @close="removeNotification"
-          />
-        </template>
-      </KBarWrapper>
-    </BBModalStack>
+    <NDialogProvider>
+      <BBModalStack>
+        <KBarWrapper>
+          <router-view />
+          <template v-if="state.notificationList.length > 0">
+            <BBNotification
+              :placement="'BOTTOM_RIGHT'"
+              :notification-list="state.notificationList"
+              @close="removeNotification"
+            />
+          </template>
+        </KBarWrapper>
+      </BBModalStack>
+    </NDialogProvider>
   </NConfigProvider>
 </template>
 
@@ -31,7 +33,7 @@ import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 
-import { NConfigProvider } from "naive-ui";
+import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { t } from "./plugins/i18n";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
@@ -54,6 +56,7 @@ export default defineComponent({
     KBarWrapper,
     BBModalStack,
     NConfigProvider,
+    NDialogProvider,
   },
   setup() {
     const store = useStore();
