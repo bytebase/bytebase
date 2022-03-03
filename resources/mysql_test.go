@@ -13,6 +13,9 @@ import (
 
 func TestStartMySQL(t *testing.T) {
 	basedir, err := os.MkdirTemp("", "mysql_test_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
 	datadir := filepath.Join(basedir, "data")
 	if err := os.Mkdir(datadir, 0755); err != nil {
 		t.Fatal(err)

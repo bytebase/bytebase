@@ -59,17 +59,14 @@ func (i *MysqlInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (
 	if err != nil {
 		return err
 	}
-
-	if waitSec > 0 {
-		for retry := 0; true; retry++ {
-			if err := db.Ping(); err == nil {
-				break
-			}
-			if retry > waitSec {
-				return fmt.Errorf("failed to connect to mysql, error: %w", err)
-			}
-			time.Sleep(time.Second)
+	for retry := 0; waitSec > 0; retry++ {
+		if err := db.Ping(); err == nil {
+			break
 		}
+		if retry > waitSec {
+			return fmt.Errorf("failed to connect to mysql, error: %w", err)
+		}
+		time.Sleep(time.Second)
 	}
 
 	return nil
