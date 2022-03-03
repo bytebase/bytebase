@@ -360,7 +360,7 @@ VALUES
         'Prod'
     );
 
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 103;
+ALTER SEQUENCE stage_id_seq RESTART WITH 103;
 
 -- Create task 101 for stage 101
 INSERT INTO
