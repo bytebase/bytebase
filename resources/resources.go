@@ -20,18 +20,14 @@ import (
 type PostgresInstance struct {
 	// basedir is the directory where the postgres binary is installed.
 	basedir string
-
 	// datadir is the directory where the postgres data is stored.
 	datadir string
-
 	// port is the port number of the postgres instance.
 	port int
 }
 
 // Port returns the port number of the postgres instance.
-func (i PostgresInstance) Port() int {
-	return i.port
-}
+func (i PostgresInstance) Port() int { return i.port }
 
 // Start starts a postgres instance on given port, outputs to stdout and stderr.
 // If port is 0, then it will choose a random unused port.

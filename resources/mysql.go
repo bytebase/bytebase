@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -15,112 +16,125 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// MysqlInstance represents a mysql instance.
+// MysqlInstance is MySQL instance installed by bytebase for testing.
 type MysqlInstance struct {
-	dir  string
+	// basedir is the directory where the mysql binary is installed.
+	basedir string
+	// datadir is the directory where the mysql data is stored.
+	datadir string
+	// port is the port of the mysql instance.
 	port int
+	// proc is the process of the mysql instance.
 	proc *os.Process
 }
 
-// CreateMysqlInstance creates a mysql instance.
-// Must call Purge() to remove the mysql instance after use.
-func CreateMysqlInstance() (*MysqlInstance, error) {
-	basedir, err := installMysql8()
-	if err != nil {
-		return nil, err
-	}
-	if err := initMysql8(basedir); err != nil {
-		return nil, err
-	}
-	return startMysql8(basedir)
-}
-
 // Port returns the port of the mysql instance.
-func (instance MysqlInstance) Port() int { return instance.port }
+func (i MysqlInstance) Port() int { return i.port }
 
-// Purge removes the mysql instance.
-func (instance *MysqlInstance) Purge() error {
-	if err := instance.proc.Kill(); err != nil {
+// Start starts the mysql instance on the given port, outputs to stdout and stderr.
+// Waits at most `waitSec` seconds for the mysql instance to ready for connection.
+// If `waitSec` is 0, it returns immediately.
+func (i *MysqlInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
+	i.port = port
+	if i.port == 0 {
+		i.port, err = randomUnusedPort()
+		if err != nil {
+			return err
+		}
+	}
+
+	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysqld"),
+		fmt.Sprintf("--defaults-file=%s", filepath.Join(i.basedir, "my.cnf")),
+		fmt.Sprintf("--port=%d", i.port),
+	)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-	return os.RemoveAll(instance.dir)
+	i.proc = cmd.Process
+
+	// wait for mysql to start
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", i.port))
+	if err != nil {
+		return err
+	}
+
+	if waitSec > 0 {
+		for retry := 0; true; retry++ {
+			if err := db.Ping(); err == nil {
+				break
+			}
+			if retry > waitSec {
+				return fmt.Errorf("failed to connect to mysql, error: %w", err)
+			}
+			time.Sleep(time.Second)
+		}
+	}
+
+	return nil
 }
+
+// Stop stops the mysql instance, outputs to stdout and stderr.
+func (i *MysqlInstance) Stop(stdout, stderr io.Writer) error { return i.proc.Kill() }
 
 //go:embed mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
 var mysqlResources embed.FS
 
-// installMysql8 extracts mysql distrubution to a temporary directory,
-// returns the directory where the mysql is installed.
-func installMysql8() (string, error) {
-	var _os string
-	switch runtime.GOOS {
-	case "darwin":
-		_os = "macos11"
-	case "linux":
-		_os = "linux-glibc2.17"
+// InstallMysql installs mysql on basedir, prepares the data directory and default user.
+func InstallMysql(basedir, datadir, user string) (*MysqlInstance, error) {
+	var tarName, version string
+	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
+	var extractFn func(io.Reader, string) error
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "mysql-8.0.28-macos11-arm64.tar.gz"
+		version = "mysql-8.0.28-macos11-arm64"
+		extractFn = extractTarGz
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		tarName = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz"
+		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
+		extractFn = extractTarXz
 	default:
-		return "", fmt.Errorf("unsupported os %q", runtime.GOOS)
+		return nil, fmt.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
-	var arch string
-	switch runtime.GOARCH {
-	case "arm64":
-		arch = "arm64"
-	case "amd64":
-		arch = "x86_64-minimal"
-	default:
-		return "", fmt.Errorf("unsupported arch %q", runtime.GOARCH)
-	}
-	distName := fmt.Sprintf("mysql-8.0.28-%s-%s", _os, arch)
 
-	tarGzF, err := mysqlResources.Open(distName + ".tar.gz")
+	tarF, err := mysqlResources.Open(tarName)
 	if err != nil {
-		return "", fmt.Errorf("failed to open mysql dist %q, error: %w", distName, err)
+		return nil, fmt.Errorf("failed to open mysql dist %q, error: %w", tarName, err)
 	}
-	defer tarGzF.Close()
+	defer tarF.Close()
 
-	tempDir, err := os.MkdirTemp("", "bytebase-mysql-instance-*")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory, error: %w", err)
-	}
-
-	if err := extractTarGz(tarGzF, tempDir); err != nil {
-		return "", fmt.Errorf("failed to extract mysql distribution %q, error: %w", distName, err)
+	if err := extractFn(tarF, basedir); err != nil {
+		return nil, fmt.Errorf("failed to extract mysql distribution %q, error: %w", tarName, err)
 	}
 
-	return filepath.Join(tempDir, distName), nil
-}
-
-const configFmt = `[mysqld]
-basedir=%s
-datadir=data
-pid-file=mysql.pid
-socket=mysql.sock
-user=root
-`
-
-func initMysql8(basedir string) error {
-	datadir := filepath.Join(basedir, "data")
-	if err := os.MkdirAll(datadir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create data directory %q, error: %w", datadir, err)
-	}
+	basedir = filepath.Join(basedir, version)
 
 	socket, err := os.Create(filepath.Join(basedir, "mysql.sock"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	socket.Close()
 
 	pidFile, err := os.Create(filepath.Join(basedir, "mysql.pid"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pidFile.Close()
 
+	const configFmt = `[mysqld]
+basedir=%s
+datadir=%s
+pid-file=mysql.pid
+socket=mysql.sock
+user=%s
+`
 	defaultCfgFile, err := os.Create(filepath.Join(basedir, "my.cnf"))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Fprintf(defaultCfgFile, configFmt, basedir)
+	fmt.Fprintf(defaultCfgFile, configFmt, basedir, datadir, user)
 	defaultCfgFile.Close()
 
 	args := []string{
@@ -132,45 +146,12 @@ func initMysql8(basedir string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to initialize mysql, error: %w", err)
-	}
-
-	return nil
-}
-
-func startMysql8(installedDir string) (*MysqlInstance, error) {
-	port, err := randomUnusedPort()
-	if err != nil {
-		return nil, err
-	}
-	cmd := exec.Command(filepath.Join(installedDir, "bin", "mysqld"),
-		fmt.Sprintf("--defaults-file=%s", filepath.Join(installedDir, "my.cnf")),
-		fmt.Sprintf("--port=%d", port),
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
-	if err != nil {
-		return nil, err
-	}
-	for retry := 0; true; retry++ {
-		if retry > 60 {
-			return nil, fmt.Errorf("failed to connect to mysql after 60 seconds")
-		}
-		if err := db.Ping(); err == nil {
-			break
-		}
-		time.Sleep(time.Second)
+		return nil, fmt.Errorf("failed to initialize mysql, error: %w", err)
 	}
 
 	return &MysqlInstance{
-		dir:  installedDir,
-		port: port,
-		proc: cmd.Process,
+		basedir: basedir,
+		datadir: datadir,
 	}, nil
 }
 

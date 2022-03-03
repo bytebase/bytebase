@@ -5,40 +5,26 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func TestExtractMySQLTarGz(t *testing.T) {
-	testDir := os.TempDir()
-	if err := os.MkdirAll(testDir, os.ModePerm); err != nil {
-		t.Fatalf("Failed to create test directory %q: %s", testDir, err)
-	}
-	defer os.RemoveAll(testDir)
-
-	f, err := mysqlResources.Open("mysql-8.0.28-macos11-arm64.tar.gz")
-	if err != nil {
-		t.Fatalf("Failed to open MySQL tar.gz: %s", err)
-	}
-	defer f.Close()
-
-	if err := extractTarGz(f, testDir); err != nil {
-		t.Fatalf("Failed to extract MySQL tar.gz: %s", err)
-	}
-
-	if _, err := os.Stat(path.Join(testDir, "mysql-8.0.28-macos11-arm64", "bin", "mysqld")); err != nil {
-		t.Fatalf("Failed to stat MySQL binary: %s", err)
-	}
-}
-
 func TestStartMySQL(t *testing.T) {
-	mysql, err := CreateMysqlInstance()
+	basedir, err := os.MkdirTemp("", "mysql_test_*")
+	datadir := filepath.Join(basedir, "data")
+	if err := os.Mkdir(datadir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	mysql, err := InstallMysql(basedir, datadir, "root")
 	if err != nil {
 		t.Fatalf("Failed to start MySQL: %s", err)
 	}
-	defer mysql.Purge()
+	if err := mysql.Start(0, os.Stdout, os.Stderr, 60); err != nil {
+		t.Fatalf("Failed to start MySQL: %s", err)
+	}
 
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
 	if err != nil {
@@ -50,6 +36,13 @@ func TestStartMySQL(t *testing.T) {
 		t.Fatalf("Failed to ping MySQL: %s", err)
 	}
 
+	if err := mysql.Stop(os.Stdout, os.Stderr); err != nil {
+		t.Fatalf("Failed to stop MySQL: %s", err)
+	}
+
+	if err := os.RemoveAll(basedir); err != nil {
+		t.Errorf("Failed to remove MySQL instance: %s", err)
+	}
 }
 
 func TestRandomUnusedPort(t *testing.T) {
