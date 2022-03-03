@@ -1305,15 +1305,16 @@ subscription:
         gitlab-login: Login with GitLab account
   plan:
     title: Plan
+    try: Try Team Plan
     free:
-      title: Free
+      title: Free Plan
       label: ''
       desc: Personal project or small team, no DBA
     team:
-      title: Team
+      title: Team Plan
       label: Beta
       desc: Medium size team, has dedicated DBA or TL for engineering velocity
     enterprise:
-      title: Enterprise
+      title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet

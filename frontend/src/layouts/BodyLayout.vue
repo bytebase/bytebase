@@ -35,17 +35,15 @@
           <div
             class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
           >
-            <a
-              href="https://docs.bytebase.com"
-              target="_blank"
-              class="flex justify-between items-center w-full flex-shrink-0 text-main group"
+            <router-link
+              to="/setting/subscription"
+              exact-active-class
+              class="text-sm text-accent flex"
             >
-              <div class="flex items-center">
-                <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
-                <span class="text-sm">{{ $t("common.help") }}</span>
-              </div>
-              <div class="text-sm">{{ version }}</div>
-            </a>
+              <heroicons-solid:sparkles class="w-5 h-5" />
+              {{ $t(currentPlan) }}
+            </router-link>
+            <div class="text-sm ml-auto">{{ version }}</div>
           </div>
         </div>
         <div class="flex-shrink-0 w-14" aria-hidden="true">
@@ -75,17 +73,15 @@
           <Quickstart />
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
-          <a
-            href="https://docs.bytebase.com"
-            target="_blank"
-            class="flex justify-between items-center flex-shrink-0 w-full text-main group"
+          <router-link
+            to="/setting/subscription"
+            exact-active-class
+            class="text-sm text-accent flex"
           >
-            <div class="flex items-center py-1">
-              <heroicons-outline:question-mark-circle class="w-5 h-5 mr-2" />
-              <span class="text-sm">{{ $t("common.help") }}</span>
-            </div>
-            <div class="text-sm">{{ version }}</div>
-          </a>
+            <heroicons-solid:sparkles class="w-5 h-5" />
+            {{ $t(currentPlan) }}
+          </router-link>
+          <div class="text-sm ml-auto">{{ version }}</div>
         </div>
       </div>
     </aside>
@@ -147,6 +143,7 @@ import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
+import { PlanType, Subscription } from "../types";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -238,6 +235,18 @@ export default {
       return v;
     });
 
+    const currentPlan = computed((): string => {
+      const plan = store.getters["subscription/currentPlan"]();
+      switch (plan) {
+        case PlanType.TEAM:
+          return "subscription.plan.team.title";
+        case PlanType.ENTERPRISE:
+          return "subscription.plan.enterprise.title";
+        default:
+          return "subscription.plan.try";
+      }
+    });
+
     return {
       state,
       quickActionList,
@@ -245,6 +254,7 @@ export default {
       showIntro,
       showQuickstart,
       version,
+      currentPlan,
     };
   },
 };
