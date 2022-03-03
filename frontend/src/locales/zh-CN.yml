@@ -1146,6 +1146,7 @@ subscription:
         gitlab-login: 通过 GitLab 账户登录
   plan:
     title: 版本
+    try: 试用团队版
     free:
       title: 免费版
       label: ''
