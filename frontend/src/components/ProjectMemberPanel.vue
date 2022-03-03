@@ -259,6 +259,7 @@ export default defineComponent({
       return false;
     });
 
+    // this function is not fully ready go online
     const allowSyncVCS = computed(() => {
       // NOTICE: will dis annotate this when this function is ready
       return false;
