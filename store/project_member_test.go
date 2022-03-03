@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/kr/pretty"
 )
 
 func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
@@ -100,33 +100,17 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 		},
 	}
 
-	opt := cmp.Comparer(func(l1, l2 []int) bool {
-		if len(l1) != len(l2) {
-			return false
-		}
-		set1 := make(map[int]bool)
-		for _, i := range l1 {
-			set1[i] = true
-		}
-		for _, i := range l2 {
-			if _, ok := set1[i]; !ok {
-				return false
-			}
-		}
-		return true
-	})
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			var got Result
 			got.createIDList, got.patchIDList, got.deleteIDList = getBatchUpdatePrincipalIDList(tc.input.oldIDList, tc.input.newIDList)
-			if diff := cmp.Diff(tc.expect.createIDList, got.createIDList, opt); len(diff) != 0 {
+			if diff := pretty.Diff(tc.expect.createIDList, got.createIDList); len(diff) != 0 {
 				t.Errorf("\ncreateIDList: %v", diff)
 			}
-			if diff := cmp.Diff(tc.expect.patchIDList, got.patchIDList, opt); diff != "" {
+			if diff := pretty.Diff(tc.expect.patchIDList, got.patchIDList); len(diff) != 0 {
 				t.Errorf("\npatchIDList: %v", diff)
 			}
-			if diff := cmp.Diff(tc.expect.deleteIDList, got.deleteIDList, opt); diff != "" {
+			if diff := pretty.Diff(tc.expect.deleteIDList, got.deleteIDList); len(diff) != 0 {
 				t.Errorf("\ndeleteIDList: %v", diff)
 			}
 		})
