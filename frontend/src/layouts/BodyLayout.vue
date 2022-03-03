@@ -33,7 +33,7 @@
             {{ $t("common.archive") }}
           </router-link>
           <div
-            class="flex-shrink-0 flex border-t border-block-border px-4 py-2"
+            class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
             <router-link
               to="/setting/subscription"
@@ -44,7 +44,7 @@
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </router-link>
-            <div class="text-sm ml-auto">{{ version }}</div>
+            <div class="text-sm ml-auto text-control-light">{{ version }}</div>
           </div>
         </div>
         <div class="flex-shrink-0 w-14" aria-hidden="true">
@@ -73,7 +73,7 @@
         >
           <Quickstart />
         </div>
-        <div class="flex-shrink-0 flex border-t border-block-border px-4 py-2">
+        <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
           <router-link
             to="/setting/subscription"
             exact-active-class
@@ -83,7 +83,9 @@
             <heroicons-outline:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
           </router-link>
-          <div class="text-sm ml-auto">{{ version }}</div>
+          <div class="text-sm ml-auto text-control-light">
+            {{ version }}
+          </div>
         </div>
       </div>
     </aside>
