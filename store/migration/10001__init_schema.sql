@@ -2,7 +2,7 @@
 CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
 
 -- updated_ts trigger.
-CREATE OR REPLACE FUNCTION trigger_after_update_updated_ts()
+CREATE OR REPLACE FUNCTION trigger_update_updated_ts()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_ts = extract(epoch from now());
@@ -30,7 +30,7 @@ CREATE TRIGGER update_principal_updated_ts
 BEFORE
 UPDATE
     ON principal FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Default bytebase system account id is 1
 INSERT INTO
@@ -77,7 +77,7 @@ CREATE TRIGGER update_setting_updated_ts
 BEFORE
 UPDATE
     ON setting FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Member
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
@@ -101,7 +101,7 @@ CREATE TRIGGER update_member_updated_ts
 BEFORE
 UPDATE
     ON member FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Environment
 CREATE TABLE environment (
@@ -123,7 +123,7 @@ CREATE TRIGGER update_environment_updated_ts
 BEFORE
 UPDATE
     ON environment FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Policy
 -- policy stores the policies for each environment.
@@ -150,7 +150,7 @@ CREATE TRIGGER update_policy_updated_ts
 BEFORE
 UPDATE
     ON policy FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project
 CREATE TABLE project (
@@ -204,7 +204,7 @@ CREATE TRIGGER update_project_updated_ts
 BEFORE
 UPDATE
     ON project FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project member
 CREATE TABLE project_member (
@@ -230,7 +230,7 @@ CREATE TRIGGER update_project_member_updated_ts
 BEFORE
 UPDATE
     ON project_member FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project Hook
 CREATE TABLE project_webhook (
@@ -258,7 +258,7 @@ CREATE TRIGGER update_project_webhook_updated_ts
 BEFORE
 UPDATE
     ON project_webhook FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Instance
 CREATE TABLE instance (
@@ -283,7 +283,7 @@ CREATE TRIGGER update_instance_updated_ts
 BEFORE
 UPDATE
     ON instance FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Instance user stores the users for a particular instance
 CREATE TABLE instance_user (
@@ -306,7 +306,7 @@ CREATE TRIGGER update_instance_user_updated_ts
 BEFORE
 UPDATE
     ON instance_user FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
@@ -339,7 +339,7 @@ CREATE TRIGGER update_db_updated_ts
 BEFORE
 UPDATE
     ON db FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- tbl stores the table for a particular database
 -- data is synced periodically from the instance
@@ -373,7 +373,7 @@ CREATE TRIGGER update_tbl_updated_ts
 BEFORE
 UPDATE
     ON tbl FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- col stores the column for a particular table from a particular database
 -- data is synced periodically from the instance
@@ -406,7 +406,7 @@ CREATE TRIGGER update_col_updated_ts
 BEFORE
 UPDATE
     ON col FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- idx stores the index for a particular table from a particular database
 -- data is synced periodically from the instance
@@ -438,7 +438,7 @@ CREATE TRIGGER update_idx_updated_ts
 BEFORE
 UPDATE
     ON idx FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- vw stores the view for a particular database
 -- data is synced periodically from the instance
@@ -465,7 +465,7 @@ CREATE TRIGGER update_vw_updated_ts
 BEFORE
 UPDATE
     ON vw FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
@@ -496,7 +496,7 @@ CREATE TRIGGER update_data_source_updated_ts
 BEFORE
 UPDATE
     ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- backup stores the backups for a particular database.
 CREATE TABLE backup (
@@ -526,7 +526,7 @@ CREATE TRIGGER update_backup_updated_ts
 BEFORE
 UPDATE
     ON backup FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- backup_setting stores the backup settings for a particular database.
 -- This is a strict version of cron expression using UTC timezone uniformly.
@@ -554,7 +554,7 @@ CREATE TRIGGER update_backup_setting_updated_ts
 BEFORE
 UPDATE
     ON backup_setting FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -----------------------
 -- Pipeline related BEGIN
@@ -578,7 +578,7 @@ CREATE TRIGGER update_pipeline_updated_ts
 BEFORE
 UPDATE
     ON pipeline FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
@@ -601,7 +601,7 @@ CREATE TRIGGER update_stage_updated_ts
 BEFORE
 UPDATE
     ON stage FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task table stores the task for the stage
 CREATE TABLE task (
@@ -635,7 +635,7 @@ CREATE TRIGGER update_task_updated_ts
 BEFORE
 UPDATE
     ON task FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task run table stores the task run
 CREATE TABLE task_run (
@@ -663,7 +663,7 @@ CREATE TRIGGER update_task_run_updated_ts
 BEFORE
 UPDATE
     ON task_run FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task check run table stores the task check run
 CREATE TABLE task_check_run (
@@ -690,7 +690,7 @@ CREATE TRIGGER update_task_check_run_updated_ts
 BEFORE
 UPDATE
     ON task_check_run FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Pipeline related END
 -----------------------
@@ -730,7 +730,7 @@ CREATE TRIGGER update_issue_updated_ts
 BEFORE
 UPDATE
     ON issue FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stores the issue subscribers. Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
 -- We use a separate table mainly because we can't leverage indexed query if the subscriber id is stored
@@ -769,7 +769,7 @@ CREATE TRIGGER update_activity_updated_ts
 BEFORE
 UPDATE
     ON activity FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- inbox table stores the inbox entry for the corresponding activity.
 -- Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
@@ -809,7 +809,7 @@ CREATE TRIGGER update_bookmark_updated_ts
 BEFORE
 UPDATE
     ON bookmark FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
@@ -833,7 +833,7 @@ CREATE TRIGGER update_vcs_updated_ts
 BEFORE
 UPDATE
     ON vcs FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- repository table stores the repository setting for a project
 -- A vcs is associated with many repositories.
@@ -894,7 +894,7 @@ CREATE TRIGGER update_repository_updated_ts
 BEFORE
 UPDATE
     ON repository FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly
 -- anomaly stores various anomalies found by the scanner.
@@ -922,7 +922,7 @@ CREATE TRIGGER update_anomaly_updated_ts
 BEFORE
 UPDATE
     ON anomaly FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Label
 -- label_key stores available label keys at workspace level.
@@ -945,7 +945,7 @@ CREATE TRIGGER update_label_key_updated_ts
 BEFORE
 UPDATE
     ON label_key FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- label_value stores available label key values at workspace level.
 CREATE TABLE label_value (
@@ -968,7 +968,7 @@ CREATE TRIGGER update_label_value_updated_ts
 BEFORE
 UPDATE
     ON label_value FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- db_label stores labels asscociated with databases.
 CREATE TABLE db_label (
@@ -993,7 +993,7 @@ CREATE TRIGGER update_db_label_updated_ts
 BEFORE
 UPDATE
     ON db_label FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Deployment Configuration.
 -- deployment_config stores deployment configurations at project level.
@@ -1017,7 +1017,7 @@ CREATE TRIGGER update_deployment_config_updated_ts
 BEFORE
 UPDATE
     ON deployment_config FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- sheet table stores general statements.
 CREATE TABLE sheet (
@@ -1046,4 +1046,4 @@ CREATE TRIGGER update_sheet_updated_ts
 BEFORE
 UPDATE
     ON sheet FOR EACH ROW
-EXECUTE FUNCTION trigger_after_update_updated_ts();
+EXECUTE FUNCTION trigger_update_updated_ts();
