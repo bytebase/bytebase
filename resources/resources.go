@@ -3,7 +3,6 @@ package resources
 import (
 	"archive/tar"
 	"bytes"
-	"embed"
 	"fmt"
 	"io"
 	"log"
@@ -19,9 +18,6 @@ import (
 
 	"github.com/xi2/xz"
 )
-
-//go:embed postgres-darwin-x86_64.txz postgres-linux-x86_64-alpine_linux.txz postgres-linux-x86_64.txz
-var postgresResources embed.FS
 
 // InstallPostgres returns the postgres binary depending on the OS.
 func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
