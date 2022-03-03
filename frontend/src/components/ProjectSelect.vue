@@ -130,7 +130,7 @@ export default defineComponent({
     const projectList = computed((): Project[] => {
       let list = store.getters["project/projectListByUser"](
         currentUser.value.id,
-        ["NORMAL", "ARCHIVED"]
+        ["NORMAL"]
       ) as Project[];
 
       if (props.includeDefaultProject) {
