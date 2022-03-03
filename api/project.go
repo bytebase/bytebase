@@ -114,7 +114,7 @@ type ProjectFind struct {
 	RowStatus *RowStatus
 
 	// Domain specific fields
-	// If present, will only find project containing PrincipalID as a member
+	// If present, will only find project containing PrincipalID as an active member
 	PrincipalID *int
 }
 
