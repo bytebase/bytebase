@@ -81,11 +81,12 @@
                 </router-link>
               </dd>
             </template>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel">{{ $t("sql-editor.self") }}</span>
-              <button class="ml-1 btn-icon" @click.prevent="gotoSqlEditor">
-                <heroicons-outline:terminal class="w-4 h-4" />
-              </button>
+            <dd
+              class="flex items-center text-sm md:mr-4 cursor-pointer textlabel hover:text-accent"
+              @click.prevent="gotoSqlEditor"
+            >
+              <span class="mr-1">{{ $t("sql-editor.self") }}</span>
+              <heroicons-outline:terminal class="w-4 h-4" />
             </dd>
             <DatabaseLabelProps
               :label-list="database.labels"
@@ -141,50 +142,6 @@
       </div>
     </main>
 
-    <BBModal
-      v-if="state.showModal"
-      :title="$t('database.transfer-project')"
-      @close="state.showModal = false"
-    >
-      <div class="col-span-1 w-64">
-        <label for="user" class="textlabel">{{ $t("common.project") }}</label>
-        <!-- Only allow to transfer database to the project having OWNER role -->
-        <!-- eslint-disable vue/attribute-hyphenation -->
-        <ProjectSelect
-          id="project"
-          class="mt-1"
-          name="project"
-          :allowed-role-list="['OWNER']"
-          :include-default-project="true"
-          :selectedId="state.editingProjectId"
-          @select-project-id="
-            (projectId) => {
-              state.editingProjectId = projectId;
-            }
-          "
-        />
-      </div>
-      <div class="pt-6 flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showModal = false"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="state.editingProjectId == database.project.id"
-          @click.prevent="
-            updateProject(state.editingProjectId);
-            state.showModal = false;
-          "
-        >
-          {{ $t("common.transfer") }}
-        </button>
-      </div>
-    </BBModal>
     <BBTabFilter
       class="px-3 pb-2 border-b border-block-border"
       :responsive="false"
@@ -214,6 +171,80 @@
         />
       </template>
     </div>
+
+    <BBModal
+      v-if="state.showTransferDatabaseModal"
+      :title="$t('database.transfer-project')"
+      @close="state.showTransferDatabaseModal = false"
+    >
+      <div class="col-span-1 w-64">
+        <label for="user" class="textlabel">{{ $t("common.project") }}</label>
+        <!-- Only allow to transfer database to the project having OWNER role -->
+        <!-- eslint-disable vue/attribute-hyphenation -->
+        <ProjectSelect
+          id="project"
+          class="mt-1"
+          name="project"
+          :allowed-role-list="['OWNER']"
+          :include-default-project="true"
+          :selectedId="state.editingProjectId"
+          @select-project-id="
+            (projectId) => {
+              state.editingProjectId = projectId;
+            }
+          "
+        />
+      </div>
+      <div class="pt-6 flex justify-end">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showTransferDatabaseModal = false"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="state.editingProjectId == database.project.id"
+          @click.prevent="
+            updateProject(state.editingProjectId);
+            state.showTransferDatabaseModal = false;
+          "
+        >
+          {{ $t("common.transfer") }}
+        </button>
+      </div>
+    </BBModal>
+    <BBModal
+      v-if="state.showIncorrectProjectModal"
+      :title="$t('common.warning')"
+      @close="state.showIncorrectProjectModal = false"
+    >
+      <div class="col-span-1 w-96">
+        {{ $t("database.incorrect-project-warning") }}
+      </div>
+      <div class="pt-6 flex justify-end">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showIncorrectProjectModal = false"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="state.editingProjectId == database.project.id"
+          @click.prevent="
+            state.showIncorrectProjectModal = false;
+            state.showTransferDatabaseModal = true;
+          "
+        >
+          {{ $t("common.transfer") }}
+        </button>
+      </div>
+    </BBModal>
   </div>
 </template>
 
@@ -250,7 +281,8 @@ type DatabaseTabItem = {
 };
 
 interface LocalState {
-  showModal: boolean;
+  showTransferDatabaseModal: boolean;
+  showIncorrectProjectModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
 }
@@ -283,7 +315,8 @@ export default defineComponent({
     ];
 
     const state = reactive<LocalState>({
-      showModal: false,
+      showTransferDatabaseModal: false,
+      showIncorrectProjectModal: false,
       editingProjectId: UNKNOWN_ID,
       selectedIndex: OVERVIEW_TAB,
     });
@@ -398,7 +431,7 @@ export default defineComponent({
 
     const tryTransferProject = () => {
       state.editingProjectId = database.value.project.id;
-      state.showModal = true;
+      state.showTransferDatabaseModal = true;
     };
 
     const alterSchema = () => {
@@ -503,12 +536,20 @@ export default defineComponent({
     };
 
     const gotoSqlEditor = () => {
-      router.push({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database.value),
-        },
-      });
+      // SQL editors can only query databases in the projects available to the user.
+      if (
+        database.value.projectId === UNKNOWN_ID ||
+        database.value.projectId === DEFAULT_PROJECT_ID
+      ) {
+        state.showIncorrectProjectModal = true;
+      } else {
+        router.push({
+          name: "sql-editor.detail",
+          params: {
+            connectionSlug: connectionSlug(database.value),
+          },
+        });
+      }
     };
 
     onMounted(() => {
