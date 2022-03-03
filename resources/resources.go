@@ -57,7 +57,7 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (string, error) {
 			return "", fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
 		if err := extractTXZ(tmpDir, data); err != nil {
-			return "", fmt.Errorf("failed to extract txz file")
+			return "", fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
 			return "", fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
