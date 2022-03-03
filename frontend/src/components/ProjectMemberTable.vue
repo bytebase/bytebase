@@ -130,6 +130,7 @@ import {
   ProjectRoleType,
   MemberId,
   ProjectMemberPatch,
+  ProjectRoleProvider,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
@@ -146,6 +147,11 @@ export default {
       required: true,
       type: Object as PropType<Project>,
     },
+    activeRoleProvider: {
+      require: false,
+      default: null,
+      type: String as PropType<ProjectRoleProvider>,
+    },
   },
   setup(props) {
     const store = useStore();
@@ -158,6 +164,13 @@ export default {
     );
 
     const state = reactive<LocalState>({});
+
+    const activeRoleProvider = computed(() => {
+      // if props.activeRoleProvider is not passed as a property, we will use props.project.roleProvider by default
+      return props.activeRoleProvider
+        ? props.activeRoleProvider
+        : props.project.roleProvider;
+    });
 
     const RoleProviderConfig = {
       GITLAB_SELF_HOST: {
@@ -175,6 +188,11 @@ export default {
         const ownerList: ProjectMember[] = [];
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
+          // only member with the same role provider as the active one would be consider a valid member
+          if (member.roleProvider !== activeRoleProvider.value) {
+            continue;
+          }
+
           if (member.role == "OWNER") {
             ownerList.push(member);
           }
@@ -206,7 +224,6 @@ export default {
         return dataSource;
       }
     );
-
     const columnList = computed((): BBTableColumn[] => {
       return hasRBACFeature.value
         ? [
