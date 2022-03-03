@@ -1,4 +1,4 @@
--- Bookmark for issue 13001 "Hello world"
+-- Bookmark for issue 101 "Hello world"
 INSERT INTO
     bookmark (
         id,
@@ -13,7 +13,7 @@ VALUES
         101,
         101,
         'Hello world!',
-        '/issue/hello-world-13001'
+        '/issue/hello-world-101'
     );
 
 ALTER SEQUENCE bookmark_id_seq RESTART WITH 16002;
