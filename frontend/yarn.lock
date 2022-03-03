@@ -3167,10 +3167,10 @@ uuid@^8.3.2:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
-v-code-diff@^0.3.4:
-  version "0.3.7"
-  resolved "https://registry.yarnpkg.com/v-code-diff/-/v-code-diff-0.3.7.tgz#90297032037bb03d0a62254273ad2f6728ab6579"
-  integrity sha512-APU9hVvPsX2q7/JW2bGWS8AaakvEBntDxlh9TSkYcshckvceDhAM9Mcc0KLBypdTuk0ODbe19+IPmYQ26RaCag==
+v-code-diff@^0.3.8:
+  version "0.3.9"
+  resolved "https://registry.yarnpkg.com/v-code-diff/-/v-code-diff-0.3.9.tgz#fd45ccc8762e86d459b43ad4101636909933ea08"
+  integrity sha512-KN554XX8gZvNbqdl5M+fbJjXWb3b2lSHPSknUfyv/YGA6le6n9A8Y0Oxy4dE4C6kYU9W8++kiAJkFkNfXD/k2w==
   dependencies:
     diff "^5.0.0"
     diff2html "^3.4.5"
