@@ -18,7 +18,7 @@
         </div>
         <button
           v-if="showClose"
-          class="absolute -right-3 -top-3 my-4 mx-4 text-control-light"
+          class="absolute -right-5 -top-3 my-4 mx-4 text-control-light"
           aria-label="close"
           @click.prevent="close"
         >
