@@ -81,7 +81,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	instance.DataSourceList = dataSourceList
 
@@ -111,7 +111,7 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 				InstanceID: &instance.ID,
 			})
 			if err != nil {
-				return nil, err
+				return nil, FormatError(err)
 			}
 			instance.DataSourceList = dataSourceList
 
@@ -165,6 +165,15 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 			return nil, err
 		}
 		if has {
+			// Get the newest data source list even with instance cache.
+			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+				InstanceID: &instance.ID,
+			})
+			if err != nil {
+				return nil, FormatError(err)
+			}
+			instance.DataSourceList = dataSourceList
+
 			return instance, nil
 		}
 	}
@@ -213,7 +222,7 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, FormatError(err)
 	}
 	instance.DataSourceList = dataSourceList
 
