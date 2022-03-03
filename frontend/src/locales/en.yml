@@ -150,6 +150,7 @@ common:
   added-time: Added time
   data-source: Data Source
   grant: Grant
+  admin: Admin
   read-only: Read-only
   connection-string: Connection string
   agents: Agents
@@ -482,6 +483,7 @@ instance:
   below-is-an-example-to-create-user-bytebase-with-password: Below is an example to create user 'bytebase{'@'}%' with password
   below-is-an-example-to-create-user-bytebase-with-password-clickhouse: Below is an example to create user 'bytebase' with password
   your_db_pwd: YOUR_DB_PWD
+  no-read-only-data-source-warn: The instance has no read-only user, which can cause security issues.
   sentence:
     host:
       snowflake: e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
@@ -493,9 +495,11 @@ instance:
       snowflake: >-
         The external console URL managing this instance (e.g. AWS RDS console,
         your in-house DB instance console)
-    create-user: >-
+    create-admin-user: >-
       This is the connection user used by Bytebase to perform DDL and DML
       operations.
+    create-readonly-user: >-
+      This is the connection user used by Bytebase to perform select query operations.
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -1053,6 +1057,7 @@ deployment-config:
   project-has-no-deployment-config: This project has no deployment config yet. Please {go} first.
   go-and-config: Go and config
 datasource:
+  role-type: Role Type
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source
   data-source-list: Data source list
@@ -1131,6 +1136,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
+  create-ro-ds: Go to create
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

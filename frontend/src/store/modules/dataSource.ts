@@ -3,12 +3,8 @@ import {
   DataSourceId,
   DataSource,
   DataSourceCreate,
-  DataSourceMember,
-  DataSourceMemberCreate,
   DataSourceState,
-  PrincipalId,
   ResourceObject,
-  ResourceIdentifier,
   DatabaseId,
   unknown,
   Database,
@@ -16,6 +12,7 @@ import {
   DataSourcePatch,
   EMPTY_ID,
   empty,
+  UNKNOWN_ID,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
 
@@ -24,21 +21,8 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
-  const databaseId = (
-    dataSource.relationships!.database.data as ResourceIdentifier
-  ).id;
-  const instanceId = (
-    dataSource.relationships!.instance.data as ResourceIdentifier
-  ).id;
-  const memberList = (dataSource.attributes.memberList as []).map(
-    (item: any): DataSourceMember => {
-      return {
-        principal: rootGetters["principal/principalById"](item.principalId),
-        issueId: item.issueId,
-        createdTs: item.createdTs,
-      };
-    }
-  );
+  const databaseId = dataSource.attributes!.databaseId;
+  const instanceId = dataSource.attributes!.instanceId;
 
   let instance: Instance = unknown("INSTANCE") as Instance;
   for (const item of includedList || []) {
@@ -59,7 +43,7 @@ function convert(
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instanceId" | "database" | "memberList" | "creator" | "updater"
+      "id" | "instance" | "database" | "creator" | "updater"
     >),
     id: parseInt(dataSource.id),
     creator: getPrincipalFromIncludedList(
@@ -72,7 +56,6 @@ function convert(
     ),
     instance,
     database,
-    memberList,
   };
 }
 
@@ -144,12 +127,14 @@ const actions = {
       dataSource: createdDataSource,
     });
 
-    // Refresh the corresponding database as it contains data source.
-    dispatch(
-      "database/fetchDatabaseById",
-      { databaseId: newDataSource.databaseId },
-      { root: true }
-    );
+    if (createdDataSource.database.id !== UNKNOWN_ID) {
+      // Refresh the corresponding database as it contains data source.
+      dispatch(
+        "database/fetchDatabaseById",
+        { databaseId: createdDataSource.database.id },
+        { root: true }
+      );
+    }
 
     return createdDataSource;
   },
@@ -184,8 +169,10 @@ const actions = {
       dataSource: updatedDataSource,
     });
 
-    // Refresh the corresponding database as it contains data source.
-    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
+    if (databaseId !== UNKNOWN_ID) {
+      // Refresh the corresponding database as it contains data source.
+      dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
+    }
 
     return updatedDataSource;
   },
@@ -204,72 +191,6 @@ const actions = {
     commit("deleteDataSourceById", dataSourceId);
 
     // Refresh the corresponding database as it contains data source.
-    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
-  },
-
-  async createDataSourceMember(
-    { commit, dispatch, rootGetters }: any,
-    {
-      dataSourceId,
-      databaseId,
-      newDataSourceMember,
-    }: {
-      dataSourceId: DataSourceId;
-      databaseId: DatabaseId;
-      newDataSourceMember: DataSourceMemberCreate;
-    }
-  ) {
-    const data = (
-      await axios.post(
-        `/api/database/${databaseId}/datasource/${dataSourceId}/member`,
-        {
-          data: {
-            type: "dataSourceMember",
-            attributes: newDataSourceMember,
-          },
-        }
-      )
-    ).data;
-    // It's patching the data source and returns the updated data source
-    const updatedDataSource = convert(data.data, data.included, rootGetters);
-
-    commit("setDataSourceById", {
-      databaseId,
-      dataSource: updatedDataSource,
-    });
-
-    // Refresh the corresponding database as it contains data source and its membership info.
-    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
-
-    return updatedDataSource;
-  },
-
-  async deleteDataSourceMemberByMemberId(
-    { commit, dispatch, rootGetters }: any,
-    {
-      databaseId,
-      dataSourceId,
-      memberId,
-    }: {
-      databaseId: DatabaseId;
-      dataSourceId: DataSourceId;
-      memberId: PrincipalId;
-    }
-  ) {
-    const data = (
-      await axios.delete(
-        `/api/database/${databaseId}/datasource/${dataSourceId}/member/${memberId}`
-      )
-    ).data;
-    // It's patching the data source and returns the updated data source
-    const updatedDataSource = convert(data.data, data.included, rootGetters);
-
-    commit("setDataSourceById", {
-      dataSourceId: updatedDataSource.id,
-      dataSource: updatedDataSource,
-    });
-
-    // Refresh the corresponding database as it contains data source and its membership info.
     dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 };

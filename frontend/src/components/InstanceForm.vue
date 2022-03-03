@@ -1,49 +1,15 @@
 <template>
   <form class="space-y-6 divide-y divide-block-border">
     <div class="space-y-6 divide-y divide-block-border px-1">
-      <div v-if="create" class="grid grid-cols-1 gap-4 sm:grid-cols-6">
-        <template
-          v-for="(engine, index) in [
-            'MYSQL',
-            'POSTGRES',
-            'TIDB',
-            'SNOWFLAKE',
-            'CLICKHOUSE',
-          ]"
-          :key="index"
-        >
-          <div
-            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
-            @click.capture="changeInstanceEngine(engine)"
-          >
-            <div class="flex flex-col items-center">
-              <img class="h-8 w-auto" :src="EngineIconPath[engine]" alt />
-              <p class="mt-1 text-center textlabel">{{ engineName(engine) }}</p>
-              <div class="mt-3 radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="state.instance.engine == engine"
-                />
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
       <!-- Instance Name -->
-      <div
-        class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4"
-        :class="create ? 'pt-4' : ''"
-      >
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
             &nbsp;
             <span style="color: red">*</span>
-            <template v-if="!create">
-              <InstanceEngineIcon class="ml-1" :instance="state.instance" />
-              <span class="ml-1">{{ state.instance.engineVersion }}</span>
-            </template>
+            <InstanceEngineIcon class="ml-1" :instance="state.instance" />
+            <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
           <input
             id="name"
@@ -53,14 +19,13 @@
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
             :value="state.instance.name"
-            @input="updateInstance('name', $event.target.value)"
+            @input="handleInstanceNameInput"
           />
         </div>
 
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="environment" class="textlabel">
             {{ $t("common.environment") }}
-            <span v-if="create" style="color: red">*</span>
           </label>
           <!-- Disallow changing environment after creation. This is to take the conservative approach to limit capability -->
           <!-- eslint-disable vue/attribute-hyphenation -->
@@ -68,19 +33,11 @@
             id="environment"
             class="mt-1 w-full"
             name="environment"
-            :disabled="!create"
-            :selectedId="
-              create
-                ? state.instance.environmentId
-                : state.instance.environment.id
-            "
+            :disabled="true"
+            :selectedId="state.instance.environment.id"
             @select-environment-id="
               (environmentId) => {
-                if (create) {
-                  state.instance.environmentId = environmentId;
-                } else {
-                  updateInstance('environmentId', environmentId);
-                }
+                updateInstance('environmentId', environmentId);
               }
             "
           />
@@ -110,7 +67,7 @@
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
             :value="state.instance.host"
-            @input="updateInstance('host', $event.target.value)"
+            @input="handleInstanceHostInput"
           />
           <div
             v-if="state.instance.engine == 'SNOWFLAKE'"
@@ -132,12 +89,12 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
-            @input="updateInstance('port', $event.target.value)"
+            @input="handleInstancePortInput"
           />
         </div>
 
         <!--Do not show external link on create to reduce cognitive load-->
-        <div v-if="!create" class="sm:col-span-3 sm:col-start-1">
+        <div class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
             <span class>
               {{
@@ -176,67 +133,168 @@
               required
               name="externallink"
               type="text"
-              class="textfield mt-1 w-full"
-              placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
               :disabled="!allowEdit"
               :value="state.instance.externalLink"
-              @input="updateInstance('externalLink', $event.target.value)"
+              class="textfield mt-1 w-full"
+              placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
+              @input="handleInstanceExternalLinkInput"
             />
           </template>
         </div>
       </div>
-      <!-- Read/Write Connection Info -->
-      <InstanceConnectionForm
-        :create="create"
-        :allowEdit="allowEdit"
-        :instance="state.instance"
-        @update-username="updateUsername"
-        @update-password="updatePassword"
-        @toggle-empty-password="toggleEmptyPassword"
+
+      <CreateDataSourceExample
+        :createInstanceFlag="false"
+        :engineType="state.instance.engine"
+        :dataSourceType="state.currentDataSourceType"
       />
-    </div>
-    <!-- Action Button Group -->
-    <div class="pt-4">
-      <!-- Create button group -->
-      <div v-if="create" class="flex justify-end items-center">
-        <div>
-          <BBSpin
-            v-if="state.creatingOrUpdating"
-            :title="$t('common.creating')"
+
+      <div
+        v-if="!hasReadonlyDataSource"
+        class="flex flex-col justify-start items-start flex-wrap bg-yellow-100 border-none rounded-lg p-2 px-3 mt-0"
+      >
+        <p class="flex justify-start items-start flex-nowrap leading-6">
+          <heroicons-outline:exclamation
+            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
+          />
+          <span class="text-yellow-800">{{
+            $t("instance.no-read-only-data-source-warn")
+          }}</span>
+        </p>
+        <button
+          type="button"
+          class="btn-normal ml-7 mt-2 text-sm"
+          @click.prevent="handleCreateDataSource('RO')"
+        >
+          {{ $t("common.create") }}
+        </button>
+      </div>
+      <div class="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3">
+        <div v-if="hasReadonlyDataSource" class="sm:col-span-3 sm:col-start-1">
+          <p class="w-full textlabel block mb-1">
+            {{ $t("datasource.role-type") }}
+          </p>
+          <div class="flex flex-row justify-start items-center flex-wrap">
+            <div
+              class="textlabel float-left flex flex-row justify-start items-center mr-3 cursor-pointer"
+            >
+              <input
+                id="admin-type"
+                class="mr-1 cursor-pointer"
+                type="radio"
+                name="type"
+                value="ADMIN"
+                :checked="state.currentDataSourceType === 'ADMIN'"
+                @change="handleDataSourceTypeChange"
+              />
+              <label
+                class="text-sm select-none cursor-pointer"
+                for="admin-type"
+              >
+                {{ $t("common.admin") }}
+              </label>
+            </div>
+            <div
+              class="textlabel float-left flex flex-row justify-start items-center"
+              :class="!hasReadonlyDataSource ? 'opacity-40' : ''"
+            >
+              <input
+                id="read-only-type"
+                class="mr-1 cursor-pointer"
+                :class="!hasReadonlyDataSource ? 'cursor-not-allowed' : ''"
+                type="radio"
+                name="type"
+                value="RO"
+                :disabled="!hasReadonlyDataSource"
+                :checked="state.currentDataSourceType === 'RO'"
+                @change="handleDataSourceTypeChange"
+              />
+              <label
+                class="text-sm select-none cursor-pointer"
+                :class="!hasReadonlyDataSource ? 'cursor-not-allowed' : ''"
+                for="read-only-type"
+              >
+                {{ $t("common.read-only") }}
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="sm:col-span-1 sm:col-start-1">
+          <label for="username" class="textlabel block">{{
+            $t("common.username")
+          }}</label>
+          <!-- For mysql, username can be empty indicating anonymous user.
+          But it's a very bad practice to use anonymous user for admin operation,
+          thus we make it REQUIRED here.-->
+          <input
+            id="username"
+            name="username"
+            type="text"
+            class="textfield mt-1 w-full"
+            :disabled="!allowEdit"
+            :placeholder="
+              instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
+            "
+            :value="state.currentDataSource.username"
+            @input="handleCurrentDataSourceNameInput"
           />
         </div>
-        <div class="ml-2">
+
+        <div class="sm:col-span-1 sm:col-start-1">
+          <div class="flex flex-row items-center space-x-2">
+            <label for="password" class="textlabel block">
+              {{ $t("common.password") }}
+            </label>
+            <!-- In create mode, user can leave the password field empty and create the instance,
+            so there is no need to show the checkbox.-->
+            <BBCheckbox
+              :title="$t('common.empty')"
+              :value="state.useEmptyPassword"
+              @toggle="handleToggleUseEmptyPassword"
+            />
+          </div>
+          <input
+            id="password"
+            name="password"
+            type="text"
+            class="textfield mt-1 w-full"
+            autocomplete="off"
+            :placeholder="
+              state.useEmptyPassword
+                ? $t('instance.no-password')
+                : $t('instance.password-write-only')
+            "
+            :disabled="!allowEdit || state.useEmptyPassword"
+            :value="state.useEmptyPassword ? '' : state.updatedPassword"
+            @input="handleCurrentDataSourcePasswordInput"
+          />
+        </div>
+      </div>
+      <div class="pt-0 border-none">
+        <div class="flex flex-row space-x-2">
           <button
             type="button"
-            class="btn-normal py-2 px-4"
-            :disabled="state.creatingOrUpdating"
-            @click.prevent="cancel"
+            class="btn-normal whitespace-nowrap items-center"
+            :disabled="!instance.host"
+            @click.prevent="testConnection"
           >
-            {{ $t("common.cancel") }}
-          </button>
-          <button
-            type="button"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-            :disabled="!allowCreate || state.creatingOrUpdating"
-            @click.prevent="tryCreate"
-          >
-            {{ $t("common.create") }}
+            {{ $t("instance.test-connection") }}
           </button>
         </div>
       </div>
-      <!-- Update button group -->
-      <div v-else class="flex justify-end items-center">
+    </div>
+
+    <!-- Action Button Group -->
+    <div class="pt-4">
+      <div class="flex justify-end items-center">
         <div>
-          <BBSpin
-            v-if="state.creatingOrUpdating"
-            :title="$t('common.updating')"
-          />
+          <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
         </div>
         <button
           v-if="allowEdit"
           type="button"
           class="btn-normal ml-2 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged || state.creatingOrUpdating"
+          :disabled="!valueChanged || state.isUpdating"
           @click.prevent="doUpdate"
         >
           {{ $t("common.update") }}
@@ -244,312 +302,298 @@
       </div>
     </div>
   </form>
-  <BBAlert
-    v-if="state.showCreateInstanceWarningModal"
-    :style="'WARN'"
-    :ok-text="$t('instance.ignore-and-create')"
-    :title="$t('instance.connection-info-seems-to-be-incorrect')"
-    :description="state.createInstanceWarning"
-    @ok="
-      () => {
-        state.showCreateInstanceWarningModal = false;
-        doCreate();
-      }
-    "
-    @cancel="state.showCreateInstanceWarningModal = false"
-  ></BBAlert>
 </template>
 
-<script lang="ts">
-import { computed, reactive, PropType, ComputedRef } from "vue";
+<script lang="ts" setup>
+import { computed, defineProps, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import InstanceConnectionForm from "../components/InstanceConnectionForm.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { instanceSlug, isDBAOrOwner, isDev } from "../utils";
+import { isDBAOrOwner } from "../utils";
 import {
-  Instance,
-  InstanceCreate,
-  UNKNOWN_ID,
   Principal,
   InstancePatch,
-  ConnectionInfo,
+  DataSourceType,
+  Instance,
   SqlResultSet,
-  EngineType,
+  ConnectionInfo,
+  DataSource,
+  UNKNOWN_ID,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
-  originalInstance?: Instance;
-  instance: Instance | InstanceCreate;
-  // Only used in non-create case.
+  originalInstance: Instance;
+  instance: Instance;
+  isUpdating: boolean;
   updatedPassword: string;
+  currentDataSourceType: DataSourceType;
+  currentDataSource: DataSource;
   useEmptyPassword: boolean;
-  showCreateInstanceWarningModal: boolean;
-  createInstanceWarning: string;
-  creatingOrUpdating: boolean;
 }
 
-export default {
-  name: "InstanceForm",
-  components: { EnvironmentSelect, InstanceConnectionForm, InstanceEngineIcon },
-  props: {
-    create: {
-      default: false,
-      type: Boolean,
-    },
-    instance: {
-      // Can be false when create is true
-      required: false,
-      type: Object as PropType<Instance>,
-    },
+const props = defineProps({
+  instance: {
+    required: true,
+    type: Object as PropType<Instance>,
   },
-  emits: ["dismiss"],
-  setup(props, { emit }) {
-    const store = useStore();
-    const router = useRouter();
-    const { t } = useI18n();
+});
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
+const store = useStore();
+const { t } = useI18n();
+
+const currentUser: ComputedRef<Principal> = computed(() =>
+  store.getters["auth/currentUser"]()
+);
+
+const currentDataSource = cloneDeep(
+  props.instance.dataSourceList.find((ds) => ds.type === "ADMIN")
+) as DataSource;
+
+const state = reactive<LocalState>({
+  originalInstance: props.instance,
+  // Make hard copy since we are going to make equal comparison to determine the update button enable state.
+  instance: cloneDeep(props.instance),
+  isUpdating: false,
+  updatedPassword: "",
+  currentDataSourceType: "ADMIN",
+  currentDataSource: currentDataSource,
+  useEmptyPassword: currentDataSource.password === "",
+});
+
+const allowEdit = computed(() => {
+  return (
+    state.instance.rowStatus == "NORMAL" && isDBAOrOwner(currentUser.value.role)
+  );
+});
+
+const valueChanged = computed(() => {
+  return !isEqual(state.instance, state.originalInstance);
+});
+
+const defaultPort = computed(() => {
+  if (state.instance.engine == "CLICKHOUSE") {
+    return "9000";
+  } else if (state.instance.engine == "POSTGRES") {
+    return "5432";
+  } else if (state.instance.engine == "SNOWFLAKE") {
+    return "443";
+  } else if (state.instance.engine == "TIDB") {
+    return "4000";
+  }
+  return "3306";
+});
+
+const adminDataSource = computed(() => {
+  let adminDataSource = undefined;
+  for (const ds of state.instance.dataSourceList) {
+    if (ds.type === "ADMIN") {
+      adminDataSource = ds;
+    }
+  }
+  return adminDataSource as DataSource;
+});
+
+const hasReadonlyDataSource = computed(() => {
+  let temp = false;
+  for (const ds of state.instance.dataSourceList) {
+    if (ds.type === "RO") {
+      temp = true;
+    }
+  }
+  return temp;
+});
+
+const instanceLink = (instance: Instance): string => {
+  if (instance.engine == "SNOWFLAKE") {
+    if (instance.host) {
+      return `https://${
+        instance.host.split("@")[0]
+      }.snowflakecomputing.com/console`;
+    }
+  }
+  return instance.host;
+};
+
+const handleToggleUseEmptyPassword = (on: boolean) => {
+  state.useEmptyPassword = on;
+};
+
+const handleInstanceNameInput = (event: Event) => {
+  updateInstance("name", (event.target as HTMLInputElement).value);
+};
+
+const handleInstanceHostInput = (event: Event) => {
+  updateInstance("host", (event.target as HTMLInputElement).value);
+};
+
+const handleInstancePortInput = (event: Event) => {
+  updateInstance("port", (event.target as HTMLInputElement).value);
+};
+
+const handleInstanceExternalLinkInput = (event: Event) => {
+  updateInstance("externalLink", (event.target as HTMLInputElement).value);
+};
+
+const handleCurrentDataSourceNameInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  state.currentDataSource.username = str;
+  updateInstanceDataSource();
+};
+
+const handleDataSourceTypeChange = (event: Event) => {
+  const lastDataSourceType = state.currentDataSourceType;
+  let index = state.instance.dataSourceList.findIndex(
+    (ds) => ds.type === lastDataSourceType
+  );
+  if (!isEqual(state.instance.dataSourceList[index], state.currentDataSource)) {
+    state.instance.dataSourceList[index] = state.currentDataSource;
+  }
+  state.currentDataSourceType = (event.target as HTMLInputElement)
+    .value as DataSourceType;
+  index = state.instance.dataSourceList.findIndex(
+    (ds) => ds.type === state.currentDataSourceType
+  );
+  state.currentDataSource = state.instance.dataSourceList[index];
+};
+
+const handleCurrentDataSourcePasswordInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  state.updatedPassword = str;
+  updateCurrentDataSourcePassword();
+};
+
+const updateCurrentDataSourcePassword = () => {
+  state.currentDataSource.password = state.updatedPassword;
+  updateInstanceDataSource();
+};
+
+const updateInstanceDataSource = () => {
+  if (state.currentDataSource.id !== UNKNOWN_ID) {
+    const index = state.instance.dataSourceList.findIndex(
+      (ds) => ds.id === state.currentDataSource.id
     );
+    state.instance.dataSourceList[index] = state.currentDataSource;
+  }
+};
 
-    const EngineIconPath = {
-      MYSQL: new URL("../assets/db-mysql.png", import.meta.url).href,
-      POSTGRES: new URL("../assets/db-postgres.png", import.meta.url).href,
-      TIDB: new URL("../assets/db-tidb.png", import.meta.url).href,
-      SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
-      CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
-    };
+const handleCreateDataSource = (type: DataSourceType) => {
+  const tempDataSource = {
+    id: UNKNOWN_ID,
+    instanceId: state.instance.id,
+    databaseId: adminDataSource.value.databaseId,
+    name: `${type} data source`,
+    type: type,
+    username: "",
+    password: "",
+  } as DataSource;
+  state.instance.dataSourceList.push(tempDataSource);
+  state.currentDataSourceType = type;
+  state.currentDataSource = tempDataSource;
+};
 
-    const state = reactive<LocalState>({
-      originalInstance: props.instance,
-      // Make hard copy since we are going to make equal comparison to determine the update button enable state.
-      instance: props.instance
-        ? cloneDeep(props.instance)
-        : {
-            environmentId: UNKNOWN_ID,
-            name: t("instance.new-instance"),
-            engine: "MYSQL",
-            // In dev mode, Bytebase is likely run in naked style and access the local network via 127.0.0.1.
-            // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
-            host: isDev() ? "127.0.0.1" : "host.docker.internal",
-            username: "",
-          },
-      updatedPassword: "",
-      useEmptyPassword: false,
-      showCreateInstanceWarningModal: false,
-      createInstanceWarning: "",
-      creatingOrUpdating: false,
-    });
+const updateInstance = (field: string, value: string) => {
+  let str = value;
+  if (
+    field == "name" ||
+    field == "host" ||
+    field == "port" ||
+    field == "externalLink"
+  ) {
+    str = value.trim();
+  }
+  (state.instance as any)[field] = str;
+};
 
-    const allowCreate = computed(() => {
-      return state.instance.name && state.instance.host;
-    });
+const doUpdate = () => {
+  const patchedInstance: InstancePatch = {};
+  let instanceInfoChanged = false;
+  let dataSourceListChanged = false;
+  let connectionInfoChanged = false;
 
-    const allowEdit = computed(() => {
-      return (
-        props.create ||
-        ((state.instance as Instance).rowStatus == "NORMAL" &&
-          isDBAOrOwner(currentUser.value.role))
-      );
-    });
+  if (state.instance.name != state.originalInstance.name) {
+    patchedInstance.name = state.instance.name;
+    instanceInfoChanged = true;
+  }
+  if (state.instance.externalLink != state.originalInstance.externalLink) {
+    patchedInstance.externalLink = state.instance.externalLink;
+    instanceInfoChanged = true;
+  }
+  if (state.instance.host != state.originalInstance.host) {
+    patchedInstance.host = state.instance.host;
+    connectionInfoChanged = true;
+    instanceInfoChanged = true;
+  }
+  if (state.instance.port != state.originalInstance.port) {
+    patchedInstance.port = state.instance.port;
+    instanceInfoChanged = true;
+    connectionInfoChanged = true;
+  }
 
-    const valueChanged = computed(() => {
-      return (
-        !isEqual(state.instance, state.originalInstance) ||
-        !isEmpty(state.updatedPassword) ||
-        state.useEmptyPassword
-      );
-    });
+  if (
+    !isEqual(
+      state.originalInstance.dataSourceList,
+      state.instance.dataSourceList
+    )
+  ) {
+    dataSourceListChanged = true;
+  }
 
-    const defaultPort = computed(() => {
-      if (state.instance.engine == "CLICKHOUSE") {
-        return "9000";
-      } else if (state.instance.engine == "POSTGRES") {
-        return "5432";
-      } else if (state.instance.engine == "SNOWFLAKE") {
-        return "443";
-      } else if (state.instance.engine == "TIDB") {
-        return "4000";
-      }
-      return "3306";
-    });
+  if (instanceInfoChanged || dataSourceListChanged) {
+    state.isUpdating = true;
+    const requests = [];
 
-    const engineName = (type: EngineType): string => {
-      switch (type) {
-        case "CLICKHOUSE":
-          return "ClickHouse";
-        case "MYSQL":
-          return "MySQL";
-        case "POSTGRES":
-          return "PostgreSQL";
-        case "SNOWFLAKE":
-          return "Snowflake";
-        case "TIDB":
-          return "TiDB";
-      }
-    };
-
-    const instanceLink = (instance: Instance): string => {
-      if (instance.engine == "SNOWFLAKE") {
-        if (instance.host) {
-          return `https://${
-            instance.host.split("@")[0]
-          }.snowflakecomputing.com/console`;
-        }
-      }
-      return instance.host;
-    };
-
-    // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
-    // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
-    const changeInstanceEngine = (engine: EngineType) => {
-      if (engine == "SNOWFLAKE") {
-        if (
-          state.instance.host == "127.0.0.1" ||
-          state.instance.host == "host.docker.internal"
-        ) {
-          state.instance.host = "";
-        }
-      } else {
-        if (!state.instance.host) {
-          state.instance.host = isDev() ? "127.0.0.1" : "host.docker.internal";
-        }
-      }
-      state.instance.engine = engine;
-    };
-
-    const updateUsername = (username: string) => {
-      state.instance.username = username;
-    };
-
-    const updatePassword = (password: string) => {
-      if (props.create) {
-        state.instance.password = password;
-      } else {
-        state.updatedPassword = password;
-      }
-    };
-
-    const toggleEmptyPassword = (useEmptyPassword: boolean) => {
-      state.useEmptyPassword = useEmptyPassword;
-    };
-
-    const updateInstance = (field: string, value: string) => {
-      let str = value;
-      if (field == "name" || field == "host" || field == "port" || field == "externalLink") {
-        str = value.trim()
-      }
-      (state.instance as any)[field] = str;
-    };
-
-    const cancel = () => {
-      emit("dismiss");
-    };
-
-    const tryCreate = () => {
-      const connectionInfo: ConnectionInfo = {
-        engine: state.instance.engine,
-        username: state.instance.username,
-        password: state.useEmptyPassword ? "" : state.instance.password,
-        useEmptyPassword: state.useEmptyPassword,
-        host: state.instance.host,
-        port: state.instance.port,
-      };
-      store
-        .dispatch("sql/ping", connectionInfo)
-        .then((resultSet: SqlResultSet) => {
-          if (isEmpty(resultSet.error)) {
-            doCreate();
-          } else {
-            state.createInstanceWarning = t("instance.unable-to-connect", [
-              resultSet.error,
-            ]);
-            state.showCreateInstanceWarningModal = true;
+    if (dataSourceListChanged) {
+      for (let i = 0; i < state.instance.dataSourceList.length; i++) {
+        const dataSource = state.instance.dataSourceList[i];
+        if (dataSource.id === UNKNOWN_ID) {
+          // Only used to create ReadOnly data source right now.
+          if (dataSource.type === "RO") {
+            requests.push(
+              store.dispatch("dataSource/createDataSource", {
+                databaseId: dataSource.databaseId,
+                instanceId: state.instance.id,
+                name: dataSource.name,
+                type: dataSource.type,
+                username: dataSource.username,
+                password: dataSource.password,
+              })
+            );
           }
-        });
-    };
+        } else if (
+          !isEqual(dataSource, state.originalInstance.dataSourceList[i])
+        ) {
+          requests.push(
+            store.dispatch("dataSource/patchDataSource", {
+              databaseId: dataSource.databaseId,
+              dataSourceId: dataSource.id,
+              dataSource: dataSource,
+            })
+          );
+        }
+      }
+    }
 
-    // We will also create the database * denoting all databases
-    // and its RW data source. The username, password is actually
-    // stored in that data source object instead of in the instance self.
-    // Conceptually, data source is the proper place to store connection info (thinking of DSN)
-    const doCreate = () => {
-      state.creatingOrUpdating = true;
-      if (state.useEmptyPassword) {
-        state.instance.password = "";
-      }
-      store
-        .dispatch("instance/createInstance", state.instance)
-        .then((createdInstance) => {
-          state.creatingOrUpdating = false;
-          state.useEmptyPassword = false;
-          emit("dismiss");
-
-          router.push(`/instance/${instanceSlug(createdInstance)}`);
-
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "instance.successfully-created-instance-createdinstance-name",
-              [createdInstance.name]
-            ),
-          });
-
-          // After creating the instance, we will check if migration schema exists on the instance.
-          // setTimeout(() => {}, 1000);
-        });
-    };
-
-    const doUpdate = () => {
-      const patchedInstance: InstancePatch = { useEmptyPassword: false };
-      let connectionInfoChanged = false;
-      if (state.instance.name != state.originalInstance!.name) {
-        patchedInstance.name = state.instance.name;
-      }
-      if (state.instance.externalLink != state.originalInstance!.externalLink) {
-        patchedInstance.externalLink = state.instance.externalLink;
-      }
-      if (state.instance.host != state.originalInstance!.host) {
-        patchedInstance.host = state.instance.host;
-        connectionInfoChanged = true;
-      }
-      if (state.instance.port != state.originalInstance!.port) {
-        patchedInstance.port = state.instance.port;
-        connectionInfoChanged = true;
-      }
-      if (state.instance.username != state.originalInstance!.username) {
-        patchedInstance.username = state.instance.username;
-        connectionInfoChanged = true;
-      }
-      if (state.useEmptyPassword) {
-        patchedInstance.useEmptyPassword = true;
-        connectionInfoChanged = true;
-      } else if (!isEmpty(state.updatedPassword)) {
-        patchedInstance.password = state.updatedPassword;
-        connectionInfoChanged = true;
-      }
-
-      state.creatingOrUpdating = true;
-      store
-        .dispatch("instance/patchInstance", {
-          instanceId: (state.instance as Instance).id,
+    if (instanceInfoChanged) {
+      requests.push(
+        store.dispatch("instance/patchInstance", {
+          instanceId: state.instance.id,
           instancePatch: patchedInstance,
         })
+      );
+    }
+
+    Promise.all(requests).then(() => {
+      store
+        .dispatch("instance/fetchInstanceById", state.instance.id)
         .then((instance) => {
-          state.creatingOrUpdating = false;
+          state.isUpdating = false;
           state.originalInstance = instance;
           // Make hard copy since we are going to make equal comparison to determine the update button enable state.
           state.instance = cloneDeep(state.originalInstance!);
-          state.updatedPassword = "";
-          state.useEmptyPassword = false;
 
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -563,32 +607,42 @@ export default {
           if (connectionInfoChanged) {
             store.dispatch(
               "database/fetchDatabaseListByInstanceId",
-              instance.id
+              state.instance.id
             );
           }
         });
-    };
+    });
+  }
+};
 
-    return {
-      state,
-      allowCreate,
-      allowEdit,
-      valueChanged,
-      EngineIconPath,
-      defaultPort,
-      engineName,
-      instanceLink,
-      changeInstanceEngine,
-      updateUsername,
-      updatePassword,
-      toggleEmptyPassword,
-      updateInstance,
-      cancel,
-      tryCreate,
-      doCreate,
-      doUpdate,
-    };
-  },
+const testConnection = () => {
+  const connectionInfo: ConnectionInfo = {
+    engine: state.instance.engine,
+    username: state.currentDataSource.username,
+    password: state.useEmptyPassword ? "" : state.currentDataSource.password,
+    useEmptyPassword: state.useEmptyPassword,
+    host: state.instance.host,
+    port: state.instance.port,
+    instanceId: state.instance.id,
+  };
+  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+    if (isEmpty(resultSet.error)) {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("instance.successfully-connected-instance"),
+      });
+    } else {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("instance.failed-to-connect-instance"),
+        description: resultSet.error,
+        // Manual hide, because user may need time to inspect the error
+        manualHide: true,
+      });
+    }
+  });
 };
 </script>
 

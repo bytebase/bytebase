@@ -1,6 +1,7 @@
 import axios from "axios";
 import {
   Anomaly,
+  DataSource,
   empty,
   EMPTY_ID,
   Environment,
@@ -34,7 +35,7 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
-  const anomalyIdList = instance.relationships!.anomaly
+  const anomalyIdList = instance.relationships!.anomalyList
     .data as ResourceIdentifier[];
   const anomalyList: Anomaly[] = [];
   for (const item of anomalyIdList) {
@@ -43,10 +44,24 @@ function convert(
     anomalyList.push(anomaly);
   }
 
+  const dataSourceIdList = instance.relationships!.dataSourceList
+    .data as ResourceIdentifier[];
+  const dataSourceList: DataSource[] = [];
+  for (const item of dataSourceIdList) {
+    const dataSource = unknown("DATA_SOURCE") as DataSource;
+    dataSource.id = parseInt(item.id);
+    dataSourceList.push(dataSource);
+  }
+
   const instancePartial = {
     ...(instance.attributes as Omit<
       Instance,
-      "id" | "environment" | "anomalyList" | "creator" | "updater"
+      | "id"
+      | "environment"
+      | "anomalyList"
+      | "dataSourceList"
+      | "creator"
+      | "updater"
     >),
     id: parseInt(instance.id),
     creator: getPrincipalFromIncludedList(
@@ -59,6 +74,7 @@ function convert(
     ),
     environment,
     anomalyList: [],
+    dataSourceList: [],
   };
 
   for (const item of includedList || []) {
@@ -82,6 +98,18 @@ function convert(
         anomalyList[i].instance = instancePartial;
       }
     }
+
+    if (
+      item.type == "dataSource" &&
+      item.attributes.instanceId == instancePartial.id
+    ) {
+      const i = dataSourceList.findIndex(
+        (dataSource: DataSource) => parseInt(item.id) == dataSource.id
+      );
+      if (i != -1) {
+        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+      }
+    }
   }
 
   for (const anomaly of anomalyList) {
@@ -91,12 +119,11 @@ function convert(
   return {
     ...(instancePartial as Omit<
       Instance,
-      "environment" | "password" | "anomalyList"
+      "environment" | "anomalyList" | "dataSourceList"
     >),
     environment,
-    // Password is not returned by the server, we just take extra caution here to redact it.
-    password: "",
     anomalyList,
+    dataSourceList,
   };
 }
 

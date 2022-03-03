@@ -31,17 +31,6 @@ export function allowDatabaseAccess(
     return true;
   }
 
-  for (const dataSource of database.dataSourceList) {
-    if (
-      // Returns true if the current user has equal or higher access
-      (dataSource.type == type || (dataSource.type == "RW" && type == "RO")) &&
-      dataSource.memberList.find((item: DataSourceMember) => {
-        return item.principal.id == principal.id;
-      })
-    ) {
-      return true;
-    }
-  }
   return false;
 }
 

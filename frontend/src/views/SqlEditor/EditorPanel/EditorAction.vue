@@ -14,6 +14,29 @@
         <template #trigger>
           <label class="flex items-center text-sm space-x-1">
             <div class="flex items-center">
+              <NPopover
+                v-if="
+                  connectionContext.instanceId !== UNKNOWN_ID &&
+                  !hasReadonlyDataSource
+                "
+                trigger="hover"
+              >
+                <template #trigger>
+                  <heroicons-outline:exclamation
+                    class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
+                  />
+                </template>
+                <p class="py-1">
+                  {{ $t("instance.no-read-only-data-source-warn") }}
+                  <NButton
+                    class="text-base underline text-accent"
+                    text
+                    @click="gotoInstanceDetailPage"
+                  >
+                    {{ $t("sql-editor.create-ro-ds") }}
+                  </NButton>
+                </p>
+              </NPopover>
               <InstanceEngineIcon
                 v-if="connectionContext.instanceId !== UNKNOWN_ID"
                 :instance="selectedInstance"
@@ -98,11 +121,15 @@ import {
   TabGetters,
   SheetActions,
   UNKNOWN_ID,
+  Instance,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
+import { useRouter } from "vue-router";
+import { instanceSlug } from "../../../utils/slug";
 
 const store = useStore();
+const router = useRouter();
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
@@ -123,9 +150,20 @@ const sharePopover = ref(null);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
-const selectedInstance = computed(() => {
+const selectedInstance = computed<Instance>(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
+});
+
+const hasReadonlyDataSource = computed(() => {
+  selectedInstance.value.environment.name;
+  let temp = false;
+  for (const ds of selectedInstance.value.dataSourceList) {
+    if (ds.type === "RO") {
+      temp = true;
+    }
+  }
+  return temp;
 });
 
 const { execute, state: executeState } = useExecuteSQL();
@@ -140,6 +178,15 @@ const handleUpsertSheet = async () => {
     id: sheetId,
     name,
     statement,
+  });
+};
+
+const gotoInstanceDetailPage = () => {
+  router.push({
+    name: "workspace.instance.detail",
+    params: {
+      instanceSlug: instanceSlug(selectedInstance.value),
+    },
   });
 };
 

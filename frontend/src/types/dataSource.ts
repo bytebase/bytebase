@@ -19,11 +19,10 @@ export type DataSource = {
   id: DataSourceId;
 
   // Related fields
+  databaseId: DatabaseId;
   database: Database;
+  instanceId: InstanceId;
   instance: Instance;
-  // Returns the member list directly because we need it quite frequently in order
-  // to do various access check.
-  memberList: DataSourceMember[];
 
   // Standard fields
   creator: Principal;
@@ -43,7 +42,6 @@ export type DataSourceCreate = {
   // Related fields
   databaseId: DatabaseId;
   instanceId: InstanceId;
-  memberList: DataSourceMemberCreate[];
 
   // Domain specific fields
   name: string;
@@ -57,6 +55,7 @@ export type DataSourcePatch = {
   name?: string;
   username?: string;
   password?: string;
+  useEmptyPassword?: boolean;
 };
 
 export type DataSourceMember = {

@@ -150,6 +150,7 @@ common:
   added-time: 添加时间
   data-source: 数据源
   grant: 授予
+  admin: 管理员
   read-only: 只读
   connection-string: 连接字符串
   agents: Agents
@@ -463,6 +464,7 @@ instance:
   connection-info: 连接信息
   show-how-to-create: 如何创建
   below-is-an-example-to-create-user-bytebase-with-password: 创建用户 'bytebase{'@'}%' 及其密码的例子如下
+  no-read-only-data-source-warn: 该实例没有只读用户，可能会导致安全问题。
   sentence:
     host:
       snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
@@ -470,7 +472,8 @@ instance:
       snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
     console:
       snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
-    create-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-admin-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-readonly-user: 这是 Bytebase 用于连接数据库，执行查询操作的用户。
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -926,6 +929,7 @@ deployment-config:
   project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
   go-and-config: 去配置
 datasource:
+  role-type: 权限类型
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源
   data-source-list: 数据源列表
@@ -1000,6 +1004,7 @@ sql-editor:
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
+  create-ro-ds: 前去创建
 label:
   empty-label-value: <空值>
   no-label: 没有标签
