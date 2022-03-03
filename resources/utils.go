@@ -77,6 +77,9 @@ func extractTar(tarReader *tar.Reader, targetDir string) error {
 				return err
 			}
 		case tar.TypeSymlink:
+			if !isRel(header.Linkname, targetPath) || !isRel(header.Name, targetPath) {
+				return fmt.Errorf("invalid symlink from %s to %s", header.Name, header.Linkname)
+			}
 			if err := os.Symlink(header.Linkname, targetPath); err != nil {
 				return err
 			}
@@ -86,4 +89,18 @@ func extractTar(tarReader *tar.Reader, targetDir string) error {
 	}
 
 	return nil
+}
+
+// isRel returns true if `candidate` is relative to `target`
+// and does not escape from `target`.
+func isRel(candidate, target string) bool {
+	if filepath.IsAbs(candidate) {
+		return false
+	}
+	realpath, err := filepath.EvalSymlinks(filepath.Join(target, candidate))
+	if err != nil {
+		return false
+	}
+	relpath, err := filepath.Rel(target, realpath)
+	return err == nil && !strings.HasPrefix(filepath.Clean(relpath), "..")
 }
