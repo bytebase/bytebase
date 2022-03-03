@@ -143,7 +143,7 @@ import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
-import { PlanType, Subscription } from "../types";
+import { PlanType } from "../types";
 
 interface LocalState {
   showMobileOverlay: boolean;

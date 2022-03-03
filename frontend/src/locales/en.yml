@@ -1305,7 +1305,7 @@ subscription:
         gitlab-login: Login with GitLab account
   plan:
     title: Plan
-    try: Try Team Plan
+    try: Try Team
     free:
       title: Free Plan
       label: ''
