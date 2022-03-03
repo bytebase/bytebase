@@ -235,13 +235,12 @@
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="state.editingProjectId == database.project.id"
           @click.prevent="
             state.showIncorrectProjectModal = false;
             state.showTransferDatabaseModal = true;
           "
         >
-          {{ $t("common.transfer") }}
+          {{ $t("database.go-to-transfer") }}
         </button>
       </div>
     </BBModal>
