@@ -20,9 +20,7 @@ func extractTarGz(tarGzF io.Reader, targetDir string) error {
 		return err
 	}
 	defer gzipR.Close()
-	tarR := tar.NewReader(gzipR)
-
-	return extractTar(tarR, targetDir)
+	return extractTar(gzipR, targetDir)
 }
 
 // extractTarXz extracts the given file as .tar.xz or .txz format to the given directory.
@@ -31,12 +29,11 @@ func extractTarXz(tarXzF io.Reader, targetDir string) error {
 	if err != nil {
 		return err
 	}
-	tarR := tar.NewReader(xzR)
-
-	return extractTar(tarR, targetDir)
+	return extractTar(xzR, targetDir)
 }
 
-func extractTar(tarReader *tar.Reader, targetDir string) error {
+func extractTar(r io.Reader, targetDir string) error {
+	tarReader := tar.NewReader(r)
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
