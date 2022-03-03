@@ -1001,6 +1001,7 @@ sql-editor:
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
     confirm-to-delete-this-sheet: 确定删除这条查询语句?
+    confirm-to-close-unsaved-tab: 确定关闭未保存的标签页？
   please-input-the-tab-label: 请输入标签页名称!
   copy-code: 复制代码
   notify:
