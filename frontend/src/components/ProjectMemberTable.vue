@@ -166,6 +166,7 @@ export default {
     const state = reactive<LocalState>({});
 
     const activeRoleProvider = computed(() => {
+      // if props.activeRoleProvider is not passed as a property, we will use props.project.roleProvider by default
       return props.activeRoleProvider
         ? props.activeRoleProvider
         : props.project.roleProvider;
@@ -187,6 +188,7 @@ export default {
         const ownerList: ProjectMember[] = [];
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
+          // only member with the same role provider as the active one would be consider a valid member
           if (member.roleProvider !== activeRoleProvider.value) {
             continue;
           }

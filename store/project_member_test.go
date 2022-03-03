@@ -119,8 +119,8 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			var got Result
-			got.createIDList, got.patchIDList, got.deleteIDList, _ = getBatchUpdatePrincipalIDList(tc.input.oldIDList, tc.input.newIDList)
-			if diff := cmp.Diff(tc.expect.createIDList, got.createIDList, opt); diff != "" {
+			got.createIDList, got.patchIDList, got.deleteIDList = getBatchUpdatePrincipalIDList(tc.input.oldIDList, tc.input.newIDList)
+			if diff := cmp.Diff(tc.expect.createIDList, got.createIDList, opt); len(diff) != 0 {
 				t.Errorf("\ncreateIDList: %v", diff)
 			}
 			if diff := cmp.Diff(tc.expect.patchIDList, got.patchIDList, opt); diff != "" {

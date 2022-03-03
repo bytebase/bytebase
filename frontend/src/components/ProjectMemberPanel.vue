@@ -248,6 +248,7 @@ export default defineComponent({
       for (const member of props.project.memberList) {
         if (
           member.principal.id == currentUser.value.id &&
+          // only member with the same role provider as that of the project will be consider a valid member
           member.roleProvider === props.project.roleProvider
         ) {
           if (isProjectOwner(member.role)) {

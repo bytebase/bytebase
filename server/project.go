@@ -77,7 +77,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
-
 			projectFind.PrincipalID = &userID
 		}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
@@ -89,7 +88,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
-		activeProjectList := make([]*api.Project, 0)
+		var activeProjectList []*api.Project
 		for _, project := range list {
 			if err := s.composeProjectRelationship(ctx, project); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
