@@ -18,12 +18,12 @@ MAJOR verison change usually happens at most once or twice a year. And if we do,
 
 ## When MINOR verison is changed
 
-We change MINOR version if the new version upgrades the underlying database schema. While the upgrade does NOT require customer involvement.
+We change MINOR version if the new version upgrades the underlying database schema. While the upgrade does `not` require customer involvement.
 
 MINOR version change usually happens at most once every month.
 
 ## When PATCH version is changed
 
-We change PATCH version if the new version does NOT include underlying database schema changes.
+We change PATCH version if the new version does `not` include underlying database schema changes.
 
 PATCH version change usually happens bi-weekly following our release schedule.
