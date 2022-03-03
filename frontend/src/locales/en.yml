@@ -1191,7 +1191,7 @@ subscription:
   upload-license: Upload license
   plan-compare: Compare features between different plans
   disabled-feature: This is a premium feature in subscription plan
-  trial: You can start a trial with $7 for 7 days.
+  trial: You can start a trial with $14 for 14 days.
   trial-comment: >-
     Only enabled for the first payment. You can cancel the subscription at any
     time.
