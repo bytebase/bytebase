@@ -16,7 +16,7 @@
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@tailwindcss/forms": "^0.4.0",
     "@tailwindcss/line-clamp": "^0.3.1",
-    "@tailwindcss/typography": "^0.5.1",
+    "@tailwindcss/typography": "^0.4.0",
     "@vueuse/core": "^7.6.0",
     "autoprefixer": "^10.4.2",
     "axios": "^0.26.0",
