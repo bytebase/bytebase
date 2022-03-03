@@ -18,8 +18,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    -- allowed types are 'END_USER', 'SYSTEM_BOT'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL
@@ -89,10 +88,8 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    -- allowed status are 'INVITED', 'ACTIVE'.
-    status TEXT NOT NULL,
-    -- allowed roles are 'OWNER', 'DBA', 'DEVELOPER'.
-    role TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
+    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DBA', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
 
@@ -165,17 +162,13 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    -- allowed workflow types are 'UI', 'VCS'.
-    workflow_type TEXT NOT NULL,
-    -- allowed visibilities are 'PUBLIC', 'PRIVATE'.
-    visibility TEXT NOT NULL,
-    -- allowed tenant modes are 'DISABLED', 'TENANT'.
-    tenant_mode TEXT NOT NULL DEFAULT 'DISABLED',
+    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
+    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
+    tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    -- allowed role_provider types are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    role_provider TEXT NOT NULL DEFAULT 'BYTEBASE'
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -222,11 +215,9 @@ CREATE TABLE project_member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    -- allowed roles are 'OWNER', 'DEVELOPER'.
-    role TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    -- allowed role_provider are 'BYTEBASE', 'GITLAB_SELF_HOST'.
-    role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -279,8 +270,7 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    -- allowed engines are 'MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE'.
-    engine TEXT NOT NULL,
+    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
@@ -331,8 +321,7 @@ CREATE TABLE db (
     project_id INTEGER NOT NULL REFERENCES project (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER,
-    -- allowed sync status are 'OK', 'NOT_FOUND'.
-    sync_status TEXT NOT NULL,
+    sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -489,8 +478,7 @@ CREATE TABLE data_source (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed types are 'ADMIN', 'RW', 'RO'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
@@ -520,12 +508,9 @@ CREATE TABLE backup (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed status are 'PENDING_CREATE', 'DONE', 'FAILED'.
-    status TEXT NOT NULL,
-    -- allowed types are 'MANUAL', 'AUTOMATIC'.
-    type TEXT NOT NULL,
-    -- allowed storage backends are 'LOCAL'.
-    storage_backend TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
+    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT ''
@@ -553,13 +538,10 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
-    -- allowed enabled values are 0, 1.
     enabled BOOLEAN NOT NULL,
-    -- allowed hour is from 0 to 23 (included).
-    hour INTEGER NOT NULL,
-    -- allowed day_of_week is from -1 to 6.
+    hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
@@ -585,8 +567,7 @@ CREATE TABLE pipeline (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
-    status TEXT NOT NULL
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED'))
 );
 
 CREATE INDEX idx_pipeline_status ON pipeline(status);
@@ -636,8 +617,7 @@ CREATE TABLE task (
     -- Could be empty for creating database task when the task isn't yet completed successfully.
     database_id INTEGER REFERENCES db (id),
     name TEXT NOT NULL,
-    -- allowed status are 'PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
@@ -666,8 +646,7 @@ CREATE TABLE task_run (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
     name TEXT NOT NULL,
-    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
@@ -694,8 +673,7 @@ CREATE TABLE task_check_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
-    -- allowed status are 'RUNNING', 'DONE', 'FAILED', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
     code INTEGER NOT NULL DEFAULT 0,
     comment TEXT NOT NULL DEFAULT '',
@@ -728,8 +706,7 @@ CREATE TABLE issue (
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     name TEXT NOT NULL,
-    -- allowed status are 'OPEN', 'DONE', 'CANCELED'.
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
     -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
@@ -777,8 +754,7 @@ CREATE TABLE activity (
     -- container_id is not zero.
     container_id INTEGER NOT NULL,
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
-    -- allowed levels are 'INFO', 'WARN', 'ERROR'.
-    level TEXT NOT NULL,
+    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -804,8 +780,7 @@ CREATE TABLE inbox (
     id SERIAL PRIMARY KEY,
     receiver_id INTEGER NOT NULL REFERENCES principal (id),
     activity_id INTEGER NOT NULL REFERENCES activity (id),
-    -- allowed status are 'UNREAD', 'READ'.
-    status TEXT NOT NULL
+    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
 );
 
 CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
@@ -845,8 +820,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    -- allowed types are 'GITLAB_SELF_HOST'.
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -1057,8 +1031,7 @@ CREATE TABLE sheet (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    -- allowed visibilities are 'PRIVATE', 'PROJECT', 'PUBLIC'.
-    visibility TEXT NOT NULL DEFAULT 'PRIVATE'
+    visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE'
 );
 
 CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
