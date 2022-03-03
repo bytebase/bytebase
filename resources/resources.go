@@ -16,7 +16,7 @@ import (
 	// Embeded postgres binaries.
 	_ "embed"
 
-	"github.com/xi2/xz"
+	"github.com/ulikunitz/xz"
 )
 
 // InstallPostgres returns the postgres binary depending on the OS.
@@ -73,7 +73,7 @@ func isAlpineLinux() bool {
 }
 
 func extractTXZ(directory string, data []byte) error {
-	xzReader, err := xz.NewReader(bytes.NewReader(data), 0)
+	xzReader, err := xz.NewReader(bytes.NewReader(data))
 	if err != nil {
 		return err
 	}

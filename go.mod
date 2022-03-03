@@ -21,7 +21,7 @@ require (
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
 	github.com/snowflakedb/gosnowflake v1.6.3
 	github.com/spf13/cobra v1.2.0
-	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
+	github.com/ulikunitz/xz v0.5.10
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 )
