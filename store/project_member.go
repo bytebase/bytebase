@@ -123,70 +123,111 @@ func (s *ProjectMemberService) DeleteProjectMember(ctx context.Context, delete *
 	return nil
 }
 
-// SetProjectMember set the project member with provided project member list
-func (s *ProjectMemberService) SetProjectMember(ctx context.Context, set *api.ProjectMemberSet) (createdMember, deletedMember []*api.ProjectMember, err error) {
+// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested)
+func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int) {
+	oldPrincipalIDSet := make(map[int]bool)
+	for _, id := range oldPrincipalIDList {
+		oldPrincipalIDSet[id] = true
+	}
+
+	newPrincipalIDSet := make(map[int]bool)
+	for _, id := range newPrincipalIDList {
+		newPrincipalIDSet[id] = true
+	}
+
+	for _, newID := range newPrincipalIDList {
+		// if the ID exists, we will try to update it (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
+		if _, ok := oldPrincipalIDSet[newID]; ok {
+			patchPrincipalIDList = append(patchPrincipalIDList, newID)
+		} else {
+			createPrincipalIDList = append(createPrincipalIDList, newID)
+		}
+	}
+
+	for _, oldID := range oldPrincipalIDList {
+		// if the old ID also exists on the new id list, then it has already been added to the patch list above.
+		if _, ok := newPrincipalIDSet[oldID]; ok {
+			continue
+		}
+		deletePrincipalIDList = append(deletePrincipalIDList, oldID)
+	}
+
+	return createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList
+}
+
+// BatchUpdateProjectMember update the project member with provided project member list
+func (s *ProjectMemberService) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) (createdMemberList, deletedMemberList []*api.ProjectMember, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	findProjectMember := &api.ProjectMemberFind{ProjectID: &set.ID}
-	existingProjectMemberList, err := findProjectMemberList(ctx, tx.PTx, findProjectMember)
+	txRead, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
+	findProjectMember := &api.ProjectMemberFind{
+		ProjectID:    &batchUpdate.ID,
+		RoleProvider: &batchUpdate.RoleProvider,
+	}
+	oldProjectMemberList, err := findProjectMemberList(ctx, txRead.PTx, findProjectMember)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	oldMemberMap := make(map[int]*api.ProjectMember)
-	for _, existingMember := range existingProjectMemberList {
-		oldMemberMap[existingMember.PrincipalID] = existingMember
+	var oldPrincipalIDList []int
+	for _, oldMember := range oldProjectMemberList {
+		oldMemberMap[oldMember.PrincipalID] = oldMember
+		oldPrincipalIDList = append(oldPrincipalIDList, oldMember.PrincipalID)
+	}
+	newMemberMap := make(map[int]*api.ProjectMemberCreate)
+	var newPrincipalIDList []int
+	for _, newMember := range batchUpdate.List {
+		newMemberMap[newMember.PrincipalID] = newMember
+		newPrincipalIDList = append(newPrincipalIDList, newMember.PrincipalID)
 	}
 
-	newMemberMap := make(map[int]bool)
-	for _, createMember := range set.List {
-		newMemberMap[createMember.PrincipalID] = true
+	createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList := getBatchUpdatePrincipalIDList(oldPrincipalIDList, newPrincipalIDList)
+
+	for _, id := range createPrincipalIDList {
+		memberCreate := newMemberMap[id]
+		createdMember, err := createProjectMember(ctx, tx.PTx, memberCreate)
+		if err != nil {
+			return nil, nil, FormatError(err)
+		}
+		createdMemberList = append(createdMemberList, createdMember)
 	}
 
-	createdMemberList := make([]*api.ProjectMember, 0)
-	deletedMemberList := make([]*api.ProjectMember, 0)
-	for _, memberCreate := range set.List {
-		// if the member exists, we will try to update its field
-		if memberBefore, ok := oldMemberMap[memberCreate.PrincipalID]; ok {
-			// if we update a member, we will the member in both createdMemberList and deletedMemberList
-			updatedMember, err := patchProjectMember(ctx, tx.PTx, &api.ProjectMemberPatch{
-				ID:           memberBefore.ID,
-				UpdaterID:    memberCreate.CreatorID,
-				Role:         (*string)(&memberCreate.Role),
-				RoleProvider: (*string)(&memberCreate.RoleProvider),
-				Payload:      &memberCreate.Payload,
-			})
-			if err != nil {
-				return nil, nil, FormatError(err)
-			}
-			// we append the updated member to createdMemberList, old member to the deletedMemberList
-			createdMemberList = append(createdMemberList, updatedMember)
-			deletedMemberList = append(deletedMemberList, memberBefore)
-		} else {
-			createdMember, err := createProjectMember(ctx, tx.PTx, memberCreate)
-			if err != nil {
-				return nil, nil, FormatError(err)
-			}
-			createdMemberList = append(createdMemberList, createdMember)
+	for _, id := range patchPrincipalIDList {
+		oldMember := oldMemberMap[id]
+		newMember := newMemberMap[id]
+		memberPatch := &api.ProjectMemberPatch{
+			ID:           oldMember.ID,
+			UpdaterID:    batchUpdate.UpdaterID,
+			Role:         (*string)(&newMember.Role),
+			RoleProvider: (*string)(&newMember.RoleProvider),
+			Payload:      &newMember.Payload,
 		}
+		patchedMember, err := patchProjectMember(ctx, tx.PTx, memberPatch)
+		if err != nil {
+			return nil, nil, FormatError(err)
+		}
+		createdMemberList = append(createdMemberList, patchedMember)
+		deletedMemberList = append(deletedMemberList, oldMember)
 	}
-	for _, member := range existingProjectMemberList {
-		// if the member exists, we will try to update
-		if _, ok := newMemberMap[member.PrincipalID]; ok {
-			continue
-		}
+
+	for _, id := range deletePrincipalIDList {
+		deletedMember := oldMemberMap[id]
 		memberDelete := &api.ProjectMemberDelete{
-			ID:        member.ID,
-			DeleterID: set.UpdaterID,
+			ID:        deletedMember.ID,
+			DeleterID: batchUpdate.UpdaterID,
 		}
 		if err := deleteProjectMember(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, FormatError(err)
 		}
-		deletedMemberList = append(deletedMemberList, member)
+		deletedMemberList = append(deletedMemberList, deletedMember)
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -260,6 +301,9 @@ func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.RoleProvider; v != nil {
+		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
