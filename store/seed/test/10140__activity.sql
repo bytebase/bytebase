@@ -1,4 +1,4 @@
--- Activity for issue 13001
+-- Activity for issue 101
 INSERT INTO
     activity (
         id,
@@ -14,7 +14,7 @@ VALUES
         14001,
         1,
         1,
-        13001,
+        101,
         'bb.issue.create',
         'INFO',
         '{"issueName":"Hello world!"}'
@@ -36,7 +36,7 @@ VALUES
         14002,
         101,
         101,
-        13001,
+        101,
         'bb.issue.comment.create',
         'INFO',
         'Welcome!',
@@ -59,7 +59,7 @@ VALUES
         14003,
         102,
         102,
-        13001,
+        101,
         'bb.issue.comment.create',
         'INFO',
         'Let''s rock!',
@@ -82,7 +82,7 @@ VALUES
         14004,
         103,
         103,
-        13001,
+        101,
         'bb.issue.comment.create',
         'INFO',
         'Go fish!',
