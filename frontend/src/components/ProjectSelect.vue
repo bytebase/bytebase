@@ -117,7 +117,7 @@ export default defineComponent({
     const prepareProjectList = () => {
       store.dispatch("project/fetchProjectListByUser", {
         userId: currentUser.value.id,
-        rowStatusList: [],
+        rowStatusList: ["NORMAL", "ARCHIVED"],
       });
     };
 
