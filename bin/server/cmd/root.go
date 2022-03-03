@@ -327,7 +327,7 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr, 0 /* waitSec */); err != nil {
 		return err
 	}
 	m.pgStarted = true

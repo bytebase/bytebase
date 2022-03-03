@@ -30,8 +30,12 @@ type PostgresInstance struct {
 func (i PostgresInstance) Port() int { return i.port }
 
 // Start starts a postgres instance on given port, outputs to stdout and stderr.
+//
 // If port is 0, then it will choose a random unused port.
-func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer) (err error) {
+//
+// If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
+// Otherwise, returns immediately.
+func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 
 	i.port = port
@@ -49,6 +53,11 @@ func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer) (err error)
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+	}
+
+	// TODO
+	for retry := 0; waitSec > 0; retry++ {
+		break
 	}
 
 	return nil
