@@ -134,7 +134,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		return true, nil, err
 	}
 
-	driver, err := getDatabaseDriver(ctx, task.Instance, databaseName, l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, l)
 	if err != nil {
 		return true, nil, err
 	}

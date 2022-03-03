@@ -147,7 +147,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 
 	// Check connection
 	if err != nil {
@@ -227,7 +227,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := getDatabaseDriver(ctx, instance, database.Name, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {

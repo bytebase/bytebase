@@ -223,7 +223,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
 					if err != nil {
 						return err
 					}
@@ -533,7 +533,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
 		if err != nil {
 			return err
 		}
@@ -1046,14 +1046,15 @@ func (s *Server) composeBackupRelationship(ctx context.Context, backup *api.Back
 	return nil
 }
 
-// Retrieve db.Driver connection.
+// Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to find admin data source"))
+		return nil, common.Errorf(common.Internal, fmt.Errorf("not found admin data source in instance %d", instance.ID))
 	}
-	driver, err := db.Open(
+
+	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
 		db.DriverConfig{Logger: logger},
@@ -1070,7 +1071,59 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 		},
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, adminDataSource.Username, err))
+		return nil, err
+	}
+
+	return driver, nil
+}
+
+// Try to get database driver using the instance's read-only data source.
+// If no read-only data source is found, try using the admin data source.
+// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
+func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+	readOnlyDataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
+	if readOnlyDataSource == nil {
+		adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+		if adminDataSource == nil {
+			return nil, common.Errorf(common.Internal, fmt.Errorf("not found read-only and admin data source in instance %d", instance.ID))
+		}
+		readOnlyDataSource = adminDataSource
+	}
+
+	driver, err := getDatabaseDriver(
+		ctx,
+		instance.Engine,
+		db.DriverConfig{Logger: logger},
+		db.ConnectionConfig{
+			Username: readOnlyDataSource.Username,
+			Password: readOnlyDataSource.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: databaseName,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return driver, nil
+}
+
+// Retrieve db.Driver connection with standard parameters for all type data source.
+func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.DriverConfig, connectionConfig db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	driver, err := db.Open(
+		ctx,
+		engine,
+		driverConfig,
+		connectionConfig,
+		connCtx,
+	)
+	if err != nil {
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
 	}
 	return driver, nil
 }

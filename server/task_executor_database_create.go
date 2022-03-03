@@ -53,7 +53,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := getDatabaseDriver(ctx, task.Instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
 		return true, nil, err
 	}
