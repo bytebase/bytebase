@@ -202,6 +202,9 @@ func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMem
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
+	if create.RoleProvider == "" {
+		create.RoleProvider = api.ProjectRoleProviderBytebase
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_member (
 			creator_id,
