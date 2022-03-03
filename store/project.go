@@ -156,6 +156,9 @@ func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *
 // createProject creates a new project.
 func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
 	// Insert row into database.
+	if create.RoleProvider == "" {
+		create.RoleProvider = api.ProjectRoleProviderBytebase
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project (
 			creator_id,
