@@ -18,7 +18,7 @@
     "@tailwindcss/line-clamp": "^0.3.1",
     "@tailwindcss/typography": "^0.4.0",
     "@vueuse/core": "^7.6.0",
-    "autoprefixer": "^10.2.6",
+    "autoprefixer": "^10.4.2",
     "axios": "^0.26.0",
     "dayjs": "^1.10.7",
     "escape-string-regexp": "^5.0.0",
