@@ -99,6 +99,9 @@
           @click.prevent="resetQuickstart"
           >{{ $t("common.quickstart") }}</a
         >
+        <a href="https://docs.bytebase.com" target="_blank" class="menu-item">
+          {{ $t("common.help") }}
+        </a>
       </div>
       <div class="border-t border-gray-100"></div>
       <div v-if="!isRelease" class="py-1 menu-item">
