@@ -15,7 +15,7 @@ func recoverMiddleware(l *zap.Logger, next echo.HandlerFunc) echo.HandlerFunc {
 				if !ok {
 					err = fmt.Errorf("%v", r)
 				}
-				l.Error("Middleware PANIC RECOVER", zap.Error(err))
+				l.Error("Middleware PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 
 				c.Error(err)
 			}
