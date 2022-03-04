@@ -29,14 +29,14 @@ func NewProjectService(logger *zap.Logger, db *DB, cache api.CacheService) *Proj
 }
 
 // CreateProject creates a new project.
-func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
+func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.ProjectPlain, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	project, err := createProject(ctx, tx.PTx, create)
+	projectPlain, err := createProject(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +45,15 @@ func (s *ProjectService) CreateProject(ctx context.Context, create *api.ProjectC
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+	if err := s.cache.UpsertCache(api.ProjectCache, projectPlain.ID, projectPlain); err != nil {
 		return nil, err
 	}
 
-	return project, nil
+	return projectPlain, nil
 }
 
 // FindProjectList retrieves a list of projects based on find.
-func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
+func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectFind) ([]*api.ProjectPlain, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -62,7 +62,7 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 
 	list, err := findProjectList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Project{}, err
+		return []*api.ProjectPlain{}, err
 	}
 
 	if err == nil {
@@ -78,9 +78,9 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 
 // FindProject retrieves a single project based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind) (*api.Project, error) {
+func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind) (*api.ProjectPlain, error) {
 	if find.ID != nil {
-		project := &api.Project{}
+		project := &api.ProjectPlain{}
 		has, err := s.cache.FindCache(api.ProjectCache, *find.ID, project)
 		if err != nil {
 			return nil, err
@@ -114,7 +114,7 @@ func (s *ProjectService) FindProject(ctx context.Context, find *api.ProjectFind)
 
 // PatchProject updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
+func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.ProjectPlain, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -139,7 +139,7 @@ func (s *ProjectService) PatchProject(ctx context.Context, patch *api.ProjectPat
 
 // PatchProjectTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.ProjectPlain, error) {
 	project, err := patchProject(ctx, tx, patch)
 
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *
 }
 
 // createProject creates a new project.
-func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
+func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.ProjectPlain, error) {
 	// Insert row into database.
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
@@ -189,7 +189,7 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 	defer row.Close()
 
 	row.Next()
-	var project api.Project
+	var project api.ProjectPlain
 	if err := row.Scan(
 		&project.ID,
 		&project.RowStatus,
@@ -211,7 +211,7 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 	return &project, nil
 }
 
-func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ []*api.Project, err error) {
+func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ []*api.ProjectPlain, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -249,9 +249,9 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Project, 0)
+	list := make([]*api.ProjectPlain, 0)
 	for rows.Next() {
-		var project api.Project
+		var project api.ProjectPlain
 		if err := rows.Scan(
 			&project.ID,
 			&project.RowStatus,
@@ -280,7 +280,7 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 }
 
 // patchProject updates a project by ID. Returns the new state of the project after update.
-func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.Project, error) {
+func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*api.ProjectPlain, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -316,7 +316,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 	defer row.Close()
 
 	if row.Next() {
-		var project api.Project
+		var project api.ProjectPlain
 		if err := row.Scan(
 			&project.ID,
 			&project.RowStatus,

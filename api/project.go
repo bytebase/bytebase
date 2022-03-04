@@ -64,6 +64,29 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
+// ProjectPlain is the store model for a project.
+type ProjectPlain struct {
+	ID int
+
+	// Standard fields
+	RowStatus RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name         string
+	Key          string
+	WorkflowType ProjectWorkflowType
+	Visibility   ProjectVisibility
+	TenantMode   ProjectTenantMode
+	// DBNameTemplate is only used when a project is in tenant mode.
+	// Empty value means {{DB_NAME}}.
+	DBNameTemplate string
+	RoleProvider   ProjectRoleProvider
+}
+
 // Project is the API message for a project.
 type Project struct {
 	ID int `jsonapi:"primary,project"`
@@ -306,12 +329,12 @@ func getTemplateTokens(template string) []string {
 	return r.FindAllString(template, -1)
 }
 
-// ProjectService is the service for projects.
+// ProjectService is the storage access service for projects.
 type ProjectService interface {
-	CreateProject(ctx context.Context, create *ProjectCreate) (*Project, error)
-	FindProjectList(ctx context.Context, find *ProjectFind) ([]*Project, error)
-	FindProject(ctx context.Context, find *ProjectFind) (*Project, error)
-	PatchProject(ctx context.Context, patch *ProjectPatch) (*Project, error)
+	CreateProject(ctx context.Context, create *ProjectCreate) (*ProjectPlain, error)
+	FindProjectList(ctx context.Context, find *ProjectFind) ([]*ProjectPlain, error)
+	FindProject(ctx context.Context, find *ProjectFind) (*ProjectPlain, error)
+	PatchProject(ctx context.Context, patch *ProjectPatch) (*ProjectPlain, error)
 	// This is specifically used to update the ProjectWorkflowType when linking/unlinking the repository.
-	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*Project, error)
+	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*ProjectPlain, error)
 }

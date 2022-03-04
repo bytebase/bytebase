@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/webhook"
+
+	"github.com/jinzhu/copier"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -71,12 +72,17 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		projectFind := &api.ProjectFind{
 			ID: &meta.issue.ProjectID,
 		}
-		meta.issue.Project, err = m.s.ProjectService.FindProject(ctx, projectFind)
+		projectPlain, err := m.s.ProjectService.FindProject(ctx, projectFind)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
-		if meta.issue.Project == nil {
+		if projectPlain == nil {
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
+		}
+		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
+		// it is currently copied from *ProjectPlain for a smaller change list, which is better for reviewers.
+		if err := copier.Copy(meta.issue.Project, projectPlain); err != nil {
+			panic(fmt.Sprintf("failed to copy from *api.ProjectPlain to *api.Project, %v", err))
 		}
 	}
 

@@ -188,11 +188,11 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		projectFind := &api.ProjectFind{
 			ID: &projectID,
 		}
-		project, err := s.ProjectService.FindProject(ctx, projectFind)
+		projectPlain, err := s.ProjectService.FindProject(ctx, projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
-		if project == nil {
+		if projectPlain == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
 		}
 
@@ -220,14 +220,14 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				Level:        webhook.WebhookInfo,
 				Title:        fmt.Sprintf("Test webhook %q", hook.Name),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(hook)),
+				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(projectPlain), api.ProjectWebhookSlug(hook)),
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
 				MetaList: []webhook.Meta{
 					{
 						Name:  "Project",
-						Value: project.Name,
+						Value: projectPlain.Name,
 					},
 				},
 			},
