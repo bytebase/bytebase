@@ -92,6 +92,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	MigrationType     db.MigrationType `json:"migrationType,omitempty"`
 	Statement         string           `json:"statement,omitempty"`
 	RollbackStatement string           `json:"rollbackStatement,omitempty"`
+	SchemaVersion     string           `json:"schemaVersion,omitempty"`
 	VCSPushEvent      *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
@@ -99,6 +100,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 type TaskDatabaseDataUpdatePayload struct {
 	Statement         string         `json:"statement,omitempty"`
 	RollbackStatement string         `json:"rollbackStatement,omitempty"`
+	SchemaVersion     string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent      *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
