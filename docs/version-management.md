@@ -14,16 +14,16 @@ For Bytebase, MINOR and PATCH version upgrade should be transparent to the custo
 1. Significant product upgrade.
 1. Require customer to use a separate method to upgrade the deployed Bytebase version.
 
-MAJOR verison change usually happens at most once or twice a year. And if we do, Bytebase will try to accomplish the 1st point (delivering great value to the customers) while avoiding the 2nd point (disrupting the customer).
+MAJOR verison change usually happens at most once or twice a year. And if we do, Bytebase will always accomplish the 1st point (delivering great value to the customers) while try to avoid the 2nd point (disrupting the customer).
 
 ## When MINOR verison is changed
 
-We change MINOR version if the new version upgrades the underlying database schema. While the upgrade does `not` require customer involvement.
+We change MINOR version if the new version upgrades the underlying database schema. While the upgrade does not require customer involvement.
 
 MINOR version change usually happens at most once every month.
 
 ## When PATCH version is changed
 
-We change PATCH version if the new version does `not` include underlying database schema changes.
+We change PATCH version if the new version does not include underlying database schema changes.
 
 PATCH version change usually happens bi-weekly following our release schedule.
