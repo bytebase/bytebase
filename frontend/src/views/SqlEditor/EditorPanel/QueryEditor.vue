@@ -67,14 +67,14 @@ const handleChangeSelection = debounce((value: string) => {
 const handleSave = async (statement: string) => {
   const { name, sheetId } = currentTab.value;
 
-  const newSheet = await upsertSheet({
+  const sheet = await upsertSheet({
     id: sheetId,
     name,
     statement,
   });
 
   updateCurrentTab({
-    sheetId: newSheet.id,
+    sheetId: sheet.id,
     isSaved: true,
   });
 };
