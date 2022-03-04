@@ -121,6 +121,9 @@ func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, up
 }
 
 func (s *DeploymentConfigService) upsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
+	if upsert.Payload == "" {
+		upsert.Payload = "{}"
+	}
 	row, err := tx.QueryContext(ctx, `
 	INSERT INTO deployment_config (
 		creator_id,

@@ -88,7 +88,8 @@ type Project struct {
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 	// DBNameTemplate is only used when a project is in tenant mode.
 	// Empty value means {{DB_NAME}}.
-	DBNameTemplate string `jsonapi:"attr,dbNameTemplate"`
+	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
+	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -98,10 +99,11 @@ type ProjectCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name           string            `jsonapi:"attr,name"`
-	Key            string            `jsonapi:"attr,key"`
-	TenantMode     ProjectTenantMode `jsonapi:"attr,tenantMode"`
-	DBNameTemplate string            `jsonapi:"attr,dbNameTemplate"`
+	Name           string              `jsonapi:"attr,name"`
+	Key            string              `jsonapi:"attr,key"`
+	TenantMode     ProjectTenantMode   `jsonapi:"attr,tenantMode"`
+	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
+	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 }
 
 // ProjectFind is the API message for finding projects.
@@ -112,7 +114,7 @@ type ProjectFind struct {
 	RowStatus *RowStatus
 
 	// Domain specific fields
-	// If present, will only find project containing PrincipalID as a member
+	// If present, will only find project containing PrincipalID as an active member
 	PrincipalID *int
 }
 
@@ -137,6 +139,7 @@ type ProjectPatch struct {
 	Name         *string              `jsonapi:"attr,name"`
 	Key          *string              `jsonapi:"attr,key"`
 	WorkflowType *ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	RoleProvider *string              `jsonapi:"attr,roleProvider"`
 }
 
 var (

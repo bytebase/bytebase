@@ -54,7 +54,7 @@ VALUES
         101,
         3007,
         'db-pattern',
-        '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.tenant","operator":"In","values":["tenant1"]}]}}},{"name":"Integration Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Integration"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
+        '{"deployments":[{"name":"Dev Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Dev"]},{"key":"bb.tenant","operator":"In","values":["dev"]}]}}},{"name":"PTR Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Staging"]},{"key":"bb.tenant","operator":"Exists"}]}}},{"name":"Release Stage","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["Prod"]},{"key":"bb.tenant","operator":"Exists"}]}}}]}'
     );
 
 ALTER SEQUENCE deployment_config_id_seq RESTART WITH 21004;

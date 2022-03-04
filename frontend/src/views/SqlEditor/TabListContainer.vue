@@ -28,9 +28,7 @@
             @dblclick="handleEditLabel(tab)"
           >
             <div
-              v-if="
-                labelState.isEditingLabel && labelState.editingTabId === tab.id
-              "
+              v-if="labelState.editingTabId === tab.id"
               class="label-input relative"
             >
               <input
@@ -122,7 +120,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive, nextTick, computed, onMounted } from "vue";
+import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
 import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
@@ -141,6 +139,7 @@ import {
   TabActions,
   SheetActions,
 } from "../../types";
+import { useDialog } from "naive-ui";
 import { getDefaultTab } from "../../store/modules/tab";
 import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
 
@@ -180,9 +179,7 @@ const enterTabId = ref("");
 const selectedTab = computed(() => currentTabId.value);
 // edit label state
 const labelState = reactive({
-  isEditingLabel: false,
   currentLabelName: "",
-  oldLabelName: "",
   editingTabId: "",
 });
 const labelInputRef = ref<HTMLInputElement>();
@@ -223,46 +220,42 @@ const updateSheetName = () => {
   }
 };
 
-// Edit label logic
 const handleEditLabel = (tab: TabInfo) => {
-  labelState.isEditingLabel = true;
   labelState.editingTabId = tab.id;
+  labelState.currentLabelName = tab.name;
+  nextTick(() => {
+    labelInputRef.value?.focus();
+  });
 };
+
 const handleTryChangeLabel = () => {
-  if (labelState.currentLabelName !== "") {
-    labelState.isEditingLabel = false;
-    updateCurrentTab({
-      name: labelState.currentLabelName,
-    });
+  if (labelState.editingTabId) {
+    if (labelState.currentLabelName !== "") {
+      updateCurrentTab({
+        name: labelState.currentLabelName,
+      });
 
-    updateSheetName();
-
-    nextTick(() => {
-      recalculateScrollWidth();
-      scrollState.style = {
-        transform: `translateX(0px)`,
-      };
-    });
-  } else {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("sql-editor.please-input-the-tab-label"),
-    });
+      updateSheetName();
+      nextTick(() => {
+        recalculateScrollWidth();
+        scrollState.style = {
+          transform: `translateX(0px)`,
+        };
+      });
+    } else {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.please-input-the-tab-label"),
+      });
+    }
+    handleCancelChangeLabel();
   }
 };
+
 const handleCancelChangeLabel = () => {
-  labelState.currentLabelName = labelState.oldLabelName;
-  updateCurrentTab({
-    name: labelState.currentLabelName,
-  });
-
-  updateSheetName();
-
-  nextTick(() => {
-    labelState.isEditingLabel = false;
-    recalculateScrollWidth();
-  });
+  labelState.editingTabId = "";
+  labelState.currentLabelName = "";
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
@@ -288,16 +281,39 @@ const handleAddTab = (tab: AnyTabInfo) => {
     recalculateScrollWidth();
   });
 };
-const handleRemoveTab = async (tab: TabInfo) => {
-  await removeTab(tab);
-  const tabsLength = tabList.value.length;
 
-  if (tabsLength > 0) {
-    handleSelectTab(tabList.value[tabsLength - 1]);
+const modal = useDialog();
+
+const handleRemoveTab = async (tab: TabInfo) => {
+  if (!tab.isSaved) {
+    const $modal = modal.create({
+      title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
+      type: "warning",
+      onPositiveClick() {
+        $modal.destroy();
+      },
+      async onNegativeClick() {
+        await remove();
+        $modal.destroy();
+      },
+      negativeText: t("common.confirm"),
+      positiveText: t("common.cancel"),
+    });
+  } else {
+    await remove();
   }
-  nextTick(() => {
-    recalculateScrollWidth();
-  });
+
+  async function remove() {
+    await removeTab(tab);
+    const tabsLength = tabList.value.length;
+
+    if (tabsLength > 0) {
+      handleSelectTab(tabList.value[tabsLength - 1]);
+    }
+    nextTick(() => {
+      recalculateScrollWidth();
+    });
+  }
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   setCurrentTabId(tabId);
@@ -310,30 +326,22 @@ const handleScollTabList = debounce((e: WheelEvent) => {
   console.log(e.offsetX);
 }, 333);
 
-watch(
-  () => labelState.isEditingLabel,
-  (newVal) => {
-    if (newVal) {
-      labelState.currentLabelName = currentTab.value.name;
-      labelState.oldLabelName = currentTab.value.name;
-      nextTick(() => {
-        labelInputRef.value?.focus();
-      });
-    } else {
-      nextTick(() => {
-        labelState.currentLabelName = "";
-        labelState.editingTabId = "";
-        labelState.oldLabelName = "";
-      });
-    }
-  }
-);
-
 onMounted(async () => {
   if (!hasTabs.value) {
     addTab(getDefaultTab());
     recalculateScrollWidth();
   }
+});
+
+// add listener to confirm confrim if close the tab.
+onMounted(() => {
+  window.onbeforeunload = () => {
+    return "false";
+  };
+});
+// remove if unmount view
+onUnmounted(() => {
+  window.onbeforeunload = null;
 });
 </script>
 

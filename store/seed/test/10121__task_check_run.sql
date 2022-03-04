@@ -14,7 +14,7 @@ INSERT INTO
     )
 VALUES
     (
-        101,
+        12101,
         1,
         1,
         11004,
@@ -22,8 +22,8 @@ VALUES
         'bb.task-check.database.connect',
         101,
         'failed to connect database "shop": failed to connect database On-premises Staging MySQL/shop at "mysql.staging.example.com":"3306" with user "admin": dial tcp: lookup mysql.staging.example.com: no such host',
-        '',
-        ''
+        '{}',
+        '{}'
     );
 
 INSERT INTO
@@ -41,7 +41,7 @@ INSERT INTO
     )
 VALUES
     (
-        102,
+        12102,
         1,
         1,
         11004,
@@ -53,4 +53,4 @@ VALUES
         '{"statement":"CREATE TABLE product (\n\tid INTEGER PRIMARY KEY AUTO_INCREMENT,\n\tname TEXT NOT NULL,\n\tdescription TEXT NOT NULL\n);\n","dbType":"MYSQL","charset":"utf8mb4","collation":"utf8mb4_general_ci"}'
     );
 
-ALTER SEQUENCE task_check_run_id_seq RESTART WITH 103;
+ALTER SEQUENCE task_check_run_id_seq RESTART WITH 12103;

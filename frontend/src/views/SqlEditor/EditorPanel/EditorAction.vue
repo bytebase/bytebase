@@ -1,12 +1,18 @@
 <template>
   <div class="sqleditor-editor-actions">
-    <div class="actions-left w-1/3">
+    <div class="actions-left w-1/3 space-x-2">
       <NButton
         type="primary"
         :disabled="isEmptyStatement || executeState.isLoadingData"
         @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
+      </NButton>
+      <NButton
+        :disabled="isEmptyStatement || executeState.isLoadingData"
+        @click="handleExplainQuery"
+      >
+        <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
     </div>
     <div class="actions-right space-x-2 flex w-2/3 justify-end">
@@ -81,7 +87,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleUpsertSheet"
+        @click="handleSave"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -90,35 +96,38 @@
         placement="bottom-end"
         :show-arrow="false"
         :show="isShowSharePopover"
+        :on-clickoutside="handleClickoutside"
       >
         <template #trigger>
           <NButton
-            :disabled="isEmptyStatement || isDisconnected"
-            @click="isShowSharePopover = !isShowSharePopover"
+            :disabled="
+              isEmptyStatement || isDisconnected || !currentTab.isSaved
+            "
+            @click.stop.prevent="toggleSharePopover"
           >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
-        <SharePopover ref="sharePopover" @close="isShowSharePopover = false" />
+        <SharePopover @close="isShowSharePopover = false" />
       </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
-import { onClickOutside } from "@vueuse/core";
 
 import {
   SqlEditorState,
   SqlEditorGetters,
   TabGetters,
+  TabActions,
   SheetActions,
   UNKNOWN_ID,
   Instance,
@@ -144,15 +153,22 @@ const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
   "upsertSheet",
 ]);
+const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
+  "updateCurrentTab",
+]);
 
 const isShowSharePopover = ref(false);
-const sharePopover = ref(null);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
 const selectedInstance = computed<Instance>(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
+});
+const selectedInstanceEngine = computed(() => {
+  return store.getters["instance/instanceFormatedEngine"](
+    selectedInstance.value
+  ) as string;
 });
 
 const hasReadonlyDataSource = computed(() => {
@@ -169,15 +185,24 @@ const hasReadonlyDataSource = computed(() => {
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
-  execute();
+  execute({ databaseType: selectedInstanceEngine.value });
 };
 
-const handleUpsertSheet = async () => {
+const handleExplainQuery = () => {
+  execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
+};
+
+const handleSave = async () => {
   const { name, statement, sheetId } = currentTab.value;
-  return upsertSheet({
+  const sheet = await upsertSheet({
     id: sheetId,
     name,
     statement,
+  });
+
+  updateCurrentTab({
+    sheetId: sheet.id,
+    isSaved: true,
   });
 };
 
@@ -190,9 +215,13 @@ const gotoInstanceDetailPage = () => {
   });
 };
 
-onMounted(() => {
-  onClickOutside(sharePopover, (event) => (isShowSharePopover.value = false));
-});
+const handleClickoutside = (e: any) => {
+  isShowSharePopover.value = false;
+};
+
+const toggleSharePopover = () => {
+  isShowSharePopover.value = !isShowSharePopover.value;
+};
 </script>
 
 <style scoped>

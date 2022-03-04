@@ -12,6 +12,14 @@ import {
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
 
+type ExecuteConfig = {
+  databaseType: string;
+};
+
+type ExecuteOption = {
+  explain: boolean;
+};
+
 const useExecuteSQL = () => {
   const store = useStore();
   const { t } = useI18n();
@@ -28,7 +36,10 @@ const useExecuteSQL = () => {
     });
   };
 
-  const execute = async () => {
+  const execute = async (
+    config: ExecuteConfig,
+    option?: Partial<ExecuteOption>
+  ) => {
     if (state.isLoadingData) {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
@@ -83,12 +94,15 @@ const useExecuteSQL = () => {
     }
 
     try {
+      const isExplain = option?.explain || false;
       state.isLoadingData = true;
       store.dispatch("sqlEditor/setIsExecuting", true);
       // remove the comment from the sql statement in front-end
-      const statement = data !== null ? transformSQL(data) : sqlStatement;
+      const selectStatement =
+        data !== null ? transformSQL(data, config.databaseType) : sqlStatement;
+      const explainStatement = `EXPLAIN ${selectStatement}`;
       const res = await store.dispatch("sqlEditor/executeQuery", {
-        statement,
+        statement: isExplain ? explainStatement : selectStatement,
       });
       state.isLoadingData = false;
       store.dispatch("sqlEditor/setIsExecuting", false);

@@ -51,6 +51,7 @@ function convert(
     visibility: attrs.visibility,
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
+    roleProvider: attrs.roleProvider,
   };
 
   const memberList: ProjectMember[] = [];
@@ -113,6 +114,8 @@ function convertMember(
       projectMember.relationships!.principal.data,
       includedList
     ),
+    roleProvider: attrs.roleProvider,
+    payload: JSON.parse((attrs.payload as unknown as string) || "{}"),
   };
 }
 
@@ -176,19 +179,35 @@ const actions = {
     { commit, rootGetters }: any,
     {
       userId,
-      rowStatusList,
+      rowStatusList = [],
     }: {
       userId: PrincipalId;
       rowStatusList?: RowStatus[];
     }
   ) {
-    const path =
-      `/api/project?user=${userId}` +
-      (rowStatusList ? "&rowstatus=" + rowStatusList.join(",") : "");
-    const data = (await axios.get(`${path}`)).data;
-    const projectList = data.data.map((project: ResourceObject) => {
-      return convert(project, data.included, rootGetters);
-    });
+    const projectList: Project[] = [];
+
+    const fetchProjectList = async (rowStatus?: RowStatus) => {
+      let path = `/api/project?user=${userId}`;
+      if (rowStatus) path += `&rowstatus=${rowStatus}`;
+      const data = (await axios.get(path)).data;
+      const list: Project[] = data.data.map((project: ResourceObject) => {
+        return convert(project, data.included, rootGetters);
+      });
+      // projects are mutual excluded by different rowstatus
+      // so we don't need to unique them by id here
+      projectList.push(...list);
+    };
+
+    if (rowStatusList.length === 0) {
+      // if no rowStatus specified, fetch all
+      await fetchProjectList();
+    } else {
+      // otherwise, fetch different rowStatus one-by-one
+      for (const rowStatus of rowStatusList) {
+        await fetchProjectList(rowStatus);
+      }
+    }
 
     commit("upsertProjectList", projectList);
     return projectList;
@@ -252,6 +271,17 @@ const actions = {
     return updatedProject;
   },
 
+  // sync member role from vcs
+  async syncMemberRoleFromVCS(
+    { dispatch }: any,
+    { projectId }: { projectId: ProjectId }
+  ) {
+    await axios.post(`/api/project/${projectId}/syncmember`);
+    const updatedProject = await dispatch("fetchProjectById", projectId);
+
+    return updatedProject;
+  },
+
   // Project Role Mapping
   // Returns existing member if the principalId has already been created.
   async createdMember(
@@ -272,7 +302,6 @@ const actions = {
     });
 
     const updatedProject = await dispatch("fetchProjectById", projectId);
-
     return updatedProject;
   },
 

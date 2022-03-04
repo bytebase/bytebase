@@ -237,6 +237,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		if len(diff) != 0 {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
+		if history.Version == "" {
+			t.Fatalf("empty migration history version for migration %v", i)
+		}
 	}
 
 	// Create a manual backup.
@@ -611,5 +614,14 @@ func TestVCS(t *testing.T) {
 		if len(diff) != 0 {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
+		if history.Version == "" {
+			t.Fatalf("empty migration history version for migration %v", i)
+		}
+	}
+	if histories[0].Version != "ver2" {
+		t.Fatalf("invalid migration(0) history version, want ver2 got %v", histories[0].Version)
+	}
+	if histories[1].Version != "ver1" {
+		t.Fatalf("invalid migration(0) history version, want ver1 got %v", histories[0].Version)
 	}
 }

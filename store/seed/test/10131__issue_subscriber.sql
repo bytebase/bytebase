@@ -1,18 +1,18 @@
--- Subscriber for issue 13001
+-- Subscriber for issue 101
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
-    (13001, 102);
+    (101, 102);
 
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
-    (13001, 103);
+    (101, 103);
 
 INSERT INTO
     issue_subscriber (issue_id, subscriber_id)
 VALUES
-    (13001, 104);
+    (101, 104);
 
 -- Subscriber for issue 13002
 INSERT INTO

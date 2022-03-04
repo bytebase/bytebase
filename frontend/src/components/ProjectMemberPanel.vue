@@ -1,9 +1,106 @@
 <template>
-  <div>
-    <p class="text-lg font-medium leading-7 text-main">
+  <div class="content-center">
+    <span class="text-lg font-medium leading-7 text-main">
       {{ $t("project.settings.manage-member") }}
-    </p>
-    <div v-if="allowAddMember" class="mt-4 w-full flex justify-start">
+    </span>
+
+    <div v-if="allowSyncVCS" class="inline-block float-right">
+      <span class="normal-link text-sm mr-5" @click="openWindowForVCSMember">
+        {{ $t("project.settings.view-vcs-member") }}
+      </span>
+
+      <span class="text-sm text-control">
+        {{ $t("project.settings.sync-from-vcs") }}
+      </span>
+      <heroicons-outline:refresh
+        v-if="project.roleProvider !== 'BYTEBASE'"
+        class="ml-1 inline text-sm normal-link"
+        @click.prevent="
+          () => {
+            syncMemberFromVCS();
+          }
+        "
+      />
+      <div class="w-auto ml-3 inline-block align-middle">
+        <BBSwitch
+          :value="project.roleProvider !== 'BYTEBASE'"
+          @toggle="
+            (on) => {
+              // we prompt a modal to let user double confirm this change
+              state.showModal = true;
+              if (!on) {
+                // we preview member if user try to switch role provider to Bytebase
+                state.previewMember = true;
+              }
+            }
+          "
+        />
+      </div>
+    </div>
+
+    <NModal
+      v-model:show="state.showModal"
+      :style="project.roleProvider === 'BYTEBASE' ? '' : 'width:800px'"
+      :mask-closable="false"
+      preset="dialog"
+      :title="$t('settings.members.toggle-role-provider.title')"
+      :content="$t('settings.members.change-role-provider-to-vcs.content')"
+      :on-after-leave="
+        () => {
+          state.previewMember = false;
+        }
+      "
+      :positive-text="$t('common.confirm')"
+      :negative-text="$t('common.cancel')"
+      @positive-click="
+        () => {
+          state.showModal = false;
+          // the current role provider is BYTEBASE, meaning switching role provider to VCS
+          if (project.roleProvider === 'BYTEBASE') {
+            patchProjectRoleProvider('GITLAB_SELF_HOST')
+              .then(() => {
+                syncMemberFromVCS();
+              })
+              .catch(() => {}); // mute error at browser
+          } else if (project.roleProvider === 'GITLAB_SELF_HOST') {
+            // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
+            patchProjectRoleProvider('BYTEBASE').then(() => {
+              $store
+                .dispatch('notification/pushNotification', {
+                  module: 'bytebase',
+                  style: 'SUCCESS',
+                  title: $t(
+                    'project.settings.switch-role-provider-to-bytebase-success-prompt'
+                  ),
+                })
+                .catch(() => {}); // mute error at browser
+            });
+          }
+        }
+      "
+      @negative-click="
+        () => {
+          state.showModal = false;
+        }
+      "
+    >
+      <template v-if="state.previewMember">
+        <div class="mx-1">
+          {{ $t("settings.members.change-role-provider-to-bytebase.content") }}
+        </div>
+        <div class="overflow-y-auto max-h-72">
+          <ProjectMemberTable
+            :project="project"
+            :active-role-provider="'BYTEBASE'"
+          />
+        </div>
+      </template>
+    </NModal>
+
+    <div
+      v-if="allowAddMember && project.roleProvider === 'BYTEBASE'"
+      class="mt-4 w-full flex justify-start"
+    >
       <!-- To prevent jiggling when showing the error text -->
       <div :class="state.error ? 'space-y-1' : 'space-y-6'">
         <div class="space-y-2">
@@ -89,6 +186,8 @@ import {
   Project,
   ProjectMember,
   ProjectMemberCreate,
+  ProjectPatch,
+  ProjectRoleProvider,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
@@ -99,6 +198,9 @@ interface LocalState {
   principalId: PrincipalId;
   role: ProjectRoleType;
   error: string;
+  showModal: boolean;
+  roleProvider: boolean;
+  previewMember: boolean;
 }
 
 export default defineComponent({
@@ -120,6 +222,9 @@ export default defineComponent({
       principalId: UNKNOWN_ID,
       role: "DEVELOPER",
       error: "",
+      showModal: false,
+      roleProvider: false,
+      previewMember: false,
     });
 
     const hasRBACFeature = computed(() =>
@@ -141,13 +246,23 @@ export default defineComponent({
       }
 
       for (const member of props.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
+        if (
+          member.principal.id == currentUser.value.id &&
+          // only member with the same role provider as that of the project will be consider a valid member
+          member.roleProvider === props.project.roleProvider
+        ) {
           if (isProjectOwner(member.role)) {
             return true;
           }
         }
       }
       return false;
+    });
+
+    const allowSyncVCS = computed(() => {
+      // NOTICE: will dis annotate this when this function is ready
+      return false;
+      // return props.project.workflowType === "VCS" && allowAddMember.value;
     });
 
     const hasValidMember = computed(() => {
@@ -182,6 +297,7 @@ export default defineComponent({
       const projectMember: ProjectMemberCreate = {
         principalId: state.principalId,
         role: hasRBACFeature.value ? state.role : "OWNER",
+        roleProvider: "BYTEBASE",
       };
       const member = store.getters["member/memberByPrincipalId"](
         state.principalId
@@ -206,14 +322,58 @@ export default defineComponent({
       state.error = "";
     };
 
+    // update project's role provider
+    const patchProjectRoleProvider = (
+      roleProvider: ProjectRoleProvider
+    ): Promise<boolean> =>
+      new Promise((resolve, reject) => {
+        const projectPatch: ProjectPatch = { roleProvider: roleProvider };
+        store
+          .dispatch("project/patchProject", {
+            projectId: props.project.id,
+            projectPatch,
+          })
+          .then((res) => {
+            resolve(true);
+          });
+      });
+
+    const syncMemberFromVCS = () => {
+      store
+        .dispatch("project/syncMemberRoleFromVCS", {
+          projectId: props.project.id,
+        })
+        .then(() => {
+          store.dispatch("notification/pushNotification", {
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("project.settings.success-member-sync-prompt"),
+          });
+        });
+    };
+
+    const openWindowForVCSMember = () => {
+      // currently we only support Gitlab, so the following redirect URL is fixed
+      store
+        .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
+        .then((repository) => {
+          // this uri format is for GitLab
+          window.open(`${repository.webUrl}/-/project_members`);
+        });
+    };
+
     return {
       state,
       hasRBACFeature,
+      allowSyncVCS,
       allowAddMember,
       validateMember,
       clearValidationError,
       hasValidMember,
       addMember,
+      syncMemberFromVCS,
+      openWindowForVCSMember,
+      patchProjectRoleProvider,
     };
   },
 });

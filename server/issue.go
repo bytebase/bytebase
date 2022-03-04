@@ -333,89 +333,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
 
-	var pipeline *api.Pipeline
 	// If frontend does not pass the stageList, we will generate it from backend.
-	if len(issueCreate.Pipeline.StageList) == 0 {
-		p, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
-		if err != nil {
-			return nil, err
-		}
-		pipeline = p
-	} else {
-		// TODO(spinningbot): remove this fallback logic once frontend is fully migrated to createContext.
-		issueCreate.Pipeline.CreatorID = creatorID
-
-		createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &issueCreate.Pipeline)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create pipeline for issue. Error %w", err)
-		}
-
-		for _, stageCreate := range issueCreate.Pipeline.StageList {
-			stageCreate.CreatorID = creatorID
-			stageCreate.PipelineID = createdPipeline.ID
-			createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create stage for issue. Error %w", err)
-			}
-
-			for _, taskCreate := range stageCreate.TaskList {
-				if taskCreate.EarliestAllowedTs != 0 && !s.feature(api.FeatureTaskScheduleTime) {
-					return nil, fmt.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
-				}
-				taskCreate.CreatorID = creatorID
-				taskCreate.PipelineID = createdPipeline.ID
-				taskCreate.StageID = createdStage.ID
-				instanceFind := &api.InstanceFind{
-					ID: &taskCreate.InstanceID,
-				}
-				instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
-				if err != nil {
-					return nil, fmt.Errorf("failed to fetch instance in issue creation: %v", err)
-				}
-				if instance == nil {
-					return nil, fmt.Errorf("instance ID not found %v", taskCreate.InstanceID)
-				}
-				if taskCreate.Type == api.TaskDatabaseSchemaUpdate {
-					payload := api.TaskDatabaseSchemaUpdatePayload{}
-					payload.MigrationType = taskCreate.MigrationType
-					payload.Statement = taskCreate.Statement
-					payload.RollbackStatement = taskCreate.RollbackStatement
-					payload.VCSPushEvent = taskCreate.VCSPushEvent
-					bytes, err := json.Marshal(payload)
-					if err != nil {
-						return nil, fmt.Errorf("failed to create schema update task, unable to marshal payload %w", err)
-					}
-					taskCreate.Payload = string(bytes)
-				} else if taskCreate.Type == api.TaskDatabaseDataUpdate {
-					payload := api.TaskDatabaseDataUpdatePayload{}
-					payload.Statement = taskCreate.Statement
-					payload.RollbackStatement = taskCreate.RollbackStatement
-					payload.VCSPushEvent = taskCreate.VCSPushEvent
-					bytes, err := json.Marshal(payload)
-					if err != nil {
-						return nil, fmt.Errorf("failed to create data update task, unable to marshal payload %w", err)
-					}
-					taskCreate.Payload = string(bytes)
-				} else if taskCreate.Type == api.TaskDatabaseRestore {
-					// Snowflake needs to use upper case of DatabaseName.
-					if instance.Engine == db.Snowflake {
-						taskCreate.DatabaseName = strings.ToUpper(taskCreate.DatabaseName)
-					}
-					payload := api.TaskDatabaseRestorePayload{}
-					payload.DatabaseName = taskCreate.DatabaseName
-					payload.BackupID = *taskCreate.BackupID
-					bytes, err := json.Marshal(payload)
-					if err != nil {
-						return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
-					}
-					taskCreate.Payload = string(bytes)
-				}
-				if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
-					return nil, fmt.Errorf("failed to create task for issue. Error %w", err)
-				}
-			}
-		}
-		pipeline = createdPipeline
+	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
+	if err != nil {
+		return nil, err
 	}
 
 	var issue *api.Issue
@@ -682,6 +603,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			schemaVersion, schema = sv, s
 		}
+		if schemaVersion == "" {
+			schemaVersion = defaultMigrationVersionFromTaskID()
+		}
 
 		payload := api.TaskDatabaseCreatePayload{}
 		payload.ProjectID = issueCreate.ProjectID
@@ -800,6 +724,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 		}
 
+		schemaVersion := defaultMigrationVersionFromTaskID()
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
 			if !s.feature(api.FeatureMultiTenancy) {
@@ -847,7 +772,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					if policy.Value == api.PipelineApprovalValueManualNever {
 						taskStatus = api.TaskPending
 					}
-					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
+					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, schemaVersion, taskStatus)
 					if err != nil {
 						return nil, err
 					}
@@ -894,7 +819,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					taskStatus = api.TaskPending
 				}
 
-				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
+				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, schemaVersion, taskStatus)
 				if err != nil {
 					return nil, err
 				}
@@ -942,7 +867,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
@@ -952,6 +877,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
 	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
+	payload.SchemaVersion = schemaVersion
 	if d.RollbackStatement != "" {
 		payload.RollbackStatement = d.RollbackStatement
 	}

@@ -31,25 +31,25 @@ var (
 	migrationStatement = `
 	CREATE TABLE book (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
+		name TEXT NULL
 	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
-	bookSchemaSQLResult = `[{"name":"book","rootpage":"2","sql":"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t)","tbl_name":"book","type":"table"}]`
+	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],[["table","book","book","2","CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]]]`
 	bookDataQuery       = `SELECT * FROM book;`
-	bookDataSQLResult   = `[{"id":"1","name":"byte"},{"id":"2","name":"base"}]`
+	bookDataSQLResult   = `[["id","name"],[["1","byte"],["2",null]]]`
 
 	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES
 		("byte"),
-		("base");
+		(NULL);
 	`
 	dumpedSchema = "" +
 		`CREATE TABLE book (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
+		name TEXT NULL
 	);
 `
-	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NOT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', 'base');\n\n"
+	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', NULL);\n\n"
 
 	deploymentSchdule = api.DeploymentSchedule{
 		Deployments: []*api.Deployment{

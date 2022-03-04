@@ -156,6 +156,9 @@ func (s *ProjectService) PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *
 // createProject creates a new project.
 func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (*api.Project, error) {
 	// Insert row into database.
+	if create.RoleProvider == "" {
+		create.RoleProvider = api.ProjectRoleProviderBytebase
+	}
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project (
 			creator_id,
@@ -165,10 +168,11 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 			workflow_type,
 			visibility,
 			tenant_mode,
-			db_name_template
+			db_name_template,
+			role_provider
 		)
-		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -176,6 +180,7 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 		strings.ToUpper(create.Key),
 		create.TenantMode,
 		create.DBNameTemplate,
+		create.RoleProvider,
 	)
 
 	if err != nil {
@@ -198,6 +203,7 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 		&project.Visibility,
 		&project.TenantMode,
 		&project.DBNameTemplate,
+		&project.RoleProvider,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -231,7 +237,8 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 			workflow_type,
 			visibility,
 			tenant_mode,
-			db_name_template
+			db_name_template,
+			role_provider
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -258,6 +265,7 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ 
 			&project.Visibility,
 			&project.TenantMode,
 			&project.DBNameTemplate,
+			&project.RoleProvider,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -287,6 +295,9 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.RoleProvider; v != nil {
+		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -295,7 +306,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
 	`, len(args)),
 		args...,
 	)
@@ -319,6 +330,7 @@ func patchProject(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*ap
 			&project.Visibility,
 			&project.TenantMode,
 			&project.DBNameTemplate,
+			&project.RoleProvider,
 		); err != nil {
 			return nil, FormatError(err)
 		}

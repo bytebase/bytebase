@@ -610,6 +610,9 @@ const doUpdate = () => {
               state.instance.id
             );
           }
+        })
+        .finally(() => {
+          state.isUpdating = false;
         });
     });
   }

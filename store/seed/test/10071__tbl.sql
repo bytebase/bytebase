@@ -638,4 +638,40 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE tbl_id_seq RESTART WITH 7119;
+INSERT INTO
+    tbl (
+        id,
+        creator_id,
+        updater_id,
+        database_id,
+        name,
+        type,
+        ENGINE,
+        "collation",
+        row_count,
+        data_size,
+        index_size,
+        data_free,
+        create_options,
+        comment
+    )
+VALUES
+    (
+        7119,
+        101,
+        101,
+        7018,
+        'blog',
+        'BASE TABLE',
+        -- PostgreSQL doesn't use pluggable engines.
+        'ACID',
+        'utf8mb4_general_ci',
+        7000,
+        8192,
+        0,
+        8192,
+        '',
+        ''
+    );
+
+ALTER SEQUENCE tbl_id_seq RESTART WITH 7120;

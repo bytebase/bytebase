@@ -19,6 +19,8 @@ type Config struct {
 	Version string
 	// Issuer is the license issuer, it should always be "bytebase".
 	Issuer string
+	// Audience is the license audience, it should always be "bb.license".
+	Audience string
 	// MinimumInstance is the minimum instance count in each plan.
 	MinimumInstance int
 	// StorePath is the file path to store license.
@@ -30,6 +32,8 @@ const (
 	keyID = "v1"
 	// issuer is the license issuer.
 	issuer = "bytebase"
+	// audience is the license token audience.
+	audience = "bb.license"
 	// minimumInstance is the minimum instance count in subscribed plan.
 	minimumInstance = 5
 )
@@ -54,6 +58,7 @@ func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 		PublicKey:       string(licensePubKey),
 		Version:         keyID,
 		Issuer:          issuer,
+		Audience:        audience,
 		MinimumInstance: minimumInstance,
 		StorePath:       fmt.Sprintf("%s/%s", dataDir, storefile),
 	}, nil
