@@ -174,6 +174,7 @@ common:
   manage: Manage
   table: Table
   search: Search
+  warning: Warning
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -758,6 +759,8 @@ database:
   columns: Columns
   indexes: Indexes
   row-count-est: Row count est.
+  incorrect-project-warning: SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.
+  go-to-transfer: Go to transfer
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
   branch-specify-tip: "Tip: You can also use wildcard like 'feature/*"
