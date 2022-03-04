@@ -19,11 +19,13 @@ var (
 type DataSourceService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewDataSourceService returns a new instance of DataSourceService.
-func NewDataSourceService(logger *zap.Logger, db *DB) *DataSourceService {
-	return &DataSourceService{l: logger, db: db}
+func NewDataSourceService(logger *zap.Logger, db *DB, cache api.CacheService) *DataSourceService {
+	return &DataSourceService{l: logger, db: db, cache: cache}
 }
 
 // CreateDataSource creates a new dataSource.
@@ -166,6 +168,9 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 	}
