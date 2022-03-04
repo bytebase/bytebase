@@ -11,10 +11,7 @@ import (
 )
 
 func TestStartMySQL(t *testing.T) {
-	basedir, err := os.MkdirTemp("", "mysql_test_*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
+	basedir := t.TempDir()
 	datadir := filepath.Join(basedir, "data")
 	if err := os.Mkdir(datadir, 0755); err != nil {
 		t.Fatal(err)
@@ -40,9 +37,5 @@ func TestStartMySQL(t *testing.T) {
 
 	if err := mysql.Stop(os.Stdout, os.Stderr); err != nil {
 		t.Fatalf("Failed to stop MySQL: %s", err)
-	}
-
-	if err := os.RemoveAll(basedir); err != nil {
-		t.Errorf("Failed to remove MySQL instance: %s", err)
 	}
 }
