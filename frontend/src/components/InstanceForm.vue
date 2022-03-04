@@ -516,6 +516,9 @@ export default defineComponent({
 
           // After creating the instance, we will check if migration schema exists on the instance.
           // setTimeout(() => {}, 1000);
+        })
+        .finally(() => {
+          state.creatingOrUpdating = false;
         });
     };
 
@@ -577,6 +580,9 @@ export default defineComponent({
               instance.id
             );
           }
+        })
+        .finally(() => {
+          state.creatingOrUpdating = false;
         });
     };
 
