@@ -134,15 +134,20 @@ const selectedInstance = computed(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
 });
+const selectedInstanceEngine = computed(() => {
+  return store.getters["instance/instanceFormatedEngine"](
+    selectedInstance.value
+  ) as string;
+});
 
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
-  execute();
+  execute({ databaseType: selectedInstanceEngine.value });
 };
 
 const handleExplainQuery = () => {
-  execute({ explain: true });
+  execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
 };
 
 const handleUpsertSheet = async () => {
