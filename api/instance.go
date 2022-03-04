@@ -24,7 +24,8 @@ type Instance struct {
 	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 	// Anomalies are stored in a separate table, but just return here for convenience
-	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
+	AnomalyList    []*Anomaly    `jsonapi:"relation,anomalyList"`
+	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
 	Name          string  `jsonapi:"attr,name"`
@@ -33,9 +34,6 @@ type Instance struct {
 	ExternalLink  string  `jsonapi:"attr,externalLink"`
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
-	Username      string  `jsonapi:"attr,username"`
-	// Password is not returned to the client
-	Password string
 }
 
 // InstanceCreate is the API message for creating an instance.
@@ -83,14 +81,21 @@ type InstancePatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
-	EngineVersion    *string
-	ExternalLink     *string `jsonapi:"attr,externalLink"`
-	Host             *string `jsonapi:"attr,host"`
-	Port             *string `jsonapi:"attr,port"`
-	Username         *string `jsonapi:"attr,username"`
-	Password         *string `jsonapi:"attr,password"`
-	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
+	Name          *string `jsonapi:"attr,name"`
+	EngineVersion *string
+	ExternalLink  *string `jsonapi:"attr,externalLink"`
+	Host          *string `jsonapi:"attr,host"`
+	Port          *string `jsonapi:"attr,port"`
+}
+
+// DataSourceFromInstanceWithType gets a typed data source from a instance.
+func DataSourceFromInstanceWithType(instance *Instance, dataSourceType DataSourceType) *DataSource {
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Type == dataSourceType {
+			return dataSource
+		}
+	}
+	return nil
 }
 
 // InstanceMigrationSchemaStatus is the schema status for instance migration.
