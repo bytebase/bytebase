@@ -25,7 +25,7 @@ RUN GOOS=linux GOARCH=amd64 go build \
     ./bin/bb/main.go
 
 # Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
-FROM alpine:3.14.0 as monolithic
+FROM alpine:3.14.3 as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
