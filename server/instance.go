@@ -457,6 +457,13 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 	}
 
+	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

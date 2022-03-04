@@ -77,14 +77,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, FormatError(err)
 	}
 
-	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	instance.DataSourceList = dataSourceList
-
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
@@ -103,20 +95,6 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Instance{}, err
-	}
-
-	for _, instance := range list {
-		dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-			InstanceID: &instance.ID,
-		})
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		instance.DataSourceList = dataSourceList
-
-		if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
-			return nil, err
-		}
 	}
 
 	return list, nil
@@ -185,14 +163,6 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	}
 
 	instance := list[0]
-	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	instance.DataSourceList = dataSourceList
-
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
@@ -216,14 +186,6 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	instance.DataSourceList = dataSourceList
 
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err

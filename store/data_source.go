@@ -45,28 +45,6 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 		return nil, FormatError(err)
 	}
 
-	// Upsert instance.dataSourceList cache after created its related datasource.
-	if dataSource != nil {
-		instance := &api.Instance{}
-		has, err := s.cache.FindCache(api.InstanceCache, dataSource.InstanceID, instance)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			dataSourceList, err := s.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &dataSource.InstanceID,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			instance.DataSourceList = dataSourceList
-			if err := s.cache.UpsertCache(api.InstanceCache, dataSource.InstanceID, instance); err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	return dataSource, nil
 }
 
@@ -129,28 +107,6 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
-	}
-
-	// Upsert instance.dataSourceList cache after patched datasource.
-	if dataSource != nil {
-		instance := &api.Instance{}
-		has, err := s.cache.FindCache(api.InstanceCache, dataSource.InstanceID, instance)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			dataSourceList, err := s.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &dataSource.InstanceID,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			instance.DataSourceList = dataSourceList
-			if err := s.cache.UpsertCache(api.InstanceCache, dataSource.InstanceID, instance); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return dataSource, nil
