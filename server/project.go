@@ -44,7 +44,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create ProjectPlain").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
 		projectMember := &api.ProjectMemberCreate{
