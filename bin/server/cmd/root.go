@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/resources"
+	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -177,7 +177,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pg        *resources.PostgresInstance
+	pg        *postgres.Instance
 	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
@@ -291,7 +291,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgInstance, err := resources.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
+	pgInstance, err := postgres.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
 	if err != nil {
 		return nil, err
 	}

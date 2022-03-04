@@ -1,4 +1,4 @@
-package resources
+package postgres
 
 import (
 	"fmt"
@@ -10,11 +10,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/bytebase/bytebase/resources/utils"
 )
 
-// PostgresInstance is a postgres instance installed by bytebase
+// Instance is a postgres instance installed by bytebase
 // for backend storage or testing.
-type PostgresInstance struct {
+type Instance struct {
 	// basedir is the directory where the postgres binary is installed.
 	basedir string
 	// datadir is the directory where the postgres data is stored.
@@ -24,7 +26,7 @@ type PostgresInstance struct {
 }
 
 // Port returns the port number of the postgres instance.
-func (i PostgresInstance) Port() int { return i.port }
+func (i Instance) Port() int { return i.port }
 
 // Start starts a postgres instance on given port, outputs to stdout and stderr.
 //
@@ -32,15 +34,10 @@ func (i PostgresInstance) Port() int { return i.port }
 //
 // If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
 // Otherwise, returns immediately.
-func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
+func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 
 	i.port = port
-	if port == 0 {
-		if i.port, err = randomUnusedPort(); err != nil {
-			return fmt.Errorf("Cannot find a random port: %v", err)
-		}
-	}
 
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
@@ -61,7 +58,7 @@ func (i *PostgresInstance) Start(port int, stdout, stderr io.Writer, waitSec int
 }
 
 // Stop stops a postgres instance, outputs to stdout and stderr.
-func (i *PostgresInstance) Stop(stdout, stderr io.Writer) error {
+func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", i.datadir)
@@ -76,7 +73,7 @@ func (i *PostgresInstance) Stop(stdout, stderr io.Writer) error {
 }
 
 // InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*PostgresInstance, error) {
+func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
@@ -109,7 +106,7 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*PostgresInstance, 
 		if err := os.RemoveAll(tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
-		if err := extractTarXz(f, tmpDir); err != nil {
+		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
@@ -121,7 +118,7 @@ func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*PostgresInstance, 
 		return nil, err
 	}
 
-	return &PostgresInstance{
+	return &Instance{
 		basedir: pgBinDir,
 		datadir: pgDataDir,
 	}, nil

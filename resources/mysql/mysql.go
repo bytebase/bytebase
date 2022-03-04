@@ -1,7 +1,8 @@
-package resources
+package mysql
 
 import (
 	"database/sql"
+	"embed"
 	"fmt"
 	"io"
 	"net"
@@ -11,12 +12,14 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/bytebase/bytebase/resources/utils"
+
 	// install mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// MysqlInstance is MySQL instance installed by bytebase for testing.
-type MysqlInstance struct {
+// Instance is MySQL instance installed by bytebase for testing.
+type Instance struct {
 	// basedir is the directory where the mysql binary is installed.
 	basedir string
 	// datadir is the directory where the mysql data is stored.
@@ -28,12 +31,12 @@ type MysqlInstance struct {
 }
 
 // Port returns the port of the mysql instance.
-func (i MysqlInstance) Port() int { return i.port }
+func (i Instance) Port() int { return i.port }
 
 // Start starts the mysql instance on the given port, outputs to stdout and stderr.
 // Waits at most `waitSec` seconds for the mysql instance to ready for connection.
 // If `waitSec` is 0, it returns immediately.
-func (i *MysqlInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
+func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
 	i.port = port
 	if i.port == 0 {
 		i.port, err = randomUnusedPort()
@@ -72,10 +75,13 @@ func (i *MysqlInstance) Start(port int, stdout, stderr io.Writer, waitSec int) (
 }
 
 // Stop stops the mysql instance, outputs to stdout and stderr.
-func (i *MysqlInstance) Stop(stdout, stderr io.Writer) error { return i.proc.Kill() }
+func (i *Instance) Stop(stdout, stderr io.Writer) error { return i.proc.Kill() }
+
+//go:embed mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
+var resources embed.FS
 
 // InstallMysql installs mysql on basedir, prepares the data directory and default user.
-func InstallMysql(basedir, datadir, user string) (*MysqlInstance, error) {
+func InstallMysql(basedir, datadir, user string) (*Instance, error) {
 	var tarName, version string
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
 	var extractFn func(io.Reader, string) error
@@ -83,11 +89,11 @@ func InstallMysql(basedir, datadir, user string) (*MysqlInstance, error) {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysql-8.0.28-macos11-arm64.tar.gz"
 		version = "mysql-8.0.28-macos11-arm64"
-		extractFn = extractTarGz
+		extractFn = utils.ExtractTarGz
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz"
 		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
-		extractFn = extractTarXz
+		extractFn = utils.ExtractTarXz
 	default:
 		return nil, fmt.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
@@ -142,7 +148,7 @@ user=%s
 		return nil, fmt.Errorf("failed to initialize mysql, error: %w", err)
 	}
 
-	return &MysqlInstance{
+	return &Instance{
 		basedir: basedir,
 		datadir: datadir,
 	}, nil

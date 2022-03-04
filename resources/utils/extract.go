@@ -1,4 +1,4 @@
-package resources
+package utils
 
 import (
 	"archive/tar"
@@ -13,8 +13,8 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-// extractTarGz extracts the given file as .tar.gz format to the given directory.
-func extractTarGz(tarGzF io.Reader, targetDir string) error {
+// ExtractTarGz extracts the given file as .tar.gz format to the given directory.
+func ExtractTarGz(tarGzF io.Reader, targetDir string) error {
 	gzipR, err := gzip.NewReader(tarGzF)
 	if err != nil {
 		return err
@@ -23,8 +23,8 @@ func extractTarGz(tarGzF io.Reader, targetDir string) error {
 	return extractTar(gzipR, targetDir)
 }
 
-// extractTarXz extracts the given file as .tar.xz or .txz format to the given directory.
-func extractTarXz(tarXzF io.Reader, targetDir string) error {
+// ExtractTarXz extracts the given file as .tar.xz or .txz format to the given directory.
+func ExtractTarXz(tarXzF io.Reader, targetDir string) error {
 	xzR, err := xz.NewReader(tarXzF)
 	if err != nil {
 		return err

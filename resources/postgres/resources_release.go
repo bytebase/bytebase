@@ -1,7 +1,7 @@
 //go:build release
 // +build release
 
-package resources
+package postgres
 
 import "embed"
 

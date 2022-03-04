@@ -1,4 +1,4 @@
-package resources
+package mysql
 
 import (
 	"database/sql"
