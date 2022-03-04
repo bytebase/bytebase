@@ -27,6 +27,11 @@
   "[vue]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file"
+  },
   "i18n-ally.localesPaths": ["frontend/src/locales"],
   "i18n-ally.enabledParsers": ["yaml"],
   "i18n-ally.keystyle": "nested",
@@ -34,6 +39,14 @@
   "i18n-ally.displayLanguage": "en",
   "i18n-ally.editor.preferEditor": true,
   "i18n-ally.enabledFrameworks": ["vue"],
+  "i18n-ally.parserOptions": {
+    "yaml": {
+      "dump": {
+        "lineWidth": 80,
+        "quotingType": "\""
+      }
+    }
+  },
   "go.lintOnSave": "workspace",
   "go.lintTool": "golint"
 }
