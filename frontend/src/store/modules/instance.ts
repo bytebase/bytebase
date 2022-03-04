@@ -186,6 +186,19 @@ const getters = {
       return state.instanceUserListById.get(instanceId) || [];
     },
 
+  // Get the formated engine string from instance for SQL transformer.
+  instanceFormatedEngine:
+    () =>
+    (instance: Instance): string => {
+      switch (instance.engine) {
+        case "POSTGRES":
+          return "PostgreSQL";
+        // Use MySQL as default engine.
+        default:
+          return "MySQL";
+      }
+    },
+
   migrationHistoryById:
     (state: InstanceState) =>
     (migrationHistoryId: MigrationHistoryId): MigrationHistory | undefined => {
