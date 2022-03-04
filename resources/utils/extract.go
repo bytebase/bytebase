@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ulikunitz/xz"
+	"github.com/xi2/xz"
 )
 
 // ExtractTarGz extracts the given file as .tar.gz format to the given directory.
@@ -25,7 +25,7 @@ func ExtractTarGz(tarGzF io.Reader, targetDir string) error {
 
 // ExtractTarXz extracts the given file as .tar.xz or .txz format to the given directory.
 func ExtractTarXz(tarXzF io.Reader, targetDir string) error {
-	xzR, err := xz.NewReader(tarXzF)
+	xzR, err := xz.NewReader(tarXzF, 0)
 	if err != nil {
 		return err
 	}
