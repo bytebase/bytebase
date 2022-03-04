@@ -80,8 +80,8 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error { return i.proc.Kill() }
 //go:embed mysql-8.0.28-macos11-arm64.tar.gz mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
 var resources embed.FS
 
-// InstallMysql installs mysql on basedir, prepares the data directory and default user.
-func InstallMysql(basedir, datadir, user string) (*Instance, error) {
+// Install installs mysql on basedir, prepares the data directory and default user.
+func Install(basedir, datadir, user string) (*Instance, error) {
 	var tarName, version string
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
 	var extractFn func(io.Reader, string) error

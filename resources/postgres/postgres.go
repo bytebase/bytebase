@@ -72,8 +72,8 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	return nil
 }
 
-// InstallPostgres returns the postgres binary depending on the OS.
-func InstallPostgres(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+// Install returns the postgres binary depending on the OS.
+func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":

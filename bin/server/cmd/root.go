@@ -291,7 +291,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgInstance, err := postgres.InstallPostgres(resourceDir, pgDataDir, activeProfile.pgUser)
+	pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 	if err != nil {
 		return nil, err
 	}

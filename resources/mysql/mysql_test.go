@@ -21,7 +21,7 @@ func TestStartMySQL(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mysql, err := InstallMysql(basedir, datadir, "root")
+	mysql, err := Install(basedir, datadir, "root")
 	if err != nil {
 		t.Fatalf("Failed to start MySQL: %s", err)
 	}
