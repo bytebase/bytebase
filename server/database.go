@@ -223,7 +223,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
 					if err != nil {
 						return err
 					}
@@ -533,7 +533,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		driver, err := getDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
 		if err != nil {
 			return err
 		}
@@ -715,6 +715,145 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get backup setting response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
+		ctx := context.Background()
+		databaseID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &databaseID,
+		}
+		database, err := s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID: &dataSourceID,
+		}
+		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
+		}
+		if dataSource == nil || dataSource.DatabaseID != databaseID {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/database/:id/datasource", func(c echo.Context) error {
+		ctx := context.Background()
+		databaseID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &databaseID,
+		}
+		database, err := s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+		}
+
+		dataSourceCreate := &api.DataSourceCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create data source request").SetInternal(err)
+		}
+
+		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		dataSourceCreate.DatabaseID = databaseID
+
+		dataSource, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.PATCH("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
+		ctx := context.Background()
+		databaseID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		databaseFind := &api.DatabaseFind{
+			ID: &databaseID,
+		}
+		database, err := s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourceID,
+			DatabaseID: &databaseID,
+		}
+		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		}
+		if dataSource == nil || dataSource.DatabaseID != databaseID {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+		}
+
+		dataSourcePatch := &api.DataSourcePatch{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch data source request").SetInternal(err)
+		}
+
+		dataSourcePatch.ID = dataSourceID
+		dataSourcePatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
+			password := ""
+			dataSourcePatch.Password = &password
+		}
+
+		dataSource, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
 		return nil
 	})
@@ -939,16 +1078,21 @@ func (s *Server) composeBackupRelationship(ctx context.Context, backup *api.Back
 	return nil
 }
 
-// Retrieve db.Driver connection.
+// Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
-	driver, err := db.Open(
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+	}
+
+	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{
-			Username: instance.Username,
-			Password: instance.Password,
+			Username: adminDataSource.Username,
+			Password: adminDataSource.Password,
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
@@ -959,7 +1103,58 @@ func getDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName
 		},
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", instance.Host, instance.Port, instance.Username, err))
+		return nil, err
+	}
+
+	return driver, nil
+}
+
+// We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
+// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
+func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
+	// If there are no read-only data source, fall back to admin data source.
+	if dataSource == nil {
+		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
+	}
+	if dataSource == nil {
+		return nil, common.Errorf(common.Internal, fmt.Errorf("data source not found for instance %d", instance.ID))
+	}
+
+	driver, err := getDatabaseDriver(
+		ctx,
+		instance.Engine,
+		db.DriverConfig{Logger: logger},
+		db.ConnectionConfig{
+			Username: dataSource.Username,
+			Password: dataSource.Password,
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: databaseName,
+		},
+		db.ConnectionContext{
+			EnvironmentName: instance.Environment.Name,
+			InstanceName:    instance.Name,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return driver, nil
+}
+
+// Retrieve db.Driver connection with standard parameters for all type data source.
+func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.DriverConfig, connectionConfig db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	driver, err := db.Open(
+		ctx,
+		engine,
+		driverConfig,
+		connectionConfig,
+		connCtx,
+	)
+	if err != nil {
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
 	}
 	return driver, nil
 }
