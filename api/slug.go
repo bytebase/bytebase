@@ -11,26 +11,24 @@ func IssueSlug(issue *Issue) string {
 	return fmt.Sprintf("%s-%d", slug.Make(issue.Name), issue.ID)
 }
 
-// ProjectSlug is the slug formatter for projects.
-func ProjectSlug(project interface{}) string {
-	if p, ok := project.(*Project); ok {
-		return fmt.Sprintf("%s-%d", slug.Make(p.Name), p.ID)
-	}
-	if p, ok := project.(*ProjectPlain); ok {
-		return fmt.Sprintf("%s-%d", slug.Make(p.Name), p.ID)
-	}
-	panic(fmt.Sprintf("invalid project: %v", project))
+// ProjectSlug is the slug formatter for Project.
+func ProjectSlug(project *Project) string {
+	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
 }
 
-// ProjectShortSlug is the slug short formatter for projects.
-func ProjectShortSlug(project interface{}) string {
-	if p, ok := project.(*Project); ok {
-		return slug.Make(p.Name)
-	}
-	if p, ok := project.(*ProjectPlain); ok {
-		return slug.Make(p.Name)
-	}
-	panic(fmt.Sprintf("invalid project: %v", project))
+// ProjectPlainSlug is the slug formatter for ProjectPlain.
+func ProjectPlainSlug(project *ProjectPlain) string {
+	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
+}
+
+// ProjectShortSlug is the slug short formatter for Project.
+func ProjectShortSlug(project *Project) string {
+	return slug.Make(project.Name)
+}
+
+// ProjectPlainShortSlug is the slug short formatter for ProjectPlain.
+func ProjectPlainShortSlug(project *ProjectPlain) string {
+	return slug.Make(project.Name)
 }
 
 // EnvSlug is the slug formatter for environments.
