@@ -603,6 +603,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			schemaVersion, schema = sv, s
 		}
+		if schemaVersion == "" {
+			schemaVersion = defaultMigrationVersionFromTaskID()
+		}
 
 		payload := api.TaskDatabaseCreatePayload{}
 		payload.ProjectID = issueCreate.ProjectID
@@ -721,6 +724,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 		}
 
+		schemaVersion := defaultMigrationVersionFromTaskID()
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
 			if !s.feature(api.FeatureMultiTenancy) {
@@ -768,7 +772,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					if policy.Value == api.PipelineApprovalValueManualNever {
 						taskStatus = api.TaskPending
 					}
-					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
+					taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, schemaVersion, taskStatus)
 					if err != nil {
 						return nil, err
 					}
@@ -815,7 +819,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					taskStatus = api.TaskPending
 				}
 
-				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, taskStatus)
+				taskCreate, err := getUpdateTask(database, m.MigrationType, m.VCSPushEvent, d, schemaVersion, taskStatus)
 				if err != nil {
 					return nil, err
 				}
@@ -863,7 +867,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return createdPipeline, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	if migrationType == db.Migrate {
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
@@ -873,6 +877,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
 	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
+	payload.SchemaVersion = schemaVersion
 	if d.RollbackStatement != "" {
 		payload.RollbackStatement = d.RollbackStatement
 	}
