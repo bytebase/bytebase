@@ -337,6 +337,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		t.Fatalf("failed to list sheet, error %v", err)
 	}
 
+	// Test if POST /api/database/:id/datasource api is working right.
+	// TODO(steven): I will add read-only data source testing to a separate test later.
 	err = ctl.createDataSource(api.DataSourceCreate{
 		InstanceID: instance.ID,
 		DatabaseID: database.ID,

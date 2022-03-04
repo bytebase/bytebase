@@ -165,7 +165,8 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 			return nil, err
 		}
 		if has {
-			// Get the newest data source list even with instance cache.
+			// If the relevant data source is updated, we cannot get the latest instance via GET /api/instance/id due to caches.
+			// So even if there is an instance cache, we need to get the latest list of data sources when FindInstance.
 			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 				InstanceID: &instance.ID,
 			})

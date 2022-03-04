@@ -45,8 +45,8 @@ p, DBA, /database/{id}/backup, GET
 p, DBA, /database/{id}/backup, POST
 p, DBA, /database/{id}/backupsetting, GET
 p, DBA, /database/{id}/backupsetting, PATCH
-p, DBA, /database/{id}/datasource/{dataSourceID}, GET
 p, DBA, /database/{id}/datasource, POST
+p, DBA, /database/{id}/datasource/{dataSourceID}, GET
 p, DBA, /database/{id}/datasource/{dataSourceID}, PATCH
 p, DBA, /issue, POST
 p, DBA, /issue, GET
