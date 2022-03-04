@@ -97,13 +97,6 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 					}
 
-					if err := s.server.composeInstanceAdminDataSource(ctx, instance); err != nil {
-						s.l.Error("Failed to retrieve instance admin connection info",
-							zap.String("instance", instance.Name),
-							zap.Error(err))
-						return
-					}
-
 					if instance.Environment == nil {
 						continue
 					}
@@ -154,7 +147,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 
 	// Check connection
 	if err != nil {
@@ -234,7 +227,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := getDatabaseDriver(ctx, instance, database.Name, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {

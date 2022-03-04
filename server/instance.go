@@ -44,7 +44,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
 		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-		db, err := getDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 		if err == nil {
 			defer db.Close(ctx)
 			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -144,56 +144,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
-			instanceFind := &api.InstanceFind{
-				ID: &id,
-			}
-			instance, err = s.InstanceService.FindInstance(ctx, instanceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-			}
-			if instance == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
-
-			dataSourceType := api.Admin
-			dataSourceFind := &api.DataSourceFind{
-				InstanceID: &instance.ID,
-				Type:       &dataSourceType,
-			}
-			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-			if adminDataSource == nil {
-				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
-			}
-
-			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSource.ID,
-				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-				Username:  instancePatch.Username,
-			}
-			if instancePatch.Password != nil {
-				dataSourcePatch.Password = instancePatch.Password
-			} else if instancePatch.UseEmptyPassword {
-				password := ""
-				dataSourcePatch.Password = &password
-			}
-			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-		}
-
 		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-		if instancePatch.Host != nil || instancePatch.Port != nil || instancePatch.Username != nil || instancePatch.Password != nil {
-			db, err := getDatabaseDriver(ctx, instance, "", s.l)
+		if instancePatch.Host != nil || instancePatch.Port != nil {
+			db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -251,21 +208,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := db.Open(
-			ctx,
-			instance.Engine,
-			db.DriverConfig{Logger: s.l},
-			db.ConnectionConfig{
-				Username: instance.Username,
-				Password: instance.Password,
-				Host:     instance.Host,
-				Port:     instance.Port,
-			},
-			db.ConnectionContext{
-				EnvironmentName: instance.Environment.Name,
-				InstanceName:    instance.Name,
-			},
-		)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -298,7 +241,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := getDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -343,7 +286,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -416,7 +359,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -504,34 +447,29 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 	for _, anomaly := range instance.AnomalyList {
-		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
-		if err != nil {
+		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
 			return err
 		}
-		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
-		if err != nil {
+		if anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID); err != nil {
 			return err
 		}
 	}
 
-	return s.composeInstanceAdminDataSource(ctx, instance)
-}
-
-func (s *Server) composeInstanceAdminDataSource(ctx context.Context, instance *api.Instance) error {
-	dataSourceFind := &api.DataSourceFind{
+	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
-	}
-	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
+	})
 	if err != nil {
 		return err
 	}
-	for _, dataSource := range dataSourceList {
-		if dataSource.Type == api.Admin {
-			instance.Username = dataSource.Username
-			instance.Password = dataSource.Password
-			break
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
+			return err
+		}
+		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
