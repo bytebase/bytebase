@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   bb:
-    image: bytebase/bytebase:0.14.0
+    image: bytebase/bytebase:0.13.0
     init: true
     container_name: bytebase
     restart: always
