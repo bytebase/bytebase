@@ -42,6 +42,9 @@ p, DEVELOPER, /database/{id}/backup, GET
 p, DEVELOPER, /database/{id}/backup, POST
 p, DEVELOPER, /database/{id}/backupsetting, GET
 p, DEVELOPER, /database/{id}/backupsetting, PATCH
+p, DEVELOPER, /database/{id}/datasource, POST
+p, DEVELOPER, /database/{id}/datasource/{dataSourceID}, GET
+p, DEVELOPER, /database/{id}/datasource/{dataSourceID}, PATCH
 p, DEVELOPER, /issue, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET

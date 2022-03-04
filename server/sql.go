@@ -127,7 +127,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, err := func() ([]byte, error) {
-			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
+			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
 			if err != nil {
 				return nil, err
 			}
@@ -220,7 +220,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
 	resultSet := &api.SQLResultSet{}
 	err := func() error {
-		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return err
 		}

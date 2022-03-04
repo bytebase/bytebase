@@ -1147,7 +1147,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := getDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.l)
 	if err != nil {
 		return "", "", err
 	}
