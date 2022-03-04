@@ -90,7 +90,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		projectList := make([]*api.Project, len(projectListPlain), 0)
+		projectList := make([]*api.Project, 0, len(projectListPlain))
 		for _, projectPlain := range projectListPlain {
 			project, err := s.composeProjectRelationship(ctx, projectPlain)
 			if err != nil {
