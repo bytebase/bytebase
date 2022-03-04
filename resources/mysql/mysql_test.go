@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,21 +45,4 @@ func TestStartMySQL(t *testing.T) {
 	if err := os.RemoveAll(basedir); err != nil {
 		t.Errorf("Failed to remove MySQL instance: %s", err)
 	}
-}
-
-func TestRandomUnusedPort(t *testing.T) {
-	port, err := randomUnusedPort()
-	if err != nil {
-		t.Fatalf("Failed to get random unused port: %s", err)
-	}
-
-	if port == 0 {
-		t.Fatalf("Random unused port is 0")
-	}
-
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		t.Fatalf("Failed to listen on port %d: %s", port, err)
-	}
-	defer l.Close()
 }

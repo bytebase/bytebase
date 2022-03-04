@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,13 +37,6 @@ func (i Instance) Port() int { return i.port }
 // If `waitSec` is 0, it returns immediately.
 func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
 	i.port = port
-	if i.port == 0 {
-		i.port, err = randomUnusedPort()
-		if err != nil {
-			return err
-		}
-	}
-
 	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysqld"),
 		fmt.Sprintf("--defaults-file=%s", filepath.Join(i.basedir, "my.cnf")),
 		fmt.Sprintf("--port=%d", i.port),
@@ -152,15 +144,4 @@ user=%s
 		basedir: basedir,
 		datadir: datadir,
 	}, nil
-}
-
-// randomUnusedPort returns a random port that is not in use.
-func randomUnusedPort() (int, error) {
-	l, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
