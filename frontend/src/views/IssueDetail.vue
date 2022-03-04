@@ -45,6 +45,7 @@ import {
   MigrationType,
   TaskDatabaseSchemaUpdatePayload,
   Principal,
+  UpdateSchemaContext,
 } from "../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -64,6 +65,11 @@ interface LocalState {
   pollIssueTimer?: ReturnType<typeof setTimeout>;
   showFeatureModal: boolean;
 }
+
+// validateOnly: true doesn't support empty SQL
+// so we use a fake sql to validate and then set it back to empty if needed
+const VALIDATE_ONLY_SQL = "/* YOUR_SQL_HERE */";
+const ESTABLISH_BASELINE_SQL = "/* Establish baseline using current schema */";
 
 export default defineComponent({
   name: "IssueDetail",
@@ -156,11 +162,19 @@ export default defineComponent({
         updateSchemaDetailList: [
           {
             databaseName: route.query.databaseName,
-            statement: "/* YOUR_SQL_HERE */",
+            statement: VALIDATE_ONLY_SQL,
           },
         ],
       };
       await helper.validate();
+
+      // we are setting SQL statement to "" because showing /* YOUR_SQL_HERE */
+      // is not that friendly to users
+      // setting it to empty can provide a placeholder to user, along with an
+      // exclamation mark indicating "No SQL statement"
+      const context = helper.issueCreate!.createContext as UpdateSchemaContext;
+      context.updateSchemaDetailList[0].statement = "";
+
       return helper.generate();
     };
 
@@ -193,8 +207,8 @@ export default defineComponent({
       }
       const statement =
         migrationType === "BASELINE"
-          ? "/* Establish baseline using current schema */"
-          : "/* YOUR_SQL_HERE */";
+          ? ESTABLISH_BASELINE_SQL
+          : VALIDATE_ONLY_SQL;
       helper.issueCreate!.createContext = {
         migrationType,
         updateSchemaDetailList: databaseList.map((db) => {
@@ -433,6 +447,10 @@ class IssueCreateHelper {
         environmentId: stage.environment.id,
         taskList: stage.taskList.map((task) => {
           const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
+          // if we are using VALIDATE_ONLY_SQL, set it back to empty
+          // otherwise keep it as-is
+          const statement =
+            payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
           return {
             name: task.name,
             status: task.status,
@@ -441,7 +459,7 @@ class IssueCreateHelper {
             databaseId: task.database?.id,
             databaseName: task.database?.name,
             migrationType: payload.migrationType,
-            statement: payload.statement || "",
+            statement,
             earliestAllowedTs: task.earliestAllowedTs,
           };
         }),
