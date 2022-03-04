@@ -58,6 +58,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 			break
 		}
 		if retry > waitSec {
+			i.proc.Kill()
 			return fmt.Errorf("failed to connect to mysql, error: %w", err)
 		}
 		time.Sleep(time.Second)
