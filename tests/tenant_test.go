@@ -224,6 +224,31 @@ func TestTenant(t *testing.T) {
 			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
 	}
+
+	// Query migration history
+	instances := append(stagingInstances, prodInstances...)
+	var hm1 map[string]bool = map[string]bool{}
+	var hm2 map[string]bool = map[string]bool{}
+	for _, instance := range instances {
+		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(histories) != 2 {
+			t.Fatalf("invalid number of migration histories, want 2, got %v", len(histories))
+		}
+		if histories[0].Version == "" {
+			t.Fatalf("empty migration history(0) version")
+		}
+		if histories[1].Version == "" {
+			t.Fatalf("empty migration history(1) version")
+		}
+		hm1[histories[0].Version] = true
+		hm2[histories[1].Version] = true
+	}
+	if len(hm1) != 1 || len(hm2) != 1 {
+		t.Fatalf("migration history should have only one version in tenant mode")
+	}
 }
 
 func TestTenantVCS(t *testing.T) {
@@ -480,6 +505,31 @@ func TestTenantVCS(t *testing.T) {
 		if bookSchemaSQLResult != result {
 			t.Fatalf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
 		}
+	}
+
+	// Query migration history
+	instances := append(stagingInstances, prodInstances...)
+	var hm1 map[string]bool = map[string]bool{}
+	var hm2 map[string]bool = map[string]bool{}
+	for _, instance := range instances {
+		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(histories) != 2 {
+			t.Fatalf("invalid number of migration histories, want 2, got %v", len(histories))
+		}
+		if histories[0].Version != "ver1" {
+			t.Fatalf("invalid migration history(0) version, want ver1, got %q", histories[0].Version)
+		}
+		if histories[1].Version == "" {
+			t.Fatalf("empty migration history(1) version")
+		}
+		hm1[histories[0].Version] = true
+		hm2[histories[1].Version] = true
+	}
+	if len(hm1) != 1 || len(hm2) != 1 {
+		t.Fatalf("migration history should have only one version in tenant mode")
 	}
 }
 
