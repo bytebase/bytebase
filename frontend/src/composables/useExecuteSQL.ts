@@ -12,7 +12,7 @@ import {
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
 
-type ExcuteConfig = {
+type ExecuteConfig = {
   databaseType: string;
 };
 
@@ -37,7 +37,7 @@ const useExecuteSQL = () => {
   };
 
   const execute = async (
-    config: ExcuteConfig,
+    config: ExecuteConfig,
     option?: Partial<ExecuteOption>
   ) => {
     if (state.isLoadingData) {
