@@ -609,7 +609,7 @@ func (s *Server) composeProjectRelationship(ctx context.Context, projectPlain *a
 
 	project := &api.Project{}
 	if err := copier.Copy(project, projectPlain); err != nil {
-		panic(fmt.Sprintf("failed to copy from *api.ProjectPlain to *api.Project, %v", err))
+		return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
 	}
 
 	project.Creator, err = s.composePrincipalByID(ctx, project.CreatorID)

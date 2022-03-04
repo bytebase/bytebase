@@ -81,7 +81,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
 		if err := copier.Copy(meta.issue.Project, projectPlain); err != nil {
-			panic(fmt.Sprintf("failed to copy from *api.ProjectPlain to *api.Project, %v", err))
+			return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
 		}
 	}
 
