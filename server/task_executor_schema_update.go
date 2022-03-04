@@ -40,5 +40,5 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, fmt.Errorf("invalid database schema update payload: %w", err)
 	}
 
-	return runMigration(ctx, exec.l, server, task, payload.MigrationType, payload.Statement, payload.VCSPushEvent)
+	return runMigration(ctx, exec.l, server, task, payload.MigrationType, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

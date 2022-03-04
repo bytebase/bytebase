@@ -179,7 +179,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(task.ID),
+		Version:        defaultMigrationVersionFromTaskID(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,
