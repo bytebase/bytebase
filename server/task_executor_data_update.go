@@ -41,5 +41,5 @@ func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server,
 		return true, nil, fmt.Errorf("invalid database data update payload: %w", err)
 	}
 
-	return runMigration(ctx, exec.l, server, task, db.Data, payload.Statement, payload.VCSPushEvent)
+	return runMigration(ctx, exec.l, server, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
