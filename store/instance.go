@@ -105,19 +105,17 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 		return []*api.Instance{}, err
 	}
 
-	if err == nil {
-		for _, instance := range list {
-			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &instance.ID,
-			})
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			instance.DataSourceList = dataSourceList
+	for _, instance := range list {
+		dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+			InstanceID: &instance.ID,
+		})
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		instance.DataSourceList = dataSourceList
 
-			if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
-				return nil, err
-			}
+		if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+			return nil, err
 		}
 	}
 
@@ -165,16 +163,6 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 			return nil, err
 		}
 		if has {
-			// If the relevant data source is updated, we cannot get the latest instance via GET /api/instance/id due to caches.
-			// So even if there is an instance cache, we need to get the latest list of data sources when FindInstance.
-			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &instance.ID,
-			})
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			instance.DataSourceList = dataSourceList
-
 			return instance, nil
 		}
 	}
@@ -195,10 +183,20 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.InstanceCache, list[0].ID, list[0]); err != nil {
+
+	instance := list[0]
+	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	instance.DataSourceList = dataSourceList
+
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
-	return list[0], nil
+	return instance, nil
 }
 
 // PatchInstance updates an existing instance by ID.

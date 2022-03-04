@@ -19,11 +19,13 @@ var (
 type DataSourceService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewDataSourceService returns a new instance of DataSourceService.
-func NewDataSourceService(logger *zap.Logger, db *DB) *DataSourceService {
-	return &DataSourceService{l: logger, db: db}
+func NewDataSourceService(logger *zap.Logger, db *DB, cache api.CacheService) *DataSourceService {
+	return &DataSourceService{l: logger, db: db, cache: cache}
 }
 
 // CreateDataSource creates a new dataSource.
@@ -41,6 +43,28 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	// Upsert instance.dataSourceList cache after created its related datasource.
+	if dataSource != nil {
+		instance := &api.Instance{}
+		has, err := s.cache.FindCache(api.InstanceCache, dataSource.InstanceID, instance)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			dataSourceList, err := s.FindDataSourceList(ctx, &api.DataSourceFind{
+				InstanceID: &dataSource.InstanceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			instance.DataSourceList = dataSourceList
+			if err := s.cache.UpsertCache(api.InstanceCache, dataSource.InstanceID, instance); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return dataSource, nil
@@ -105,6 +129,28 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	// Upsert instance.dataSourceList cache after patched datasource.
+	if dataSource != nil {
+		instance := &api.Instance{}
+		has, err := s.cache.FindCache(api.InstanceCache, dataSource.InstanceID, instance)
+		if err != nil {
+			return nil, err
+		}
+		if has {
+			dataSourceList, err := s.FindDataSourceList(ctx, &api.DataSourceFind{
+				InstanceID: &dataSource.InstanceID,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			instance.DataSourceList = dataSourceList
+			if err := s.cache.UpsertCache(api.InstanceCache, dataSource.InstanceID, instance); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return dataSource, nil
