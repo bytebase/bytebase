@@ -28,9 +28,7 @@
             @dblclick="handleEditLabel(tab)"
           >
             <div
-              v-if="
-                labelState.isEditingLabel && labelState.editingTabId === tab.id
-              "
+              v-if="labelState.editingTabId === tab.id"
               class="label-input relative"
             >
               <input
@@ -122,15 +120,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  ref,
-  watch,
-  reactive,
-  nextTick,
-  computed,
-  onMounted,
-  onUnmounted,
-} from "vue";
+import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
 import { debounce, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
@@ -189,9 +179,7 @@ const enterTabId = ref("");
 const selectedTab = computed(() => currentTabId.value);
 // edit label state
 const labelState = reactive({
-  isEditingLabel: false,
   currentLabelName: "",
-  oldLabelName: "",
   editingTabId: "",
 });
 const labelInputRef = ref<HTMLInputElement>();
@@ -232,46 +220,42 @@ const updateSheetName = () => {
   }
 };
 
-// Edit label logic
 const handleEditLabel = (tab: TabInfo) => {
-  labelState.isEditingLabel = true;
   labelState.editingTabId = tab.id;
+  labelState.currentLabelName = tab.name;
+  nextTick(() => {
+    labelInputRef.value?.focus();
+  });
 };
+
 const handleTryChangeLabel = () => {
-  if (labelState.currentLabelName !== "") {
-    labelState.isEditingLabel = false;
-    updateCurrentTab({
-      name: labelState.currentLabelName,
-    });
+  if (labelState.editingTabId) {
+    if (labelState.currentLabelName !== "") {
+      updateCurrentTab({
+        name: labelState.currentLabelName,
+      });
 
-    updateSheetName();
-
-    nextTick(() => {
-      recalculateScrollWidth();
-      scrollState.style = {
-        transform: `translateX(0px)`,
-      };
-    });
-  } else {
-    store.dispatch("notification/pushNotification", {
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("sql-editor.please-input-the-tab-label"),
-    });
+      updateSheetName();
+      nextTick(() => {
+        recalculateScrollWidth();
+        scrollState.style = {
+          transform: `translateX(0px)`,
+        };
+      });
+    } else {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.please-input-the-tab-label"),
+      });
+    }
+    handleCancelChangeLabel();
   }
 };
+
 const handleCancelChangeLabel = () => {
-  labelState.currentLabelName = labelState.oldLabelName;
-  updateCurrentTab({
-    name: labelState.currentLabelName,
-  });
-
-  updateSheetName();
-
-  nextTick(() => {
-    labelState.isEditingLabel = false;
-    recalculateScrollWidth();
-  });
+  labelState.editingTabId = "";
+  labelState.currentLabelName = "";
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
@@ -341,25 +325,6 @@ const handleScollTabList = debounce((e: WheelEvent) => {
   console.log(e.deltaX > 0 ? "Move to right" : "Move to left");
   console.log(e.offsetX);
 }, 333);
-
-watch(
-  () => labelState.isEditingLabel,
-  (newVal) => {
-    if (newVal) {
-      labelState.currentLabelName = currentTab.value.name;
-      labelState.oldLabelName = currentTab.value.name;
-      nextTick(() => {
-        labelInputRef.value?.focus();
-      });
-    } else {
-      nextTick(() => {
-        labelState.currentLabelName = "";
-        labelState.editingTabId = "";
-        labelState.oldLabelName = "";
-      });
-    }
-  }
-);
 
 onMounted(async () => {
   if (!hasTabs.value) {

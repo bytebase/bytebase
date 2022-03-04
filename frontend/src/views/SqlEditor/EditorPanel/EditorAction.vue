@@ -64,7 +64,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleUpsertSheet"
+        @click="handleSave"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -73,35 +73,38 @@
         placement="bottom-end"
         :show-arrow="false"
         :show="isShowSharePopover"
+        :on-clickoutside="handleClickoutside"
       >
         <template #trigger>
           <NButton
-            :disabled="isEmptyStatement || isDisconnected"
-            @click="isShowSharePopover = !isShowSharePopover"
+            :disabled="
+              isEmptyStatement || isDisconnected || !currentTab.isSaved
+            "
+            @click.stop.prevent="toggleSharePopover"
           >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
-        <SharePopover ref="sharePopover" @close="isShowSharePopover = false" />
+        <SharePopover @close="isShowSharePopover = false" />
       </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import {
   useNamespacedState,
   useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
-import { onClickOutside } from "@vueuse/core";
 
 import {
   SqlEditorState,
   SqlEditorGetters,
   TabGetters,
+  TabActions,
   SheetActions,
   UNKNOWN_ID,
 } from "../../../types";
@@ -123,9 +126,11 @@ const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
   "upsertSheet",
 ]);
+const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
+  "updateCurrentTab",
+]);
 
 const isShowSharePopover = ref(false);
-const sharePopover = ref(null);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
@@ -133,29 +138,43 @@ const selectedInstance = computed(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
 });
+const selectedInstanceEngine = computed(() => {
+  return store.getters["instance/instanceFormatedEngine"](
+    selectedInstance.value
+  ) as string;
+});
 
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = () => {
-  execute();
+  execute({ databaseType: selectedInstanceEngine.value });
 };
 
 const handleExplainQuery = () => {
-  execute({ explain: true });
+  execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
 };
 
-const handleUpsertSheet = async () => {
+const handleSave = async () => {
   const { name, statement, sheetId } = currentTab.value;
-  return upsertSheet({
+  const sheet = await upsertSheet({
     id: sheetId,
     name,
     statement,
   });
+
+  updateCurrentTab({
+    sheetId: sheet.id,
+    isSaved: true,
+  });
 };
 
-onMounted(() => {
-  onClickOutside(sharePopover, (event) => (isShowSharePopover.value = false));
-});
+const handleClickoutside = (e: any) => {
+  isShowSharePopover.value = false;
+};
+
+const toggleSharePopover = () => {
+  isShowSharePopover.value = !isShowSharePopover.value;
+};
 </script>
 
 <style scoped>

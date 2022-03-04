@@ -65,6 +65,7 @@
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
+        :disabled="!currentTab.isSaved"
         @click="handleCopy"
       >
         <heroicons-solid:check v-if="copied" class="h-4 w-4" />

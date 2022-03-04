@@ -261,12 +261,17 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, ComputedRef } from "vue";
+import {
+  computed,
+  reactive,
+  PropType,
+  ComputedRef,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceConnectionForm from "../components/InstanceConnectionForm.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
@@ -295,7 +300,7 @@ interface LocalState {
   creatingOrUpdating: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceForm",
   components: { EnvironmentSelect, InstanceConnectionForm, InstanceEngineIcon },
   props: {
@@ -307,6 +312,7 @@ export default {
       // Can be false when create is true
       required: false,
       type: Object as PropType<Instance>,
+      default: undefined,
     },
   },
   emits: ["dismiss"],
@@ -404,7 +410,7 @@ export default {
           }.snowflakecomputing.com/console`;
         }
       }
-      return instance.host;
+      return instance.externalLink || "";
     };
 
     // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
@@ -443,8 +449,13 @@ export default {
 
     const updateInstance = (field: string, value: string) => {
       let str = value;
-      if (field == "name" || field == "host" || field == "port" || field == "externalLink") {
-        str = value.trim()
+      if (
+        field == "name" ||
+        field == "host" ||
+        field == "port" ||
+        field == "externalLink"
+      ) {
+        str = value.trim();
       }
       (state.instance as any)[field] = str;
     };
@@ -589,7 +600,7 @@ export default {
       doUpdate,
     };
   },
-};
+});
 </script>
 
 <style scoped>
