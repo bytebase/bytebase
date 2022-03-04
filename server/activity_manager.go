@@ -80,7 +80,6 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		// it is currently copied from *ProjectPlain for a smaller change list, which is better for reviewers.
 		if err := copier.Copy(meta.issue.Project, projectPlain); err != nil {
 			panic(fmt.Sprintf("failed to copy from *api.ProjectPlain to *api.Project, %v", err))
 		}
