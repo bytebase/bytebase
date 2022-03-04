@@ -321,6 +321,7 @@ import {
   ConnectionInfo,
   DataSource,
   UNKNOWN_ID,
+  DataSourceTypes,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -350,7 +351,7 @@ const currentUser: ComputedRef<Principal> = computed(() =>
 );
 
 const currentDataSource = cloneDeep(
-  props.instance.dataSourceList.find((ds) => ds.type === "ADMIN")
+  props.instance.dataSourceList.find((ds) => ds.type === DataSourceTypes.ADMIN)
 ) as DataSource;
 
 const state = reactive<LocalState>({
@@ -359,7 +360,7 @@ const state = reactive<LocalState>({
   instance: cloneDeep(props.instance),
   isUpdating: false,
   updatedPassword: "",
-  currentDataSourceType: "ADMIN",
+  currentDataSourceType: DataSourceTypes.ADMIN,
   currentDataSource: currentDataSource,
   useEmptyPassword: currentDataSource.password === "",
 });
@@ -390,7 +391,7 @@ const defaultPort = computed(() => {
 const adminDataSource = computed(() => {
   let adminDataSource = undefined;
   for (const ds of state.instance.dataSourceList) {
-    if (ds.type === "ADMIN") {
+    if (ds.type === DataSourceTypes.ADMIN) {
       adminDataSource = ds;
     }
   }

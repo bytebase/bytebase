@@ -9,7 +9,7 @@
         :class="props.createInstanceFlag ? 'max-w-xl' : ''"
       >
         {{
-          props.dataSourceType === "ADMIN"
+          props.dataSourceType === DataSourceTypes.ADMIN
             ? $t("instance.sentence.create-admin-user")
             : $t("instance.sentence.create-readonly-user")
         }}
@@ -124,8 +124,8 @@
 import { defineProps, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { DataSourceType, EngineType } from "../types";
 import { useI18n } from "vue-i18n";
+import { DataSourceType, EngineType, DataSourceTypes } from "../types";
 
 interface LocalState {
   showCreateUserExample: boolean;
@@ -157,7 +157,7 @@ const grantStatement = (
   engineType: EngineType,
   dataSourceType: DataSourceType
 ): string => {
-  if (dataSourceType === "ADMIN") {
+  if (dataSourceType === DataSourceTypes.ADMIN) {
     switch (engineType) {
       case "MYSQL":
       case "TIDB":

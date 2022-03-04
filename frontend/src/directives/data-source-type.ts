@@ -1,16 +1,16 @@
-import { DataSourceType } from "../types";
+import { DataSourceType, DataSourceTypes } from "../types";
 
 const directive = {
   beforeMount(el: HTMLElement) {
     const dataSourceType = el.innerText as DataSourceType;
     switch (dataSourceType) {
-      case "ADMIN":
+      case DataSourceTypes.ADMIN:
         el.innerText = "ADMIN";
         return;
-      case "RW":
+      case DataSourceTypes.RW:
         el.innerText = "Read & Write";
         return;
-      case "RO":
+      case DataSourceTypes.RO:
         el.innerText = "Read Only";
         return;
     }

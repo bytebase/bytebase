@@ -1,7 +1,7 @@
 import {
   Database,
-  DataSourceMember,
   DataSourceType,
+  DataSourceTypes,
   Environment,
   Principal,
 } from "../types";
@@ -16,7 +16,7 @@ export function allowDatabaseAccess(
   // "ADMIN" data source should only be used by the system, thus it shouldn't
   // touch this method at all. If it touches somehow, we will reject it and
   // log a warning
-  if (type == "ADMIN") {
+  if (type == DataSourceTypes.ADMIN) {
     if (isDev()) {
       console.trace(
         "Should not check database access against ADMIN connection"

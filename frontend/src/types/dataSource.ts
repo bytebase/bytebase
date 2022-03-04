@@ -15,6 +15,12 @@ import { Principal } from "./principal";
 // which from the ops perspective, having different meaning from the normal RW data source.
 export type DataSourceType = "ADMIN" | "RW" | "RO";
 
+export enum DataSourceTypes {
+  ADMIN = "ADMIN",
+  RW = "RW",
+  RO = "RO",
+}
+
 export type DataSource = {
   id: DataSourceId;
 
