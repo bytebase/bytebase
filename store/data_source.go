@@ -19,11 +19,13 @@ var (
 type DataSourceService struct {
 	l  *zap.Logger
 	db *DB
+
+	cache api.CacheService
 }
 
 // NewDataSourceService returns a new instance of DataSourceService.
-func NewDataSourceService(logger *zap.Logger, db *DB) *DataSourceService {
-	return &DataSourceService{l: logger, db: db}
+func NewDataSourceService(logger *zap.Logger, db *DB, cache api.CacheService) *DataSourceService {
+	return &DataSourceService{l: logger, db: db, cache: cache}
 }
 
 // CreateDataSource creates a new dataSource.

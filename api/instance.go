@@ -7,18 +7,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// DataSourceFromInstanceWithType gets a typed data source from a instance.
-func DataSourceFromInstanceWithType(instance *Instance, dataSourceType DataSourceType) *DataSource {
-	var dataSource *DataSource = nil
-	for _, item := range instance.DataSourceList {
-		if item.Type == dataSourceType {
-			dataSource = item
-			break
-		}
-	}
-	return dataSource
-}
-
 // Instance is the API message for an instance.
 type Instance struct {
 	ID int `jsonapi:"primary,instance"`
@@ -98,6 +86,16 @@ type InstancePatch struct {
 	ExternalLink  *string `jsonapi:"attr,externalLink"`
 	Host          *string `jsonapi:"attr,host"`
 	Port          *string `jsonapi:"attr,port"`
+}
+
+// DataSourceFromInstanceWithType gets a typed data source from a instance.
+func DataSourceFromInstanceWithType(instance *Instance, dataSourceType DataSourceType) *DataSource {
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Type == dataSourceType {
+			return dataSource
+		}
+	}
+	return nil
 }
 
 // InstanceMigrationSchemaStatus is the schema status for instance migration.

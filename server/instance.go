@@ -447,12 +447,25 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		return err
 	}
 	for _, anomaly := range instance.AnomalyList {
-		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
-		if err != nil {
+		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
 			return err
 		}
-		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
-		if err != nil {
+		if anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID); err != nil {
+			return err
+		}
+	}
+
+	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return err
+	}
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
+			return err
+		}
+		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return err
 		}
 	}

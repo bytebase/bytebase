@@ -77,14 +77,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		return nil, FormatError(err)
 	}
 
-	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	instance.DataSourceList = dataSourceList
-
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
@@ -103,22 +95,6 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
 		return []*api.Instance{}, err
-	}
-
-	if err == nil {
-		for _, instance := range list {
-			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &instance.ID,
-			})
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			instance.DataSourceList = dataSourceList
-
-			if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return list, nil
@@ -165,15 +141,6 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 			return nil, err
 		}
 		if has {
-			// Get the newest data source list even with instance cache.
-			dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-				InstanceID: &instance.ID,
-			})
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			instance.DataSourceList = dataSourceList
-
 			return instance, nil
 		}
 	}
@@ -194,10 +161,12 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.InstanceCache, list[0].ID, list[0]); err != nil {
+
+	instance := list[0]
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
-	return list[0], nil
+	return instance, nil
 }
 
 // PatchInstance updates an existing instance by ID.
@@ -217,14 +186,6 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	if err := tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	dataSourceList, err := s.dataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	instance.DataSourceList = dataSourceList
 
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
