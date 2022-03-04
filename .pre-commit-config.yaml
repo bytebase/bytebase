@@ -26,4 +26,5 @@ repos:
     rev: "v2.4.1"
     hooks:
       - id: prettier
+        files: frontend/src/locales/.+\.yaml$
         types_or: [yaml]
