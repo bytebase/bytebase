@@ -484,7 +484,6 @@ export default defineComponent({
             databaseId: task.databaseId!,
             databaseName: task.databaseName!,
             statement: task.statement,
-            rollbackStatement: "",
             earliestAllowedTs: task.earliestAllowedTs,
           };
         });
