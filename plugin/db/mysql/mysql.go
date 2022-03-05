@@ -951,13 +951,13 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	}
 
 	for _, dbName := range dumpableDbNames {
-		// Database header.
-		header := fmt.Sprintf(databaseHeaderFmt, dbName)
-		if _, err := io.WriteString(out, header); err != nil {
-			return err
-		}
 		// Include "USE DATABASE xxx" if dumping multiple databases.
 		if len(dumpableDbNames) > 1 {
+			// Database header.
+			header := fmt.Sprintf(databaseHeaderFmt, dbName)
+			if _, err := io.WriteString(out, header); err != nil {
+				return err
+			}
 			dbStmt, err := getDatabaseStmt(txn, dbName)
 			if err != nil {
 				return fmt.Errorf("failed to get database %q: %s", dbName, err)
