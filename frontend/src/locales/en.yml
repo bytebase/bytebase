@@ -516,7 +516,7 @@ instance:
         The external console URL managing this instance (e.g. AWS RDS console,
         your in-house DB instance console)
     create-admin-user: >-
-      This is the connection user used by Bytebase to perform DDL and DML
+      This is the connection user used by Bytebase to perform DDL and DML (non-SELECT)
       operations.
     create-readonly-user: >-
       This is the connection user used by Bytebase to perform select query operations.
