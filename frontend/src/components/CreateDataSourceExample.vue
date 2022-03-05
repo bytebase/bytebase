@@ -1,120 +1,115 @@
 <template>
-  <div class="pt-4 w-full">
-    <div class="flex flex-col justify-start">
-      <a class="text-lg leading-6 font-medium text-gray-900">
-        {{ $t("instance.connection-info") }}
-      </a>
-      <p
-        class="mt-1 text-sm text-gray-500"
-        :class="props.createInstanceFlag ? 'max-w-xl' : ''"
+  <div class="w-full flex flex-col justify-start" :class="props.className">
+    <p
+      class="w-full mt-1 text-sm text-gray-500"
+      :class="props.createInstanceFlag ? 'max-w-xl' : ''"
+    >
+      {{
+        props.dataSourceType === DataSourceTypes.ADMIN
+          ? $t("instance.sentence.create-admin-user")
+          : $t("instance.sentence.create-readonly-user")
+      }}
+      <span
+        v-if="!props.createInstanceFlag"
+        class="normal-link select-none"
+        @click="toggleCreateUserExample"
       >
-        {{
-          props.dataSourceType === DataSourceTypes.ADMIN
-            ? $t("instance.sentence.create-admin-user")
-            : $t("instance.sentence.create-readonly-user")
-        }}
+        {{ $t("instance.show-how-to-create") }}
+      </span>
+    </p>
+    <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
+    <div
+      v-if="state.showCreateUserExample"
+      class="mt-2 text-sm text-main w-208"
+    >
+      <template·
+        v-if="props.engineType == 'MYSQL' || props.engineType == 'TIDB'"
+      >
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.mysql.template"
+        >
+          <template #user>{{
+            $t("instance.sentence.create-user-example.mysql.user")
+          }}</template>
+          <template #password>
+            <span class="text-red-600">
+              {{ $t("instance.sentence.create-user-example.mysql.password") }}
+            </span>
+          </template>
+        </i18n-t>
+        <a
+          href="https://docs.bytebase.com/install/docker#start-a-local-mysql-server-for-testing"
+          target="_blank"
+          class="normal-link"
+        >
+          {{ $t("common.detailed-guide") }}
+        </a>
+      </template·>
+      <template v-else-if="props.engineType == 'CLICKHOUSE'">
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.clickhouse.template"
+        >
+          <template #password>
+            <span class="text-red-600">YOUR_DB_PWD</span>
+          </template>
+          <template #link>
+            <a
+              class="normal-link"
+              href="https://clickhouse.com/docs/en/operations/access-rights/#access-control-usage"
+              target="__blank"
+            >
+              {{
+                $t(
+                  "instance.sentence.create-user-example.clickhouse.sql-driven-workflow"
+                )
+              }}
+            </a>
+          </template>
+        </i18n-t>
+      </template>
+      <template v-else-if="props.engineType == 'POSTGRES'">
+        <BBAttention
+          class="mb-1"
+          :style="'WARN'"
+          :title="$t('instance.sentence.create-user-example.postgres.warn')"
+        />
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.postgres.template"
+        >
+          <template #password>
+            <span class="text-red-600">YOUR_DB_PWD</span>
+          </template>
+        </i18n-t>
+      </template>
+      <template v-else-if="props.engineType == 'SNOWFLAKE'">
+        <i18n-t
+          tag="p"
+          keypath="instance.sentence.create-user-example.snowflake.template"
+        >
+          <template #password>
+            <span class="text-red-600">YOUR_DB_PWD</span>
+          </template>
+          <template #warehouse>
+            <span class="text-red-600">YOUR_COMPUTE_WAREHOUSE</span>
+          </template>
+        </i18n-t>
+      </template>
+      <div class="mt-2 flex flex-row">
         <span
-          v-if="!props.createInstanceFlag"
-          class="normal-link select-none"
-          @click="toggleCreateUserExample"
+          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
         >
-          {{ $t("instance.show-how-to-create") }}
+          {{ grantStatement(props.engineType, props.dataSourceType) }}
         </span>
-      </p>
-      <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
-      <div
-        v-if="state.showCreateUserExample"
-        class="mt-2 text-sm text-main w-208"
-      >
-        <template·
-          v-if="props.engineType == 'MYSQL' || props.engineType == 'TIDB'"
+        <button
+          tabindex="-1"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+          @click.prevent="copyGrantStatement"
         >
-          <i18n-t
-            tag="p"
-            keypath="instance.sentence.create-user-example.mysql.template"
-          >
-            <template #user>{{
-              $t("instance.sentence.create-user-example.mysql.user")
-            }}</template>
-            <template #password>
-              <span class="text-red-600">
-                {{ $t("instance.sentence.create-user-example.mysql.password") }}
-              </span>
-            </template>
-          </i18n-t>
-          <a
-            href="https://docs.bytebase.com/install/docker#start-a-local-mysql-server-for-testing"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ $t("common.detailed-guide") }}
-          </a>
-        </template·>
-        <template v-else-if="props.engineType == 'CLICKHOUSE'">
-          <i18n-t
-            tag="p"
-            keypath="instance.sentence.create-user-example.clickhouse.template"
-          >
-            <template #password>
-              <span class="text-red-600">YOUR_DB_PWD</span>
-            </template>
-            <template #link>
-              <a
-                class="normal-link"
-                href="https://clickhouse.com/docs/en/operations/access-rights/#access-control-usage"
-                target="__blank"
-              >
-                {{
-                  $t(
-                    "instance.sentence.create-user-example.clickhouse.sql-driven-workflow"
-                  )
-                }}
-              </a>
-            </template>
-          </i18n-t>
-        </template>
-        <template v-else-if="props.engineType == 'POSTGRES'">
-          <BBAttention
-            class="mb-1"
-            :style="'WARN'"
-            :title="$t('instance.sentence.create-user-example.postgres.warn')"
-          />
-          <i18n-t
-            tag="p"
-            keypath="instance.sentence.create-user-example.postgres.template"
-          >
-            <template #password>
-              <span class="text-red-600">YOUR_DB_PWD</span>
-            </template>
-          </i18n-t>
-        </template>
-        <template v-else-if="props.engineType == 'SNOWFLAKE'">
-          <i18n-t
-            tag="p"
-            keypath="instance.sentence.create-user-example.snowflake.template"
-          >
-            <template #password>
-              <span class="text-red-600">YOUR_DB_PWD</span>
-            </template>
-            <template #warehouse>
-              <span class="text-red-600">YOUR_COMPUTE_WAREHOUSE</span>
-            </template>
-          </i18n-t>
-        </template>
-        <div class="mt-2 flex flex-row">
-          <span
-            class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre"
-          >
-            {{ grantStatement(props.engineType, props.dataSourceType) }}
-          </span>
-          <button
-            tabindex="-1"
-            class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
-            @click.prevent="copyGrantStatement"
-          >
-            <heroicons-outline:clipboard class="w-6 h-6" />
-          </button>
-        </div>
+          <heroicons-outline:clipboard class="w-6 h-6" />
+        </button>
       </div>
     </div>
   </div>
@@ -132,6 +127,10 @@ interface LocalState {
 }
 
 const props = defineProps({
+  className: {
+    type: String,
+    default: "",
+  },
   createInstanceFlag: {
     type: Boolean,
     default: false,

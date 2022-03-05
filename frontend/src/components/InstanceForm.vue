@@ -1,8 +1,8 @@
 <template>
   <form class="space-y-6 divide-y divide-block-border">
-    <div class="space-y-6 divide-y divide-block-border px-1">
+    <div class="divide-y divide-block-border px-1">
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+      <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
@@ -136,22 +136,20 @@
               :disabled="!allowEdit"
               :value="state.instance.externalLink"
               class="textfield mt-1 w-full"
-              placeholder="https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false"
+              :placeholder="snowflakeExtraLinkPlaceHolder"
               @input="handleInstanceExternalLinkInput"
             />
           </template>
         </div>
       </div>
 
-      <CreateDataSourceExample
-        :createInstanceFlag="false"
-        :engineType="state.instance.engine"
-        :dataSourceType="state.currentDataSourceType"
-      />
+      <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+        {{ $t("instance.connection-info") }}
+      </p>
 
       <div
         v-if="!hasReadonlyDataSource"
-        class="flex flex-col justify-start items-start flex-wrap bg-yellow-100 border-none rounded-lg p-2 px-3 mt-0"
+        class="mt-4 flex flex-col justify-start items-start flex-wrap bg-yellow-100 border-none rounded-lg p-2 px-3 mt-0"
       >
         <p class="flex justify-start items-start flex-nowrap leading-6">
           <heroicons-outline:exclamation
@@ -169,57 +167,26 @@
           {{ $t("common.create") }}
         </button>
       </div>
-      <div class="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3">
-        <div v-if="hasReadonlyDataSource" class="sm:col-span-3 sm:col-start-1">
-          <p class="w-full textlabel block mb-1">
-            {{ $t("datasource.role-type") }}
-          </p>
-          <div class="flex flex-row justify-start items-center flex-wrap">
-            <div
-              class="textlabel float-left flex flex-row justify-start items-center mr-3 cursor-pointer"
-            >
-              <input
-                id="admin-type"
-                class="mr-1 cursor-pointer"
-                type="radio"
-                name="type"
-                value="ADMIN"
-                :checked="state.currentDataSourceType === 'ADMIN'"
-                @change="handleDataSourceTypeChange"
-              />
-              <label
-                class="text-sm select-none cursor-pointer"
-                for="admin-type"
-              >
-                {{ $t("common.admin") }}
-              </label>
-            </div>
-            <div
-              class="textlabel float-left flex flex-row justify-start items-center"
-              :class="!hasReadonlyDataSource ? 'opacity-40' : ''"
-            >
-              <input
-                id="read-only-type"
-                class="mr-1 cursor-pointer"
-                :class="!hasReadonlyDataSource ? 'cursor-not-allowed' : ''"
-                type="radio"
-                name="type"
-                value="RO"
-                :disabled="!hasReadonlyDataSource"
-                :checked="state.currentDataSourceType === 'RO'"
-                @change="handleDataSourceTypeChange"
-              />
-              <label
-                class="text-sm select-none cursor-pointer"
-                :class="!hasReadonlyDataSource ? 'cursor-not-allowed' : ''"
-                for="read-only-type"
-              >
-                {{ $t("common.read-only") }}
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="sm:col-span-1 sm:col-start-1">
+
+      <div
+        class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
+      >
+        <NTabs
+          class="sm:col-span-3"
+          type="line"
+          default-value="ADMIN"
+          @update:value="handleDataSourceTypeChange"
+        >
+          <NTab name="ADMIN">Admin</NTab>
+          <NTab name="RO" :disabled="!hasReadonlyDataSource">Read only</NTab>
+        </NTabs>
+        <CreateDataSourceExample
+          className="sm:col-span-3 border-none mt-2"
+          :createInstanceFlag="false"
+          :engineType="state.instance.engine"
+          :dataSourceType="state.currentDataSourceType"
+        />
+        <div class="mt-2 sm:col-span-1 sm:col-start-1">
           <label for="username" class="textlabel block">{{
             $t("common.username")
           }}</label>
@@ -240,7 +207,7 @@
           />
         </div>
 
-        <div class="sm:col-span-1 sm:col-start-1">
+        <div class="mt-2 sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
               {{ $t("common.password") }}
@@ -270,7 +237,7 @@
           />
         </div>
       </div>
-      <div class="pt-0 border-none">
+      <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
           <button
             type="button"
@@ -399,14 +366,16 @@ const adminDataSource = computed(() => {
 });
 
 const hasReadonlyDataSource = computed(() => {
-  let temp = false;
   for (const ds of state.instance.dataSourceList) {
-    if (ds.type === "RO") {
-      temp = true;
+    if (ds.type === DataSourceTypes.RO) {
+      return true;
     }
   }
-  return temp;
+  return false;
 });
+
+const snowflakeExtraLinkPlaceHolder =
+  "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
 
 const instanceLink = (instance: Instance): string => {
   if (instance.engine == "SNOWFLAKE") {
@@ -445,7 +414,7 @@ const handleCurrentDataSourceNameInput = (event: Event) => {
   updateInstanceDataSource();
 };
 
-const handleDataSourceTypeChange = (event: Event) => {
+const handleDataSourceTypeChange = (value: string) => {
   const lastDataSourceType = state.currentDataSourceType;
   let index = state.instance.dataSourceList.findIndex(
     (ds) => ds.type === lastDataSourceType
@@ -453,8 +422,7 @@ const handleDataSourceTypeChange = (event: Event) => {
   if (!isEqual(state.instance.dataSourceList[index], state.currentDataSource)) {
     state.instance.dataSourceList[index] = state.currentDataSource;
   }
-  state.currentDataSourceType = (event.target as HTMLInputElement)
-    .value as DataSourceType;
+  state.currentDataSourceType = value as DataSourceType;
   index = state.instance.dataSourceList.findIndex(
     (ds) => ds.type === state.currentDataSourceType
   );
@@ -552,7 +520,7 @@ const doUpdate = () => {
         const dataSource = state.instance.dataSourceList[i];
         if (dataSource.id === UNKNOWN_ID) {
           // Only used to create ReadOnly data source right now.
-          if (dataSource.type === "RO") {
+          if (dataSource.type === DataSourceTypes.RO) {
             requests.push(
               store.dispatch("dataSource/createDataSource", {
                 databaseId: dataSource.databaseId,

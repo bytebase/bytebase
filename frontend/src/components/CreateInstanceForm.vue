@@ -1,6 +1,6 @@
 <template>
   <form class="space-y-6 divide-y divide-block-border">
-    <div class="space-y-6 divide-y divide-block-border px-1">
+    <div class="divide-y divide-block-border px-1">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -24,7 +24,7 @@
         </template>
       </div>
       <!-- Instance Name -->
-      <div class="grid grid-cols-1 gap-y-6 gap-x-4 pt-4 sm:grid-cols-4">
+      <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 pt-4 sm:grid-cols-4">
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
@@ -114,13 +114,19 @@
         </div>
       </div>
 
-      <CreateDataSourceExample
-        :createInstanceFlag="true"
-        :engineType="state.instance.engine"
-        :dataSourceType="'ADMIN'"
-      />
+      <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+        {{ $t("instance.connection-info") }}
+      </p>
 
-      <div class="pt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-3">
+      <div
+        class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
+      >
+        <CreateDataSourceExample
+          className="sm:col-span-3"
+          :createInstanceFlag="true"
+          :engineType="state.instance.engine"
+          :dataSourceType="'ADMIN'"
+        />
         <div class="sm:col-span-1 sm:col-start-1">
           <label for="username" class="textlabel block">{{
             $t("common.username")
@@ -160,7 +166,7 @@
         </div>
       </div>
 
-      <div class="pt-2 border-none">
+      <div class="mt-6 border-none">
         <div class="flex flex-row space-x-2">
           <button
             type="button"
