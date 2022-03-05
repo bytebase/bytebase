@@ -519,7 +519,7 @@ instance:
       This is the connection user used by Bytebase to perform DDL and DML (non-SELECT)
       operations.
     create-readonly-user: >-
-      This is the connection user used by Bytebase to perform select query operations.
+      This is the connection user used by Bytebase to perform read-only operations such as SELECT query.
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
