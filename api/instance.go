@@ -34,6 +34,9 @@ type Instance struct {
 	ExternalLink  string  `jsonapi:"attr,externalLink"`
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
+	Username      string  `jsonapi:"attr,username"`
+	// Password is not returned to the client
+	Password string
 }
 
 // InstanceCreate is the API message for creating an instance.
@@ -81,11 +84,14 @@ type InstancePatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name          *string `jsonapi:"attr,name"`
-	EngineVersion *string
-	ExternalLink  *string `jsonapi:"attr,externalLink"`
-	Host          *string `jsonapi:"attr,host"`
-	Port          *string `jsonapi:"attr,port"`
+	Name             *string `jsonapi:"attr,name"`
+	EngineVersion    *string
+	ExternalLink     *string `jsonapi:"attr,externalLink"`
+	Host             *string `jsonapi:"attr,host"`
+	Port             *string `jsonapi:"attr,port"`
+	Username         *string `jsonapi:"attr,username"`
+	Password         *string `jsonapi:"attr,password"`
+	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.
