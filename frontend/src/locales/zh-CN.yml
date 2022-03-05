@@ -56,7 +56,6 @@ common:
   approve: 批准
   done: 完成
   create: 创建
-  rollback: 回滚
   run: 运行
   retry: 重试
   skip: 跳过
@@ -369,8 +368,6 @@ issue:
   apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
   add-sql-statement: 添加 SQL @:{'common.statement'}…
   optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
-  rollback-sql: "@:{'common.rollback'} SQL"
-  add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
   add-a-comment: 添加评论

@@ -25,7 +25,7 @@ const template: IssueTemplate = {
                 instanceId: UNKNOWN_ID,
                 databaseId: UNKNOWN_ID,
                 statement: "",
-                rollbackStatement: "",
+                earliestAllowedTs: 0,
               },
             ],
           },
