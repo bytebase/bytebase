@@ -42,7 +42,6 @@ export type UpdateSchemaDetail = {
   databaseId: DatabaseId;
   databaseName: string;
   statement: string;
-  rollbackStatement: string;
   earliestAllowedTs: number;
 };
 
@@ -94,7 +93,6 @@ export type IssueCreate = {
   type: IssueType;
   description: string;
   assigneeId: PrincipalId;
-  rollbackIssueId?: IssueId;
   createContext: IssueCreateContext;
   payload: IssuePayload;
 };

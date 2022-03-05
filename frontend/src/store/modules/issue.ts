@@ -155,8 +155,6 @@ const actions = {
     // so that we should also update instance/database store, otherwise, we may get
     // unknown instance/database when navigating to other UI from the issue detail page
     // since other UIs are getting instance/database by id from the store.
-    // An example is if user navigates to an issue and do a rollback, the constructed rollback
-    // issue requires the instance/database exist in the store.
     for (const stage of issue.pipeline.stageList) {
       for (const task of stage.taskList) {
         commit(
