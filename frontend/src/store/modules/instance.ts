@@ -34,7 +34,7 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
-  const anomalyIdList = instance.relationships!.anomaly
+  const anomalyIdList = instance.relationships!.anomalyList
     .data as ResourceIdentifier[];
   const anomalyList: Anomaly[] = [];
   for (const item of anomalyIdList) {
