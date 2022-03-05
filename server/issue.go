@@ -396,9 +396,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Name,
 	}
-	if issueCreate.RollbackIssueID != nil {
-		createActivityPayload.RollbackIssueID = *issueCreate.RollbackIssueID
-	}
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
@@ -416,40 +413,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
-	}
-
-	// If we are creating a rollback issue, then we will also post a comment on the original issue
-	if issueCreate.RollbackIssueID != nil {
-		issueFind := &api.IssueFind{
-			ID: issueCreate.RollbackIssueID,
-		}
-		rollbackIssue, err := s.IssueService.FindIssue(ctx, issueFind)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
-		if rollbackIssue == nil {
-			return nil, fmt.Errorf("Rollback issue not found for ID %v", issueCreate.RollbackIssueID)
-		}
-		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
-			IssueName: rollbackIssue.Name,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   creatorID,
-			ContainerID: *issueCreate.RollbackIssueID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
-			Payload:     string(bytes),
-		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-			issue: rollbackIssue,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
 	}
 	return issue, nil
 }
@@ -878,9 +841,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
-	if d.RollbackStatement != "" {
-		payload.RollbackStatement = d.RollbackStatement
-	}
 	if vcsPushEvent != nil {
 		payload.VCSPushEvent = vcsPushEvent
 	}
@@ -904,7 +864,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Status:            taskStatus,
 		Type:              taskType,
 		Statement:         d.Statement,
-		RollbackStatement: d.RollbackStatement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
 		MigrationType:     migrationType,
 		Payload:           string(bytes),

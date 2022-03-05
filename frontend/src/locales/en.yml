@@ -56,7 +56,6 @@ common:
   approve: Approve
   done: Done
   create: Create
-  rollback: Rollback
   run: Run
   retry: Retry
   skip: Skip
@@ -221,6 +220,8 @@ task:
     success: Success
     warn: Warning
     error: Error
+  earliest-allowed-time-no-modify: >-
+    You can not modify this field because you are not the issue assignee or it's not pending to run.
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
@@ -379,8 +380,6 @@ issue:
   apply-to-other-stages: Apply to other stages
   add-sql-statement: Add SQL statement...
   optional-add-sql-statement: (Optional) Add SQL statement...
-  rollback-sql: Rollback SQL
-  add-rollback-sql-statement: Add rollback SQL statement...
   edit-description: Edit description
   add-some-description: Add some description...
   add-a-comment: Add a comment

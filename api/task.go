@@ -89,19 +89,17 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
-	MigrationType     db.MigrationType `json:"migrationType,omitempty"`
-	Statement         string           `json:"statement,omitempty"`
-	RollbackStatement string           `json:"rollbackStatement,omitempty"`
-	SchemaVersion     string           `json:"schemaVersion,omitempty"`
-	VCSPushEvent      *vcs.PushEvent   `json:"pushEvent,omitempty"`
+	MigrationType db.MigrationType `json:"migrationType,omitempty"`
+	Statement     string           `json:"statement,omitempty"`
+	SchemaVersion string           `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
-	Statement         string         `json:"statement,omitempty"`
-	RollbackStatement string         `json:"rollbackStatement,omitempty"`
-	SchemaVersion     string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent      *vcs.PushEvent `json:"pushEvent,omitempty"`
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -170,7 +168,6 @@ type TaskCreate struct {
 	Payload           string
 	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
 	Statement         string `jsonapi:"attr,statement"`
-	RollbackStatement string `jsonapi:"attr,rollbackStatement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`

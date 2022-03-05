@@ -56,7 +56,6 @@ common:
   approve: 批准
   done: 完成
   create: 创建
-  rollback: 回滚
   run: 运行
   retry: 重试
   skip: 跳过
@@ -218,6 +217,7 @@ task:
     success: 成功
     warn: 警告
     error: 错误
+  earliest-allowed-time-no-modify: 您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
@@ -368,8 +368,6 @@ issue:
   apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
   add-sql-statement: 添加 SQL @:{'common.statement'}…
   optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
-  rollback-sql: "@:{'common.rollback'} SQL"
-  add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
   add-a-comment: 添加评论
