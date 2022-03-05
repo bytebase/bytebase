@@ -261,9 +261,7 @@ export default defineComponent({
 
     // this function is not fully ready go online
     const allowSyncVCS = computed(() => {
-      // NOTICE: will dis annotate this when this function is ready
-      return false;
-      // return props.project.workflowType === "VCS" && allowAddMember.value;
+      return props.project.workflowType === "VCS" && allowAddMember.value;
     });
 
     const hasValidMember = computed(() => {

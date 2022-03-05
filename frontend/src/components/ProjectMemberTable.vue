@@ -172,13 +172,6 @@ export default {
         : props.project.roleProvider;
     });
 
-    const activeRoleProvider = computed(() => {
-      // if props.activeRoleProvider is not passed as a property, we will use props.project.roleProvider by default
-      return props.activeRoleProvider
-        ? props.activeRoleProvider
-        : props.project.roleProvider;
-    });
-
     const RoleProviderConfig = {
       GITLAB_SELF_HOST: {
         // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
