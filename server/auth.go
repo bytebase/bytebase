@@ -81,7 +81,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				GitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+				GitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchUserInfo(ctx,
 					common.OauthContext{
 						ClientID:     gitlabLogin.ApplicationID,
 						ClientSecret: gitlabLogin.Secret,
@@ -90,6 +90,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						Refresher:    nil,
 					},
 					gitlabLogin.InstanceURL,
+					nil,
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)

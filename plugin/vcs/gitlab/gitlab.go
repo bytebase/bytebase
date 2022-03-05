@@ -182,11 +182,16 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-// TryLogin will try to login GitLab.
-func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
+// FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
+func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID *int) (*vcs.UserInfo, error) {
+	uri := []string{"user"}
+	if userID != nil {
+		uri[0] = "users"
+		uri = append(uri, fmt.Sprintf("%v", *userID))
+	}
 	code, body, err := httpGet(
 		instanceURL,
-		"user",
+		strings.Join(uri, "/"),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
