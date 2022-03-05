@@ -144,6 +144,50 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
+		// TODO(d): remove this once UI fully switched to data source API.
+		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
+			instanceFind := &api.InstanceFind{
+				ID: &id,
+			}
+			instance, err = s.InstanceService.FindInstance(ctx, instanceFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+			}
+			if instance == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+			}
+
+			dataSourceType := api.Admin
+			dataSourceFind := &api.DataSourceFind{
+				InstanceID: &instance.ID,
+				Type:       &dataSourceType,
+			}
+			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
+			}
+			if adminDataSource == nil {
+				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+			}
+
+			dataSourcePatch := &api.DataSourcePatch{
+				ID:        adminDataSource.ID,
+				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+				Username:  instancePatch.Username,
+			}
+			if instancePatch.Password != nil {
+				dataSourcePatch.Password = instancePatch.Password
+			} else if instancePatch.UseEmptyPassword {
+				password := ""
+				dataSourcePatch.Password = &password
+			}
+			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
+			}
+		}
+
 		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 			return err
 		}
@@ -467,6 +511,12 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return err
+		}
+
+		// TODO(d): remove this when UI is fully switched to data source API.
+		if dataSource.Type == api.Admin {
+			instance.Username = dataSource.Username
+			instance.Password = dataSource.Password
 		}
 	}
 
