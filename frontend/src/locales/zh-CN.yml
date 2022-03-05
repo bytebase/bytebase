@@ -485,7 +485,7 @@ instance:
       snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
     console:
       snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
-    create-admin-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-admin-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。
     create-readonly-user: 这是 Bytebase 用于连接数据库，执行查询操作的用户。
     create-user-example:
       snowflake:
