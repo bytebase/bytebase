@@ -24,6 +24,9 @@ DELETE FROM
     activity;
 
 DELETE FROM
+    sheet;
+
+DELETE FROM
     issue_subscriber;
 
 DELETE FROM
@@ -99,8 +102,6 @@ DELETE FROM
 DELETE FROM
     deployment_config;
 
-DELETE FROM
-    sheet;
 -- Project 1 refers to DEFAULT project which is considered as part of schema
 DELETE FROM
     project
