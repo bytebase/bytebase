@@ -155,11 +155,11 @@ func (e ProjectRole) String() string {
 
 // gitLabRepositoryMember is the API message for repository member
 type gitLabRepositoryMember struct {
-	Email           string    `json:"email"`
-	Name            string    `json:"name"`
-	State           vcs.State `json:"state"`
-	MembershipState vcs.State `json:"membership_state"`
-	AccessLevel     int32     `json:"access_level"`
+	ID          int       `json:"id"`
+	Email       string    `json:"email"`
+	Name        string    `json:"name"`
+	State       vcs.State `json:"state"`
+	AccessLevel int32     `json:"access_level"`
 }
 
 func init() {
@@ -247,7 +247,8 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	code, body, err := httpGet(
 		instanceURL,
-		fmt.Sprintf("projects/%s/members", repositoryID),
+		// official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
+		fmt.Sprintf("projects/%s/members/all", repositoryID),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
@@ -277,11 +278,17 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	// we only return active member (both state and membership_state is active)
 	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
 	for _, gitLabMember := range gitLabrepositoryMember {
-		if gitLabMember.State == vcs.StateActive && gitLabMember.MembershipState == vcs.StateActive {
+		if gitLabMember.State == vcs.StateActive {
+			// the Email filed cannot be returned as expected, maybe cause by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
+			// so we need to fetch this field one by one
+			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, &gitLabMember.ID)
+			if err != nil {
+				return nil, err
+			}
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
 			repositoryMember := &vcs.RepositoryMember{
 				Name:         gitLabMember.Name,
-				Email:        gitLabMember.Email,
+				Email:        userInfo.Email, /* this filed should has been returned by projects/%s/members/all */
 				Role:         bytebaseRole,
 				VCSRole:      gitLabRole.String(),
 				State:        vcs.StateActive,
