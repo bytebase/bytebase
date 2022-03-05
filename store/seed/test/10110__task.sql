@@ -193,7 +193,7 @@ VALUES
         'Update testdb_dev',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl1;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl1 (name TEXT);"}'
     );
 
 -- Task for stage 10003 "Integration" to update database 7006 'testdb_integration'
@@ -223,7 +223,7 @@ VALUES
         'Update testdb_integration',
         'bb.task.database.schema.update',
         'PENDING',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl1 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl1;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl1 (name TEXT);"}'
     );
 
 -- Task for stage 10008 simulating webhook push event
@@ -424,7 +424,7 @@ VALUES
         'Update testdb_dev',
         'bb.task.database.schema.update',
         'DONE',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_dev.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_dev.tbl2 (name TEXT);"}'
     );
 
 -- Task for stage 10014 "Integration" to create table in database 7006 'testdb_integration'
@@ -454,7 +454,7 @@ VALUES
         'Update testdb_integration',
         'bb.task.database.schema.update',
         'DONE',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_integration.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_integration.tbl2 (name TEXT);"}'
     );
 
 
@@ -485,7 +485,7 @@ VALUES
         'Update testdb_staging',
         'bb.task.database.schema.update',
         'FAILED',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_staging.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT);"}'
     );
 
 -- Task for stage 10016 "prod" to create table in database 7014 'testdb_prod'
@@ -515,7 +515,7 @@ VALUES
         'Update testdb_prod',
         'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);", "rollbackStatement":"DROP TABLE testdb_prod.tbl2;"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);"}'
     );
 
 ALTER SEQUENCE task_id_seq RESTART WITH 11017;

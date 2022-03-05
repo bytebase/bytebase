@@ -78,7 +78,6 @@ export type ActivityLevel = "INFO" | "WARN" | "ERROR";
 
 export type ActivityIssueCreatePayload = {
   issueName: string;
-  rollbackIssueId?: IssueId;
 };
 
 export type ActivityIssueCommentCreatePayload = {
