@@ -751,17 +751,17 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
 			}
-			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			// Convert to pipelineCreate
-			for i, stage := range p {
+			for i, databaseList := range matrix {
 				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
 				environmentSet := make(map[string]bool)
 				var environmentID int
 				var taskCreateList []api.TaskCreate
-				for _, database := range stage {
+				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 					taskStatus := api.TaskPendingApproval
@@ -1091,11 +1091,11 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
+	d, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
-	return d, p, nil
+	return d, matrix, nil
 }
 
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
@@ -1111,11 +1111,11 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+	_, matrix, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 	if err != nil {
 		return "", "", err
 	}
-	similarDB := getPeerTenantDatabase(pipeline, instance.EnvironmentID)
+	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
 
 	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
 	// If there are existing databases with the same name, we will disallow the database creation.

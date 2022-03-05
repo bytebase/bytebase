@@ -46,7 +46,7 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 // getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The returned matrix doesn't include deployment with no matched database.
 func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, baseDatabaseName, dbNameTemplate string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
-	var pipeline [][]*api.Database
+	var matrix [][]*api.Database
 	var deployments []*api.Deployment
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
@@ -95,26 +95,26 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 			}
 		}
 
-		var stage []*api.Database
+		var databaseList []*api.Database
 		for _, id := range matchedDatabaseList {
-			stage = append(stage, databaseMap[id])
+			databaseList = append(databaseList, databaseMap[id])
 		}
 		// sort databases in stage based on names.
-		for i := 0; i < len(stage)-1; i++ {
-			for j := i + 1; j < len(stage)-1; j++ {
-				if stage[i].Name > stage[j].Name {
-					stage[i], stage[j] = stage[j], stage[i]
+		for i := 0; i < len(databaseList)-1; i++ {
+			for j := i + 1; j < len(databaseList)-1; j++ {
+				if databaseList[i].Name > databaseList[j].Name {
+					databaseList[i], databaseList[j] = databaseList[j], databaseList[i]
 				}
 			}
 		}
 
-		if len(stage) > 0 {
-			pipeline = append(pipeline, stage)
+		if len(databaseList) > 0 {
+			matrix = append(matrix, databaseList)
 			deployments = append(deployments, deployment)
 		}
 	}
 
-	return deployments, pipeline, nil
+	return deployments, matrix, nil
 }
 
 // formatDatabaseName will return the full database name given the dbNameTemplate, base database name, and labels.
