@@ -173,7 +173,6 @@ const selectedInstanceEngine = computed(() => {
 });
 
 const hasReadonlyDataSource = computed(() => {
-  selectedInstance.value.environment.name;
   for (const ds of selectedInstance.value.dataSourceList) {
     if (ds.type === DataSourceTypes.RO) {
       return true;
