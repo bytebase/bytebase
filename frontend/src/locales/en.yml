@@ -220,6 +220,8 @@ task:
     success: Success
     warn: Warning
     error: Error
+  earliest-allowed-time-no-modify: >-
+    You can not modify this field because you are not the issue assignee or it's not pending to run.
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
