@@ -148,7 +148,7 @@ func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.
 			environment_id,
 			name
 		FROM stage
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id`,
 		args...,
 	)
 	if err != nil {

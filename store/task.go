@@ -277,7 +277,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 			payload,
 			earliest_allowed_ts
 		FROM task
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id`,
 		args...,
 	)
 	if err != nil {

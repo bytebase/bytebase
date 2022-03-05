@@ -99,6 +99,14 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		for _, id := range matchedDatabaseList {
 			stage = append(stage, databaseMap[id])
 		}
+		// sort databases in stage based on names.
+		for i := 0; i < len(stage)-1; i++ {
+			for j := i + 1; j < len(stage)-1; j++ {
+				if stage[i].Name > stage[j].Name {
+					stage[i], stage[j] = stage[j], stage[i]
+				}
+			}
+		}
 
 		if len(stage) > 0 {
 			pipeline = append(pipeline, stage)
