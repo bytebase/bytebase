@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"sort"
 
 	"github.com/bytebase/bytebase/api"
 )
@@ -100,13 +101,9 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 			databaseList = append(databaseList, databaseMap[id])
 		}
 		// sort databases in stage based on names.
-		for i := 0; i < len(databaseList)-1; i++ {
-			for j := i + 1; j < len(databaseList)-1; j++ {
-				if databaseList[i].Name > databaseList[j].Name {
-					databaseList[i], databaseList[j] = databaseList[j], databaseList[i]
-				}
-			}
-		}
+		sort.Slice(databaseList, func(i, j int) bool {
+			return databaseList[i].Name > databaseList[j].Name
+		})
 
 		if len(databaseList) > 0 {
 			matrix = append(matrix, databaseList)
