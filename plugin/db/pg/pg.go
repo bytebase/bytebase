@@ -809,13 +809,13 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	}
 	defer txn.Rollback()
 
-	// Database header.
-	header := fmt.Sprintf(databaseHeaderFmt, database)
-	if _, err := io.WriteString(out, header); err != nil {
-		return err
-	}
 	// Database statement.
 	if includeUseDatabase {
+		// Database header.
+		header := fmt.Sprintf(databaseHeaderFmt, database)
+		if _, err := io.WriteString(out, header); err != nil {
+			return err
+		}
 		// Use database statement.
 		useStmt := fmt.Sprintf(useDatabaseFmt, database)
 		if _, err := io.WriteString(out, useStmt); err != nil {
