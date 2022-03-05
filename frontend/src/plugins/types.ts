@@ -20,7 +20,6 @@ export enum IssueBuiltinFieldId {
   PROJECT = "5",
   SUBSCRIBER_LIST = "6",
   SQL = "7",
-  ROLLBACK_SQL = "8",
 }
 
 export const INPUT_CUSTOM_FIELD_ID_BEGIN = "100";
@@ -95,7 +94,6 @@ export type TemplateContext = {
   approvalPolicyList: Policy[];
   currentUser: Principal;
   statementList?: string[];
-  rollbackStatementList?: string[];
 };
 
 export type IssueTemplate = {
