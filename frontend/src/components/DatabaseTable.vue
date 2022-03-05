@@ -73,14 +73,38 @@
       </BBTableCell>
     </template>
   </BBTable>
+  <BBModal
+    v-if="state.showIncorrectProjectModal"
+    :title="$t('common.warning')"
+    @close="handleIncorrectProjectModalCancel"
+  >
+    <div class="col-span-1 w-96">
+      {{ $t("database.incorrect-project-warning") }}
+    </div>
+    <div class="pt-6 flex justify-end">
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click.prevent="handleIncorrectProjectModalCancel"
+      >
+        {{ $t("common.cancel") }}
+      </button>
+      <button
+        type="button"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        @click.prevent="handleIncorrectProjectModalConfirm"
+      >
+        {{ $t("database.go-to-transfer") }}
+      </button>
+    </div>
+  </BBModal>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
-import { useStore } from "vuex";
+<script lang="ts" setup>
+import { computed, defineProps, defineEmits, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { connectionSlug, databaseSlug } from "../utils";
-import { Database } from "../types";
+import { Database, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { cloneDeep } from "lodash-es";
@@ -88,202 +112,214 @@ import { useI18n } from "vue-i18n";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
-export default defineComponent({
-  name: "DatabaseTable",
-  components: { InstanceEngineIcon },
-  props: {
-    bordered: {
-      default: true,
-      type: Boolean,
-    },
-    mode: {
-      default: "ALL",
-      type: String as PropType<Mode>,
-    },
-    singleInstance: {
-      default: true,
-      type: Boolean,
-    },
-    rowClickable: {
-      default: true,
-      type: Boolean,
-    },
-    customClick: {
-      default: false,
-      type: Boolean,
-    },
-    databaseList: {
-      required: true,
-      type: Object as PropType<Database[]>,
-    },
+interface State {
+  showIncorrectProjectModal: boolean;
+  warningDatabase?: Database;
+}
+
+const props = defineProps({
+  bordered: {
+    default: true,
+    type: Boolean,
   },
-  emits: ["select-database"],
-  setup(props, { emit }) {
-    const store = useStore();
-    const router = useRouter();
-    const { t } = useI18n();
-
-    const columnListMap = computed(() => {
-      return new Map([
-        [
-          "ALL",
-          [
-            {
-              title: t("common.name"),
-            },
-            {
-              title: t("common.project"),
-            },
-            {
-              title: t("common.environment"),
-            },
-            {
-              title: t("common.instance"),
-            },
-            {
-              title: t("db.sync-status"),
-            },
-            {
-              title: t("db.last-successful-sync"),
-            },
-          ],
-        ],
-        [
-          "ALL_SHORT",
-          [
-            {
-              title: t("common.name"),
-            },
-            {
-              title: t("common.project"),
-            },
-            {
-              title: t("common.environment"),
-            },
-            {
-              title: t("common.instance"),
-            },
-          ],
-        ],
-        [
-          "INSTANCE",
-          [
-            {
-              title: t("common.name"),
-            },
-            {
-              title: t("common.project"),
-            },
-            {
-              title: t("db.sync-status"),
-            },
-            {
-              title: t("db.last-successful-sync"),
-            },
-          ],
-        ],
-        [
-          "PROJECT",
-          [
-            {
-              title: t("common.name"),
-            },
-            {
-              title: t("common.environment"),
-            },
-            {
-              title: t("common.instance"),
-            },
-            {
-              title: t("db.sync-status"),
-            },
-            {
-              title: t("db.last-successful-sync"),
-            },
-          ],
-        ],
-        [
-          "PROJECT_SHORT",
-          [
-            {
-              title: t("common.name"),
-            },
-            {
-              title: t("common.environment"),
-            },
-            {
-              title: t("common.instance"),
-            },
-          ],
-        ],
-      ]);
-    });
-
-    // const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const showInstanceColumn = computed(() => {
-      return props.mode != "INSTANCE";
-    });
-
-    const showProjectColumn = computed(() => {
-      return props.mode != "PROJECT" && props.mode != "PROJECT_SHORT";
-    });
-
-    const showEnvironmentColumn = computed(() => {
-      return props.mode != "INSTANCE";
-    });
-
-    const showMiscColumn = computed(() => {
-      return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
-    });
-
-    const columnList = computed(() => {
-      var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
-      if (showSqlEditorLink.value) {
-        // Use cloneDeep, otherwise it will alter the one in columnListMap
-        list = cloneDeep(list);
-        list.push({ title: t("sql-editor.self") });
-      }
-      return list;
-    });
-
-    const showSqlEditorLink = computed(() => {
-      if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
-        return false;
-      }
-      return true;
-    });
-
-    const gotoSqlEditor = (database: Database) => {
-      router.push({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database),
-        },
-      });
-    };
-
-    const clickDatabase = function (section: number, row: number) {
-      if (!props.rowClickable) return;
-
-      const database = props.databaseList[row];
-      if (props.customClick) {
-        emit("select-database", database);
-      } else {
-        router.push(`/db/${databaseSlug(database)}`);
-      }
-    };
-
-    return {
-      showInstanceColumn,
-      showProjectColumn,
-      showEnvironmentColumn,
-      showMiscColumn,
-      columnList,
-      showSqlEditorLink,
-      gotoSqlEditor,
-      clickDatabase,
-    };
+  mode: {
+    default: "ALL",
+    type: String as PropType<Mode>,
+  },
+  singleInstance: {
+    default: true,
+    type: Boolean,
+  },
+  rowClickable: {
+    default: true,
+    type: Boolean,
+  },
+  customClick: {
+    default: false,
+    type: Boolean,
+  },
+  databaseList: {
+    required: true,
+    type: Object as PropType<Database[]>,
   },
 });
+
+const emit = defineEmits(["select-database"]);
+
+const router = useRouter();
+const { t } = useI18n();
+const state = reactive<State>({
+  showIncorrectProjectModal: false,
+});
+
+const columnListMap = computed(() => {
+  return new Map([
+    [
+      "ALL",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.project"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+        {
+          title: t("db.sync-status"),
+        },
+        {
+          title: t("db.last-successful-sync"),
+        },
+      ],
+    ],
+    [
+      "ALL_SHORT",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.project"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+      ],
+    ],
+    [
+      "INSTANCE",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.project"),
+        },
+        {
+          title: t("db.sync-status"),
+        },
+        {
+          title: t("db.last-successful-sync"),
+        },
+      ],
+    ],
+    [
+      "PROJECT",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+        {
+          title: t("db.sync-status"),
+        },
+        {
+          title: t("db.last-successful-sync"),
+        },
+      ],
+    ],
+    [
+      "PROJECT_SHORT",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+      ],
+    ],
+  ]);
+});
+
+// const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+const showInstanceColumn = computed(() => {
+  return props.mode != "INSTANCE";
+});
+
+const showProjectColumn = computed(() => {
+  return props.mode != "PROJECT" && props.mode != "PROJECT_SHORT";
+});
+
+const showEnvironmentColumn = computed(() => {
+  return props.mode != "INSTANCE";
+});
+
+const showMiscColumn = computed(() => {
+  return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
+});
+
+const columnList = computed(() => {
+  var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
+  if (showSqlEditorLink.value) {
+    // Use cloneDeep, otherwise it will alter the one in columnListMap
+    list = cloneDeep(list);
+    list.push({ title: t("sql-editor.self") });
+  }
+  return list;
+});
+
+const showSqlEditorLink = computed(() => {
+  if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
+    return false;
+  }
+  return true;
+});
+
+const gotoSqlEditor = (database: Database) => {
+  // SQL editors can only query databases in the projects available to the user.
+  if (
+    database.projectId === UNKNOWN_ID ||
+    database.projectId === DEFAULT_PROJECT_ID
+  ) {
+    state.warningDatabase = database;
+    state.showIncorrectProjectModal = true;
+  } else {
+    router.push({
+      name: "sql-editor.detail",
+      params: {
+        connectionSlug: connectionSlug(database),
+      },
+    });
+  }
+};
+
+const handleIncorrectProjectModalConfirm = () => {
+  if (state.warningDatabase) {
+    router.push(`/db/${databaseSlug(state.warningDatabase)}`);
+  }
+};
+
+const handleIncorrectProjectModalCancel = () => {
+  state.showIncorrectProjectModal = false;
+  state.warningDatabase = undefined;
+};
+
+const clickDatabase = (section: number, row: number) => {
+  if (!props.rowClickable) return;
+
+  const database = props.databaseList[row];
+  if (props.customClick) {
+    emit("select-database", database);
+  } else {
+    router.push(`/db/${databaseSlug(database)}`);
+  }
+};
 </script>
