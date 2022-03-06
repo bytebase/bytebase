@@ -182,11 +182,11 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-// TryLogin will try to fetch the user info from the current OAuth content of GitLab.
-func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
+// fetchUserInfo will fetch user info from the given resourceURI, resourceURI should be either 'user' or 'users/:userID'
+func fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	code, body, err := httpGet(
 		instanceURL,
-		"user",
+		resourceURI,
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
@@ -200,7 +200,14 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	if code == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s", instanceURL))
+		errInfo := []string{fmt.Sprintf("failed to fetch user info from GitLab instance %s", instanceURL)}
+
+		resourceURISplit := strings.Split(resourceURI, "/")
+		if len(resourceURI) > 1 {
+			errInfo = append(errInfo, fmt.Sprintf("UserID: %v", resourceURISplit[1]))
+		}
+
+		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, status code: %d",
 			instanceURL,
@@ -216,39 +223,14 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 	return userInfo, err
 }
 
+// TryLogin will try to fetch the user info from the current OAuth content of GitLab.
+func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
+	return fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+}
+
 // FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
 func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*vcs.UserInfo, error) {
-	code, body, err := httpGet(
-		instanceURL,
-		fmt.Sprintf("users/%v", userID),
-		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if code == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s, userID: %d", instanceURL, userID))
-	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, userID: %d, status code: %d",
-			instanceURL,
-			userID,
-			code,
-		)
-	}
-
-	userInfo := &vcs.UserInfo{}
-	if err := json.Unmarshal([]byte(body), userInfo); err != nil {
-		return nil, err
-	}
-
-	return userInfo, err
+	return fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%d", userID))
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
