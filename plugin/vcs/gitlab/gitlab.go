@@ -208,12 +208,12 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 		)
 	}
 
-	UserInfo := &vcs.UserInfo{}
-	if err := json.Unmarshal([]byte(body), UserInfo); err != nil {
+	userInfo := &vcs.UserInfo{}
+	if err := json.Unmarshal([]byte(body), userInfo); err != nil {
 		return nil, err
 	}
 
-	return UserInfo, err
+	return userInfo, err
 }
 
 // FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
@@ -234,20 +234,21 @@ func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.Oau
 	}
 
 	if code == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s, userID: %d", instanceURL, userID))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, userID: %d, status code: %d",
 			instanceURL,
+			userID,
 			code,
 		)
 	}
 
-	UserInfo := &vcs.UserInfo{}
-	if err := json.Unmarshal([]byte(body), UserInfo); err != nil {
+	userInfo := &vcs.UserInfo{}
+	if err := json.Unmarshal([]byte(body), userInfo); err != nil {
 		return nil, err
 	}
 
-	return UserInfo, err
+	return userInfo, err
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
@@ -310,6 +311,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 		if gitLabMember.State == vcs.StateActive {
 			// the email field does not return as expected via projects/<<projectId>>/members/all, possibly caused by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
 			// so we need to fetch this field one by one
+			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
 			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, gitLabMember.ID)
 			if err != nil {
 				return nil, err
