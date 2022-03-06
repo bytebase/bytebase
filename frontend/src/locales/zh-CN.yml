@@ -528,6 +528,7 @@ instance:
     RDS 实例，也可能是您私有化部署的 MySQL 实例。
     Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
+  dbs-ro-unsupport: 暂时不支持 {database} 创建只读连接
   grants: 权限
 environment:
   select: 选择环境

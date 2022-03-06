@@ -580,6 +580,7 @@ instance:
     Bytebase requires read/write (NOT the super privilege) access to the
     instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
+  dbs-ro-unsupport: The {database} does not currently support creating read-only connections
   grants: Grants
 environment:
   select: Select environment
