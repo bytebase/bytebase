@@ -389,8 +389,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
-	if err := s.composeTaskRelationship(ctx, task); err != nil {
-		return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
+	if task != nil {
+		if err := s.composeTaskRelationship(ctx, task); err != nil {
+			return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
+		}
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -797,6 +799,19 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
+	}
+
+	// Return an error if the issue has no task to be executed
+	hasTask := false
+	for _, stage := range pipelineCreate.StageList {
+		if len(stage.TaskList) > 0 {
+			hasTask = true
+			break
+		}
+	}
+	if !hasTask {
+		err := fmt.Errorf("issue has no task to be executed")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	// Create the pipeline, stages, and tasks.
