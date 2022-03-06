@@ -457,7 +457,7 @@ const handleCreateDataSource = (type: DataSourceType) => {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "WARN",
-      title: t("instance.dbs-ro-unsupport", {
+      title: t("instance.no-read-only-data-source-support", {
         database: state.instance.engine,
       }),
     });

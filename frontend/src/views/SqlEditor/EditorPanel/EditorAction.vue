@@ -39,7 +39,7 @@
                     text
                     @click="gotoInstanceDetailPage"
                   >
-                    {{ $t("sql-editor.create-ro-ds") }}
+                    {{ $t("sql-editor.create-read-only-data-source") }}
                   </NButton>
                 </p>
               </NPopover>

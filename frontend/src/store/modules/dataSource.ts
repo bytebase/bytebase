@@ -7,8 +7,6 @@ import {
   ResourceObject,
   DatabaseId,
   unknown,
-  Database,
-  Instance,
   DataSourcePatch,
   EMPTY_ID,
   empty,
@@ -21,31 +19,17 @@ function convert(
   includedList: ResourceObject[],
   rootGetters: any
 ): DataSource {
-  const databaseId = dataSource.attributes!.databaseId;
-  const instanceId = dataSource.attributes!.instanceId;
-
-  let instance: Instance = unknown("INSTANCE") as Instance;
-  for (const item of includedList || []) {
-    if (item.type == "instance" && item.id == instanceId) {
-      instance = rootGetters["instance/convert"](item);
-      break;
-    }
-  }
-
-  let database: Database = unknown("DATABASE") as Database;
-  for (const item of includedList || []) {
-    if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item);
-      break;
-    }
-  }
+  const databaseId = dataSource.attributes!.databaseId as string;
+  const instanceId = dataSource.attributes!.instanceId as string;
 
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instance" | "database" | "creator" | "updater"
+      "id" | "instanceId" | "databaseId" | "creator" | "updater"
     >),
     id: parseInt(dataSource.id),
+    databaseId: parseInt(databaseId),
+    instanceId: parseInt(instanceId),
     creator: getPrincipalFromIncludedList(
       dataSource.relationships!.creator.data,
       includedList
@@ -54,8 +38,6 @@ function convert(
       dataSource.relationships!.updater.data,
       includedList
     ),
-    instance,
-    database,
   };
 }
 
@@ -127,11 +109,11 @@ const actions = {
       dataSource: createdDataSource,
     });
 
-    if (createdDataSource.database.id !== UNKNOWN_ID) {
+    if (createdDataSource.databaseId !== UNKNOWN_ID) {
       // Refresh the corresponding database as it contains data source.
       dispatch(
         "database/fetchDatabaseById",
-        { databaseId: createdDataSource.database.id },
+        { databaseId: createdDataSource.databaseId },
         { root: true }
       );
     }

@@ -1,7 +1,6 @@
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
 
-import { Database } from "./database";
 import {
   DatabaseId,
   DataSourceId,
@@ -9,7 +8,6 @@ import {
   IssueId,
   PrincipalId,
 } from "./id";
-import { Instance } from "./instance";
 import { Principal } from "./principal";
 
 // which from the ops perspective, having different meaning from the normal RW data source.
@@ -20,9 +18,7 @@ export type DataSource = {
 
   // Related fields
   databaseId: DatabaseId;
-  database: Database;
   instanceId: InstanceId;
-  instance: Instance;
 
   // Standard fields
   creator: Principal;

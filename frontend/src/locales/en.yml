@@ -580,7 +580,7 @@ instance:
     Bytebase requires read/write (NOT the super privilege) access to the
     instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
-  dbs-ro-unsupport: The {database} does not currently support creating read-only connections
+  no-read-only-data-source-support: The {database} does not currently support creating read-only connections
   grants: Grants
 environment:
   select: Select environment
@@ -1169,7 +1169,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
-  create-ro-ds: Go to create
+  create-read-only-data-source: Go to create
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
