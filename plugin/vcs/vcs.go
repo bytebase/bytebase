@@ -96,11 +96,18 @@ type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
-	// Try to use this provider as an auth provider and fetch the user info stored at this provider
+	// Try to use this provider as an auth provider and fetch the user info from the OAuth content
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID *int) (*UserInfo, error)
+	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+
+	// Fetch the user info of the given userID
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	// userID: the ID of the desired user
+	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*UserInfo, error)
 
 	// Fetch all active members of a given repository
 	//

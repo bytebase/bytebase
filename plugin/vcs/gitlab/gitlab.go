@@ -182,16 +182,45 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-// FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
-func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID *int) (*vcs.UserInfo, error) {
-	uri := []string{"user"}
-	if userID != nil {
-		uri[0] = "users"
-		uri = append(uri, fmt.Sprintf("%v", *userID))
-	}
+// TryLogin will try to fetch the user info from the current OAuth content of GitLab.
+func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
 	code, body, err := httpGet(
 		instanceURL,
-		strings.Join(uri, "/"),
+		"user",
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if code == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch user info from GitLab instance %s", instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	UserInfo := &vcs.UserInfo{}
+	if err := json.Unmarshal([]byte(body), UserInfo); err != nil {
+		return nil, err
+	}
+
+	return UserInfo, err
+}
+
+// FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
+func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*vcs.UserInfo, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("users/%v", userID),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
@@ -281,14 +310,14 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 		if gitLabMember.State == vcs.StateActive {
 			// the email field does not return as expected via projects/<<projectId>>/members/all, possibly caused by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
 			// so we need to fetch this field one by one
-			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, &gitLabMember.ID)
+			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, gitLabMember.ID)
 			if err != nil {
 				return nil, err
 			}
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
 			repositoryMember := &vcs.RepositoryMember{
 				Name:         gitLabMember.Name,
-				Email:        userInfo.Email, /* this filed should has been returned by projects/%s/members/all */
+				Email:        userInfo.Email,
 				Role:         bytebaseRole,
 				VCSRole:      gitLabRole.String(),
 				State:        vcs.StateActive,

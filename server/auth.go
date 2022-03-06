@@ -81,7 +81,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				GitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).FetchUserInfo(ctx,
+				gitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     gitlabLogin.ApplicationID,
 						ClientSecret: gitlabLogin.Secret,
@@ -90,19 +90,18 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						Refresher:    nil,
 					},
 					gitlabLogin.InstanceURL,
-					nil,
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
 				}
 
 				// we only allow active user to login via gitlab
-				if GitlabUserInfo.State != vcsPlugin.StateActive {
+				if gitlabUserInfo.State != vcsPlugin.StateActive {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via Gitlab, user is Archived")
 				}
 
 				principalFind := &api.PrincipalFind{
-					Email: &GitlabUserInfo.Email,
+					Email: &gitlabUserInfo.Email,
 				}
 				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
 				if err != nil {
@@ -115,9 +114,9 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					// The random password is supposed to be not guessable. If user wants to login
 					// via password, she needs to set the new password from the profile page.
 					signup := &api.Signup{
-						Email:    GitlabUserInfo.Email,
+						Email:    gitlabUserInfo.Email,
 						Password: common.RandomString(20),
-						Name:     GitlabUserInfo.Name,
+						Name:     gitlabUserInfo.Name,
 					}
 					var httpError *echo.HTTPError
 					user, httpError = trySignup(ctx, s, signup, api.SystemBotID)
