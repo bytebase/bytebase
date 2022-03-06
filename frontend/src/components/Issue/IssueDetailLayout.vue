@@ -729,32 +729,10 @@ export default defineComponent({
     };
 
     const isTenantDeployMode = computed((): boolean => {
-      if (
+      return (
         props.issue.type === "bb.issue.database.schema.update" &&
         project.value.tenantMode === "TENANT"
-      ) {
-        const stages = props.issue.pipeline?.stageList;
-        // We need this check, because when we do a "Establish new baseline" to
-        //   one of a tenant mode project's databases, we will create an issue
-        //   with type "bb.issue.database.schema.update" with dummy SQL statement.
-        // In this case, it's schema.update, and it's TENANT mode, but it's not
-        //   a tenancy-based deployment
-        // But we down-grade "1x1" pipeline to simple database deploy, that is
-        //   when we click "Alter Schema" in database detail page to alter exactly
-        //   ONE database's schema
-        if (stages) {
-          if (stages.length > 1) {
-            // n stages, it's tenant mode
-            // we won't down-grade to multi-database deployment here
-            return true;
-          }
-          if (stages.length === 1 && stages[0].taskList.length > 1) {
-            // 1 stage, n tasks, yes it's tenant mode
-            return true;
-          }
-        }
-      }
-      return false;
+      );
     });
 
     const selectedStatement = computed((): string => {
