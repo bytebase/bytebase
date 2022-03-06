@@ -288,7 +288,6 @@ import {
   ConnectionInfo,
   DataSource,
   UNKNOWN_ID,
-  DataSourceTypes,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -318,7 +317,7 @@ const currentUser: ComputedRef<Principal> = computed(() =>
 );
 
 const currentDataSource = cloneDeep(
-  props.instance.dataSourceList.find((ds) => ds.type === DataSourceTypes.ADMIN)
+  props.instance.dataSourceList.find((ds) => ds.type === "ADMIN")
 ) as DataSource;
 
 const state = reactive<LocalState>({
@@ -327,7 +326,7 @@ const state = reactive<LocalState>({
   instance: cloneDeep(props.instance),
   isUpdating: false,
   updatedPassword: "",
-  currentDataSourceType: DataSourceTypes.ADMIN,
+  currentDataSourceType: "ADMIN",
   currentDataSource: currentDataSource,
   useEmptyPassword: currentDataSource.password === "",
 });
@@ -358,7 +357,7 @@ const defaultPort = computed(() => {
 const adminDataSource = computed(() => {
   let adminDataSource = undefined;
   for (const ds of state.instance.dataSourceList) {
-    if (ds.type === DataSourceTypes.ADMIN) {
+    if (ds.type === "ADMIN") {
       adminDataSource = ds;
     }
   }
@@ -367,7 +366,7 @@ const adminDataSource = computed(() => {
 
 const hasReadonlyDataSource = computed(() => {
   for (const ds of state.instance.dataSourceList) {
-    if (ds.type === DataSourceTypes.RO) {
+    if (ds.type === "RO") {
       return true;
     }
   }
@@ -520,7 +519,7 @@ const doUpdate = () => {
         const dataSource = state.instance.dataSourceList[i];
         if (dataSource.id === UNKNOWN_ID) {
           // Only used to create ReadOnly data source right now.
-          if (dataSource.type === DataSourceTypes.RO) {
+          if (dataSource.type === "RO") {
             requests.push(
               store.dispatch("dataSource/createDataSource", {
                 databaseId: dataSource.databaseId,

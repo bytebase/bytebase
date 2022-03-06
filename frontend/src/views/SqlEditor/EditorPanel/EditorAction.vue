@@ -131,7 +131,6 @@ import {
   SheetActions,
   UNKNOWN_ID,
   Instance,
-  DataSourceTypes,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
@@ -174,7 +173,7 @@ const selectedInstanceEngine = computed(() => {
 
 const hasReadonlyDataSource = computed(() => {
   for (const ds of selectedInstance.value.dataSourceList) {
-    if (ds.type === DataSourceTypes.RO) {
+    if (ds.type === "RO") {
       return true;
     }
   }
