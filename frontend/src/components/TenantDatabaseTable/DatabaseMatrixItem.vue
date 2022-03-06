@@ -7,25 +7,29 @@
     }"
   >
     <template #trigger>
-      <div
-        class="border rounded-sm flex items-center p-1 select-none space-x-1"
-      >
+      <div class="flex items-center select-none space-x-2">
         <div class="sync-status">
           <heroicons-solid:check
             v-if="database.syncStatus === 'OK'"
-            class="w-9 h-9 text-success"
+            class="p-1 w-8 h-8 bg-success text-white"
           />
-          <heroicons-outline:exclamation v-else class="w-9 h-9 text-warning" />
+          <heroicons-outline:exclamation
+            v-else
+            class="p-1 w-8 h-8 bg-warning text-white"
+          />
         </div>
         <div class="flex flex-col items-start">
           <router-link
             :to="databaseDetailUrl"
-            class="whitespace-nowrap hover:underline"
+            class="text-main whitespace-nowrap hover:underline"
           >
             {{ database.name }}
           </router-link>
 
-          <router-link :to="schemaVersionUrl" class="hover:underline">
+          <router-link
+            :to="schemaVersionUrl"
+            class="text-sm text-control hover:underline"
+          >
             {{ database.schemaVersion }}
           </router-link>
         </div>
