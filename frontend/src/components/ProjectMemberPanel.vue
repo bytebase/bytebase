@@ -260,9 +260,7 @@ export default defineComponent({
     });
 
     const allowSyncVCS = computed(() => {
-      // NOTICE: will dis annotate this when this function is ready
-      return false;
-      // return props.project.workflowType === "VCS" && allowAddMember.value;
+      return props.project.workflowType === "VCS" && allowAddMember.value;
     });
 
     const hasValidMember = computed(() => {
