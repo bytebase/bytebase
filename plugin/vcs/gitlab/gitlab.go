@@ -279,7 +279,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
 	for _, gitLabMember := range gitLabrepositoryMember {
 		if gitLabMember.State == vcs.StateActive {
-			// the Email filed cannot be returned as expected, maybe cause by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
+			// the email field does not return as expected via projects/<<projectId>>/members/all, possibly caused by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
 			// so we need to fetch this field one by one
 			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, &gitLabMember.ID)
 			if err != nil {
