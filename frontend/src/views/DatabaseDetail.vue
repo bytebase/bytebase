@@ -115,7 +115,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowMigrate"
             type="button"
             class="btn-normal"
             @click.prevent="changeData"
@@ -127,7 +127,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowMigrate"
             type="button"
             class="btn-normal"
             @click.prevent="alterSchema"
@@ -403,6 +403,15 @@ export default defineComponent({
       return false;
     });
 
+    const allowMigrate = computed(() => {
+      if (!allowEdit.value) return false;
+
+      // Migrating single database in tenant mode is not allowed
+      // Since this will probably cause different migration version across
+      //   tenant databases
+      return database.value.project.tenantMode === "DISABLED";
+    });
+
     const allowEditDatabaseLabels = computed((): boolean => {
       // only allowed to edit database labels when allowAdmin
       return allowAdmin.value;
@@ -574,6 +583,7 @@ export default defineComponent({
       allowChangeProject,
       allowAdmin,
       allowEdit,
+      allowMigrate,
       allowEditDatabaseLabels,
       tabItemList,
       tryTransferProject,

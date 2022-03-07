@@ -3,9 +3,9 @@
     <div
       class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
-      {{ $t("migration-history.self") }}
+      <span>{{ $t("migration-history.self") }}</span>
       <button
-        v-if="allowEdit"
+        v-if="allowMigrate"
         type="button"
         class="ml-4 btn-primary"
         :disabled="state.migrationSetupStatus != 'OK'"
@@ -58,7 +58,13 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watchEffect } from "vue";
+import {
+  computed,
+  defineComponent,
+  PropType,
+  reactive,
+  watchEffect,
+} from "vue";
 import { useStore } from "vuex";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
@@ -78,7 +84,7 @@ interface LocalState {
   loading: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseMigrationHistoryPanel",
   components: { MigrationHistoryTable },
   props: {
@@ -138,6 +144,15 @@ export default {
 
     const allowConfigInstance = computed(() => {
       return isCurrentUserDBAOrOwner.value;
+    });
+
+    const allowMigrate = computed(() => {
+      if (!props.allowEdit) return false;
+
+      // Migrating single database in tenant mode is not allowed
+      // Since this will probably cause different migration version across
+      //   tenant databases
+      return props.database.project.tenantMode === "DISABLED";
     });
 
     const attentionTitle = computed((): string => {
@@ -201,11 +216,12 @@ export default {
     return {
       state,
       allowConfigInstance,
+      allowMigrate,
       attentionTitle,
       migrationHistorySectionList,
       configInstance,
       doCreateBaseline,
     };
   },
-};
+});
 </script>
