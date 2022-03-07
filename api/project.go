@@ -64,8 +64,8 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
-// ProjectPlain is the store model for a project.
-type ProjectPlain struct {
+// ProjectRaw is the store model for a project.
+type ProjectRaw struct {
 	ID int
 
 	// Standard fields
@@ -331,10 +331,10 @@ func getTemplateTokens(template string) []string {
 
 // ProjectService is the storage access service for projects.
 type ProjectService interface {
-	CreateProject(ctx context.Context, create *ProjectCreate) (*ProjectPlain, error)
-	FindProjectList(ctx context.Context, find *ProjectFind) ([]*ProjectPlain, error)
-	FindProject(ctx context.Context, find *ProjectFind) (*ProjectPlain, error)
-	PatchProject(ctx context.Context, patch *ProjectPatch) (*ProjectPlain, error)
+	CreateProject(ctx context.Context, create *ProjectCreate) (*ProjectRaw, error)
+	FindProjectList(ctx context.Context, find *ProjectFind) ([]*ProjectRaw, error)
+	FindProject(ctx context.Context, find *ProjectFind) (*ProjectRaw, error)
+	PatchProject(ctx context.Context, patch *ProjectPatch) (*ProjectRaw, error)
 	// This is specifically used to update the ProjectWorkflowType when linking/unlinking the repository.
-	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*ProjectPlain, error)
+	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*ProjectRaw, error)
 }

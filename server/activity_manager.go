@@ -72,15 +72,15 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		projectFind := &api.ProjectFind{
 			ID: &meta.issue.ProjectID,
 		}
-		projectPlain, err := m.s.ProjectService.FindProject(ctx, projectFind)
+		projectRaw, err := m.s.ProjectService.FindProject(ctx, projectFind)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
-		if projectPlain == nil {
+		if projectRaw == nil {
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		if err := copier.Copy(meta.issue.Project, projectPlain); err != nil {
+		if err := copier.Copy(meta.issue.Project, projectRaw); err != nil {
 			return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
 		}
 	}

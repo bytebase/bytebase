@@ -39,7 +39,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
 		}
-		projectPlain, err := s.ProjectService.CreateProject(ctx, projectCreate)
+		projectRaw, err := s.ProjectService.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
@@ -49,7 +49,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		projectMember := &api.ProjectMemberCreate{
 			CreatorID:   projectCreate.CreatorID,
-			ProjectID:   projectPlain.ID,
+			ProjectID:   projectRaw.ID,
 			Role:        common.ProjectOwner,
 			PrincipalID: projectCreate.CreatorID,
 		}
@@ -58,7 +58,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
 		}
 
-		project, err := s.composeProjectRelationship(ctx, projectPlain)
+		project, err := s.composeProjectRelationship(ctx, projectRaw)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch relationship after creating project").SetInternal(err)
 		}
@@ -84,15 +84,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
 		}
-		projectListPlain, err := s.ProjectService.FindProjectList(ctx, projectFind)
+		projectRawList, err := s.ProjectService.FindProjectList(ctx, projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
 		var activeProjectList []*api.Project
-		projectList := make([]*api.Project, 0, len(projectListPlain))
-		for _, projectPlain := range projectListPlain {
-			project, err := s.composeProjectRelationship(ctx, projectPlain)
+		projectList := make([]*api.Project, 0, len(projectRawList))
+		for _, projectRaw := range projectRawList {
+			project, err := s.composeProjectRelationship(ctx, projectRaw)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
 			}
@@ -160,7 +160,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
 		}
 
-		projectPlain, err := s.ProjectService.PatchProject(ctx, projectPatch)
+		projectRaw, err := s.ProjectService.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
@@ -168,7 +168,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
 
-		project, err := s.composeProjectRelationship(ctx, projectPlain)
+		project, err := s.composeProjectRelationship(ctx, projectRaw)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
@@ -588,15 +588,15 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 	projectFind := &api.ProjectFind{
 		ID: &id,
 	}
-	projectPlain, err := s.ProjectService.FindProject(ctx, projectFind)
+	projectRaw, err := s.ProjectService.FindProject(ctx, projectFind)
 	if err != nil {
 		return nil, err
 	}
-	if projectPlain == nil {
+	if projectRaw == nil {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", id)}
 	}
 
-	project, err := s.composeProjectRelationship(ctx, projectPlain)
+	project, err := s.composeProjectRelationship(ctx, projectRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -604,11 +604,11 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 	return project, nil
 }
 
-func (s *Server) composeProjectRelationship(ctx context.Context, projectPlain *api.ProjectPlain) (*api.Project, error) {
+func (s *Server) composeProjectRelationship(ctx context.Context, projectRaw *api.ProjectRaw) (*api.Project, error) {
 	var err error
 
 	project := &api.Project{}
-	if err := copier.Copy(project, projectPlain); err != nil {
+	if err := copier.Copy(project, projectRaw); err != nil {
 		return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
 	}
 
