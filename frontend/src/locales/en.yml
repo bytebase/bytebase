@@ -1311,7 +1311,7 @@ subscription:
         activity-log: Activity log
         rbac: RBAC (Owner, DBA, Developer role)
         gitlab-login: Login with GitLab account
-        sync-project-member-from-vcs: VCS Role Mapping
+        sync-project-member-from-vcs: Sync Project Member from VCS
   plan:
     title: Plan
     try: Try Team
