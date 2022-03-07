@@ -215,7 +215,7 @@ const handleSelectedKeysChange = (
   }
 };
 
-function renderLabel({ option }: { option: TreeOption }) {
+const renderLabel = ({ option }: { option: TreeOption }) => {
   const renderLabelHTML = searchPattern.value
     ? h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
@@ -226,7 +226,7 @@ function renderLabel({ option }: { option: TreeOption }) {
     : escape(option.label);
 
   return renderLabelHTML;
-}
+};
 </script>
 
 <style>
