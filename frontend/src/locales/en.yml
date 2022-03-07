@@ -1308,7 +1308,7 @@ subscription:
         activity-log: Activity log
         rbac: RBAC (Owner, DBA, Developer role)
         3rd-party-auth: 3rd party authentication & authorization
-        sync-members-from-vcs: Sync Project Member from VCS
+        sync-members-from-vcs: Sync Project Members from VCS
   plan:
     title: Plan
     try: Try Team
