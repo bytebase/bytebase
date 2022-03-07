@@ -102,7 +102,7 @@ func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api
 // PatchTaskStatus updates an existing task status and the correspondng task run status atomically.
 // Returns ENOTFOUND if task does not exist.
 func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return nil, FormatError(err)
 	}
