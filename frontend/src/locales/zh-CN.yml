@@ -1148,7 +1148,7 @@ subscription:
       features:
         activity-log: 活动日志
         rbac: RBAC 权限管理
-        3rd-party-auth: 第三方权限控制
+        3rd-party-auth: 第三方认证 & 授权
   plan:
     title: 版本
     try: 试用团队版
