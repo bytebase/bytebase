@@ -1259,15 +1259,15 @@ subscription:
       desc: >-
         Role management can assign a particular role (e.g. DBA) to a member.
         @:{'subscription.upgrade'} to unlock this feature.
-    bb-feature-3rd-party-login:
-      title: 3rd-party login
-      desc: >-
-        Bytebase auto-support 3rd-party login based on your VCS configuration.
-        @:{'subscription.upgrade'} to unlock this feature.
-      login: "@:{'subscription.upgrade'} to unlock this feature"
     bb-feature-schema-drift:
       title: Schema drift
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+    bb-feature-3rd-party-auth:
+      title: 3rd party authentication & authorization
+      desc: >-
+        Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.
+        @:{'subscription.upgrade'} to unlock this feature.
+      login: "@:{'subscription.upgrade'} to unlock this feature"
   feature-sections:
     database-management:
       title: Database Development
@@ -1307,7 +1307,8 @@ subscription:
       features:
         activity-log: Activity log
         rbac: RBAC (Owner, DBA, Developer role)
-        gitlab-login: Login with GitLab account
+        3rd-party-auth: 3rd party authentication & authorization
+        sync-members-from-vcs: Sync Project Members from VCS
   plan:
     title: Plan
     try: Try Team

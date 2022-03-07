@@ -64,6 +64,50 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
+// ProjectRaw is the store model for a project.
+type ProjectRaw struct {
+	ID int
+
+	// Standard fields
+	RowStatus RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name         string
+	Key          string
+	WorkflowType ProjectWorkflowType
+	Visibility   ProjectVisibility
+	TenantMode   ProjectTenantMode
+	// DBNameTemplate is only used when a project is in tenant mode.
+	// Empty value means {{DB_NAME}}.
+	DBNameTemplate string
+	RoleProvider   ProjectRoleProvider
+}
+
+// CopyToProject copies fields of ProjectRaw to an instance of Project.
+// This is intented to be used when we need to compose a Project relationship.
+func (raw *ProjectRaw) CopyToProject(p *Project) {
+	p.ID = raw.ID
+
+	p.RowStatus = raw.RowStatus
+	p.CreatorID = raw.CreatorID
+	p.CreatedTs = raw.CreatedTs
+	p.UpdaterID = raw.UpdaterID
+	p.UpdatedTs = raw.UpdatedTs
+
+	p.Name = raw.Name
+	p.Key = raw.Key
+	p.WorkflowType = raw.WorkflowType
+	p.Visibility = raw.Visibility
+	p.TenantMode = raw.TenantMode
+
+	p.DBNameTemplate = raw.DBNameTemplate
+	p.RoleProvider = raw.RoleProvider
+}
+
 // Project is the API message for a project.
 type Project struct {
 	ID int `jsonapi:"primary,project"`
@@ -306,12 +350,12 @@ func getTemplateTokens(template string) []string {
 	return r.FindAllString(template, -1)
 }
 
-// ProjectService is the service for projects.
+// ProjectService is the storage access service for projects.
 type ProjectService interface {
-	CreateProject(ctx context.Context, create *ProjectCreate) (*Project, error)
-	FindProjectList(ctx context.Context, find *ProjectFind) ([]*Project, error)
-	FindProject(ctx context.Context, find *ProjectFind) (*Project, error)
-	PatchProject(ctx context.Context, patch *ProjectPatch) (*Project, error)
+	CreateProject(ctx context.Context, create *ProjectCreate) (*ProjectRaw, error)
+	FindProjectList(ctx context.Context, find *ProjectFind) ([]*ProjectRaw, error)
+	FindProject(ctx context.Context, find *ProjectFind) (*ProjectRaw, error)
+	PatchProject(ctx context.Context, patch *ProjectPatch) (*ProjectRaw, error)
 	// This is specifically used to update the ProjectWorkflowType when linking/unlinking the repository.
-	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*Project, error)
+	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*ProjectRaw, error)
 }

@@ -143,18 +143,13 @@
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
           <td v-for="plan in plans" :key="plan.type" class="pt-5 px-6">
-            <a
+            <button
               v-if="!plan.isFreePlan"
-              href="https://hub.bytebase.com/pricing"
-              target="_blank"
               class="block w-full py-4 bg-gray-800 border border-gray-800 rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-gray-900"
+              @click="onButtonClick(plan)"
             >
-              {{
-                $t("subscription.buy", {
-                  plan: $t(`subscription.plan.${plan.title}.title`),
-                })
-              }}
-            </a>
+              {{ plan.buttonText }}
+            </button>
           </td>
         </tr>
       </tfoot>
@@ -408,7 +403,7 @@ export default {
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
         );
       } else {
-        window.open("https://docs.bytebase.com/", "__blank");
+        window.open("https://docs.bytebase.com/", "_self");
       }
     };
 

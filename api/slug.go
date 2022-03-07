@@ -11,13 +11,23 @@ func IssueSlug(issue *Issue) string {
 	return fmt.Sprintf("%s-%d", slug.Make(issue.Name), issue.ID)
 }
 
-// ProjectSlug is the slug formatter for projects.
+// ProjectSlug is the slug formatter for Project.
 func ProjectSlug(project *Project) string {
 	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
 }
 
-// ProjectShortSlug is the slug short formatter for projects.
+// ProjectRawSlug is the slug formatter for ProjectRaw.
+func ProjectRawSlug(project *ProjectRaw) string {
+	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
+}
+
+// ProjectShortSlug is the slug short formatter for Project.
 func ProjectShortSlug(project *Project) string {
+	return slug.Make(project.Name)
+}
+
+// ProjectRawShortSlug is the slug short formatter for ProjectRaw.
+func ProjectRawShortSlug(project *ProjectRaw) string {
 	return slug.Make(project.Name)
 }
 
