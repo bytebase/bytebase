@@ -84,7 +84,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 // Install installs mysql on basedir, prepares the data directory and default user.
 //
 // To use this package in testing, download the MySQL binary first:
-//  go generate ./...
+// go generate ./...
 func Install(basedir, datadir, user string) (*Instance, error) {
 	var tarName, version string
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
