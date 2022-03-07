@@ -87,7 +87,12 @@ export const FEATURE_SECTIONS = [
   },
   {
     id: "admin-and-security",
-    features: ["activity-log", "rbac", "3rd-party-auth"],
+    features: [
+      "activity-log",
+      "rbac",
+      "3rd-party-auth",
+      "sync-members-from-vcs",
+    ],
   },
 ];
 
@@ -180,6 +185,7 @@ export const TEAM_PLAN: Plan = {
     { id: "activity-log" },
     { id: "rbac" },
     { id: "3rd-party-auth" },
+    { id: "sync-members-from-vcs" },
   ],
 };
 
@@ -229,5 +235,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "activity-log" },
     { id: "rbac" },
     { id: "3rd-party-auth" },
+    { id: "sync-members-from-vcs" },
   ],
 };
