@@ -407,8 +407,7 @@ export default defineComponent({
       if (!allowEdit.value) return false;
 
       // Migrating single database in tenant mode is not allowed
-      // Since this will probably cause different migration version across
-      //   tenant databases
+      // Since this will probably cause different migration version across a group of tenant databases
       return database.value.project.tenantMode === "DISABLED";
     });
 

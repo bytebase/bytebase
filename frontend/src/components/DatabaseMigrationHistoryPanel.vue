@@ -150,8 +150,7 @@ export default defineComponent({
       if (!props.allowEdit) return false;
 
       // Migrating single database in tenant mode is not allowed
-      // Since this will probably cause different migration version across
-      //   tenant databases
+      // Since this will probably cause different migration version across a group of tenant databases
       return props.database.project.tenantMode === "DISABLED";
     });
 
