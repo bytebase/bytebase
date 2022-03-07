@@ -90,10 +90,10 @@ const (
 	// - Project level RBAC
 	FeatureRBAC FeatureType = "bb.feature.rbac"
 
-	// Feature3rdPartyLogin allows user to login using 3rd party account.
+	// Feature3rdPartyAuth allows user to authenticate (login) and authorize (sync project member)
 	//
-	// Currently, we only support GitLab EE/CE OAuth login.
-	Feature3rdPartyLogin FeatureType = "bb.feature.3rd-party-login"
+	// Currently, we only support GitLab EE/CE auth.
+	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 )
 
 func (e FeatureType) String() string {
@@ -116,8 +116,8 @@ func (e FeatureType) String() string {
 		return "bb.feature.backup-policy"
 	case FeatureRBAC:
 		return "bb.feature.rbac"
-	case Feature3rdPartyLogin:
-		return "bb.feature.3rd-party-login"
+	case Feature3rdPartyAuth:
+		return "bb.feature.3rd-party-auth"
 	}
 	return ""
 }
@@ -143,8 +143,8 @@ func (e FeatureType) Name() string {
 		return "Backup policy"
 	case FeatureRBAC:
 		return "RBAC"
-	case Feature3rdPartyLogin:
-		return "3rd party login"
+	case Feature3rdPartyAuth:
+		return "3rd party auth"
 	}
 	return ""
 }
@@ -177,7 +177,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.approval-policy":        {false, true, true},
 	"bb.feature.backup-policy":          {false, true, true},
 	"bb.feature.rbac":                   {false, true, true},
-	"bb.feature.3rd-party-login":        {false, true, true},
+	"bb.feature.3rd-party-auth":         {false, true, true},
 }
 
 // Plan is the API message for a plan.
