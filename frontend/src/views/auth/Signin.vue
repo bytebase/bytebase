@@ -38,7 +38,7 @@
             $t("auth.sign-in.gitlab-demo")
           }}</span>
           <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
-            $t("subscription.features.bb-feature-3rd-party-login.login")
+            $t("subscription.features.bb-feature-3rd-party-auth.login")
           }}</span>
         </n-button>
       </template>
@@ -292,9 +292,7 @@ export default {
     };
 
     const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.3rd-party-login"
-      );
+      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
     });
 
     return {
