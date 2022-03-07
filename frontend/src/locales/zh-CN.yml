@@ -1147,6 +1147,7 @@ subscription:
         activity-log: 活动日志
         rbac: RBAC 权限管理
         3rd-party-auth: 第三方认证 & 授权
+        sync-members-from-vcs: 从 VCS 同步成员信息
   plan:
     title: 版本
     try: 试用团队版
