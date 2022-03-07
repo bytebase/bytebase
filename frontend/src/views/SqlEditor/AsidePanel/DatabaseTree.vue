@@ -225,14 +225,6 @@ function renderLabel({ option }: { option: TreeOption }) {
       })
     : escape(option.label);
 
-  // return h(
-  //   "span",
-  //   {
-  //     class: "text-accent",
-  //   },
-  //   { default: () => label }
-  // );
-  // return h("span", ["hello", h("b", "hello"), label]);
   return renderLabelHTML;
 }
 </script>
@@ -244,8 +236,6 @@ function renderLabel({ option }: { option: TreeOption }) {
   .n-tree-node-content__text {
   border-bottom: none;
   border-bottom-color: transparent;
-  /* background-color: var(--n-node-color-active);
-  padding: 0 0.25rem; */
 }
 </style>
 
