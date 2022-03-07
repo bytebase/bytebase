@@ -183,7 +183,7 @@
   </div>
   <FeatureModal
     v-if="state.showFeatureModal"
-    :feature="'bb.feature.sync-project-member-from-vcs'"
+    :feature="'bb.feature.3rd-party-auth'"
     @cancel="state.showFeatureModal = false"
   />
 </template>
