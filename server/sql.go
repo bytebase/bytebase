@@ -141,6 +141,53 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return json.Marshal(rowSet)
 		}()
 
+		{
+			errMessage := ""
+			activityLevel := api.ActivityInfo
+			if err != nil {
+				errMessage = err.Error()
+				activityLevel = api.ActivityError
+			}
+
+			activityBytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
+				Statement:    exec.Statement,
+				DurationNs:   time.Now().UnixNano() - start,
+				InstanceName: instance.Name,
+				DatabaseName: exec.DatabaseName,
+				Error:        errMessage,
+			})
+
+			if err != nil {
+				s.l.Warn("Failed to marshal activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.String("instance_name", instance.Name),
+					zap.String("statement", exec.Statement),
+					zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+			}
+
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+				Type:        api.ActivitySQLEditorQuery,
+				ContainerID: exec.InstanceID,
+				Level:       activityLevel,
+				Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
+					exec.Statement, exec.DatabaseName, instance.Name),
+				Payload: string(activityBytes),
+			}
+
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+
+			if err != nil {
+				s.l.Warn("Failed to create activity after executing sql statement",
+					zap.String("database_name", exec.DatabaseName),
+					zap.String("instance_name", instance.Name),
+					zap.String("statement", exec.Statement),
+					zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
+			}
+		}
+
 		resultSet := &api.SQLResultSet{}
 		if err == nil {
 			resultSet.Data = string(bytes)
@@ -148,45 +195,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				zap.String("statement", exec.Statement),
 				zap.String("data", resultSet.Data),
 			)
-
-			// Only record the history of successfully executed queries.
-			{
-				activityBytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
-					Statement:    exec.Statement,
-					DurationNs:   time.Now().UnixNano() - start,
-					InstanceName: instance.Name,
-					DatabaseName: exec.DatabaseName,
-				})
-				if err != nil {
-					s.l.Warn("Failed to marshal activity after executing sql statement",
-						zap.String("database_name", exec.DatabaseName),
-						zap.String("instance_name", instance.Name),
-						zap.String("statement", exec.Statement),
-						zap.Error(err))
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-				}
-
-				activityCreate := &api.ActivityCreate{
-					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-					Type:        api.ActivitySQLEditorQuery,
-					ContainerID: exec.InstanceID,
-					Level:       api.ActivityInfo,
-					Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
-						exec.Statement, exec.DatabaseName, instance.Name),
-					Payload: string(activityBytes),
-				}
-
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-
-				if err != nil {
-					s.l.Warn("Failed to create activity after executing sql statement",
-						zap.String("database_name", exec.DatabaseName),
-						zap.String("instance_name", instance.Name),
-						zap.String("statement", exec.Statement),
-						zap.Error(err))
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
-				}
-			}
 		} else {
 			resultSet.Error = err.Error()
 			if s.mode == "dev" {
