@@ -15,31 +15,14 @@
       <heroicons-outline:refresh
         v-if="project.roleProvider !== 'BYTEBASE'"
         class="ml-1 inline text-sm normal-link"
-        @click.prevent="
-          () => {
-            if (!has3rdPartyAuthFeature) {
-              state.showFeatureModal = true;
-              return;
-            }
-            syncMemberFromVCS();
-          }
-        "
+        @click.prevent="onRefreshSync"
       />
       <div class="w-auto ml-3 inline-block align-middle">
         <BBSwitch
           :value="project.roleProvider !== 'BYTEBASE'"
           @toggle="
             (on) => {
-              if (!has3rdPartyAuthFeature && on) {
-                state.showFeatureModal = true;
-                return;
-              }
-              // we prompt a modal to let user double confirm this change
-              state.showModal = true;
-              if (!on) {
-                // we preview member if user try to switch role provider to Bytebase
-                state.previewMember = true;
-              }
+              onToggleRoleProvider(on);
             }
           "
         />
@@ -379,6 +362,27 @@ export default defineComponent({
         });
     };
 
+    const onRefreshSync = () => {
+      if (!has3rdPartyAuthFeature.value) {
+        state.showFeatureModal = true;
+        return;
+      }
+      syncMemberFromVCS();
+    };
+
+    const onToggleRoleProvider = (on: boolean) => {
+      if (!has3rdPartyAuthFeature.value && on) {
+        state.showFeatureModal = true;
+        return;
+      }
+      // we prompt a modal to let user double confirm this change
+      state.showModal = true;
+      if (!on) {
+        // we preview member if user try to switch role provider to Bytebase
+        state.previewMember = true;
+      }
+    };
+
     return {
       state,
       hasRBACFeature,
@@ -392,6 +396,8 @@ export default defineComponent({
       openWindowForVCSMember,
       patchProjectRoleProvider,
       has3rdPartyAuthFeature,
+      onRefreshSync,
+      onToggleRoleProvider,
     };
   },
 });
