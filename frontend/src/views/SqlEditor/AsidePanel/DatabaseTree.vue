@@ -21,6 +21,7 @@
         :default-expanded-keys="defaultExpanedKeys"
         :default-selected-keys="defaultSelectedKeys"
         :on-update:selected-keys="handleSelectedKeysChange"
+        :render-label="renderLabel"
       />
     </div>
   </div>
@@ -35,9 +36,10 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { cloneDeep, omit } from "lodash-es";
+import { cloneDeep, omit, escape } from "lodash-es";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
+import { TreeOption } from "naive-ui";
 
 import {
   SqlEditorState,
@@ -46,7 +48,7 @@ import {
   ConnectionContext,
   UNKNOWN_ID,
 } from "../../../types";
-import { connectionSlug } from "../../../utils";
+import { connectionSlug, getHighlightHTMLByKeyWords } from "../../../utils";
 import InstanceEngineIconVue from "../../../components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
@@ -212,7 +214,30 @@ const handleSelectedKeysChange = (
     }
   }
 };
+
+const renderLabel = ({ option }: { option: TreeOption }) => {
+  const renderLabelHTML = searchPattern.value
+    ? h("span", {
+        innerHTML: getHighlightHTMLByKeyWords(
+          escape(option.label),
+          escape(searchPattern.value)
+        ),
+      })
+    : escape(option.label);
+
+  return renderLabelHTML;
+};
 </script>
+
+<style>
+.n-tree
+  .n-tree-node.n-tree-node--highlight
+  .n-tree-node-content
+  .n-tree-node-content__text {
+  border-bottom: none;
+  border-bottom-color: transparent;
+}
+</style>
 
 <style scoped>
 .databases-tree--tree {
