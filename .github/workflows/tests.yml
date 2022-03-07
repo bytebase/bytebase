@@ -3,7 +3,7 @@ name: build
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-            go-version: 1.17
+          go-version: 1.17
       - name: Verify tidy
         run: |
           go mod tidy
@@ -33,10 +33,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          # lfs: true
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
       - run: |
-          # go test -v ./...
-          go test $(go list ./... | grep -v /resources/mysql)
+          go generate ./...
+          go test -v ./...
