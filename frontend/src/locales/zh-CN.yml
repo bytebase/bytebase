@@ -1143,14 +1143,12 @@ subscription:
         shareable-query-link: 分享查询链接
         im-integration: IM 集成
         inbox-notification: 站内信通知
-        sync-project-member-from-vcs: VCS 项目成员权限同步
     admin-and-security:
       title: 管理与安全
       features:
         activity-log: 活动日志
         rbac: RBAC 权限管理
-        gitlab-login: 通过 GitLab 账户登录
-        sync-project-member-from-vcs: VCS 项目成员权限同步
+        3rd-party-auth: 第三方权限控制
   plan:
     title: 版本
     try: 试用团队版

@@ -17,7 +17,7 @@
         class="ml-1 inline text-sm normal-link"
         @click.prevent="
           () => {
-            if (!isSyncMemberFromVCSEnabled) {
+            if (!has3rdPartyAuthFeature) {
               state.showFeatureModal = true;
               return;
             }
@@ -30,7 +30,7 @@
           :value="project.roleProvider !== 'BYTEBASE'"
           @toggle="
             (on) => {
-              if (!isSyncMemberFromVCSEnabled && on) {
+              if (!has3rdPartyAuthFeature && on) {
                 state.showFeatureModal = true;
                 return;
               }
@@ -242,10 +242,8 @@ export default defineComponent({
       showFeatureModal: false,
     });
 
-    const isSyncMemberFromVCSEnabled = computed(() => {
-      return store.getters["subscription/feature"](
-        "bb.feature.sync-project-member-from-vcs"
-      );
+    const has3rdPartyAuthFeature = computed(() => {
+      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
     });
 
     const hasRBACFeature = computed(() =>
@@ -393,7 +391,7 @@ export default defineComponent({
       syncMemberFromVCS,
       openWindowForVCSMember,
       patchProjectRoleProvider,
-      isSyncMemberFromVCSEnabled,
+      has3rdPartyAuthFeature,
     };
   },
 });

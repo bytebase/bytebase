@@ -12,9 +12,7 @@ export type FeatureType =
   | "bb.feature.backup-policy"
   // Admin & Security
   | "bb.feature.rbac"
-  | "bb.feature.3rd-party-login"
-  // Usability
-  | "bb.feature.sync-project-member-from-vcs";
+  | "bb.feature.3rd-party-auth";
 
 export enum PlanType {
   FREE = 0,
@@ -57,9 +55,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.backup-policy", [false, true, true]],
   // Admin & Security
   ["bb.feature.rbac", [false, true, true]],
-  ["bb.feature.3rd-party-login", [false, true, true]],
-  // Usability
-  ["bb.feature.sync-project-member-from-vcs", [false, true, true]],
+  ["bb.feature.3rd-party-auth", [false, true, true]],
 ]);
 
 export const FEATURE_SECTIONS = [
@@ -91,12 +87,7 @@ export const FEATURE_SECTIONS = [
   },
   {
     id: "admin-and-security",
-    features: [
-      "activity-log",
-      "rbac",
-      "gitlab-login",
-      "sync-project-member-from-vcs",
-    ],
+    features: ["activity-log", "rbac", "3rd-party-auth"],
   },
 ];
 
@@ -188,8 +179,7 @@ export const TEAM_PLAN: Plan = {
     { id: "inbox-notification" },
     { id: "activity-log" },
     { id: "rbac" },
-    { id: "gitlab-login" },
-    { id: "sync-project-member-from-vcs" },
+    { id: "3rd-party-auth" },
   ],
 };
 
@@ -238,7 +228,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "inbox-notification" },
     { id: "activity-log" },
     { id: "rbac" },
-    { id: "gitlab-login" },
-    { id: "sync-project-member-from-vcs" },
+    { id: "3rd-party-auth" },
   ],
 };

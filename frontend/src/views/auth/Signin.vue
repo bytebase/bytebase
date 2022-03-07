@@ -292,9 +292,7 @@ export default {
     };
 
     const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.3rd-party-login"
-      );
+      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
     });
 
     return {
