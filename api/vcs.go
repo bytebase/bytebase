@@ -27,7 +27,7 @@ type VCSRaw struct {
 }
 
 // ToVCS creates an instance of VCS based on the VCSRaw.
-// This is intended to be used when we need to compose a VCS relationship.
+// This is intended to be called when we need to compose a VCS relationship.
 func (raw *VCSRaw) ToVCS() *VCS {
 	return &VCS{
 		ID: raw.ID,
