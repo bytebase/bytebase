@@ -15,23 +15,14 @@
       <heroicons-outline:refresh
         v-if="project.roleProvider !== 'BYTEBASE'"
         class="ml-1 inline text-sm normal-link"
-        @click.prevent="
-          () => {
-            syncMemberFromVCS();
-          }
-        "
+        @click.prevent="onRefreshSync"
       />
       <div class="w-auto ml-3 inline-block align-middle">
         <BBSwitch
           :value="project.roleProvider !== 'BYTEBASE'"
           @toggle="
             (on) => {
-              // we prompt a modal to let user double confirm this change
-              state.showModal = true;
-              if (!on) {
-                // we preview member if user try to switch role provider to Bytebase
-                state.previewMember = true;
-              }
+              onToggleRoleProvider(on);
             }
           "
         />
@@ -173,6 +164,11 @@
     </div>
     <ProjectMemberTable :project="project" />
   </div>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    :feature="'bb.feature.3rd-party-auth'"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -201,6 +197,7 @@ interface LocalState {
   showModal: boolean;
   roleProvider: boolean;
   previewMember: boolean;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -225,6 +222,11 @@ export default defineComponent({
       showModal: false,
       roleProvider: false,
       previewMember: false,
+      showFeatureModal: false,
+    });
+
+    const has3rdPartyAuthFeature = computed(() => {
+      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
     });
 
     const hasRBACFeature = computed(() =>
@@ -360,6 +362,27 @@ export default defineComponent({
         });
     };
 
+    const onRefreshSync = () => {
+      if (!has3rdPartyAuthFeature.value) {
+        state.showFeatureModal = true;
+        return;
+      }
+      syncMemberFromVCS();
+    };
+
+    const onToggleRoleProvider = (on: boolean) => {
+      if (!has3rdPartyAuthFeature.value && on) {
+        state.showFeatureModal = true;
+        return;
+      }
+      // we prompt a modal to let user double confirm this change
+      state.showModal = true;
+      if (!on) {
+        // we preview member if user try to switch role provider to Bytebase
+        state.previewMember = true;
+      }
+    };
+
     return {
       state,
       hasRBACFeature,
@@ -372,6 +395,9 @@ export default defineComponent({
       syncMemberFromVCS,
       openWindowForVCSMember,
       patchProjectRoleProvider,
+      has3rdPartyAuthFeature,
+      onRefreshSync,
+      onToggleRoleProvider,
     };
   },
 });
