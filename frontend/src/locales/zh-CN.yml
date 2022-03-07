@@ -1143,7 +1143,7 @@ subscription:
         shareable-query-link: 分享查询链接
         im-integration: IM 集成
         inbox-notification: 站内信通知
-        sync-project-member-from-vcs: VCS 角色权限映射
+        sync-project-member-from-vcs: VCS 项目成员权限同步
     admin-and-security:
       title: 管理与安全
       features:
