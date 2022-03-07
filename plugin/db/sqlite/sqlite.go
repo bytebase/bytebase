@@ -232,7 +232,6 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 				}
 				tbl.IndexList = append(tbl.IndexList, dbIdx)
 			}
-			fmt.Printf("Barny1: %+v\n", tbl.IndexList)
 		}
 
 		tables = append(tables, tbl)
@@ -280,7 +279,6 @@ func getViews(txn *sql.Tx) ([]db.View, error) {
 
 	for rows.Next() {
 		var view db.View
-
 		if err := rows.Scan(&view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
