@@ -122,6 +122,8 @@ const actions = {
       "type=bb.sql-editor.query",
       `user=${currentUser.id}`,
       `limit=${limit}`,
+      // only fetch the successful query history
+      `level=INFO`,
     ];
     const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
     const activityList = data.data.map((activity: ResourceObject) => {
