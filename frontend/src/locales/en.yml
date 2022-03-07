@@ -1265,7 +1265,7 @@ subscription:
     bb-feature-3rd-party-auth:
       title: 3rd party authentication & authorization
       desc: >-
-        Bytebase auto-support 3rd-party authentication & authorization based on your VCS configuration.
+        Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.
         @:{'subscription.upgrade'} to unlock this feature.
       login: "@:{'subscription.upgrade'} to unlock this feature"
   feature-sections:
