@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/webhook"
 
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -80,9 +79,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		if err := copier.Copy(meta.issue.Project, projectRaw); err != nil {
-			return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
-		}
+		projectRaw.CopyToProject(meta.issue.Project)
 	}
 
 	principalFind := &api.PrincipalFind{

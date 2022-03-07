@@ -87,6 +87,27 @@ type ProjectRaw struct {
 	RoleProvider   ProjectRoleProvider
 }
 
+// CopyToProject copies fields of ProjectRaw to an instance of Project.
+// This is intented to be used when we need to compose a Project relationship.
+func (raw *ProjectRaw) CopyToProject(p *Project) {
+	p.ID = raw.ID
+
+	p.RowStatus = raw.RowStatus
+	p.CreatorID = raw.CreatorID
+	p.CreatedTs = raw.CreatedTs
+	p.UpdaterID = raw.UpdaterID
+	p.UpdatedTs = raw.UpdatedTs
+
+	p.Name = raw.Name
+	p.Key = raw.Key
+	p.WorkflowType = raw.WorkflowType
+	p.Visibility = raw.Visibility
+	p.TenantMode = raw.TenantMode
+
+	p.DBNameTemplate = raw.DBNameTemplate
+	p.RoleProvider = raw.RoleProvider
+}
+
 // Project is the API message for a project.
 type Project struct {
 	ID int `jsonapi:"primary,project"`

@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
-	"github.com/jinzhu/copier"
 	"github.com/labstack/echo/v4"
 )
 
@@ -608,9 +607,7 @@ func (s *Server) composeProjectRelationship(ctx context.Context, projectRaw *api
 	var err error
 
 	project := &api.Project{}
-	if err := copier.Copy(project, projectRaw); err != nil {
-		return nil, fmt.Errorf("failed to copy from *api.ProjectPlain to *api.Project, %w", err)
-	}
+	projectRaw.CopyToProject(project)
 
 	project.Creator, err = s.composePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
