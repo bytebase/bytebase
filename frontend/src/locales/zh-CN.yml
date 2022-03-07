@@ -1106,6 +1106,9 @@ subscription:
     bb-feature-schema-drift:
       title: Schema 偏差
       desc: "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+    bb-feature-sync-project-member-from-vcs:
+      title: 从 VCS 同步项目成员
+      desc: "@:{'subscription.upgrade'} 来开启该功能"
   feature-sections:
     database-management:
       title: 数据库管理
@@ -1140,6 +1143,7 @@ subscription:
         shareable-query-link: 分享查询链接
         im-integration: IM 集成
         inbox-notification: 站内信通知
+        sync-project-member-from-vcs: VCS 角色权限映射
     admin-and-security:
       title: 管理与安全
       features:

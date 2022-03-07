@@ -1268,6 +1268,9 @@ subscription:
     bb-feature-schema-drift:
       title: Schema drift
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+    bb-feature-sync-project-member-from-vcs:
+      title: Sync Project Member From VCS
+      desc: "@:{'subscription.upgrade'} to unlock sync project member from vcs"
   feature-sections:
     database-management:
       title: Database Development
@@ -1308,6 +1311,7 @@ subscription:
         activity-log: Activity log
         rbac: RBAC (Owner, DBA, Developer role)
         gitlab-login: Login with GitLab account
+        sync-project-member-from-vcs: VCS Role Mapping
   plan:
     title: Plan
     try: Try Team

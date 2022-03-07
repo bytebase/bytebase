@@ -94,6 +94,11 @@ const (
 	//
 	// Currently, we only support GitLab EE/CE OAuth login.
 	Feature3rdPartyLogin FeatureType = "bb.feature.3rd-party-login"
+
+	// FeatureSyncProjectMemberFromVCS allows user to sync project member from a configured VCS
+	//
+	// Currently, we only support GitLab EE/CE for this feature.
+	FeatureSyncProjectMemberFromVCS FeatureType = "bb.feature.sync-project-member-from-vcs"
 )
 
 func (e FeatureType) String() string {
@@ -118,6 +123,8 @@ func (e FeatureType) String() string {
 		return "bb.feature.rbac"
 	case Feature3rdPartyLogin:
 		return "bb.feature.3rd-party-login"
+	case FeatureSyncProjectMemberFromVCS:
+		return "bb.feature.sync-project-member-from-vcs"
 	}
 	return ""
 }
@@ -145,6 +152,8 @@ func (e FeatureType) Name() string {
 		return "RBAC"
 	case Feature3rdPartyLogin:
 		return "3rd party login"
+	case FeatureSyncProjectMemberFromVCS:
+		return "sync project member from VCS"
 	}
 	return ""
 }
@@ -168,16 +177,17 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.backward-compatibility": {false, true, true},
-	"bb.feature.schema-drift":           {false, true, true},
-	"bb.feature.task-schedule-time":     {false, true, true},
-	"bb.feature.multi-tenancy":          {false, true, true},
-	"bb.feature.dba-workflow":           {false, false, true},
-	"bb.feature.data-source":            {false, false, false},
-	"bb.feature.approval-policy":        {false, true, true},
-	"bb.feature.backup-policy":          {false, true, true},
-	"bb.feature.rbac":                   {false, true, true},
-	"bb.feature.3rd-party-login":        {false, true, true},
+	"bb.feature.backward-compatibility":       {false, true, true},
+	"bb.feature.schema-drift":                 {false, true, true},
+	"bb.feature.task-schedule-time":           {false, true, true},
+	"bb.feature.multi-tenancy":                {false, true, true},
+	"bb.feature.dba-workflow":                 {false, false, true},
+	"bb.feature.data-source":                  {false, false, false},
+	"bb.feature.approval-policy":              {false, true, true},
+	"bb.feature.backup-policy":                {false, true, true},
+	"bb.feature.rbac":                         {false, true, true},
+	"bb.feature.3rd-party-login":              {false, true, true},
+	"bb.feature.sync-project-member-from-vcs": {false, true, true},
 }
 
 // Plan is the API message for a plan.

@@ -17,6 +17,10 @@
         class="ml-1 inline text-sm normal-link"
         @click.prevent="
           () => {
+            if (!isSyncMemberFromVCSEnabled) {
+              state.showFeatureModal = true;
+              return;
+            }
             syncMemberFromVCS();
           }
         "
@@ -26,6 +30,10 @@
           :value="project.roleProvider !== 'BYTEBASE'"
           @toggle="
             (on) => {
+              if (!isSyncMemberFromVCSEnabled && on) {
+                state.showFeatureModal = true;
+                return;
+              }
               // we prompt a modal to let user double confirm this change
               state.showModal = true;
               if (!on) {
@@ -173,6 +181,11 @@
     </div>
     <ProjectMemberTable :project="project" />
   </div>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    :feature="'bb.feature.sync-project-member-from-vcs'"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -201,6 +214,7 @@ interface LocalState {
   showModal: boolean;
   roleProvider: boolean;
   previewMember: boolean;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
@@ -225,6 +239,13 @@ export default defineComponent({
       showModal: false,
       roleProvider: false,
       previewMember: false,
+      showFeatureModal: false,
+    });
+
+    const isSyncMemberFromVCSEnabled = computed(() => {
+      return store.getters["subscription/feature"](
+        "bb.feature.sync-project-member-from-vcs"
+      );
     });
 
     const hasRBACFeature = computed(() =>
@@ -372,6 +393,7 @@ export default defineComponent({
       syncMemberFromVCS,
       openWindowForVCSMember,
       patchProjectRoleProvider,
+      isSyncMemberFromVCSEnabled,
     };
   },
 });
