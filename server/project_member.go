@@ -70,7 +70,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		// The following block will check whether the relevant principal exists in our system.
 		// If the principal does not exist, we will try to create one out of the vcs member info.
-		createList := make([]*api.ProjectMemberCreate, 0)
+		var createList []*api.ProjectMemberCreate
 		// we declare latSyncTs to ensure that every projectMember would have the same sync time.
 		lastSyncTs := time.Now().UTC().Unix()
 		for _, projectMember := range vcsProjectMemberList {
