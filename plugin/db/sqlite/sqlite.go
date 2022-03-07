@@ -133,13 +133,27 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			return nil, nil, err
 		}
 		defer txn.Rollback()
+		// Index statements.
+		indicesMap := make(map[string][]indexSchema)
+		indices, err := getIndices(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+		}
+		for _, idx := range indices {
+			indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
+		}
 
-		// TODO(d-bytebase): retrieve database schema such as tables and indices.
-		tbls, err := getTables(txn)
+		tbls, err := getTables(txn, indicesMap)
 		if err != nil {
 			return nil, nil, err
 		}
 		schema.TableList = tbls
+
+		views, err := getViews(txn)
+		if err != nil {
+			return nil, nil, err
+		}
+		schema.ViewList = views
 
 		if err := txn.Commit(); err != nil {
 			return nil, nil, err
@@ -151,7 +165,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx) ([]db.Table, error) {
+func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, error) {
 	var tables []db.Table
 	query := "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
 	rows, err := txn.Query(query)
@@ -201,10 +215,76 @@ func getTables(txn *sql.Tx) ([]db.Table, error) {
 
 			tbl.ColumnList = append(tbl.ColumnList, col)
 		}
+		for _, idx := range indicesMap[tbl.Name] {
+			query := fmt.Sprintf("pragma index_info(%s);", idx.name)
+			rows, err := txn.Query(query)
+			if err != nil {
+				return nil, err
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var dbIdx db.Index
+				dbIdx.Name = idx.name
+				dbIdx.Unique = idx.unique
+				var cid string
+				if err := rows.Scan(&dbIdx.Position, &cid, &dbIdx.Expression); err != nil {
+					return nil, err
+				}
+				tbl.IndexList = append(tbl.IndexList, dbIdx)
+			}
+		}
 
 		tables = append(tables, tbl)
 	}
 	return tables, nil
+}
+
+// getIndices gets all indices of a database.
+func getIndices(txn *sql.Tx) ([]indexSchema, error) {
+	var indices []indexSchema
+	query := "SELECT name, tbl_name, sql FROM sqlite_schema WHERE type ='index' AND name NOT LIKE 'sqlite_%';"
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var idx indexSchema
+		if err := rows.Scan(&idx.name, &idx.tableName, &idx.statement); err != nil {
+			return nil, err
+		}
+		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
+		indices = append(indices, idx)
+	}
+	return indices, nil
+}
+
+// indexSchema describes the schema of an index.
+type indexSchema struct {
+	name      string
+	tableName string
+	statement string
+	unique    bool
+}
+
+func getViews(txn *sql.Tx) ([]db.View, error) {
+	var views []db.View
+	query := "SELECT name, sql FROM sqlite_schema WHERE type ='view' AND name NOT LIKE 'sqlite_%';"
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var view db.View
+		if err := rows.Scan(&view.Name, &view.Definition); err != nil {
+			return nil, err
+		}
+		views = append(views, view)
+	}
+	return views, nil
 }
 
 func (driver *Driver) getDatabases() ([]string, error) {
