@@ -101,20 +101,17 @@ const useExecuteSQL = () => {
       const selectStatement =
         data !== null ? transformSQL(data, config.databaseType) : sqlStatement;
       const explainStatement = `EXPLAIN ${selectStatement}`;
-      const res = await store.dispatch("sqlEditor/executeQuery", {
+      const queryResult = await store.dispatch("sqlEditor/executeQuery", {
         statement: isExplain ? explainStatement : selectStatement,
       });
-      state.isLoadingData = false;
-      store.dispatch("sqlEditor/setIsExecuting", false);
-
-      if (res.error) {
-        notify("CRITICAL", res.error);
-        return;
-      }
+      store.dispatch("tab/updateCurrentTab", { queryResult });
+      store.dispatch("sqlEditor/fetchQueryHistoryList");
     } catch (error) {
+      store.dispatch("tab/updateCurrentTab", { queryResult: undefined });
+      notify("CRITICAL", error as string);
+    } finally {
       state.isLoadingData = false;
       store.dispatch("sqlEditor/setIsExecuting", false);
-      notify("CRITICAL", error as string);
     }
   };
 
