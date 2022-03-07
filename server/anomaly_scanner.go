@@ -88,6 +88,10 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				for _, instance := range instanceList {
+					if err := s.server.composeInstanceRelationship(ctx, instance); err != nil {
+						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instance.ID, instance.Name), zap.Error(err))
+						continue
+					}
 					for _, env := range environmentList {
 						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
