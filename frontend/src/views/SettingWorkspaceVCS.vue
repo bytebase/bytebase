@@ -19,9 +19,9 @@
       <FeatureAttention
         v-if="!has3rdPartyLoginFeature && vcsList.length > 0"
         custom-class="mb-5"
-        feature="bb.feature.3rd-party-login"
+        feature="bb.feature.3rd-party-auth"
         :description="
-          $t('subscription.features.bb-feature-3rd-party-login.desc')
+          $t('subscription.features.bb-feature-3rd-party-auth.desc')
         "
       />
       <div v-if="vcsList.length > 0" class="space-y-6">
@@ -74,9 +74,7 @@ export default {
     };
 
     const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.3rd-party-login"
-      );
+      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
     });
 
     return {
