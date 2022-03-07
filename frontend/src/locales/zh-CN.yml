@@ -1150,7 +1150,7 @@ subscription:
         activity-log: 活动日志
         rbac: RBAC 权限管理
         gitlab-login: 通过 GitLab 账户登录
-        sync-project-member-from-vcs: 从 VCS 同步项目成员
+        sync-project-member-from-vcs: VCS 项目成员权限同步
   plan:
     title: 版本
     try: 试用团队版
