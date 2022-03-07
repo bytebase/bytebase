@@ -5,6 +5,7 @@ INSERT INTO
         creator_id,
         updater_id,
         project_id,
+        database_id,
         name,
         statement
     )
@@ -14,6 +15,7 @@ VALUES
         101,
         101,
         3001,
+        7018,
         'my-sheet',
         'SELECT * FROM demo'
     );
