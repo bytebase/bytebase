@@ -214,6 +214,16 @@ const handleSelectedKeysChange = (
 };
 </script>
 
+<style>
+.n-tree
+  .n-tree-node.n-tree-node--highlight
+  .n-tree-node-content
+  .n-tree-node-content__text {
+  border-bottom: none;
+  background-color: var(--n-node-color-active);
+}
+</style>
+
 <style scoped>
 .databases-tree--tree {
   height: calc(100% - 40px);
