@@ -12,8 +12,8 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/sql-editor" class="bar-link px-2 py-2 rounded-md">
-            {{ $t("sql-editor.self") }}
+          <router-link to="/" class="bar-link px-2 py-2 rounded-md">
+            {{ $t("sql-editor.go-back") }}
           </router-link>
         </div>
       </div>
