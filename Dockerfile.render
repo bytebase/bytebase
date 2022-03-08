@@ -24,6 +24,8 @@ ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
+RUN echo $MODE
+
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apk --no-cache add gcc musl-dev
 
