@@ -62,7 +62,7 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 
 	list, err := s.findPipelineList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Pipeline{}, err
+		return nil, err
 	}
 
 	if err == nil {

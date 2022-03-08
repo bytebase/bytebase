@@ -453,19 +453,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			ProjectID: &projectID,
 		}
-		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
+		repoRawList, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
-		if len(list) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
-		} else if len(list) == 0 {
+		if len(repoRawList) > 1 {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(repoRawList), projectID)).SetInternal(err)
+		} else if len(repoRawList) == 0 {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
-		repository := list[0]
+		repository := repoRawList[0]
 		vcsFind := &api.VCSFind{
 			ID: &repository.VCSID,
 		}

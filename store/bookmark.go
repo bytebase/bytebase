@@ -56,7 +56,7 @@ func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.Bookma
 
 	list, err := findBookmarkList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Bookmark{}, err
+		return nil, err
 	}
 
 	return list, nil
