@@ -4,15 +4,25 @@
       class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
       <span>{{ $t("migration-history.self") }}</span>
-      <button
-        v-if="allowMigrate"
-        type="button"
-        class="ml-4 btn-primary"
-        :disabled="state.migrationSetupStatus != 'OK'"
-        @click.prevent="state.showBaselineModal = true"
+      <BBButton
+        v-if="allowEdit"
+        type="primary"
+        :disabled="!allowMigrate || state.migrationSetupStatus != 'OK'"
+        tooltip-mode="DISABLED-ONLY"
+        @click="state.showBaselineModal = true"
       >
         {{ $t("migration-history.establish-baseline") }}
-      </button>
+
+        <template v-if="!allowMigrate" #tooltip>
+          {{
+            $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+              operation: $t(
+                "migration-history.establish-baseline"
+              ).toLowerCase(),
+            })
+          }}
+        </template>
+      </BBButton>
       <div>
         <BBSpin
           v-if="state.loading"

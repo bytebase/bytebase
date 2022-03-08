@@ -114,30 +114,46 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <button
-            v-if="allowMigrate"
-            type="button"
-            class="btn-normal"
-            @click.prevent="changeData"
+          <BBButton
+            v-if="allowEdit"
+            type="normal"
+            tooltip-mode="DISABLED-ONLY"
+            :disabled="!allowMigrate"
+            @click="changeData"
           >
             <span>{{ changeDataText }}</span>
             <heroicons-outline:external-link
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-          </button>
-          <button
-            v-if="allowMigrate"
-            type="button"
-            class="btn-normal"
-            @click.prevent="alterSchema"
+            <template v-if="!allowMigrate" #tooltip>
+              {{
+                $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                  operation: changeDataText.toLowerCase(),
+                })
+              }}
+            </template>
+          </BBButton>
+          <BBButton
+            v-if="allowEdit"
+            type="normal"
+            tooltip-mode="DISABLED-ONLY"
+            :disabled="!allowMigrate"
+            @click="alterSchema"
           >
             <span>{{ alterSchemaText }}</span>
             <heroicons-outline:external-link
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-          </button>
+            <template v-if="!allowMigrate" #tooltip>
+              {{
+                $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                  operation: alterSchemaText.toLowerCase(),
+                })
+              }}
+            </template>
+          </BBButton>
         </div>
       </div>
     </main>
