@@ -94,7 +94,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.DatabaseID = &databaseID
 		}
 
-		if visibility := api.SheetVisibility(c.QueryParam("visibiliy")); visibility != "" {
+		if visibility := api.SheetVisibility(c.QueryParam("visibility")); visibility != "" {
 			sheetFind.Visibility = &visibility
 		}
 
