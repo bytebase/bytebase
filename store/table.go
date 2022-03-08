@@ -175,7 +175,7 @@ func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.
 	return &table, nil
 }
 
-func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.TableFind) (_ []*api.Table, err error) {
+func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*api.Table, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

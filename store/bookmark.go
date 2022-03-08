@@ -145,7 +145,7 @@ func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate)
 	return &bookmark, nil
 }
 
-func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (_ []*api.Bookmark, err error) {
+func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
