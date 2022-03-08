@@ -19,15 +19,32 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
     common: {
       primaryColor: callVar("--color-accent"),
       primaryColorHover: callVar("--color-accent-hover"),
+      primaryColorPressed: callVar("--color-accent"),
 
       successColor: callVar("--color-success"),
       successColorHover: callVar("--color-success-hover"),
+      successColorPressed: callVar("--color-success"),
 
       warningColor: callVar("--color-warning"),
       warningColorHover: callVar("--color-warning-hover"),
+      warningColorPressed: callVar("--color-warning"),
 
       errorColor: callVar("--color-error"),
       errorColorHover: callVar("--color-error-hover"),
+      errorColorPressed: callVar("--color-error"),
+    },
+    Button: {
+      colorInfo: callVar("--color-accent"),
+      colorHoverInfo: callVar("--color-accent-hover"),
+      colorPressedInfo: callVar("--color-accent-disabled"),
+      colorFocusInfo: callVar("--color-accent"),
+      colorDisabledInfo: callVar("--color-accent-disabled"),
+      borderInfo: callVar("--color-accent"),
+      borderHoverInfo: callVar("--color-accent-hover"),
+      borderFocusInfo: callVar("--color-accent"),
+    },
+    Dialog: {
+      iconColorInfo: callVar("--color-accent"),
     },
   };
 });
