@@ -150,6 +150,10 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 	initDBBinary := filepath.Join(pgBinDir, "bin", "initdb")
 	p := exec.Command(initDBBinary, args...)
+	p.Env = append(os.Environ(),
+		"LC_ALL=en_US.UTF-8",
+		"LC_CTYPE=en_US.UTF-8",
+	)
 	p.Stderr = os.Stderr
 	p.Stdout = os.Stdout
 
