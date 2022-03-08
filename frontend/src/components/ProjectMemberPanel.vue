@@ -1,5 +1,5 @@
 <template>
-  <div class="content-center">
+  <div class="">
     <span class="text-lg font-medium leading-7 text-main">
       {{ $t("project.settings.manage-member") }}
     </span>
