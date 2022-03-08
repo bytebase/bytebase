@@ -57,7 +57,7 @@
               @click.prevent="clickItem(item)"
             >
               <span class="text-xs">{{ item.stageName }}</span>
-              <n-ellipsis class="text-sm" :line-clamp="2" :tooltip="true">
+              <n-ellipsis class="text-sm" :line-clamp="1" :tooltip="true">
                 {{ item.taskName }}
               </n-ellipsis>
             </div>
