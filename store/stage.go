@@ -127,7 +127,7 @@ func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.
 	return &stage, nil
 }
 
-func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) (_ []*api.Stage, err error) {
+func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*api.Stage, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
