@@ -162,7 +162,7 @@ func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *ap
 	return &backup, nil
 }
 
-func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) (_ []*api.Backup, err error) {
+func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*api.Backup, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -303,7 +303,7 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	return list[0], nil
 }
 
-func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) (_ []*api.BackupSetting, err error) {
+func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*api.BackupSetting, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

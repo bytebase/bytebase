@@ -223,7 +223,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 	return &repository, nil
 }
 
-func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) (_ []*api.RepositoryRaw, err error) {
+func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) ([]*api.RepositoryRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
