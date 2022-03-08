@@ -172,7 +172,7 @@
         <NTabs
           class="sm:col-span-3"
           type="line"
-          default-value="ADMIN"
+          :value="state.currentDataSourceType"
           @update:value="handleDataSourceTypeChange"
         >
           <NTab name="ADMIN">Admin</NTab>
@@ -200,7 +200,7 @@
             :placeholder="
               instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
             "
-            :value="state.currentDataSource.username"
+            :value="currentDataSource.username"
             @input="handleCurrentDataSourceNameInput"
           />
         </div>
@@ -210,11 +210,9 @@
             <label for="password" class="textlabel block">
               {{ $t("common.password") }}
             </label>
-            <!-- In create mode, user can leave the password field empty and create the instance,
-            so there is no need to show the checkbox.-->
             <BBCheckbox
               :title="$t('common.empty')"
-              :value="state.useEmptyPassword"
+              :value="currentDataSource.useEmptyPassword"
               @toggle="handleToggleUseEmptyPassword"
             />
           </div>
@@ -225,12 +223,16 @@
             class="textfield mt-1 w-full"
             autocomplete="off"
             :placeholder="
-              state.useEmptyPassword
+              currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
                 : $t('instance.password-write-only')
             "
-            :disabled="!allowEdit || state.useEmptyPassword"
-            :value="state.useEmptyPassword ? '' : state.updatedPassword"
+            :disabled="!allowEdit || currentDataSource.useEmptyPassword"
+            :value="
+              currentDataSource.useEmptyPassword
+                ? ''
+                : currentDataSource.updatedPassword
+            "
             @input="handleCurrentDataSourcePasswordInput"
           />
         </div>
@@ -292,14 +294,17 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 
-interface LocalState {
+interface EditDataSource extends DataSource {
+  updatedPassword: string;
+  useEmptyPassword: boolean;
+}
+
+interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
-  updatedPassword: string;
+  dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
-  currentDataSource: DataSource;
-  useEmptyPassword: boolean;
 }
 
 const props = defineProps({
@@ -316,19 +321,21 @@ const currentUser: ComputedRef<Principal> = computed(() =>
   store.getters["auth/currentUser"]()
 );
 
-const currentDataSource = cloneDeep(
-  props.instance.dataSourceList.find((ds) => ds.type === "ADMIN")
-) as DataSource;
+const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
+  return {
+    ...cloneDeep(dataSource),
+    updatedPassword: "",
+    useEmptyPassword: dataSource.password === "",
+  } as EditDataSource;
+});
 
-const state = reactive<LocalState>({
+const state = reactive<State>({
   originalInstance: props.instance,
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
-  updatedPassword: "",
+  dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
-  currentDataSource: currentDataSource,
-  useEmptyPassword: currentDataSource.password === "",
 });
 
 const allowEdit = computed(() => {
@@ -355,22 +362,26 @@ const defaultPort = computed(() => {
 });
 
 const adminDataSource = computed(() => {
-  let adminDataSource = undefined;
-  for (const ds of state.instance.dataSourceList) {
-    if (ds.type === "ADMIN") {
-      adminDataSource = ds;
-    }
-  }
-  return adminDataSource as DataSource;
+  const temp = state.dataSourceList.find(
+    (ds) => ds.type === "ADMIN"
+  ) as DataSource;
+  return temp;
 });
 
 const hasReadonlyDataSource = computed(() => {
-  for (const ds of state.instance.dataSourceList) {
+  for (const ds of state.dataSourceList) {
     if (ds.type === "RO") {
       return true;
     }
   }
   return false;
+});
+
+const currentDataSource = computed(() => {
+  const temp = state.dataSourceList.find(
+    (ds) => ds.type === state.currentDataSourceType
+  ) as EditDataSource;
+  return temp;
 });
 
 const snowflakeExtraLinkPlaceHolder =
@@ -385,10 +396,6 @@ const instanceLink = (instance: Instance): string => {
     }
   }
   return instance.host;
-};
-
-const handleToggleUseEmptyPassword = (on: boolean) => {
-  state.useEmptyPassword = on;
 };
 
 const handleInstanceNameInput = (event: Event) => {
@@ -407,49 +414,44 @@ const handleInstanceExternalLinkInput = (event: Event) => {
   updateInstance("externalLink", (event.target as HTMLInputElement).value);
 };
 
+const handleDataSourceTypeChange = (value: string) => {
+  state.currentDataSourceType = value as DataSourceType;
+};
+
 const handleCurrentDataSourceNameInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  state.currentDataSource.username = str;
+  currentDataSource.value.username = str;
   updateInstanceDataSource();
 };
 
-const handleDataSourceTypeChange = (value: string) => {
-  const lastDataSourceType = state.currentDataSourceType;
-  let index = state.instance.dataSourceList.findIndex(
-    (ds) => ds.type === lastDataSourceType
-  );
-  if (!isEqual(state.instance.dataSourceList[index], state.currentDataSource)) {
-    state.instance.dataSourceList[index] = state.currentDataSource;
-  }
-  state.currentDataSourceType = value as DataSourceType;
-  index = state.instance.dataSourceList.findIndex(
-    (ds) => ds.type === state.currentDataSourceType
-  );
-  state.currentDataSource = state.instance.dataSourceList[index];
+const handleToggleUseEmptyPassword = (on: boolean) => {
+  currentDataSource.value.useEmptyPassword = on;
+  updateInstanceDataSource();
 };
 
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  state.updatedPassword = str;
-  updateCurrentDataSourcePassword();
-};
-
-const updateCurrentDataSourcePassword = () => {
-  state.currentDataSource.password = state.updatedPassword;
+  currentDataSource.value.updatedPassword = str;
   updateInstanceDataSource();
 };
 
 const updateInstanceDataSource = () => {
-  if (state.currentDataSource.id !== UNKNOWN_ID) {
-    const index = state.instance.dataSourceList.findIndex(
-      (ds) => ds.id === state.currentDataSource.id
-    );
-    state.instance.dataSourceList[index] = state.currentDataSource;
-  }
+  const index = state.dataSourceList.findIndex(
+    (ds) => ds === currentDataSource.value
+  );
+  state.instance.dataSourceList[index] = {
+    ...state.instance.dataSourceList[index],
+    username: currentDataSource.value.username,
+    password: currentDataSource.value.useEmptyPassword
+      ? ""
+      : currentDataSource.value.updatedPassword
+      ? currentDataSource.value.updatedPassword
+      : currentDataSource.value.password,
+  };
 };
 
 const handleCreateDataSource = (type: DataSourceType) => {
-  // Don't allow creating RO in UI for SNOWFLAKE/POSTGRES till we figure out the grant?
+  // Don't allow creating RO in UI for SNOWFLAKE/POSTGRES till we figure out the grant.
   if (
     state.instance.engine === "SNOWFLAKE" ||
     state.instance.engine === "POSTGRES"
@@ -463,6 +465,7 @@ const handleCreateDataSource = (type: DataSourceType) => {
     });
     return;
   }
+
   const tempDataSource = {
     id: UNKNOWN_ID,
     instanceId: state.instance.id,
@@ -473,8 +476,12 @@ const handleCreateDataSource = (type: DataSourceType) => {
     password: "",
   } as DataSource;
   state.instance.dataSourceList.push(tempDataSource);
+  state.dataSourceList.push({
+    ...tempDataSource,
+    updatedPassword: "",
+    useEmptyPassword: false,
+  });
   state.currentDataSourceType = type;
-  state.currentDataSource = tempDataSource;
 };
 
 const updateInstance = (field: string, value: string) => {
@@ -574,8 +581,16 @@ const doUpdate = () => {
         .then((instance) => {
           state.isUpdating = false;
           state.originalInstance = instance;
-          // Make hard copy since we are going to make equal comparison to determine the update button enable state.
-          state.instance = cloneDeep(state.originalInstance!);
+          state.instance = cloneDeep(state.originalInstance);
+          state.dataSourceList = state.instance.dataSourceList.map(
+            (dataSource) => {
+              return {
+                ...cloneDeep(dataSource),
+                updatedPassword: "",
+                useEmptyPassword: dataSource.password === "",
+              } as EditDataSource;
+            }
+          );
 
           store.dispatch("notification/pushNotification", {
             module: "bytebase",
@@ -603,9 +618,13 @@ const doUpdate = () => {
 const testConnection = () => {
   const connectionInfo: ConnectionInfo = {
     engine: state.instance.engine,
-    username: state.currentDataSource.username,
-    password: state.useEmptyPassword ? "" : state.currentDataSource.password,
-    useEmptyPassword: state.useEmptyPassword,
+    username: currentDataSource.value.username,
+    password: currentDataSource.value.useEmptyPassword
+      ? ""
+      : currentDataSource.value.updatedPassword
+      ? currentDataSource.value.updatedPassword
+      : currentDataSource.value.password,
+    useEmptyPassword: currentDataSource.value.useEmptyPassword,
     host: state.instance.host,
     port: state.instance.port,
     instanceId: state.instance.id,
