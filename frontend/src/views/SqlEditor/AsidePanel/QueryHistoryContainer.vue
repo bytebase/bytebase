@@ -57,18 +57,6 @@
       <BBSpin :title="$t('common.loading')" />
     </div>
   </div>
-
-  <BBModal
-    v-if="state.isShowDeletingHint"
-    :title="$t('common.tips')"
-    @close="handleHintClose"
-  >
-    <DeleteHint
-      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-history')"
-      @close="handleHintClose"
-      @confirm="handleDeleteHistory"
-    />
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -81,6 +69,7 @@ import {
   useNamespacedActions,
   useNamespacedState,
 } from "vuex-composition-helpers";
+import { useDialog } from "naive-ui";
 
 import {
   TabActions,
@@ -89,7 +78,6 @@ import {
   SqlEditorState,
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
-import DeleteHint from "./DeleteHint.vue";
 
 interface State {
   search: string;
@@ -99,6 +87,7 @@ interface State {
 
 const { t } = useI18n();
 const store = useStore();
+const dialog = useDialog();
 
 const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -176,11 +165,32 @@ const actionDropdownOptions = computed(() => {
   return options;
 });
 
+const handleDeleteHistory = () => {
+  if (state.currentActionHistory) {
+    deleteQueryHistory(state.currentActionHistory.id);
+  }
+  state.isShowDeletingHint = false;
+};
+
 const handleActionBtnClick = (key: string, history: QueryHistory) => {
   state.currentActionHistory = history;
 
   if (key === "delete") {
-    state.isShowDeletingHint = true;
+    const $dialog = dialog.create({
+      title: t("sql-editor.hint-tips.confirm-to-delete-this-history"),
+      type: "info",
+      onPositiveClick() {
+        handleDeleteHistory();
+        $dialog.destroy();
+      },
+      async onNegativeClick() {
+        state.currentActionHistory = null;
+        $dialog.destroy();
+      },
+      negativeText: t("common.cancel"),
+      positiveText: t("common.confirm"),
+      showIcon: false,
+    });
   } else if (key === "copy") {
     copyTextToClipboard(history.statement);
     store.dispatch("notification/pushNotification", {
@@ -193,18 +203,6 @@ const handleActionBtnClick = (key: string, history: QueryHistory) => {
 
 const handleActionBtnOutsideClick = () => {
   state.currentActionHistory = null;
-};
-
-const handleHintClose = () => {
-  state.currentActionHistory = null;
-  state.isShowDeletingHint = false;
-};
-
-const handleDeleteHistory = () => {
-  if (state.currentActionHistory) {
-    deleteQueryHistory(state.currentActionHistory.id);
-  }
-  state.isShowDeletingHint = false;
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
