@@ -1,5 +1,5 @@
-//go:build release
-// +build release
+//go:build linux_alpine
+// +build linux_alpine
 
 package postgres
 
