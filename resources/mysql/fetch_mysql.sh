@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 
 ckmd5() {
     if [[ $(uname) = Darwin ]]; then
