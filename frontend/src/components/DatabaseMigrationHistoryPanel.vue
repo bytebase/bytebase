@@ -14,13 +14,15 @@
         {{ $t("migration-history.establish-baseline") }}
 
         <template v-if="!allowMigrate" #tooltip>
-          {{
-            $t("issue.not-allowed-to-single-database-in-tenant-mode", {
-              operation: $t(
-                "migration-history.establish-baseline"
-              ).toLowerCase(),
-            })
-          }}
+          <div class="w-52 whitespace-pre-wrap">
+            {{
+              $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                operation: $t(
+                  "migration-history.establish-baseline"
+                ).toLowerCase(),
+              })
+            }}
+          </div>
         </template>
       </BBButton>
       <div>

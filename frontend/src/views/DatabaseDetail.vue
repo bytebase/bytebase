@@ -127,11 +127,13 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
             <template v-if="!allowMigrate" #tooltip>
-              {{
-                $t("issue.not-allowed-to-single-database-in-tenant-mode", {
-                  operation: changeDataText.toLowerCase(),
-                })
-              }}
+              <div class="w-48 whitespace-pre-wrap">
+                {{
+                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                    operation: changeDataText.toLowerCase(),
+                  })
+                }}
+              </div>
             </template>
           </BBButton>
           <BBButton
@@ -147,11 +149,13 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
             <template v-if="!allowMigrate" #tooltip>
-              {{
-                $t("issue.not-allowed-to-single-database-in-tenant-mode", {
-                  operation: alterSchemaText.toLowerCase(),
-                })
-              }}
+              <div class="w-48 whitespace-pre-wrap">
+                {{
+                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                    operation: alterSchemaText.toLowerCase(),
+                  })
+                }}
+              </div>
             </template>
           </BBButton>
         </div>
