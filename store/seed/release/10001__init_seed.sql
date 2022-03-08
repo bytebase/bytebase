@@ -270,7 +270,7 @@ VALUES
         'Admin data source',
         'ADMIN',
         'root',
-        'testpwd1'
+        ''
     );
 
 INSERT INTO
@@ -295,7 +295,7 @@ VALUES
         'Admin data source',
         'ADMIN',
         'root',
-        'testpwd1'
+        ''
     );
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 103;
