@@ -51,7 +51,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
-- [x] Classic UI based schema migraiton (SQL Review)
+- [x] Classic UI based schema migration (SQL Review)
 - [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
