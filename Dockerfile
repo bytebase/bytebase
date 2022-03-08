@@ -20,14 +20,11 @@ RUN yarn release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 
-ARG MODE="\"release alpine\""
 ARG VERSION="development"
 ARG GO_VERSION="1.16.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
-
-RUN echo $MODE
 
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apk --no-cache add gcc musl-dev
@@ -42,7 +39,7 @@ COPY --from=frontend /frontend-build/dist ./server/dist
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    --tags ${MODE} \
+    --tags "release alpine" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./bin/server/main.go
