@@ -243,11 +243,11 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, create, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
+		_, matrix, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
 
-		diff := pretty.Diff(create, test.want)
+		diff := pretty.Diff(matrix, test.want)
 		if len(diff) > 0 {
-			t.Errorf("%q: getPipelineFromDeploymentSchedule() got create %+v, want %+v, diff %+v.", test.name, create, test.want, diff)
+			t.Errorf("%q: getPipelineFromDeploymentSchedule() got matrix %+v, want %+v, diff %+v.", test.name, matrix, test.want, diff)
 		}
 	}
 }

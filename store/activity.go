@@ -192,6 +192,9 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Level; v != nil {
+		where, args = append(where, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	}
 
 	var query = `
 		SELECT

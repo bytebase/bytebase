@@ -97,14 +97,6 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 		return []*api.Instance{}, err
 	}
 
-	if err == nil {
-		for _, instance := range list {
-			if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	return list, nil
 }
 
@@ -169,10 +161,12 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.InstanceCache, list[0].ID, list[0]); err != nil {
+
+	instance := list[0]
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
-	return list[0], nil
+	return instance, nil
 }
 
 // PatchInstance updates an existing instance by ID.

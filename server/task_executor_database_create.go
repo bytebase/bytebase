@@ -53,7 +53,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := getDatabaseDriver(ctx, task.Instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
 		return true, nil, err
 	}
@@ -66,13 +66,9 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	// Create a baseline migration history upon creating the database.
-	version := payload.SchemaVersion
-	if version == "" {
-		version = defaultMigrationVersionFromTaskID(task.ID)
-	}
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        version,
+		Version:        payload.SchemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,

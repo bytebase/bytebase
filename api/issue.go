@@ -56,8 +56,6 @@ const (
 	IssueFieldSubscriberList IssueFieldID = "6"
 	// IssueFieldSQL is the field ID for SQL.
 	IssueFieldSQL IssueFieldID = "7"
-	// IssueFieldRollbackSQL is the field ID for rollback SQL.
-	IssueFieldRollbackSQL IssueFieldID = "8"
 )
 
 // Issue is the API message for an issue.
@@ -106,7 +104,6 @@ type IssueCreate struct {
 	Description      string    `jsonapi:"attr,description"`
 	AssigneeID       int       `jsonapi:"attr,assigneeId"`
 	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
-	RollbackIssueID  *int      `jsonapi:"attr,rollbackIssueId"`
 	Payload          string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
@@ -144,8 +141,6 @@ type UpdateSchemaDetail struct {
 	DatabaseName string `json:"databaseName"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
-	// RollbackStatement is the rollback statement of the statement.
-	RollbackStatement string `json:"rollbackStatement"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }

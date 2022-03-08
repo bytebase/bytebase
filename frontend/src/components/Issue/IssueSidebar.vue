@@ -130,13 +130,19 @@
             clearable
             @update:value="updateEarliestAllowedTs"
           />
-          <span v-else class="textfield col-span-2">
-            {{
-              task.earliestAllowedTs === 0
-                ? $t("task.earliest-allowed-time-unset")
-                : dayjs(task.earliestAllowedTs * 1000).format("LLL")
-            }}</span
-          >
+
+          <div v-else class="tooltip-wrapper">
+            <span class="tooltip w-48 textlabel">{{
+              $t("task.earliest-allowed-time-no-modify")
+            }}</span>
+            <span class="textfield col-span-2 text-sm font-medium text-main">
+              {{
+                task.earliestAllowedTs === 0
+                  ? $t("task.earliest-allowed-time-unset")
+                  : dayjs(task.earliestAllowedTs * 1000).format("LLL")
+              }}
+            </span>
+          </div>
         </div>
       </template>
 

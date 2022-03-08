@@ -48,13 +48,11 @@ export type TaskDatabaseCreatePayload = {
 export type TaskDatabaseSchemaUpdatePayload = {
   migrationType: MigrationType;
   statement: string;
-  rollbackStatement: string;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
-  rollbackStatement: string;
   pushEvent?: VCSPushEvent;
 };
 
@@ -105,7 +103,6 @@ export type TaskCreate = {
   instanceId: InstanceId;
   databaseId?: DatabaseId;
   statement: string;
-  rollbackStatement?: string;
   databaseName?: string;
   characterSet?: string;
   collation?: string;

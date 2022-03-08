@@ -20,9 +20,6 @@
           @mouseover="enterTabId = tab.id"
           @mouseleave="enterTabId = ''"
         >
-          <span class="prefix">
-            <carbon:code class="h-4 w-4" />
-          </span>
           <div
             class="label max-w-5xl w-48 truncate"
             @dblclick="handleEditLabel(tab)"

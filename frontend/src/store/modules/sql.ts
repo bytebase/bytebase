@@ -88,6 +88,10 @@ const actions = {
     ).data.data;
 
     const resultSet = convert(data);
+    if (resultSet.error) {
+      throw new Error(resultSet.error);
+    }
+
     return resultSet.data;
   },
 };

@@ -30,11 +30,11 @@ type TaskExecutor interface {
 
 // defaultMigrationVersion returns the default migration version string
 // Use the concatenation of current time and the task id to guarantee uniqueness in a monotonic increasing way.
-func defaultMigrationVersionFromTaskID(taskID int) string {
-	return strings.Join([]string{time.Now().Format("20060102150405"), strconv.Itoa(taskID)}, ".")
+func defaultMigrationVersionFromTaskID() string {
+	return time.Now().Format("20060102150405")
 }
 
-func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement string, vcsPushEvent *vcs.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcs.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -62,7 +62,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		} else {
 			mi.Creator = creator.Name
 		}
-		mi.Version = defaultMigrationVersionFromTaskID(task.ID)
+		mi.Version = schemaVersion
 		mi.Database = databaseName
 		mi.Namespace = databaseName
 		mi.Description = task.Name
@@ -134,7 +134,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		return true, nil, err
 	}
 
-	driver, err := getDatabaseDriver(ctx, task.Instance, databaseName, l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, l)
 	if err != nil {
 		return true, nil, err
 	}

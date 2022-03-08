@@ -77,6 +77,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if typeStr := c.QueryParams().Get("type"); typeStr != "" {
 			activityFind.Type = &typeStr
 		}
+		if levelStr := c.QueryParams().Get("level"); levelStr != "" {
+			activityLevel := api.ActivityLevel(levelStr)
+			activityFind.Level = &activityLevel
+		}
 		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
 			containerID, err := strconv.Atoi(containerIDStr)
 			if err != nil {

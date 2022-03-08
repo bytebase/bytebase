@@ -24,7 +24,8 @@ type Instance struct {
 	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
 	// Anomalies are stored in a separate table, but just return here for convenience
-	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
+	AnomalyList    []*Anomaly    `jsonapi:"relation,anomalyList"`
+	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
 	Name          string  `jsonapi:"attr,name"`
@@ -91,6 +92,16 @@ type InstancePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
+}
+
+// DataSourceFromInstanceWithType gets a typed data source from a instance.
+func DataSourceFromInstanceWithType(instance *Instance, dataSourceType DataSourceType) *DataSource {
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Type == dataSourceType {
+			return dataSource
+		}
+	}
+	return nil
 }
 
 // InstanceMigrationSchemaStatus is the schema status for instance migration.
