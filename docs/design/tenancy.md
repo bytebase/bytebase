@@ -3,7 +3,7 @@
 2021.11.30
 
 ## Terminology
-**Multi-tenancy v.s. Muti-single-tenancy**: multi-single-tenancy is an architecture where a single instance of the software and supporting infrastructure serve a single customer. Multi-tenant is an architecture where a single instance of the software and its supporting infrastructure serves multiple customers. Each customer shares the software application and also shares a single database. Each tenant’s data is isolated and remains invisible to other tenants.
+**Multi-tenancy v.s. Multi-single-tenancy**: multi-single-tenancy is an architecture where a single instance of the software and supporting infrastructure serve a single customer. Multi-tenant is an architecture where a single instance of the software and its supporting infrastructure serves multiple customers. Each customer shares the software application and also shares a single database. Each tenant’s data is isolated and remains invisible to other tenants.
 
 **Database Instance v.s. Database**: an instance is an installation of the database server executable which runs as an operating system service. A database is a systematic collection of data that stores data in tables. A database instance operates one or more databases.
 
@@ -37,7 +37,7 @@ More specifically, labels will enable the following support:
 - Filter and group by tenants at project database overview page, e.g. 1) first filter by 'environment:prod' then group by 'region', 2) group by 'environment' then 'company' in two dimensions.
 - Deploy to multiple tenants at the same time. We can introduce a concept called **deployment configuration** to specify stages and ordering, e.g. 'environment:canary' should come before 'environment:prod'. Details are in a later section.
 
-We call it a [label](https://dictionary.cambridge.org/dictionary/english/label) instead of a [tag](https://dictionary.cambridge.org/dictionary/english/tag) because labels are structured descriptions (key:value with predefined keys) of resources. [AWS](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) and [Azure](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources?tabs=json) name it tags for cloud resources. [GCP](https://cloud.google.com/compute/docs/labeling-resources) and [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) name it labels for resources. We'd like to be close to Kubernates style as we're both in the devops category.
+We call it a [label](https://dictionary.cambridge.org/dictionary/english/label) instead of a [tag](https://dictionary.cambridge.org/dictionary/english/tag) because labels are structured descriptions (key:value with predefined keys) of resources. [AWS](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) and [Azure](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources?tabs=json) name it tags for cloud resources. [GCP](https://cloud.google.com/compute/docs/labeling-resources) and [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) name it labels for resources. We'd like to be close to Kubernetes style as we're both in the devops category.
 
 ### Tenant Mode Project Setting
 We'll introduce a project level setting called **Tenant Mode**. When enabled, all the deployments will use tenant deployment described below. Any newly created databases or databases transferred over should have labels attached. The project overview page will look differently in the tenant view.
@@ -49,7 +49,7 @@ Deployment specification follows [Kubernetes' Labels and Selectors](https://kube
 
 Tenant databases matching the query in a stage should not show up in the following stages because they have been updated already. Deployment configurations are not retroactive meaning updating configuration will not update existing deployments in the issue. We will only support one deployment configuration at first.
 
-```
+```go
 type DeploymentConfig struct {
   deployments []Deployment
 }
@@ -82,7 +82,7 @@ type LabelSelectorRequirement {
 Here are some examples of deployment configurations.
 
 Example 1: Deploy to tenants based on environments.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -107,7 +107,7 @@ deployment_config:
           values: prod
 ```
 Example 2: Deploy to canary company tenants, then all company tenants.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -127,7 +127,7 @@ deployment_config:
           operator: Exists
 ```
 Example 3: Slow rollout to all regions over four days.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -158,7 +158,7 @@ deployment_config:
           operator: Exists
 ```
 Example 4: This illustrates the compatibility with Octopus deployment model in the Appendix section.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -230,7 +230,7 @@ Since we will still take the database name that's plugged to deployment configur
 
 ### Storage
 #### Available label keys
-```
+```sql
 CREATE TABLE label_key (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -267,7 +267,7 @@ CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
 #### Labels
 We need some JOINs between project and label tables to find databases that match the label patterns in deployment configurations. This label has a [foreign key](https://www.sqlite.org/foreignkeys.html) to label_value table so that database labels can only use pre-defined keys and values. PRAGMA foreign_keys should be turned on.
 
-```
+```sql
 CREATE TABLE db_label (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -288,7 +288,7 @@ CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
 ```
 
 #### Deployment Configurations
-```
+```sql
 CREATE TABLE deployment_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -331,9 +331,9 @@ We have some reserved/built-in keys to simplify the onboarding and be consistent
 | -------------- | ------------------------------------------------------------------ |
 | bb.location    | The location of a database such as region, zone, datacenter names. |
 | bb.tenant      | The tenant name of a customer.                                     |
-| bb.environment | The environment name mappped from instance environment.            |
+| bb.environment | The environment name mapped from instance environment.            |
 
-Note, bb.environemnt labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
+Note, bb.environment labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
 
 
 ### Octopus Tenant SaaS Deployment
