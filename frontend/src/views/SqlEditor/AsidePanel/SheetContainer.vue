@@ -78,18 +78,6 @@
       <BBSpin :title="$t('common.loading')" />
     </div>
   </div>
-
-  <BBModal
-    v-if="state.isShowDeletingHint"
-    :title="$t('common.tips')"
-    @close="handleHintClose"
-  >
-    <DeleteHint
-      :content="$t('sql-editor.hint-tips.confirm-to-delete-this-sheet')"
-      @close="handleHintClose"
-      @confirm="handleDeleteSheet"
-    />
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -101,6 +89,7 @@ import {
   useNamespacedGetters,
   useNamespacedState,
 } from "vuex-composition-helpers";
+import { useDialog } from "naive-ui";
 
 import {
   TabActions,
@@ -114,12 +103,10 @@ import {
   UNKNOWN_ID,
 } from "../../../types";
 import { getHighlightHTMLByKeyWords } from "../../../utils";
-import DeleteHint from "./DeleteHint.vue";
 import { useSQLEditorConnection } from "../../../composables/useSQLEditorConnection";
 
 interface State {
   search: string;
-  isShowDeletingHint: boolean;
   currentSheetName: string;
   editingSheetId: number | null;
   currentActionSheet: Sheet | null;
@@ -127,6 +114,7 @@ interface State {
 
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
+const dialog = useDialog();
 
 const { sharedSheet, isFetchingSheet: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -157,7 +145,6 @@ const state = reactive<State>({
   search: "",
   currentSheetName: "",
   editingSheetId: null,
-  isShowDeletingHint: false,
   currentActionSheet: null,
 });
 
@@ -247,23 +234,6 @@ const handleSheetNameChanged = () => {
   }
 };
 
-const handleActionBtnClick = (key: string, sheet: Sheet) => {
-  state.currentActionSheet = sheet;
-
-  if (key === "delete") {
-    state.isShowDeletingHint = true;
-  }
-};
-
-const handleActionBtnOutsideClick = () => {
-  state.currentActionSheet = null;
-};
-
-const handleHintClose = () => {
-  state.currentActionSheet = null;
-  state.isShowDeletingHint = false;
-};
-
 const handleDeleteSheet = () => {
   if (state.currentActionSheet) {
     deleteSheet(state.currentActionSheet.id);
@@ -274,7 +244,32 @@ const handleDeleteSheet = () => {
       });
     }
   }
-  state.isShowDeletingHint = false;
+};
+
+const handleActionBtnClick = (key: string, sheet: Sheet) => {
+  state.currentActionSheet = sheet;
+
+  if (key === "delete") {
+    const $dialog = dialog.create({
+      title: t("sql-editor.hint-tips.confirm-to-delete-this-sheet"),
+      type: "info",
+      onPositiveClick() {
+        handleDeleteSheet();
+        $dialog.destroy();
+      },
+      async onNegativeClick() {
+        state.currentActionSheet = null;
+        $dialog.destroy();
+      },
+      negativeText: t("common.cancel"),
+      positiveText: t("common.confirm"),
+      showIcon: false,
+    });
+  }
+};
+
+const handleActionBtnOutsideClick = () => {
+  state.currentActionSheet = null;
 };
 
 const handleSheetClick = async (sheet: Sheet) => {

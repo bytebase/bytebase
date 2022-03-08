@@ -20,9 +20,6 @@
           @mouseover="enterTabId = tab.id"
           @mouseleave="enterTabId = ''"
         >
-          <span class="prefix">
-            <carbon:code class="h-4 w-4" />
-          </span>
           <div
             class="label max-w-5xl w-48 truncate"
             @dblclick="handleEditLabel(tab)"
@@ -174,6 +171,7 @@ const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
 const store = useStore();
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
+const dialog = useDialog();
 
 const enterTabId = ref("");
 const selectedTab = computed(() => currentTabId.value);
@@ -282,22 +280,21 @@ const handleAddTab = (tab: AnyTabInfo) => {
   });
 };
 
-const modal = useDialog();
-
 const handleRemoveTab = async (tab: TabInfo) => {
   if (!tab.isSaved) {
-    const $modal = modal.create({
+    const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
-      type: "warning",
+      type: "info",
       onPositiveClick() {
-        $modal.destroy();
+        $dialog.destroy();
       },
       async onNegativeClick() {
         await remove();
-        $modal.destroy();
+        $dialog.destroy();
       },
       negativeText: t("common.confirm"),
       positiveText: t("common.cancel"),
+      showIcon: false,
     });
   } else {
     await remove();

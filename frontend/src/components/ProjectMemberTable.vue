@@ -87,13 +87,12 @@
             member.updater.name
           }}</router-link>
           <!-- we only show user's role provider if hers is not Bytebase -->
-          <template v-if="member.roleProvider !== 'BYTEBASE'">
+          <template v-if="member.roleProvider == 'GITLAB_SELF_HOST'">
             <span>{{ $t("common.from") }}</span>
             <div class="tooltip-wrapper">
               <span class="tooltip w-60">
                 {{
-                  $t("settings.members.tooltip.role-provider", {
-                    roleProvider: member.roleProvider,
+                  $t("settings.members.tooltip.project-role-provider-gitlab", {
                     rawRole: member.payload.vcsRole,
                   })
                 }}
