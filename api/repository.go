@@ -10,32 +10,32 @@ import (
 type RepositoryRaw struct {
 	ID int
 
+	// Standard fields
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
 
+	// Related fields
 	VCSID     int
 	ProjectID int
 
-	Name          string
-	FullPath      string
-	WebURL        string
-	BranchFilter  string
-	BaseDirectory string
-
-	FilePathTemplate string
-
+	// Domain specific fields
+	Name               string
+	FullPath           string
+	WebURL             string
+	BranchFilter       string
+	BaseDirectory      string
+	FilePathTemplate   string
 	SchemaPathTemplate string
 	ExternalID         string
 	ExternalWebhookID  string
 	WebhookURLHost     string
 	WebhookEndpointID  string
 	WebhookSecretToken string
-
-	AccessToken  string
-	ExpiresTs    int64
-	RefreshToken string
+	AccessToken        string
+	ExpiresTs          int64
+	RefreshToken       string
 }
 
 // ToRepository creates an instance of Repository based on the RepositoryRaw.
@@ -52,22 +52,19 @@ func (raw *RepositoryRaw) ToRepository() *Repository {
 		VCSID:     raw.VCSID,
 		ProjectID: raw.ProjectID,
 
-		Name:          raw.Name,
-		FullPath:      raw.FullPath,
-		WebURL:        raw.WebURL,
-		BranchFilter:  raw.BranchFilter,
-		BaseDirectory: raw.BaseDirectory,
-
-		FilePathTemplate: raw.FilePathTemplate,
-
+		Name:               raw.Name,
+		FullPath:           raw.FullPath,
+		WebURL:             raw.WebURL,
+		BranchFilter:       raw.BranchFilter,
+		BaseDirectory:      raw.BaseDirectory,
+		FilePathTemplate:   raw.FilePathTemplate,
 		SchemaPathTemplate: raw.SchemaPathTemplate,
 		ExternalID:         raw.ExternalID,
 		ExternalWebhookID:  raw.ExternalWebhookID,
 		WebhookURLHost:     raw.WebhookURLHost,
 		WebhookEndpointID:  raw.WebhookEndpointID,
 		WebhookSecretToken: raw.WebhookSecretToken,
-
-		AccessToken: raw.AccessToken,
+		AccessToken:        raw.AccessToken,
 	}
 }
 
