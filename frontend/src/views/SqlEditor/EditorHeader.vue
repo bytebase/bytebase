@@ -12,9 +12,9 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <router-link to="/" class="bar-link px-2 py-2 rounded-md">
+          <a href="#" class="bar-link px-2 py-2 rounded-md" @click="goBack">
             {{ $t("sql-editor.go-back") }}
-          </router-link>
+          </a>
         </div>
       </div>
     </div>
@@ -245,12 +245,21 @@ export default defineComponent({
     ]);
     useRegisterActions(i18nActions);
 
+    const goBack = () => {
+      if (window.history.state?.back) {
+        router.go(-1);
+      } else {
+        router.push("/");
+      }
+    };
+
     return {
       state,
       showDBAItem,
       showSwitchPlan,
       inboxSummary,
       toggleLocales,
+      goBack,
     };
   },
 });
