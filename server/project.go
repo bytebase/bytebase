@@ -604,10 +604,9 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 }
 
 func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.ProjectRaw) (*api.Project, error) {
-	var err error
-
 	project := raw.ToProject()
 
+	var err error
 	project.Creator, err = s.composePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return nil, err
