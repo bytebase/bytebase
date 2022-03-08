@@ -73,7 +73,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	return ret, nil
 }
 
-func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) (_ []*api.Policy, err error) {
+func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*api.Policy, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

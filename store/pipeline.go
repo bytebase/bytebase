@@ -176,7 +176,7 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create
 	return &pipeline, nil
 }
 
-func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) (_ []*api.Pipeline, err error) {
+func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*api.Pipeline, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

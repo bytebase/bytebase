@@ -146,7 +146,7 @@ func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.
 	return &index, nil
 }
 
-func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.IndexFind) (_ []*api.Index, err error) {
+func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

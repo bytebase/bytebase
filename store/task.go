@@ -242,7 +242,7 @@ func (s *TaskService) findTask(ctx context.Context, tx *sql.Tx, find *api.TaskFi
 	return list[0], nil
 }
 
-func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.TaskFind) (_ []*api.Task, err error) {
+func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.TaskFind) ([]*api.Task, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

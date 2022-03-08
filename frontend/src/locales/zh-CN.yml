@@ -287,13 +287,13 @@ settings:
       upgrade: 升级到付费方案来解锁角色管理
       not-allow-edit: 只有所有者才能改变角色
       not-allow-remove: 不能移除最后一个所有者
-      role-provider: 该角色同步自 {roleProvider} 的 {rawRole}
+      project-role-provider-gitlab: 同步自对应 GitLab 项目的 {rawRole} 角色
     toggle-role-provider:
       title: 您确认吗？
     change-role-provider-to-vcs:
       content: |-
-        将角色权限提供方切换至 VCS 将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
-        原来的成员将会无效，您之后可以将角色权限切换回 Bytebase 来撤销这一操作。
+        开启 VCS 同步将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
+        原来的成员将会无效，您之后也可以关闭该 VCS 同步来撤销这一操作。
     change-role-provider-to-bytebase:
       content: 将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。
 activity:
@@ -865,7 +865,7 @@ project:
     sync-from-vcs: 从 VCS 同步
     success-member-sync-prompt: 从 VCS 同步成功
     view-vcs-member: 在 VCS 中查看成员
-    switch-role-provider-to-bytebase-success-prompt: 成功将角色权限提供方切换为 Bytebase
+    switch-role-provider-to-bytebase-success-prompt: 成功关闭了 VCS 项目成员同步
   mode:
     standard: 标准
     tenant: 多租户
@@ -1020,6 +1020,7 @@ sql-editor:
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
+  go-back: 返回
 label:
   empty-label-value: <空值>
   no-label: 没有标签
@@ -1051,7 +1052,6 @@ subscription:
   plan-compare: 比较不同版本的功能，寻找适合您的方案
   disabled-feature: 这是一个订阅版高级功能
   trial: 您可以以 $14 的价格试用 14 天
-  trial-comment: 仅首次付费可以试用，可随时退款。
   upgrade: 升级订阅
   per-month: / 月
   per-instance: 每个实例
