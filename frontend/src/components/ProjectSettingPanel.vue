@@ -2,7 +2,9 @@
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
-      <ProjectMemberPanel class="pt-4" :project="project" />
+      <div class="pt-4">
+        <ProjectMemberPanel :project="project" />
+      </div>
     </div>
     <template v-if="allowArchiveOrRestore">
       <template v-if="project.rowStatus == 'NORMAL'">

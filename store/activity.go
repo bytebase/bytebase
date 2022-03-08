@@ -177,7 +177,7 @@ func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate)
 	return &activity, nil
 }
 
-func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (_ []*api.Activity, err error) {
+func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) ([]*api.Activity, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

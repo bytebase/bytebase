@@ -185,7 +185,7 @@ func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreat
 	return &principal, nil
 }
 
-func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) (_ []*api.Principal, err error) {
+func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*api.Principal, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
