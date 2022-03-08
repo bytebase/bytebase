@@ -56,7 +56,7 @@ func (s *VCSService) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api
 
 	list, err := findVCSList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.VCSRaw{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -207,7 +207,7 @@ func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) (_ []*api.V
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.VCSRaw, 0)
+	var list []*api.VCSRaw
 	for rows.Next() {
 		var vcs api.VCSRaw
 		if err := rows.Scan(
