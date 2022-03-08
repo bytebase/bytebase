@@ -69,18 +69,19 @@ const (
 type ProjectRaw struct {
 	ID int
 
+	// Standard fields
 	RowStatus RowStatus
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
 
-	Name         string
-	Key          string
-	WorkflowType ProjectWorkflowType
-	Visibility   ProjectVisibility
-	TenantMode   ProjectTenantMode
-
+	// Domain specific fields
+	Name           string
+	Key            string
+	WorkflowType   ProjectWorkflowType
+	Visibility     ProjectVisibility
+	TenantMode     ProjectTenantMode
 	DBNameTemplate string
 	RoleProvider   ProjectRoleProvider
 }
@@ -97,12 +98,11 @@ func (raw *ProjectRaw) ToProject() *Project {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
-		Name:         raw.Name,
-		Key:          raw.Key,
-		WorkflowType: raw.WorkflowType,
-		Visibility:   raw.Visibility,
-		TenantMode:   raw.TenantMode,
-
+		Name:           raw.Name,
+		Key:            raw.Key,
+		WorkflowType:   raw.WorkflowType,
+		Visibility:     raw.Visibility,
+		TenantMode:     raw.TenantMode,
 		DBNameTemplate: raw.DBNameTemplate,
 		RoleProvider:   raw.RoleProvider,
 	}

@@ -12,18 +12,19 @@ import (
 type VCSRaw struct {
 	ID int
 
+	// Standard fields
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
 	UpdatedTs int64
 
+	// Domain specific fields
 	Name          string
 	Type          vcs.Type
 	InstanceURL   string
 	APIURL        string
 	ApplicationID string
-
-	Secret string
+	Secret        string
 }
 
 // ToVCS creates an instance of VCS based on the VCSRaw.
@@ -42,8 +43,7 @@ func (raw *VCSRaw) ToVCS() *VCS {
 		InstanceURL:   raw.InstanceURL,
 		APIURL:        raw.APIURL,
 		ApplicationID: raw.ApplicationID,
-
-		Secret: raw.Secret,
+		Secret:        raw.Secret,
 	}
 }
 
