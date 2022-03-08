@@ -25,3 +25,7 @@ require (
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 )
+
+// copied from pingcap/tidb
+// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
+replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
