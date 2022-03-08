@@ -168,7 +168,7 @@ func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (
 	return nil, err
 }
 
-func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) (_ []*api.Anomaly, err error) {
+func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
