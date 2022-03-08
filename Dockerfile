@@ -20,7 +20,7 @@ RUN yarn release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 
-ARG MODE="release linux_alpine"
+ARG MODE="release alpine"
 ARG VERSION="development"
 ARG GO_VERSION="1.16.5"
 ARG GIT_COMMIT="unknown"
