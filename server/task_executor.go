@@ -44,7 +44,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	databaseName := task.Database.Name
 
-	var repoRaw *api.Repository
+	var repository *api.Repository
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Type:           migrationType,
@@ -67,20 +67,20 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		mi.Namespace = databaseName
 		mi.Description = task.Name
 	} else {
-		repoFind := &api.RepositoryFind{
+		repositoryFind := &api.RepositoryFind{
 			ProjectID: &task.Database.ProjectID,
 		}
-		repoRaw, err := server.RepositoryService.FindRepository(ctx, repoFind)
+		repository, err = server.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
-		if repoRaw == nil {
+		if repository == nil {
 			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 		}
 
 		mi, err = db.ParseMigrationInfo(
 			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repoRaw.FilePathTemplate),
+			filepath.Join(vcsPushEvent.BaseDirectory, repository.FilePathTemplate),
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -162,7 +162,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repoRaw.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repository.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	if writeBack && issue != nil {
 		project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
@@ -186,16 +186,16 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	if writeBack {
-		latestSchemaFile := filepath.Join(repoRaw.BaseDirectory, repoRaw.SchemaPathTemplate)
+		latestSchemaFile := filepath.Join(repository.BaseDirectory, repository.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		repoRaw.VCS, err = server.composeVCSByID(ctx, repoRaw.VCSID)
+		repository.VCS, err = server.composeVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
-		if repoRaw.VCS == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repoRaw.VCSID)
+		if repository.VCS == nil {
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repository.VCSID)
 		}
 
 		// Writes back the latest schema file to the same branch as the push event.
@@ -209,7 +209,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, server, repoRaw, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, server, repository, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -218,7 +218,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		{
 			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
 				TaskID:             task.ID,
-				VCSInstanceURL:     repoRaw.VCS.InstanceURL,
+				VCSInstanceURL:     repository.VCS.InstanceURL,
 				RepositoryFullPath: vcsPushEvent.RepositoryFullPath,
 				Branch:             branch,
 				FilePath:           latestSchemaFile,
@@ -227,7 +227,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to marshal file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRaw.WebURL),
+					zap.String("repository", repository.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -253,7 +253,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRaw.WebURL),
+					zap.String("repository", repository.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)

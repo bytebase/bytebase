@@ -261,7 +261,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
-		repoRaw, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
+		repository, err := s.RepositoryService.CreateRepository(ctx, repositoryCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project %d has already linked repository", repositoryCreate.ProjectID))
@@ -269,13 +269,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-		if err != nil {
+		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, repo); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal link project repository response").SetInternal(err)
 		}
 		return nil
@@ -291,30 +290,27 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		repoFind := &api.RepositoryFind{
+		repositoryFind := &api.RepositoryFind{
 			ProjectID: &projectID,
 		}
-		repoRawList, err := s.RepositoryService.FindRepositoryList(ctx, repoFind)
+		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
-		if len(repoRawList) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(repoRawList), projectID)).SetInternal(err)
+		if len(list) > 1 {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
 		}
 
-		repoList := make([]*api.Repository, 0, len(repoRawList))
-		for _, repoRaw := range repoRawList {
-			repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.Name)).SetInternal(err)
+		for _, repository := range list {
+			if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 			}
-			repoList = append(repoList, repo)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, repoList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)
 		}
 		return nil
@@ -327,10 +323,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		repoPatch := &api.RepositoryPatch{
+		repositoryPatch := &api.RepositoryPatch{
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
 		}
 		project, err := s.composeProjectByID(ctx, projectID)
@@ -341,56 +337,56 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 
-		if repoPatch.FilePathTemplate != nil {
-			if err := api.ValidateRepositoryFilePathTemplate(*repoPatch.FilePathTemplate, project.TenantMode); err != nil {
+		if repositoryPatch.FilePathTemplate != nil {
+			if err := api.ValidateRepositoryFilePathTemplate(*repositoryPatch.FilePathTemplate, project.TenantMode); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch linked repository request: %s", err.Error()))
 			}
 		}
 
-		if repoPatch.SchemaPathTemplate != nil {
-			if err := api.ValidateRepositorySchemaPathTemplate(*repoPatch.SchemaPathTemplate, project.TenantMode); err != nil {
+		if repositoryPatch.SchemaPathTemplate != nil {
+			if err := api.ValidateRepositorySchemaPathTemplate(*repositoryPatch.SchemaPathTemplate, project.TenantMode); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 			}
 		}
 
 		// Remove enclosing /
-		if repoPatch.BaseDirectory != nil {
-			baseDir := strings.Trim(*repoPatch.BaseDirectory, "/")
-			repoPatch.BaseDirectory = &baseDir
+		if repositoryPatch.BaseDirectory != nil {
+			baseDir := strings.Trim(*repositoryPatch.BaseDirectory, "/")
+			repositoryPatch.BaseDirectory = &baseDir
 		}
 
-		repoFind := &api.RepositoryFind{
+		repositoryFind := &api.RepositoryFind{
 			ProjectID: &projectID,
 		}
-		repoRawList, err := s.RepositoryService.FindRepositoryList(ctx, repoFind)
+		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for project ID: %d", projectID)).SetInternal(err)
 		}
 
 		// Just be defensive, this shouldn't happen because we set UNIQUE constraint on project_id
-		if len(repoRawList) > 1 {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(repoRawList), projectID)).SetInternal(err)
-		} else if len(repoRawList) == 0 {
+		if len(list) > 1 {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(list), projectID)).SetInternal(err)
+		} else if len(list) == 0 {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
-		repo := repoRawList[0]
-		repoPatch.ID = repo.ID
-		updatedRepoRaw, err := s.RepositoryService.PatchRepository(ctx, repoPatch)
+		repository := list[0]
+		repositoryPatch.ID = repository.ID
+		updatedRepository, err := s.RepositoryService.PatchRepository(ctx, repositoryPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
-		if repoPatch.BranchFilter != nil {
+		if repositoryPatch.BranchFilter != nil {
 			vcsFind := &api.VCSFind{
-				ID: &repo.VCSID,
+				ID: &repository.VCSID,
 			}
 			vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
 			if vcs == nil {
-				err := fmt.Errorf("failed to find VCS configuration for ID: %d", repo.VCSID)
+				err := fmt.Errorf("failed to find VCS configuration for ID: %d", repository.VCSID)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 			// Update the webhook after we successfully update the repository.
@@ -400,12 +396,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepoRaw.WebhookEndpointID),
-					PushEventsBranchFilter: *repoPatch.BranchFilter,
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepository.WebhookEndpointID),
+					PushEventsBranchFilter: *repositoryPatch.BranchFilter,
 				}
 				webhookPatchPayload, err = json.Marshal(webhookPut)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 				}
 			}
 
@@ -415,28 +411,27 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 					ClientID:     vcs.ApplicationID,
 					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
+					AccessToken:  repository.AccessToken,
+					RefreshToken: repository.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repository.ID),
 				},
 				vcs.InstanceURL,
-				repo.ExternalID,
-				repo.ExternalWebhookID,
+				repository.ExternalID,
+				repository.ExternalWebhookID,
 				webhookPatchPayload,
 			)
 
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
 			}
 		}
 
-		updatedRepo, err := s.composeRepositoryRelationship(ctx, updatedRepoRaw)
-		if err != nil {
+		if err := s.composeRepositoryRelationship(ctx, updatedRepository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to updating repository for project").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedRepo); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedRepository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)
 		}
 		return nil
