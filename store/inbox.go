@@ -204,7 +204,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	return &inbox, nil
 }
 
-func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) (_ []*api.Inbox, err error) {
+func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api.Inbox, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
