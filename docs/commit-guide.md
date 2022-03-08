@@ -139,7 +139,7 @@ test: test some case
 
 ### perf
 
-Used for some preformance improvements.
+Used for some performance improvements.
 
 ```bash
 perf: reduce the api requests when page loading
