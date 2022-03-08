@@ -49,7 +49,7 @@ Deployment specification follows [Kubernetes' Labels and Selectors](https://kube
 
 Tenant databases matching the query in a stage should not show up in the following stages because they have been updated already. Deployment configurations are not retroactive meaning updating configuration will not update existing deployments in the issue. We will only support one deployment configuration at first.
 
-```
+```go
 type DeploymentConfig struct {
   deployments []Deployment
 }
@@ -82,7 +82,7 @@ type LabelSelectorRequirement {
 Here are some examples of deployment configurations.
 
 Example 1: Deploy to tenants based on environments.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -107,7 +107,7 @@ deployment_config:
           values: prod
 ```
 Example 2: Deploy to canary company tenants, then all company tenants.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -127,7 +127,7 @@ deployment_config:
           operator: Exists
 ```
 Example 3: Slow rollout to all regions over four days.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -158,7 +158,7 @@ deployment_config:
           operator: Exists
 ```
 Example 4: This illustrates the compatibility with Octopus deployment model in the Appendix section.
-```
+```yaml
 deployment_config:
   deployments:
     spec:
@@ -230,7 +230,7 @@ Since we will still take the database name that's plugged to deployment configur
 
 ### Storage
 #### Available label keys
-```
+```sql
 CREATE TABLE label_key (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -267,7 +267,7 @@ CREATE UNIQUE INDEX idx_label_value_key_value ON label_value(key, value);
 #### Labels
 We need some JOINs between project and label tables to find databases that match the label patterns in deployment configurations. This label has a [foreign key](https://www.sqlite.org/foreignkeys.html) to label_value table so that database labels can only use pre-defined keys and values. PRAGMA foreign_keys should be turned on.
 
-```
+```sql
 CREATE TABLE db_label (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
@@ -288,7 +288,7 @@ CREATE UNIQUE INDEX idx_db_label_database_id_key ON db_label(database_id, key);
 ```
 
 #### Deployment Configurations
-```
+```sql
 CREATE TABLE deployment_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     row_status TEXT NOT NULL CHECK (
