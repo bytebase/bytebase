@@ -54,10 +54,12 @@ type Index struct {
 	// This could refer to a column or an expression
 	Expression string
 	Position   int
-	Type       string
-	Unique     bool
-	// Visible isn't supported for Postgres.
+	// Type isn't supported for SQLite.
+	Type   string
+	Unique bool
+	// Visible isn't supported for Postgres, SQLite.
 	Visible bool
+	// Comment isn't supported for SQLite.
 	Comment string
 }
 

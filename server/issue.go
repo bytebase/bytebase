@@ -389,15 +389,14 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
 	}
 	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
-	if err := s.composeTaskRelationship(ctx, task); err != nil {
-		return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
+	if task != nil {
+		if err := s.composeTaskRelationship(ctx, task); err != nil {
+			return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
+		}
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
 		IssueName: issue.Name,
-	}
-	if issueCreate.RollbackIssueID != nil {
-		createActivityPayload.RollbackIssueID = *issueCreate.RollbackIssueID
 	}
 
 	bytes, err := json.Marshal(createActivityPayload)
@@ -416,40 +415,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
-	}
-
-	// If we are creating a rollback issue, then we will also post a comment on the original issue
-	if issueCreate.RollbackIssueID != nil {
-		issueFind := &api.IssueFind{
-			ID: issueCreate.RollbackIssueID,
-		}
-		rollbackIssue, err := s.IssueService.FindIssue(ctx, issueFind)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
-		if rollbackIssue == nil {
-			return nil, fmt.Errorf("Rollback issue not found for ID %v", issueCreate.RollbackIssueID)
-		}
-		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
-			IssueName: rollbackIssue.Name,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   creatorID,
-			ContainerID: *issueCreate.RollbackIssueID,
-			Type:        api.ActivityIssueCommentCreate,
-			Level:       api.ActivityInfo,
-			Comment:     fmt.Sprintf("Created rollback issue %q", issue.Name),
-			Payload:     string(bytes),
-		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-			issue: rollbackIssue,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create activity after creating the rollback issue: %v. Error %w", issue.Name, err)
-		}
 	}
 	return issue, nil
 }
@@ -751,17 +716,17 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
 			}
-			deployments, p, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			// Convert to pipelineCreate
-			for i, stage := range p {
+			for i, databaseList := range matrix {
 				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
 				environmentSet := make(map[string]bool)
 				var environmentID int
 				var taskCreateList []api.TaskCreate
-				for _, database := range stage {
+				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 					taskStatus := api.TaskPendingApproval
@@ -836,6 +801,19 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
 
+	// Return an error if the issue has no task to be executed
+	hasTask := false
+	for _, stage := range pipelineCreate.StageList {
+		if len(stage.TaskList) > 0 {
+			hasTask = true
+			break
+		}
+	}
+	if !hasTask {
+		err := fmt.Errorf("issue has no task to be executed")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
 		return createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
@@ -878,9 +856,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
-	if d.RollbackStatement != "" {
-		payload.RollbackStatement = d.RollbackStatement
-	}
 	if vcsPushEvent != nil {
 		payload.VCSPushEvent = vcsPushEvent
 	}
@@ -904,7 +879,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Status:            taskStatus,
 		Type:              taskType,
 		Statement:         d.Statement,
-		RollbackStatement: d.RollbackStatement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
 		MigrationType:     migrationType,
 		Payload:           string(bytes),
@@ -1091,11 +1065,11 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
 		}
 	}
-	d, p, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
+	d, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
-	return d, p, nil
+	return d, matrix, nil
 }
 
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
@@ -1111,11 +1085,11 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, pipeline, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+	_, matrix, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
 	if err != nil {
 		return "", "", err
 	}
-	similarDB := getPeerTenantDatabase(pipeline, instance.EnvironmentID)
+	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
 
 	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
 	// If there are existing databases with the same name, we will disallow the database creation.

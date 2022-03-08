@@ -132,8 +132,6 @@ func (e ActivityLevel) String() string {
 type ActivityIssueCreatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
-	// If we create a rollback issue, this field records the issue id to be rolled back.
-	RollbackIssueID int `json:"rollbackIssueId,omitempty"`
 }
 
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
@@ -295,6 +293,7 @@ type ActivityFind struct {
 	// Domain specific fields
 	CreatorID   *int
 	Type        *string
+	Level       *ActivityLevel
 	ContainerID *int
 	Limit       *int
 }

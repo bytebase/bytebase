@@ -56,7 +56,6 @@ common:
   approve: 批准
   done: 完成
   create: 创建
-  rollback: 回滚
   run: 运行
   retry: 重试
   skip: 跳过
@@ -219,6 +218,7 @@ task:
     success: 成功
     warn: 警告
     error: 错误
+  earliest-allowed-time-no-modify: 您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
@@ -369,8 +369,6 @@ issue:
   apply-to-other-stages: "@:{'common.apply'}到其他@:{'common.stage'}"
   add-sql-statement: 添加 SQL @:{'common.statement'}…
   optional-add-sql-statement: （可选）添加 SQL @:{'common.statement'}…
-  rollback-sql: "@:{'common.rollback'} SQL"
-  add-rollback-sql-statement: 添加 @:{'common.rollback'} SQL @:{'common.statement'}…
   edit-description: 编辑描述
   add-some-description: 添加一些描述…
   add-a-comment: 添加评论
@@ -1107,13 +1105,14 @@ subscription:
     bb-feature-rbac:
       title: 角色管理
       desc: 「角色管理」可以赋予成员诸如 DBA 这样的特定角色，可以通过@:{'subscription.upgrade'}来开启该功能。
-    bb-feature-3rd-party-login:
-      title: 第三方登录
-      desc: Bytebase 可自动根据您配置的 VCS 来支持相应的第三方登录。请通过@:{'subscription.upgrade'}来开启该功能。
-      login: 请@:{'subscription.upgrade'}来开启该功能
     bb-feature-schema-drift:
       title: Schema 偏差
       desc: "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
+    bb-feature-3rd-party-auth:
+      title: 第三方认证 & 授权
+      desc: >-
+        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。
+      login: 请@:{'subscription.upgrade'}来开启该功能
   feature-sections:
     database-management:
       title: 数据库管理
@@ -1153,7 +1152,8 @@ subscription:
       features:
         activity-log: 活动日志
         rbac: RBAC 权限管理
-        gitlab-login: 通过 GitLab 账户登录
+        3rd-party-auth: 第三方认证 & 授权
+        sync-members-from-vcs: 从 VCS 同步成员信息
   plan:
     title: 版本
     try: 试用团队版
