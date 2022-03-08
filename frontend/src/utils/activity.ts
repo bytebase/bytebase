@@ -23,9 +23,9 @@ export function issueActivityActionSentence(
     case "bb.issue.field.update": {
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
-      let name = "Unknown Field";
-      let oldValue = undefined;
-      let newValue = undefined;
+      const name = "Unknown Field";
+      const oldValue = undefined;
+      const newValue = undefined;
 
       switch (update.fieldId) {
         case IssueBuiltinFieldId.ASSIGNEE: {
@@ -77,51 +77,6 @@ export function issueActivityActionSentence(
         case IssueBuiltinFieldId.NAME:
         case IssueBuiltinFieldId.PROJECT:
         case IssueBuiltinFieldId.SQL:
-        case IssueBuiltinFieldId.ROLLBACK_SQL: {
-          if (update.fieldId == IssueBuiltinFieldId.NAME) {
-            name = "name";
-          } else if (update.fieldId == IssueBuiltinFieldId.SQL) {
-            name = "SQL";
-          } else if (update.fieldId == IssueBuiltinFieldId.ROLLBACK_SQL) {
-            name = "Rollback SQL";
-          }
-
-          oldValue = update.oldValue;
-          newValue = update.newValue;
-          if (oldValue && newValue) {
-            return [
-              "activity.sentence.changed-from-to",
-              {
-                name,
-                oldValue,
-                newValue,
-              },
-            ];
-          } else if (oldValue) {
-            return [
-              "activity.sentence.unset-from",
-              {
-                name,
-                oldValue,
-              },
-            ];
-          } else if (newValue) {
-            return [
-              "activity.sentence.set-to",
-              {
-                name,
-                newValue,
-              },
-            ];
-          } else {
-            return [
-              "activity.sentence.changed-update",
-              {
-                name,
-              },
-            ];
-          }
-        }
       }
 
       return ["activity.sentence.updated", {}];

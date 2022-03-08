@@ -837,7 +837,7 @@ VALUES
         'game_echo_island',
         'utf8mb4',
         'utf8mb4_general_ci',
-        'OK',
+        'NOT_FOUND',
         1624558090,
         '2022v0'
     );

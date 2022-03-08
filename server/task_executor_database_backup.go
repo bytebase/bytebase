@@ -87,7 +87,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 // backupDatabase will take a backup of a database.
 func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := getDatabaseDriver(ctx, instance, databaseName, exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
 		return err
 	}

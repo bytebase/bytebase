@@ -125,7 +125,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 // restoreDatabase will restore the database from a backup
 func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := getDatabaseDriver(ctx, instance, databaseName, exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) (int64, string, error) {
-	targetDriver, err := getDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, logger)
+	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, logger)
 	if err != nil {
 		return -1, "", err
 	}
@@ -179,7 +179,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(task.ID),
+		Version:        defaultMigrationVersionFromTaskID(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,

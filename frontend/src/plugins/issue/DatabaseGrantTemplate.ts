@@ -36,7 +36,7 @@ const template: IssueTemplate = {
                 instanceId: ctx.databaseList[0].instance.id,
                 databaseId: ctx.databaseList[0].id,
                 statement: "",
-                rollbackStatement: "",
+                earliestAllowedTs: 0,
               },
             ],
           },

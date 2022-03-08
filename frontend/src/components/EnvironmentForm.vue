@@ -47,7 +47,10 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t("policy.approval.auto") }}</div>
+              <div class="textlabel flex">
+                {{ $t("policy.approval.auto") }}
+                <FeatureBadge feature="bb.feature.approval-policy" />
+              </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.approval.auto-info") }}
               </div>
@@ -86,7 +89,10 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t("policy.backup.daily") }}</div>
+              <div class="textlabel flex">
+                {{ $t("policy.backup.daily") }}
+                <FeatureBadge feature="bb.feature.backup-policy" />
+              </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.daily-info") }}
               </div>
@@ -102,7 +108,10 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
-              <div class="textlabel">{{ $t("policy.backup.weekly") }}</div>
+              <div class="textlabel flex">
+                {{ $t("policy.backup.weekly") }}
+                <FeatureBadge feature="bb.feature.backup-policy" />
+              </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.weekly-info") }}
               </div>

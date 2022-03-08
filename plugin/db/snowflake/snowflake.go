@@ -896,10 +896,12 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 // dumpOneDatabase will dump the database DDL schema for a database.
 // Note: this operation is not supported on shared databases, e.g. SNOWFLAKE_SAMPLE_DATA.
 func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool, dumpSingleDatabase bool) error {
-	// Database header.
-	header := fmt.Sprintf(databaseHeaderFmt, database)
-	if _, err := io.WriteString(out, header); err != nil {
-		return err
+	if !dumpSingleDatabase {
+		// Database header.
+		header := fmt.Sprintf(databaseHeaderFmt, database)
+		if _, err := io.WriteString(out, header); err != nil {
+			return err
+		}
 	}
 
 	query := fmt.Sprintf(`SELECT GET_DDL('DATABASE', '%s', true)`, database)

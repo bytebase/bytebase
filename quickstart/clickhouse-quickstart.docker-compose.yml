@@ -32,4 +32,4 @@ services:
       - 9000:9000
     volumes:
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
-      - ../store/test_schema/clickhouse:/docker-entrypoint-initdb.d
+      - ./test_schema/clickhouse:/docker-entrypoint-initdb.d

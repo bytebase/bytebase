@@ -201,8 +201,6 @@ const actions = {
       { root: true }
     );
 
-    dispatch("tab/updateCurrentTab", { queryResult }, { root: true });
-    dispatch("fetchQueryHistoryList");
     return queryResult;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(

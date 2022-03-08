@@ -127,7 +127,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, err := func() ([]byte, error) {
-			driver, err := getDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
+			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
 			if err != nil {
 				return nil, err
 			}
@@ -149,7 +149,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				activityLevel = api.ActivityError
 			}
 
-			bytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
+			activityBytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
 				Statement:    exec.Statement,
 				DurationNs:   time.Now().UnixNano() - start,
 				InstanceName: instance.Name,
@@ -173,7 +173,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				Level:       activityLevel,
 				Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
 					exec.Statement, exec.DatabaseName, instance.Name),
-				Payload: string(bytes),
+				Payload: string(activityBytes),
 			}
 
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
@@ -184,6 +184,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					zap.String("instance_name", instance.Name),
 					zap.String("statement", exec.Statement),
 					zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 			}
 		}
 
@@ -220,7 +221,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
 	resultSet := &api.SQLResultSet{}
 	err := func() error {
-		driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "", s.l)
 		if err != nil {
 			return err
 		}

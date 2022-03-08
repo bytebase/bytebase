@@ -88,6 +88,10 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				for _, instance := range instanceList {
+					if err := s.server.composeInstanceRelationship(ctx, instance); err != nil {
+						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instance.ID, instance.Name), zap.Error(err))
+						continue
+					}
 					for _, env := range environmentList {
 						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
@@ -95,13 +99,6 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							break
 						}
-					}
-
-					if err := s.server.composeInstanceAdminDataSource(ctx, instance); err != nil {
-						s.l.Error("Failed to retrieve instance admin connection info",
-							zap.String("instance", instance.Name),
-							zap.Error(err))
-						return
 					}
 
 					if instance.Environment == nil {
@@ -154,7 +151,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := getDatabaseDriver(ctx, instance, "", s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
 
 	// Check connection
 	if err != nil {
@@ -234,7 +231,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := getDatabaseDriver(ctx, instance, database.Name, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, database.Name, s.l)
 
 	// Check connection
 	if err != nil {

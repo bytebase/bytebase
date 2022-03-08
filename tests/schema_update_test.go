@@ -237,6 +237,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		if len(diff) != 0 {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
+		if history.Version == "" {
+			t.Fatalf("empty migration history version for migration %v", i)
+		}
 	}
 
 	// Create a manual backup.
@@ -335,6 +338,22 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	_, err = ctl.listSheets(database.ID)
 	if err != nil {
 		t.Fatalf("failed to list sheet, error %v", err)
+	}
+
+	// Test if POST /api/database/:id/datasource api is working right.
+	// TODO(steven): I will add read-only data source testing to a separate test later.
+	err = ctl.createDataSource(api.DataSourceCreate{
+		InstanceID: instance.ID,
+		DatabaseID: database.ID,
+		CreatorID:  project.Creator.ID,
+		Name:       "ADMIN data source",
+		Type:       "ADMIN",
+		Username:   "root",
+		Password:   "",
+	})
+
+	if err != nil {
+		t.Fatalf("failed to create data source, error %v", err)
 	}
 }
 
@@ -595,5 +614,14 @@ func TestVCS(t *testing.T) {
 		if len(diff) != 0 {
 			t.Fatalf("migration history %v got %v, want %v, diff %v", i, got, want, diff)
 		}
+		if history.Version == "" {
+			t.Fatalf("empty migration history version for migration %v", i)
+		}
+	}
+	if histories[0].Version != "ver2" {
+		t.Fatalf("invalid migration(0) history version, want ver2 got %v", histories[0].Version)
+	}
+	if histories[1].Version != "ver1" {
+		t.Fatalf("invalid migration(0) history version, want ver1 got %v", histories[0].Version)
 	}
 }
