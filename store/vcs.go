@@ -177,7 +177,7 @@ func createVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCS
 	return &vcs, nil
 }
 
-func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) (_ []*api.VCS, err error) {
+func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*api.VCS, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

@@ -182,7 +182,7 @@ func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*a
 	return &member, nil
 }
 
-func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) (_ []*api.Member, err error) {
+func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*api.Member, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
