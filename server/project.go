@@ -603,26 +603,26 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 	return project, nil
 }
 
-func (s *Server) composeProjectRelationship(ctx context.Context, projectRaw *api.ProjectRaw) (*api.Project, error) {
-	var err error
+func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.ProjectRaw) (*api.Project, error) {
+	project := raw.ToProject()
 
-	project := &api.Project{}
-	projectRaw.CopyToProject(project)
-
-	project.Creator, err = s.composePrincipalByID(ctx, project.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return nil, err
 	}
+	project.Creator = creator
 
-	project.Updater, err = s.composePrincipalByID(ctx, project.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, project.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
+	project.Updater = updater
 
-	project.ProjectMemberList, err = s.composeProjectMemberListByProjectID(ctx, project.ID)
+	memberList, err := s.composeProjectMemberListByProjectID(ctx, project.ID)
 	if err != nil {
 		return nil, err
 	}
+	project.ProjectMemberList = memberList
 
 	return project, nil
 }
