@@ -695,8 +695,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if !s.feature(api.FeatureMultiTenancy) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
-			if m.MigrationType != db.Migrate {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
+			if !(m.MigrationType == db.Migrate || m.MigrationType == db.Data) {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
 			}
 			if len(m.UpdateSchemaDetailList) != 1 {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
