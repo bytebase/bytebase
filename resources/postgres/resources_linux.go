@@ -1,5 +1,5 @@
-//go:build linux
-// +build linux
+//go:build lnx
+// +build lnx
 
 package postgres
 
