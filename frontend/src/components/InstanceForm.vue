@@ -149,19 +149,17 @@
 
       <div
         v-if="!hasReadonlyDataSource"
-        class="mt-4 flex flex-col justify-start items-start flex-wrap bg-yellow-100 border-none rounded-lg p-2 px-3 mt-0"
+        class="mt-4 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
       >
-        <p class="flex justify-start items-start flex-nowrap leading-6">
-          <heroicons-outline:exclamation
-            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
-          />
-          <span class="text-yellow-800">{{
-            $t("instance.no-read-only-data-source-warn")
-          }}</span>
-        </p>
+        <heroicons-outline:exclamation
+          class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
+        />
+        <span class="text-yellow-800 text-sm">{{
+          $t("instance.no-read-only-data-source-warn")
+        }}</span>
         <button
           type="button"
-          class="btn-normal ml-7 mt-2 text-sm"
+          class="btn-normal ml-4 text-sm"
           @click.prevent="handleCreateDataSource('RO')"
         >
           {{ $t("common.create") }}
@@ -260,8 +258,10 @@
         <button
           v-if="allowEdit"
           type="button"
-          class="btn-normal ml-2 inline-flex justify-center py-2 px-4"
           :disabled="!valueChanged || state.isUpdating"
+          :class="
+            !valueChanged || state.isUpdating ? 'btn-normal' : 'btn-primary'
+          "
           @click.prevent="doUpdate"
         >
           {{ $t("common.update") }}
