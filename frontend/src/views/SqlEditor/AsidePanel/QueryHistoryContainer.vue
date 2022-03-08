@@ -81,7 +81,6 @@ import { getHighlightHTMLByKeyWords } from "../../../utils";
 
 interface State {
   search: string;
-  isShowDeletingHint: boolean;
   currentActionHistory: QueryHistory | null;
 }
 
@@ -102,7 +101,6 @@ const { addTab } = useNamespacedActions<TabActions>("tab", ["addTab"]);
 
 const state = reactive<State>({
   search: "",
-  isShowDeletingHint: false,
   currentActionHistory: null,
 });
 
@@ -169,7 +167,6 @@ const handleDeleteHistory = () => {
   if (state.currentActionHistory) {
     deleteQueryHistory(state.currentActionHistory.id);
   }
-  state.isShowDeletingHint = false;
 };
 
 const handleActionBtnClick = (key: string, history: QueryHistory) => {
