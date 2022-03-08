@@ -294,16 +294,15 @@ settings:
       upgrade: Upgrade to enable role management
       not-allow-edit: Only Owner can change the role
       not-allow-remove: Can not remove the last Owner
-      role-provider: This role is mapped from {rawRole} provided by {roleProvider}
+      project-role-provider-gitlab: Mapped from the {rawRole} role in the corresponding GitLab project.
     toggle-role-provider:
       title: Are you sure?
     change-role-provider-to-vcs:
       content: >-
-        Changing role provider to VCS will replace all existing members with the
+        Turning on VCS sync will replace all existing members with the
         members from the corresponding VCS project.
 
-        The existing members will become inactive. You can reset role provider
-        to Bytebase to restore those members.
+        The existing members will become inactive. You can turn off VCS sync to restore those members.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members
@@ -976,8 +975,8 @@ project:
       btn-text: Restore this @.lower:{'common.project'}
     sync-from-vcs: Sync from VCS
     success-member-sync-prompt: Sync member from VCS Succeeded
-    view-vcs-member: View members at VCS
-    switch-role-provider-to-bytebase-success-prompt: Successfully switching project role provider to Bytebase.
+    view-vcs-member: View members in VCS
+    switch-role-provider-to-bytebase-success-prompt: Successfully turning off VCS project membership sync.
   mode:
     standard: Standard
     tenant: Tenant
@@ -1198,9 +1197,6 @@ subscription:
   plan-compare: Compare features between different plans
   disabled-feature: This is a premium feature in subscription plan
   trial: You can start a trial with $14 for 14 days.
-  trial-comment: >-
-    Only enabled for the first payment. You can cancel the subscription at any
-    time.
   upgrade: Upgrade subscription
   per-month: / month
   per-instance: Per instance

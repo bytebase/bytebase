@@ -98,9 +98,13 @@
                   $t(`common.role.${principal.role.toLowerCase()}`)
                 }}</router-link
               >
-              <router-link :to="'/setting/subscription'" class="normal-link">{{
-                $t("settings.profile.subscription")
-              }}</router-link>
+              <router-link
+                v-if="!hasRBACFeature"
+                :to="'/setting/subscription'"
+                class="normal-link"
+              >
+                {{ $t("settings.profile.subscription") }}
+              </router-link>
             </dd>
           </div>
 
