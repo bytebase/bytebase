@@ -306,18 +306,29 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	}
 
 	colCount := len(columnTypes)
+
+	columnTypeNames := make([]string, colCount)
+	for i, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames[i] = strings.ToUpper(v.DatabaseTypeName())
+	}
+
 	rowCount := 0
 	data := []interface{}{}
 	for rows.Next() {
 		scanArgs := make([]interface{}, colCount)
-		for i, v := range columnTypes {
-			switch v.DatabaseTypeName() {
+		for i, v := range columnTypeNames {
+			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			switch v {
 			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
 				scanArgs[i] = new(sql.NullString)
 			case "BOOL":
 				scanArgs[i] = new(sql.NullBool)
-			case "INT4":
+			case "INT", "INTEGER":
 				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT":
+				scanArgs[i] = new(sql.NullFloat64)
 			default:
 				scanArgs[i] = new(sql.NullString)
 			}
@@ -341,12 +352,12 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 				rowData = append(rowData, v.Int64)
 				continue
 			}
-			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				rowData = append(rowData, v.Float64)
-				continue
-			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
 				rowData = append(rowData, v.Int32)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData = append(rowData, v.Float64)
 				continue
 			}
 			// If none of them match, set nil to its value.
