@@ -79,7 +79,7 @@ func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind
 
 	list, err := s.findBackupList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Backup{}, err
+		return nil, err
 	}
 
 	return list, nil

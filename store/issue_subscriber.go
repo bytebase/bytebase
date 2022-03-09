@@ -55,7 +55,7 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 
 	list, err := findIssueSubscriberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.IssueSubscriber{}, err
+		return nil, err
 	}
 
 	return list, nil

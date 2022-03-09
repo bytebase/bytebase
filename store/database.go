@@ -106,7 +106,7 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 
 	list, err := s.findDatabaseList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Database{}, err
+		return nil, err
 	}
 
 	if err == nil {

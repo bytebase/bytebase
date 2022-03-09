@@ -1161,6 +1161,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
+  go-back: Go Back
 label:
   empty-label-value: <Empty Value>
   no-label: No labels

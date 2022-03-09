@@ -56,19 +56,19 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		issueSubscriberFind := &api.IssueSubscriberFind{
 			IssueID: &issueID,
 		}
-		list, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+		issueSubscriberList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueID)).SetInternal(err)
 		}
 
-		for _, issueSubscriber := range list {
+		for _, issueSubscriber := range issueSubscriberList {
 			if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueSubscriberList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue subscriber list response").SetInternal(err)
 		}
 		return nil

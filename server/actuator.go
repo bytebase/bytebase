@@ -25,11 +25,11 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		find := &api.MemberFind{
 			Role: &findRole,
 		}
-		list, err := s.MemberService.FindMemberList(ctx, find)
+		memberList, err := s.MemberService.FindMemberList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch admin setup status").SetInternal(err)
 		}
-		serverInfo.NeedAdminSetup = len(list) == 0
+		serverInfo.NeedAdminSetup = len(memberList) == 0
 
 		return c.JSON(http.StatusOK, serverInfo)
 	})

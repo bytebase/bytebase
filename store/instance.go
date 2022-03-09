@@ -94,7 +94,7 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 
 	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Instance{}, err
+		return nil, err
 	}
 
 	return list, nil
