@@ -76,7 +76,7 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 
 	list, err := findSheetList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Sheet{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -237,7 +237,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
 }
 
-func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) (_ []*api.Sheet, err error) {
+func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api.Sheet, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	// Standard fields
 	if v := find.ID; v != nil {

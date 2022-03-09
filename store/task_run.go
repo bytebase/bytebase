@@ -84,7 +84,7 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
 	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
-		return []*api.TaskRun{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -170,7 +170,7 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	return &taskRun, nil
 }
 
-func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (_ []*api.TaskRun, err error) {
+func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

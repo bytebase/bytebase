@@ -62,7 +62,7 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 
 	list, err := findProjectList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectRaw{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -211,7 +211,7 @@ func createProject(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate) (
 	return &project, nil
 }
 
-func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) (_ []*api.ProjectRaw, err error) {
+func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]*api.ProjectRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

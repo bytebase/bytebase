@@ -399,6 +399,7 @@ issue:
     assignee: Assignee
   stage-select:
     active: "{name} (active)"
+  not-allowed-to-single-database-in-tenant-mode: "Can't {operation} to single database in tenant mode"
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
@@ -1161,6 +1162,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
+  go-back: Go Back
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
@@ -1303,8 +1305,8 @@ subscription:
       features:
         activity-log: Activity log
         rbac: RBAC (Owner, DBA, Developer role)
-        3rd-party-auth: 3rd party authentication & authorization
-        sync-members-from-vcs: Sync Project Members from VCS
+        3rd-party-auth: Login with GitLab account
+        sync-members-from-vcs: Sync project membership from the linked GitLab project
   plan:
     title: Plan
     try: Try Team

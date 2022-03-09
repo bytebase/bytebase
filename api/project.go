@@ -65,6 +65,7 @@ const (
 )
 
 // ProjectRaw is the store model for a project.
+// Fields have exactly the same meanings as Project.
 type ProjectRaw struct {
 	ID int
 
@@ -76,36 +77,35 @@ type ProjectRaw struct {
 	UpdatedTs int64
 
 	// Domain specific fields
-	Name         string
-	Key          string
-	WorkflowType ProjectWorkflowType
-	Visibility   ProjectVisibility
-	TenantMode   ProjectTenantMode
-	// DBNameTemplate is only used when a project is in tenant mode.
-	// Empty value means {{DB_NAME}}.
+	Name           string
+	Key            string
+	WorkflowType   ProjectWorkflowType
+	Visibility     ProjectVisibility
+	TenantMode     ProjectTenantMode
 	DBNameTemplate string
 	RoleProvider   ProjectRoleProvider
 }
 
-// CopyToProject copies fields of ProjectRaw to an instance of Project.
-// This is intented to be used when we need to compose a Project relationship.
-func (raw *ProjectRaw) CopyToProject(p *Project) {
-	p.ID = raw.ID
+// ToProject creates an instance of Project based on the ProjectRaw.
+// This is intended to be used when we need to compose a Project relationship.
+func (raw *ProjectRaw) ToProject() *Project {
+	return &Project{
+		ID: raw.ID,
 
-	p.RowStatus = raw.RowStatus
-	p.CreatorID = raw.CreatorID
-	p.CreatedTs = raw.CreatedTs
-	p.UpdaterID = raw.UpdaterID
-	p.UpdatedTs = raw.UpdatedTs
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
 
-	p.Name = raw.Name
-	p.Key = raw.Key
-	p.WorkflowType = raw.WorkflowType
-	p.Visibility = raw.Visibility
-	p.TenantMode = raw.TenantMode
-
-	p.DBNameTemplate = raw.DBNameTemplate
-	p.RoleProvider = raw.RoleProvider
+		Name:           raw.Name,
+		Key:            raw.Key,
+		WorkflowType:   raw.WorkflowType,
+		Visibility:     raw.Visibility,
+		TenantMode:     raw.TenantMode,
+		DBNameTemplate: raw.DBNameTemplate,
+		RoleProvider:   raw.RoleProvider,
+	}
 }
 
 // Project is the API message for a project.
@@ -189,8 +189,8 @@ type ProjectPatch struct {
 var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"
-	// EnvironemntToken is the token for environment.
-	EnvironemntToken = "{{ENV_NAME}}"
+	// EnvironmentToken is the token for environment.
+	EnvironmentToken = "{{ENV_NAME}}"
 	// LocationToken is the token for location.
 	LocationToken = "{{LOCATION}}"
 	// TenantToken is the token for tenant.
@@ -201,12 +201,12 @@ var (
 		"{{VERSION}}":     true,
 		DBNameToken:       true,
 		"{{TYPE}}":        true,
-		EnvironemntToken:  false,
+		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
 	}
 	schemaPathTemplateTokens = map[string]bool{
 		DBNameToken:      true,
-		EnvironemntToken: false,
+		EnvironmentToken: false,
 	}
 	allowedProjectDBNameTemplateTokens = map[string]bool{
 		DBNameToken:   true,
@@ -223,8 +223,8 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 		tokenMap[token] = true
 	}
 	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironemntToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		if _, ok := tokenMap[EnvironmentToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 
@@ -254,8 +254,8 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 		tokenMap[token] = true
 	}
 	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironemntToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		if _, ok := tokenMap[EnvironmentToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 

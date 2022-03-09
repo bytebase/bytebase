@@ -56,7 +56,7 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 
 	list, err := findProjectMemberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectMember{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -293,7 +293,7 @@ func createProjectMember(ctx context.Context, tx *sql.Tx, create *api.ProjectMem
 	return &projectMember, nil
 }
 
-func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMemberFind) (_ []*api.ProjectMember, err error) {
+func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

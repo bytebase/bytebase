@@ -57,7 +57,7 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 
 	list, err := findProjectWebhookList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectWebhook{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -175,7 +175,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 	return &projectWebhook, nil
 }
 
-func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) (_ []*api.ProjectWebhook, err error) {
+func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

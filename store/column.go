@@ -56,7 +56,7 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 
 	list, err := s.findColumnList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Column{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -182,7 +182,7 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *sql.Tx, create *ap
 	return &column, nil
 }
 
-func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) (_ []*api.Column, err error) {
+func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

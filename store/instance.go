@@ -94,7 +94,7 @@ func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.Instan
 
 	list, err := findInstanceList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Instance{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -249,7 +249,7 @@ func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate)
 	return &instance, nil
 }
 
-func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (_ []*api.Instance, err error) {
+func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*api.Instance, error) {
 	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `

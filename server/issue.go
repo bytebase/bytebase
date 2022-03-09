@@ -71,19 +71,19 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			issueFind.PrincipalID = &userID
 		}
-		list, err := s.IssueService.FindIssueList(ctx, issueFind)
+		issueList, err := s.IssueService.FindIssueList(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
-		for _, issue := range list {
+		for _, issue := range issueList {
 			if err := s.composeIssueRelationship(ctx, issue); err != nil {
 				return err
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
 		}
 		return nil
@@ -294,11 +294,11 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	list, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriber := range list {
+	for _, issueSubscriber := range issueSubscriberList {
 		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
 		}
@@ -695,8 +695,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if !s.feature(api.FeatureMultiTenancy) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
-			if m.MigrationType != db.Migrate {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate type migration can be performed on tenant mode project")
+			if !(m.MigrationType == db.Migrate || m.MigrationType == db.Data) {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
 			}
 			if len(m.UpdateSchemaDetailList) != 1 {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")

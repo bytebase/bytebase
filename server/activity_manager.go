@@ -57,11 +57,11 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	hookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
+	webhookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
-	if len(hookList) == 0 {
+	if len(webhookList) == 0 {
 		return activity, nil
 	}
 
@@ -79,7 +79,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		projectRaw.CopyToProject(meta.issue.Project)
+		meta.issue.Project = projectRaw.ToProject()
 	}
 
 	principalFind := &api.PrincipalFind{
@@ -100,7 +100,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			return
 		}
 
-		for _, hook := range hookList {
+		for _, hook := range webhookList {
 			webhookCtx.URL = hook.URL
 			webhookCtx.CreatedTs = time.Now().Unix()
 			if err := webhook.Post(hook.Type, webhookCtx); err != nil {

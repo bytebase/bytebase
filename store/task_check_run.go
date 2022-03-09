@@ -156,7 +156,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 
 	list, err := s.findTaskCheckRunList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.TaskCheckRun{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -166,7 +166,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	list, err := s.findTaskCheckRunList(ctx, tx, find)
 	if err != nil {
-		return []*api.TaskCheckRun{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -249,7 +249,7 @@ func (s *TaskCheckRunService) patchTaskCheckRunStatusTx(ctx context.Context, tx 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run ID not found: %d", *patch.ID)}
 }
 
-func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) (_ []*api.TaskCheckRun, err error) {
+func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

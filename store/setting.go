@@ -69,7 +69,7 @@ func (s *SettingService) FindSettingList(ctx context.Context, find *api.SettingF
 
 	list, err := findSettingList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Setting{}, err
+		return nil, err
 	}
 	return list, nil
 }
@@ -156,7 +156,7 @@ func createSetting(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (
 	return &setting, nil
 }
 
-func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) (_ []*api.Setting, err error) {
+func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]*api.Setting, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.Name; v != nil {

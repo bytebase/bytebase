@@ -62,7 +62,7 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 
 	list, err := s.findEnvironmentList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Environment{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -205,7 +205,7 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *sql.Tx, 
 	return &environment, nil
 }
 
-func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) (_ []*api.Environment, err error) {
+func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

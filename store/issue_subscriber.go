@@ -55,7 +55,7 @@ func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, fi
 
 	list, err := findIssueSubscriberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.IssueSubscriber{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -112,7 +112,7 @@ func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSub
 	return &issueSubscriber, nil
 }
 
-func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) (_ []*api.IssueSubscriber, err error) {
+func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.IssueID; v != nil {

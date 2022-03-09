@@ -57,13 +57,13 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				list, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
+				instanceList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instances", zap.Error(err))
 					return
 				}
 
-				for _, instance := range list {
+				for _, instance := range instanceList {
 					mu.Lock()
 					if _, ok := runningTasks[instance.ID]; ok {
 						mu.Unlock()

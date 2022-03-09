@@ -56,7 +56,7 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 
 	list, err := s.findViewList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.View{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -154,7 +154,7 @@ func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.Vi
 	return &view, nil
 }
 
-func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.ViewFind) (_ []*api.View, err error) {
+func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*api.View, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

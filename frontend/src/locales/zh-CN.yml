@@ -388,6 +388,7 @@ issue:
     assignee: 审核人
   stage-select:
     active: "{name}（活动中）"
+  not-allowed-to-single-database-in-tenant-mode: 在多租户模式下无法对单个数据库{operation}
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。
@@ -1020,6 +1021,7 @@ sql-editor:
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
+  go-back: 返回
 label:
   empty-label-value: <空值>
   no-label: 没有标签
@@ -1145,8 +1147,8 @@ subscription:
       features:
         activity-log: 活动日志
         rbac: RBAC 权限管理
-        3rd-party-auth: 第三方认证 & 授权
-        sync-members-from-vcs: 从 VCS 同步成员信息
+        3rd-party-auth: 通过 GitLab 登录
+        sync-members-from-vcs: 从 GitLab 同步成员信息
   plan:
     title: 版本
     try: 试用团队版

@@ -210,11 +210,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				if !s.feature(api.FeatureMultiTenancy) {
 					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 				}
+
+				labels := database.Labels
+				if databasePatch.Labels != nil {
+					labels = *databasePatch.Labels
+				}
 				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, database.Labels)
+				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, database.Labels, err)
+					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, labels, err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, baseDatabaseName)
 				if err != nil {
@@ -375,19 +380,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseID: &id,
 				TableID:    &table.ID,
 			}
-			table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
+			columnList, err := s.ColumnService.FindColumnList(ctx, columnFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
+			table.ColumnList = columnList
 
 			indexFind := &api.IndexFind{
 				DatabaseID: &id,
 				TableID:    &table.ID,
 			}
-			table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
+			indexList, err := s.IndexService.FindIndexList(ctx, indexFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
+			table.IndexList = indexList
 
 			if err := s.composeTableRelationship(ctx, table); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
@@ -438,19 +445,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			TableID:    &table.ID,
 		}
-		table.ColumnList, err = s.ColumnService.FindColumnList(ctx, columnFind)
+		columnList, err := s.ColumnService.FindColumnList(ctx, columnFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
+		table.ColumnList = columnList
 
 		indexFind := &api.IndexFind{
 			DatabaseID: &id,
 			TableID:    &table.ID,
 		}
-		table.IndexList, err = s.IndexService.FindIndexList(ctx, indexFind)
+		indexList, err := s.IndexService.FindIndexList(ctx, indexFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}
+		table.IndexList = indexList
 
 		if err := s.composeTableRelationship(ctx, table); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
@@ -921,18 +930,18 @@ func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFi
 }
 
 func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
-	list, err := s.DatabaseService.FindDatabaseList(ctx, find)
+	dbList, err := s.DatabaseService.FindDatabaseList(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, database := range list {
+	for _, database := range dbList {
 		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
 			return nil, err
 		}
 	}
 
-	return list, nil
+	return dbList, nil
 }
 
 func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.Database) error {
@@ -968,13 +977,14 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	database.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	database.AnomalyList, err = s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseID: &database.ID,
 	})
 	if err != nil {
 		return err
 	}
+	database.AnomalyList = anomalyList
 	for _, anomaly := range database.AnomalyList {
 		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
 		if err != nil {

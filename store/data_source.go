@@ -63,7 +63,7 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 
 	list, err := s.findDataSourceList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.DataSource{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -165,7 +165,7 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 	return &dataSource, nil
 }
 
-func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) (_ []*api.DataSource, err error) {
+func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

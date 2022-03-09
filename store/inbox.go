@@ -48,7 +48,7 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 	return inbox, nil
 }
 
-// FindInboxList retrieves a list of inboxs based on find.
+// FindInboxList retrieves a list of inboxes based on find.
 func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) (
 
 	list, err := findInboxList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Inbox{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -204,7 +204,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	return &inbox, nil
 }
 
-func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) (_ []*api.Inbox, err error) {
+func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api.Inbox, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")

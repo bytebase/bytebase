@@ -106,7 +106,7 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 
 	list, err := s.findDatabaseList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Database{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -252,7 +252,7 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 	return &database, nil
 }
 
-func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) (_ []*api.Database, err error) {
+func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*api.Database, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
