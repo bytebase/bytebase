@@ -34,7 +34,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			exec.l.Error("DatabaseRestoreTaskExecutor PANIC RECOVER", zap.Error(panicErr))
+			exec.l.Error("DatabaseRestoreTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
 			terminated = true
 			err = fmt.Errorf("encounter internal error when restoring the database")
 		}
