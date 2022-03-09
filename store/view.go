@@ -56,7 +56,7 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 
 	list, err := s.findViewList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.View{}, err
+		return nil, err
 	}
 
 	return list, nil

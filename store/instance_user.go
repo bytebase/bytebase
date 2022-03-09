@@ -54,7 +54,7 @@ func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *ap
 
 	list, err := findInstanceUserList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.InstanceUser{}, err
+		return nil, err
 	}
 
 	return list, nil

@@ -62,7 +62,7 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 
 	list, err := findMemberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Member{}, err
+		return nil, err
 	}
 
 	if err == nil {

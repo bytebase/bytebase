@@ -84,7 +84,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
 			if principal == nil { // try to create principal
-				signupInfo := &api.Signup{
+				signUpInfo := &api.SignUp{
 					Name:  projectMember.Name,
 					Email: projectMember.Email,
 					// Principal created via this method would have no chance to set their password.
@@ -93,7 +93,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// if the principal uses external auth provider
 					Password: common.RandomString(20),
 				}
-				createdPrincipal, httpErr := trySignup(ctx, s, signupInfo, c.Get(getPrincipalIDContextKey()).(int))
+				createdPrincipal, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
 				}

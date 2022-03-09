@@ -76,7 +76,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 	return anomaly, nil
 }
 
-// FindAnomalyList retrieves a list of anomalys based on find.
+// FindAnomalyList retrieves a list of anomalies based on the find condition.
 func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyF
 
 	list, err := findAnomalyList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Anomaly{}, err
+		return nil, err
 	}
 
 	return list, nil

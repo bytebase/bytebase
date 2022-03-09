@@ -63,7 +63,7 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 
 	list, err := s.findIssueList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Issue{}, err
+		return nil, err
 	}
 
 	if err == nil {
