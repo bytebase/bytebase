@@ -38,5 +38,5 @@ jobs:
         with:
           go-version: 1.17
       - run: |
-          # go test --tags=lnx -v ./...
-          go test --tags=lnx $(go list ./... | grep -v /resources/mysql)
+          # go test -v ./...
+          go test $(go list ./... | grep -v /resources/mysql)
