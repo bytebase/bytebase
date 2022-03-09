@@ -56,7 +56,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 		}
 
-		envList := make([]*api.Environment, 0, len(envRawList))
+		var envList []*api.Environment
 		for _, envRaw := range envRawList {
 			env, err := s.composeEnvironmentRelationship(ctx, envRaw)
 			if err != nil {
@@ -134,7 +134,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)
 		}
 
-		envList := make([]*api.Environment, 0, len(envRawList))
+		var envList []*api.Environment
 		for _, envRaw := range envRawList {
 			env, err := s.composeEnvironmentRelationship(ctx, envRaw)
 			if err != nil {
