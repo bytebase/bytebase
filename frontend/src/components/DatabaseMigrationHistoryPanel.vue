@@ -3,16 +3,28 @@
     <div
       class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
-      {{ $t("migration-history.self") }}
-      <button
+      <span>{{ $t("migration-history.self") }}</span>
+      <BBTooltipButton
         v-if="allowEdit"
-        type="button"
-        class="ml-4 btn-primary"
-        :disabled="state.migrationSetupStatus != 'OK'"
-        @click.prevent="state.showBaselineModal = true"
+        type="primary"
+        :disabled="!allowMigrate"
+        tooltip-mode="DISABLED-ONLY"
+        @click="state.showBaselineModal = true"
       >
         {{ $t("migration-history.establish-baseline") }}
-      </button>
+
+        <template v-if="isTenantProject" #tooltip>
+          <div class="w-52 whitespace-pre-wrap">
+            {{
+              $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                operation: $t(
+                  "migration-history.establish-baseline"
+                ).toLowerCase(),
+              })
+            }}
+          </div>
+        </template>
+      </BBTooltipButton>
       <div>
         <BBSpin
           v-if="state.loading"
@@ -58,7 +70,13 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watchEffect } from "vue";
+import {
+  computed,
+  defineComponent,
+  PropType,
+  reactive,
+  watchEffect,
+} from "vue";
 import { useStore } from "vuex";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
@@ -78,7 +96,7 @@ interface LocalState {
   loading: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseMigrationHistoryPanel",
   components: { MigrationHistoryTable },
   props: {
@@ -138,6 +156,20 @@ export default {
 
     const allowConfigInstance = computed(() => {
       return isCurrentUserDBAOrOwner.value;
+    });
+
+    const isTenantProject = computed(() => {
+      return props.database.project.tenantMode === "TENANT";
+    });
+
+    const allowMigrate = computed(() => {
+      if (!props.allowEdit) return false;
+
+      if (state.migrationSetupStatus !== "OK") return false;
+
+      // Migrating single database in tenant mode is not allowed
+      // Since this will probably cause different migration version across a group of tenant databases
+      return !isTenantProject.value;
     });
 
     const attentionTitle = computed((): string => {
@@ -201,11 +233,13 @@ export default {
     return {
       state,
       allowConfigInstance,
+      isTenantProject,
+      allowMigrate,
       attentionTitle,
       migrationHistorySectionList,
       configInstance,
       doCreateBaseline,
     };
   },
-};
+});
 </script>
