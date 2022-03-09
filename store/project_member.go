@@ -56,7 +56,7 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 
 	list, err := findProjectMemberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectMember{}, err
+		return nil, err
 	}
 
 	return list, nil

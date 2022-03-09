@@ -33,11 +33,11 @@ type FeatureType string
 const (
 	// Change Workflow
 
-	// FeatureBackwardCompatibilty checks if a DDL change is backward compatible.
+	// FeatureBackwardCompatibility checks if a DDL change is backward compatible.
 	// See https://docs.bytebase.com/features/sql-advisor/backward-compatibility-migration-check
 	//
 	// Currently, we only support MySQL/TiDB thanks to github.com/pingcap/parser
-	FeatureBackwardCompatibilty FeatureType = "bb.feature.backward-compatibility"
+	FeatureBackwardCompatibility FeatureType = "bb.feature.backward-compatibility"
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://docs.bytebase.com/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
@@ -61,7 +61,7 @@ const (
 	//
 	// Currently, we DO NOT expose this feature.
 	//
-	// Internally Bytebase stores instance username/password in a seperate data source model.
+	// Internally Bytebase stores instance username/password in a separate data source model.
 	// This allows a single instance to have multiple data sources (e.g. one RW and one RO).
 	// And from the user's perspective, the username/password
 	// look like the property of the instance, which are not. They are the property of data source which
@@ -98,7 +98,7 @@ const (
 
 func (e FeatureType) String() string {
 	switch e {
-	case FeatureBackwardCompatibilty:
+	case FeatureBackwardCompatibility:
 		return "bb.feature.backward-compatibility"
 	case FeatureSchemaDrift:
 		return "bb.feature.schema-drift"
@@ -125,7 +125,7 @@ func (e FeatureType) String() string {
 // Name returns a readable name of the feature
 func (e FeatureType) Name() string {
 	switch e {
-	case FeatureBackwardCompatibilty:
+	case FeatureBackwardCompatibility:
 		return "Backward compatibility"
 	case FeatureSchemaDrift:
 		return "Schema drift"

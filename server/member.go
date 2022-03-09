@@ -81,19 +81,19 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.GET("/member", func(c echo.Context) error {
 		ctx := context.Background()
 		memberFind := &api.MemberFind{}
-		list, err := s.MemberService.FindMemberList(ctx, memberFind)
+		memberList, err := s.MemberService.FindMemberList(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
 		}
 
-		for _, member := range list {
+		for _, member := range memberList {
 			if err := s.composeMemberRelationship(ctx, member); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, memberList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal member list response").SetInternal(err)
 		}
 		return nil

@@ -84,7 +84,7 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
 	list, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
-		return []*api.TaskRun{}, err
+		return nil, err
 	}
 
 	return list, nil

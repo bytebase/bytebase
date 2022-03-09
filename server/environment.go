@@ -49,19 +49,19 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			environmentFind.RowStatus = &rowStatus
 		}
-		list, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+		envList, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 		}
 
-		for _, environment := range list {
+		for _, environment := range envList {
 			if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, envList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal environment list response").SetInternal(err)
 		}
 		return nil
@@ -121,19 +121,19 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		environmentFind := &api.EnvironmentFind{}
-		list, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+		envList, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)
 		}
 
-		for _, environment := range list {
+		for _, environment := range envList {
 			if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch reordered environment relationship: %v", environment.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, envList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal environment reorder response").SetInternal(err)
 		}
 		return nil
