@@ -11,7 +11,7 @@
         <div
           class="cursor-default group flex items-center justify-between w-full"
         >
-          <span class="w-full pl-4 py-2 flex items-center text-sm font-medium">
+          <span class="tab-item">
             <div
               class="relative w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="flowItemIconClass(item)"
@@ -53,7 +53,10 @@
             </div>
             <div
               class="hidden cursor-pointer hover:underline lg:ml-4 lg:flex lg:flex-col pipeline-item"
-              :class="flowItemTextClass(item)"
+              :class="
+                (flowItemTextClass(item) || '') +
+                (item.valid ? '' : ' ' + 'no-valid')
+              "
               @click.prevent="clickItem(item)"
             >
               <span class="text-xs">{{ item.stageName }}</span>
@@ -72,16 +75,23 @@
               <span class="col-span-1 text-sm">{{ item.stageName }}</span>
               <span class="col-span-2 text-sm ml-4">{{ item.taskName }}</span>
             </div>
-            <div class="tooltip-wrapper" @click.prevent="clickItem(item)">
-              <span class="tooltip">Missing SQL statement</span>
-              <span
-                v-if="!item.valid"
-                class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
-              >
-                <span class="text-center font-normal" aria-hidden="true"
-                  >!</span
-                >
-              </span>
+            <div
+              v-if="!item.valid"
+              class="tooltip-wrapper"
+              @click.prevent="clickItem(item)"
+            >
+              <n-popover trigger="hover">
+                <template #trigger>
+                  <span
+                    class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
+                  >
+                    <span class="text-center font-normal" aria-hidden="true"
+                      >!</span
+                    >
+                  </span>
+                </template>
+                <span>Missing SQL statement</span>
+              </n-popover>
             </div>
           </span>
         </div>
@@ -126,7 +136,7 @@ import {
 } from "../../types";
 import { activeTask, activeTaskInStage } from "../../utils";
 import { isEmpty } from "lodash-es";
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NPopover } from "naive-ui";
 interface FlowItem {
   stageId: StageId;
   stageName: string;
@@ -138,7 +148,7 @@ interface FlowItem {
 
 export default defineComponent({
   name: "PipelineSimpleFlow",
-  components: { NEllipsis },
+  components: { NEllipsis, NPopover },
   props: {
     create: {
       required: true,
@@ -277,5 +287,15 @@ export default defineComponent({
 <style scoped>
 .pipeline-item {
   flex-basis: 80%;
+}
+
+.pipeline-item.no-valid {
+  flex-basis: calc(80% - 2.5rem);
+}
+
+.tab-item {
+  @apply w-full pl-4 py-2 flex items-center text-sm font-medium;
+
+  min-width: 300px;
 }
 </style>
