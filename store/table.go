@@ -56,7 +56,7 @@ func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) (
 
 	list, err := s.findTableList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Table{}, err
+		return nil, err
 	}
 
 	return list, nil

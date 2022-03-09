@@ -63,7 +63,7 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 
 	list, err := s.findDataSourceList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.DataSource{}, err
+		return nil, err
 	}
 
 	return list, nil

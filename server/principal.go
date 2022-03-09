@@ -49,13 +49,13 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 	g.GET("/principal", func(c echo.Context) error {
 		ctx := context.Background()
-		list, err := s.PrincipalService.FindPrincipalList(ctx)
+		principalList, err := s.PrincipalService.FindPrincipalList(ctx)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
 
 		filteredList := []*api.Principal{}
-		for _, principal := range list {
+		for _, principal := range principalList {
 			if err := s.composePrincipalRole(ctx, principal); err != nil {
 				// Normally this should not happen since we create the member together with the principal
 				// and we don't allow deleting the member. Just in case.

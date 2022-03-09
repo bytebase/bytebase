@@ -27,8 +27,8 @@ type Login struct {
 	Password string `jsonapi:"attr,password"`
 }
 
-// Signup is the API message for sign-ups.
-type Signup struct {
+// SignUp is the API message for sign-ups.
+type SignUp struct {
 	// Domain specific fields
 	Name     string `jsonapi:"attr,name"`
 	Email    string `jsonapi:"attr,email"`
