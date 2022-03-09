@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# MySQL packages
+mysql-*.tar*
+
 # Test binary, built with `go test -c`
 *.test
 
