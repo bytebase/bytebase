@@ -46,7 +46,7 @@ func (s *ActivityService) CreateActivity(ctx context.Context, create *api.Activi
 	return activity, nil
 }
 
-// FindActivityList retrieves a list of activitys based on find.
+// FindActivityList retrieves a list of activities based on the find condition.
 func (s *ActivityService) FindActivityList(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 
 	list, err := findActivityList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Activity{}, err
+		return nil, err
 	}
 
 	return list, nil

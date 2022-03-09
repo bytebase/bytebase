@@ -56,7 +56,7 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 
 	list, err := s.findColumnList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Column{}, err
+		return nil, err
 	}
 
 	return list, nil

@@ -62,7 +62,7 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 
 	list, err := findPrincipalList(ctx, tx.PTx, &api.PrincipalFind{})
 	if err != nil {
-		return []*api.Principal{}, err
+		return nil, err
 	}
 
 	if err == nil {

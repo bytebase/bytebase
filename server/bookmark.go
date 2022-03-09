@@ -51,19 +51,19 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		bookmarkFind := &api.BookmarkFind{
 			CreatorID: &userID,
 		}
-		list, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
+		bookmarkList, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch bookmark list").SetInternal(err)
 		}
 
-		for _, bookmark := range list {
+		for _, bookmark := range bookmarkList {
 			if err := s.composeBookmarkRelationship(ctx, bookmark); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch bookmark relationship: %v", bookmark.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, bookmarkList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal bookmark list response").SetInternal(err)
 		}
 		return nil

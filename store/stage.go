@@ -56,7 +56,7 @@ func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) (
 
 	list, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Stage{}, err
+		return nil, err
 	}
 
 	return list, nil

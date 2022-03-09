@@ -48,7 +48,7 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 	return inbox, nil
 }
 
-// FindInboxList retrieves a list of inboxs based on find.
+// FindInboxList retrieves a list of inboxes based on find.
 func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) (
 
 	list, err := findInboxList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Inbox{}, err
+		return nil, err
 	}
 
 	return list, nil
