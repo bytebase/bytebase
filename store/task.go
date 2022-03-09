@@ -60,7 +60,7 @@ func (s *TaskService) FindTaskList(ctx context.Context, find *api.TaskFind) ([]*
 
 	list, err := s.findTaskList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Task{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -317,18 +317,20 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 		taskRunFind := &api.TaskRunFind{
 			TaskID: &task.ID,
 		}
-		task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+		taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 		if err != nil {
 			return nil, err
 		}
+		task.TaskRunList = taskRunList
 
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
-		task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
+		taskCheckRunList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
 		}
+		task.TaskCheckRunList = taskCheckRunList
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
@@ -518,18 +520,20 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *sql.Tx, patch *ap
 	taskRunFind := &api.TaskRunFind{
 		TaskID: &task.ID,
 	}
-	task.TaskRunList, err = s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+	taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
 	}
+	task.TaskRunList = taskRunList
 
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID: &task.ID,
 	}
-	task.TaskCheckRunList, err = s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
+	taskCheckRunList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}
+	task.TaskCheckRunList = taskCheckRunList
 
 	return t, nil
 }

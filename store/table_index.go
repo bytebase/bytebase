@@ -46,7 +46,7 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	return index, nil
 }
 
-// FindIndexList retrieves a list of indexs based on find.
+// FindIndexList retrieves a list of indexes based on find.
 func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 
 	list, err := s.findIndexList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Index{}, err
+		return nil, err
 	}
 
 	return list, nil

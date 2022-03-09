@@ -57,7 +57,7 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 
 	list, err := findProjectWebhookList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectWebhook{}, err
+		return nil, err
 	}
 
 	return list, nil
