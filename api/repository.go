@@ -65,6 +65,8 @@ func (raw *RepositoryRaw) ToRepository() *Repository {
 		WebhookEndpointID:  raw.WebhookEndpointID,
 		WebhookSecretToken: raw.WebhookSecretToken,
 		AccessToken:        raw.AccessToken,
+		ExpiresTs:          raw.ExpiresTs,
+		RefreshToken:       raw.RefreshToken,
 	}
 }
 
