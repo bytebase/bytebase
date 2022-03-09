@@ -62,7 +62,7 @@ func (s *ProjectService) FindProjectList(ctx context.Context, find *api.ProjectF
 
 	list, err := findProjectList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectRaw{}, err
+		return nil, err
 	}
 
 	if err == nil {

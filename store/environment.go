@@ -62,7 +62,7 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 
 	list, err := s.findEnvironmentList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Environment{}, err
+		return nil, err
 	}
 
 	if err == nil {

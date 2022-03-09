@@ -90,7 +90,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
 	f, err := resources.Open(tarName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
 	}
 	defer f.Close()
 	version := strings.TrimRight(tarName, ".txz")
