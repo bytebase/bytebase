@@ -10,7 +10,10 @@
         >
           <template #go>
             <router-link
-              to="#deployment-config"
+              :to="{
+                path: `/project/${projectSlug(project)}`,
+                hash: '#deployment-config',
+              }"
               active-class=""
               exact-active-class=""
               class="px-1 underline hover:bg-link-hover"
