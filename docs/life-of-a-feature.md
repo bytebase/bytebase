@@ -1,6 +1,6 @@
 # Life of a Feature
 
-## Do
+## Do's
 
 1. Understand the goal by answering "what's the problem we're solving?".
 1. Write technical design docs.
