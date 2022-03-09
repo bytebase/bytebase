@@ -27,37 +27,26 @@
           </template>
         </template>
         <template v-else>
-          <template v-if="isAlterSchema">
-            <NTabs v-model:value="state.tab" type="line">
-              <NTabPane :tab="$t('project.mode.standard')" name="standard">
-                <!-- a simple table -->
-                <DatabaseTable
-                  mode="ALL_SHORT"
-                  :bordered="true"
-                  :custom-click="true"
-                  :database-list="standardProjectDatabaseList"
-                  @select-database="selectDatabase"
-                />
-              </NTabPane>
-              <NTabPane :tab="$t('project.mode.tenant')" name="tenant">
-                <CommonTenantView
-                  :state="state"
-                  :database-list="databaseList"
-                  :environment-list="environmentList"
-                  @dismiss="cancel"
-                />
-              </NTabPane>
-            </NTabs>
-          </template>
-          <template v-else>
-            <DatabaseTable
-              mode="ALL_SHORT"
-              :bordered="true"
-              :custom-click="true"
-              :database-list="standardProjectDatabaseList"
-              @select-database="selectDatabase"
-            />
-          </template>
+          <NTabs v-model:value="state.tab" type="line">
+            <NTabPane :tab="$t('project.mode.standard')" name="standard">
+              <!-- a simple table -->
+              <DatabaseTable
+                mode="ALL_SHORT"
+                :bordered="true"
+                :custom-click="true"
+                :database-list="standardProjectDatabaseList"
+                @select-database="selectDatabase"
+              />
+            </NTabPane>
+            <NTabPane :tab="$t('project.mode.tenant')" name="tenant">
+              <CommonTenantView
+                :state="state"
+                :database-list="databaseList"
+                :environment-list="environmentList"
+                @dismiss="cancel"
+              />
+            </NTabPane>
+          </NTabs>
         </template>
       </div>
     </div>
