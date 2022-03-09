@@ -187,7 +187,7 @@ func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.
 	return &issue, nil
 }
 
-func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.IssueFind) (_ []*api.Issue, err error) {
+func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*api.Issue, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

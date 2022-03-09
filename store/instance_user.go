@@ -122,7 +122,7 @@ func upsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUse
 	return nil, err
 }
 
-func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) (_ []*api.InstanceUser, err error) {
+func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, "instance_id = $1"), append(args, find.InstanceID)
