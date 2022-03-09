@@ -47,7 +47,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Schema syncer PANIC RECOVER", zap.Error(err))
+						s.l.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
