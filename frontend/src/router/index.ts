@@ -474,18 +474,12 @@ const routes: Array<RouteRecordRaw> = [
                   }
 
                   const actionList: string[] = allowEditProject
-                    ? project.tenantMode == "DISABLED"
-                      ? [
-                          "quickaction.bb.database.schema.update",
-                          "quickaction.bb.database.data.update",
-                          "quickaction.bb.database.create",
-                          "quickaction.bb.project.database.transfer",
-                        ]
-                      : [
-                          "quickaction.bb.database.schema.update",
-                          "quickaction.bb.database.create",
-                          "quickaction.bb.project.database.transfer",
-                        ]
+                    ? [
+                        "quickaction.bb.database.schema.update",
+                        "quickaction.bb.database.data.update",
+                        "quickaction.bb.database.create",
+                        "quickaction.bb.project.database.transfer",
+                      ]
                     : [];
                   return new Map([
                     ["OWNER", actionList],
