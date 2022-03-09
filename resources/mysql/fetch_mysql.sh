@@ -20,25 +20,4 @@ atomic_download() {
     fi
 }
 
-mysql_8_0_28_macos11_arm64() {
-    if [[ $(uname) = Darwin && $(uname -m) = arm64 ]]; then
-        atomic_download mysql-8.0.28-macos11-arm64.tar.gz f1943053b12428e4c0e4ed309a636fd0
-    else
-        touch mysql-8.0.28-macos11-arm64.tar.gz
-    fi
-}
-
-mysql_8_0_28_linux_glibc2_17_x86_64_minimal() {
-    if [[ ! $(uname) = Darwin || ! $(uname -m) = arm64 ]]; then
-        atomic_download mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz 55a7759e25cc527416150c8181ce3f6d
-    else
-        touch mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
-    fi
-}
-
-mysql() {
-    mysql_8_0_28_macos11_arm64
-    mysql_8_0_28_linux_glibc2_17_x86_64_minimal
-}
-
-mysql
+atomic_download $1 $2
