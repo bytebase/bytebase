@@ -32,19 +32,19 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReadCreatedAfterTs = &createdTs
 		}
-		list, err := s.InboxService.FindInboxList(ctx, inboxFind)
+		inboxList, err := s.InboxService.FindInboxList(ctx, inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
 		}
 
-		for _, inbox := range list {
+		for _, inbox := range inboxList {
 			if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, inboxList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal inbox list response").SetInternal(err)
 		}
 		return nil

@@ -58,7 +58,7 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 
 	list, err := findRepositoryList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Repository{}, err
+		return nil, err
 	}
 
 	return list, nil

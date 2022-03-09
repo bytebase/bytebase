@@ -71,19 +71,19 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			instanceFind.RowStatus = &rowStatus
 		}
-		list, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
+		instanceList, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 		}
 
-		for _, instance := range list {
+		for _, instance := range instanceList {
 			if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 				return err
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal instance list response").SetInternal(err)
 		}
 		return nil
@@ -224,13 +224,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		instanceUserFind := &api.InstanceUserFind{
 			InstanceID: id,
 		}
-		list, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+		instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUserList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -482,7 +482,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	}
 
 	rowStatus := api.Normal
-	instance.AnomalyList, err = s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
 		InstanceID:   &instance.ID,
 		InstanceOnly: true,
@@ -490,6 +490,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	if err != nil {
 		return err
 	}
+	instance.AnomalyList = anomalyList
 	for _, anomaly := range instance.AnomalyList {
 		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
 			return err
@@ -499,12 +500,13 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 	}
 
-	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
 		return err
 	}
+	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
 		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
 			return err

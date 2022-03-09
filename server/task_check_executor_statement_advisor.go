@@ -37,8 +37,8 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 	case api.TaskCheckDatabaseStatementSyntax:
 		advisorType = advisor.MySQLSyntax
 	case api.TaskCheckDatabaseStatementCompatibility:
-		if !server.feature(api.FeatureBackwardCompatibilty) {
-			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibilty.AccessErrorMessage()))
+		if !server.feature(api.FeatureBackwardCompatibility) {
+			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
 		}
 		advisorType = advisor.MySQLMigrationCompatibility
 	}

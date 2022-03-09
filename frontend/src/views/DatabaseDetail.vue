@@ -114,30 +114,50 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <button
+          <BBTooltipButton
             v-if="allowEdit"
-            type="button"
-            class="btn-normal"
-            @click.prevent="changeData"
+            type="normal"
+            tooltip-mode="DISABLED-ONLY"
+            :disabled="!allowMigrate"
+            @click="changeData"
           >
             <span>{{ changeDataText }}</span>
             <heroicons-outline:external-link
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-          </button>
-          <button
+            <template v-if="!allowMigrate" #tooltip>
+              <div class="w-48 whitespace-pre-wrap">
+                {{
+                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                    operation: changeDataText.toLowerCase(),
+                  })
+                }}
+              </div>
+            </template>
+          </BBTooltipButton>
+          <BBTooltipButton
             v-if="allowEdit"
-            type="button"
-            class="btn-normal"
-            @click.prevent="alterSchema"
+            type="normal"
+            tooltip-mode="DISABLED-ONLY"
+            :disabled="!allowMigrate"
+            @click="alterSchema"
           >
             <span>{{ alterSchemaText }}</span>
             <heroicons-outline:external-link
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-          </button>
+            <template v-if="!allowMigrate" #tooltip>
+              <div class="w-48 whitespace-pre-wrap">
+                {{
+                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+                    operation: alterSchemaText.toLowerCase(),
+                  })
+                }}
+              </div>
+            </template>
+          </BBTooltipButton>
         </div>
       </div>
     </main>
@@ -403,6 +423,14 @@ export default defineComponent({
       return false;
     });
 
+    const allowMigrate = computed(() => {
+      if (!allowEdit.value) return false;
+
+      // Migrating single database in tenant mode is not allowed
+      // Since this will probably cause different migration version across a group of tenant databases
+      return database.value.project.tenantMode === "DISABLED";
+    });
+
     const allowEditDatabaseLabels = computed((): boolean => {
       // only allowed to edit database labels when allowAdmin
       return allowAdmin.value;
@@ -574,6 +602,7 @@ export default defineComponent({
       allowChangeProject,
       allowAdmin,
       allowEdit,
+      allowMigrate,
       allowEditDatabaseLabels,
       tabItemList,
       tryTransferProject,

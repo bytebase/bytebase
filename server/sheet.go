@@ -98,19 +98,19 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.Visibility = &visibility
 		}
 
-		list, err := s.SheetService.FindSheetList(ctx, sheetFind)
+		sheetList, err := s.SheetService.FindSheetList(ctx, sheetFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
 		}
 
-		for _, sheet := range list {
+		for _, sheet := range sheetList {
 			if err := s.composeSheetRelationship(ctx, sheet); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet relationship: %v", sheet.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheet list response").SetInternal(err)
 		}
 		return nil

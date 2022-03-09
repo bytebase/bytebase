@@ -399,6 +399,7 @@ issue:
     assignee: Assignee
   stage-select:
     active: "{name} (active)"
+  not-allowed-to-single-database-in-tenant-mode: "Can't {operation} to single database in tenant mode"
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
