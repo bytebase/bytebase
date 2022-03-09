@@ -4,7 +4,7 @@
       class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
       <span>{{ $t("migration-history.self") }}</span>
-      <BBButton
+      <BBTooltipButton
         v-if="allowEdit"
         type="primary"
         :disabled="!allowMigrate"
@@ -24,7 +24,7 @@
             }}
           </div>
         </template>
-      </BBButton>
+      </BBTooltipButton>
       <div>
         <BBSpin
           v-if="state.loading"

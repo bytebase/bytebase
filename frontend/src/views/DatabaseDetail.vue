@@ -114,7 +114,7 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <BBButton
+          <BBTooltipButton
             v-if="allowEdit"
             type="normal"
             tooltip-mode="DISABLED-ONLY"
@@ -135,8 +135,8 @@
                 }}
               </div>
             </template>
-          </BBButton>
-          <BBButton
+          </BBTooltipButton>
+          <BBTooltipButton
             v-if="allowEdit"
             type="normal"
             tooltip-mode="DISABLED-ONLY"
@@ -157,7 +157,7 @@
                 }}
               </div>
             </template>
-          </BBButton>
+          </BBTooltipButton>
         </div>
       </div>
     </main>
