@@ -292,7 +292,7 @@ func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.An
 		&anomaly.UpdaterID,
 		&anomaly.UpdatedTs,
 		&anomaly.InstanceID,
-		&anomaly.DatabaseID,
+		&databaseID,
 		&anomaly.Type,
 		&anomaly.Payload,
 	); err != nil {
