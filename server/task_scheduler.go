@@ -52,7 +52,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Task scheduler PANIC RECOVER", zap.Error(err))
+						s.l.Error("Task scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -284,7 +284,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 				return task, nil
 			}
 
-			if s.server.feature(api.FeatureBackwardCompatibilty) {
+			if s.server.feature(api.FeatureBackwardCompatibility) {
 				pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
 				if err != nil {
 					return nil, err

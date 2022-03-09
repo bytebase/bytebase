@@ -195,7 +195,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					if s.feature(api.FeatureBackwardCompatibilty) {
+					if s.feature(api.FeatureBackwardCompatibility) {
 						_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 							CreatorID:               api.SystemBotID,
 							TaskID:                  task.ID,

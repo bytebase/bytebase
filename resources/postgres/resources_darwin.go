@@ -1,6 +1,3 @@
-//go:build darwin
-// +build darwin
-
 package postgres
 
 import "embed"

@@ -20,13 +20,13 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
 		ctx := context.Background()
 		find := &api.SettingFind{}
-		list, err := s.SettingService.FindSettingList(ctx, find)
+		settingList, err := s.SettingService.FindSettingList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch setting list").SetInternal(err)
 		}
 
 		filteredList := []*api.Setting{}
-		for _, setting := range list {
+		for _, setting := range settingList {
 			for _, whitelist := range whitelistSettings {
 				if setting.Name == whitelist {
 					filteredList = append(filteredList, setting)

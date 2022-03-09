@@ -87,7 +87,7 @@ type ProjectRaw struct {
 }
 
 // ToProject creates an instance of Project based on the ProjectRaw.
-// This is intended to be used when we need to compose a Project relationship.
+// This is intended to be called when we need to compose a Project relationship.
 func (raw *ProjectRaw) ToProject() *Project {
 	return &Project{
 		ID: raw.ID,
@@ -189,8 +189,8 @@ type ProjectPatch struct {
 var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"
-	// EnvironemntToken is the token for environment.
-	EnvironemntToken = "{{ENV_NAME}}"
+	// EnvironmentToken is the token for environment.
+	EnvironmentToken = "{{ENV_NAME}}"
 	// LocationToken is the token for location.
 	LocationToken = "{{LOCATION}}"
 	// TenantToken is the token for tenant.
@@ -201,12 +201,12 @@ var (
 		"{{VERSION}}":     true,
 		DBNameToken:       true,
 		"{{TYPE}}":        true,
-		EnvironemntToken:  false,
+		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
 	}
 	schemaPathTemplateTokens = map[string]bool{
 		DBNameToken:      true,
-		EnvironemntToken: false,
+		EnvironmentToken: false,
 	}
 	allowedProjectDBNameTemplateTokens = map[string]bool{
 		DBNameToken:   true,
@@ -223,8 +223,8 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 		tokenMap[token] = true
 	}
 	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironemntToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		if _, ok := tokenMap[EnvironmentToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 
@@ -254,8 +254,8 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 		tokenMap[token] = true
 	}
 	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironemntToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironemntToken)}
+		if _, ok := tokenMap[EnvironmentToken]; ok {
+			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 

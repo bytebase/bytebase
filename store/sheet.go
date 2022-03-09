@@ -76,7 +76,7 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 
 	list, err := findSheetList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Sheet{}, err
+		return nil, err
 	}
 
 	return list, nil

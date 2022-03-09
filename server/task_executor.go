@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/vcs"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +34,7 @@ func defaultMigrationVersionFromTaskID() string {
 	return time.Now().Format("20060102150405")
 }
 
-func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcs.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) ( /*terminated*/ bool /*result*/, *api.TaskRunResultPayload, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -44,7 +44,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	databaseName := task.Database.Name
 
-	var repository *api.Repository
+	var repoRawOutter *api.RepositoryRaw
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Type:           migrationType,
@@ -67,20 +67,21 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		mi.Namespace = databaseName
 		mi.Description = task.Name
 	} else {
-		repositoryFind := &api.RepositoryFind{
+		repoFind := &api.RepositoryFind{
 			ProjectID: &task.Database.ProjectID,
 		}
-		repository, err = server.RepositoryService.FindRepository(ctx, repositoryFind)
+		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
-		if repository == nil {
+		if repoRawInner == nil {
 			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 		}
+		repoRawOutter = repoRawInner
 
 		mi, err = db.ParseMigrationInfo(
 			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repository.FilePathTemplate),
+			filepath.Join(vcsPushEvent.BaseDirectory, repoRawOutter.FilePathTemplate),
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -162,7 +163,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repository.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	if writeBack && issue != nil {
 		project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
@@ -186,20 +187,23 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	if writeBack {
-		latestSchemaFile := filepath.Join(repository.BaseDirectory, repository.SchemaPathTemplate)
+		latestSchemaFile := filepath.Join(repoRawOutter.BaseDirectory, repoRawOutter.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		repository.VCS, err = server.composeVCSByID(ctx, repository.VCSID)
+		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
+		repo := repoRawOutter.ToRepository()
+		vcs, err := server.composeVCSByID(ctx, repoRawOutter.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
-		if repository.VCS == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repository.VCSID)
+		if vcs == nil {
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repoRawOutter.VCSID)
 		}
+		repo.VCS = vcs
 
 		// Writes back the latest schema file to the same branch as the push event.
-		branch, err := vcs.Branch(vcsPushEvent.Ref)
+		branch, err := vcsPlugin.Branch(vcsPushEvent.Ref)
 		if err != nil {
 			return true, nil, err
 		}
@@ -209,7 +213,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, server, repository, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -218,7 +222,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		{
 			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
 				TaskID:             task.ID,
-				VCSInstanceURL:     repository.VCS.InstanceURL,
+				VCSInstanceURL:     repo.VCS.InstanceURL,
 				RepositoryFullPath: vcsPushEvent.RepositoryFullPath,
 				Branch:             branch,
 				FilePath:           latestSchemaFile,
@@ -227,7 +231,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to marshal file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repository.WebURL),
+					zap.String("repository", repoRawOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -253,7 +257,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repository.WebURL),
+					zap.String("repository", repoRawOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -275,8 +279,8 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcs.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	schemaFileMeta, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).ReadFileMeta(
+func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+	schemaFileMeta, err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
@@ -303,7 +307,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	}
 
 	commitTitle := fmt.Sprintf("[Bytebase] %s latest schema for %q after migration %s", verb, mi.Database, mi.Version)
-	commitBody := "THIS COMMIT IS AUTO-GENERATED BY BTYEBASE"
+	commitBody := "THIS COMMIT IS AUTO-GENERATED BY BYTEBASE"
 	if bytebaseURL != "" {
 		commitBody += "\n\n" + bytebaseURL
 	}
@@ -313,13 +317,13 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		pushEvent.FileCommit.Message,
 	)
 
-	schemaFileCommit := vcs.FileCommitCreate{
+	schemaFileCommit := vcsPlugin.FileCommitCreate{
 		Branch:        branch,
 		CommitMessage: fmt.Sprintf("%s\n\n%s", commitTitle, commitBody),
 		Content:       schema,
 	}
 	if createSchemaFile {
-		err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).CreateFile(
+		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).CreateFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
@@ -339,7 +343,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		}
 	} else {
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
-		err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).OverwriteFile(
+		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).OverwriteFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
@@ -359,7 +363,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	}
 
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
-	schemaFileMeta, err = vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: server.l}).ReadFileMeta(
+	schemaFileMeta, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
