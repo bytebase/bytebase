@@ -30,7 +30,7 @@ func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server,
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			exec.l.Error("DataUpdateTaskExecutor PANIC RECOVER", zap.Error(panicErr))
+			exec.l.Error("DataUpdateTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
 			terminated = true
 			err = fmt.Errorf("encounter internal error when executing sql")
 		}
