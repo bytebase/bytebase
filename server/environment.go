@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -114,7 +115,10 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		for _, item := range patchList {
-			envPatch, _ := item.(*api.EnvironmentPatch)
+			envPatch, ok := item.(*api.EnvironmentPatch)
+			if !ok {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(errors.New("Failed to convert request item to *api.EnvironmentPatch"))
+			}
 			envPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 			if _, err := s.EnvironmentService.PatchEnvironment(ctx, envPatch); err != nil {
 				if common.ErrorCode(err) == common.NotFound {
