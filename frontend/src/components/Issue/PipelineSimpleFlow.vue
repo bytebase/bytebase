@@ -1,7 +1,7 @@
 <template>
   <nav aria-label="Pipeline">
     <ol
-      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0 overflow-auto py-4"
+      class="border-t border-b border-block-border divide-y divide-gray-300 lg:flex lg:divide-y-0 overflow-auto"
     >
       <li
         v-for="(item, index) in itemList"
