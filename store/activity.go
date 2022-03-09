@@ -56,7 +56,7 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 
 	list, err := findActivityList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Activity{}, err
+		return nil, err
 	}
 
 	return list, nil
