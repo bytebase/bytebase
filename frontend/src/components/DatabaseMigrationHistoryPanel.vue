@@ -7,13 +7,13 @@
       <BBButton
         v-if="allowEdit"
         type="primary"
-        :disabled="!allowMigrate || state.migrationSetupStatus != 'OK'"
+        :disabled="!allowMigrate"
         tooltip-mode="DISABLED-ONLY"
         @click="state.showBaselineModal = true"
       >
         {{ $t("migration-history.establish-baseline") }}
 
-        <template v-if="!allowMigrate" #tooltip>
+        <template v-if="isTenantProject" #tooltip>
           <div class="w-52 whitespace-pre-wrap">
             {{
               $t("issue.not-allowed-to-single-database-in-tenant-mode", {
@@ -158,12 +158,18 @@ export default defineComponent({
       return isCurrentUserDBAOrOwner.value;
     });
 
+    const isTenantProject = computed(() => {
+      return props.database.project.tenantMode === "TENANT";
+    });
+
     const allowMigrate = computed(() => {
       if (!props.allowEdit) return false;
 
+      if (state.migrationSetupStatus !== "OK") return false;
+
       // Migrating single database in tenant mode is not allowed
       // Since this will probably cause different migration version across a group of tenant databases
-      return props.database.project.tenantMode === "DISABLED";
+      return !isTenantProject.value;
     });
 
     const attentionTitle = computed((): string => {
@@ -227,6 +233,7 @@ export default defineComponent({
     return {
       state,
       allowConfigInstance,
+      isTenantProject,
       allowMigrate,
       attentionTitle,
       migrationHistorySectionList,
