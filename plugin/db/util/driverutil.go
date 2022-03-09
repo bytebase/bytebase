@@ -281,9 +281,9 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
+	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, formatError(err)
 	}
@@ -371,7 +371,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 		}
 	}
 
-	return []interface{}{columns, data}, nil
+	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
 // FindMigrationHistoryList will find the list of migration history.

@@ -7,8 +7,8 @@ export interface TabInfo {
   savedAt: string;
   statement: string;
   selectedStatement: string;
-  // [columns: string[], data: any[][]]
-  queryResult?: [string[], any[][]];
+  // [columnNames: string[], types: string[], data: any[][]]
+  queryResult?: [string[], string[], any[][]];
   sheetId?: SheetId;
 }
 
