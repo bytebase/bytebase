@@ -48,7 +48,7 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	return repository, nil
 }
 
-// FindRepositoryList retrieves a list of repositorys based on find.
+// FindRepositoryList retrieves a list of repositories based on find.
 func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 
 	list, err := findRepositoryList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Repository{}, err
+		return nil, err
 	}
 
 	return list, nil
