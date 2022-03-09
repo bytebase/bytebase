@@ -87,7 +87,7 @@ type ProjectRaw struct {
 }
 
 // ToProject creates an instance of Project based on the ProjectRaw.
-// This is intended to be called when we need to compose a Project relationship.
+// This is intended to be used when we need to compose a Project relationship.
 func (raw *ProjectRaw) ToProject() *Project {
 	return &Project{
 		ID: raw.ID,

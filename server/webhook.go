@@ -48,36 +48,35 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			WebhookEndpointID: &webhookEndpointID,
 		}
-		repoRaw, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
+		repository, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
-		if repoRaw == nil {
+		if repository == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
 		}
 
-		repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.Name)).SetInternal(err)
+		if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.Name)).SetInternal(err)
 		}
-		if repo.VCS == nil {
-			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+		if repository.VCS == nil {
+			err := fmt.Errorf("VCS not found for ID: %v", repository.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
-		if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
+		if c.Request().Header.Get("X-Gitlab-Token") != repository.WebhookSecretToken {
 			return echo.NewHTTPError(http.StatusBadRequest, "Secret token mismatch")
 		}
 
-		if strconv.Itoa(pushEvent.Project.ID) != repo.ExternalID {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repo.ExternalID))
+		if strconv.Itoa(pushEvent.Project.ID) != repository.ExternalID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repository.ExternalID))
 		}
 
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
 			for _, added := range commit.AddedList {
-				if !strings.HasPrefix(added, repo.BaseDirectory) {
-					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repo.BaseDirectory))
+				if !strings.HasPrefix(added, repository.BaseDirectory) {
+					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repository.BaseDirectory))
 					continue
 				}
 
@@ -87,13 +86,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Ignored the schema file we auto generated to the repository.
-				if isSkipGeneratedSchemaFile(repo, added, s.l) {
+				if isSkipGeneratedSchemaFile(repository, added, s.l) {
 					continue
 				}
 
 				vcsPushEvent := vcs.PushEvent{
-					VCSType:            repo.VCS.Type,
-					BaseDirectory:      repo.BaseDirectory,
+					VCSType:            repository.VCS.Type,
+					BaseDirectory:      repository.BaseDirectory,
 					Ref:                pushEvent.Ref,
 					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
 					RepositoryURL:      pushEvent.Project.WebURL,
@@ -123,7 +122,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   api.SystemBotID,
-						ContainerID: repo.ProjectID,
+						ContainerID: repository.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ActivityWarn,
 						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
@@ -135,7 +134,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 				}
 
-				mi, err := db.ParseMigrationInfo(added, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+				mi, err := db.ParseMigrationInfo(added, filepath.Join(repository.BaseDirectory, repository.FilePathTemplate))
 				if err != nil {
 					createIgnoredFileActivity(err)
 					continue
@@ -145,14 +144,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
 					ctx,
 					common.OauthContext{
-						ClientID:     repo.VCS.ApplicationID,
-						ClientSecret: repo.VCS.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    s.refreshToken(ctx, repo.ID),
+						ClientID:     repository.VCS.ApplicationID,
+						ClientSecret: repository.VCS.Secret,
+						AccessToken:  repository.AccessToken,
+						RefreshToken: repository.RefreshToken,
+						Refresher:    s.refreshToken(ctx, repository.ID),
 					},
-					repo.VCS.InstanceURL,
-					repo.ExternalID,
+					repository.VCS.InstanceURL,
+					repository.ExternalID,
 					added,
 					commit.ID,
 				)
@@ -163,13 +162,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				// Create schema update issue.
 				var createContext string
-				if repo.Project.TenantMode == api.TenantModeTenant {
+				if repository.Project.TenantMode == api.TenantModeTenant {
 					if !s.feature(api.FeatureMultiTenancy) {
 						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 					}
-					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, added, content)
+					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, content)
 				} else {
-					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, added, content)
+					createContext, err = s.createSchemaUpdateIssue(ctx, repository, mi, vcsPushEvent, commit, added, content)
 				}
 				if err != nil {
 					createIgnoredFileActivity(err)
@@ -181,7 +180,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					issueType = api.IssueDatabaseDataUpdate
 				}
 				issueCreate := &api.IssueCreate{
-					ProjectID:     repo.ProjectID,
+					ProjectID:     repository.ProjectID,
 					Name:          commit.Title,
 					Type:          issueType,
 					Description:   commit.Message,
@@ -211,7 +210,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   api.SystemBotID,
-					ContainerID: repo.ProjectID,
+					ContainerID: repository.ProjectID,
 					Type:        api.ActivityProjectRepositoryPush,
 					Level:       api.ActivityInfo,
 					Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
