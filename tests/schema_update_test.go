@@ -277,7 +277,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			return err
 		}
 		if bookDataSQLResult != result {
-			return fmt.Errorf("SQL result want %q, got %q, diff %q", bookSchemaSQLResult, result, pretty.Diff(bookSchemaSQLResult, result))
+			return fmt.Errorf("SQL result want %q, got %q, diff %q", bookDataSQLResult, result, pretty.Diff(bookDataSQLResult, result))
 		}
 		// Query clone migration history.
 		histories, err = ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &cloneDatabaseName})
