@@ -29,7 +29,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			exec.l.Error("SchemaUpdateTaskExecutor PANIC RECOVER", zap.Error(panicErr))
+			exec.l.Error("SchemaUpdateTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
 			terminated = true
 			err = fmt.Errorf("encounter internal error when executing sql")
 		}
