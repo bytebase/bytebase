@@ -66,7 +66,7 @@ flags="-X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}'
 -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=$(id -u -n)'"
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-go build --tags "release linux" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./bin/server/main.go
+go build --tags "release" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./bin/server/main.go
 
 echo "Completed building bytebase backend."
 
