@@ -2,7 +2,7 @@
 
 ## Postgresql
 
-We will embed Postgres binaries to serve and store backend data. We will extract the binary to a binary path and install Postgres. We will Go file suffix build tags to include the embedded file only for the build platform. For example, resources_darwin.go will only be included for building Bytebase on darwin platform. However, we will also use build tag `alpine` to differentiate builds on Linux and alpine Linux. We have to include alpine Linux because it's underlying libc is different from regular Linux, and we use alpine Linux for our docker images.
+We will embed Postgres binaries to serve and store backend data. We will extract the binary to a binary path and install Postgres. We will use Go file suffix build tags to include the embedded file only for the build platform. For example, resources_darwin.go will only be included for building Bytebase on darwin platform. However, we will also use build tag `alpine` to differentiate builds on Linux and alpine Linux. We have to include alpine Linux because its underlying libc is different from regular Linux, and we use alpine Linux for our docker images.
 
 linux/amd64 used for Linux (MD5 3b5b460450f09543f1055e7ffd1cf773): https://repo1.maven.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-linux-amd64/14.2.0/embedded-postgres-binaries-linux-amd64-14.2.0.jar
 
