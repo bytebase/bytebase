@@ -18,7 +18,7 @@
 <a href="https://github.com/bytebase/bytebase/blob/main/LICENSE" target="_blank">
     <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
 </a>
-<img alt="status" src="https://img.shields.io/badge/status-alpha-red" />
+<img alt="status" src="https://img.shields.io/badge/status-beta-blue" />
 <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
     <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
 </a>
@@ -51,7 +51,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 - [x] Web-based schema change and management workspace for teams
 - [x] Version control based schema migration (Database-as-Code)
-- [x] Classic UI based schema migraiton (SQL Review)
+- [x] Classic UI based schema migration (SQL Review)
 - [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
@@ -68,7 +68,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 - [x] TiDB support
 - [x] Snowflake support
 - [x] ClickHouse support
-- [x] GitLab CE/EE support
+- [x] GitLab CE/EE support (Database-as-Code, login with GitLab account, project membership sync)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
 - [ ] GitLab.com support
 - [ ] GitHub support
@@ -96,13 +96,13 @@ Regardless of working as an IC in a team or managing your own side project, deve
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.13.0 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.0 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:0.13.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 📕 Docs
@@ -114,6 +114,10 @@ In particular, get familar with various product concept such as [data model](htt
 ### Design doc
 
 https://github.com/bytebase/bytebase/tree/main/docs/design
+
+### Version upgrade policy
+
+https://github.com/bytebase/bytebase/tree/main/docs/version-management.md
 
 ## 🕊 Interested in contributing?
 
@@ -137,6 +141,8 @@ working on the code:
 1. It has no external dependency.
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
+
+**[Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/coding-guide.md)**
 
 **Tech Stack**
 
@@ -191,15 +197,6 @@ working on the code:
    ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
-
-### Coding guideline
-
-[Here](https://github.com/bytebase/bytebase/tree/main/docs/coding-guide.md)
-
-## Notice
-
-> Bytebase is in public alpha and we may make breaking schema changes between versions. We plan to stabilize the schema by the end of Mar 2022. In the mean time, if you are eager to try Bytebase for your business and encounter
-> issue when upgrading to the new version. Please contact support@bytebase.com and we will help you manually upgrade the schema.
 
 ## Star History
 
