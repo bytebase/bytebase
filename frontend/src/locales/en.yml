@@ -1164,7 +1164,7 @@ sql-editor:
   public-desc: Sheet OWNER can read/write, and all others can read
   go-back: Go Back
   save-sheet: Save Sheet
-  save-sheet-input-placeholder: Please input a new sheet name
+  save-sheet-input-placeholder: Please input a sheet name
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
