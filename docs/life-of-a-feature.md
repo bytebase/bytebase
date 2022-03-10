@@ -16,7 +16,7 @@
     - Follow [code review guide](code-review-guide.md) (small changes, effective communication, collabrate, and ```respect```).
     - Split changes to database schema, API, backend, frontend if possible, because you will get different reviewers looking at different parts. For example, we can make backend do dual writes for any API changes, switch the reads on UI, and clean up the dual writes in bacnkend.
     - ```(IMPORTANT)``` Think about compatability and don't break existing users. This usually happen if we change database schemas or APIs.
-    - Guard new features behind a release flag especially for frontend. We should release the feature only when it's mature.
+    - Guard new features behind a release flag especially for frontend using [`isDev()`](https://github.com/bytebase/bytebase/blob/4fd7ea41a716dbd72c85b0bc02f04fff5e08370f/frontend/src/main.ts#L41). We should release the feature only when it's mature.
     - Testing, key for product quality. This includes unit tests, [backend integration tests](https://github.com/bytebase/bytebase/tree/main/tests), frontend manual tests. Tests should cover critical user journeys. While writing backend integration tests, you will have even better idea on how users will use the product from end to end.
     - Golang code follows [Go Wiki](https://github.com/golang/go/wiki/CodeReviewComments) and [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
     - Collabrate if a feature requires multiple developers to work on.
