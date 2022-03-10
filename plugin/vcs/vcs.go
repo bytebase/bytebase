@@ -76,7 +76,7 @@ const (
 
 // UserInfo is the API message for user info.
 type UserInfo struct {
-	// NOTICE: we use public email here because user's primary email can only be access by the admin
+	// NOTICE: we use public email here because user's primary email can only be accessed by the admin
 	PublicEmail string `json:"public_email"`
 	Name        string `json:"name"`
 	State       State  `json:"state"`
