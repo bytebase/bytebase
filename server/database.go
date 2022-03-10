@@ -977,13 +977,18 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	database.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	anomalyList, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseID: &database.ID,
 	})
 	if err != nil {
 		return err
 	}
+	var anomalyList []*api.Anomaly
+	for _, anomalyRaw := range anomalyListRaw {
+		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
+	}
+	// TODO(dragonly): implement composeAnomalyRelationship
 	database.AnomalyList = anomalyList
 	for _, anomaly := range database.AnomalyList {
 		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
