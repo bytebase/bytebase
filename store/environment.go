@@ -29,7 +29,7 @@ func NewEnvironmentService(logger *zap.Logger, db *DB, cache api.CacheService) *
 }
 
 // CreateEnvironment creates a new environment.
-func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.EnvironmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -53,7 +53,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, create *api.
 }
 
 // FindEnvironmentList retrieves a list of environments based on find.
-func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
+func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.EnvironmentFind) ([]*api.EnvironmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -78,15 +78,15 @@ func (s *EnvironmentService) FindEnvironmentList(ctx context.Context, find *api.
 
 // FindEnvironment retrieves a single environment based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) (*api.Environment, error) {
+func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) (*api.EnvironmentRaw, error) {
 	if find.ID != nil {
-		environment := &api.Environment{}
-		has, err := s.cache.FindCache(api.EnvironmentCache, *find.ID, environment)
+		envRaw := &api.EnvironmentRaw{}
+		has, err := s.cache.FindCache(api.EnvironmentCache, *find.ID, envRaw)
 		if err != nil {
 			return nil, err
 		}
 		if has {
-			return environment, nil
+			return envRaw, nil
 		}
 	}
 
@@ -96,32 +96,32 @@ func (s *EnvironmentService) FindEnvironment(ctx context.Context, find *api.Envi
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findEnvironmentList(ctx, tx.PTx, find)
+	envRawList, err := s.findEnvironmentList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
+	if len(envRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(list), find)}
+	} else if len(envRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.EnvironmentCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
 		return nil, err
 	}
-	return list[0], nil
+	return envRawList[0], nil
 }
 
 // PatchEnvironment updates an existing environment by ID.
 // Returns ENOTFOUND if environment does not exist.
-func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.EnvironmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	environment, err := s.patchEnvironment(ctx, tx.PTx, patch)
+	envRaw, err := s.patchEnvironment(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -130,15 +130,15 @@ func (s *EnvironmentService) PatchEnvironment(ctx context.Context, patch *api.En
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+	if err := s.cache.UpsertCache(api.EnvironmentCache, envRaw.ID, envRaw); err != nil {
 		return nil, err
 	}
 
-	return environment, nil
+	return envRaw, nil
 }
 
 // createEnvironment creates a new environment.
-func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*api.EnvironmentRaw, error) {
 	// The order is the MAX(order) + 1
 	row1, err1 := tx.QueryContext(ctx, `
 		SELECT "order"
@@ -187,25 +187,25 @@ func (s *EnvironmentService) createEnvironment(ctx context.Context, tx *sql.Tx, 
 	defer row2.Close()
 
 	row2.Next()
-	var environment api.Environment
+	var envRaw api.EnvironmentRaw
 	if err := row2.Scan(
-		&environment.ID,
-		&environment.RowStatus,
-		&environment.CreatorID,
-		&environment.CreatedTs,
-		&environment.UpdaterID,
-		&environment.UpdatedTs,
-		&environment.Name,
-		&environment.Order,
+		&envRaw.ID,
+		&envRaw.RowStatus,
+		&envRaw.CreatorID,
+		&envRaw.CreatedTs,
+		&envRaw.UpdaterID,
+		&envRaw.UpdatedTs,
+		&envRaw.Name,
+		&envRaw.Order,
 	); err != nil {
 		fmt.Printf("Yang4: %v\n", err)
 		return nil, FormatError(err)
 	}
 
-	return &environment, nil
+	return &envRaw, nil
 }
 
-func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*api.Environment, error) {
+func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*api.EnvironmentRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -235,9 +235,9 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Environment, 0)
+	var envRawList []*api.EnvironmentRaw
 	for rows.Next() {
-		var environment api.Environment
+		var environment api.EnvironmentRaw
 		if err := rows.Scan(
 			&environment.ID,
 			&environment.RowStatus,
@@ -251,17 +251,17 @@ func (s *EnvironmentService) findEnvironmentList(ctx context.Context, tx *sql.Tx
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &environment)
+		envRawList = append(envRawList, &environment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return envRawList, nil
 }
 
 // patchEnvironment updates a environment by ID. Returns the new state of the environment after update.
-func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*api.EnvironmentRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -291,7 +291,7 @@ func (s *EnvironmentService) patchEnvironment(ctx context.Context, tx *sql.Tx, p
 	defer row.Close()
 
 	if row.Next() {
-		var environment api.Environment
+		var environment api.EnvironmentRaw
 		if err := row.Scan(
 			&environment.ID,
 			&environment.RowStatus,
