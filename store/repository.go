@@ -272,8 +272,8 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.RepositoryRaw, 0)
+	// Iterate over result set and deserialize rows into repoRawList.
+	var repoRawList []*api.RepositoryRaw
 	for rows.Next() {
 		var repository api.RepositoryRaw
 		if err := rows.Scan(
@@ -303,13 +303,13 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &repository)
+		repoRawList = append(repoRawList, &repository)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return repoRawList, nil
 }
 
 // patchRepository updates a repository by ID. Returns the new state of the repository after update.

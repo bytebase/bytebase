@@ -232,7 +232,7 @@ type ActivityProjectRepositoryPushPayload struct {
 	IssueName string `json:"issueName,omitempty"`
 }
 
-// ActivityProjectDatabaseTransferPayload is the API message payloads for transfering databases.
+// ActivityProjectDatabaseTransferPayload is the API message payloads for transferring databases.
 type ActivityProjectDatabaseTransferPayload struct {
 	DatabaseID int `json:"databaseId,omitempty"`
 	// Used by activity table to display info without paying the join cost
