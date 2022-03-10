@@ -289,18 +289,20 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 
 	// we only return active member (both state and membership_state is active)
 	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
+	var emptyEmailUserIDList []string
 	for _, gitLabMember := range gitLabrepositoryMember {
 		if gitLabMember.State == vcs.StateActive {
-			// the email field does not return as expected via projects/<<projectId>>/members/all, possibly caused by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
-			// so we need to fetch this field one by one
+			// the email field does not return if the user does not have the admin accessibility
+			// for normal user, email field will not be returned by GitLab
+			// thus we use public email
+			// TODO: need to work around if the user does not set public email (for now we just return an error showing user who do not configure their public emails)
 			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
 			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, gitLabMember.ID)
 			if err != nil {
 				return nil, err
 			}
-
 			if userInfo.PublicEmail == "" {
-				return nil, fmt.Errorf("failed to fetch public email of user, userID: %v", gitLabMember.ID)
+				emptyEmailUserIDList = append(emptyEmailUserIDList, gitLabMember.Name)
 			}
 
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
@@ -314,6 +316,10 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 			}
 			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
 		}
+	}
+
+	if len(emptyEmailUserIDList) != 0 {
+		return nil, fmt.Errorf("failed to fetch public email of user, userID: %v", strings.Join(emptyEmailUserIDList, ", "))
 	}
 
 	return activeRepositoryMember, nil
