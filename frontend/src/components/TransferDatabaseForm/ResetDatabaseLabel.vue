@@ -20,18 +20,22 @@
           <span v-if="isRequiredLabel(label.key)" style="color: red">*</span>
         </label>
 
-        <div class="flex flex-col space-y-1 w-64">
-          <BBSelect
-            :selected-item="getLabelValue(label.key)"
-            :item-list="getLabelValueList(label)"
-            :placeholder="getLabelPlaceholder(label.key)"
+        <div class="flex flex-col space-y-1 w-64 mt-1">
+          <select
+            class="btn-select w-full disabled:cursor-not-allowed"
+            :value="getLabelValue(label.key)"
             :disabled="isParsedLabel(label.key)"
-            @select-item="(value: string) => setLabelValue(label.key, value)"
+            @change="(e: any) => setLabelValue(label.key, e.target.value)"
           >
-            <template #menuItem="{ item: value }">
+            <option disabled>{{ getLabelPlaceholder(label.key) }}</option>
+            <option
+              v-for="value in getLabelValueList(label)"
+              :key="value"
+              :value="value"
+            >
               {{ value === "" ? $t("label.empty-label-value") : value }}
-            </template>
-          </BBSelect>
+            </option>
+          </select>
         </div>
 
         <div v-if="isParsedLabel(label.key)" class="mt-2 textinfolabel">
