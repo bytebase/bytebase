@@ -202,8 +202,8 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Backup, 0)
+	// Iterate over result set and deserialize rows into backupList.
+	var backupList []*api.Backup
 	for rows.Next() {
 		var backup api.Backup
 		if err := rows.Scan(
@@ -224,13 +224,13 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &backup)
+		backupList = append(backupList, &backup)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return backupList, nil
 }
 
 // patchBackup updates a backup by ID. Returns the new state of the backup after update.
@@ -334,8 +334,8 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.BackupSetting, 0)
+	// Iterate over result set and deserialize rows into backupSettingList.
+	var backupSettingList []*api.BackupSetting
 	for rows.Next() {
 		var backupSetting api.BackupSetting
 		if err := rows.Scan(
@@ -353,13 +353,13 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &backupSetting)
+		backupSettingList = append(backupSettingList, &backupSetting)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return backupSettingList, nil
 }
 
 // UpsertBackupSetting sets the backup settings for a database.
@@ -496,8 +496,8 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.BackupSetting, 0)
+	// Iterate over result set and deserialize rows into backupSettingList.
+	var backupSettingList []*api.BackupSetting
 	for rows.Next() {
 		var backupSetting api.BackupSetting
 		if err := rows.Scan(
@@ -515,11 +515,11 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &backupSetting)
+		backupSettingList = append(backupSettingList, &backupSetting)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return backupSettingList, nil
 }
