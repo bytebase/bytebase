@@ -1023,7 +1023,7 @@ sql-editor:
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
   go-back: 返回
   save-sheet: 保存工作表
-  save-sheet-input-placeholder: 请输入一个新的工作表名称
+  save-sheet-input-placeholder: 请输入工作表名称
 label:
   empty-label-value: <空值>
   no-label: 没有标签
