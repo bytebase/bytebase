@@ -197,43 +197,58 @@
       :title="$t('database.transfer-project')"
       @close="state.showTransferDatabaseModal = false"
     >
-      <div class="col-span-1 w-64">
-        <label for="user" class="textlabel">{{ $t("common.project") }}</label>
-        <!-- Only allow to transfer database to the project having OWNER role -->
-        <!-- eslint-disable vue/attribute-hyphenation -->
-        <ProjectSelect
-          id="project"
-          class="mt-1"
-          name="project"
-          :allowed-role-list="['OWNER']"
-          :include-default-project="true"
-          :selectedId="state.editingProjectId"
-          @select-project-id="
-            (projectId) => {
-              state.editingProjectId = projectId;
-            }
-          "
-        />
-      </div>
-      <div class="pt-6 flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showTransferDatabaseModal = false"
+      <div class="w-112 flex flex-col items-center">
+        <div class="col-span-1 w-64">
+          <label for="user" class="textlabel">{{ $t("common.project") }}</label>
+          <!-- Only allow to transfer database to the project having OWNER role -->
+          <ProjectSelect
+            id="project"
+            class="mt-1"
+            name="project"
+            :allowed-role-list="['OWNER']"
+            :include-default-project="true"
+            :selected-id="state.editingProjectId"
+            @select-project-id="
+              (projectId) => {
+                state.editingProjectId = projectId;
+              }
+            "
+          />
+        </div>
+        <SelectDatabaseLabel
+          :database="database"
+          :target-project-id="state.editingProjectId"
+          class="mt-4"
+          @next="doTransfer"
         >
-          {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="state.editingProjectId == database.project.id"
-          @click.prevent="
-            updateProject(state.editingProjectId);
-            state.showTransferDatabaseModal = false;
-          "
-        >
-          {{ $t("common.transfer") }}
-        </button>
+          <template #buttons="{ next, valid }">
+            <div
+              class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
+            >
+              <button
+                type="button"
+                class="btn-normal py-2 px-4"
+                @click.prevent="state.showTransferDatabaseModal = false"
+              >
+                {{ $t("common.cancel") }}
+              </button>
+              <!--
+                We are not allowed to transfer a db either its labels are not valid
+                or transferring into its project itself.
+              -->
+              <button
+                type="button"
+                class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+                :disabled="
+                  !valid || state.editingProjectId == database.project.id
+                "
+                @click.prevent="next"
+              >
+                {{ $t("common.transfer") }}
+              </button>
+            </div>
+          </template>
+        </SelectDatabaseLabel>
       </div>
     </BBModal>
     <BBModal
@@ -277,6 +292,7 @@ import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistor
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { DatabaseLabelProps } from "../components/DatabaseLabels";
+import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
 import { idFromSlug, isDBAOrOwner, connectionSlug, hidePrefix } from "../utils";
 import {
   ProjectId,
@@ -315,6 +331,7 @@ export default defineComponent({
     DatabaseBackupPanel,
     InstanceEngineIcon,
     DatabaseLabelProps,
+    SelectDatabaseLabel,
   },
   props: {
     databaseSlug: {
@@ -513,11 +530,15 @@ export default defineComponent({
       }
     };
 
-    const updateProject = (newProjectId: ProjectId) => {
+    const updateProject = (
+      newProjectId: ProjectId,
+      labels?: DatabaseLabel[]
+    ) => {
       store
         .dispatch("database/transferProject", {
           databaseId: database.value.id,
           projectId: newProjectId,
+          labels,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {
@@ -592,6 +613,11 @@ export default defineComponent({
       }
     );
 
+    const doTransfer = (labels: DatabaseLabel[]) => {
+      updateProject(state.editingProjectId, labels);
+      state.showTransferDatabaseModal = false;
+    };
+
     return {
       OVERVIEW_TAB,
       MIGRATION_HISTORY_TAB,
@@ -614,6 +640,7 @@ export default defineComponent({
       updateLabels,
       selectTab,
       gotoSqlEditor,
+      doTransfer,
       hidePrefix,
     };
   },
