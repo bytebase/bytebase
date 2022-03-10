@@ -1040,7 +1040,8 @@ label:
   setting:
     description: 标签是一组可用于标识数据库租户的键值对。{link}。
   db-name-template-tips: 让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。
-  parsed-from-template: "从 {name} 中依据模板 {template} 解析得出"
+  parsed-from-template: 从 {name} 中依据模板 {template} 解析得出
+  cannot-transfer-template-not-match: 数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。
 oauth:
   unknown-event: 未知的事件类型，认证失败
 subscription:
