@@ -210,8 +210,8 @@ func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Anomaly, 0)
+	// Iterate over result set and deserialize rows into anomalyList.
+	var anomalyList []*api.Anomaly
 	for rows.Next() {
 		var anomaly api.Anomaly
 		databaseID := sql.NullInt32{}
@@ -234,13 +234,13 @@ func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]
 		}
 		anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
 
-		list = append(list, &anomaly)
+		anomalyList = append(anomalyList, &anomaly)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return anomalyList, nil
 }
 
 type anomalyPatch struct {
