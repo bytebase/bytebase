@@ -590,26 +590,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
-	const checkDuplicateVersionQuery = `
-		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = ? AND source = ? AND version = ?
-		`
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
-}
-
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
 func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
 	const checkOutofOrderVersionQuery = `
