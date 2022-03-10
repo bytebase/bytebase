@@ -5,6 +5,7 @@
     "lokalise.i18n-ally",
     "antfu.iconify",
     "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss"
+    "bradlc.vscode-tailwindcss",
+    "eamodio.gitlens"
   ]
 }
