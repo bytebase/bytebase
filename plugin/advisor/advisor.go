@@ -15,11 +15,11 @@ import (
 type Status string
 
 const (
-	// Success is the adivsor status for successes.
+	// Success is the advisor status for successes.
 	Success Status = "SUCCESS"
-	// Warn is the adivsor status for warnings.
+	// Warn is the advisor status for warnings.
 	Warn Status = "WARN"
-	// Error is the adivsor status for errors.
+	// Error is the advisor status for errors.
 	Error Status = "ERROR"
 )
 
