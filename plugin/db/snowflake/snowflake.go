@@ -374,12 +374,12 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		return nil, nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for shareRows.Next() {
-		if err := shareRows.Scan(ptrs...); err != nil {
+		if err := shareRows.Scan(refs...); err != nil {
 			return nil, err
 		}
 		if values[1].String == "INBOUND" {
@@ -451,7 +451,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
 	`
-	userList := make([]*db.User, 0)
+	var userList []*db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {

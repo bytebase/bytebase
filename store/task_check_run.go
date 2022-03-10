@@ -298,8 +298,8 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.TaskCheckRun, 0)
+	// Iterate over result set and deserialize rows into taskCheckRunList.
+	var taskCheckRunList []*api.TaskCheckRun
 	for rows.Next() {
 		var taskCheckRun api.TaskCheckRun
 		if err := rows.Scan(
@@ -319,11 +319,11 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &taskCheckRun)
+		taskCheckRunList = append(taskCheckRunList, &taskCheckRun)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return taskCheckRunList, nil
 }

@@ -105,8 +105,8 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.Po
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Policy, 0)
+	// Iterate over result set and deserialize rows into policyList.
+	var policyList []*api.Policy
 	for rows.Next() {
 		var policy api.Policy
 		if err := rows.Scan(
@@ -122,13 +122,13 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.Po
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &policy)
+		policyList = append(policyList, &policy)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return policyList, nil
 }
 
 // UpsertPolicy sets a policy for an environment.

@@ -288,8 +288,8 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	}
 
 	// we only return active member (both state and membership_state is active)
-	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
 	var emptyEmailUserIDList []string
+	var activeRepositoryMemberList []*vcs.RepositoryMember
 	for _, gitLabMember := range gitLabrepositoryMember {
 		if gitLabMember.State == vcs.StateActive {
 			// the email field does not return if the user does not have the admin accessibility
@@ -314,7 +314,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			}
-			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
+			activeRepositoryMemberList = append(activeRepositoryMemberList, repositoryMember)
 		}
 	}
 

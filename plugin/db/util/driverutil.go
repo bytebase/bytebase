@@ -307,11 +307,11 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 
 	colCount := len(columnTypes)
 
-	columnTypeNames := make([]string, colCount)
-	for i, v := range columnTypes {
+	var columnTypeNames []string
+	for _, v := range columnTypes {
 		// DatabaseTypeName returns the database system name of the column type.
 		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames[i] = strings.ToUpper(v.DatabaseTypeName())
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
 	rowCount := 0
@@ -392,8 +392,8 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*db.MigrationHistory, 0)
+	// Iterate over result set and deserialize rows into migrationHistoryList.
+	var migrationHistoryList []*db.MigrationHistory
 	for rows.Next() {
 		var history db.MigrationHistory
 		if err := rows.Scan(
@@ -420,7 +420,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			return nil, err
 		}
 
-		list = append(list, &history)
+		migrationHistoryList = append(migrationHistoryList, &history)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -430,7 +430,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 		return nil, err
 	}
 
-	return list, nil
+	return migrationHistoryList, nil
 }
 
 func formatError(err error) error {

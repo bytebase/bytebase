@@ -203,8 +203,8 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.DataSource, 0)
+	// Iterate over result set and deserialize rows into dataSourceList.
+	var dataSourceList []*api.DataSource
 	for rows.Next() {
 		var dataSource api.DataSource
 		if err := rows.Scan(
@@ -223,13 +223,13 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &dataSource)
+		dataSourceList = append(dataSourceList, &dataSource)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return dataSourceList, nil
 }
 
 // patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
