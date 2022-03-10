@@ -144,8 +144,8 @@ func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUse
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.InstanceUser, 0)
+	// Iterate over result set and deserialize rows into instanceUserList.
+	var instanceUserList []*api.InstanceUser
 	for rows.Next() {
 		var instanceUser api.InstanceUser
 		if err := rows.Scan(
@@ -157,13 +157,13 @@ func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUse
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &instanceUser)
+		instanceUserList = append(instanceUserList, &instanceUser)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return instanceUserList, nil
 }
 
 // deleteInstanceUser permanently deletes a instance user by ID.

@@ -215,7 +215,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
-	schemaList := make([]*db.Schema, 0)
+	var schemaList []*db.Schema
 	for _, database := range databases {
 		dbName := database.name
 		if _, ok := excludedDatabaseList[dbName]; ok {
@@ -331,7 +331,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM pg_catalog.pg_user
 		ORDER BY role_name
 			`
-	userList := make([]*db.User, 0)
+	var userList []*db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1626,12 +1626,12 @@ func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
+		if err := rows.Scan(refs...); err != nil {
 			return err
 		}
 		tokens := make([]string, len(cols))

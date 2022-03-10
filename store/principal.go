@@ -215,8 +215,8 @@ func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind)
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Principal, 0)
+	// Iterate over result set and deserialize rows into principalList.
+	var principalList []*api.Principal
 	for rows.Next() {
 		var principal api.Principal
 		if err := rows.Scan(
@@ -233,13 +233,13 @@ func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind)
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &principal)
+		principalList = append(principalList, &principal)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return principalList, nil
 }
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.

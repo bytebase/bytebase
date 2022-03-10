@@ -288,7 +288,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	}
 
 	// we only return active member (both state and membership_state is active)
-	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
+	var activeRepositoryMemberList []*vcs.RepositoryMember
 	for _, gitLabMember := range gitLabrepositoryMember {
 		if gitLabMember.State == vcs.StateActive {
 			// the email field does not return as expected via projects/<<projectId>>/members/all, possibly caused by: https://gitlab.com/gitlab-org/gitlab/-/issues/25077
@@ -307,11 +307,11 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			}
-			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
+			activeRepositoryMemberList = append(activeRepositoryMemberList, repositoryMember)
 		}
 	}
 
-	return activeRepositoryMember, nil
+	return activeRepositoryMemberList, nil
 }
 
 // CreateFile creates a file.

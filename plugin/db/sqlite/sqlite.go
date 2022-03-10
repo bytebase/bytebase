@@ -758,12 +758,12 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
+		if err := rows.Scan(refs...); err != nil {
 			return err
 		}
 		tokens := make([]string, len(cols))
