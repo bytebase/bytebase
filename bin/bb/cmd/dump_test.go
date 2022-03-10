@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	// Embeded expected output.
+	// Embedded expected output.
 	_ "embed"
 
 	"github.com/bytebase/bytebase/resources/mysql"
