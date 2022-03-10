@@ -101,7 +101,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				principalFind := &api.PrincipalFind{
-					Email: &gitlabUserInfo.Email,
+					Email: &gitlabUserInfo.PublicEmail,
 				}
 				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
 				if err != nil {
@@ -114,7 +114,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					// The random password is supposed to be not guessable. If user wants to login
 					// via password, she needs to set the new password from the profile page.
 					signUp := &api.SignUp{
-						Email:    gitlabUserInfo.Email,
+						Email:    gitlabUserInfo.PublicEmail,
 						Password: common.RandomString(20),
 						Name:     gitlabUserInfo.Name,
 					}

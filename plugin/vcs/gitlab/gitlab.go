@@ -298,10 +298,15 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 			if err != nil {
 				return nil, err
 			}
+
+			if userInfo.PublicEmail == "" {
+				return nil, fmt.Errorf("failed to fetch public email of user, userID: %v", gitLabMember.ID)
+			}
+
 			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
 			repositoryMember := &vcs.RepositoryMember{
 				Name:         gitLabMember.Name,
-				Email:        userInfo.Email,
+				Email:        userInfo.PublicEmail,
 				Role:         bytebaseRole,
 				VCSRole:      gitLabRole.String(),
 				State:        vcs.StateActive,
