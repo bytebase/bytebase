@@ -1185,6 +1185,10 @@ label:
   db-name-template-tips: >-
     Allow you to group databases with the same {placeholder} from different
     tenants. {link}.
+  parsed-from-template: Parsed from {name} by template {template}.
+  cannot-transfer-template-not-match: >-
+    Database '{name}' cannot be transferred to this project. Since its name
+    doesn't match the template {template}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:

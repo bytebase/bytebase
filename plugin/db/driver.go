@@ -462,7 +462,7 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
-	parts := make([]string, 0, len(paramNames))
+	var parts []string
 	for i, param := range paramNames {
 		idx := fmt.Sprintf("$%d", i+1)
 		param = param + "=" + idx
