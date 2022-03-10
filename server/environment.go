@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -16,27 +17,28 @@ import (
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.POST("/environment", func(c echo.Context) error {
 		ctx := context.Background()
-		environmentCreate := &api.EnvironmentCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, environmentCreate); err != nil {
+		envCreate := &api.EnvironmentCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, envCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create environment request").SetInternal(err)
 		}
 
-		environmentCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		environment, err := s.EnvironmentService.CreateEnvironment(ctx, environmentCreate)
+		envRaw, err := s.EnvironmentService.CreateEnvironment(ctx, envCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Environment name already exists: %s", environmentCreate.Name))
+				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Environment name already exists: %s", envCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create environment").SetInternal(err)
 		}
 
-		if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
+		env, err := s.composeEnvironmentRelationship(ctx, envRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created environment relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, environment); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, env); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create environment response").SetInternal(err)
 		}
 		return nil
@@ -44,20 +46,23 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 	g.GET("/environment", func(c echo.Context) error {
 		ctx := context.Background()
-		environmentFind := &api.EnvironmentFind{}
+		envFind := &api.EnvironmentFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
-			environmentFind.RowStatus = &rowStatus
+			envFind.RowStatus = &rowStatus
 		}
-		envList, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+		envRawList, err := s.EnvironmentService.FindEnvironmentList(ctx, envFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 		}
 
-		for _, environment := range envList {
-			if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment relationship: %v", environment.Name)).SetInternal(err)
+		var envList []*api.Environment
+		for _, envRaw := range envRawList {
+			env, err := s.composeEnvironmentRelationship(ctx, envRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch environment relationship: %v", envRaw.Name)).SetInternal(err)
 			}
+			envList = append(envList, env)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -74,15 +79,15 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		environmentPatch := &api.EnvironmentPatch{
+		envPatch := &api.EnvironmentPatch{
 			ID:        id,
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, environmentPatch); err != nil {
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, envPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch environment request").SetInternal(err)
 		}
 
-		environment, err := s.EnvironmentService.PatchEnvironment(ctx, environmentPatch)
+		envRaw, err := s.EnvironmentService.PatchEnvironment(ctx, envPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", id))
@@ -90,12 +95,13 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated environment relationship: %v", environment.Name)).SetInternal(err)
+		env, err := s.composeEnvironmentRelationship(ctx, envRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated environment relationship: %v", envRaw.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, environment); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, env); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal environment ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -109,27 +115,32 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		for _, item := range patchList {
-			environmentPatch, _ := item.(*api.EnvironmentPatch)
-			environmentPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-			_, err = s.EnvironmentService.PatchEnvironment(ctx, environmentPatch)
-			if err != nil {
+			envPatch, ok := item.(*api.EnvironmentPatch)
+			if !ok {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(errors.New("Failed to convert request item to *api.EnvironmentPatch"))
+			}
+			envPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
+			if _, err := s.EnvironmentService.PatchEnvironment(ctx, envPatch); err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", environmentPatch.ID))
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", envPatch.ID))
 				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", environmentPatch.ID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch environment ID: %v", envPatch.ID)).SetInternal(err)
 			}
 		}
 
-		environmentFind := &api.EnvironmentFind{}
-		envList, err := s.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+		envFind := &api.EnvironmentFind{}
+		envRawList, err := s.EnvironmentService.FindEnvironmentList(ctx, envFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)
 		}
 
-		for _, environment := range envList {
-			if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch reordered environment relationship: %v", environment.Name)).SetInternal(err)
+		var envList []*api.Environment
+		for _, envRaw := range envRawList {
+			env, err := s.composeEnvironmentRelationship(ctx, envRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch reordered environment relationship: %v", envRaw.Name)).SetInternal(err)
 			}
+			envList = append(envList, env)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -141,36 +152,39 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 }
 
 func (s *Server) composeEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
-	environmentFind := &api.EnvironmentFind{
+	envFind := &api.EnvironmentFind{
 		ID: &id,
 	}
-	environment, err := s.EnvironmentService.FindEnvironment(ctx, environmentFind)
+	envRaw, err := s.EnvironmentService.FindEnvironment(ctx, envFind)
 	if err != nil {
 		return nil, err
 	}
-	if environment == nil {
+	if envRaw == nil {
 		return nil, fmt.Errorf("environment ID not found %v", id)
 	}
 
-	if err := s.composeEnvironmentRelationship(ctx, environment); err != nil {
+	env, err := s.composeEnvironmentRelationship(ctx, envRaw)
+	if err != nil {
 		return nil, err
 	}
 
-	return environment, nil
+	return env, nil
 }
 
-func (s *Server) composeEnvironmentRelationship(ctx context.Context, environment *api.Environment) error {
-	var err error
+func (s *Server) composeEnvironmentRelationship(ctx context.Context, raw *api.EnvironmentRaw) (*api.Environment, error) {
+	env := raw.ToEnvironment()
 
-	environment.Creator, err = s.composePrincipalByID(ctx, environment.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, env.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	env.Creator = creator
 
-	environment.Updater, err = s.composePrincipalByID(ctx, environment.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, env.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	env.Updater = updater
 
-	return nil
+	return env, nil
 }

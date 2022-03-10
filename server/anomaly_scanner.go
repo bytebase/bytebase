@@ -58,15 +58,28 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				environmentFind := &api.EnvironmentFind{}
-				environmentList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+				envFind := &api.EnvironmentFind{}
+				envRawList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, envFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
+				// compose environments
+				var envList []*api.Environment
+				for _, envRaw := range envRawList {
+					env, err := s.server.composeEnvironmentRelationship(ctx, envRaw)
+					if err != nil {
+						s.l.Error("Failed to compose environment relationship",
+							zap.String("environment", envRaw.Name),
+							zap.Error(err))
+						return
+					}
+					envList = append(envList, env)
+				}
+
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
-				for _, env := range environmentList {
+				for _, env := range envList {
 					policy, err := s.server.PolicyService.GetBackupPlanPolicy(ctx, env.ID)
 					if err != nil {
 						s.l.Error("Failed to retrieve backup policy",
@@ -92,16 +105,19 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instance.ID, instance.Name), zap.Error(err))
 						continue
 					}
-					for _, env := range environmentList {
+
+					foundEnv := false
+					for _, env := range envList {
 						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
+							foundEnv = true
 							break
 						}
 					}
 
-					if instance.Environment == nil {
+					if !foundEnv {
 						continue
 					}
 
