@@ -191,6 +191,10 @@ const init = async () => {
     emit("save", value);
   });
 
+  editorInstance.focus();
+
+  nextTick(() => setPositionAtEndOfLine(editorInstance));
+
   watch(
     () => isReadOnly.value,
     (readOnly) => {
