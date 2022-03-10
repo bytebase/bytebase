@@ -14,7 +14,7 @@
       class="space-y-4 flex flex-col justify-center items-center"
       v-bind="$attrs"
     >
-      <div v-for="label in sortedLabelList" :key="label.id" class="w-64">
+      <div v-for="label in availableLabelList" :key="label.id" class="w-64">
         <label class="textlabel capitalize">
           {{ hidePrefix(label.key) }}
           <span v-if="isRequiredLabel(label.key)" style="color: red">*</span>
@@ -229,21 +229,10 @@ const setLabelValue = (key: LabelKeyType, value: LabelValueType) => {
   } else {
     state.databaseLabelList.push({ key, value });
   }
+  state.databaseLabelList = state.databaseLabelList.filter(
+    (label) => !!label.value
+  );
 };
-
-// sort availableLabelList, required ones up
-const sortedLabelList = computed(() => {
-  const compare = (a: Label, b: Label): number => {
-    const isARequired = isRequiredLabel(a.key);
-    const isBRequired = isRequiredLabel(b.key);
-    if (isARequired && !isBRequired) return -1;
-    if (isBRequired && !isARequired) return 1;
-    return a.id - b.id;
-  };
-  const list = [...availableLabelList.value];
-  list.sort(compare);
-  return list;
-});
 
 watch(
   () => props.database,
