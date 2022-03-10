@@ -9,7 +9,7 @@ import (
 const (
 	// AllDatabaseName is the wild expression for all databases.
 	AllDatabaseName = "*"
-	// DefaultCharactorSetName is the default charactor set.
+	// DefaultCharactorSetName is the default character set.
 	DefaultCharactorSetName = "utf8mb4"
 	// DefaultCollationName is the default collation name.
 	// Use utf8mb4_general_ci instead of the new MySQL 8.0.1 default utf8mb4_0900_ai_ci
