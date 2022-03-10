@@ -222,8 +222,8 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Activity, 0)
+	// Iterate over result set and deserialize rows into activityList.
+	var activityList []*api.Activity
 	for rows.Next() {
 		var activity api.Activity
 		if err := rows.Scan(
@@ -241,13 +241,13 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &activity)
+		activityList = append(activityList, &activity)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return activityList, nil
 }
 
 // patchActivity updates a activity by ID. Returns the new state of the activity after update.

@@ -248,8 +248,8 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.ProjectRaw, 0)
+	// Iterate over result set and deserialize rows into projectRawList.
+	var projectRawList []*api.ProjectRaw
 	for rows.Next() {
 		var project api.ProjectRaw
 		if err := rows.Scan(
@@ -270,13 +270,13 @@ func findProjectList(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &project)
+		projectRawList = append(projectRawList, &project)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return projectRawList, nil
 }
 
 // patchProject updates a project by ID. Returns the new state of the project after update.

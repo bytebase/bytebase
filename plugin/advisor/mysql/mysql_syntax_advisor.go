@@ -35,7 +35,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 		}, nil
 	}
 
-	advisorList := make([]advisor.Advice, 0, len(warns)+1)
+	var advisorList []advisor.Advice
 	for _, warn := range warns {
 		advisorList = append(advisorList, advisor.Advice{
 			Status:  advisor.Warn,
