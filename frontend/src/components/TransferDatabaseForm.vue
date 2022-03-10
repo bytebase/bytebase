@@ -1,85 +1,115 @@
 <template>
-  <div class="px-4 space-y-6 w-208">
-    <div v-if="projectId != DEFAULT_PROJECT_ID" class="textlabel">
-      <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
-        {{ $t("quick-action.transfer-in-db-hint") }}
-      </div>
-      <div class="radio-set-row">
-        <div class="flex flex-row">
+  <div
+    class="px-4 space-y-6"
+    :class="!state.selectedDatabase ? 'w-208' : 'w-112'"
+  >
+    <template v-if="!state.selectedDatabase">
+      <div v-if="projectId != DEFAULT_PROJECT_ID" class="textlabel">
+        <div
+          v-if="state.transferSource == 'DEFAULT'"
+          class="textinfolabel mb-2"
+        >
+          {{ $t("quick-action.transfer-in-db-hint") }}
+        </div>
+        <div class="radio-set-row">
+          <div class="flex flex-row">
+            <div class="radio">
+              <input
+                v-model="state.transferSource"
+                tabindex="-1"
+                type="radio"
+                class="btn"
+                value="DEFAULT"
+              />
+              <label class="label">
+                {{ $t("quick-action.from-default-project") }}
+              </label>
+            </div>
+          </div>
           <div class="radio">
             <input
               v-model="state.transferSource"
               tabindex="-1"
               type="radio"
               class="btn"
-              value="DEFAULT"
+              value="OTHER"
             />
             <label class="label">
-              {{ $t("quick-action.from-default-project") }}
+              {{ $t("quick-action.from-other-projects") }}
             </label>
           </div>
         </div>
-        <div class="radio">
-          <input
-            v-model="state.transferSource"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="OTHER"
-          />
-          <label class="label">
-            {{ $t("quick-action.from-other-projects") }}
-          </label>
-        </div>
       </div>
-    </div>
 
-    <DatabaseTable
-      :mode="'ALL_SHORT'"
-      :bordered="true"
-      :custom-click="true"
-      :database-list="databaseList"
-      @select-database="selectDatabase"
-    />
+      <DatabaseTable
+        :mode="'ALL_SHORT'"
+        :bordered="true"
+        :custom-click="true"
+        :database-list="databaseList"
+        @select-database="selectDatabase"
+      />
+      <!-- Update button group -->
+      <div class="pt-4 border-t border-block-border flex justify-end">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="cancel"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+      </div>
+    </template>
 
-    <!-- Update button group -->
-    <div class="pt-4 border-t border-block-border flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="cancel"
+    <template v-else>
+      <ResetDatabaseLabel
+        :database="state.selectedDatabase"
+        :target-project-id="projectId"
+        @next="transferDatabase"
       >
-        {{ $t("common.cancel") }}
-      </button>
-    </div>
-
-    <BBAlert
-      v-if="state.showModal"
-      :style="'INFO'"
-      :ok-text="$t('common.transfer')"
-      :title="
-        $t('quick-action.transfer-in-db-alert', {
-          dbName: selectedDatabaseName,
-        })
-      "
-      @ok="
-        () => {
-          state.showModal = false;
-          transferDatabase();
-        }
-      "
-      @cancel="state.showModal = false"
-    >
-    </BBAlert>
+        <template #buttons="{ next, valid }">
+          <div
+            class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
+          >
+            <button
+              type="button"
+              class="btn-normal py-2 px-4"
+              @click.prevent="state.selectedDatabase = undefined"
+            >
+              {{ $t("common.back") }}
+            </button>
+            <button
+              type="button"
+              class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+              :disabled="!valid"
+              @click.prevent="next"
+            >
+              {{ $t("common.transfer") }}
+            </button>
+          </div>
+        </template>
+      </ResetDatabaseLabel>
+    </template>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive, watchEffect } from "vue";
+import {
+  computed,
+  defineComponent,
+  PropType,
+  reactive,
+  watchEffect,
+} from "vue";
 import { useStore } from "vuex";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Database, ProjectId, DEFAULT_PROJECT_ID } from "../types";
+import { ResetDatabaseLabel } from "../components/TransferDatabaseForm";
+import {
+  Database,
+  ProjectId,
+  DEFAULT_PROJECT_ID,
+  DatabaseLabel,
+} from "../types";
 import { sortDatabaseList } from "../utils";
 
 type TransferSource = "DEFAULT" | "OTHER";
@@ -87,13 +117,13 @@ type TransferSource = "DEFAULT" | "OTHER";
 interface LocalState {
   selectedDatabase?: Database;
   transferSource: TransferSource;
-  showModal: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "TransferDatabaseForm",
   components: {
     DatabaseTable,
+    ResetDatabaseLabel,
   },
   props: {
     projectId: {
@@ -108,7 +138,6 @@ export default {
     const state = reactive<LocalState>({
       transferSource:
         props.projectId == DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
-      showModal: false,
     });
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -149,14 +178,14 @@ export default {
 
     const selectDatabase = (database: Database) => {
       state.selectedDatabase = database;
-      state.showModal = true;
     };
 
-    const transferDatabase = () => {
+    const transferDatabase = (labels: DatabaseLabel[]) => {
       store
         .dispatch("database/transferProject", {
           databaseId: state.selectedDatabase!.id,
           projectId: props.projectId,
+          labels,
         })
         .then((updatedDatabase) => {
           store.dispatch("notification/pushNotification", {
@@ -182,5 +211,5 @@ export default {
       cancel,
     };
   },
-};
+});
 </script>
