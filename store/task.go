@@ -288,8 +288,8 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Task, 0)
+	// Iterate over result set and deserialize rows into taskList.
+	var taskList []*api.Task
 	for rows.Next() {
 		var task api.Task
 		if err := rows.Scan(
@@ -310,10 +310,10 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		list = append(list, &task)
+		taskList = append(taskList, &task)
 	}
 
-	for _, task := range list {
+	for _, task := range taskList {
 		taskRunFind := &api.TaskRunFind{
 			TaskID: &task.ID,
 		}
@@ -335,7 +335,7 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return list, nil
+	return taskList, nil
 }
 
 // patchTask updates a task by ID. Returns the new state of the task after update.
