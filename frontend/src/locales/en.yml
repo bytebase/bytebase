@@ -1185,6 +1185,7 @@ label:
   db-name-template-tips: >-
     Allow you to group databases with the same {placeholder} from different
     tenants. {link}.
+  parsed-from-template: "Parsed from {name} by template {template}."
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
