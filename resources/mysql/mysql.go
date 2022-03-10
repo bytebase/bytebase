@@ -145,6 +145,7 @@ func (i *Instance) Import(path string, stdout, stderr io.Writer) error {
 	}
 
 	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysql"),
+		"--user=root",
 		"--protocol=TCP",
 		"--host=localhost",
 		fmt.Sprintf("--port=%d", i.port),
