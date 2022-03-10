@@ -4,13 +4,13 @@
     @change="handleChange"
     @change-selection="handleChangeSelection"
     @run-query="handleRunQuery"
-    @save="handleSave"
+    @save="(e) => emit('save-sheet')"
   />
 </template>
 
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
-import { computed } from "vue";
+import { computed, defineEmits } from "vue";
 import { useStore } from "vuex";
 import {
   useNamespacedActions,
@@ -19,12 +19,11 @@ import {
 } from "vuex-composition-helpers";
 
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import {
-  TabActions,
-  TabGetters,
-  SheetActions,
-  SqlEditorState,
-} from "../../../types";
+import { TabActions, TabGetters, SqlEditorState } from "../../../types";
+
+const emit = defineEmits<{
+  (e: "save-sheet", content?: string): void;
+}>();
 
 const store = useStore();
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
@@ -33,9 +32,6 @@ const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
 ]);
 const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
   "updateCurrentTab",
-]);
-const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
-  "upsertSheet",
 ]);
 
 const { execute } = useExecuteSQL();
@@ -63,21 +59,6 @@ const handleChangeSelection = debounce((value: string) => {
     selectedStatement: value,
   });
 }, 300);
-
-const handleSave = async (statement: string) => {
-  const { name, sheetId } = currentTab.value;
-
-  const sheet = await upsertSheet({
-    id: sheetId,
-    name,
-    statement,
-  });
-
-  updateCurrentTab({
-    sheetId: sheet.id,
-    isSaved: true,
-  });
-};
 
 const handleRunQuery = ({
   explain,

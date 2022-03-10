@@ -1163,6 +1163,8 @@ sql-editor:
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
   go-back: Go Back
+  save-sheet: Save Sheet
+  save-sheet-input-placeholder: Please input a new sheet name
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
