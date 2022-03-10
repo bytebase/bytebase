@@ -5,6 +5,7 @@ linters:
     - golint
     - govet
     - staticcheck
+    - misspell
 
 # golangci-lint run --exclude="Rollback,logger.Sync"
 issues:

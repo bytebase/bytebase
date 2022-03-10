@@ -1791,7 +1791,7 @@ func getEventTriggers(txn *sql.Tx) ([]*eventTriggerSchema, error) {
 	return triggers, nil
 }
 
-// quoteIdentifier will quote identifiers including keywords, capital charactors, or special charactors.
+// quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
 func quoteIdentifier(s string) string {
 	quote := false
 	if reserved[strings.ToUpper(s)] {
