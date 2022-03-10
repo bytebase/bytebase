@@ -319,7 +319,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	}
 
 	if len(emptyEmailUserIDList) != 0 {
-		return nil, fmt.Errorf("failed to fetch public email of user, userID: %v", strings.Join(emptyEmailUserIDList, ", "))
+		return nil, fmt.Errorf("[ %v ] did not configured their public email, please make sure every members' public emails are configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
 	}
 
 	return activeRepositoryMember, nil
