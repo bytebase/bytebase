@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"testing"
 	"time"
 
 	"github.com/bytebase/bytebase/resources/utils"
@@ -134,6 +135,30 @@ user=%s
 		basedir: basedir,
 		datadir: datadir,
 	}, nil
+}
+
+// SetupTestInstance installs and starts a mysql instance for testing,
+// returns the instance and the stop function.
+func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
+	basedir, datadir := t.TempDir(), t.TempDir()
+	t.Log("Installing Mysql...")
+	i, err := Install(basedir, datadir, "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("Starting Mysql...")
+	if err := i.Start(port, os.Stdout, os.Stderr, 60); err != nil {
+		t.Fatal(err)
+	}
+
+	stopFn := func() {
+		t.Log("Stopping Mysql...")
+		if err := i.Stop(os.Stdout, os.Stderr); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return i, stopFn
 }
 
 // Import executes sql script in the given path on the instance.

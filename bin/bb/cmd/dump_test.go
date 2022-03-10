@@ -17,22 +17,8 @@ var (
 )
 
 func TestDump(t *testing.T) {
-	basedir, datadir := t.TempDir(), t.TempDir()
-	t.Log("Installing MySQL...")
-	mysql, err := mysql.Install(basedir, datadir, "root")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Starting MySQL...")
-	if err := mysql.Start(13306, os.Stdout, os.Stderr, 60); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		t.Log("Stopping MySQL...")
-		if err := mysql.Stop(os.Stdout, os.Stderr); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	mysql, stop := mysql.SetupTestInstance(t, 13306)
+	defer stop()
 
 	t.Log("Importing MySQL data...")
 	if err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr); err != nil {
