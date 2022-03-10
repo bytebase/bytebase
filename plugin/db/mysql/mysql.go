@@ -239,7 +239,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		if indexList, ok := indexMap[key]; ok {
 			indexMap[key] = append(indexList, index)
 		} else {
-			indexMap[key] = append([]db.Index(nil), index)
+			indexMap[key] = []db.Index{index}
 		}
 	}
 
@@ -296,7 +296,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		if tableList, ok := columnMap[key]; ok {
 			columnMap[key] = append(tableList, column)
 		} else {
-			columnMap[key] = append([]db.Column(nil), column)
+			columnMap[key] = []db.Column{column}
 		}
 	}
 
@@ -369,7 +369,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			if tableList, ok := tableMap[dbName]; ok {
 				tableMap[dbName] = append(tableList, table)
 			} else {
-				tableMap[dbName] = append([]db.Table(nil), table)
+				tableMap[dbName] = []db.Table{table}
 			}
 		} else if table.Type == "VIEW" {
 			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
@@ -416,7 +416,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		if viewList, ok := viewMap[dbName]; ok {
 			viewMap[dbName] = append(viewList, view)
 		} else {
-			viewMap[dbName] = append([]db.View(nil), view)
+			viewMap[dbName] = []db.View{view}
 		}
 	}
 
@@ -604,15 +604,15 @@ func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace s
 
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
 func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
-	const checkOutofOrderVersionQuery = `
+	const checkOutOfOrderVersionQuery = `
 		SELECT MIN(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND source = ? AND version > ?
 		`
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+	row, err := tx.QueryContext(ctx, checkOutOfOrderVersionQuery,
 		namespace, source.String(), version,
 	)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+		return nil, util.FormatErrorWithQuery(err, checkOutOfOrderVersionQuery)
 	}
 	defer row.Close()
 
