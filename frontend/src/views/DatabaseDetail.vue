@@ -215,7 +215,7 @@
             "
           />
         </div>
-        <ResetDatabaseLabel
+        <SelectDatabaseLabel
           :database="database"
           :target-project-id="state.editingProjectId"
           class="mt-4"
@@ -248,7 +248,7 @@
               </button>
             </div>
           </template>
-        </ResetDatabaseLabel>
+        </SelectDatabaseLabel>
       </div>
     </BBModal>
     <BBModal
@@ -292,7 +292,7 @@ import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistor
 import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { DatabaseLabelProps } from "../components/DatabaseLabels";
-import { ResetDatabaseLabel } from "../components/TransferDatabaseForm";
+import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
 import { idFromSlug, isDBAOrOwner, connectionSlug, hidePrefix } from "../utils";
 import {
   ProjectId,
@@ -331,7 +331,7 @@ export default defineComponent({
     DatabaseBackupPanel,
     InstanceEngineIcon,
     DatabaseLabelProps,
-    ResetDatabaseLabel,
+    SelectDatabaseLabel,
   },
   props: {
     databaseSlug: {

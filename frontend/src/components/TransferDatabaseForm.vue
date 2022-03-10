@@ -61,7 +61,7 @@
     </template>
 
     <template v-else>
-      <ResetDatabaseLabel
+      <SelectDatabaseLabel
         :database="state.selectedDatabase"
         :target-project-id="projectId"
         @next="transferDatabase"
@@ -87,7 +87,7 @@
             </button>
           </div>
         </template>
-      </ResetDatabaseLabel>
+      </SelectDatabaseLabel>
     </template>
   </div>
 </template>
@@ -103,7 +103,7 @@ import {
 import { useStore } from "vuex";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { ResetDatabaseLabel } from "../components/TransferDatabaseForm";
+import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
 import {
   Database,
   ProjectId,
@@ -123,7 +123,7 @@ export default defineComponent({
   name: "TransferDatabaseForm",
   components: {
     DatabaseTable,
-    ResetDatabaseLabel,
+    SelectDatabaseLabel,
   },
   props: {
     projectId: {

@@ -1,3 +1,3 @@
-import ResetDatabaseLabel from "./ResetDatabaseLabel.vue";
+import SelectDatabaseLabel from "./SelectDatabaseLabel.vue";
 
-export { ResetDatabaseLabel };
+export { SelectDatabaseLabel };
