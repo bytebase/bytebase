@@ -1,13 +1,13 @@
 <template>
   <template v-if="!dbNameMatchesTemplate">
-    <p>
+    <div class="textinfolabel" v-bind="$attrs">
       Database '{{ database.name }}' cannot be transferred to this project.
       Since its name doesn't match the template
       <code class="text-sm font-mono bg-control-bg">{{
         targetProject.dbNameTemplate
       }}</code
       >.
-    </p>
+    </div>
   </template>
   <template v-else>
     <div
