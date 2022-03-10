@@ -8,6 +8,7 @@ require (
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
+	github.com/google/go-cmp v0.5.6
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
@@ -24,6 +25,8 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/sys v0.0.0-20220224003255-dbe011f71a99 // indirect
 )
 
 // copied from pingcap/tidb
