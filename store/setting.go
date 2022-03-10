@@ -181,8 +181,8 @@ func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Setting, 0)
+	// Iterate over result set and deserialize rows into settingList.
+	var settingList []*api.Setting
 	for rows.Next() {
 		var setting api.Setting
 		if err := rows.Scan(
@@ -197,13 +197,13 @@ func findSettingList(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &setting)
+		settingList = append(settingList, &setting)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return settingList, nil
 }
 
 // patchSetting updates a setting by name. Returns the new state of the setting after update.

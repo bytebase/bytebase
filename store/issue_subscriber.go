@@ -135,8 +135,8 @@ func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.IssueSubscriber, 0)
+	// Iterate over result set and deserialize rows into issueSubscriberList.
+	var issueSubscriberList []*api.IssueSubscriber
 	for rows.Next() {
 		var issueSubscriber api.IssueSubscriber
 		if err := rows.Scan(
@@ -146,13 +146,13 @@ func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &issueSubscriber)
+		issueSubscriberList = append(issueSubscriberList, &issueSubscriber)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return issueSubscriberList, nil
 }
 
 // deleteIssueSubscriber permanently deletes a issueSubscriber by ID.

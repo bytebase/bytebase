@@ -83,6 +83,17 @@ export const parseDatabaseNameByTemplate = (
   template: string,
   labelList: Label[]
 ) => {
+  const regex = buildDatabaseNameRegExpByTemplate(template, labelList);
+  const match = name.match(regex);
+
+  // fallback to name it self when failed
+  return match?.groups?.name || name;
+};
+
+export const buildDatabaseNameRegExpByTemplate = (
+  template: string,
+  labelList: Label[]
+): RegExp => {
   let regexpString = template.replace("{{DB_NAME}}", "(?<name>.+?)");
   /*
     Rewrite the placeholder-based template to a big RegExp
@@ -97,12 +108,11 @@ export const parseDatabaseNameByTemplate = (
     const escapedValueList = valueList.map((value) =>
       escapeStringRegexp(value)
     );
-    const regex = `(${escapedValueList.join("|")})`;
+    // the groups are named as "label_{id}"
+    // so the caller can get matched label values from the regex's match result
+    const regex = `(?<label_${label.id}>${escapedValueList.join("|")})`;
     regexpString = regexpString.replace(placeholder, regex);
   });
   const regex = new RegExp(`^${regexpString}$`);
-  const match = name.match(regex);
-
-  // fallback to name it self when failed
-  return match?.groups?.name || name;
+  return regex;
 };
