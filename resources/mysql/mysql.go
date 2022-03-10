@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"io"
@@ -104,22 +105,9 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 
 	basedir = filepath.Join(basedir, version)
 
-	socket, err := os.Create(filepath.Join(basedir, "mysql.sock"))
-	if err != nil {
-		return nil, err
-	}
-	socket.Close()
-
-	pidFile, err := os.Create(filepath.Join(basedir, "mysql.pid"))
-	if err != nil {
-		return nil, err
-	}
-	pidFile.Close()
-
 	const configFmt = `[mysqld]
 basedir=%s
 datadir=%s
-pid-file=mysql.pid
 socket=mysql.sock
 user=%s
 `
@@ -146,4 +134,52 @@ user=%s
 		basedir: basedir,
 		datadir: datadir,
 	}, nil
+}
+
+// Import executes sql script in the given path on the instance.
+// If the path is a directory, it imports all sql scripts in the directory recursively.
+func (i *Instance) Import(path string, stdout, stderr io.Writer) error {
+	var buf bytes.Buffer
+	if err := cat(path, &buf); err != nil {
+		return err
+	}
+
+	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysql"),
+		"--protocol=TCP",
+		"--host=localhost",
+		fmt.Sprintf("--port=%d", i.port),
+	)
+	cmd.Stdin = bytes.NewReader(buf.Bytes())
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	return cmd.Run()
+}
+
+func cat(path string, out io.Writer) error {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if fi.IsDir() {
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if err := cat(filepath.Join(path, entry.Name()), out); err != nil {
+				return err
+			}
+		}
+	} else {
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		if _, err = io.Copy(out, f); err != nil {
+			return err
+		}
+	}
+	return nil
 }
