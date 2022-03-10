@@ -8,7 +8,7 @@ export const getDefaultTab = () => {
   return {
     id: uuidv1(),
     name: "Untitled Sheet",
-    isSaved: false,
+    isSaved: true,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     statement: "",
     selectedStatement: "",

@@ -86,7 +86,7 @@
           <button
             class="p-1 hover:bg-gray-200 rounded-md"
             :class="{ 'cursor-not-allowed': isDisconnected }"
-            @click="handleAddTab({})"
+            @click="handleAddTab"
           >
             <heroicons-solid:plus class="h-4 w-4" />
           </button>
@@ -118,7 +118,7 @@
 
 <script lang="ts" setup>
 import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
-import { debounce, cloneDeep } from "lodash-es";
+import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
 import {
@@ -129,7 +129,6 @@ import {
 
 import {
   TabInfo,
-  AnyTabInfo,
   SqlEditorGetters,
   TabGetters,
   TabState,
@@ -260,15 +259,12 @@ const handleSelectTab = async (tab: TabInfo) => {
   setCurrentTabId(tab.id);
   setConnectionContextFromCurrentTab();
 };
-const handleAddTab = (tab: AnyTabInfo) => {
+const handleAddTab = () => {
   if (isDisconnected.value) return;
 
-  addTab(tab);
+  addTab(getDefaultTab());
 
   nextTick(async () => {
-    const tab = cloneDeep(currentTab.value);
-    handleEditLabel(tab);
-
     // make a relation between the new sheet and the current tab
     const newSheet = await createSheet();
 
