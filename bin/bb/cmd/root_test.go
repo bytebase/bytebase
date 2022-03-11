@@ -58,7 +58,9 @@ got unexpected output:
 				t.Log(err)
 			}
 			defer f.Close()
-			io.WriteString(f, actual)
+			if _, err := io.WriteString(f, actual); err != nil {
+				t.Log(err)
+			}
 			t.Logf("Actual output written to %s", f.Name())
 		}
 	}
