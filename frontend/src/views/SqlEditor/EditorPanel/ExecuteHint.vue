@@ -57,18 +57,14 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { UNKNOWN_ID } from "../../../types";
+import { UNKNOWN_ID } from "@/types";
 
-import type {
-  SqlEditorState,
-  SqlEditorGetters,
-  TabGetters,
-} from "../../../types";
+import type { SqlEditorState, SqlEditorGetters, TabGetters } from "@/types";
 import {
   parseSQL,
   transformSQL,
   isDDLStatement,
-} from "../../../components/MonacoEditor/sqlParser";
+} from "@/components/MonacoEditor/sqlParser";
 
 const emit = defineEmits<{
   (e: "close"): void;

@@ -99,9 +99,9 @@ import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import { useStore } from "vuex";
 
-import ProfileDropdown from "../../components/ProfileDropdown.vue";
-import { InboxSummary, UNKNOWN_ID } from "../../types";
-import { isDBAOrOwner, isDev } from "../../utils";
+import ProfileDropdown from "@/components/ProfileDropdown.vue";
+import { InboxSummary, UNKNOWN_ID } from "@/types";
+import { isDBAOrOwner, isDev } from "@/utils";
 
 interface LocalState {
   showMobileMenu: boolean;

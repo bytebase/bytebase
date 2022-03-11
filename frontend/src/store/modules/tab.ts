@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { TabInfo, AnyTabInfo, TabState } from "../../types";
+import { TabInfo, AnyTabInfo, TabState } from "@/types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 
