@@ -341,7 +341,7 @@ func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) e
 	if assignee == nil {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Principal ID not found: %d", assigneeID))
 	}
-	if assignee.Role == api.Developer {
+	if assignee.Role != api.Owner && assignee.Role != api.DBA {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("%s is not allowed as assignee", assignee.Role))
 	}
 
