@@ -69,7 +69,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if _, err := s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
