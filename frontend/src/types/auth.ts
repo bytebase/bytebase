@@ -1,5 +1,7 @@
 // Auth
 
+import { VCSId } from "./id";
+
 // For now, a single user's auth provider should either belong to  GITLAB_SELF_HOST or BYTEBASE
 export type AuthProviderType = "GITLAB_SELF_HOST" | "BYTEBASE";
 
@@ -27,6 +29,7 @@ export type BytebaseLoginInfo = {
 };
 
 export type AuthProvider = {
+  id: VCSId;
   type: AuthProviderType;
   name: string;
   instanceUrl: string;
@@ -35,6 +38,7 @@ export type AuthProvider = {
 };
 
 export const EmptyAuthProvider: AuthProvider = {
+  id: 0,
   type: "BYTEBASE",
   name: "",
   instanceUrl: "",
@@ -43,8 +47,7 @@ export const EmptyAuthProvider: AuthProvider = {
 };
 
 export type VCSLoginInfo = {
-  applicationId: string;
-  secret: string;
-  instanceUrl: string;
+  id: VCSId;
+  name: string;
   accessToken: string;
 };
