@@ -25,7 +25,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
-		authProvider := make([]*api.AuthProvider, 0)
+		var authProviderList []*api.AuthProvider
 		for _, vcs := range list {
 			newProvider := &api.AuthProvider{
 				Type:          vcs.Type,
@@ -34,11 +34,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				ApplicationID: vcs.ApplicationID,
 				Secret:        vcs.Secret,
 			}
-			authProvider = append(authProvider, newProvider)
+			authProviderList = append(authProviderList, newProvider)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, authProvider); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, authProviderList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal auth provider").SetInternal(err)
 		}
 		return nil

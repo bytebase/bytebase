@@ -191,8 +191,8 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Index, 0)
+	// Iterate over result set and deserialize rows into indexList.
+	var indexList []*api.Index
 	for rows.Next() {
 		var index api.Index
 		if err := rows.Scan(
@@ -214,11 +214,11 @@ func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &index)
+		indexList = append(indexList, &index)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return indexList, nil
 }

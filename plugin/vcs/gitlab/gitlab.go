@@ -288,14 +288,13 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	}
 
 	// we only return active member (both state and membership_state is active)
-	activeRepositoryMember := make([]*vcs.RepositoryMember, 0)
 	var emptyEmailUserIDList []string
+	var activeRepositoryMemberList []*vcs.RepositoryMember
 	for _, gitLabMember := range gitLabrepositoryMember {
 		if gitLabMember.State == vcs.StateActive {
-			// the email field does not return if the user does not have the admin accessibility
-			// for normal user, email field will not be returned by GitLab
-			// thus we use public email
-			// TODO: need to work around if the user does not set public email (for now we just return an error showing user who do not configure their public emails)
+			// The email field will only be returned if the caller credential is associated with a GitLab admin account.
+			// And since most callers are not GitLab admins, thus we fetch public email
+			// TODO: need to work around this if the user does not set public email. For now, we just return an error listing users not having public emails.
 			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
 			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, gitLabMember.ID)
 			if err != nil {
@@ -314,12 +313,12 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			}
-			activeRepositoryMember = append(activeRepositoryMember, repositoryMember)
+			activeRepositoryMemberList = append(activeRepositoryMemberList, repositoryMember)
 		}
 	}
 
 	if len(emptyEmailUserIDList) != 0 {
-		return nil, fmt.Errorf("[ %v ] did not configured their public email, please make sure every members' public emails are configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
+		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
 	}
 
 	return activeRepositoryMember, nil
