@@ -13,9 +13,7 @@
       >
         <div class="relative h-9 py-1.5">
           <template v-if="state.value && !state.open">
-            <template v-if="state.value">
-              <slot name="menuItem" :item="state.value" />
-            </template>
+            <slot name="menuItem" :item="state.value" />
           </template>
           <template v-if="!state.value && !state.query">
             <slot name="placeholder" :placeholder="placeholder">
