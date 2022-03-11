@@ -107,8 +107,8 @@ import {
   TabActions,
   SheetActions,
   UNKNOWN_ID,
-} from "../../../types";
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+} from "@/types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 
 const store = useStore();

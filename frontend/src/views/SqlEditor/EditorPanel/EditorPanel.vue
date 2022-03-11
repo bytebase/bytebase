@@ -26,11 +26,7 @@ import {
   useNamespacedActions,
 } from "vuex-composition-helpers";
 
-import {
-  SqlEditorState,
-  SqlEditorActions,
-  SqlEditorGetters,
-} from "../../../types";
+import { SqlEditorState, SqlEditorActions, SqlEditorGetters } from "@/types";
 import EditorAction from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";

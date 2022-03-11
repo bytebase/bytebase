@@ -126,6 +126,7 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
+import { useDialog } from "naive-ui";
 
 import {
   TabInfo,
@@ -135,10 +136,9 @@ import {
   TabState,
   TabActions,
   SheetActions,
-} from "../../types";
-import { useDialog } from "naive-ui";
-import { getDefaultTab } from "../../store/modules/tab";
-import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
+} from "@/types";
+import { getDefaultTab } from "@/store/modules/tab";
+import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 // getters map
 const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
