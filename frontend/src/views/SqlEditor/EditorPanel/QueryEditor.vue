@@ -18,8 +18,8 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import { TabActions, TabGetters, SqlEditorState } from "../../../types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { TabActions, TabGetters, SqlEditorState } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;

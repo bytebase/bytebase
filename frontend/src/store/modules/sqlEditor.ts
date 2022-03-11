@@ -14,10 +14,10 @@ import {
   UNKNOWN_ID,
   Sheet,
   DEFAULT_PROJECT_ID,
-} from "../../types";
+} from "@/types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import { unknown } from "../../types";
+import { unknown } from "@/types";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,

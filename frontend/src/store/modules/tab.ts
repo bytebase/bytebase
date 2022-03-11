@@ -1,4 +1,4 @@
-import { TabInfo, AnyTabInfo, TabState } from "../../types";
+import { TabInfo, AnyTabInfo, TabState } from "@/types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import { getDefaultTab } from "../../utils/tab";

@@ -3,7 +3,7 @@ import { isEmpty } from "lodash-es";
 
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import {
+import type {
   Sheet,
   SheetId,
   SheetState,
@@ -16,9 +16,8 @@ import {
   Database,
   Project,
   ProjectMember,
-  UNKNOWN_ID,
-} from "../../types";
-import { unknown } from "../../types";
+} from "@/types";
+import { unknown, UNKNOWN_ID } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convertSheet(

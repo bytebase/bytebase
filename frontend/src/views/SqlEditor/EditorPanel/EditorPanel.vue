@@ -41,7 +41,7 @@ import {
   TabGetters,
   TabActions,
   SheetActions,
-} from "../../../types";
+} from "@/types";
 import EditorAction from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
