@@ -7,6 +7,60 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// InstanceRaw is the store model for an Instance.
+// Fields have exactly the same meanings as Instance.
+type InstanceRaw struct {
+	ID int
+
+	// Standard fields
+	RowStatus RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	EnvironmentID int
+
+	// Domain specific fields
+	Name          string
+	Engine        db.Type
+	EngineVersion string
+	ExternalLink  string
+	Host          string
+	Port          string
+	Username      string
+	Password      string
+}
+
+// ToInstance creates an instance of Instance based on the InstanceRaw.
+// This is intended to be called when we need to compose an Instance relationship.
+func (raw *InstanceRaw) ToInstance() *Instance {
+	return &Instance{
+		ID: raw.ID,
+
+		// Standard fields
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		EnvironmentID: raw.EnvironmentID,
+
+		// Domain specific fields
+		Name:          raw.Name,
+		Engine:        raw.Engine,
+		EngineVersion: raw.EngineVersion,
+		ExternalLink:  raw.ExternalLink,
+		Host:          raw.Host,
+		Port:          raw.Port,
+		Username:      raw.Username,
+		Password:      raw.Password,
+	}
+}
+
 // Instance is the API message for an instance.
 type Instance struct {
 	ID int `jsonapi:"primary,instance"`
@@ -165,9 +219,9 @@ type MigrationHistory struct {
 // InstanceService is the service for instances.
 type InstanceService interface {
 	// CreateInstance should also create the * database and the admin data source.
-	CreateInstance(ctx context.Context, create *InstanceCreate) (*Instance, error)
-	FindInstanceList(ctx context.Context, find *InstanceFind) ([]*Instance, error)
-	FindInstance(ctx context.Context, find *InstanceFind) (*Instance, error)
+	CreateInstance(ctx context.Context, create *InstanceCreate) (*InstanceRaw, error)
+	FindInstanceList(ctx context.Context, find *InstanceFind) ([]*InstanceRaw, error)
+	FindInstance(ctx context.Context, find *InstanceFind) (*InstanceRaw, error)
 	CountInstance(ctx context.Context, find *InstanceFind) (int, error)
-	PatchInstance(ctx context.Context, patch *InstancePatch) (*Instance, error)
+	PatchInstance(ctx context.Context, patch *InstancePatch) (*InstanceRaw, error)
 }

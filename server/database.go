@@ -25,15 +25,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		databaseCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		instance, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceID})
+		instanceRaw, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
-		if instance == nil {
+		if instanceRaw == nil {
 			err := fmt.Errorf("Instance ID not found %v", databaseCreate.InstanceID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		databaseCreate.EnvironmentID = instance.EnvironmentID
+		databaseCreate.EnvironmentID = instanceRaw.EnvironmentID
 		project, err := s.composeProjectByID(ctx, databaseCreate.ProjectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
@@ -47,7 +47,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
+			// TODO(dragonly): compose Instance
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instanceRaw.ToInstance()} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
 				return err
 			}
 		}
