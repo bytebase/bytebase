@@ -21,24 +21,24 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		find := &api.LabelKeyFind{
 			RowStatus: &rowStatus,
 		}
-		list, err := s.LabelService.FindLabelKeyList(ctx, find)
+		labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
 		}
 
 		// Add reserved environment key.
-		envList, err := s.EnvironmentService.FindEnvironmentList(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
+		envRawList, err := s.EnvironmentService.FindEnvironmentList(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environments").SetInternal(err)
 		}
 		envKey := &api.LabelKey{Key: api.EnvironmentKeyName}
-		for _, env := range envList {
-			envKey.ValueList = append(envKey.ValueList, env.Name)
+		for _, envRaw := range envRawList {
+			envKey.ValueList = append(envKey.ValueList, envRaw.Name)
 		}
-		list = append(list, envKey)
+		labelKeyList = append(labelKeyList, envKey)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, labelKeyList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal label keys response").SetInternal(err)
 		}
 		return nil

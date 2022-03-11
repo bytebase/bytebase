@@ -61,14 +61,14 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 			"missing {{VERSION}}",
 		}, {
 			"UnknownToken",
-			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNWON}}.sql",
+			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
-			"unknown token {{UNKNWON}}",
+			"unknown token {{UNKNOWN}}",
 		}, {
 			"UnknownToken",
-			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNWON}}.sql",
+			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
-			"unknown token {{UNKNWON}}",
+			"unknown token {{UNKNOWN}}",
 		}, {
 			"Tenant mode {{ENV_NAME}}",
 			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",

@@ -29,7 +29,7 @@ func NewAnomalyService(logger *zap.Logger, db *DB) *AnomalyService {
 // UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
 // Do not use ON CONFLICT (upsert syntax) as it will consume autoincrement id. Functional wise, this is fine, but
 // from the UX perspective, it's not great, since user will see large id gaps.
-func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.AnomalyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -48,9 +48,9 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		return nil, err
 	}
 
-	var anomaly *api.Anomaly
+	var anomalyRaw *api.AnomalyRaw
 	if len(list) == 0 {
-		anomaly, err = createAnomaly(ctx, tx.PTx, upsert)
+		anomalyRaw, err = createAnomaly(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			UpdaterID: upsert.CreatorID,
 			Payload:   upsert.Payload,
 		}
-		anomaly, err = patchAnomaly(ctx, tx.PTx, patch)
+		anomalyRaw, err = patchAnomaly(ctx, tx.PTx, patch)
 		if err != nil {
 			return nil, err
 		}
@@ -73,11 +73,11 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		return nil, FormatError(err)
 	}
 
-	return anomaly, nil
+	return anomalyRaw, nil
 }
 
 // FindAnomalyList retrieves a list of anomalies based on the find condition.
-func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
+func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyFind) ([]*api.AnomalyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -113,7 +113,7 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 }
 
 // createAnomaly creates a new anomaly.
-func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.AnomalyRaw, error) {
 	// Inserts row into database.
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
@@ -144,31 +144,31 @@ func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (
 	defer row.Close()
 
 	row.Next()
-	var anomaly api.Anomaly
+	var anomalyRaw api.AnomalyRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
-		&anomaly.ID,
-		&anomaly.CreatorID,
-		&anomaly.CreatedTs,
-		&anomaly.UpdaterID,
-		&anomaly.UpdatedTs,
-		&anomaly.InstanceID,
+		&anomalyRaw.ID,
+		&anomalyRaw.CreatorID,
+		&anomalyRaw.CreatedTs,
+		&anomalyRaw.UpdaterID,
+		&anomalyRaw.UpdatedTs,
+		&anomalyRaw.InstanceID,
 		&databaseID,
-		&anomaly.Type,
-		&anomaly.Payload,
+		&anomalyRaw.Type,
+		&anomalyRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
-		anomaly.DatabaseID = &value
+		anomalyRaw.DatabaseID = &value
 	}
-	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
+	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
 
-	return nil, err
+	return &anomalyRaw, err
 }
 
-func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*api.Anomaly, error) {
+func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*api.AnomalyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
@@ -210,37 +210,37 @@ func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Anomaly, 0)
+	// Iterate over result set and deserialize rows into anomalyRawList.
+	var anomalyRawList []*api.AnomalyRaw
 	for rows.Next() {
-		var anomaly api.Anomaly
+		var anomalyRaw api.AnomalyRaw
 		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
-			&anomaly.ID,
-			&anomaly.CreatorID,
-			&anomaly.CreatedTs,
-			&anomaly.UpdaterID,
-			&anomaly.UpdatedTs,
-			&anomaly.InstanceID,
+			&anomalyRaw.ID,
+			&anomalyRaw.CreatorID,
+			&anomalyRaw.CreatedTs,
+			&anomalyRaw.UpdaterID,
+			&anomalyRaw.UpdatedTs,
+			&anomalyRaw.InstanceID,
 			&databaseID,
-			&anomaly.Type,
-			&anomaly.Payload,
+			&anomalyRaw.Type,
+			&anomalyRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
-			anomaly.DatabaseID = &value
+			anomalyRaw.DatabaseID = &value
 		}
-		anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
+		anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
 
-		list = append(list, &anomaly)
+		anomalyRawList = append(anomalyRawList, &anomalyRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return anomalyRawList, nil
 }
 
 type anomalyPatch struct {
@@ -254,7 +254,7 @@ type anomalyPatch struct {
 }
 
 // patchAnomaly patches an anomaly
-func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.Anomaly, error) {
+func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.AnomalyRaw, error) {
 	// Build UPDATE clause.
 	if patch.Payload == "" {
 		patch.Payload = "{}"
@@ -283,28 +283,28 @@ func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.An
 	defer row.Close()
 
 	row.Next()
-	var anomaly api.Anomaly
+	var anomalyRaw api.AnomalyRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
-		&anomaly.ID,
-		&anomaly.CreatorID,
-		&anomaly.CreatedTs,
-		&anomaly.UpdaterID,
-		&anomaly.UpdatedTs,
-		&anomaly.InstanceID,
+		&anomalyRaw.ID,
+		&anomalyRaw.CreatorID,
+		&anomalyRaw.CreatedTs,
+		&anomalyRaw.UpdaterID,
+		&anomalyRaw.UpdatedTs,
+		&anomalyRaw.InstanceID,
 		&databaseID,
-		&anomaly.Type,
-		&anomaly.Payload,
+		&anomalyRaw.Type,
+		&anomalyRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
-		anomaly.DatabaseID = &value
+		anomalyRaw.DatabaseID = &value
 	}
-	anomaly.Severity = api.AnomalySeverityFromType(anomaly.Type)
+	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
 
-	return &anomaly, err
+	return &anomalyRaw, err
 }
 
 // archiveAnomaly archives an anomaly by ID.

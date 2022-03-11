@@ -482,7 +482,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	}
 
 	rowStatus := api.Normal
-	anomalyList, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
 		InstanceID:   &instance.ID,
 		InstanceOnly: true,
@@ -490,6 +490,11 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	if err != nil {
 		return err
 	}
+	var anomalyList []*api.Anomaly
+	for _, anomalyRaw := range anomalyListRaw {
+		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
+	}
+	// TODO(dragonly): implement composeAnomalyRelationship
 	instance.AnomalyList = anomalyList
 	for _, anomaly := range instance.AnomalyList {
 		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {

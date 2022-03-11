@@ -58,15 +58,28 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				environmentFind := &api.EnvironmentFind{}
-				environmentList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, environmentFind)
+				envFind := &api.EnvironmentFind{}
+				envRawList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, envFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
+				// compose environments
+				var envList []*api.Environment
+				for _, envRaw := range envRawList {
+					env, err := s.server.composeEnvironmentRelationship(ctx, envRaw)
+					if err != nil {
+						s.l.Error("Failed to compose environment relationship",
+							zap.String("environment", envRaw.Name),
+							zap.Error(err))
+						return
+					}
+					envList = append(envList, env)
+				}
+
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
-				for _, env := range environmentList {
+				for _, env := range envList {
 					policy, err := s.server.PolicyService.GetBackupPlanPolicy(ctx, env.ID)
 					if err != nil {
 						s.l.Error("Failed to retrieve backup policy",
@@ -92,16 +105,19 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instance.ID, instance.Name), zap.Error(err))
 						continue
 					}
-					for _, env := range environmentList {
+
+					foundEnv := false
+					for _, env := range envList {
 						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
+							foundEnv = true
 							break
 						}
 					}
 
-					if instance.Environment == nil {
+					if !foundEnv {
 						continue
 					}
 
@@ -165,13 +181,12 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
 				Payload:    string(payload),
-			})
-			if err != nil {
+			}); err != nil {
 				s.l.Error("Failed to create anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("type", string(api.AnomalyInstanceConnection)),
@@ -203,12 +218,11 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			if setup {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
@@ -246,14 +260,13 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
 				Payload:    string(payload),
-			})
-			if err != nil {
+			}); err != nil {
 				s.l.Error("Failed to create anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
@@ -336,14 +349,13 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
 						Payload:    string(payload),
-					})
-					if err != nil {
+					}); err != nil {
 						s.l.Error("Failed to create anomaly",
 							zap.String("instance", instance.Name),
 							zap.String("database", database.Name),
@@ -421,14 +433,13 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
@@ -505,14 +516,13 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
