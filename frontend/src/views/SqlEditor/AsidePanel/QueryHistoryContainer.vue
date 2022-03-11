@@ -76,8 +76,8 @@ import {
   QueryHistory,
   SqlEditorActions,
   SqlEditorState,
-} from "../../../types";
-import { getHighlightHTMLByKeyWords } from "../../../utils";
+} from "@/types";
+import { getHighlightHTMLByKeyWords } from "@/utils";
 
 interface State {
   search: string;

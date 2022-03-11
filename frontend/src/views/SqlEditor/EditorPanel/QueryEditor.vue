@@ -18,13 +18,8 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
-import {
-  TabActions,
-  TabGetters,
-  SheetActions,
-  SqlEditorState,
-} from "../../../types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { TabActions, TabGetters, SheetActions, SqlEditorState } from "@/types";
 
 const store = useStore();
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
