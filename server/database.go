@@ -47,7 +47,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummp database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -758,15 +758,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceFind := &api.DataSourceFind{
 			ID: &dataSourceID,
 		}
-		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
-		if dataSource == nil || dataSource.DatabaseID != databaseID {
+		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
 		}
@@ -799,12 +801,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSource, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		dataSourceRaw, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
 		}
@@ -838,11 +842,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ID:         &dataSourceID,
 			DatabaseID: &databaseID,
 		}
-		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSource == nil || dataSource.DatabaseID != databaseID {
+		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -859,12 +863,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dataSourcePatch.Password = &password
 		}
 
-		dataSource, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		dataSourceRaw, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
