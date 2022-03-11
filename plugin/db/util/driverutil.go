@@ -212,7 +212,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
 			return -1, common.Errorf(common.MigrationPending,
-				fmt.Errorf("database %q version %s is pending", m.Database, m.Version))
+				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
 		case db.Failed:
 			return -1, common.Errorf(common.MigrationFailed,
 				fmt.Errorf("database %q version %s has failed", m.Database, m.Version))
