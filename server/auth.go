@@ -110,6 +110,9 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// create a new user if not exist
 				if user == nil {
+					if gitlabUserInfo.PublicEmail == "" {
+						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.gitlab.com/ee/user/profile/")
+					}
 					// if user login via gitlab at the first time, we will generate a random password.
 					// The random password is supposed to be not guessable. If user wants to login
 					// via password, she needs to set the new password from the profile page.
