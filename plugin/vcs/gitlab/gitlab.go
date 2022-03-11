@@ -321,7 +321,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
 	}
 
-	return activeRepositoryMember, nil
+	return activeRepositoryMemberList, nil
 }
 
 // CreateFile creates a file.
