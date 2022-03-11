@@ -11,7 +11,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func newRestoreCmd() *cobra.Command {
+	var (
+		databaseType string
+		username     string
+		password     string
+		hostname     string
+		port         string
+		database     string
+		file         string
+
+		// SSL flags.
+		sslCA   string // server-ca.pem
+		sslCert string // client-cert.pem
+		sslKey  string // client-key.pem
+	)
+	restoreCmd := &cobra.Command{
+		Use:   "restore",
+		Short: "restores the schema of a database instance",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tlsCfg := db.TLSConfig{
+				SslCA:   sslCA,
+				SslCert: sslCert,
+				SslKey:  sslKey,
+			}
+			return restoreDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg)
+		},
+	}
 	restoreCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql, or pg).")
 	restoreCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
 	restoreCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
@@ -31,23 +57,8 @@ func init() {
 	restoreCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
 	restoreCmd.Flags().StringVar(&sslKey, "ssl-key", "", "X509 key in PEM format.")
 
-	rootCmd.AddCommand(restoreCmd)
+	return restoreCmd
 }
-
-var (
-	restoreCmd = &cobra.Command{
-		Use:   "restore",
-		Short: "restores the schema of a database instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := db.TLSConfig{
-				SslCA:   sslCA,
-				SslCert: sslCert,
-				SslKey:  sslKey,
-			}
-			return restoreDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg)
-		},
-	}
-)
 
 // restoreDatabase restores the schema of a database instance.
 func restoreDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TLSConfig) error {
