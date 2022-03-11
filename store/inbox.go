@@ -243,8 +243,8 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Inbox, 0)
+	// Iterate over result set and deserialize rows into inboxList.
+	var inboxList []*api.Inbox
 	for rows.Next() {
 		var inbox api.Inbox
 		inbox.Activity = &api.Activity{}
@@ -266,13 +266,13 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &inbox)
+		inboxList = append(inboxList, &inbox)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return inboxList, nil
 }
 
 // patchInbox updates a inbox by ID. Returns the new state of the inbox after update.

@@ -236,9 +236,8 @@ export default {
         })
         .then((token: OAuthToken) => {
           const gitlabLoginInfo: VCSLoginInfo = {
-            applicationId: state.activeAuthProvider!.applicationId,
-            secret: state.activeAuthProvider.secret,
-            instanceUrl: state.activeAuthProvider.instanceUrl,
+            id: state.activeAuthProvider.id,
+            name: state.activeAuthProvider.name,
             accessToken: token.accessToken,
           };
 

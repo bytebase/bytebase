@@ -194,7 +194,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transfering database has %d bound sheets, unbind them first", len(sheetList)))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, unbind them first", len(sheetList)))
 			}
 
 			toProject, err := s.composeProjectByID(ctx, *databasePatch.ProjectID)
@@ -977,13 +977,18 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 	database.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	anomalyList, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseID: &database.ID,
 	})
 	if err != nil {
 		return err
 	}
+	var anomalyList []*api.Anomaly
+	for _, anomalyRaw := range anomalyListRaw {
+		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
+	}
+	// TODO(dragonly): implement composeAnomalyRelationship
 	database.AnomalyList = anomalyList
 	for _, anomaly := range database.AnomalyList {
 		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)

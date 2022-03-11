@@ -213,8 +213,8 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.TaskRun, 0)
+	// Iterate over result set and deserialize rows into taskRunList.
+	var taskRunList []*api.TaskRun
 	for rows.Next() {
 		var taskRun api.TaskRun
 		if err := rows.Scan(
@@ -235,11 +235,11 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &taskRun)
+		taskRunList = append(taskRunList, &taskRun)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return taskRunList, nil
 }

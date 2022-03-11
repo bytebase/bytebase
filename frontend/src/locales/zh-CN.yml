@@ -294,6 +294,7 @@ settings:
       content: |-
         开启 VCS 同步将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
         原来的成员将会无效，您之后也可以关闭该 VCS 同步来撤销这一操作。
+      emphasize: 请注意，该功能需要 VCS 仓库内所有成员均设置了公开邮箱。
     change-role-provider-to-bytebase:
       content: 将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。
 activity:
@@ -1041,6 +1042,8 @@ label:
     description: 标签是一组可用于标识数据库租户的键值对。{link}。
   db-name-template-tips: 让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。
   confirm-change: 你确定要修改 '{label}' 吗？
+  parsed-from-template: 从 {name} 中依据模板 {template} 解析得出
+  cannot-transfer-template-not-match: 数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。
 oauth:
   unknown-event: 未知的事件类型，认证失败
 subscription:

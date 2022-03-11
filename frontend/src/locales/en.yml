@@ -303,6 +303,7 @@ settings:
         members from the corresponding VCS project.
 
         The existing members will become inactive. You can turn off VCS sync to restore those members.
+      emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members
@@ -1186,6 +1187,10 @@ label:
     Allow you to group databases with the same {placeholder} from different
     tenants. {link}.
   confirm-change: Are you sure to change '{label}' ?
+  parsed-from-template: Parsed from {name} by template {template}.
+  cannot-transfer-template-not-match: >-
+    Database '{name}' cannot be transferred to this project. Since its name
+    doesn't match the template {template}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
