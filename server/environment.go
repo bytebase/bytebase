@@ -160,7 +160,7 @@ func (s *Server) composeEnvironmentByID(ctx context.Context, id int) (*api.Envir
 		return nil, err
 	}
 	if envRaw == nil {
-		return nil, fmt.Errorf("environment ID not found %v", id)
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment not found with ID %v", id)}
 	}
 
 	env, err := s.composeEnvironmentRelationship(ctx, envRaw)

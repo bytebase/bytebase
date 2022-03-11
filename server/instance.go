@@ -453,7 +453,7 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 		return nil, err
 	}
 	if instance == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found %v", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance not found with ID %v", id)}
 	}
 
 	if err := s.composeInstanceRelationship(ctx, instance); err != nil {
