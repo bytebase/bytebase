@@ -78,6 +78,56 @@ func (e BackupStorageBackend) String() string {
 	return "UNKNOWN"
 }
 
+// BackupRaw is the store model for an Backup.
+// Fields have exactly the same meanings as Backup.
+type BackupRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+
+	// Domain specific fields
+	Name                    string
+	Status                  BackupStatus
+	Type                    BackupType
+	StorageBackend          BackupStorageBackend
+	MigrationHistoryVersion string
+	Path                    string
+	Comment                 string
+}
+
+// ToBackup creates an instance of Backup based on the BackupRaw.
+// This is intended to be called when we need to compose an Backup relationship.
+func (raw *BackupRaw) ToBackup() *Backup {
+	return &Backup{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:                    raw.Name,
+		Status:                  raw.Status,
+		Type:                    raw.Type,
+		StorageBackend:          raw.StorageBackend,
+		MigrationHistoryVersion: raw.MigrationHistoryVersion,
+		Path:                    raw.Path,
+		Comment:                 raw.Comment,
+	}
+}
+
 // Backup is the API message for a backup.
 type Backup struct {
 	ID int `jsonapi:"primary,backup"`
@@ -218,11 +268,11 @@ type BackupSettingsMatch struct {
 
 // BackupService is the service for backups.
 type BackupService interface {
-	CreateBackup(ctx context.Context, create *BackupCreate) (*Backup, error)
-	FindBackup(ctx context.Context, find *BackupFind) (*Backup, error)
+	CreateBackup(ctx context.Context, create *BackupCreate) (*BackupRaw, error)
+	FindBackup(ctx context.Context, find *BackupFind) (*BackupRaw, error)
 	// Returns backup list in updated_ts descending order.
-	FindBackupList(ctx context.Context, find *BackupFind) ([]*Backup, error)
-	PatchBackup(ctx context.Context, patch *BackupPatch) (*Backup, error)
+	FindBackupList(ctx context.Context, find *BackupFind) ([]*BackupRaw, error)
+	PatchBackup(ctx context.Context, patch *BackupPatch) (*BackupRaw, error)
 	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSetting, error)
 	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSetting, error)
 	UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSetting, error)
