@@ -131,8 +131,8 @@ import {
   SheetActions,
   UNKNOWN_ID,
   Instance,
-} from "../../../types";
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+} from "@/types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 import { useRouter } from "vue-router";
 import { instanceSlug } from "../../../utils/slug";
