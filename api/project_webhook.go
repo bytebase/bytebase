@@ -19,7 +19,7 @@ type ProjectWebhook struct {
 
 	// Related fields
 	// Just returns ProjectID since it always operates within the project context
-	ProjectID int `jsonapi:"attr,projecId"`
+	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
 	Type         string   `jsonapi:"attr,type"`
