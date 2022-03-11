@@ -147,8 +147,8 @@ export default {
 
     const database = computed(() => {
       return store.getters["database/databaseById"](
-        props.dataSource.database.id,
-        props.dataSource.instance.id
+        props.dataSource.databaseId,
+        props.dataSource.instanceId
       );
     });
 
