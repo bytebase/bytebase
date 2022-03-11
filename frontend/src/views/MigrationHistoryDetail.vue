@@ -258,21 +258,27 @@ export default defineComponent({
       );
     });
 
+    const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
+
     // get all migration histories before (include) the one of given id, ordered by descending version.
     const prevMigrationHistoryList = computed((): MigrationHistory[] => {
       const migrationHistoryList: MigrationHistory[] = store.getters[
         "instance/migrationHistoryListByInstanceIdAndDatabaseName"
       ](database.value.instance.id, database.value.name);
-      return migrationHistoryList.filter(
-        (mh) => mh.id <= idFromSlug(props.migrationHistorySlug)
-      );
+
+      // If migrationHistoryList does not contain current migration, it indicates cache stale.
+      // Dispatch a fetch. When new data is returned, it will update computed value.
+      if (migrationHistoryList.every((mh) => mh.id !== migrationHistoryId))
+        store.dispatch("instance/fetchInstanceList");
+
+      return migrationHistoryList.filter((mh) => mh.id <= migrationHistoryId);
     });
 
     const migrationHistory = computed((): MigrationHistory => {
       if (prevMigrationHistoryList.value.length > 0)
         return prevMigrationHistoryList.value[0];
       return store.getters["instance/migrationHistoryById"](
-        idFromSlug(props.migrationHistorySlug)
+        migrationHistoryId
       ) as MigrationHistory;
     });
 
