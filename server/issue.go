@@ -126,6 +126,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
 		}
 
+		if issuePatch.AssigneeID != nil {
+			if err := s.validateAssigneeRoleByID(ctx, *issuePatch.AssigneeID); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+			}
+		}
+
 		issueFind := &api.IssueFind{
 			ID: &id,
 		}
@@ -324,6 +330,24 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
+// Only allow Owner/DBA as the assignee, not Developer.
+func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
+	assignee, err := s.PrincipalService.FindPrincipal(ctx, &api.PrincipalFind{
+		ID: &assigneeID,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find principal by id %d", assigneeID)).SetInternal(err)
+	}
+	if assignee == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Principal ID not found: %d", assigneeID))
+	}
+	if assignee.Role == api.Developer {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("%s is not allowed as assignee", assignee.Role))
+	}
+
+	return nil
+}
+
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
@@ -331,6 +355,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	// quite unlikely so we will live with it for now.
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+
+	if err := s.validateAssigneeRoleByID(ctx, issueCreate.AssigneeID); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
 	// If frontend does not pass the stageList, we will generate it from backend.
