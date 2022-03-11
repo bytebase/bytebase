@@ -47,7 +47,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummp database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -554,14 +554,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupCreate.MigrationHistoryVersion = version
 
-		backup, err := s.BackupService.CreateBackup(ctx, backupCreate)
+		backupRaw, err := s.BackupService.CreateBackup(ctx, backupCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
 		}
-		if err := s.composeBackupRelationship(ctx, backup); err != nil {
+		backup, err := s.composeBackupRelationship(ctx, backupRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 		}
 
@@ -634,15 +635,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupFind := &api.BackupFind{
 			DatabaseID: &id,
 		}
-		backupList, err := s.BackupService.FindBackupList(ctx, backupFind)
+		backupRawList, err := s.BackupService.FindBackupList(ctx, backupFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
 		}
 
-		for _, backup := range backupList {
-			if err := s.composeBackupRelationship(ctx, backup); err != nil {
+		var backupList []*api.Backup
+		for _, backupRaw := range backupRawList {
+			backup, err := s.composeBackupRelationship(ctx, backupRaw)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 			}
+			backupList = append(backupList, backup)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -754,15 +758,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceFind := &api.DataSourceFind{
 			ID: &dataSourceID,
 		}
-		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
-		if dataSource == nil || dataSource.DatabaseID != databaseID {
+		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
 		}
@@ -795,12 +801,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSource, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		dataSourceRaw, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
 		}
@@ -834,11 +842,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ID:         &dataSourceID,
 			DatabaseID: &databaseID,
 		}
-		dataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSource == nil || dataSource.DatabaseID != databaseID {
+		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -855,12 +863,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dataSourcePatch.Password = &password
 		}
 
-		dataSource, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		dataSourceRaw, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		// TODO(dragonly): compose DataSource
+		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
@@ -1066,31 +1076,38 @@ func (s *Server) composeBackupByID(ctx context.Context, id int) (*api.Backup, er
 	backupFind := &api.BackupFind{
 		ID: &id,
 	}
-	backup, err := s.BackupService.FindBackup(ctx, backupFind)
+	backupRaw, err := s.BackupService.FindBackup(ctx, backupFind)
+	if err != nil {
+		return nil, err
+	}
+	if backupRaw == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup not found with ID %d", id)}
+	}
+
+	backup, err := s.composeBackupRelationship(ctx, backupRaw)
 	if err != nil {
 		return nil, err
 	}
 
-	if backup != nil {
-		if err := s.composeBackupRelationship(ctx, backup); err != nil {
-			return nil, err
-		}
-	}
 	return backup, nil
 }
 
 // composeBackupRelationship will compose the relationship of a backup.
-func (s *Server) composeBackupRelationship(ctx context.Context, backup *api.Backup) error {
-	var err error
-	backup.Creator, err = s.composePrincipalByID(ctx, backup.CreatorID)
+func (s *Server) composeBackupRelationship(ctx context.Context, raw *api.BackupRaw) (*api.Backup, error) {
+	backup := raw.ToBackup()
+	creator, err := s.composePrincipalByID(ctx, backup.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	backup.Updater, err = s.composePrincipalByID(ctx, backup.UpdaterID)
+	backup.Creator = creator
+
+	updater, err := s.composePrincipalByID(ctx, backup.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	backup.Updater = updater
+
+	return backup, nil
 }
 
 // Try to get database driver using the instance's admin data source.

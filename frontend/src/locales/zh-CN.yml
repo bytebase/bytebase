@@ -150,6 +150,7 @@ common:
   added-time: 添加时间
   data-source: 数据源
   grant: 授予
+  admin: 管理员
   read-only: 只读
   connection-string: 连接字符串
   agents: Agents
@@ -174,6 +175,7 @@ common:
   table: 表
   search: 搜索
   warning: 警告
+  edited: 编辑于
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -476,6 +478,7 @@ instance:
   connection-info: 连接信息
   show-how-to-create: 如何创建
   below-is-an-example-to-create-user-bytebase-with-password: 创建用户 'bytebase{'@'}%' 及其密码的例子如下
+  no-read-only-data-source-warn: 该实例没有配置只读用户，请考虑配置。
   sentence:
     host:
       snowflake: 例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
@@ -483,7 +486,8 @@ instance:
       snowflake: 对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT
     console:
       snowflake: "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
-    create-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML 操作的用户。
+    create-admin-user: 这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。
+    create-readonly-user: 这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作。
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -525,6 +529,7 @@ instance:
     RDS 实例，也可能是您私有化部署的 MySQL 实例。
     Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
   search-instance-name: 搜索实例名称
+  no-read-only-data-source-support: 暂时不支持 {database} 创建只读连接
   grants: 权限
 environment:
   select: 选择环境
@@ -947,6 +952,7 @@ deployment-config:
   project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
   go-and-config: 去配置
 datasource:
+  role-type: 权限类型
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
   create-data-source: 创建数据源
   data-source-list: 数据源列表
@@ -1022,6 +1028,7 @@ sql-editor:
   project-desc: 工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限
   public: 公开
   public-desc: 工作表所有者拥有读写权限，其他人只拥有只读权限.
+  create-read-only-data-source: 前去创建
   go-back: 返回
 label:
   empty-label-value: <空值>
@@ -1041,6 +1048,7 @@ label:
   setting:
     description: 标签是一组可用于标识数据库租户的键值对。{link}。
   db-name-template-tips: 让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。
+  confirm-change: 您确定要修改 '{label}' 吗？
   parsed-from-template: 从 {name} 中依据模板 {template} 解析得出
   cannot-transfer-template-not-match: 数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。
 oauth:

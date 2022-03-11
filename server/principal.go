@@ -151,7 +151,7 @@ func (s *Server) composePrincipalByID(ctx context.Context, id int) (*api.Princip
 		return nil, err
 	}
 	if id > 0 && principal == nil {
-		return nil, fmt.Errorf("principal not found for ID %v", id)
+		return nil, fmt.Errorf("Principal not found with ID %v", id)
 	}
 
 	if err = s.composePrincipalRole(ctx, principal); err != nil {
