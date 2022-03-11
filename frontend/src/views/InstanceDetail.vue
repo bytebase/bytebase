@@ -10,7 +10,7 @@
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
-      <InstanceForm :create="false" :instance="instance" />
+      <InstanceForm :instance="instance" />
       <div
         v-if="hasDataSourceFeature"
         class="py-6 space-y-4 border-t divide-control-border"
@@ -124,10 +124,9 @@
     :title="$t('quick-action.create-db')"
     @close="state.showCreateDatabaseModal = false"
   >
-    <!-- eslint-disable vue/attribute-hyphenation -->
     <CreateDatabasePrepForm
-      :environmentId="instance.environment.id"
-      :instanceId="instance.id"
+      :environment-id="instance.environment.id"
+      :instance-id="instance.id"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
@@ -138,8 +137,8 @@
   />
 </template>
 
-<script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+<script lang="ts" setup>
+import { computed, defineProps, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
@@ -172,293 +171,255 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-export default {
-  name: "InstanceDetail",
-  components: {
-    ArchiveBanner,
-    DatabaseTable,
-    DataSourceTable,
-    InstanceUserTable,
-    InstanceForm,
-    CreateDatabasePrepForm,
+const props = defineProps({
+  instanceSlug: {
+    required: true,
+    type: String,
   },
-  props: {
-    instanceSlug: {
-      required: true,
-      type: String,
-    },
-  },
-  setup(props) {
-    const store = useStore();
-    const { t } = useI18n();
+});
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+const store = useStore();
+const { t } = useI18n();
 
-    const state = reactive<LocalState>({
-      selectedIndex: DATABASE_TAB,
-      migrationSetupStatus: "OK",
-      showCreateMigrationSchemaModal: false,
-      creatingMigrationSchema: false,
-      showCreateDatabaseModal: false,
-      syncingSchema: false,
-      showFeatureModal: false,
+const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+const state = reactive<LocalState>({
+  selectedIndex: DATABASE_TAB,
+  migrationSetupStatus: "OK",
+  showCreateMigrationSchemaModal: false,
+  creatingMigrationSchema: false,
+  showCreateDatabaseModal: false,
+  syncingSchema: false,
+  showFeatureModal: false,
+});
+
+const instance = computed((): Instance => {
+  return store.getters["instance/instanceById"](idFromSlug(props.instanceSlug));
+});
+
+const checkMigrationSetup = () => {
+  store
+    .dispatch("instance/checkMigrationSetup", instance.value.id)
+    .then((migration: InstanceMigration) => {
+      state.migrationSetupStatus = migration.status;
     });
+};
 
-    const instance = computed((): Instance => {
-      return store.getters["instance/instanceById"](
-        idFromSlug(props.instanceSlug)
-      );
-    });
+const prepareMigrationSchemaStatus = () => {
+  checkMigrationSetup();
+};
+watchEffect(prepareMigrationSchemaStatus);
 
-    const checkMigrationSetup = () => {
-      store
-        .dispatch("instance/checkMigrationSetup", instance.value.id)
-        .then((migration: InstanceMigration) => {
-          state.migrationSetupStatus = migration.status;
-        });
-    };
+const attentionTitle = computed((): string => {
+  if (state.migrationSetupStatus == "NOT_EXIST") {
+    return t("instance.missing-migration-schema");
+  } else if (state.migrationSetupStatus == "UNKNOWN") {
+    return t("instance.unable-to-connect-instance-to-check-migration-schema");
+  }
+  return "";
+});
 
-    const prepareMigrationSchemaStatus = () => {
-      checkMigrationSetup();
-    };
-    watchEffect(prepareMigrationSchemaStatus);
-
-    const attentionTitle = computed((): string => {
-      if (state.migrationSetupStatus == "NOT_EXIST") {
-        return t("instance.missing-migration-schema");
-      } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return t(
-          "instance.unable-to-connect-instance-to-check-migration-schema"
-        );
-      }
-      return "";
-    });
-
-    const attentionText = computed((): string => {
-      if (state.migrationSetupStatus == "NOT_EXIST") {
-        return (
-          t(
-            "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
-          ) +
-          (isDBAOrOwner(currentUser.value.role)
-            ? ""
-            : " " + t("instance.please-contact-your-dba-to-configure-it"))
-        );
-      } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return (
-          t(
-            "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
-          ) +
-          (isDBAOrOwner(currentUser.value.role)
-            ? " " +
-              t("instance.please-check-the-instance-connection-info-is-correct")
-            : " " + t("instance.please-contact-your-dba-to-configure-it"))
-        );
-      }
-      return "";
-    });
-
-    const attentionActionText = computed((): string => {
-      if (isDBAOrOwner(currentUser.value.role)) {
-        if (state.migrationSetupStatus == "NOT_EXIST") {
-          return t("instance.create-migration-schema");
-        } else if (state.migrationSetupStatus == "UNKNOWN") {
-          return "";
-        }
-      }
-      return "";
-    });
-
-    const hasDataSourceFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.data-source")
+const attentionText = computed((): string => {
+  if (state.migrationSetupStatus == "NOT_EXIST") {
+    return (
+      t(
+        "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+      ) +
+      (isDBAOrOwner(currentUser.value.role)
+        ? ""
+        : " " + t("instance.please-contact-your-dba-to-configure-it"))
     );
+  } else if (state.migrationSetupStatus == "UNKNOWN") {
+    return (
+      t(
+        "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
+      ) +
+      (isDBAOrOwner(currentUser.value.role)
+        ? " " +
+          t("instance.please-check-the-instance-connection-info-is-correct")
+        : " " + t("instance.please-contact-your-dba-to-configure-it"))
+    );
+  }
+  return "";
+});
 
-    const databaseList = computed(() => {
-      const list = store.getters["database/databaseListByInstanceId"](
-        instance.value.id
-      );
-      if (isDBAOrOwner(currentUser.value.role)) {
-        return list;
+const attentionActionText = computed((): string => {
+  if (isDBAOrOwner(currentUser.value.role)) {
+    if (state.migrationSetupStatus == "NOT_EXIST") {
+      return t("instance.create-migration-schema");
+    } else if (state.migrationSetupStatus == "UNKNOWN") {
+      return "";
+    }
+  }
+  return "";
+});
+
+const hasDataSourceFeature = computed(() =>
+  store.getters["subscription/feature"]("bb.feature.data-source")
+);
+
+const databaseList = computed(() => {
+  const list = store.getters["database/databaseListByInstanceId"](
+    instance.value.id
+  );
+  if (isDBAOrOwner(currentUser.value.role)) {
+    return list;
+  }
+
+  // In edge case when the user is no longer an Owner or DBA, we only want to display the database
+  // belonging to the project which the user is a member of. The returned list above may contain
+  // databases not meeting this criteria and we need to filter out them.
+  const filteredList: Database[] = [];
+  for (const database of list) {
+    for (const member of database.project.memberList) {
+      if (member.principal.id == currentUser.value.id) {
+        filteredList.push(database);
+        break;
       }
+    }
+  }
+  return filteredList;
+});
 
-      // In edge case when the user is no longer an Owner or DBA, we only want to display the database
-      // belonging to the project which the user is a member of. The returned list above may contain
-      // databases not meeting this criteria and we need to filter out them.
-      const filteredList: Database[] = [];
-      for (const database of list) {
-        for (const member of database.project.memberList) {
-          if (member.principal.id == currentUser.value.id) {
-            filteredList.push(database);
-            break;
-          }
-        }
+const instanceUserList = computed(() => {
+  return store.getters["instance/instanceUserListById"](instance.value.id);
+});
+
+const allowEdit = computed(() => {
+  return (
+    instance.value.rowStatus == "NORMAL" && isDBAOrOwner(currentUser.value.role)
+  );
+});
+
+const allowArchiveOrRestore = computed(() => {
+  return isDBAOrOwner(currentUser.value.role);
+});
+
+const tabItemList = computed((): BBTabFilterItem[] => {
+  return [
+    {
+      title: t("common.databases"),
+      alert: false,
+    },
+    {
+      title: t("instance.users"),
+      alert: false,
+    },
+  ];
+});
+
+const doArchive = () => {
+  store
+    .dispatch("instance/patchInstance", {
+      instanceId: instance.value.id,
+      instancePatch: {
+        rowStatus: "ARCHIVED",
+      },
+    })
+    .then((updatedInstance) => {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t(
+          "instance.successfully-archived-instance-updatedinstance-name",
+          [updatedInstance.name]
+        ),
+      });
+    });
+};
+
+const doRestore = () => {
+  const subscription: Subscription | undefined =
+    store.getters["subscription/subscription"]();
+  const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+  if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
+    state.showFeatureModal = true;
+    return;
+  }
+  store
+    .dispatch("instance/patchInstance", {
+      instanceId: instance.value.id,
+      instancePatch: {
+        rowStatus: "NORMAL",
+      },
+    })
+    .then((updatedInstance) => {
+      store.dispatch("notification/pushNotification", {
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t(
+          "instance.successfully-restored-instance-updatedinstance-name",
+          [updatedInstance.name]
+        ),
+      });
+    });
+};
+
+const doCreateMigrationSchema = () => {
+  state.creatingMigrationSchema = true;
+  store
+    .dispatch("instance/createMigrationSetup", instance.value.id)
+    .then((resultSet: SqlResultSet) => {
+      state.creatingMigrationSchema = false;
+      if (resultSet.error) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t(
+            "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
+            [instance.value.name]
+          ),
+          description: resultSet.error,
+        });
+      } else {
+        checkMigrationSetup();
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t(
+            "instance.successfully-created-migration-schema-for-instance-value-name",
+            [instance.value.name]
+          ),
+        });
       }
-      return filteredList;
+      state.showCreateMigrationSchemaModal = false;
     });
+};
 
-    const instanceUserList = computed(() => {
-      return store.getters["instance/instanceUserListById"](instance.value.id);
-    });
-
-    const allowEdit = computed(() => {
-      return (
-        instance.value.rowStatus == "NORMAL" &&
-        isDBAOrOwner(currentUser.value.role)
-      );
-    });
-
-    const allowArchiveOrRestore = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
-    const tabItemList = computed((): BBTabFilterItem[] => {
-      return [
-        {
-          title: t("common.databases"),
-          alert: false,
-        },
-        {
-          title: t("instance.users"),
-          alert: false,
-        },
-      ];
-    });
-
-    const doArchive = () => {
-      store
-        .dispatch("instance/patchInstance", {
-          instanceId: instance.value.id,
-          instancePatch: {
-            rowStatus: "ARCHIVED",
-          },
-        })
-        .then((updatedInstance) => {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "instance.successfully-archived-instance-updatedinstance-name",
-              [updatedInstance.name]
-            ),
-          });
+const syncSchema = () => {
+  state.syncingSchema = true;
+  store
+    .dispatch("sql/syncSchema", instance.value.id)
+    .then((resultSet: SqlResultSet) => {
+      state.syncingSchema = false;
+      if (resultSet.error) {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t(
+            "instance.failed-to-sync-schema-for-instance-instance-value-name",
+            [instance.value.name]
+          ),
+          description: resultSet.error,
         });
-    };
-
-    const doRestore = () => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
-      const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
-      if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
-        state.showFeatureModal = true;
-        return;
+      } else {
+        store.dispatch("notification/pushNotification", {
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t(
+            "instance.successfully-synced-schema-for-instance-instance-value-name",
+            [instance.value.name]
+          ),
+          description: resultSet.error,
+        });
       }
-      store
-        .dispatch("instance/patchInstance", {
-          instanceId: instance.value.id,
-          instancePatch: {
-            rowStatus: "NORMAL",
-          },
-        })
-        .then((updatedInstance) => {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "instance.successfully-restored-instance-updatedinstance-name",
-              [updatedInstance.name]
-            ),
-          });
-        });
-    };
+    })
+    .catch(() => {
+      state.syncingSchema = false;
+    });
+};
 
-    const doCreateMigrationSchema = () => {
-      state.creatingMigrationSchema = true;
-      store
-        .dispatch("instance/createMigrationSetup", instance.value.id)
-        .then((resultSet: SqlResultSet) => {
-          state.creatingMigrationSchema = false;
-          if (resultSet.error) {
-            store.dispatch("notification/pushNotification", {
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t(
-                "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
-                [instance.value.name]
-              ),
-              description: resultSet.error,
-            });
-          } else {
-            checkMigrationSetup();
-            store.dispatch("notification/pushNotification", {
-              module: "bytebase",
-              style: "SUCCESS",
-              title: t(
-                "instance.successfully-created-migration-schema-for-instance-value-name",
-                [instance.value.name]
-              ),
-            });
-          }
-          state.showCreateMigrationSchemaModal = false;
-        });
-    };
-
-    const syncSchema = () => {
-      state.syncingSchema = true;
-      store
-        .dispatch("sql/syncSchema", instance.value.id)
-        .then((resultSet: SqlResultSet) => {
-          state.syncingSchema = false;
-          if (resultSet.error) {
-            store.dispatch("notification/pushNotification", {
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t(
-                "instance.failed-to-sync-schema-for-instance-instance-value-name",
-                [instance.value.name]
-              ),
-              description: resultSet.error,
-            });
-          } else {
-            store.dispatch("notification/pushNotification", {
-              module: "bytebase",
-              style: "SUCCESS",
-              title: t(
-                "instance.successfully-synced-schema-for-instance-instance-value-name",
-                [instance.value.name]
-              ),
-              description: resultSet.error,
-            });
-          }
-        })
-        .catch(() => {
-          state.syncingSchema = false;
-        });
-    };
-
-    const createDatabase = () => {
-      state.showCreateDatabaseModal = true;
-    };
-
-    return {
-      DATABASE_TAB,
-      USER_TAB,
-      state,
-      attentionTitle,
-      attentionText,
-      attentionActionText,
-      hasDataSourceFeature,
-      instance,
-      databaseList,
-      instanceUserList,
-      allowEdit,
-      allowArchiveOrRestore,
-      tabItemList,
-      doArchive,
-      doRestore,
-      doCreateMigrationSchema,
-      syncSchema,
-      createDatabase,
-    };
-  },
+const createDatabase = () => {
+  state.showCreateDatabaseModal = true;
 };
 </script>
