@@ -47,7 +47,7 @@ import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
-import { getDefaultTab } from "../../../utils/tab";
+import { defaultTabName } from "../../../utils/tab";
 
 const { isShowExecutingHint } = useNamespacedState<SqlEditorState>(
   "sqlEditor",
@@ -81,7 +81,7 @@ const handleClose = () => {
 };
 
 const handleSaveSheet = async (sheetName?: string) => {
-  if (currentTab.value.name === getDefaultTab().name && !sheetName) {
+  if (currentTab.value.name === defaultTabName.value && !sheetName) {
     isShowSaveSheetModal.value = true;
     return;
   }
