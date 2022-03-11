@@ -481,7 +481,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					DatabaseID: &database.ID,
 					Status:     &status,
 				}
-				backupList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
+				backupRawList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
@@ -490,8 +490,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 
 				hasValidBackup := false
-				if len(backupList) > 0 {
-					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+				if len(backupRawList) > 0 {
+					if backupRawList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
 						hasValidBackup = true
 					}
 				}
@@ -500,8 +500,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
 						ExpectedBackupSchedule: expectedSchedule,
 					}
-					if len(backupList) > 0 {
-						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
+					if len(backupRawList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupRawList[0].UpdatedTs
 					}
 				}
 			}
