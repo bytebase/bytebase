@@ -143,7 +143,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		if status != api.TaskDone {
 			return fmt.Errorf("issue %v pipeline %v is expected to finish with status done got %v", issue.ID, issue.Pipeline.ID, status)
 		}
-		fmt.Println("***done")
 
 		// Query schema.
 		result, err := ctl.query(instance, databaseName, bookTableQuery)
