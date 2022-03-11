@@ -47,7 +47,7 @@ import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
-import { getDefaultTab } from "../../../store/modules/tab";
+import { getDefaultTab } from "../../../utils/tab";
 
 const { isShowExecutingHint } = useNamespacedState<SqlEditorState>(
   "sqlEditor",

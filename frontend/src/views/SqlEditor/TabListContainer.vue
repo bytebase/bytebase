@@ -136,7 +136,7 @@ import {
   SheetActions,
 } from "../../types";
 import { useDialog } from "naive-ui";
-import { getDefaultTab } from "../../store/modules/tab";
+import { getDefaultTab } from "../../utils/tab";
 import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
 
 // getters map
@@ -162,10 +162,9 @@ const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
     "setCurrentTabId",
     "updateCurrentTab",
   ]);
-const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
-  "sheet",
-  ["createSheet", "patchSheetById"]
-);
+const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
+  "patchSheetById",
+]);
 
 const store = useStore();
 const { t } = useI18n();
@@ -264,16 +263,7 @@ const handleAddTab = () => {
 
   addTab(getDefaultTab());
 
-  nextTick(async () => {
-    // make a relation between the new sheet and the current tab
-    const newSheet = await createSheet();
-
-    updateCurrentTab({
-      sheetId: newSheet.id,
-    });
-
-    recalculateScrollWidth();
-  });
+  nextTick(recalculateScrollWidth);
 };
 
 const handleRemoveTab = async (tab: TabInfo) => {

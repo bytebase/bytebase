@@ -1,20 +1,7 @@
-import dayjs from "dayjs";
-import { v1 as uuidv1 } from "uuid";
 import { TabInfo, AnyTabInfo, TabState } from "../../types";
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
-import { t } from "../../plugins/i18n";
-
-export const getDefaultTab = () => {
-  return {
-    id: uuidv1(),
-    name: t("sql-editor.untitled-sheet"),
-    isSaved: true,
-    savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-    statement: "",
-    selectedStatement: "",
-  };
-};
+import { getDefaultTab } from "../../utils/tab";
 
 // tab store is the sheet store for frontend
 const state: () => TabState = () => {
