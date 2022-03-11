@@ -196,10 +196,12 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	activityFind := &api.ActivityFind{
 		ID: &activityID,
 	}
-	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+	activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	// TODO(dragonly): compose Activity
+	inbox.Activity = activityRaw.ToActivity()
 
 	return &inbox, nil
 }
@@ -310,10 +312,12 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 		activityFind := &api.ActivityFind{
 			ID: &activityID,
 		}
-		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+		activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 		if err != nil {
 			return nil, FormatError(err)
 		}
+		// TODO(dragonly): compose Activity
+		inbox.Activity = activityRaw.ToActivity()
 
 		return &inbox, nil
 	}
