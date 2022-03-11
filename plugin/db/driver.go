@@ -28,7 +28,7 @@ const (
 	Snowflake Type = "SNOWFLAKE"
 	// SQLite is the database type for SQLite.
 	SQLite Type = "SQLITE"
-	// TiDB is the database type for TIDB.
+	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
 )
 
@@ -342,7 +342,7 @@ type MigrationHistory struct {
 	Payload             string
 }
 
-// MigrationHistoryFind is the API message for finding migration historys.
+// MigrationHistoryFind is the API message for finding migration histories.
 type MigrationHistoryFind struct {
 	ID *int
 
