@@ -53,7 +53,6 @@ ORDER BY
 LIMIT 10;
 
 -- Procedure
-DELIMITER //
 CREATE PROCEDURE bytebase_test_blog.author_post_count (IN author_id INT, OUT post_count INT)
 BEGIN
 	SELECT
@@ -62,11 +61,9 @@ BEGIN
 			author, post
 		WHERE
 			author.id = post.author_id AND author.id = author_id;
-END //
-DELIMITER ;
+END;
 
 -- Function
-DELIMITER //
 CREATE FUNCTION bytebase_test_blog.author_comment_count (author_id INT)
 	RETURNS INT DETERMINISTIC
 BEGIN
@@ -81,11 +78,9 @@ DECLARE
 		author.id = comment.author_id
 		AND author.id = author_id;
 	RETURN comment_count;
-END //
-DELIMITER ;
+END;
 
 -- Event
-DELIMITER //
 CREATE EVENT bytebase_test_blog.increase_author_coin_daily ON SCHEDULE EVERY 1 DAY DO UPDATE author
 SET coin = coin + 1;
 
@@ -100,5 +95,4 @@ BEGIN
 		updated_ts = NOW()
 	WHERE
 		id = OLD.id;
-END //
-DELIMITER ;
+END;
