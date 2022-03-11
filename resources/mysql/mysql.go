@@ -169,16 +169,14 @@ func (i *Instance) Import(path string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysql"),
-		"--user=root",
-		"--protocol=TCP",
-		"--host=localhost",
-		fmt.Sprintf("--port=%d", i.port),
-	)
-	cmd.Stdin = bytes.NewReader(buf.Bytes())
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	return cmd.Run()
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/?multiStatements=true", i.port))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec(buf.String())
+	return err
 }
 
 func cat(path string, out io.Writer) error {
