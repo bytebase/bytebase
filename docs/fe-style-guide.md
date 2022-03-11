@@ -64,10 +64,6 @@ We are using [ESLint](https://eslint.org/) and [Prettier](https://prettier.io/) 
 
 See [the configuration file](https://github.com/bytebase/bytebase/blob/main/frontend/.eslintrc.js) to learn more about the rules.
 
-# Misc
-
-1. Timestamps should be Unix timestamp (UTC timezone) in seconds whenever possible. The names should be in the format of `xxTs` such as `createdTs`. Timestamps that need precision should be nanoseconds, e.g. perf profiling. The names should be in the format of `xxNs`.
-
 # References
 
 1. [Bytebase's API Style Guide](https://github.com/bytebase/bytebase/blob/main/docs/api-style-guide.md)
