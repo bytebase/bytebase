@@ -82,16 +82,9 @@ const onChange = (e: Event) => {
     closable: false,
     maskClosable: false,
     closeOnEsc: false,
-    onClose: () => {
-      console.log("asdf");
-    },
-    onMaskClick: () => {
-      console.log("222");
-    },
     onNegativeClick: () => {
       state.value = props.value;
       select.value = state.value || "";
-      console.log(state.value);
     },
     onPositiveClick: () => {
       const { value } = select;
