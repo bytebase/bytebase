@@ -121,7 +121,8 @@ type DataSource struct {
 	Name     string         `jsonapi:"attr,name"`
 	Type     DataSourceType `jsonapi:"attr,type"`
 	Username string         `jsonapi:"attr,username"`
-	Password string         `jsonapi:"attr,password"`
+	// Do not return the password to client
+	Password string
 }
 
 // DataSourceCreate is the API message for creating a data source.
