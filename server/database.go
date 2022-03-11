@@ -52,27 +52,28 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		}
 
-		database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+		dbRaw, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Database name already exists: %s", databaseCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
 		}
-		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
+		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created database relationship").SetInternal(err)
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, database, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, db, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, db); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create database response").SetInternal(err)
 		}
 		return nil
@@ -149,7 +150,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -166,43 +167,43 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		databasePatch := &api.DatabasePatch{
+		dbPatch := &api.DatabasePatch{
 			ID:        id,
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, databasePatch); err != nil {
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dbPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
 		}
 
-		database, err := s.composeDatabaseByFind(ctx, &api.DatabaseFind{
+		dbRaw, err := s.composeDatabaseByFind(ctx, &api.DatabaseFind{
 			ID: &id,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+		if dbRaw == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		targetProject := database.Project
-		if databasePatch.ProjectID != nil && *databasePatch.ProjectID != database.ProjectID {
+		targetProject := dbRaw.Project
+		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != dbRaw.ProjectID {
 			// Before updating the database projectID, we first need to check if there are still bound sheets.
 			sheetList, err := s.SheetService.FindSheetList(ctx, &api.SheetFind{
-				DatabaseID: &database.ID,
+				DatabaseID: &dbRaw.ID,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", dbRaw.ID)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, unbind them first", len(sheetList)))
 			}
 
-			toProject, err := s.composeProjectByID(ctx, *databasePatch.ProjectID)
+			toProject, err := s.composeProjectByID(ctx, *dbPatch.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project ID: %d", *databasePatch.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project ID: %d", *dbPatch.ProjectID)).SetInternal(err)
 			}
 			if toProject == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *databasePatch.ProjectID))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
 			targetProject = toProject
 
@@ -211,42 +212,42 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 				}
 
-				labels := database.Labels
-				if databasePatch.Labels != nil {
-					labels = *databasePatch.Labels
+				labels := dbRaw.Labels
+				if dbPatch.Labels != nil {
+					labels = *dbPatch.Labels
 				}
 				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
+				baseDatabaseName, err := api.GetBaseDatabaseName(dbRaw.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, labels, err)
+					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", dbRaw.Name, toProject.DBNameTemplate, labels, err)
 				}
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *databasePatch.ProjectID, baseDatabaseName)
+				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, dbRaw.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
 				if err != nil {
 					return err
 				}
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, dbRaw.Instance, dbRaw.Name, s.l)
 					if err != nil {
 						return err
 					}
 					defer driver.Close(ctx)
-					schemaVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
+					schemaVersion, err := getLatestSchemaVersion(ctx, driver, dbRaw.Name)
 					if err != nil {
-						return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
+						return fmt.Errorf("failed to get migration history for database %q: %w", dbRaw.Name, err)
 					}
 					if peerSchemaVersion != schemaVersion {
 						return fmt.Errorf("the schema version %q does not match the peer database schema version %q in the target tenant mode project %q", schemaVersion, peerSchemaVersion, toProject.Name)
 					}
 
 					var schemaBuf bytes.Buffer
-					if err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
+					if err := driver.Dump(ctx, dbRaw.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+						return fmt.Errorf("failed to get database schema for database %q: %w", dbRaw.Name, err)
 					}
 					if peerSchema != schemaBuf.String() {
-						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name)
+						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", dbRaw.Name, toProject.Name)
 					}
 				}
 			}
@@ -255,86 +256,89 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Patch database labels
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
-		if databasePatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *databasePatch.Labels, database, targetProject, databasePatch.UpdaterID, false /* validateOnly */); err != nil {
+		if dbPatch.Labels != nil {
+			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, dbRaw, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return err
 			}
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
 		// the old project and new project.
-		var existingDatabase *api.Database
-		if databasePatch.ProjectID != nil {
-			existingDatabase, err = s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
-				ID: &databasePatch.ID,
+		var dbRawExisting *api.DatabaseRaw
+		if dbPatch.ProjectID != nil {
+			dbRawExisting, err = s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{
+				ID: &dbPatch.ID,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 			}
-			if existingDatabase == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			if dbRawExisting == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 			}
 		}
+		dbExisting, err := s.composeDatabaseRelationship(ctx, dbRawExisting)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
 
-		database, err = s.DatabaseService.PatchDatabase(ctx, databasePatch)
+		dbRawPatched, err := s.DatabaseService.PatchDatabase(ctx, dbPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", database.Name)).SetInternal(err)
+		dbPatched, err := s.composeDatabaseRelationship(ctx, dbRawPatched)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated database relationship: %v", dbRawPatched.Name)).SetInternal(err)
 		}
 
 		// Create transferring database project activity.
-		if databasePatch.ProjectID != nil {
+		if dbPatch.ProjectID != nil {
 			bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-				DatabaseID:   database.ID,
-				DatabaseName: database.Name,
+				DatabaseID:   dbPatched.ID,
+				DatabaseName: dbPatched.Name,
 			})
 			if err == nil {
-				existingDatabase.Project, err = s.composeProjectByID(ctx, existingDatabase.ProjectID)
+				dbExisting.Project, err = s.composeProjectByID(ctx, dbExisting.ProjectID)
 				if err == nil {
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-						ContainerID: existingDatabase.ProjectID,
+						ContainerID: dbExisting.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
 						Level:       api.ActivityInfo,
-						Comment: fmt.Sprintf("Transferred out database %q to project %q.",
-							database.Name, database.Project.Name),
-						Payload: string(bytes),
+						Comment:     fmt.Sprintf("Transferred out database %q to project %q.", dbPatched.Name, dbPatched.Project.Name),
+						Payload:     string(bytes),
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 				}
 
 				if err != nil {
 					s.l.Warn("Failed to create project activity after transferring database",
-						zap.Int("database_id", database.ID),
-						zap.String("database_name", database.Name),
-						zap.Int("old_project_id", existingDatabase.ProjectID),
-						zap.Int("new_project_id", database.ProjectID),
+						zap.Int("database_id", dbPatched.ID),
+						zap.String("database_name", dbPatched.Name),
+						zap.Int("old_project_id", dbExisting.ProjectID),
+						zap.Int("new_project_id", dbPatched.ProjectID),
 						zap.Error(err))
 				}
 
 				{
 					activityCreate := &api.ActivityCreate{
 						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-						ContainerID: database.ProjectID,
+						ContainerID: dbPatched.ProjectID,
 						Type:        api.ActivityProjectDatabaseTransfer,
 						Level:       api.ActivityInfo,
-						Comment: fmt.Sprintf("Transferred in database %q from project %q.",
-							existingDatabase.Name, existingDatabase.Project.Name),
-						Payload: string(bytes),
+						Comment:     fmt.Sprintf("Transferred in database %q from project %q.", dbExisting.Name, dbExisting.Project.Name),
+						Payload:     string(bytes),
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
 						s.l.Warn("Failed to create project activity after transferring database",
-							zap.Int("database_id", database.ID),
-							zap.String("database_name", database.Name),
-							zap.Int("old_project_id", existingDatabase.ProjectID),
-							zap.Int("new_project_id", database.ProjectID),
+							zap.Int("database_id", dbPatched.ID),
+							zap.String("database_name", dbPatched.Name),
+							zap.Int("old_project_id", dbExisting.ProjectID),
+							zap.Int("new_project_id", dbPatched.ProjectID),
 							zap.Error(err))
 					}
 				}
@@ -342,7 +346,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dbPatched); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -363,7 +367,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		tableFind := &api.TableFind{
@@ -423,7 +427,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		tableName := c.Param("tableName")
@@ -487,7 +491,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		viewFind := &api.ViewFind{
@@ -534,7 +538,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		backupCreate.Path, err = getAndCreateBackupPath(s.dataDir, database, backupCreate.Name)
@@ -629,7 +633,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		backupFind := &api.BackupFind{
@@ -677,7 +681,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if db == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 		backupSettingUpsert.EnvironmentID = db.Instance.Environment.ID
 
@@ -708,7 +712,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		backupSettingFind := &api.BackupSettingFind{
@@ -752,7 +756,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
 
 		dataSourceFind := &api.DataSourceFind{
@@ -790,7 +794,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
 
 		dataSourceCreate := &api.DataSourceCreate{}
@@ -835,7 +839,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", databaseID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
 
 		dataSourceFind := &api.DataSourceFind{
@@ -925,99 +929,110 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 }
 
 func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	database, err := s.DatabaseService.FindDatabase(ctx, find)
+	databaseRaw, err := s.DatabaseService.FindDatabase(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if database != nil {
-		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-			return nil, err
-		}
+	if databaseRaw == nil {
+		return nil, nil
+	}
+
+	database, err := s.composeDatabaseRelationship(ctx, databaseRaw)
+	if err != nil {
+		return nil, err
 	}
 
 	return database, nil
 }
 
 func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
-	dbList, err := s.DatabaseService.FindDatabaseList(ctx, find)
+	dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, database := range dbList {
-		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
+	var dbList []*api.Database
+	for _, dbRaw := range dbRawList {
+		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+		if err != nil {
 			return nil, err
 		}
+		dbList = append(dbList, db)
 	}
 
 	return dbList, nil
 }
 
-func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.Database) error {
-	var err error
+func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.DatabaseRaw) (*api.Database, error) {
+	db := raw.ToDatabase()
 
-	database.Creator, err = s.composePrincipalByID(ctx, database.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, db.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	db.Creator = creator
 
-	database.Updater, err = s.composePrincipalByID(ctx, database.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, db.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	db.Updater = updater
 
-	database.Project, err = s.composeProjectByID(ctx, database.ProjectID)
+	project, err := s.composeProjectByID(ctx, db.ProjectID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	db.Project = project
 
-	database.Instance, err = s.composeInstanceByID(ctx, database.InstanceID)
+	instance, err := s.composeInstanceByID(ctx, db.InstanceID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	db.Instance = instance
 
-	if database.SourceBackupID != 0 {
-		database.SourceBackup, err = s.composeBackupByID(ctx, database.SourceBackupID)
+	if db.SourceBackupID != 0 {
+		sourceBackup, err := s.composeBackupByID(ctx, db.SourceBackupID)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		db.SourceBackup = sourceBackup
 	}
 
-	database.DataSourceList = []*api.DataSource{}
+	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
 	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
-		DatabaseID: &database.ID,
+		DatabaseID: &db.ID,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var anomalyList []*api.Anomaly
 	for _, anomalyRaw := range anomalyListRaw {
 		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
 	}
 	// TODO(dragonly): implement composeAnomalyRelationship
-	database.AnomalyList = anomalyList
-	for _, anomaly := range database.AnomalyList {
+	db.AnomalyList = anomalyList
+	for _, anomaly := range db.AnomalyList {
 		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	rowStatus = api.Normal
 	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
-		DatabaseID: &database.ID,
+		DatabaseID: &db.ID,
 		RowStatus:  &rowStatus,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Since tenants are identified by labels in deployment config, we need an environment
@@ -1029,16 +1044,16 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, database *api.
 
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentKeyName,
-		Value: database.Instance.Environment.Name,
+		Value: db.Instance.Environment.Name,
 	})
 
 	labels, err := json.Marshal(labelList)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	database.Labels = string(labels)
+	db.Labels = string(labels)
 
-	return nil
+	return db, nil
 }
 
 func (s *Server) composeTableRelationship(ctx context.Context, table *api.Table) error {
