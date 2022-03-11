@@ -21,8 +21,9 @@ func TestMigrate(t *testing.T) {
 	mysql, stop := mysql.SetupTestInstance(t, 23306)
 	defer stop()
 
-	mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
-	// mysql.Import("testdata/mysql_test_schema/2_blog.sql", os.Stdout, os.Stderr)
+	if err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr); err != nil {
+		t.Errorf("error importing data: %v", err)
+	}
 
 	tt := []testTable{
 		{
