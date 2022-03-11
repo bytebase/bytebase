@@ -208,12 +208,14 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
-		return -1, common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+			return -1, common.Errorf(common.MigrationAlreadyApplied,
+				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
-			return -1, common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q version %s is pending", m.Database, m.Version))
+			return -1, common.Errorf(common.MigrationPending,
+				fmt.Errorf("database %q version %s is pending", m.Database, m.Version))
 		case db.Failed:
-			// If the same version has failed, it's okay to retry.
-			break
+			return -1, common.Errorf(common.MigrationFailed,
+				fmt.Errorf("database %q version %s has failed", m.Database, m.Version))
 		}
 	}
 

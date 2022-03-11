@@ -29,6 +29,8 @@ const (
 	MigrationAlreadyApplied  Code = 202
 	MigrationOutOfOrder      Code = 203
 	MigrationBaselineMissing Code = 204
+	MigrationPending         Code = 205
+	MigrationFailed          Code = 206
 
 	// 301 task error
 	TaskTimingNotAllowed Code = 301
