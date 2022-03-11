@@ -1165,6 +1165,7 @@ sql-editor:
   go-back: Go Back
   save-sheet: Save Sheet
   save-sheet-input-placeholder: Please input a sheet name
+  untitled-sheet: Untitled Sheet
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
