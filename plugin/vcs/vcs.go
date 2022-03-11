@@ -76,9 +76,10 @@ const (
 
 // UserInfo is the API message for user info.
 type UserInfo struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	State State  `json:"state"`
+	// NOTICE: we use public email here because user's primary email can only be accessed by the admin
+	PublicEmail string `json:"public_email"`
+	Name        string `json:"name"`
+	State       State  `json:"state"`
 }
 
 // RepositoryMember is the API message for  repository member info.

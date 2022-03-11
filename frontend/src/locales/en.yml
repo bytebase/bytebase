@@ -303,6 +303,7 @@ settings:
         members from the corresponding VCS project.
 
         The existing members will become inactive. You can turn off VCS sync to restore those members.
+      emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members
