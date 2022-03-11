@@ -28,14 +28,14 @@ func NewBackupService(logger *zap.Logger, db *DB, policyService api.PolicyServic
 }
 
 // CreateBackup creates a new backup.
-func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
+func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.BackupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.createBackup(ctx, tx.PTx, create)
+	backupRaw, err := s.createBackup(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -44,57 +44,57 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 		return nil, FormatError(err)
 	}
 
-	return backup, nil
+	return backupRaw, nil
 }
 
 // FindBackup retrieves a single backup based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*api.Backup, error) {
+func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*api.BackupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findBackupList(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
+	if len(backupRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d backups with filter %+v, expect 1. ", len(list), find)}
+	} else if len(backupRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d backups with filter %+v, expect 1. ", len(backupRawList), find)}
 	}
-	return list[0], nil
+	return backupRawList[0], nil
 }
 
 // FindBackupList retrieves a list of backups based on find.
-func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
+func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind) ([]*api.BackupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findBackupList(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	return backupRawList, nil
 }
 
 // PatchBackup updates an existing backup by ID.
 // Returns ENOTFOUND if backup does not exist.
-func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
+func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.BackupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.patchBackup(ctx, tx.PTx, patch)
+	backupRaw, err := s.patchBackup(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -103,11 +103,11 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 		return nil, FormatError(err)
 	}
 
-	return backup, nil
+	return backupRaw, nil
 }
 
 // createBackup creates a new backup.
-func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.Backup, error) {
+func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.BackupRaw, error) {
 	// Insert row into backup.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup (
@@ -140,29 +140,29 @@ func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *ap
 	defer row.Close()
 
 	row.Next()
-	var backup api.Backup
+	var backupRaw api.BackupRaw
 	if err := row.Scan(
-		&backup.ID,
-		&backup.CreatorID,
-		&backup.CreatedTs,
-		&backup.UpdaterID,
-		&backup.UpdatedTs,
-		&backup.DatabaseID,
-		&backup.Name,
-		&backup.Status,
-		&backup.Type,
-		&backup.StorageBackend,
-		&backup.MigrationHistoryVersion,
-		&backup.Path,
-		&backup.Comment,
+		&backupRaw.ID,
+		&backupRaw.CreatorID,
+		&backupRaw.CreatedTs,
+		&backupRaw.UpdaterID,
+		&backupRaw.UpdatedTs,
+		&backupRaw.DatabaseID,
+		&backupRaw.Name,
+		&backupRaw.Status,
+		&backupRaw.Type,
+		&backupRaw.StorageBackend,
+		&backupRaw.MigrationHistoryVersion,
+		&backupRaw.Path,
+		&backupRaw.Comment,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &backup, nil
+	return &backupRaw, nil
 }
 
-func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*api.Backup, error) {
+func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*api.BackupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -202,39 +202,39 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into backupList.
-	var backupList []*api.Backup
+	// Iterate over result set and deserialize rows into backupRawList.
+	var backupRawList []*api.BackupRaw
 	for rows.Next() {
-		var backup api.Backup
+		var backupRaw api.BackupRaw
 		if err := rows.Scan(
-			&backup.ID,
-			&backup.CreatorID,
-			&backup.CreatedTs,
-			&backup.UpdaterID,
-			&backup.UpdatedTs,
-			&backup.DatabaseID,
-			&backup.Name,
-			&backup.Status,
-			&backup.Type,
-			&backup.StorageBackend,
-			&backup.MigrationHistoryVersion,
-			&backup.Path,
-			&backup.Comment,
+			&backupRaw.ID,
+			&backupRaw.CreatorID,
+			&backupRaw.CreatedTs,
+			&backupRaw.UpdaterID,
+			&backupRaw.UpdatedTs,
+			&backupRaw.DatabaseID,
+			&backupRaw.Name,
+			&backupRaw.Status,
+			&backupRaw.Type,
+			&backupRaw.StorageBackend,
+			&backupRaw.MigrationHistoryVersion,
+			&backupRaw.Path,
+			&backupRaw.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		backupList = append(backupList, &backup)
+		backupRawList = append(backupRawList, &backupRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return backupList, nil
+	return backupRawList, nil
 }
 
 // patchBackup updates a backup by ID. Returns the new state of the backup after update.
-func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.Backup, error) {
+func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.BackupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -257,25 +257,25 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.
 	defer row.Close()
 
 	if row.Next() {
-		var backup api.Backup
+		var backupRaw api.BackupRaw
 		if err := row.Scan(
-			&backup.ID,
-			&backup.CreatorID,
-			&backup.CreatedTs,
-			&backup.UpdaterID,
-			&backup.UpdatedTs,
-			&backup.DatabaseID,
-			&backup.Name,
-			&backup.Status,
-			&backup.Type,
-			&backup.StorageBackend,
-			&backup.MigrationHistoryVersion,
-			&backup.Path,
-			&backup.Comment,
+			&backupRaw.ID,
+			&backupRaw.CreatorID,
+			&backupRaw.CreatedTs,
+			&backupRaw.UpdaterID,
+			&backupRaw.UpdatedTs,
+			&backupRaw.DatabaseID,
+			&backupRaw.Name,
+			&backupRaw.Status,
+			&backupRaw.Type,
+			&backupRaw.StorageBackend,
+			&backupRaw.MigrationHistoryVersion,
+			&backupRaw.Path,
+			&backupRaw.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		return &backup, nil
+		return &backupRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
