@@ -20,6 +20,29 @@
         <template #trigger>
           <label class="flex items-center text-sm space-x-1">
             <div class="flex items-center">
+              <NPopover
+                v-if="
+                  connectionContext.instanceId !== UNKNOWN_ID &&
+                  !hasReadonlyDataSource
+                "
+                trigger="hover"
+              >
+                <template #trigger>
+                  <heroicons-outline:exclamation
+                    class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
+                  />
+                </template>
+                <p class="py-1">
+                  {{ $t("instance.no-read-only-data-source-warn") }}
+                  <NButton
+                    class="text-base underline text-accent"
+                    text
+                    @click="gotoInstanceDetailPage"
+                  >
+                    {{ $t("sql-editor.create-read-only-data-source") }}
+                  </NButton>
+                </p>
+              </NPopover>
               <InstanceEngineIcon
                 v-if="connectionContext.instanceId !== UNKNOWN_ID"
                 :instance="selectedInstance"
@@ -104,15 +127,19 @@ import {
   SqlEditorGetters,
   TabGetters,
   UNKNOWN_ID,
+  Instance,
 } from "../../../types";
 import { useExecuteSQL } from "../../../composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
+import { useRouter } from "vue-router";
+import { instanceSlug } from "../../../utils/slug";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
 }>();
 
 const store = useStore();
+const router = useRouter();
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
@@ -128,7 +155,7 @@ const isShowSharePopover = ref(false);
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
-const selectedInstance = computed(() => {
+const selectedInstance = computed<Instance>(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
 });
@@ -136,6 +163,15 @@ const selectedInstanceEngine = computed(() => {
   return store.getters["instance/instanceFormatedEngine"](
     selectedInstance.value
   ) as string;
+});
+
+const hasReadonlyDataSource = computed(() => {
+  for (const ds of selectedInstance.value.dataSourceList) {
+    if (ds.type === "RO") {
+      return true;
+    }
+  }
+  return false;
 });
 
 const { execute, state: executeState } = useExecuteSQL();
@@ -146,6 +182,15 @@ const handleRunQuery = () => {
 
 const handleExplainQuery = () => {
   execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
+};
+
+const gotoInstanceDetailPage = () => {
+  router.push({
+    name: "workspace.instance.detail",
+    params: {
+      instanceSlug: instanceSlug(selectedInstance.value),
+    },
+  });
 };
 
 const handleClickoutside = (e: any) => {

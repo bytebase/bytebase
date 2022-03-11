@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -28,6 +29,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		var authProviderList []*api.AuthProvider
 		for _, vcs := range list {
 			newProvider := &api.AuthProvider{
+				ID:            vcs.ID,
 				Type:          vcs.Type,
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
@@ -81,15 +83,24 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				gitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+				findVCS := &api.VCSFind{ID: &gitlabLogin.ID}
+				vcsFound, err := s.VCSService.FindVCS(ctx, findVCS)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+				if vcsFound == nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+
+				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
-						ClientID:     gitlabLogin.ApplicationID,
-						ClientSecret: gitlabLogin.Secret,
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
 						AccessToken:  gitlabLogin.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},
-					gitlabLogin.InstanceURL,
+					vcsFound.InstanceURL,
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
@@ -101,7 +112,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				principalFind := &api.PrincipalFind{
-					Email: &gitlabUserInfo.Email,
+					Email: &gitlabUserInfo.PublicEmail,
 				}
 				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
 				if err != nil {
@@ -110,11 +121,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// create a new user if not exist
 				if user == nil {
+					if gitlabUserInfo.PublicEmail == "" {
+						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.gitlab.com/ee/user/profile/")
+					}
 					// if user login via gitlab at the first time, we will generate a random password.
 					// The random password is supposed to be not guessable. If user wants to login
 					// via password, she needs to set the new password from the profile page.
 					signUp := &api.SignUp{
-						Email:    gitlabUserInfo.Email,
+						Email:    gitlabUserInfo.PublicEmail,
 						Password: common.RandomString(20),
 						Name:     gitlabUserInfo.Name,
 					}

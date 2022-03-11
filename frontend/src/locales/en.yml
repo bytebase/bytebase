@@ -150,6 +150,7 @@ common:
   added-time: Added time
   data-source: Data Source
   grant: Grant
+  admin: Admin
   read-only: Read-only
   connection-string: Connection string
   agents: Agents
@@ -174,6 +175,7 @@ common:
   table: Table
   search: Search
   warning: Warning
+  edited: edited
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -303,6 +305,7 @@ settings:
         members from the corresponding VCS project.
 
         The existing members will become inactive. You can turn off VCS sync to restore those members.
+      emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members
@@ -501,6 +504,7 @@ instance:
   below-is-an-example-to-create-user-bytebase-with-password: Below is an example to create user 'bytebase{'@'}%' with password
   below-is-an-example-to-create-user-bytebase-with-password-clickhouse: Below is an example to create user 'bytebase' with password
   your_db_pwd: YOUR_DB_PWD
+  no-read-only-data-source-warn: The instance has not configured read-only user, please consider adding one.
   sentence:
     host:
       snowflake: e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
@@ -512,9 +516,11 @@ instance:
       snowflake: >-
         The external console URL managing this instance (e.g. AWS RDS console,
         your in-house DB instance console)
-    create-user: >-
-      This is the connection user used by Bytebase to perform DDL and DML
+    create-admin-user: >-
+      This is the connection user used by Bytebase to perform DDL and DML (non-SELECT)
       operations.
+    create-readonly-user: >-
+      This is the connection user used by Bytebase to perform read-only operations such as SELECT query.
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -575,6 +581,7 @@ instance:
     Bytebase requires read/write (NOT the super privilege) access to the
     instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
+  no-read-only-data-source-support: The {database} does not currently support creating read-only connections
   grants: Grants
 environment:
   select: Select environment
@@ -1083,6 +1090,7 @@ deployment-config:
   project-has-no-deployment-config: This project has no deployment config yet. Please {go} first.
   go-and-config: Go and config
 datasource:
+  role-type: Role Type
   successfully-deleted-data-source-name: Successfully deleted data source '{0}'.
   create-data-source: Create data source
   data-source-list: Data source list
@@ -1162,6 +1170,7 @@ sql-editor:
     read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
+  create-read-only-data-source: Go to create
   go-back: Go Back
   save-sheet: Save Sheet
   save-sheet-input-placeholder: Please input a sheet name
@@ -1188,6 +1197,7 @@ label:
   db-name-template-tips: >-
     Allow you to group databases with the same {placeholder} from different
     tenants. {link}.
+  confirm-change: Are you sure to change '{label}' ?
   parsed-from-template: Parsed from {name} by template {template}.
   cannot-transfer-template-not-match: >-
     Database '{name}' cannot be transferred to this project. Since its name

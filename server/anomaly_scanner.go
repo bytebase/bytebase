@@ -181,13 +181,12 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
 				Payload:    string(payload),
-			})
-			if err != nil {
+			}); err != nil {
 				s.l.Error("Failed to create anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("type", string(api.AnomalyInstanceConnection)),
@@ -219,12 +218,11 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			if setup {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("type", string(api.AnomalyInstanceMigrationSchema)),
@@ -262,14 +260,13 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseConnection,
 				Payload:    string(payload),
-			})
-			if err != nil {
+			}); err != nil {
 				s.l.Error("Failed to create anomaly",
 					zap.String("instance", instance.Name),
 					zap.String("database", database.Name),
@@ -352,14 +349,13 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
 						Payload:    string(payload),
-					})
-					if err != nil {
+					}); err != nil {
 						s.l.Error("Failed to create anomaly",
 							zap.String("instance", instance.Name),
 							zap.String("database", database.Name),
@@ -437,14 +433,13 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),
@@ -486,7 +481,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					DatabaseID: &database.ID,
 					Status:     &status,
 				}
-				backupList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
+				backupRawList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
@@ -495,8 +490,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 
 				hasValidBackup := false
-				if len(backupList) > 0 {
-					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+				if len(backupRawList) > 0 {
+					if backupRawList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
 						hasValidBackup = true
 					}
 				}
@@ -505,8 +500,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
 						ExpectedBackupSchedule: expectedSchedule,
 					}
-					if len(backupList) > 0 {
-						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
+					if len(backupRawList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupRawList[0].UpdatedTs
 					}
 				}
 			}
@@ -521,14 +516,13 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				_, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
-				})
-				if err != nil {
+				}); err != nil {
 					s.l.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
 						zap.String("database", database.Name),

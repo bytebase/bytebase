@@ -53,10 +53,6 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 		}
 
-		if err := s.composeActivityRelationship(ctx, activity); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created activity relationship").SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal created activity response").SetInternal(err)
@@ -95,19 +91,22 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.Limit = &limit
 		}
-		list, err := s.ActivityService.FindActivityList(ctx, activityFind)
+		activityRawList, err := s.ActivityService.FindActivityList(ctx, activityFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch activity list").SetInternal(err)
 		}
 
-		for _, activity := range list {
-			if err := s.composeActivityRelationship(ctx, activity); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activity.ID)).SetInternal(err)
+		var activityList []*api.Activity
+		for _, activityRaw := range activityRawList {
+			activity, err := s.composeActivityRelationship(ctx, activityRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activityRaw.ID)).SetInternal(err)
 			}
+			activityList = append(activityList, activity)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, activityList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal activity list response").SetInternal(err)
 		}
 		return nil
@@ -128,7 +127,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)
 		}
 
-		activity, err := s.ActivityService.PatchActivity(ctx, activityPatch)
+		activityRaw, err := s.ActivityService.PatchActivity(ctx, activityPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", id))
@@ -136,8 +135,9 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch activity ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeActivityRelationship(ctx, activity); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activity.ID)).SetInternal(err)
+		activity, err := s.composeActivityRelationship(ctx, activityRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activityRaw.ID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -168,18 +168,28 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeActivityRelationship(ctx context.Context, activity *api.Activity) error {
-	var err error
-
-	activity.Creator, err = s.composePrincipalByID(ctx, activity.CreatorID)
+func (s *Server) composeActivityByID(ctx context.Context, id int) (*api.Activity, error) {
+	activityRaw, err := s.ActivityService.FindActivity(ctx, &api.ActivityFind{ID: &id})
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return s.composeActivityRelationship(ctx, activityRaw)
+}
 
-	activity.Updater, err = s.composePrincipalByID(ctx, activity.UpdaterID)
+func (s *Server) composeActivityRelationship(ctx context.Context, raw *api.ActivityRaw) (*api.Activity, error) {
+	activity := raw.ToActivity()
+
+	creator, err := s.composePrincipalByID(ctx, activity.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	activity.Creator = creator
 
-	return nil
+	updater, err := s.composePrincipalByID(ctx, activity.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	activity.Updater = updater
+
+	return activity, nil
 }

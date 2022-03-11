@@ -261,7 +261,7 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 		return nil, err
 	}
 	if id > 0 && issue == nil {
-		return nil, fmt.Errorf("issue not found for ID %v", id)
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Issue not found with ID %v", id)}
 	}
 
 	if issue != nil {
@@ -547,7 +547,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		// Validate the labels. Labels are set upon task completion.
 		if m.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Name: m.DatabaseName, Instance: instance} /* dummp database */, project, 0 /* dummp updaterID */, true /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, m.Labels, &api.Database{Name: m.DatabaseName, Instance: instance} /* dummy database */, project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", m.Labels, err))
 			}
 		}
@@ -594,7 +594,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 
 		if m.BackupID != 0 {
-			backup, err := s.BackupService.FindBackup(ctx, &api.BackupFind{ID: &m.BackupID})
+			backupRaw, err := s.BackupService.FindBackup(ctx, &api.BackupFind{ID: &m.BackupID})
 			if err != nil {
 				return nil, fmt.Errorf("failed to find backup %v", m.BackupID)
 			}
@@ -607,7 +607,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 
 			pipelineCreate = &api.PipelineCreate{
-				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
+				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backupRaw.Name),
 				StageList: []api.StageCreate{
 					{
 						Name:          "Create database",
@@ -629,7 +629,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 						TaskList: []api.TaskCreate{
 							{
 								InstanceID:   m.InstanceID,
-								Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+								Name:         fmt.Sprintf("Restore backup %v", backupRaw.Name),
 								Status:       api.TaskPending,
 								Type:         api.TaskDatabaseRestore,
 								DatabaseName: payload.DatabaseName,
@@ -919,7 +919,7 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 			stmt = fmt.Sprintf("%s\nUSE DATABASE %s;\n%s", stmt, databaseName, schema)
 		}
 	case db.SQLite:
-		// This is a fake CREATA DATABASE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
+		// This is a fake CREATE DATABASE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		stmt = fmt.Sprintf("CREATE DATABASE '%s';", databaseName)
 	}
 
