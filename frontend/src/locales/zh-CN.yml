@@ -294,6 +294,7 @@ settings:
       content: |-
         开启 VCS 同步将会用 VCS 中对应仓库的成员列表替换现存的所有成员。
         原来的成员将会无效，您之后也可以关闭该 VCS 同步来撤销这一操作。
+      emphasize: 请注意，该功能需要 VCS 仓库内所有成员均设置了公开邮箱。
     change-role-provider-to-bytebase:
       content: 将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。
 activity:

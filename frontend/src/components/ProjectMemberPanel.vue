@@ -35,7 +35,6 @@
       :mask-closable="false"
       preset="dialog"
       :title="$t('settings.members.toggle-role-provider.title')"
-      :content="$t('settings.members.change-role-provider-to-vcs.content')"
       :on-after-leave="
         () => {
           state.previewMember = false;
@@ -84,6 +83,16 @@
             :project="project"
             :active-role-provider="'BYTEBASE'"
           />
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="mx-1">
+          <span class="font-bold">
+            {{ $t("settings.members.change-role-provider-to-vcs.emphasize") }}
+          </span>
+          <br />
+          {{ $t("settings.members.change-role-provider-to-vcs.content") }}
         </div>
       </template>
     </NModal>
