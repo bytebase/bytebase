@@ -25,20 +25,21 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
-		authProvider := make([]*api.AuthProvider, 0)
+		var authProviderList []*api.AuthProvider
 		for _, vcs := range list {
 			newProvider := &api.AuthProvider{
+				ID:            vcs.ID,
 				Type:          vcs.Type,
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
 				Secret:        vcs.Secret,
 			}
-			authProvider = append(authProvider, newProvider)
+			authProviderList = append(authProviderList, newProvider)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, authProvider); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, authProviderList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal auth provider").SetInternal(err)
 		}
 		return nil
@@ -81,15 +82,24 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
+				findVCS := &api.VCSFind{ID: &gitlabLogin.ID}
+				vcsFound, err := s.VCSService.FindVCS(ctx, findVCS)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+				if vcsFound == nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+
 				gitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
-						ClientID:     gitlabLogin.ApplicationID,
-						ClientSecret: gitlabLogin.Secret,
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
 						AccessToken:  gitlabLogin.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},
-					gitlabLogin.InstanceURL,
+					vcsFound.InstanceURL,
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
