@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -50,6 +52,14 @@ got unexpected error:
 got unexpected output:
 %s
 `, strings.Join(tc.args, " "), cmp.Diff(actual, tc.expected))
+
+			f, err := os.CreateTemp("", "*")
+			if err != nil {
+				t.Log(err)
+			}
+			defer f.Close()
+			io.WriteString(f, actual)
+			t.Logf("Actual output written to %s", f.Name())
 		}
 	}
 }
