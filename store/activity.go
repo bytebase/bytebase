@@ -27,7 +27,7 @@ func NewActivityService(logger *zap.Logger, db *DB) *ActivityService {
 }
 
 // CreateActivity creates a new activity.
-func (s *ActivityService) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
+func (s *ActivityService) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.ActivityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,7 +47,7 @@ func (s *ActivityService) CreateActivity(ctx context.Context, create *api.Activi
 }
 
 // FindActivityList retrieves a list of activities based on the find condition.
-func (s *ActivityService) FindActivityList(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
+func (s *ActivityService) FindActivityList(ctx context.Context, find *api.ActivityFind) ([]*api.ActivityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -64,7 +64,7 @@ func (s *ActivityService) FindActivityList(ctx context.Context, find *api.Activi
 
 // FindActivity retrieves a single activity based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFind) (*api.Activity, error) {
+func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFind) (*api.ActivityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -86,7 +86,7 @@ func (s *ActivityService) FindActivity(ctx context.Context, find *api.ActivityFi
 
 // PatchActivity updates an existing activity by ID.
 // Returns ENOTFOUND if activity does not exist.
-func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
+func (s *ActivityService) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.ActivityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -125,7 +125,7 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, delete *api.Activi
 }
 
 // createActivity creates a new activity.
-func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*api.Activity, error) {
+func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*api.ActivityRaw, error) {
 	// Insert row into activity.
 	if create.Payload == "" {
 		create.Payload = "{}"
@@ -158,26 +158,26 @@ func createActivity(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate)
 	defer row.Close()
 
 	row.Next()
-	var activity api.Activity
+	var activityRaw api.ActivityRaw
 	if err := row.Scan(
-		&activity.ID,
-		&activity.CreatorID,
-		&activity.CreatedTs,
-		&activity.UpdaterID,
-		&activity.UpdatedTs,
-		&activity.ContainerID,
-		&activity.Type,
-		&activity.Level,
-		&activity.Comment,
-		&activity.Payload,
+		&activityRaw.ID,
+		&activityRaw.CreatorID,
+		&activityRaw.CreatedTs,
+		&activityRaw.UpdaterID,
+		&activityRaw.UpdatedTs,
+		&activityRaw.ContainerID,
+		&activityRaw.Type,
+		&activityRaw.Level,
+		&activityRaw.Comment,
+		&activityRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &activity, nil
+	return &activityRaw, nil
 }
 
-func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) ([]*api.Activity, error) {
+func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) ([]*api.ActivityRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -222,10 +222,10 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into activityList.
-	var activityList []*api.Activity
+	// Iterate over result set and deserialize rows into activityRawList.
+	var activityRawList []*api.ActivityRaw
 	for rows.Next() {
-		var activity api.Activity
+		var activity api.ActivityRaw
 		if err := rows.Scan(
 			&activity.ID,
 			&activity.CreatorID,
@@ -241,17 +241,17 @@ func findActivityList(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 			return nil, FormatError(err)
 		}
 
-		activityList = append(activityList, &activity)
+		activityRawList = append(activityRawList, &activity)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return activityList, nil
+	return activityRawList, nil
 }
 
 // patchActivity updates a activity by ID. Returns the new state of the activity after update.
-func patchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*api.Activity, error) {
+func patchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*api.ActivityRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Comment; v != nil {
@@ -275,23 +275,23 @@ func patchActivity(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*
 	defer row.Close()
 
 	if row.Next() {
-		var activity api.Activity
+		var activityRaw api.ActivityRaw
 		if err := row.Scan(
-			&activity.ID,
-			&activity.CreatorID,
-			&activity.CreatedTs,
-			&activity.UpdaterID,
-			&activity.UpdatedTs,
-			&activity.ContainerID,
-			&activity.Type,
-			&activity.Level,
-			&activity.Comment,
-			&activity.Payload,
+			&activityRaw.ID,
+			&activityRaw.CreatorID,
+			&activityRaw.CreatedTs,
+			&activityRaw.UpdaterID,
+			&activityRaw.UpdatedTs,
+			&activityRaw.ContainerID,
+			&activityRaw.Type,
+			&activityRaw.Level,
+			&activityRaw.Comment,
+			&activityRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &activity, nil
+		return &activityRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}
