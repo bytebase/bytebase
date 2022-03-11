@@ -325,7 +325,7 @@ const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
   return {
     ...cloneDeep(dataSource),
     updatedPassword: "",
-    useEmptyPassword: dataSource.password === "",
+    useEmptyPassword: false,
   } as EditDataSource;
 });
 
@@ -444,9 +444,7 @@ const updateInstanceDataSource = () => {
     username: currentDataSource.value.username,
     password: currentDataSource.value.useEmptyPassword
       ? ""
-      : currentDataSource.value.updatedPassword
-      ? currentDataSource.value.updatedPassword
-      : currentDataSource.value.password,
+      : currentDataSource.value.updatedPassword,
   };
 };
 
@@ -587,7 +585,7 @@ const doUpdate = () => {
               return {
                 ...cloneDeep(dataSource),
                 updatedPassword: "",
-                useEmptyPassword: dataSource.password === "",
+                useEmptyPassword: false,
               } as EditDataSource;
             }
           );
@@ -621,9 +619,7 @@ const testConnection = () => {
     username: currentDataSource.value.username,
     password: currentDataSource.value.useEmptyPassword
       ? ""
-      : currentDataSource.value.updatedPassword
-      ? currentDataSource.value.updatedPassword
-      : currentDataSource.value.password,
+      : currentDataSource.value.updatedPassword,
     useEmptyPassword: currentDataSource.value.useEmptyPassword,
     host: state.instance.host,
     port: state.instance.port,
