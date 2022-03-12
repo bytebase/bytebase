@@ -211,6 +211,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Barny1: %+v\n", p.SysProcAttr)
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
