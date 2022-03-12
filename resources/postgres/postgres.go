@@ -54,6 +54,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 	}
@@ -84,6 +85,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 	}
@@ -211,6 +213,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
