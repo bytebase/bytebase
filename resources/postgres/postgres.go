@@ -97,6 +97,10 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 
 // Install returns the postgres binary depending on the OS.
 func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+	uid, gid, _, err := getBytebaseUser()
+	if err != nil {
+		return nil, err
+	}
 	// Create resource directory if not exists.
 	if _, err := os.Stat(resourceDir); err != nil {
 		if !os.IsNotExist(err) {
@@ -104,6 +108,9 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		}
 		if err := os.MkdirAll(resourceDir, os.ModePerm); err != nil {
 			return nil, err
+		}
+		if err := os.Chown(resourceDir, uid, gid); err != nil {
+			return nil, fmt.Errorf("failed to change owner to bytebase of resource directory %q, error: %w", resourceDir, err)
 		}
 	}
 
@@ -141,6 +148,14 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		}
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
+		}
+		if err := filepath.Walk(tmpDir, func(path string, f os.FileInfo, err error) error {
+			if err := os.Chown(path, uid, gid); err != nil {
+				return fmt.Errorf("failed to change owner to bytebase of directory %q, error: %w", path, err)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
 		}
 
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
