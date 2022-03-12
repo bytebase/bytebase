@@ -69,7 +69,6 @@ RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase
 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
-RUN chown -R bytebase:bytebase /var/opt/bytebase
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
