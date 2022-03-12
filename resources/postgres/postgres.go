@@ -55,7 +55,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid), NoSetGroups: true},
+			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 	}
 
@@ -86,7 +86,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid), NoSetGroups: true},
+			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 	}
 
@@ -189,7 +189,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid), NoSetGroups: true},
+			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
 			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
