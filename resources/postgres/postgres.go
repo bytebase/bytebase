@@ -219,11 +219,11 @@ func getBytebaseUser() (int, int, bool, error) {
 		sameUser = false
 	}
 
-	uid, err := strconv.Atoi(bytebaseUser.Uid)
+	uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
 	if err != nil {
 		return 0, 0, false, err
 	}
-	gid, err := strconv.Atoi(bytebaseUser.Gid)
+	gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
 	if err != nil {
 		return 0, 0, false, err
 	}
