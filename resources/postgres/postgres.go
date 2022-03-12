@@ -6,10 +6,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/bytebase/bytebase/resources/utils"
 )
@@ -154,6 +157,24 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
 	)
+	currentUser, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("failed to get current user, error: %w", err)
+	}
+	// If user runs bytebase as root user, we will attempt to run initdb as user `bytebase`.
+	if currentUser.Username == "root" {
+		bytebaseUser, err := user.Lookup("bytebase")
+		if err != nil {
+			return fmt.Errorf("Please run Bytebase as non-root user or create a user called `bytebase`")
+		}
+		uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
+		if err != nil {
+			fmt.Println(err)
+		}
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
 	p.Stderr = os.Stderr
 	p.Stdout = os.Stdout
 
