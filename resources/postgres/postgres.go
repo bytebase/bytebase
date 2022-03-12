@@ -49,7 +49,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	if err != nil {
 		return fmt.Errorf("failed to get current user, error: %w", err)
 	}
-	// If user runs bytebase as root user, we will attempt to run initdb as user `bytebase`.
+	// If user runs bytebase as root user, we will attempt to run pg_ctl as user `bytebase`.
 	if currentUser.Username == "root" {
 		uid, _, err := getBytebaseUser()
 		if err != nil {
