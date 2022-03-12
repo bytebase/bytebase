@@ -48,7 +48,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 
 	p.Stdout = stdout
 	p.Stderr = stderr
-	uid, gid, sameUser, err := getBytebaseUser()
+	uid, _, sameUser, err := getBytebaseUser()
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 
 	p.Stderr = stderr
 	p.Stdout = stdout
-	uid, gid, sameUser, err := getBytebaseUser()
+	uid, _, sameUser, err := getBytebaseUser()
 	if err != nil {
 		return err
 	}
