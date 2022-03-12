@@ -211,11 +211,10 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Barny1: %+v\n", p.SysProcAttr)
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid), NoSetGroups: true},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
 			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
