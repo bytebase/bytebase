@@ -214,7 +214,7 @@ func getBytebaseUser() (int, int, bool, error) {
 	if bytebaseUser.Username == "root" {
 		bytebaseUser, err = user.Lookup("bytebase")
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("Please run Bytebase as non-root user. You can use the following command to create a dedicated bytebase user to run the application: RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase")
+			return 0, 0, false, fmt.Errorf("Please run Bytebase as non-root user. You can use the following command to create a dedicated bytebase user to run the application: addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase")
 		}
 		sameUser = false
 	}
