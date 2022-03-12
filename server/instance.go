@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -26,8 +27,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
 		}
-
 		instanceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 
 		instance, err := s.InstanceService.CreateInstance(ctx, instanceCreate)
 		if err != nil {
@@ -125,8 +128,24 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
 		}
+		instance, err := s.composeInstanceByID(ctx, id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+		}
+		host, port := instance.Host, instance.Port
+		if instancePatch.Host != nil {
+			host = *instancePatch.Host
+		}
+		if instancePatch.Port != nil {
+			port = *instancePatch.Port
+		}
+		if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 
-		var instance *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
@@ -566,5 +585,30 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
 
+	return nil
+}
+
+func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
+	if engine != db.Postgres {
+		return nil
+	}
+	if port != fmt.Sprintf("%v", s.datastorePort) {
+		return nil
+	}
+
+	existErr := fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return existErr
+	}
+	// Check loopback addresses
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() {
+			return existErr
+		}
+	}
 	return nil
 }
