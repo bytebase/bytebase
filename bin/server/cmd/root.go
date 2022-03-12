@@ -351,7 +351,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.db = db
 
-	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
 	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
 	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
