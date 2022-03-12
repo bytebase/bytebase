@@ -48,7 +48,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 
 	p.Stdout = stdout
 	p.Stderr = stderr
-	uid, _, sameUser, err := getBytebaseUser()
+	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 
 	p.Stderr = stderr
 	p.Stdout = stdout
-	uid, _, sameUser, err := getBytebaseUser()
+	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	)
 	p.Stderr = os.Stderr
 	p.Stdout = os.Stdout
-	uid, gid, sameUser, err := getBytebaseUser()
+	uid, gid, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	return nil
 }
 
-func getBytebaseUser() (int, int, bool, error) {
+func shouldSwitchUser() (int, int, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
 	if err != nil {
