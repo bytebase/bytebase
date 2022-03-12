@@ -45,22 +45,18 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
 		"-o", fmt.Sprintf(`"-p %d"`, i.port))
-	currentUser, err := user.Current()
+
+	p.Stdout = stdout
+	p.Stderr = stderr
+	uid, _, sameUser, err := getBytebaseUser()
 	if err != nil {
-		return fmt.Errorf("failed to get current user, error: %w", err)
+		return err
 	}
-	// If user runs bytebase as root user, we will attempt to run pg_ctl as user `bytebase`.
-	if currentUser.Username == "root" {
-		uid, _, err := getBytebaseUser()
-		if err != nil {
-			return err
-		}
+	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 	}
-	p.Stdout = stdout
-	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
@@ -79,8 +75,18 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", i.datadir)
+
 	p.Stderr = stderr
 	p.Stdout = stdout
+	uid, _, sameUser, err := getBytebaseUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
 
 	if err := p.Run(); err != nil {
 		return err
@@ -91,6 +97,24 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 
 // Install returns the postgres binary depending on the OS.
 func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+	uid, gid, _, err := getBytebaseUser()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create resource directory if not exists.
+	if _, err := os.Stat(resourceDir); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to check resource directory path %q, error: %w", resourceDir, err)
+		}
+		if err := os.MkdirAll(resourceDir, os.ModePerm); err != nil {
+			return nil, err
+		}
+		if err := os.Chown(resourceDir, uid, gid); err != nil {
+			return nil, fmt.Errorf("failed to change owner to bytebase of resource directory %q, error: %w", resourceDir, err)
+		}
+	}
+
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
@@ -126,6 +150,15 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
+		if err := filepath.Walk(tmpDir, func(path string, f os.FileInfo, err error) error {
+			if err := os.Chown(path, uid, gid); err != nil {
+				return fmt.Errorf("failed to change owner to bytebase of directory %q, error: %w", path, err)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
 			return nil, fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
 		}
@@ -171,25 +204,20 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
 	)
-	currentUser, err := user.Current()
+	p.Stderr = os.Stderr
+	p.Stdout = os.Stdout
+	uid, gid, sameUser, err := getBytebaseUser()
 	if err != nil {
-		return fmt.Errorf("failed to get current user, error: %w", err)
+		return err
 	}
-	// If user runs bytebase as root user, we will attempt to run initdb as user `bytebase`.
-	if currentUser.Username == "root" {
-		uid, gid, err := getBytebaseUser()
-		if err != nil {
-			return err
-		}
+	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
-			return fmt.Errorf("failed to change owner to bytebase of %q, error: %w", pgDataDir, err)
+			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
 		}
 	}
-	p.Stderr = os.Stderr
-	p.Stdout = os.Stdout
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
@@ -198,18 +226,29 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	return nil
 }
 
-func getBytebaseUser() (int, int, error) {
-	bytebaseUser, err := user.Lookup("bytebase")
+func getBytebaseUser() (int, int, bool, error) {
+	sameUser := true
+	bytebaseUser, err := user.Current()
 	if err != nil {
-		return 0, 0, fmt.Errorf("Please run Bytebase as non-root user or create a user called `bytebase`")
+		return 0, 0, true, fmt.Errorf("failed to get current user, error: %w", err)
 	}
+	// If user runs bytebase as root user, we will attempt to run as user `bytebase`.
+	// https://www.postgresql.org/docs/14/app-initdb.html
+	if bytebaseUser.Username == "root" {
+		bytebaseUser, err = user.Lookup("bytebase")
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("Please run Bytebase as non-root user. You can use the following command to create a dedicated bytebase user to run the application: RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase")
+		}
+		sameUser = false
+	}
+
 	uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
 	}
 	gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
 	}
-	return int(uid), int(gid), nil
+	return int(uid), int(gid), sameUser, nil
 }
