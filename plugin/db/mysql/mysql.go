@@ -236,12 +236,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		indexList, ok := indexMap[key]
-		if ok {
+		if indexList, ok := indexMap[key]; ok {
 			indexMap[key] = append(indexList, index)
 		} else {
-			list := make([]db.Index, 0)
-			indexMap[key] = append(list, index)
+			indexMap[key] = []db.Index{index}
 		}
 	}
 
@@ -295,12 +293,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		tableList, ok := columnMap[key]
-		if ok {
+		if tableList, ok := columnMap[key]; ok {
 			columnMap[key] = append(tableList, column)
 		} else {
-			list := make([]db.Column, 0)
-			columnMap[key] = append(list, column)
+			columnMap[key] = []db.Column{column}
 		}
 	}
 
@@ -370,12 +366,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			table.ColumnList = columnMap[key]
 			table.IndexList = indexMap[key]
 
-			tableList, ok := tableMap[dbName]
-			if ok {
+			if tableList, ok := tableMap[dbName]; ok {
 				tableMap[dbName] = append(tableList, table)
 			} else {
-				list := make([]db.Table, 0)
-				tableMap[dbName] = append(list, table)
+				tableMap[dbName] = []db.Table{table}
 			}
 		} else if table.Type == "VIEW" {
 			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
@@ -419,12 +413,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		view.UpdatedTs = info.updatedTs
 		view.Comment = info.comment
 
-		viewList, ok := viewMap[dbName]
-		if ok {
+		if viewList, ok := viewMap[dbName]; ok {
 			viewMap[dbName] = append(viewList, view)
 		} else {
-			list := make([]db.View, 0)
-			viewMap[dbName] = append(list, view)
+			viewMap[dbName] = []db.View{view}
 		}
 	}
 
@@ -443,7 +435,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 	}
 	defer rows.Close()
 
-	schemaList := make([]*db.Schema, 0)
+	var schemaList []*db.Schema
 	for rows.Next() {
 		var schema db.Schema
 		if err := rows.Scan(
@@ -475,7 +467,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM mysql.user
 		WHERE user NOT LIKE 'mysql.%'
 	`
-	userList := make([]*db.User, 0)
+	var userList []*db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -590,37 +582,17 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
-	const checkDuplicateVersionQuery = `
-		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = ? AND source = ? AND version = ?
-		`
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
-}
-
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
 func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
-	const checkOutofOrderVersionQuery = `
+	const checkOutOfOrderVersionQuery = `
 		SELECT MIN(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND source = ? AND version > ?
 		`
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+	row, err := tx.QueryContext(ctx, checkOutOfOrderVersionQuery,
 		namespace, source.String(), version,
 	)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+		return nil, util.FormatErrorWithQuery(err, checkOutOfOrderVersionQuery)
 	}
 	defer row.Close()
 
@@ -810,6 +782,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	if v := find.Version; v != nil {
 		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	if v := find.Source; v != nil {
+		paramNames, params = append(paramNames, "source"), append(params, *v)
 	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
@@ -1186,12 +1161,12 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
+		if err := rows.Scan(refs...); err != nil {
 			return err
 		}
 		tokens := make([]string, len(cols))

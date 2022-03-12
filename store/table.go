@@ -215,8 +215,8 @@ func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Table, 0)
+	// Iterate over result set and deserialize rows into tableList.
+	var tableList []*api.Table
 	for rows.Next() {
 		var table api.Table
 		if err := rows.Scan(
@@ -240,13 +240,13 @@ func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &table)
+		tableList = append(tableList, &table)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return tableList, nil
 }
 
 // deleteTable permanently deletes tables from a database.

@@ -196,10 +196,12 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	activityFind := &api.ActivityFind{
 		ID: &activityID,
 	}
-	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+	activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	// TODO(dragonly): compose Activity
+	inbox.Activity = activityRaw.ToActivity()
 
 	return &inbox, nil
 }
@@ -243,8 +245,8 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Inbox, 0)
+	// Iterate over result set and deserialize rows into inboxList.
+	var inboxList []*api.Inbox
 	for rows.Next() {
 		var inbox api.Inbox
 		inbox.Activity = &api.Activity{}
@@ -266,13 +268,13 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &inbox)
+		inboxList = append(inboxList, &inbox)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return inboxList, nil
 }
 
 // patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
@@ -310,10 +312,12 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 		activityFind := &api.ActivityFind{
 			ID: &activityID,
 		}
-		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+		activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 		if err != nil {
 			return nil, FormatError(err)
 		}
+		// TODO(dragonly): compose Activity
+		inbox.Activity = activityRaw.ToActivity()
 
 		return &inbox, nil
 	}

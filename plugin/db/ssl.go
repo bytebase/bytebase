@@ -35,7 +35,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 	if tc.SslCert != "" && tc.SslKey != "" {
-		clientCert := make([]tls.Certificate, 0, 1)
+		var clientCert []tls.Certificate
 		certs, err := tls.LoadX509KeyPair(tc.SslCert, tc.SslKey)
 		if err != nil {
 			return nil, err

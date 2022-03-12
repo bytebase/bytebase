@@ -78,7 +78,7 @@ import type {
   SqlEditorGetters,
   Database,
   DatabaseId,
-} from "../../../types";
+} from "@/types";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;

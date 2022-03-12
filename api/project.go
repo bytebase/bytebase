@@ -64,7 +64,7 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
-// ProjectRaw is the store model for a project.
+// ProjectRaw is the store model for a Project.
 // Fields have exactly the same meanings as Project.
 type ProjectRaw struct {
 	ID int

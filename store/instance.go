@@ -69,7 +69,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	if _, err = s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if _, err := s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
@@ -276,8 +276,8 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Instance, 0)
+	// Iterate over result set and deserialize rows into instanceList.
+	var instanceList []*api.Instance
 	for rows.Next() {
 		var instance api.Instance
 		if err := rows.Scan(
@@ -298,13 +298,13 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &instance)
+		instanceList = append(instanceList, &instance)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return instanceList, nil
 }
 
 // patchInstance updates a instance by ID. Returns the new state of the instance after update.

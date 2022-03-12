@@ -144,8 +144,8 @@
                             activity.type == 'bb.issue.comment.create'
                           "
                         >
-                          (edited
-                          {{ humanizeTs(activity.createdTs) }})
+                          ({{ $t("common.edited") }}
+                          {{ humanizeTs(activity.updatedTs) }})
                         </template>
                       </a>
                     </div>

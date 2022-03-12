@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
@@ -14,11 +16,12 @@ func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline
 	if err != nil {
 		return nil, err
 	}
+	if pipeline == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Pipeline not found with ID %v", id)}
+	}
 
-	if pipeline != nil {
-		if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
-			return nil, err
-		}
+	if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
+		return nil, err
 	}
 	return pipeline, nil
 }

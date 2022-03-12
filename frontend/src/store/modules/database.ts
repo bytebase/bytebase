@@ -380,18 +380,22 @@ const actions = {
     {
       databaseId,
       projectId,
+      labels,
     }: {
       databaseId: DatabaseId;
       projectId: ProjectId;
+      labels?: DatabaseLabel[];
     }
   ) {
+    const attributes: any = { projectId };
+    if (labels) {
+      attributes.labels = JSON.stringify(labels);
+    }
     const data = (
       await axios.patch(`/api/database/${databaseId}`, {
         data: {
           type: "databasePatch",
-          attributes: {
-            projectId,
-          },
+          attributes,
         },
       })
     ).data;

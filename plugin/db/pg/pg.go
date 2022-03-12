@@ -215,7 +215,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
-	schemaList := make([]*db.Schema, 0)
+	var schemaList []*db.Schema
 	for _, database := range databases {
 		dbName := database.name
 		if _, ok := excludedDatabaseList[dbName]; ok {
@@ -331,7 +331,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM pg_catalog.pg_user
 		ORDER BY role_name
 			`
-	userList := make([]*db.User, 0)
+	var userList []*db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -500,26 +500,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
-	const checkDuplicateVersionQuery = `
-		SELECT 1 FROM migration_history
-		WHERE namespace = $1 AND source = $2 AND version = $3
-	`
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
 }
 
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
@@ -718,6 +698,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	if v := find.Version; v != nil {
 		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	if v := find.Source; v != nil {
+		paramNames, params = append(paramNames, "source"), append(params, *v)
 	}
 	var query = baseQuery +
 		db.FormatParamNameInNumberedPosition(paramNames) +
@@ -1626,12 +1609,12 @@ func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
+		if err := rows.Scan(refs...); err != nil {
 			return err
 		}
 		tokens := make([]string, len(cols))
@@ -1791,7 +1774,7 @@ func getEventTriggers(txn *sql.Tx) ([]*eventTriggerSchema, error) {
 	return triggers, nil
 }
 
-// quoteIdentifier will quote identifiers including keywords, capital charactors, or special charactors.
+// quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
 func quoteIdentifier(s string) string {
 	quote := false
 	if reserved[strings.ToUpper(s)] {

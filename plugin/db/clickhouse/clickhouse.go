@@ -124,7 +124,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := []string{
 		// Skip our internal "bytebase" database
@@ -180,12 +180,10 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		tableList, ok := columnMap[key]
-		if ok {
+		if tableList, ok := columnMap[key]; ok {
 			columnMap[key] = append(tableList, column)
 		} else {
-			list := make([]db.Column, 0)
-			columnMap[key] = append(list, column)
+			columnMap[key] = append([]db.Column(nil), column)
 		}
 	}
 
@@ -253,7 +251,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		}
 	}
 
-	schemaList := make([]*db.Schema, 0)
+	var schemaList []*db.Schema
 	// Query db info
 	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	query = `
@@ -293,7 +291,6 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			name
 		FROM system.users
 	`
-	userList := make([]*db.User, 0)
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -301,6 +298,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 	}
 	defer userRows.Close()
 
+	var userList []*db.User
 	for userRows.Next() {
 		var user string
 		if err := userRows.Scan(
@@ -407,26 +405,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
-	const checkDuplicateVersionQuery = `
-		SELECT 1 FROM bytebase.migration_history
-		WHERE namespace = $1 AND source = $2  AND version = $3
-	`
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
 }
 
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
@@ -650,6 +628,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	if v := find.Version; v != nil {
 		paramNames, params = append(paramNames, "version"), append(params, *v)
+	}
+	if v := find.Source; v != nil {
+		paramNames, params = append(paramNames, "source"), append(params, *v)
 	}
 	var query = baseQuery +
 		db.FormatParamNameInNumberedPosition(paramNames) +

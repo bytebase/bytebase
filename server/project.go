@@ -89,7 +89,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		projectList := make([]*api.Project, 0, len(projectRawList))
+		var projectList []*api.Project
 		for _, projectRaw := range projectRawList {
 			project, err := s.composeProjectRelationship(ctx, projectRaw)
 			if err != nil {
@@ -304,7 +304,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(repoRawList), projectID)).SetInternal(err)
 		}
 
-		repoList := make([]*api.Repository, 0, len(repoRawList))
+		var repoList []*api.Repository
 		for _, repoRaw := range repoRawList {
 			repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
 			if err != nil {
@@ -597,7 +597,7 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 		return nil, err
 	}
 	if projectRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Project not found with ID %d", id)}
 	}
 
 	project, err := s.composeProjectRelationship(ctx, projectRaw)
