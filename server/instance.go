@@ -588,6 +588,8 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	return nil
 }
 
+// disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
+// Otherwise, users can take control of the database which is a security issue.
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
 	if engine != db.Postgres {
 		return nil
