@@ -17,7 +17,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from "vue";
 import { Label, LabelKeyType } from "../../types";
 import { hidePrefix } from "../../utils";
 

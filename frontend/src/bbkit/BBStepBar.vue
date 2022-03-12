@@ -66,7 +66,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from "vue";
 import { BBStep, BBStepStatus } from "./types";
 
 defineProps<{
