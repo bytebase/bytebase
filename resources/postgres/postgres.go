@@ -169,10 +169,17 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		}
 		uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
 		if err != nil {
-			fmt.Println(err)
+			return err
+		}
+		gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
+		if err != nil {
+			return err
 		}
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
+			return fmt.Errorf("failed to change owner to bytebase of %q, error: %w", pgDataDir, err)
 		}
 	}
 	p.Stderr = os.Stderr
