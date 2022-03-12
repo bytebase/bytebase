@@ -45,6 +45,20 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
 		"-o", fmt.Sprintf(`"-p %d"`, i.port))
+	currentUser, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("failed to get current user, error: %w", err)
+	}
+	// If user runs bytebase as root user, we will attempt to run initdb as user `bytebase`.
+	if currentUser.Username == "root" {
+		uid, _, err := getBytebaseUser()
+		if err != nil {
+			return err
+		}
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
 	p.Stdout = stdout
 	p.Stderr = stderr
 
@@ -163,15 +177,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 	// If user runs bytebase as root user, we will attempt to run initdb as user `bytebase`.
 	if currentUser.Username == "root" {
-		bytebaseUser, err := user.Lookup("bytebase")
-		if err != nil {
-			return fmt.Errorf("Please run Bytebase as non-root user or create a user called `bytebase`")
-		}
-		uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
-		if err != nil {
-			return err
-		}
-		gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
+		uid, gid, err := getBytebaseUser()
 		if err != nil {
 			return err
 		}
@@ -190,4 +196,20 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 
 	return nil
+}
+
+func getBytebaseUser() (int, int, error) {
+	bytebaseUser, err := user.Lookup("bytebase")
+	if err != nil {
+		return 0, 0, fmt.Errorf("Please run Bytebase as non-root user or create a user called `bytebase`")
+	}
+	uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
+	if err != nil {
+		return 0, 0, err
+	}
+	gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(uid), int(gid), nil
 }
