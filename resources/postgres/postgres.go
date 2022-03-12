@@ -48,13 +48,13 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 
 	p.Stdout = stdout
 	p.Stderr = stderr
-	uid, _, sameUser, err := getBytebaseUser()
+	uid, gid, sameUser, err := getBytebaseUser()
 	if err != nil {
 		return err
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
 		}
 	}
 
@@ -78,13 +78,13 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 
 	p.Stderr = stderr
 	p.Stdout = stdout
-	uid, _, sameUser, err := getBytebaseUser()
+	uid, gid, sameUser, err := getBytebaseUser()
 	if err != nil {
 		return err
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
 		}
 	}
 
@@ -211,7 +211,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
 			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
