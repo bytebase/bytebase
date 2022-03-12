@@ -241,7 +241,7 @@ export default {
       };
       store
         .dispatch("dataSource/patchDataSource", {
-          databaseId: dataSource.value.database.id,
+          databaseId: dataSource.value.databaseId,
           dataSourceid: dataSource.value.id,
           dataSource: dataSourcePatch,
         })
@@ -255,7 +255,7 @@ export default {
       const name = dataSource.value.name;
       store
         .dispatch("dataSource/deleteDataSourceById", {
-          databaseId: dataSource.value.database.id,
+          databaseId: dataSource.value.databaseId,
           dataSourceId,
         })
         .then(() => {

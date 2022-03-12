@@ -197,7 +197,7 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
     >
-      <InstanceForm :create="true" @dismiss="state.showModal = false" />
+      <CreateInstanceForm @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="
@@ -259,7 +259,7 @@ import { defineComponent, reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import InstanceForm from "../components/InstanceForm.vue";
+import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
@@ -282,7 +282,7 @@ export default defineComponent({
   name: "QuickActionPanel",
   components: {
     ProjectCreate,
-    InstanceForm,
+    CreateInstanceForm,
     AlterSchemaPrepForm,
     CreateDatabasePrepForm,
     RequestDatabasePrepForm,

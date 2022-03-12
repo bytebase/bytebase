@@ -185,15 +185,15 @@ func (s *Server) composeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if vcsRaw != nil {
-		vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
-		if err != nil {
-			return nil, err
-		}
-		return vcs, nil
+	if vcsRaw == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("VCS not found with ID %v", id)}
 	}
-	return nil, nil
+
+	vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
+	if err != nil {
+		return nil, err
+	}
+	return vcs, nil
 }
 
 func (s *Server) composeVCSRelationship(ctx context.Context, raw *api.VCSRaw) (*api.VCS, error) {

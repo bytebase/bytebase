@@ -49,23 +49,23 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, err
 	}
 
-	backup, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
+	backupRaw, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)
 	}
-	if backup == nil {
+	if backupRaw == nil {
 		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
 	}
 
 	sourceDatabaseFind := &api.DatabaseFind{
-		ID: &backup.DatabaseID,
+		ID: &backupRaw.DatabaseID,
 	}
 	sourceDatabase, err := server.composeDatabaseByFind(ctx, sourceDatabaseFind)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
 	if sourceDatabase == nil {
-		return true, nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
+		return true, nil, fmt.Errorf("source database ID not found %v", backupRaw.DatabaseID)
 	}
 
 	targetDatabaseFind := &api.DatabaseFind{
@@ -85,8 +85,11 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		zap.String("source_database", sourceDatabase.Name),
 		zap.String("target_instance", targetDatabase.Instance.Name),
 		zap.String("target_database", targetDatabase.Name),
-		zap.String("backup", backup.Name),
+		zap.String("backup", backupRaw.Name),
 	)
+
+	// TODO(dragonly): refactor to composed Backup
+	backup := backupRaw.ToBackup()
 
 	// Restore the database to the target database.
 	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.dataDir); err != nil {
@@ -107,7 +110,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	databasePatch := &api.DatabasePatch{
 		ID:             targetDatabase.ID,
 		UpdaterID:      api.SystemBotID,
-		SourceBackupID: &backup.ID,
+		SourceBackupID: &backupRaw.ID,
 	}
 	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {
 		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
@@ -117,7 +120,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	server.syncEngineVersionAndSchema(ctx, targetDatabase.Instance)
 
 	return true, &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
+		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backupRaw.Name),
 		MigrationID: migrationID,
 		Version:     version,
 	}, nil

@@ -35,7 +35,12 @@ func NewActivityManager(server *Server, activityService api.ActivityService) *Ac
 
 // CreateActivity creates an activity.
 func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.ActivityCreate, meta *ActivityMeta) (*api.Activity, error) {
-	activity, err := m.activityService.CreateActivity(ctx, create)
+	activityRaw, err := m.activityService.CreateActivity(ctx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, err := m.s.composeActivityRelationship(ctx, activityRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +234,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal paylaod",
+			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
 				zap.String("issue_name", meta.issue.Name),
 				zap.Error(err))
 			return webhookCtx, err

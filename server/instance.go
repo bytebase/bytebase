@@ -162,17 +162,17 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				InstanceID: &instance.ID,
 				Type:       &dataSourceType,
 			}
-			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+			adminDataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
 			}
-			if adminDataSource == nil {
+			if adminDataSourceRaw == nil {
 				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSource.ID,
+				ID:        adminDataSourceRaw.ID,
 				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 				Username:  instancePatch.Username,
 			}
@@ -182,8 +182,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				password := ""
 				dataSourcePatch.Password = &password
 			}
-			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
-			if err != nil {
+			if _, err := s.DataSourceService.PatchDataSource(ctx, dataSourcePatch); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
 			}
 		}
@@ -453,7 +452,7 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 		return nil, err
 	}
 	if instance == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found %v", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance not found with ID %v", id)}
 	}
 
 	if err := s.composeInstanceRelationship(ctx, instance); err != nil {
@@ -505,11 +504,16 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 	}
 
-	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
 		return err
+	}
+	// TODO(dragonly): compose DataSource
+	var dataSourceList []*api.DataSource
+	for _, dataSourceRaw := range dataSourceRawList {
+		dataSourceList = append(dataSourceList, dataSourceRaw.ToDataSource())
 	}
 	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
@@ -534,16 +538,16 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
+	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
 	if err != nil {
 		return "", err
 	}
-	for _, dataSource := range dataSourceList {
-		if dataSource.Type == api.Admin {
-			return dataSource.Password, nil
+	for _, dataSourceRaw := range dataSourceRawList {
+		if dataSourceRaw.Type == api.Admin {
+			return dataSourceRaw.Password, nil
 		}
 	}
-	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceID)}
+	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
 }
 
 // instanceCountGuard is a feature guard for instance count.

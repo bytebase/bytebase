@@ -141,15 +141,15 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			activityFind := &api.ActivityFind{
 				ID: &activityID,
 			}
-			activity, err := s.ActivityService.FindActivity(ctx, activityFind)
+			activityRaw, err := s.ActivityService.FindActivity(ctx, activityFind)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
-			if activity == nil {
+			if activityRaw == nil {
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", activityID))
 			}
 
-			return activity.CreatorID == curPrincipalID, nil
+			return activityRaw.CreatorID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
 		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {

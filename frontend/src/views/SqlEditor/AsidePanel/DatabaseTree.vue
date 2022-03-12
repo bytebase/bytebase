@@ -47,9 +47,9 @@ import {
   SqlEditorActions,
   ConnectionContext,
   UNKNOWN_ID,
-} from "../../../types";
-import { connectionSlug, getHighlightHTMLByKeyWords } from "../../../utils";
-import InstanceEngineIconVue from "../../../components/InstanceEngineIcon.vue";
+} from "@/types";
+import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
+import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 

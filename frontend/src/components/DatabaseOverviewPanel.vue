@@ -337,8 +337,8 @@ export default {
       };
       store
         .dispatch("dataSource/patchDataSource", {
-          databaseId: state.editingDataSource!.database.id,
-          dataSourceId: state.editingDataSource!.id,
+          databaseId: state.editingDataSource?.databaseId,
+          dataSourceId: state.editingDataSource?.id,
           dataSource: dataSourcePatch,
         })
         .then(() => {
