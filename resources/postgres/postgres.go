@@ -54,7 +54,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 	}
 
@@ -84,7 +84,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 	}
 
@@ -211,7 +211,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
+			Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), NoSetGroups: true},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
 			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
@@ -241,11 +241,11 @@ func getBytebaseUser() (int, int, bool, error) {
 		sameUser = false
 	}
 
-	uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
+	uid, err := strconv.Atoi(bytebaseUser.Uid)
 	if err != nil {
 		return 0, 0, false, err
 	}
-	gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
+	gid, err := strconv.Atoi(bytebaseUser.Gid)
 	if err != nil {
 		return 0, 0, false, err
 	}
