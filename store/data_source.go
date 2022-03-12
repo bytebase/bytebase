@@ -29,7 +29,7 @@ func NewDataSourceService(logger *zap.Logger, db *DB, cache api.CacheService) *D
 }
 
 // CreateDataSource creates a new dataSource.
-func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
+func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -49,12 +49,12 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 }
 
 // CreateDataSourceTx creates a data source with a transaction.
-func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
 	return s.createDataSource(ctx, tx, create)
 }
 
 // FindDataSourceList retrieves a list of data sources based on find.
-func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
+func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -63,7 +63,7 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 
 	list, err := s.findDataSourceList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.DataSource{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -71,7 +71,7 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 
 // FindDataSource retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
+func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -93,7 +93,7 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 
 // PatchDataSource updates an existing dataSource by ID.
 // Returns ENOTFOUND if dataSource does not exist.
-func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
+func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -113,7 +113,7 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 }
 
 // createDataSource creates a new dataSource.
-func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSource, error) {
+func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
 	// Insert row into dataSource.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO data_source (
@@ -145,27 +145,27 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 	defer row.Close()
 
 	row.Next()
-	var dataSource api.DataSource
+	var dataSourceRaw api.DataSourceRaw
 	if err := row.Scan(
-		&dataSource.ID,
-		&dataSource.CreatorID,
-		&dataSource.CreatedTs,
-		&dataSource.UpdaterID,
-		&dataSource.UpdatedTs,
-		&dataSource.InstanceID,
-		&dataSource.DatabaseID,
-		&dataSource.Name,
-		&dataSource.Type,
-		&dataSource.Username,
-		&dataSource.Password,
+		&dataSourceRaw.ID,
+		&dataSourceRaw.CreatorID,
+		&dataSourceRaw.CreatedTs,
+		&dataSourceRaw.UpdaterID,
+		&dataSourceRaw.UpdatedTs,
+		&dataSourceRaw.InstanceID,
+		&dataSourceRaw.DatabaseID,
+		&dataSourceRaw.Name,
+		&dataSourceRaw.Type,
+		&dataSourceRaw.Username,
+		&dataSourceRaw.Password,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &dataSource, nil
+	return &dataSourceRaw, nil
 }
 
-func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*api.DataSource, error) {
+func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*api.DataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -203,37 +203,37 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.DataSource, 0)
+	// Iterate over result set and deserialize rows into dataSourceRawList.
+	var dataSourceRawList []*api.DataSourceRaw
 	for rows.Next() {
-		var dataSource api.DataSource
+		var dataSourceRaw api.DataSourceRaw
 		if err := rows.Scan(
-			&dataSource.ID,
-			&dataSource.CreatorID,
-			&dataSource.CreatedTs,
-			&dataSource.UpdaterID,
-			&dataSource.UpdatedTs,
-			&dataSource.InstanceID,
-			&dataSource.DatabaseID,
-			&dataSource.Name,
-			&dataSource.Type,
-			&dataSource.Username,
-			&dataSource.Password,
+			&dataSourceRaw.ID,
+			&dataSourceRaw.CreatorID,
+			&dataSourceRaw.CreatedTs,
+			&dataSourceRaw.UpdaterID,
+			&dataSourceRaw.UpdatedTs,
+			&dataSourceRaw.InstanceID,
+			&dataSourceRaw.DatabaseID,
+			&dataSourceRaw.Name,
+			&dataSourceRaw.Type,
+			&dataSourceRaw.Username,
+			&dataSourceRaw.Password,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &dataSource)
+		dataSourceRawList = append(dataSourceRawList, &dataSourceRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return dataSourceRawList, nil
 }
 
 // patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSource, error) {
+func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
@@ -260,24 +260,24 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, pat
 	defer row.Close()
 
 	if row.Next() {
-		var dataSource api.DataSource
+		var dataSourceRaw api.DataSourceRaw
 		if err := row.Scan(
-			&dataSource.ID,
-			&dataSource.CreatorID,
-			&dataSource.CreatedTs,
-			&dataSource.UpdaterID,
-			&dataSource.UpdatedTs,
-			&dataSource.InstanceID,
-			&dataSource.DatabaseID,
-			&dataSource.Name,
-			&dataSource.Type,
-			&dataSource.Username,
-			&dataSource.Password,
+			&dataSourceRaw.ID,
+			&dataSourceRaw.CreatorID,
+			&dataSourceRaw.CreatedTs,
+			&dataSourceRaw.UpdaterID,
+			&dataSourceRaw.UpdatedTs,
+			&dataSourceRaw.InstanceID,
+			&dataSourceRaw.DatabaseID,
+			&dataSourceRaw.Name,
+			&dataSourceRaw.Type,
+			&dataSourceRaw.Username,
+			&dataSourceRaw.Password,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		return &dataSource, nil
+		return &dataSourceRaw, nil
 	}
 
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("dataSource ID not found: %d", patch.ID)}
+	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("DataSource not found with ID %d", patch.ID)}
 }

@@ -2,11 +2,20 @@ package cmd
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
+
+func init() {
+	logger = zap.NewNop()
+}
 
 func execute(t *testing.T, cmd *cobra.Command, args ...string) (string, error) {
 	t.Helper()
@@ -29,32 +38,30 @@ type testTable struct {
 func tableTest(t *testing.T, tables []testTable) {
 	t.Helper()
 	for _, tc := range tables {
-		actual, err := execute(t, rootCmd, tc.args...)
+		actual, err := execute(t, NewRootCmd(), tc.args...)
 
 		if err != tc.expectedErr {
 			t.Errorf(`"> bb %v"
 got unexpected error:
->>>>>>>>>>
-%v
-<<<<<<<<<<
-want:
->>>>>>>>>>
-%v
-<<<<<<<<<<
-`, strings.Join(tc.args, " "), err, tc.expectedErr)
+%s
+`, strings.Join(tc.args, " "), cmp.Diff(err, tc.expectedErr))
 		}
 
 		if actual != tc.expected {
 			t.Errorf(`"> bb %v"
 got unexpected output:
->>>>>>>>>>
-%v
-<<<<<<<<<<
-want:
->>>>>>>>>>
-%v
-<<<<<<<<<<
-`, strings.Join(tc.args, " "), actual, tc.expected)
+%s
+`, strings.Join(tc.args, " "), cmp.Diff(actual, tc.expected))
+
+			f, err := os.CreateTemp("", "*")
+			if err != nil {
+				t.Log(err)
+			}
+			defer f.Close()
+			if _, err := io.WriteString(f, actual); err != nil {
+				t.Log(err)
+			}
+			t.Logf("Actual output written to %s", f.Name())
 		}
 	}
 }

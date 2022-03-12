@@ -112,8 +112,6 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// CheckDuplicateVersion will check whether the version is already applied.
-	CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (isDuplicate bool, err error)
 	// CheckOutOfOrderVersion will return versions that are higher than the given version.
 	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error)
 	// FindBaseline retruns true if any baseline is found.
@@ -201,10 +199,24 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has alraedy been applied
-	if duplicate, err := executor.CheckDuplicateVersion(ctx, tx, m.Namespace, m.Source, m.Version); err != nil {
-		return -1, err
-	} else if duplicate {
-		return -1, common.Errorf(common.MigrationAlreadyApplied, fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+		Database: &m.Namespace,
+		Source:   &m.Source,
+		Version:  &m.Version,
+	}); err != nil {
+		return -1, fmt.Errorf("Check duplicate version error: %q", err)
+	} else if len(list) > 0 {
+		switch list[0].Status {
+		case db.Done:
+			return -1, common.Errorf(common.MigrationAlreadyApplied,
+				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+		case db.Pending:
+			return -1, common.Errorf(common.MigrationPending,
+				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
+		case db.Failed:
+			return -1, common.Errorf(common.MigrationFailed,
+				fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version))
+		}
 	}
 
 	// Check if there is any higher version already been applied
@@ -281,9 +293,9 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +307,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
+	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, formatError(err)
 	}
@@ -307,11 +319,11 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 
 	colCount := len(columnTypes)
 
-	columnTypeNames := make([]string, colCount)
-	for i, v := range columnTypes {
+	var columnTypeNames []string
+	for _, v := range columnTypes {
 		// DatabaseTypeName returns the database system name of the column type.
 		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames[i] = strings.ToUpper(v.DatabaseTypeName())
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
 	rowCount := 0
@@ -371,7 +383,7 @@ func Query(ctx context.Context, l *zap.Logger, db *sql.DB, statement string, lim
 		}
 	}
 
-	return []interface{}{columns, data}, nil
+	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
 // FindMigrationHistoryList will find the list of migration history.
@@ -392,8 +404,8 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*db.MigrationHistory, 0)
+	// Iterate over result set and deserialize rows into migrationHistoryList.
+	var migrationHistoryList []*db.MigrationHistory
 	for rows.Next() {
 		var history db.MigrationHistory
 		if err := rows.Scan(
@@ -420,7 +432,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			return nil, err
 		}
 
-		list = append(list, &history)
+		migrationHistoryList = append(migrationHistoryList, &history)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -430,7 +442,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 		return nil, err
 	}
 
-	return list, nil
+	return migrationHistoryList, nil
 }
 
 func formatError(err error) error {

@@ -62,7 +62,7 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 
 	list, err := s.findPipelineList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Pipeline{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -204,8 +204,8 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Pipeline, 0)
+	// Iterate over result set and deserialize rows into pipelineList.
+	var pipelineList []*api.Pipeline
 	for rows.Next() {
 		var pipeline api.Pipeline
 		if err := rows.Scan(
@@ -220,13 +220,13 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &pipeline)
+		pipelineList = append(pipelineList, &pipeline)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return pipelineList, nil
 }
 
 // patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.

@@ -56,7 +56,7 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 
 	list, err := s.findViewList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.View{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -188,8 +188,8 @@ func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.Vi
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.View, 0)
+	// Iterate over result set and deserialize rows into viewList.
+	var viewList []*api.View
 	for rows.Next() {
 		var view api.View
 		if err := rows.Scan(
@@ -206,13 +206,13 @@ func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.Vi
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &view)
+		viewList = append(viewList, &view)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return viewList, nil
 }
 
 // deleteView permanently deletes views from a database.

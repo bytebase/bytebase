@@ -167,7 +167,6 @@ export default {
         type: "RO",
         databaseId: props.database ? props.database.id : UNKNOWN_ID,
         instanceId: props.instanceId,
-        memberList: [],
       },
       showPassword: false,
     });

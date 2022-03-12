@@ -48,7 +48,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Task check scheduler PANIC RECOVER", zap.Error(err))
+						s.l.Error("Task check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -320,7 +320,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				return nil, err
 			}
 
-			if s.server.feature(api.FeatureBackwardCompatibilty) {
+			if s.server.feature(api.FeatureBackwardCompatibility) {
 				_, err = s.server.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               creatorID,
 					TaskID:                  task.ID,
@@ -337,10 +337,11 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
-		task.TaskCheckRunList, err = s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+		taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
 		}
+		task.TaskCheckRunList = taskCheckRunList
 
 		return task, err
 	}

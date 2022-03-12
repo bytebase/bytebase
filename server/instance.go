@@ -71,19 +71,19 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			instanceFind.RowStatus = &rowStatus
 		}
-		list, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
+		instanceList, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 		}
 
-		for _, instance := range list {
+		for _, instance := range instanceList {
 			if err := s.composeInstanceRelationship(ctx, instance); err != nil {
 				return err
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal instance list response").SetInternal(err)
 		}
 		return nil
@@ -162,17 +162,17 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				InstanceID: &instance.ID,
 				Type:       &dataSourceType,
 			}
-			adminDataSource, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+			adminDataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
 			}
-			if adminDataSource == nil {
+			if adminDataSourceRaw == nil {
 				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSource.ID,
+				ID:        adminDataSourceRaw.ID,
 				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 				Username:  instancePatch.Username,
 			}
@@ -182,8 +182,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				password := ""
 				dataSourcePatch.Password = &password
 			}
-			_, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
-			if err != nil {
+			if _, err := s.DataSourceService.PatchDataSource(ctx, dataSourcePatch); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
 			}
 		}
@@ -224,13 +223,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		instanceUserFind := &api.InstanceUserFind{
 			InstanceID: id,
 		}
-		list, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+		instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUserList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -453,7 +452,7 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 		return nil, err
 	}
 	if instance == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found %v", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance not found with ID %v", id)}
 	}
 
 	if err := s.composeInstanceRelationship(ctx, instance); err != nil {
@@ -482,7 +481,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	}
 
 	rowStatus := api.Normal
-	instance.AnomalyList, err = s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
 		InstanceID:   &instance.ID,
 		InstanceOnly: true,
@@ -490,6 +489,12 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	if err != nil {
 		return err
 	}
+	var anomalyList []*api.Anomaly
+	for _, anomalyRaw := range anomalyListRaw {
+		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
+	}
+	// TODO(dragonly): implement composeAnomalyRelationship
+	instance.AnomalyList = anomalyList
 	for _, anomaly := range instance.AnomalyList {
 		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
 			return err
@@ -499,12 +504,18 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		}
 	}
 
-	instance.DataSourceList, err = s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
 		return err
 	}
+	// TODO(dragonly): compose DataSource
+	var dataSourceList []*api.DataSource
+	for _, dataSourceRaw := range dataSourceRawList {
+		dataSourceList = append(dataSourceList, dataSourceRaw.ToDataSource())
+	}
+	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
 		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
 			return err
@@ -527,16 +538,16 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
+	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
 	if err != nil {
 		return "", err
 	}
-	for _, dataSource := range dataSourceList {
-		if dataSource.Type == api.Admin {
-			return dataSource.Password, nil
+	for _, dataSourceRaw := range dataSourceRawList {
+		if dataSourceRaw.Type == api.Admin {
+			return dataSourceRaw.Password, nil
 		}
 	}
-	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance: %d", instanceID)}
+	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
 }
 
 // instanceCountGuard is a feature guard for instance count.

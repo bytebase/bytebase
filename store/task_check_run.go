@@ -156,7 +156,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 
 	list, err := s.findTaskCheckRunList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.TaskCheckRun{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -166,7 +166,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	list, err := s.findTaskCheckRunList(ctx, tx, find)
 	if err != nil {
-		return []*api.TaskCheckRun{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -298,8 +298,8 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.TaskCheckRun, 0)
+	// Iterate over result set and deserialize rows into taskCheckRunList.
+	var taskCheckRunList []*api.TaskCheckRun
 	for rows.Next() {
 		var taskCheckRun api.TaskCheckRun
 		if err := rows.Scan(
@@ -319,11 +319,11 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &taskCheckRun)
+		taskCheckRunList = append(taskCheckRunList, &taskCheckRun)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return taskCheckRunList, nil
 }

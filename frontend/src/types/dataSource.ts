@@ -1,7 +1,6 @@
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
 
-import { Database } from "./database";
 import {
   DatabaseId,
   DataSourceId,
@@ -9,7 +8,6 @@ import {
   IssueId,
   PrincipalId,
 } from "./id";
-import { Instance } from "./instance";
 import { Principal } from "./principal";
 
 // which from the ops perspective, having different meaning from the normal RW data source.
@@ -19,11 +17,8 @@ export type DataSource = {
   id: DataSourceId;
 
   // Related fields
-  database: Database;
-  instance: Instance;
-  // Returns the member list directly because we need it quite frequently in order
-  // to do various access check.
-  memberList: DataSourceMember[];
+  databaseId: DatabaseId;
+  instanceId: InstanceId;
 
   // Standard fields
   creator: Principal;
@@ -43,7 +38,6 @@ export type DataSourceCreate = {
   // Related fields
   databaseId: DatabaseId;
   instanceId: InstanceId;
-  memberList: DataSourceMemberCreate[];
 
   // Domain specific fields
   name: string;
@@ -57,6 +51,7 @@ export type DataSourcePatch = {
   name?: string;
   username?: string;
   password?: string;
+  useEmptyPassword?: boolean;
 };
 
 export type DataSourceMember = {

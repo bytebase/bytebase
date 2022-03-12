@@ -56,7 +56,7 @@ func (s *ProjectMemberService) FindProjectMemberList(ctx context.Context, find *
 
 	list, err := findProjectMemberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectMember{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -327,8 +327,8 @@ func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.ProjectMember, 0)
+	// Iterate over result set and deserialize rows into projectMemberList.
+	var projectMemberList []*api.ProjectMember
 	for rows.Next() {
 		var projectMember api.ProjectMember
 		if err := rows.Scan(
@@ -346,13 +346,13 @@ func findProjectMemberList(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &projectMember)
+		projectMemberList = append(projectMemberList, &projectMember)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return projectMemberList, nil
 }
 
 // patchProjectMember updates a projectMember by ID. Returns the new state of the projectMember after update.

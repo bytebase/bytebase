@@ -4,13 +4,55 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/bytebase/bytebase/plugin/db"
+
+	// install mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func newDumpCmd() *cobra.Command {
+	var (
+		databaseType string
+		username     string
+		password     string
+		hostname     string
+		port         string
+		database     string
+		file         string
+
+		// SSL flags.
+		sslCA   string // server-ca.pem
+		sslCert string // client-cert.pem
+		sslKey  string // client-key.pem
+
+		// Dump options.
+		schemaOnly bool
+	)
+	dumpCmd := &cobra.Command{
+		Use:   "dump",
+		Short: "Exports the schema of a database instance",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tlsCfg := db.TLSConfig{
+				SslCA:   sslCA,
+				SslCert: sslCert,
+				SslKey:  sslKey,
+			}
+			out := cmd.OutOrStdout()
+			if file != "" {
+				f, err := os.Create(file)
+				if err != nil {
+					return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
+				}
+				defer f.Close()
+				out = f
+			}
+			return dumpDatabase(context.Background(), databaseType, username, password, hostname, port, database, out, tlsCfg, schemaOnly)
+		},
+	}
 	dumpCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
 	dumpCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
 	dumpCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
@@ -26,27 +68,12 @@ func init() {
 
 	dumpCmd.Flags().BoolVar(&schemaOnly, "schema-only", false, "Schema only dump.")
 
-	rootCmd.AddCommand(dumpCmd)
+	return dumpCmd
 }
-
-var (
-	dumpCmd = &cobra.Command{
-		Use:   "dump",
-		Short: "Exports the schema of a database instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := db.TLSConfig{
-				SslCA:   sslCA,
-				SslCert: sslCert,
-				SslKey:  sslKey,
-			}
-			return dumpDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg, schemaOnly)
-		},
-	}
-)
 
 // dumpDatabase exports the schema of a database instance.
 // When file isn't specified, the schema will be exported to stdout.
-func dumpDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TLSConfig, schemaOnly bool) error {
+func dumpDatabase(ctx context.Context, databaseType, username, password, hostname, port, database string, out io.Writer, tlsCfg db.TLSConfig, schemaOnly bool) error {
 	var dbType db.Type
 	switch databaseType {
 	case "mysql":
@@ -79,17 +106,8 @@ func dumpDatabase(ctx context.Context, databaseType, username, password, hostnam
 	}
 	defer db.Close(ctx)
 
-	out := os.Stdout
-	if file != "" {
-		out, err = os.Create(file)
-		if err != nil {
-			return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
-		}
-	}
-	defer out.Close()
-
 	if err := db.Dump(ctx, database, out, schemaOnly); err != nil {
-		return fmt.Errorf("failed to create dump %s, got error: %w", file, err)
+		return fmt.Errorf("failed to create dump, got error: %w", err)
 	}
 	return nil
 }

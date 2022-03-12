@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -25,20 +26,21 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
-		authProvider := make([]*api.AuthProvider, 0)
+		var authProviderList []*api.AuthProvider
 		for _, vcs := range list {
 			newProvider := &api.AuthProvider{
+				ID:            vcs.ID,
 				Type:          vcs.Type,
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
 				Secret:        vcs.Secret,
 			}
-			authProvider = append(authProvider, newProvider)
+			authProviderList = append(authProviderList, newProvider)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, authProvider); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, authProviderList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal auth provider").SetInternal(err)
 		}
 		return nil
@@ -81,15 +83,24 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				gitlabUserInfo, err := vcsPlugin.Get("GITLAB_SELF_HOST", vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+				findVCS := &api.VCSFind{ID: &gitlabLogin.ID}
+				vcsFound, err := s.VCSService.FindVCS(ctx, findVCS)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+				if vcsFound == nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
+				}
+
+				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
-						ClientID:     gitlabLogin.ApplicationID,
-						ClientSecret: gitlabLogin.Secret,
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
 						AccessToken:  gitlabLogin.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},
-					gitlabLogin.InstanceURL,
+					vcsFound.InstanceURL,
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
@@ -101,7 +112,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				principalFind := &api.PrincipalFind{
-					Email: &gitlabUserInfo.Email,
+					Email: &gitlabUserInfo.PublicEmail,
 				}
 				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
 				if err != nil {
@@ -110,16 +121,19 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 				// create a new user if not exist
 				if user == nil {
+					if gitlabUserInfo.PublicEmail == "" {
+						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.gitlab.com/ee/user/profile/")
+					}
 					// if user login via gitlab at the first time, we will generate a random password.
 					// The random password is supposed to be not guessable. If user wants to login
 					// via password, she needs to set the new password from the profile page.
-					signup := &api.Signup{
-						Email:    gitlabUserInfo.Email,
+					signUp := &api.SignUp{
+						Email:    gitlabUserInfo.PublicEmail,
 						Password: common.RandomString(20),
 						Name:     gitlabUserInfo.Name,
 					}
 					var httpError *echo.HTTPError
-					user, httpError = trySignup(ctx, s, signup, api.SystemBotID)
+					user, httpError = trySignUp(ctx, s, signUp, api.SystemBotID)
 					if httpError != nil {
 						return httpError
 					}
@@ -166,12 +180,12 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 	g.POST("/auth/signup", func(c echo.Context) error {
 		ctx := context.Background()
-		signup := &api.Signup{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, signup); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted signup request").SetInternal(err)
+		signUp := &api.SignUp{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, signUp); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sign up request").SetInternal(err)
 		}
 
-		user, err := trySignup(ctx, s, signup, api.SystemBotID)
+		user, err := trySignUp(ctx, s, signUp, api.SystemBotID)
 		if err != nil {
 			return err
 		}
@@ -182,14 +196,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal signup response").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sign up response").SetInternal(err)
 		}
 		return nil
 	})
 }
 
-func trySignup(ctx context.Context, s *Server, signup *api.Signup, CreatorID int) (*api.Principal, *echo.HTTPError) {
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signup.Password), bcrypt.DefaultCost)
+func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int) (*api.Principal, *echo.HTTPError) {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signUp.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
@@ -197,30 +211,30 @@ func trySignup(ctx context.Context, s *Server, signup *api.Signup, CreatorID int
 	principalCreate := &api.PrincipalCreate{
 		CreatorID:    CreatorID,
 		Type:         api.EndUser,
-		Name:         signup.Name,
-		Email:        signup.Email,
+		Name:         signUp.Name,
+		Email:        signUp.Email,
 		PasswordHash: string(passwordHash),
 	}
 	user, err := s.PrincipalService.CreatePrincipal(ctx, principalCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signup.Email))
+			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signUp.Email))
 		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
 
 	findRole := api.Owner
 	find := &api.MemberFind{
 		Role: &findRole,
 	}
-	list, err := s.MemberService.FindMemberList(ctx, find)
+	memberList, err := s.MemberService.FindMemberList(ctx, find)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
 
 	// Grant the member Owner role if there is no existing Owner member.
 	role := api.Developer
-	if len(list) == 0 {
+	if len(memberList) == 0 {
 		role = api.Owner
 	}
 	memberCreate := &api.MemberCreate{
@@ -233,9 +247,9 @@ func trySignup(ctx context.Context, s *Server, signup *api.Signup, CreatorID int
 	member, err := s.MemberService.CreateMember(ctx, memberCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signup.Email))
+			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signUp.Email))
 		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to signup").SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
 
 	{

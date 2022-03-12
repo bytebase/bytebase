@@ -31,7 +31,7 @@
 import { ref, watch } from "vue";
 import { useNamespacedState } from "vuex-composition-helpers";
 
-import type { SqlEditorState } from "../../../types";
+import type { SqlEditorState } from "@/types";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SheetContainer from "./SheetContainer.vue";

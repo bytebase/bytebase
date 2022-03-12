@@ -56,7 +56,7 @@ func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.Bookma
 
 	list, err := findBookmarkList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Bookmark{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -173,8 +173,8 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Bookmark, 0)
+	// Iterate over result set and deserialize rows into bookmarkList.
+	var bookmarkList []*api.Bookmark
 	for rows.Next() {
 		var bookmark api.Bookmark
 		if err := rows.Scan(
@@ -189,13 +189,13 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &bookmark)
+		bookmarkList = append(bookmarkList, &bookmark)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return bookmarkList, nil
 }
 
 // deleteBookmark permanently deletes a bookmark by ID.

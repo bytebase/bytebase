@@ -56,7 +56,7 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 
 	list, err := s.findColumnList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Column{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -225,8 +225,8 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *ap
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Column, 0)
+	// Iterate over result set and deserialize rows into columnList.
+	var columnList []*api.Column
 	for rows.Next() {
 		var column api.Column
 		defaultStr := sql.NullString{}
@@ -254,13 +254,13 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *ap
 			column.Default = &defaultStr.String
 		}
 
-		list = append(list, &column)
+		columnList = append(columnList, &column)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return columnList, nil
 }
 
 // patchColumn updates a column by ID. Returns the new state of the column after update.

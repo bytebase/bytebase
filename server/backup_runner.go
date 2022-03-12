@@ -48,7 +48,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
+						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -149,12 +149,12 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}
 
-	// Return early if the backup already exists.
-	backup, err := s.server.BackupService.FindBackup(ctx, &api.BackupFind{Name: &backupName})
+	// Return early if the backupRawOld already exists.
+	backupRawOld, err := s.server.BackupService.FindBackup(ctx, &api.BackupFind{Name: &backupName})
 	if err != nil {
 		return fmt.Errorf("failed to find backup %q, error %v", backupName, err)
 	}
-	if backup != nil {
+	if backupRawOld != nil {
 		return nil
 	}
 
@@ -167,7 +167,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		StorageBackend:          api.BackupStorageBackendLocal,
 		Path:                    path,
 	}
-	backup, err = s.server.BackupService.CreateBackup(ctx, backupCreate)
+	backupRawNew, err := s.server.BackupService.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			// Automatic backup already exists.
@@ -177,7 +177,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupID: backup.ID,
+		BackupID: backupRawNew.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {

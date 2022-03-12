@@ -57,17 +57,42 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
+		issueFind := &api.IssueFind{
+			PipelineID: &task.PipelineID,
+		}
+		issue, err := s.IssueService.FindIssue(ctx, issueFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID %v", task.PipelineID)).SetInternal(err)
+		}
+
+		oldStatement := ""
+		newStatement := ""
 		if taskPatch.Statement != nil {
+			// Tenant mode project don't allow updating SQL statement.
+			project, err := s.composeProjectByID(ctx, issue.ProjectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID %v", issue.ProjectID)).SetInternal(err)
+			}
+			if project.TenantMode == api.TenantModeTenant {
+				err := fmt.Errorf("cannot update SQL statement for projects in tenant mode")
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
+
 			if task.Status != api.TaskPending && task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Can not update task in %v state", task.Status))
 			}
+			newStatement = *taskPatch.Statement
 
 			if task.Type == api.TaskDatabaseSchemaUpdate {
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
 				}
+				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = defaultMigrationVersionFromTaskID()
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
@@ -79,7 +104,11 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
 				}
+				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = defaultMigrationVersionFromTaskID()
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
@@ -103,42 +132,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// create an activity and trigger task check for statement update
 		if updatedTask.Type == api.TaskDatabaseSchemaUpdate || updatedTask.Type == api.TaskDatabaseDataUpdate {
-			oldStatement := ""
-			newStatement := ""
-
-			if updatedTask.Type == api.TaskDatabaseSchemaUpdate {
-				oldPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-				newPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-				if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
-				}
-				if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
-				}
-				oldStatement = oldPayload.Statement
-				newStatement = newPayload.Statement
-			} else {
-				oldPayload := &api.TaskDatabaseDataUpdatePayload{}
-				newPayload := &api.TaskDatabaseDataUpdatePayload{}
-				if err := json.Unmarshal([]byte(updatedTask.Payload), newPayload); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
-				}
-				if err := json.Unmarshal([]byte(task.Payload), oldPayload); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", updatedTask.Name).SetInternal(err)
-				}
-				oldStatement = oldPayload.Statement
-				newStatement = newPayload.Statement
-			}
-
 			if oldStatement != newStatement {
 				// create an activity
-				issueFind := &api.IssueFind{
-					PipelineID: &task.PipelineID,
-				}
-				issue, err := s.IssueService.FindIssue(ctx, issueFind)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task statement: %v", task.PipelineID)).SetInternal(err)
-				}
 				if issue == nil {
 					err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 					return echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
@@ -195,7 +190,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					if s.feature(api.FeatureBackwardCompatibilty) {
+					if s.feature(api.FeatureBackwardCompatibility) {
 						_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 							CreatorID:               api.SystemBotID,
 							TaskID:                  task.ID,
@@ -219,13 +214,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		// create an activity and trigger task check for earliest allowed time update
 		if updatedTask.EarliestAllowedTs != task.EarliestAllowedTs {
 			// create an activity
-			issueFind := &api.IssueFind{
-				PipelineID: &task.PipelineID,
-			}
-			issue, err := s.IssueService.FindIssue(ctx, issueFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID after updating task's earliest allowed time: %v", task.PipelineID)).SetInternal(err)
-			}
 			if issue == nil {
 				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 				return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)

@@ -52,17 +52,17 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
-		list := make([]*api.VCS, 0, len(vcsRawList))
+		var vcsList []*api.VCS
 		for _, vcsRaw := range vcsRawList {
 			vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs relationship: %v", vcs.ID)).SetInternal(err)
 			}
-			list = append(list, vcs)
+			vcsList = append(vcsList, vcs)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, vcsList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal vcs list response").SetInternal(err)
 		}
 		return nil
@@ -155,19 +155,22 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			VCSID: &id,
 		}
-		list, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
+		repoRawList, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for vcs ID: %v", id)).SetInternal(err)
 		}
 
-		for _, repository := range list {
-			if err := s.composeRepositoryRelationship(ctx, repository); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repository.ID)).SetInternal(err)
+		var repoList []*api.Repository
+		for _, repoRaw := range repoRawList {
+			repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.ID)).SetInternal(err)
 			}
+			repoList = append(repoList, repo)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, repoList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal repository list response for vcs ID: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -182,15 +185,15 @@ func (s *Server) composeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if vcsRaw != nil {
-		vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
-		if err != nil {
-			return nil, err
-		}
-		return vcs, nil
+	if vcsRaw == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("VCS not found with ID %v", id)}
 	}
-	return nil, nil
+
+	vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
+	if err != nil {
+		return nil, err
+	}
+	return vcs, nil
 }
 
 func (s *Server) composeVCSRelationship(ctx context.Context, raw *api.VCSRaw) (*api.VCS, error) {

@@ -4,6 +4,7 @@ import "github.com/bytebase/bytebase/plugin/vcs"
 
 // AuthProvider is the authentication provider which only supports GitLab for now.
 type AuthProvider struct {
+	ID            int      `jsonapi:"attr,id"`
 	Type          vcs.Type `jsonapi:"attr,type"`
 	Name          string   `jsonapi:"attr,name"`
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
@@ -14,10 +15,9 @@ type AuthProvider struct {
 
 // GitlabLogin is the API message for logins via Gitlab.
 type GitlabLogin struct {
-	InstanceURL   string `jsonapi:"attr,instanceUrl"`
-	ApplicationID string `jsonapi:"attr,applicationId"`
-	Secret        string `jsonapi:"attr,secret"`
-	AccessToken   string `jsonapi:"attr,accessToken"`
+	ID          int    `jsonapi:"attr,id"`
+	Name        string `jsonapi:"attr,name"`
+	AccessToken string `jsonapi:"attr,accessToken"`
 }
 
 // Login is the API message for logins.
@@ -27,8 +27,8 @@ type Login struct {
 	Password string `jsonapi:"attr,password"`
 }
 
-// Signup is the API message for sign-ups.
-type Signup struct {
+// SignUp is the API message for sign-ups.
+type SignUp struct {
 	// Domain specific fields
 	Name     string `jsonapi:"attr,name"`
 	Email    string `jsonapi:"attr,email"`

@@ -62,7 +62,7 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 
 	list, err := findMemberList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Member{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -215,8 +215,8 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*a
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Member, 0)
+	// Iterate over result set and deserialize rows into memberList.
+	var memberList []*api.Member
 	for rows.Next() {
 		var member api.Member
 		if err := rows.Scan(
@@ -233,13 +233,13 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*a
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &member)
+		memberList = append(memberList, &member)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return memberList, nil
 }
 
 // patchMember updates a member by ID. Returns the new state of the member after update.

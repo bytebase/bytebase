@@ -63,7 +63,7 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 
 	list, err := s.findIssueList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Issue{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -241,8 +241,8 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Issue, 0)
+	// Iterate over result set and deserialize rows into issueList.
+	var issueList []*api.Issue
 	for rows.Next() {
 		var issue api.Issue
 		if err := rows.Scan(
@@ -263,13 +263,13 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &issue)
+		issueList = append(issueList, &issue)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return issueList, nil
 }
 
 // patchIssue updates a issue by ID. Returns the new state of the issue after update.

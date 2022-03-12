@@ -25,19 +25,19 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		find := &api.ProjectWebhookFind{
 			ProjectID: &projectID,
 		}
-		list, err := s.ProjectWebhookService.FindProjectWebhookList(ctx, find)
+		webhookList, err := s.ProjectWebhookService.FindProjectWebhookList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch webhook list for project ID: %d", projectID)).SetInternal(err)
 		}
 
-		for _, hook := range list {
+		for _, hook := range webhookList {
 			if err := s.composeProjectWebhookRelationship(ctx, hook); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch webhook relationship: %v", hook.Name)).SetInternal(err)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, webhookList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project webhook response: %v", projectID)).SetInternal(err)
 		}
 		return nil

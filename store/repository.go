@@ -29,7 +29,7 @@ func NewRepositoryService(logger *zap.Logger, db *DB, projectService api.Project
 }
 
 // CreateRepository creates a new repository.
-func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.RepositoryCreate) (*api.Repository, error) {
+func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.RepositoryCreate) (*api.RepositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -48,8 +48,8 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, create *api.Re
 	return repository, nil
 }
 
-// FindRepositoryList retrieves a list of repositorys based on find.
-func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
+// FindRepositoryList retrieves a list of repositories based on find.
+func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.RepositoryFind) ([]*api.RepositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -58,7 +58,7 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 
 	list, err := findRepositoryList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Repository{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -66,7 +66,7 @@ func (s *RepositoryService) FindRepositoryList(ctx context.Context, find *api.Re
 
 // FindRepository retrieves a single repository based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *RepositoryService) FindRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
+func (s *RepositoryService) FindRepository(ctx context.Context, find *api.RepositoryFind) (*api.RepositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -88,7 +88,7 @@ func (s *RepositoryService) FindRepository(ctx context.Context, find *api.Reposi
 
 // PatchRepository updates an existing repository by ID.
 // Returns ENOTFOUND if repository does not exist.
-func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.RepositoryPatch) (*api.Repository, error) {
+func (s *RepositoryService) PatchRepository(ctx context.Context, patch *api.RepositoryPatch) (*api.RepositoryRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -127,7 +127,7 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, delete *api.Re
 }
 
 // createRepository creates a new repository.
-func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*api.Repository, error) {
+func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*api.RepositoryRaw, error) {
 	// Updates the project workflow_type to "VCS"
 	workflowType := api.VCSWorkflow
 	projectPatch := api.ProjectPatch{
@@ -192,7 +192,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 	defer row.Close()
 
 	row.Next()
-	var repository api.Repository
+	var repository api.RepositoryRaw
 	if err := row.Scan(
 		&repository.ID,
 		&repository.CreatorID,
@@ -223,7 +223,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 	return &repository, nil
 }
 
-func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) ([]*api.Repository, error) {
+func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) ([]*api.RepositoryRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -272,10 +272,10 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Repository, 0)
+	// Iterate over result set and deserialize rows into repoRawList.
+	var repoRawList []*api.RepositoryRaw
 	for rows.Next() {
-		var repository api.Repository
+		var repository api.RepositoryRaw
 		if err := rows.Scan(
 			&repository.ID,
 			&repository.CreatorID,
@@ -303,17 +303,17 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &repository)
+		repoRawList = append(repoRawList, &repository)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return repoRawList, nil
 }
 
 // patchRepository updates a repository by ID. Returns the new state of the repository after update.
-func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*api.Repository, error) {
+func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*api.RepositoryRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
@@ -355,7 +355,7 @@ func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch
 	defer row.Close()
 
 	if row.Next() {
-		var repository api.Repository
+		var repository api.RepositoryRaw
 		if err := row.Scan(
 			&repository.ID,
 			&repository.CreatorID,

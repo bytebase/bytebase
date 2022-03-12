@@ -32,19 +32,22 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReadCreatedAfterTs = &createdTs
 		}
-		list, err := s.InboxService.FindInboxList(ctx, inboxFind)
+		inboxList, err := s.InboxService.FindInboxList(ctx, inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
 		}
 
-		for _, inbox := range list {
-			if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
+		for _, inbox := range inboxList {
+			// TODO(dragonly): This seems a bit weird. Should be embed an *ActivityRaw in InboxRaw?
+			activity, err := s.composeActivityByID(ctx, inbox.Activity.ID)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
 			}
+			inbox.Activity = activity
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, list); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, inboxList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal inbox list response").SetInternal(err)
 		}
 		return nil
@@ -87,9 +90,11 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
+		activity, err := s.composeActivityByID(ctx, inbox.Activity.ID)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated inbox activity relationship: %v", inbox.ID)).SetInternal(err)
 		}
+		inbox.Activity = activity
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, inbox); err != nil {

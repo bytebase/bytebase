@@ -73,7 +73,7 @@ import {
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 
-import { TabGetters, SqlEditorState } from "../../../types";
+import { TabGetters, SqlEditorState } from "@/types";
 
 interface State {
   search: string;
@@ -101,7 +101,7 @@ const columns = computed(() => {
     return [];
   }
 
-  const [columns] = queryResult.value;
+  const columns = queryResult.value[0];
   return columns.map((d) => {
     return {
       title: d,
@@ -114,7 +114,7 @@ const data = computed(() => {
     return [];
   }
 
-  const [_, data] = queryResult.value;
+  const data = queryResult.value[2];
   const temp = data
     .filter((d) => {
       let t = false;
@@ -142,7 +142,7 @@ const notifyMessage = computed(() => {
   if (isExecuting.value) {
     return t("sql-editor.loading-data");
   }
-  const [_, data] = queryResult.value;
+  const data = queryResult.value[2];
   if (data.length === 0) {
     return t("sql-editor.no-rows-found");
   }

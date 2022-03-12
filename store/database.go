@@ -106,7 +106,7 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 
 	list, err := s.findDatabaseList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Database{}, err
+		return nil, err
 	}
 
 	if err == nil {
@@ -296,8 +296,8 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Database, 0)
+	// Iterate over result set and deserialize rows into databaseList.
+	var databaseList []*api.Database
 	for rows.Next() {
 		var database api.Database
 		var nullSourceBackupID sql.NullInt64
@@ -323,13 +323,13 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 			database.SourceBackupID = int(nullSourceBackupID.Int64)
 		}
 
-		list = append(list, &database)
+		databaseList = append(databaseList, &database)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return databaseList, nil
 }
 
 // patchDatabase updates a database by ID. Returns the new state of the database after update.

@@ -56,7 +56,7 @@ func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) (
 
 	list, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Stage{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -156,8 +156,8 @@ func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.Stage, 0)
+	// Iterate over result set and deserialize rows into stageList.
+	var stageList []*api.Stage
 	for rows.Next() {
 		var stage api.Stage
 		if err := rows.Scan(
@@ -173,11 +173,11 @@ func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.
 			return nil, FormatError(err)
 		}
 
-		list = append(list, &stage)
+		stageList = append(stageList, &stage)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return stageList, nil
 }

@@ -76,7 +76,7 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 
 	list, err := findSheetList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.Sheet{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -284,7 +284,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 	}
 	defer rows.Close()
 
-	list := make([]*api.Sheet, 0)
+	var sheetList []*api.Sheet
 	for rows.Next() {
 		var sheet api.Sheet
 		databaseID := sql.NullInt32{}
@@ -308,13 +308,13 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 			sheet.DatabaseID = &value
 		}
 
-		list = append(list, &sheet)
+		sheetList = append(sheetList, &sheet)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return sheetList, nil
 }
 
 // deleteSheet permanently deletes a sheet by ID.

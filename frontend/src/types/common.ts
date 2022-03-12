@@ -240,6 +240,7 @@ export const unknown = (
     rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     anomalyList: [],
+    dataSourceList: [],
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
@@ -277,7 +278,6 @@ export const unknown = (
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
-    memberList: [],
     name: "<<Unknown data source>>",
     type: "RO",
   };
@@ -628,6 +628,7 @@ export const empty = (
     rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     anomalyList: [],
+    dataSourceList: [],
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
@@ -665,7 +666,6 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    memberList: [],
     name: "",
     type: "RO",
   };

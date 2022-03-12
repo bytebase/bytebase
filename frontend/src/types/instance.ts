@@ -1,4 +1,4 @@
-import { Anomaly } from ".";
+import { Anomaly, DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
@@ -47,6 +47,8 @@ export type Instance = {
   // Related fields
   environment: Environment;
   anomalyList: Anomaly[];
+  // An instance must have a admin data source, maybe a read-only data source.
+  dataSourceList: DataSource[];
 
   // Standard fields
   creator: Principal;
@@ -62,9 +64,6 @@ export type Instance = {
   externalLink?: string;
   host: string;
   port?: string;
-  // In mysql, username can be empty which means anonymous user
-  username?: string;
-  password?: string;
 };
 
 export type InstanceCreate = {
@@ -91,9 +90,6 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
-  username?: string;
-  password?: string;
-  useEmptyPassword: boolean;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

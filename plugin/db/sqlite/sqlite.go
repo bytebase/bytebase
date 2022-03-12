@@ -417,26 +417,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckDuplicateVersion will check whether the version is already applied.
-func (Driver) CheckDuplicateVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (bool, error) {
-	const checkDuplicateVersionQuery = `
-		SELECT 1 FROM bytebase_migration_history
-		WHERE namespace = ? AND source = ? AND version = ?
-	`
-	row, err := tx.QueryContext(ctx, checkDuplicateVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, checkDuplicateVersionQuery)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		return true, nil
-	}
-	return false, nil
-}
-
 // CheckOutOfOrderVersion will return versions that are higher than the given version.
 func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
 	const checkOutofOrderVersionQuery = `
@@ -638,6 +618,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Version; v != nil {
 		paramNames, params = append(paramNames, "version"), append(params, *v)
 	}
+	if v := find.Source; v != nil {
+		paramNames, params = append(paramNames, "source"), append(params, *v)
+	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
 		`ORDER BY created_ts DESC`
@@ -758,12 +741,12 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
-	ptrs := make([]interface{}, len(cols))
+	refs := make([]interface{}, len(cols))
 	for i := 0; i < len(cols); i++ {
-		ptrs[i] = &values[i]
+		refs[i] = &values[i]
 	}
 	for rows.Next() {
-		if err := rows.Scan(ptrs...); err != nil {
+		if err := rows.Scan(refs...); err != nil {
 			return err
 		}
 		tokens := make([]string, len(cols))

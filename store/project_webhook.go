@@ -57,7 +57,7 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 
 	list, err := findProjectWebhookList(ctx, tx.PTx, find)
 	if err != nil {
-		return []*api.ProjectWebhook{}, err
+		return nil, err
 	}
 
 	return list, nil
@@ -206,8 +206,8 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into list.
-	list := make([]*api.ProjectWebhook, 0)
+	// Iterate over result set and deserialize rows into projectWebhookList.
+	var projectWebhookList []*api.ProjectWebhook
 	for rows.Next() {
 		var projectWebhook api.ProjectWebhook
 		if err := rows.Scan(
@@ -228,19 +228,19 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 		if v := find.ActivityType; v != nil {
 			for _, activity := range projectWebhook.ActivityList {
 				if api.ActivityType(activity) == *v {
-					list = append(list, &projectWebhook)
+					projectWebhookList = append(projectWebhookList, &projectWebhook)
 					break
 				}
 			}
 		} else {
-			list = append(list, &projectWebhook)
+			projectWebhookList = append(projectWebhookList, &projectWebhook)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return list, nil
+	return projectWebhookList, nil
 }
 
 // patchProjectWebhook updates a projectWebhook by ID. Returns the new state of the projectWebhook after update.
