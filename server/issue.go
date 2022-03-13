@@ -341,11 +341,6 @@ func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) e
 	if assignee == nil {
 		return fmt.Errorf("Principal ID not found: %d", assigneeID)
 	}
-
-	if assignee.Type == api.BOT {
-		return nil
-	}
-
 	if err = s.composePrincipalRole(ctx, assignee); err != nil {
 		return err
 	}
