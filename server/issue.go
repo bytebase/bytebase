@@ -330,19 +330,27 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
-// Only allow Owner/DBA as the assignee, not Developer.
+// Only allow Bot/Owner/DBA as the assignee, not Developer.
 func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
 	assignee, err := s.PrincipalService.FindPrincipal(ctx, &api.PrincipalFind{
 		ID: &assigneeID,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find principal by id %d", assigneeID)).SetInternal(err)
+		return err
 	}
 	if assignee == nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Principal ID not found: %d", assigneeID))
+		return fmt.Errorf("Principal ID not found: %d", assigneeID)
+	}
+
+	if assignee.Type == api.BOT {
+		return nil
+	}
+
+	if err = s.composePrincipalRole(ctx, assignee); err != nil {
+		return err
 	}
 	if assignee.Role != api.Owner && assignee.Role != api.DBA {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("%s is not allowed as assignee", assignee.Role))
+		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
 	}
 
 	return nil
