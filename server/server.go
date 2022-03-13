@@ -73,20 +73,21 @@ type Server struct {
 
 	e *echo.Echo
 
-	l            *zap.Logger
-	lvl          *zap.AtomicLevel
-	version      string
-	mode         string
-	host         string
-	port         int
-	frontendHost string
-	frontendPort int
-	startedTs    int64
-	secret       string
-	readonly     bool
-	demo         bool
-	dataDir      string
-	subscription *enterprise.Subscription
+	l             *zap.Logger
+	lvl           *zap.AtomicLevel
+	version       string
+	mode          string
+	host          string
+	port          int
+	frontendHost  string
+	frontendPort  int
+	datastorePort int
+	startedTs     int64
+	secret        string
+	readonly      bool
+	demo          bool
+	dataDir       string
+	subscription  *enterprise.Subscription
 }
 
 //go:embed acl_casbin_model.conf
@@ -102,7 +103,7 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
@@ -116,21 +117,22 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	embedFrontend(logger, e)
 
 	s := &Server{
-		l:            logger,
-		lvl:          loggerLevel,
-		CacheService: NewCacheService(logger),
-		e:            e,
-		version:      version,
-		mode:         mode,
-		host:         host,
-		port:         port,
-		frontendHost: frontendHost,
-		frontendPort: frontendPort,
-		startedTs:    time.Now().Unix(),
-		secret:       secret,
-		readonly:     readonly,
-		demo:         demo,
-		dataDir:      dataDir,
+		l:             logger,
+		lvl:           loggerLevel,
+		CacheService:  NewCacheService(logger),
+		e:             e,
+		version:       version,
+		mode:          mode,
+		host:          host,
+		port:          port,
+		frontendHost:  frontendHost,
+		frontendPort:  frontendPort,
+		datastorePort: datastorePort,
+		startedTs:     time.Now().Unix(),
+		secret:        secret,
+		readonly:      readonly,
+		demo:          demo,
+		dataDir:       dataDir,
 	}
 
 	if !readonly {
