@@ -112,14 +112,8 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	default:
 		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
-	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
-	}
-	defer f.Close()
-	version := strings.TrimRight(tarName, ".txz")
 
+	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(pgBinDir); err != nil {
 		if !os.IsNotExist(err) {
@@ -127,10 +121,19 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
+		log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
+
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := os.RemoveAll(tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
+
+		f, err := resources.Open(tarName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+		}
+		defer f.Close()
+
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
@@ -155,11 +158,12 @@ func isAlpineLinux() bool {
 	return err == nil
 }
 
-// initDB inits a postgres database.
+// initDB inits a postgres database if not yet.
 func initDB(pgBinDir, pgDataDir, pgUser string) error {
-	_, err := os.Stat(pgDataDir)
+	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
+	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to check data directory path %q, error: %w", pgDataDir, err)
+		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
 	}
 	// Skip initDB if setup already.
 	if err == nil {
