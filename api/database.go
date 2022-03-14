@@ -60,7 +60,8 @@ type DatabaseRaw struct {
 	SchemaVersion        string
 	SyncStatus           SyncStatus
 	LastSuccessfulSyncTs int64
-	Labels               string
+	// TODO(dragonly): remove Labels
+	Labels string
 }
 
 // ToDatabase creates an instance of Database based on the DatabaseRaw.
