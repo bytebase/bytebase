@@ -73,7 +73,7 @@ import {
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 
-import { TabGetters, SqlEditorState } from "../../../types";
+import { TabGetters, SqlEditorState } from "@/types";
 
 interface State {
   search: string;

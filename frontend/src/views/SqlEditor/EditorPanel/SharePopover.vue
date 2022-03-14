@@ -93,7 +93,7 @@ import {
   SheetGetters,
   SheetActions,
   AccessOption,
-} from "../../../types";
+} from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;

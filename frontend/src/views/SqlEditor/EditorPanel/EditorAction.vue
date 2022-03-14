@@ -87,7 +87,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleSave"
+        @click="(e) => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -115,10 +115,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, defineEmits } from "vue";
 import {
   useNamespacedState,
-  useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
@@ -127,15 +126,17 @@ import {
   SqlEditorState,
   SqlEditorGetters,
   TabGetters,
-  TabActions,
-  SheetActions,
   UNKNOWN_ID,
   Instance,
-} from "../../../types";
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+} from "@/types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 import { useRouter } from "vue-router";
 import { instanceSlug } from "../../../utils/slug";
+
+const emit = defineEmits<{
+  (e: "save-sheet", content?: string): void;
+}>();
 
 const store = useStore();
 const router = useRouter();
@@ -149,15 +150,8 @@ const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-// actions
-const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
-  "upsertSheet",
-]);
-const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
-  "updateCurrentTab",
-]);
-
 const isShowSharePopover = ref(false);
+
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
@@ -188,20 +182,6 @@ const handleRunQuery = () => {
 
 const handleExplainQuery = () => {
   execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
-};
-
-const handleSave = async () => {
-  const { name, statement, sheetId } = currentTab.value;
-  const sheet = await upsertSheet({
-    id: sheetId,
-    name,
-    statement,
-  });
-
-  updateCurrentTab({
-    sheetId: sheet.id,
-    isSaved: true,
-  });
 };
 
 const gotoInstanceDetailPage = () => {

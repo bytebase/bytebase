@@ -6,10 +6,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/bytebase/bytebase/resources/utils"
 )
@@ -42,8 +45,19 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
 		"-o", fmt.Sprintf(`"-p %d"`, i.port))
+
 	p.Stdout = stdout
 	p.Stderr = stderr
+	uid, _, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
@@ -62,8 +76,19 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", i.datadir)
+
 	p.Stderr = stderr
 	p.Stdout = stdout
+	uid, _, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
 
 	if err := p.Run(); err != nil {
 		return err
@@ -87,14 +112,8 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	default:
 		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
-	log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
-	}
-	defer f.Close()
-	version := strings.TrimRight(tarName, ".txz")
 
+	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(pgBinDir); err != nil {
 		if !os.IsNotExist(err) {
@@ -102,13 +121,23 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
+		log.Printf("Installing Postgres OS %q Arch %q txz %q\n", runtime.GOOS, runtime.GOARCH, tarName)
+
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := os.RemoveAll(tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}
+
+		f, err := resources.Open(tarName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+		}
+		defer f.Close()
+
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
 		}
+
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
 			return nil, fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
 		}
@@ -129,11 +158,12 @@ func isAlpineLinux() bool {
 	return err == nil
 }
 
-// initDB inits a postgres database.
+// initDB inits a postgres database if not yet.
 func initDB(pgBinDir, pgDataDir, pgUser string) error {
-	_, err := os.Stat(pgDataDir)
+	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
+	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to check data directory path %q, error: %w", pgDataDir, err)
+		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
 	}
 	// Skip initDB if setup already.
 	if err == nil {
@@ -156,10 +186,50 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	)
 	p.Stderr = os.Stderr
 	p.Stdout = os.Stdout
+	uid, gid, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
+			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
+		}
+	}
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
 	}
 
 	return nil
+}
+
+func shouldSwitchUser() (int, int, bool, error) {
+	sameUser := true
+	bytebaseUser, err := user.Current()
+	if err != nil {
+		return 0, 0, true, fmt.Errorf("failed to get current user, error: %w", err)
+	}
+	// If user runs bytebase as root user, we will attempt to run as user `bytebase`.
+	// https://www.postgresql.org/docs/14/app-initdb.html
+	if bytebaseUser.Username == "root" {
+		bytebaseUser, err = user.Lookup("bytebase")
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("Please run Bytebase as non-root user. You can use the following command to create a dedicated bytebase user to run the application: addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase")
+		}
+		sameUser = false
+	}
+
+	uid, err := strconv.ParseUint(bytebaseUser.Uid, 10, 32)
+	if err != nil {
+		return 0, 0, false, err
+	}
+	gid, err := strconv.ParseUint(bytebaseUser.Gid, 10, 32)
+	if err != nil {
+		return 0, 0, false, err
+	}
+	return int(uid), int(gid), sameUser, nil
 }
