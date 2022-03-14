@@ -42,7 +42,7 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
-		return nil, fmt.Errorf("--alter must be provided and statement must not be empty")
+		return nil, fmt.Errorf("alterStatement must be provided and must not be empty")
 	}
 	parser := ghostsql.NewParserFromAlterStatement(migrationContext.AlterStatement)
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
@@ -51,14 +51,14 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 		if parser.HasExplicitSchema() {
 			migrationContext.DatabaseName = parser.GetExplicitSchema()
 		} else {
-			return nil, fmt.Errorf("--database must be provided and database name must not be empty, or --alter must specify database name")
+			return nil, fmt.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
 		}
 	}
 	if migrationContext.OriginalTableName == "" {
 		if parser.HasExplicitTable() {
 			migrationContext.OriginalTableName = parser.GetExplicitTable()
 		} else {
-			return nil, fmt.Errorf("--table must be provided and table name must not be empty, or --alter must specify table name")
+			return nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
 	}
 	migrationContext.Noop = !config.execute
