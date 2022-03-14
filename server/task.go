@@ -310,8 +310,18 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
 		}
-		if issue.AssigneeID != currentPrincipalID {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+		if issue.AssigneeID == api.SystemBotID {
+			currentPrincipal, err := s.composePrincipalByID(ctx, currentPrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
+			}
+			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA to update this task status")
+			}
+		} else {
+			if issue.AssigneeID != currentPrincipalID {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+			}
 		}
 
 		updatedTask, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
