@@ -38,7 +38,7 @@ We can look at the following example as an interesting case. helloID follows Go 
 
 ## Composition API
 
-We write vue components with [Composition API](https://vuejs.org/guide/extras/composition-api-faq.html). It's easier and more practical to extract reuseable logics as composable functions than mixins.
+We write vue components with [Composition API](https://vuejs.org/guide/extras/composition-api-faq.html). It's easier and more practical to extract reusable logic as composable functions than mixins.
 
 We also recommend to use it together with the `<script setup>` syntax in Single-File Components.
 
