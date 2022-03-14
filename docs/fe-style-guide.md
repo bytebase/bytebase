@@ -52,7 +52,7 @@ We recommend using a "local state" pattern when components mutate their properti
 
 See [BBSwitch](https://github.com/bytebase/bytebase/blob/main/frontend/src/bbkit/BBSwitch.vue) as an example of this pattern.
 
-# Linting and Formatting
+# Linting and formatting
 
 ## Principles
 
