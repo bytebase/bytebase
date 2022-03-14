@@ -300,13 +300,14 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriber := range issueSubscriberList {
-		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
+	for _, issueSubscriberRaw := range issueSubscriberRawList {
+		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
 		}
 		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
 	}
