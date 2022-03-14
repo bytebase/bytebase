@@ -162,7 +162,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 		user:           "root",
 		database:       "gh_ost_test_db",
 		table:          "tbl",
-		alterStatement: "alter table tbl add name varchar(64)",
+		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
 	})
 
 	if err != nil {
