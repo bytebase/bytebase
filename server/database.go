@@ -715,16 +715,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupSettingFind := &api.BackupSettingFind{
 			DatabaseID: &id,
 		}
-		backupSetting, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
+		backupSettingRaw, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
 		}
-		if backupSetting == nil {
+		if backupSettingRaw == nil {
 			// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-			backupSetting = &api.BackupSetting{
+			backupSettingRaw = &api.BackupSettingRaw{
 				ID: api.UnknownID,
 			}
 		}
+		// TODO(dragonly): compose this
+		backupSetting := backupSettingRaw.ToBackupSetting()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {

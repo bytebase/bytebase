@@ -27,7 +27,7 @@ func NewBookmarkService(logger *zap.Logger, db *DB) *BookmarkService {
 }
 
 // CreateBookmark creates a new bookmark.
-func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
+func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.BookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,7 +47,7 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.Bookma
 }
 
 // FindBookmarkList retrieves a list of bookmarks based on find.
-func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
+func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.BookmarkFind) ([]*api.BookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -64,24 +64,24 @@ func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.Bookma
 
 // FindBookmark retrieves a single bookmark based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFind) (*api.Bookmark, error) {
+func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFind) (*api.BookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findBookmarkList(ctx, tx.PTx, find)
+	bookmarkRawList, err := findBookmarkList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
+	if len(bookmarkRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+	} else if len(bookmarkRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(bookmarkRawList), find)}
 	}
-	return list[0], nil
+	return bookmarkRawList[0], nil
 }
 
 // DeleteBookmark deletes an existing bookmark by ID.
@@ -105,7 +105,7 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 }
 
 // createBookmark creates a new bookmark.
-func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.Bookmark, error) {
+func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.BookmarkRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO bookmark (
@@ -129,23 +129,23 @@ func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate)
 	defer row.Close()
 
 	row.Next()
-	var bookmark api.Bookmark
+	var bookmarkRaw api.BookmarkRaw
 	if err := row.Scan(
-		&bookmark.ID,
-		&bookmark.CreatorID,
-		&bookmark.CreatedTs,
-		&bookmark.UpdaterID,
-		&bookmark.UpdatedTs,
-		&bookmark.Name,
-		&bookmark.Link,
+		&bookmarkRaw.ID,
+		&bookmarkRaw.CreatorID,
+		&bookmarkRaw.CreatedTs,
+		&bookmarkRaw.UpdaterID,
+		&bookmarkRaw.UpdatedTs,
+		&bookmarkRaw.Name,
+		&bookmarkRaw.Link,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &bookmark, nil
+	return &bookmarkRaw, nil
 }
 
-func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*api.Bookmark, error) {
+func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*api.BookmarkRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -173,10 +173,10 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into bookmarkList.
-	var bookmarkList []*api.Bookmark
+	// Iterate over result set and deserialize rows into bookmarkRawList.
+	var bookmarkRawList []*api.BookmarkRaw
 	for rows.Next() {
-		var bookmark api.Bookmark
+		var bookmark api.BookmarkRaw
 		if err := rows.Scan(
 			&bookmark.ID,
 			&bookmark.CreatorID,
@@ -189,13 +189,13 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 			return nil, FormatError(err)
 		}
 
-		bookmarkList = append(bookmarkList, &bookmark)
+		bookmarkRawList = append(bookmarkRawList, &bookmark)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return bookmarkList, nil
+	return bookmarkRawList, nil
 }
 
 // deleteBookmark permanently deletes a bookmark by ID.
