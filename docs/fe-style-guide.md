@@ -14,7 +14,7 @@ _Rationale_: This makes URLs more clean and human-readable, especially when shar
 
 Use `/anomaly-center` instead of `/anomalycenter` or `/anomalyCenter`
 
-_Rationale_: Using `/anomalycenter` makes it more difficult to read. `/anomalyCenter` makes it more difficult to memoize and input because of mixed cases. Using `/anomaly-center` is good for readability and improves consistency with slugs.
+_Rationale_: Using `/anomalycenter` makes it more difficult to read. `/anomalyCenter` makes it more difficult to memoize and type because of mixed cases. Using `/anomaly-center` is good for readability and improves consistency with slugs.
 
 ## Use singular form even for collection resource
 
