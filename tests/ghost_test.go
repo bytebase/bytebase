@@ -160,6 +160,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to SELECT * FROM tbl: %v", err)
 	}
+	defer rows.Close()
 
 	var (
 		id   int
@@ -174,5 +175,4 @@ func TestGhostSimpleNoop(t *testing.T) {
 			t.Errorf("data mismatch, expect id: %v, data: %v, get id: %v, data: %v", id, id, id, data)
 		}
 	}
-	defer rows.Close()
 }
