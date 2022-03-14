@@ -27,7 +27,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 
 		issueSubscriberCreate.IssueID = issueID
 
-		issueSubscriber, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, issueSubscriberCreate)
+		issueSubscriberRaw, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, issueSubscriberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID))
@@ -35,7 +35,8 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
-		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
+		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
@@ -56,15 +57,18 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		issueSubscriberFind := &api.IssueSubscriberFind{
 			IssueID: &issueID,
 		}
-		issueSubscriberList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+		issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueID)).SetInternal(err)
 		}
 
-		for _, issueSubscriber := range issueSubscriberList {
-			if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
+		var issueSubscriberList []*api.IssueSubscriber
+		for _, issueSubscriberRaw := range issueSubscriberRawList {
+			issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
 			}
+			issueSubscriberList = append(issueSubscriberList, issueSubscriber)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -100,13 +104,14 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeIssueSubscriberRelationship(ctx context.Context, issueSubscriber *api.IssueSubscriber) error {
-	var err error
+func (s *Server) composeIssueSubscriberRelationship(ctx context.Context, raw *api.IssueSubscriberRaw) (*api.IssueSubscriber, error) {
+	issueSubscriber := raw.ToIssueSubscriber()
 
-	issueSubscriber.Subscriber, err = s.composePrincipalByID(ctx, issueSubscriber.SubscriberID)
+	subscriber, err := s.composePrincipalByID(ctx, issueSubscriber.SubscriberID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	issueSubscriber.Subscriber = subscriber
 
-	return nil
+	return issueSubscriber, nil
 }
