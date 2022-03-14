@@ -25,6 +25,8 @@ type config struct {
 	execute        bool
 }
 
+const localhost = "127.0.0.1"
+
 const (
 	allowedRunningOnMaster              = true
 	concurrentCountTableRows            = true
@@ -95,6 +97,7 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 }
 
 func TestGhostSimpleNoop(t *testing.T) {
+	const port = 13306
 	basedir := t.TempDir()
 	datadir := filepath.Join(basedir, "data")
 	if err := os.Mkdir(datadir, 0755); err != nil {
@@ -104,7 +107,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start MySQL: %v", err)
 	}
-	if err := mysql.Start(13306, os.Stdout, os.Stderr, 60); err != nil {
+	if err := mysql.Start(port, os.Stdout, os.Stderr, 60); err != nil {
 		t.Fatalf("failed to start MySQL: %v", err)
 	}
 
@@ -154,8 +157,8 @@ func TestGhostSimpleNoop(t *testing.T) {
 	}
 
 	migrationContext, err := newMigrationContext(config{
-		host:           "127.0.0.1",
-		port:           13306,
+		host:           localhost,
+		port:           port,
 		user:           "root",
 		database:       "gh_ost_test_db",
 		table:          "tbl",
