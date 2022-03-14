@@ -708,7 +708,7 @@ CREATE TABLE issue (
     status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
-    -- someone(DBA/owner) should pass a non-robot DBA/owner as issue assignee.
+    -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     payload JSONB NOT NULL DEFAULT '{}'
 );
