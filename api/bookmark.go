@@ -5,6 +5,40 @@ import (
 	"encoding/json"
 )
 
+// BookmarkRaw is the store model for an Bookmark.
+// Fields have exactly the same meanings as Bookmark.
+type BookmarkRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name string
+	Link string
+}
+
+// ToBookmark creates an instance of Bookmark based on the BookmarkRaw.
+// This is intended to be called when we need to compose an Bookmark relationship.
+func (raw *BookmarkRaw) ToBookmark() *Bookmark {
+	return &Bookmark{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		Name: raw.Name,
+		Link: raw.Link,
+	}
+}
+
 // Bookmark is the API message for a bookmark.
 type Bookmark struct {
 	ID int `jsonapi:"primary,bookmark"`
@@ -60,8 +94,8 @@ type BookmarkDelete struct {
 
 // BookmarkService is the service for bookmarks.
 type BookmarkService interface {
-	CreateBookmark(ctx context.Context, create *BookmarkCreate) (*Bookmark, error)
-	FindBookmarkList(ctx context.Context, find *BookmarkFind) ([]*Bookmark, error)
-	FindBookmark(ctx context.Context, find *BookmarkFind) (*Bookmark, error)
+	CreateBookmark(ctx context.Context, create *BookmarkCreate) (*BookmarkRaw, error)
+	FindBookmarkList(ctx context.Context, find *BookmarkFind) ([]*BookmarkRaw, error)
+	FindBookmark(ctx context.Context, find *BookmarkFind) (*BookmarkRaw, error)
 	DeleteBookmark(ctx context.Context, delete *BookmarkDelete) error
 }
