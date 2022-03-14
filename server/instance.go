@@ -150,7 +150,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
-		var instanceRaw *api.InstanceRaw
+		var instancePatchedRaw *api.InstanceRaw
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
@@ -159,7 +159,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return err
 				}
 			}
-			instanceRaw, err = s.InstanceService.PatchInstance(ctx, instancePatch)
+			instancePatchedRaw, err = s.InstanceService.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -173,25 +173,25 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			instanceFind := &api.InstanceFind{
 				ID: &id,
 			}
-			instanceRaw, err = s.InstanceService.FindInstance(ctx, instanceFind)
+			instancePatchedRaw, err = s.InstanceService.FindInstance(ctx, instanceFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
 			}
-			if instanceRaw == nil {
+			if instancePatchedRaw == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 			}
 
 			dataSourceType := api.Admin
 			dataSourceFind := &api.DataSourceFind{
-				InstanceID: &instanceRaw.ID,
+				InstanceID: &instancePatchedRaw.ID,
 				Type:       &dataSourceType,
 			}
 			adminDataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instanceRaw.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instancePatchedRaw.Name)).SetInternal(err)
 			}
 			if adminDataSourceRaw == nil {
-				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instanceRaw.ID, instanceRaw.Name, dataSourceType)
+				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instancePatchedRaw.ID, instancePatchedRaw.Name, dataSourceType)
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
@@ -207,32 +207,32 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				dataSourcePatch.Password = &password
 			}
 			if _, err := s.DataSourceService.PatchDataSource(ctx, dataSourcePatch); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instanceRaw.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instancePatchedRaw.Name)).SetInternal(err)
 			}
 		}
 
-		instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
+		instancePatched, err := s.composeInstanceRelationship(ctx, instancePatchedRaw)
 		if err != nil {
 			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil {
-			db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+			db, err := getAdminDatabaseDriver(ctx, instancePatched, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
 					s.l.Warn("Failed to setup migration schema on instance update",
-						zap.String("instance_name", instanceRaw.Name),
-						zap.String("engine", string(instanceRaw.Engine)),
+						zap.String("instance_name", instancePatchedRaw.Name),
+						zap.String("engine", string(instancePatchedRaw.Engine)),
 						zap.Error(err))
 				}
-				s.syncEngineVersionAndSchema(ctx, instance)
+				s.syncEngineVersionAndSchema(ctx, instancePatched)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instancePatched); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
 		}
 		return nil
