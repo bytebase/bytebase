@@ -281,9 +281,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
 		}
 
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		taskStatusPatch := &api.TaskStatusPatch{
 			ID:        taskID,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
@@ -297,7 +298,30 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 		if task == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task ID not found: %d", taskID))
+		}
+
+		issue, err := s.IssueService.FindIssue(ctx, &api.IssueFind{
+			PipelineID: &task.PipelineID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
+		}
+		if issue.AssigneeID == api.SystemBotID {
+			currentPrincipal, err := s.composePrincipalByID(ctx, currentPrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
+			}
+			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update this task status")
+			}
+		} else {
+			if issue.AssigneeID != currentPrincipalID {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+			}
 		}
 
 		updatedTask, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
