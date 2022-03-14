@@ -29,8 +29,6 @@ type InstanceRaw struct {
 	ExternalLink  string
 	Host          string
 	Port          string
-	Username      string
-	Password      string
 }
 
 // ToInstance creates an instance of Instance based on the InstanceRaw.
@@ -56,8 +54,6 @@ func (raw *InstanceRaw) ToInstance() *Instance {
 		ExternalLink:  raw.ExternalLink,
 		Host:          raw.Host,
 		Port:          raw.Port,
-		Username:      raw.Username,
-		Password:      raw.Password,
 	}
 }
 
