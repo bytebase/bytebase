@@ -316,7 +316,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
 			}
 			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA to update this task status")
+				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update this task status")
 			}
 		} else {
 			if issue.AssigneeID != currentPrincipalID {
