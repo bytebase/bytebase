@@ -205,6 +205,52 @@ type BackupPatch struct {
 	Comment string
 }
 
+// BackupSettingRaw is the store model for an BackupSetting.
+// Fields have exactly the same meanings as BackupSetting.
+type BackupSettingRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+
+	// Domain specific fields
+	Enabled   bool
+	Hour      int
+	DayOfWeek int
+	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+	HookURL string
+}
+
+// ToBackupSetting creates an instance of BackupSetting based on the BackupSettingRaw.
+// This is intended to be called when we need to compose an BackupSetting relationship.
+func (raw *BackupSettingRaw) ToBackupSetting() *BackupSetting {
+	return &BackupSetting{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Enabled:   raw.Enabled,
+		Hour:      raw.Hour,
+		DayOfWeek: raw.DayOfWeek,
+		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+		HookURL: raw.HookURL,
+	}
+}
+
 // BackupSetting is the backup setting for a database.
 type BackupSetting struct {
 	ID int `jsonapi:"primary,backupSetting"`
@@ -221,6 +267,7 @@ type BackupSetting struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 	// Do not return this to the client since the client always has the database context and fetching the
 	// database object and all its own related objects is a bit expensive.
+	// TODO(dragonly): Maybe implementing a good hierarchical caching mechanism can resolve this issue? Needs benchmarks.
 	Database *Database
 
 	// Domain specific fields
@@ -273,8 +320,8 @@ type BackupService interface {
 	// Returns backup list in updated_ts descending order.
 	FindBackupList(ctx context.Context, find *BackupFind) ([]*BackupRaw, error)
 	PatchBackup(ctx context.Context, patch *BackupPatch) (*BackupRaw, error)
-	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSetting, error)
-	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSetting, error)
-	UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSetting, error)
-	FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSetting, error)
+	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSettingRaw, error)
+	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSettingRaw, error)
+	UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSettingRaw, error)
+	FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSettingRaw, error)
 }
