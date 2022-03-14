@@ -26,7 +26,7 @@ func NewIssueSubscriberService(logger *zap.Logger, db *DB) *IssueSubscriberServi
 }
 
 // CreateIssueSubscriber creates a new issueSubscriber.
-func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
+func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -46,7 +46,7 @@ func (s *IssueSubscriberService) CreateIssueSubscriber(ctx context.Context, crea
 }
 
 // FindIssueSubscriberList retrieves a list of issueSubscribers based on find.
-func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
+func (s *IssueSubscriberService) FindIssueSubscriberList(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -81,7 +81,7 @@ func (s *IssueSubscriberService) DeleteIssueSubscriber(ctx context.Context, dele
 }
 
 // createIssueSubscriber creates a new issueSubscriber.
-func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
+func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*api.IssueSubscriberRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO issue_subscriber (
@@ -101,18 +101,18 @@ func createIssueSubscriber(ctx context.Context, tx *sql.Tx, create *api.IssueSub
 	defer row.Close()
 
 	row.Next()
-	var issueSubscriber api.IssueSubscriber
+	var issueSubscriberRaw api.IssueSubscriberRaw
 	if err := row.Scan(
-		&issueSubscriber.IssueID,
-		&issueSubscriber.SubscriberID,
+		&issueSubscriberRaw.IssueID,
+		&issueSubscriberRaw.SubscriberID,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &issueSubscriber, nil
+	return &issueSubscriberRaw, nil
 }
 
-func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
+func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*api.IssueSubscriberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.IssueID; v != nil {
@@ -135,24 +135,24 @@ func findIssueSubscriberList(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into issueSubscriberList.
-	var issueSubscriberList []*api.IssueSubscriber
+	// Iterate over result set and deserialize rows into issueSubscriberRawList.
+	var issueSubscriberRawList []*api.IssueSubscriberRaw
 	for rows.Next() {
-		var issueSubscriber api.IssueSubscriber
+		var issueSubscriberRaw api.IssueSubscriberRaw
 		if err := rows.Scan(
-			&issueSubscriber.IssueID,
-			&issueSubscriber.SubscriberID,
+			&issueSubscriberRaw.IssueID,
+			&issueSubscriberRaw.SubscriberID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		issueSubscriberList = append(issueSubscriberList, &issueSubscriber)
+		issueSubscriberRawList = append(issueSubscriberRawList, &issueSubscriberRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return issueSubscriberList, nil
+	return issueSubscriberRawList, nil
 }
 
 // deleteIssueSubscriber permanently deletes a issueSubscriber by ID.

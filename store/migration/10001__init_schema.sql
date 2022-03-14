@@ -708,7 +708,7 @@ CREATE TABLE issue (
     status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description TEXT NOT NULL DEFAULT '',
-    -- we require an assignee, if user wants to unassign herself, she can re-assign to the system account.
+    -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     payload JSONB NOT NULL DEFAULT '{}'
 );

@@ -32,7 +32,7 @@ func NewInstanceService(logger *zap.Logger, db *DB, cache api.CacheService, data
 }
 
 // CreateInstance creates a new instance.
-func (s *InstanceService) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
+func (s *InstanceService) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.InstanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -85,7 +85,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 }
 
 // FindInstanceList retrieves a list of instances based on find.
-func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
+func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.InstanceFind) ([]*api.InstanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -133,15 +133,15 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 
 // FindInstance retrieves a single instance based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.Instance, error) {
+func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.InstanceRaw, error) {
 	if find.ID != nil {
-		instance := &api.Instance{}
-		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instance)
+		instanceRaw := &api.InstanceRaw{}
+		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instanceRaw)
 		if err != nil {
 			return nil, err
 		}
 		if has {
-			return instance, nil
+			return instanceRaw, nil
 		}
 	}
 
@@ -171,7 +171,7 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 
 // PatchInstance updates an existing instance by ID.
 // Returns ENOTFOUND if instance does not exist.
-func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.InstanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -195,7 +195,7 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 }
 
 // createInstance creates a new instance.
-func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.Instance, error) {
+func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.InstanceRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance (
@@ -227,29 +227,29 @@ func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate)
 	defer row.Close()
 
 	row.Next()
-	var instance api.Instance
+	var instanceRaw api.InstanceRaw
 	if err := row.Scan(
-		&instance.ID,
-		&instance.RowStatus,
-		&instance.CreatorID,
-		&instance.CreatedTs,
-		&instance.UpdaterID,
-		&instance.UpdatedTs,
-		&instance.EnvironmentID,
-		&instance.Name,
-		&instance.Engine,
-		&instance.EngineVersion,
-		&instance.ExternalLink,
-		&instance.Host,
-		&instance.Port,
+		&instanceRaw.ID,
+		&instanceRaw.RowStatus,
+		&instanceRaw.CreatorID,
+		&instanceRaw.CreatedTs,
+		&instanceRaw.UpdaterID,
+		&instanceRaw.UpdatedTs,
+		&instanceRaw.EnvironmentID,
+		&instanceRaw.Name,
+		&instanceRaw.Engine,
+		&instanceRaw.EngineVersion,
+		&instanceRaw.ExternalLink,
+		&instanceRaw.Host,
+		&instanceRaw.Port,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &instance, nil
+	return &instanceRaw, nil
 }
 
-func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*api.Instance, error) {
+func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*api.InstanceRaw, error) {
 	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
@@ -276,39 +276,39 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into instanceList.
-	var instanceList []*api.Instance
+	// Iterate over result set and deserialize rows into instanceRawList.
+	var instanceRawList []*api.InstanceRaw
 	for rows.Next() {
-		var instance api.Instance
+		var instanceRaw api.InstanceRaw
 		if err := rows.Scan(
-			&instance.ID,
-			&instance.RowStatus,
-			&instance.CreatorID,
-			&instance.CreatedTs,
-			&instance.UpdaterID,
-			&instance.UpdatedTs,
-			&instance.EnvironmentID,
-			&instance.Name,
-			&instance.Engine,
-			&instance.EngineVersion,
-			&instance.ExternalLink,
-			&instance.Host,
-			&instance.Port,
+			&instanceRaw.ID,
+			&instanceRaw.RowStatus,
+			&instanceRaw.CreatorID,
+			&instanceRaw.CreatedTs,
+			&instanceRaw.UpdaterID,
+			&instanceRaw.UpdatedTs,
+			&instanceRaw.EnvironmentID,
+			&instanceRaw.Name,
+			&instanceRaw.Engine,
+			&instanceRaw.EngineVersion,
+			&instanceRaw.ExternalLink,
+			&instanceRaw.Host,
+			&instanceRaw.Port,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		instanceList = append(instanceList, &instance)
+		instanceRawList = append(instanceRawList, &instanceRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return instanceList, nil
+	return instanceRawList, nil
 }
 
 // patchInstance updates a instance by ID. Returns the new state of the instance after update.
-func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.Instance, error) {
+func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.InstanceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -347,26 +347,26 @@ func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*
 	defer row.Close()
 
 	if row.Next() {
-		var instance api.Instance
+		var instanceRaw api.InstanceRaw
 		if err := row.Scan(
-			&instance.ID,
-			&instance.RowStatus,
-			&instance.CreatorID,
-			&instance.CreatedTs,
-			&instance.UpdaterID,
-			&instance.UpdatedTs,
-			&instance.EnvironmentID,
-			&instance.Name,
-			&instance.Engine,
-			&instance.EngineVersion,
-			&instance.ExternalLink,
-			&instance.Host,
-			&instance.Port,
+			&instanceRaw.ID,
+			&instanceRaw.RowStatus,
+			&instanceRaw.CreatorID,
+			&instanceRaw.CreatedTs,
+			&instanceRaw.UpdaterID,
+			&instanceRaw.UpdatedTs,
+			&instanceRaw.EnvironmentID,
+			&instanceRaw.Name,
+			&instanceRaw.Engine,
+			&instanceRaw.EngineVersion,
+			&instanceRaw.ExternalLink,
+			&instanceRaw.Host,
+			&instanceRaw.Port,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &instance, nil
+		return &instanceRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
