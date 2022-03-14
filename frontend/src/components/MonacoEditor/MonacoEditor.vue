@@ -189,6 +189,13 @@ const init = async () => {
     emit("save", value);
   });
 
+  // set the editor focus when the tab is selected
+  if (!isReadOnly.value) {
+    editorInstance.focus();
+
+    nextTick(() => setPositionAtEndOfLine(editorInstance));
+  }
+
   watch(
     () => isReadOnly.value,
     (readOnly) => {
