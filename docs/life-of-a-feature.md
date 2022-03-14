@@ -28,7 +28,7 @@
 3. Release and announcement. Cheers!
 
 
-## Local Branches
+## Branch Management
 
 Since git utilizes branches as a primary development pattern, we usually face the problem of branch management. We suggest naming your fork of the code, i.e. `${YourGithubID}/bytebase` as `origin`, and the repo `bytebase/bytebase` as `upstream`. Here's a guide for following this branch development pattern.
 
@@ -71,6 +71,6 @@ git push
 git push --set-upstream origin feat-xxx
 ```
 
-**Branch naming tip**
+### Branch Naming Convention
 
-You can choose any form of branch naming convention, e.g., feat-xxx, chore-xxx, docs-xxx. Another style is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools like GitLens.
+The recommended branch naming convention is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools like GitLens.
