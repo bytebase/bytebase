@@ -8,7 +8,7 @@ We are following [Bytebase's API Style Guide](https://github.com/bytebase/byteba
 
 Bytebase uses [slugs](https://en.wikipedia.org/wiki/Clean_URL#Slug) in URLs for resource identification. We use `/issue/hello-world-101` instead of `/issue/101`
 
-_Rationale_: This make URLs more clean and human-readable, especially when sharing via social medias.
+_Rationale_: This makes URLs more clean and human-readable, especially when sharing via social media.
 
 ## Use lower case, kebab-case for phrases
 
