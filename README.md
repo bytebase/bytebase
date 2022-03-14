@@ -155,7 +155,7 @@ working on the code:
 ### Prerequisites
 
 - [Go](https://golang.org/doc/install) (1.16 or later)
-- [Yarn](https://yarnpkg.com/getting-started/install)
+- [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/cosmtrek/air#installation) (For backend live reload)
 
 ### Steps
@@ -193,7 +193,7 @@ working on the code:
 1. Start frontend (with live reload).
 
    ```bash
-   cd frontend && yarn && yarn dev
+   cd frontend && pnpm i && pnpm dev
    ```
 
 Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.

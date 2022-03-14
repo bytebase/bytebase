@@ -47,9 +47,9 @@ echo "Start building Bytebase monolithic ${VERSION}..."
 echo ""
 echo "Step 1 - building bytebase frontend..."
 
-if command -v yarn &> /dev/null
+if command -v pnpm &> /dev/null
 then
-    yarn --cwd ./frontend && yarn --cwd ./frontend release
+    pnpm --cwd ./frontend && pnpm --cwd ./frontend release
 else
     npm --prefix ./frontend run release
 fi
