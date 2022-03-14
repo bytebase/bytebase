@@ -15,34 +15,33 @@
         <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
     </div>
-    <div class="actions-right space-x-2 flex w-2/3 justify-end">
+    <div class="actions-right space-x-2 flex w-2/3 justify-end items-center">
+      <NPopover
+        v-if="
+          connectionContext.instanceId !== UNKNOWN_ID && !hasReadonlyDataSource
+        "
+        trigger="hover"
+      >
+        <template #trigger>
+          <heroicons-outline:exclamation
+            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
+          />
+        </template>
+        <p class="py-1">
+          {{ $t("instance.no-read-only-data-source-warn") }}
+          <NButton
+            class="text-base underline text-accent"
+            text
+            @click="gotoInstanceDetailPage"
+          >
+            {{ $t("sql-editor.create-read-only-data-source") }}
+          </NButton>
+        </p>
+      </NPopover>
       <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
         <template #trigger>
           <label class="flex items-center text-sm space-x-1">
             <div class="flex items-center">
-              <NPopover
-                v-if="
-                  connectionContext.instanceId !== UNKNOWN_ID &&
-                  !hasReadonlyDataSource
-                "
-                trigger="hover"
-              >
-                <template #trigger>
-                  <heroicons-outline:exclamation
-                    class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
-                  />
-                </template>
-                <p class="py-1">
-                  {{ $t("instance.no-read-only-data-source-warn") }}
-                  <NButton
-                    class="text-base underline text-accent"
-                    text
-                    @click="gotoInstanceDetailPage"
-                  >
-                    {{ $t("sql-editor.create-read-only-data-source") }}
-                  </NButton>
-                </p>
-              </NPopover>
               <InstanceEngineIcon
                 v-if="connectionContext.instanceId !== UNKNOWN_ID"
                 :instance="selectedInstance"
@@ -87,7 +86,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="(e) => emit('save-sheet')"
+        @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
