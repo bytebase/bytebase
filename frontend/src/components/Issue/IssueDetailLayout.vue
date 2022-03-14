@@ -97,7 +97,7 @@
       <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
         <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
           <div
-            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border"
+            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border overflow-hidden"
           >
             <IssueSidebar
               :issue="issue"
