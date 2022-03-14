@@ -26,3 +26,50 @@
 2. Testing and feedback.
    - Before a feature is released, get some peers to try out these new features by following public documentation. Receive feedback and iterate.
 3. Release and announcement. Cheers!
+
+
+## Local Branches
+
+Since git utilizes branches as a primary development pattern, we usually face the problem of branch management. We suggest naming your fork of the code, i.e. `${YourGithubID}/bytebase` as `origin`, and the repo `bytebase/bytebase` as `upstream`. Here's a guide for following this branch development pattern.
+
+### Remote Tracking
+
+After forking the `bytebase/bytebase` repository, set up the git remote tracking.
+
+```bash
+# clone your bytebase fork
+git clone git@github.com:${YourGithubID}/bytebase.git
+cd bytebase
+# setup upstream pointing to bytebase/bytebase
+git remote add upstream git@github.com:bytebase/bytebase.git
+# check the result
+git remote -v
+# expected outputs:
+#   origin     git@github.com:${YourGithubID}/bytebase.git (fetch)
+#   origin     git@github.com:${YourGithubID}/bytebase.git (push)
+#   upstream   git@github.com:bytebase/bytebase.git (fetch)
+#   upstream   git@github.com:bytebase/bytebase.git (push)
+```
+
+Now you have set up two tracked repositories: `upstream` for `bytebase/bytebase` and `origin` for your fork.
+
+### Development
+
+We usually create a new branch when we start developing a new feature. Here's a typical workflow.
+
+```bash
+# checkout to the main branch
+git checkout main
+# sync with the upstream
+git pull upstream main
+# create and checkout to your new feature branch
+git checkout -b feat-xxx
+# coding & commit
+# push to origin
+# note: if you execute `git push`, git will prompt you with the following command to push and track to the origin
+git push --set-upstream origin feat-xxx
+```
+
+**Branch naming tip**
+
+You can choose any form of branch naming convention, e.g., feat-xxx, chore-xxx, docs-xxx. Another style is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools like GitLens.
