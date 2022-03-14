@@ -66,7 +66,8 @@ git pull upstream main
 git checkout -b feat-xxx
 # coding & commit
 # push to origin
-# note: if you execute `git push`, git will prompt you with the following command to push and track to the origin
+git push
+# then git will prompt you with a complete command to push and track to the origin, copy & paste
 git push --set-upstream origin feat-xxx
 ```
 
