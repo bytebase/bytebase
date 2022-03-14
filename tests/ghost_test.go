@@ -51,6 +51,7 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 	migrationContext.DatabaseName = config.database
 	migrationContext.OriginalTableName = config.table
 	migrationContext.AlterStatement = config.alterStatement
+	migrationContext.Noop = !config.execute
 	// set defaults
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
@@ -78,7 +79,6 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 			return nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
 	}
-	migrationContext.Noop = !config.execute
 	migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
