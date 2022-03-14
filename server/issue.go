@@ -1111,7 +1111,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	// Otherwise, we will create a blank new database.
 	if similarDB == nil {
 		found := false
-		for _, db := range dbRawList {
+		for _, db := range dbList {
 			var labelList []*api.DatabaseLabel
 			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
 				return "", "", fmt.Errorf("failed to unmarshal labels for database ID %v name %q, error: %v", db.ID, db.Name, err)

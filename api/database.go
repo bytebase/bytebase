@@ -60,8 +60,6 @@ type DatabaseRaw struct {
 	SchemaVersion        string
 	SyncStatus           SyncStatus
 	LastSuccessfulSyncTs int64
-	// TODO(dragonly): remove Labels
-	Labels string
 }
 
 // ToDatabase creates an instance of Database based on the DatabaseRaw.
@@ -88,7 +86,6 @@ func (raw *DatabaseRaw) ToDatabase() *Database {
 		SchemaVersion:        raw.SchemaVersion,
 		SyncStatus:           raw.SyncStatus,
 		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
-		Labels:               raw.Labels,
 	}
 }
 
