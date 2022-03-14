@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -36,7 +38,7 @@ type testTable struct {
 func tableTest(t *testing.T, tables []testTable) {
 	t.Helper()
 	for _, tc := range tables {
-		actual, err := execute(t, rootCmd, tc.args...)
+		actual, err := execute(t, NewRootCmd(), tc.args...)
 
 		if err != tc.expectedErr {
 			t.Errorf(`"> bb %v"
@@ -50,6 +52,16 @@ got unexpected error:
 got unexpected output:
 %s
 `, strings.Join(tc.args, " "), cmp.Diff(actual, tc.expected))
+
+			f, err := os.CreateTemp("", "*")
+			if err != nil {
+				t.Log(err)
+			}
+			defer f.Close()
+			if _, err := io.WriteString(f, actual); err != nil {
+				t.Log(err)
+			}
+			t.Logf("Actual output written to %s", f.Name())
 		}
 	}
 }

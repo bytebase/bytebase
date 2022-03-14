@@ -2,6 +2,22 @@ package api
 
 import "context"
 
+// IssueSubscriberRaw is the store model for an IssueSubscriber.
+// Fields have exactly the same meanings as IssueSubscriber.
+type IssueSubscriberRaw struct {
+	IssueID      int
+	SubscriberID int
+}
+
+// ToIssueSubscriber creates an instance of IssueSubscriber based on the IssueSubscriberRaw.
+// This is intended to be called when we need to compose an IssueSubscriber relationship.
+func (raw *IssueSubscriberRaw) ToIssueSubscriber() *IssueSubscriber {
+	return &IssueSubscriber{
+		IssueID:      raw.IssueID,
+		SubscriberID: raw.SubscriberID,
+	}
+}
+
 // IssueSubscriber is the API message for an issue subscriber.
 type IssueSubscriber struct {
 	// Domain specific fields
@@ -33,7 +49,7 @@ type IssueSubscriberDelete struct {
 
 // IssueSubscriberService is the service for issue subscribers.
 type IssueSubscriberService interface {
-	CreateIssueSubscriber(ctx context.Context, create *IssueSubscriberCreate) (*IssueSubscriber, error)
-	FindIssueSubscriberList(ctx context.Context, find *IssueSubscriberFind) ([]*IssueSubscriber, error)
+	CreateIssueSubscriber(ctx context.Context, create *IssueSubscriberCreate) (*IssueSubscriberRaw, error)
+	FindIssueSubscriberList(ctx context.Context, find *IssueSubscriberFind) ([]*IssueSubscriberRaw, error)
 	DeleteIssueSubscriber(ctx context.Context, delete *IssueSubscriberDelete) error
 }
