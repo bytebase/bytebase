@@ -25,6 +25,21 @@ type config struct {
 	execute        bool
 }
 
+const (
+	allowedRunningOnMaster              = true
+	concurrentCountTableRows            = true
+	hooksStatusIntervalSec              = 60
+	replicaServerID                     = 99999
+	heartbeatIntervalMilliseconds       = 100
+	niceRatio                           = 0
+	chunkSize                           = 1000
+	dmlBatchSize                        = 10
+	maxLagMillisecondsThrottleThreshold = 1500
+	defaultNumRetries                   = 60
+	cutoverLockTimoutSeconds            = 3
+	exponentialBackoffMaxInterval       = 64
+)
+
 func newMigrationContext(config config) (*base.MigrationContext, error) {
 	migrationContext := base.NewMigrationContext()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
@@ -35,10 +50,10 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 	migrationContext.OriginalTableName = config.table
 	migrationContext.AlterStatement = config.alterStatement
 	// set defaults
-	migrationContext.AllowedRunningOnMaster = true
-	migrationContext.ConcurrentCountTableRows = true
-	migrationContext.HooksStatusIntervalSec = 60
-	migrationContext.ReplicaServerId = 99999
+	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
+	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
+	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
+	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
@@ -63,17 +78,17 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 	}
 	migrationContext.Noop = !config.execute
 	migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
-	migrationContext.SetHeartbeatIntervalMilliseconds(100)
-	migrationContext.SetNiceRatio(0)
-	migrationContext.SetChunkSize(1000)
-	migrationContext.SetDMLBatchSize(10)
-	migrationContext.SetMaxLagMillisecondsThrottleThreshold(1500)
-	migrationContext.SetDefaultNumRetries(60)
+	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
+	migrationContext.SetNiceRatio(niceRatio)
+	migrationContext.SetChunkSize(chunkSize)
+	migrationContext.SetDMLBatchSize(dmlBatchSize)
+	migrationContext.SetMaxLagMillisecondsThrottleThreshold(maxLagMillisecondsThrottleThreshold)
+	migrationContext.SetDefaultNumRetries(defaultNumRetries)
 	migrationContext.ApplyCredentials()
-	if err := migrationContext.SetCutOverLockTimeoutSeconds(3); err != nil {
+	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimoutSeconds); err != nil {
 		return nil, err
 	}
-	if err := migrationContext.SetExponentialBackoffMaxInterval(64); err != nil {
+	if err := migrationContext.SetExponentialBackoffMaxInterval(exponentialBackoffMaxInterval); err != nil {
 		return nil, err
 	}
 	return migrationContext, nil
