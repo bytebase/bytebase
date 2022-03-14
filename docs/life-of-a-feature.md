@@ -63,12 +63,12 @@ git checkout main
 # sync with the upstream
 git pull upstream main
 # create and checkout to your new feature branch
-git checkout -b feat-xxx
+git checkout -b feat/xxx
 # coding & commit
 # push to origin
 git push
 # then git will prompt you with a complete command to push and track to the origin, copy & paste
-git push --set-upstream origin feat-xxx
+git push --set-upstream origin feat/xxx
 ```
 
 ### Branch Naming Convention
