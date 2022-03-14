@@ -317,9 +317,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 		taskRunFind := &api.TaskRunFind{
 			TaskID: &task.ID,
 		}
-		taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+		taskRunRawList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 		if err != nil {
 			return nil, err
+		}
+		// TODO(dragonly): compose TaskRunList
+		var taskRunList []*api.TaskRun
+		for _, taskRunRaw := range taskRunRawList {
+			taskRunList = append(taskRunList, taskRunRaw.ToTaskRun())
 		}
 		task.TaskRunList = taskRunList
 
@@ -520,9 +525,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *sql.Tx, patch *ap
 	taskRunFind := &api.TaskRunFind{
 		TaskID: &task.ID,
 	}
-	taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+	taskRunRawList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
+	}
+	// TODO(dragonly): compose TaskRunList
+	var taskRunList []*api.TaskRun
+	for _, taskRunRaw := range taskRunRawList {
+		taskRunList = append(taskRunList, taskRunRaw.ToTaskRun())
 	}
 	task.TaskRunList = taskRunList
 

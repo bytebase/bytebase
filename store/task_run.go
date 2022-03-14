@@ -27,7 +27,7 @@ func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
 }
 
 // CreateTaskRunTx creates a new taskRun.
-func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRun, error) {
+func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -58,55 +58,55 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 	defer row.Close()
 
 	row.Next()
-	var taskRun api.TaskRun
+	var taskRunRaw api.TaskRunRaw
 	if err := row.Scan(
-		&taskRun.ID,
-		&taskRun.CreatorID,
-		&taskRun.CreatedTs,
-		&taskRun.UpdaterID,
-		&taskRun.UpdatedTs,
-		&taskRun.TaskID,
-		&taskRun.Name,
-		&taskRun.Status,
-		&taskRun.Type,
-		&taskRun.Code,
-		&taskRun.Comment,
-		&taskRun.Result,
-		&taskRun.Payload,
+		&taskRunRaw.ID,
+		&taskRunRaw.CreatorID,
+		&taskRunRaw.CreatedTs,
+		&taskRunRaw.UpdaterID,
+		&taskRunRaw.UpdatedTs,
+		&taskRunRaw.TaskID,
+		&taskRunRaw.Name,
+		&taskRunRaw.Status,
+		&taskRunRaw.Type,
+		&taskRunRaw.Code,
+		&taskRunRaw.Comment,
+		&taskRunRaw.Result,
+		&taskRunRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &taskRun, nil
+	return &taskRunRaw, nil
 }
 
 // FindTaskRunListTx retrieves a list of taskRuns based on find.
-func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
-	list, err := s.findTaskRunList(ctx, tx, find)
+func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRunRaw, error) {
+	taskRunRawList, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	return taskRunRawList, nil
 }
 
 // FindTaskRunTx retrieves a single taskRun based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRun, error) {
-	list, err := s.findTaskRunList(ctx, tx, find)
+func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRunRaw, error) {
+	taskRunRawList, err := s.findTaskRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
-	if len(list) == 0 {
+	if len(taskRunRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d task runs with filter %+v, expect 1", len(list), find)}
+	} else if len(taskRunRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d task runs with filter %+v, expect 1", len(taskRunRawList), find)}
 	}
-	return list[0], nil
+	return taskRunRawList[0], nil
 }
 
 // PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
-func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRun, error) {
+func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRunRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -148,29 +148,29 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	defer row.Close()
 
 	row.Next()
-	var taskRun api.TaskRun
+	var taskRunRaw api.TaskRunRaw
 	if err := row.Scan(
-		&taskRun.ID,
-		&taskRun.CreatorID,
-		&taskRun.CreatedTs,
-		&taskRun.UpdaterID,
-		&taskRun.UpdatedTs,
-		&taskRun.TaskID,
-		&taskRun.Name,
-		&taskRun.Status,
-		&taskRun.Type,
-		&taskRun.Code,
-		&taskRun.Comment,
-		&taskRun.Result,
-		&taskRun.Payload,
+		&taskRunRaw.ID,
+		&taskRunRaw.CreatorID,
+		&taskRunRaw.CreatedTs,
+		&taskRunRaw.UpdaterID,
+		&taskRunRaw.UpdatedTs,
+		&taskRunRaw.TaskID,
+		&taskRunRaw.Name,
+		&taskRunRaw.Status,
+		&taskRunRaw.Type,
+		&taskRunRaw.Code,
+		&taskRunRaw.Comment,
+		&taskRunRaw.Result,
+		&taskRunRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &taskRun, nil
+	return &taskRunRaw, nil
 }
 
-func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRun, error) {
+func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -213,33 +213,33 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into taskRunList.
-	var taskRunList []*api.TaskRun
+	// Iterate over result set and deserialize rows into taskRunRawList.
+	var taskRunRawList []*api.TaskRunRaw
 	for rows.Next() {
-		var taskRun api.TaskRun
+		var taskRunRaw api.TaskRunRaw
 		if err := rows.Scan(
-			&taskRun.ID,
-			&taskRun.CreatorID,
-			&taskRun.CreatedTs,
-			&taskRun.UpdaterID,
-			&taskRun.UpdatedTs,
-			&taskRun.TaskID,
-			&taskRun.Name,
-			&taskRun.Status,
-			&taskRun.Type,
-			&taskRun.Code,
-			&taskRun.Comment,
-			&taskRun.Result,
-			&taskRun.Payload,
+			&taskRunRaw.ID,
+			&taskRunRaw.CreatorID,
+			&taskRunRaw.CreatedTs,
+			&taskRunRaw.UpdaterID,
+			&taskRunRaw.UpdatedTs,
+			&taskRunRaw.TaskID,
+			&taskRunRaw.Name,
+			&taskRunRaw.Status,
+			&taskRunRaw.Type,
+			&taskRunRaw.Code,
+			&taskRunRaw.Comment,
+			&taskRunRaw.Result,
+			&taskRunRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		taskRunList = append(taskRunList, &taskRun)
+		taskRunRawList = append(taskRunRawList, &taskRunRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return taskRunList, nil
+	return taskRunRawList, nil
 }
