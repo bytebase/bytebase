@@ -144,7 +144,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 		t.Fatalf("failed to start a transaction: %v", err)
 	}
 	defer tx.Rollback()
-	for i := 1; i <= 100000; i++ {
+	for i := 1; i <= 1000; i++ {
 		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl values (%v, %v)", i, i))
 		if err != nil {
 			t.Fatalf("failed to insert: %v", err)
