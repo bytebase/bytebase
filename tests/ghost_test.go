@@ -93,6 +93,13 @@ func TestGhostSimpleNoop(t *testing.T) {
 		t.Fatalf("failed to start MySQL: %v", err)
 	}
 
+	defer func() {
+		err := mysql.Stop(os.Stdout, os.Stderr)
+		if err != nil {
+			t.Fatalf("failed to stop MySQL: %v", err)
+		}
+	}()
+
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
 	if err != nil {
 		t.Fatalf("failed to open MySQL: %v", err)
@@ -118,6 +125,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start a transaction: %v", err)
 	}
+	defer tx.Rollback()
 	for i := 1; i <= 100000; i++ {
 		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl values (%v, %v)", i, i))
 		if err != nil {
@@ -166,9 +174,5 @@ func TestGhostSimpleNoop(t *testing.T) {
 			t.Errorf("data mismatch, expect id: %v, data: %v, get id: %v, data: %v", id, id, id, data)
 		}
 	}
-	rows.Close()
-
-	if err := mysql.Stop(os.Stdout, os.Stderr); err != nil {
-		t.Fatalf("failed to stop MySQL: %v", err)
-	}
+	defer rows.Close()
 }
