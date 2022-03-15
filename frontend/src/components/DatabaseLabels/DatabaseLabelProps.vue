@@ -17,15 +17,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import {
-  computed,
-  defineProps,
-  defineEmits,
-  withDefaults,
-  watch,
-  watchEffect,
-  reactive,
-} from "vue";
+import { computed, withDefaults, watch, watchEffect, reactive } from "vue";
 import { useStore } from "vuex";
 import {
   Database,

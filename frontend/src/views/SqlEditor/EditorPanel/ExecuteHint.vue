@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
