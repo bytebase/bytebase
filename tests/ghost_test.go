@@ -110,7 +110,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 		}
 		instance, err := mysql.Install(basedir, datadir, "root")
 		if err != nil {
-			return fmt.Errorf("failed to start MySQL: %v", err)
+			return fmt.Errorf("failed to install MySQL: %v", err)
 		}
 		if err := instance.Start(port, os.Stdout, os.Stderr, 60 /* waitSec */); err != nil {
 			return fmt.Errorf("failed to start MySQL: %v", err)
