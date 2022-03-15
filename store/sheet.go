@@ -126,6 +126,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 
 // createSheet creates a new sheet.
 func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.Sheet, error) {
+	// TODO(Steven): remove these default value when developing the service logic for sheet.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
@@ -134,9 +135,11 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 			database_id,
 			name,
 			statement,
-			visibility
+			visibility,
+			source,
+			type
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 	`,
 		create.CreatorID,
@@ -146,6 +149,8 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 		create.Name,
 		create.Statement,
 		create.Visibility,
+		"BYTEBASE",
+		"SQL",
 	)
 
 	if err != nil {
