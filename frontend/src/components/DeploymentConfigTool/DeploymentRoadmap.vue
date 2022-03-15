@@ -1,36 +1,54 @@
 <template>
-  <div class="space-y-2">
-    <div class="flex items-center py-0.5 space-x-2">
-      <select
-        v-model="state.selectedDatabaseName"
-        class="btn-select w-40 disabled:cursor-not-allowed"
-      >
-        <option disabled>{{ $t("db.select") }}</option>
-        <option
-          v-for="(group, i) in databaseListGroupByName"
-          :key="i"
-          :value="group.name"
+  <div class="space-y-2 w-192 px-1">
+    <div
+      v-if="databaseListGroupByName.length === 0"
+      class="textinfolabel px-10 py-4"
+    >
+      <i18n-t keypath="project.overview.no-db-prompt" tag="p">
+        <template #newDb>
+          <span class="text-main">{{ $t("quick-action.new-db") }}</span>
+        </template>
+        <template #transferInDb>
+          <span class="text-main">
+            {{ $t("quick-action.transfer-in-db") }}
+          </span>
+        </template>
+      </i18n-t>
+    </div>
+
+    <template v-else>
+      <div class="flex items-center py-0.5 space-x-2">
+        <select
+          v-model="state.selectedDatabaseName"
+          class="btn-select w-40 disabled:cursor-not-allowed"
         >
-          {{ group.name }}
-        </option>
-      </select>
+          <option disabled>{{ $t("db.select") }}</option>
+          <option
+            v-for="(group, i) in databaseListGroupByName"
+            :key="i"
+            :value="group.name"
+          >
+            {{ group.name }}
+          </option>
+        </select>
 
-      <YAxisRadioGroup
-        v-model:label="state.label"
-        :label-list="labelList"
-        class="text-sm"
-      />
-    </div>
+        <YAxisRadioGroup
+          v-model:label="state.label"
+          :label-list="labelList"
+          class="text-sm"
+        />
+      </div>
 
-    <div v-if="selectedDatabaseGroup">
-      <DeployDatabaseTable
-        :database-list="selectedDatabaseGroup.list"
-        :label="state.label"
-        :label-list="labelList"
-        :environment-list="environmentList"
-        :deployment="deployment"
-      />
-    </div>
+      <div v-if="selectedDatabaseGroup">
+        <DeployDatabaseTable
+          :database-list="selectedDatabaseGroup.list"
+          :label="state.label"
+          :label-list="labelList"
+          :environment-list="environmentList"
+          :deployment="deployment"
+        />
+      </div>
+    </template>
   </div>
 </template>
 

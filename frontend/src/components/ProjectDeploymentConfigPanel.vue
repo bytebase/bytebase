@@ -93,15 +93,13 @@
       :title="$t('deployment-config.preview-deployment-config')"
       @close="state.showPreview = false"
     >
-      <div class="w-192 px-1">
-        <DeploymentRoadmap
-          :project="project"
-          :deployment="deployment"
-          :database-list="databaseList"
-          :environment-list="environmentList"
-          :label-list="labelList"
-        />
-      </div>
+      <DeploymentRoadmap
+        :project="project"
+        :deployment="deployment"
+        :database-list="databaseList"
+        :environment-list="environmentList"
+        :label-list="labelList"
+      />
     </BBModal>
   </div>
 </template>
