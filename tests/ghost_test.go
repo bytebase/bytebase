@@ -102,100 +102,102 @@ func TestGhostSimpleNoop(t *testing.T) {
 		database  = "gh_ost_test_db"
 		table     = "tbl"
 	)
-	basedir := t.TempDir()
-	datadir := filepath.Join(basedir, "data")
-	if err := os.Mkdir(datadir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	mysql, err := mysql.Install(basedir, datadir, "root")
-	if err != nil {
-		t.Fatalf("failed to start MySQL: %v", err)
-	}
-	if err := mysql.Start(port, os.Stdout, os.Stderr, 60); err != nil {
-		t.Fatalf("failed to start MySQL: %v", err)
-	}
-
-	defer func() {
-		err := mysql.Stop(os.Stdout, os.Stderr)
-		if err != nil {
-			t.Fatalf("failed to stop MySQL: %v", err)
+	err := func() error {
+		basedir := t.TempDir()
+		datadir := filepath.Join(basedir, "data")
+		if err := os.Mkdir(datadir, 0755); err != nil {
+			return err
 		}
+		mysql, err := mysql.Install(basedir, datadir, "root")
+		if err != nil {
+			return fmt.Errorf("failed to start MySQL: %v", err)
+		}
+		if err := mysql.Start(port, os.Stdout, os.Stderr, 60); err != nil {
+			return fmt.Errorf("failed to start MySQL: %v", err)
+		}
+
+		defer func() {
+			_ = mysql.Stop(os.Stdout, os.Stderr)
+		}()
+
+		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
+		if err != nil {
+			return fmt.Errorf("failed to open MySQL: %v", err)
+		}
+		defer db.Close()
+
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(fmt.Sprintf("USE %s", database))
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table))
+		if err != nil {
+			return err
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		for i := 1; i <= 1000; i++ {
+			_, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
+			if err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+
+		migrationContext, err := newMigrationContext(config{
+			host:           localhost,
+			port:           port,
+			user:           user,
+			database:       database,
+			table:          table,
+			alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
+			noop:           true,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		migrator := logic.NewMigrator(migrationContext)
+		if err := migrator.Migrate(); err != nil {
+			return err
+		}
+
+		rows, err := db.Query(`SELECT * FROM tbl`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		var (
+			id   int
+			data int
+		)
+
+		for rows.Next() {
+			if err := rows.Scan(&id, &data); err != nil {
+				return err
+			}
+			if id != data {
+				return fmt.Errorf("data mismatch, id != data, id: %v, data: %v", id, data)
+			}
+		}
+		return nil
 	}()
-
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
 	if err != nil {
-		t.Fatalf("failed to open MySQL: %v", err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("failed to CREATE DATABASE %s", database))
-	}
-
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("failed to USE %s", database))
-	}
-
-	_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table))
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("failed to CREATE TABLE %s (id int primary key, data int)", table))
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		t.Fatalf("failed to start a transaction: %v", err)
-	}
-	defer tx.Rollback()
-	for i := 1; i <= 1000; i++ {
-		_, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
-		if err != nil {
-			t.Fatalf("failed to insert: %v", err)
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		t.Fatalf("failed to commit: %v", err)
-	}
-
-	migrationContext, err := newMigrationContext(config{
-		host:           localhost,
-		port:           port,
-		user:           user,
-		database:       database,
-		table:          table,
-		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
-		noop:           true,
-	})
-
-	if err != nil {
-		t.Fatalf("failed to setup migrationContext: %v", err)
-	}
-
-	migrator := logic.NewMigrator(migrationContext)
-	if err := migrator.Migrate(); err != nil {
-		t.Fatalf("failed to migrate: %v", err)
-	}
-
-	rows, err := db.Query(`SELECT * FROM tbl`)
-	if err != nil {
-		t.Fatalf("failed to SELECT * FROM tbl: %v", err)
-	}
-	defer rows.Close()
-
-	var (
-		id   int
-		data int
-	)
-
-	for rows.Next() {
-		if err := rows.Scan(&id, &data); err != nil {
-			t.Fatalf("failed to scan: %v", err)
-		}
-		if id != data {
-			t.Errorf("data mismatch, expect id: %v, data: %v, get id: %v, data: %v", id, id, id, data)
-		}
+		t.Error(err)
 	}
 }
