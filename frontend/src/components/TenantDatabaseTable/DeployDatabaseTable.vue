@@ -102,7 +102,7 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
-import { computed, defineProps, withDefaults } from "vue";
+import { computed, withDefaults } from "vue";
 import type {
   Database,
   DeploymentConfig,
