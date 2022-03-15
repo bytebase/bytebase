@@ -331,9 +331,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
-		taskCheckRunList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
+		taskCheckRunRawList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
+		}
+		// TODO(dragonly): compose this
+		var taskCheckRunList []*api.TaskCheckRun
+		for _, raw := range taskCheckRunRawList {
+			taskCheckRunList = append(taskCheckRunList, raw.ToTaskCheckRun())
 		}
 		task.TaskCheckRunList = taskCheckRunList
 	}
@@ -539,9 +544,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *sql.Tx, patch *ap
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID: &task.ID,
 	}
-	taskCheckRunList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
+	taskCheckRunRawList, err := s.TaskCheckRunService.FindTaskCheckRunListTx(ctx, tx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
+	}
+	// TODO(dragonly): compose this
+	var taskCheckRunList []*api.TaskCheckRun
+	for _, raw := range taskCheckRunRawList {
+		taskCheckRunList = append(taskCheckRunList, raw.ToTaskCheckRun())
 	}
 	task.TaskCheckRunList = taskCheckRunList
 
