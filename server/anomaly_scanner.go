@@ -94,21 +94,22 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
+				instanceRawList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
-				for _, instance := range instanceList {
-					if err := s.server.composeInstanceRelationship(ctx, instance); err != nil {
-						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instance.ID, instance.Name), zap.Error(err))
+				for _, instanceRaw := range instanceRawList {
+					instance, err := s.server.composeInstanceRelationship(ctx, instanceRaw)
+					if err != nil {
+						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instanceRaw.ID, instanceRaw.Name), zap.Error(err))
 						continue
 					}
 
 					foundEnv := false
 					for _, env := range envList {
-						if env.ID == instance.EnvironmentID {
+						if env.ID == instanceRaw.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
@@ -122,11 +123,11 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					mu.Lock()
-					if _, ok := runningTasks[instance.ID]; ok {
+					if _, ok := runningTasks[instanceRaw.ID]; ok {
 						mu.Unlock()
 						continue
 					}
-					runningTasks[instance.ID] = true
+					runningTasks[instanceRaw.ID] = true
 					mu.Unlock()
 
 					// Do NOT use go-routine otherwise would cause "database locked" in underlying SQLite
@@ -143,16 +144,18 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						databaseFind := &api.DatabaseFind{
 							InstanceID: &instance.ID,
 						}
-						dbList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
+						dbRawList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
 						if err != nil {
 							s.l.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
 								zap.Error(err))
 							return
 						}
-						for _, database := range dbList {
-							s.checkDatabaseAnomaly(ctx, instance, database)
-							s.checkBackupAnomaly(ctx, instance, database, backupPlanPolicyMap)
+						for _, dbRaw := range dbRawList {
+							// TODO(dragonly): compose Database
+							db := dbRaw.ToDatabase()
+							s.checkDatabaseAnomaly(ctx, instance, db)
+							s.checkBackupAnomaly(ctx, instance, db, backupPlanPolicyMap)
 						}
 					}(instance)
 

@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits, withDefaults } from "vue";
+import { withDefaults } from "vue";
 import { BBTabFilterItem } from "./types";
 
 withDefaults(

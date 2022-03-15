@@ -58,13 +58,19 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					Hour:      t.Hour(),
 					DayOfWeek: int(t.Weekday()),
 				}
-				list, err := s.server.BackupService.FindBackupSettingsMatch(ctx, match)
+				backupSettingRawList, err := s.server.BackupService.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
 				}
+				// TODO(dragonly): implement composeBackupSettingRelation
+				var backupSettingList []*api.BackupSetting
+				for _, backupSettingRaw := range backupSettingRawList {
+					backupSetting := backupSettingRaw.ToBackupSetting()
+					backupSettingList = append(backupSettingList, backupSetting)
+				}
 
-				for _, backupSetting := range list {
+				for _, backupSetting := range backupSettingList {
 					mu.Lock()
 					if _, ok := runningTasks[backupSetting.ID]; ok {
 						mu.Unlock()
@@ -73,10 +79,10 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					runningTasks[backupSetting.ID] = true
 					mu.Unlock()
 
-					databaseFind := &api.DatabaseFind{
+					dbFind := &api.DatabaseFind{
 						ID: &backupSetting.DatabaseID,
 					}
-					database, err := s.server.composeDatabaseByFind(ctx, databaseFind)
+					db, err := s.server.composeDatabaseByFind(ctx, dbFind)
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
@@ -84,7 +90,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.Error(err))
 						continue
 					}
-					if database == nil {
+					if db == nil {
 						err := fmt.Errorf("Failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
 						s.l.Error(err.Error(),
 							zap.Int("id", backupSetting.ID),
@@ -92,9 +98,10 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.Error(err))
 						continue
 					}
-					backupSetting.Database = database
+					// TODO(dragonly): what's the purpose of this assignment?
+					backupSetting.Database = db
 
-					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(database.Project), api.EnvSlug(database.Instance.Environment), t.Format("20060102T030405"))
+					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 						s.l.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
@@ -123,7 +130,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
 						}
-					}(database, backupSetting.ID, backupName, backupSetting.HookURL)
+					}(db, backupSetting.ID, backupName, backupSetting.HookURL)
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute

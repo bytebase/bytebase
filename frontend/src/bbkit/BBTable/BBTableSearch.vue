@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, defineProps, defineEmits } from "vue";
+import { withDefaults } from "vue";
 withDefaults(
   defineProps<{
     placeholder?: string;

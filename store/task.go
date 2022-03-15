@@ -99,7 +99,7 @@ func (s *TaskService) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api
 	return task, nil
 }
 
-// PatchTaskStatus updates an existing task status and the correspondng task run status atomically.
+// PatchTaskStatus updates an existing task status and the corresponding task run status atomically.
 // Returns ENOTFOUND if task does not exist.
 func (s *TaskService) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
 	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
@@ -317,9 +317,14 @@ func (s *TaskService) findTaskList(ctx context.Context, tx *sql.Tx, find *api.Ta
 		taskRunFind := &api.TaskRunFind{
 			TaskID: &task.ID,
 		}
-		taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+		taskRunRawList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 		if err != nil {
 			return nil, err
+		}
+		// TODO(dragonly): compose TaskRunList
+		var taskRunList []*api.TaskRun
+		for _, taskRunRaw := range taskRunRawList {
+			taskRunList = append(taskRunList, taskRunRaw.ToTaskRun())
 		}
 		task.TaskRunList = taskRunList
 
@@ -520,9 +525,14 @@ func (s *TaskService) patchTaskStatus(ctx context.Context, tx *sql.Tx, patch *ap
 	taskRunFind := &api.TaskRunFind{
 		TaskID: &task.ID,
 	}
-	taskRunList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
+	taskRunRawList, err := s.TaskRunService.FindTaskRunListTx(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
+	}
+	// TODO(dragonly): compose TaskRunList
+	var taskRunList []*api.TaskRun
+	for _, taskRunRaw := range taskRunRawList {
+		taskRunList = append(taskRunList, taskRunRaw.ToTaskRun())
 	}
 	task.TaskRunList = taskRunList
 

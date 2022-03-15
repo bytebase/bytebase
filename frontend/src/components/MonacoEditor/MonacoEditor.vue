@@ -10,8 +10,6 @@ import {
   toRaw,
   PropType,
   nextTick,
-  defineProps,
-  defineEmits,
   onUnmounted,
   watch,
 } from "vue";
@@ -190,6 +188,13 @@ const init = async () => {
     const value = editorInstance.getValue();
     emit("save", value);
   });
+
+  // set the editor focus when the tab is selected
+  if (!isReadOnly.value) {
+    editorInstance.focus();
+
+    nextTick(() => setPositionAtEndOfLine(editorInstance));
+  }
 
   watch(
     () => isReadOnly.value,

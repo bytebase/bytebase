@@ -22,8 +22,8 @@
   </NConfigProvider>
 </template>
 
-<script lang="ts">
-import { reactive, watchEffect, onErrorCaptured, defineComponent } from "vue";
+<script lang="ts" setup>
+import { reactive, watchEffect, onErrorCaptured } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
@@ -50,113 +50,93 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
-export default defineComponent({
-  name: "App",
-  components: {
-    KBarWrapper,
-    BBModalStack,
-    NConfigProvider,
-    NDialogProvider,
-  },
-  setup() {
-    const store = useStore();
-    const router = useRouter();
+const store = useStore();
+const router = useRouter();
 
-    const state = reactive<LocalState>({
-      notificationList: [],
-      prevLoggedIn: store.getters["auth/isLoggedIn"](),
-    });
+const state = reactive<LocalState>({
+  notificationList: [],
+  prevLoggedIn: store.getters["auth/isLoggedIn"](),
+});
 
-    setInterval(() => {
-      const loggedIn = store.getters["auth/isLoggedIn"]();
-      if (state.prevLoggedIn != loggedIn) {
-        state.prevLoggedIn = loggedIn;
-        if (!loggedIn) {
-          store.dispatch("auth/logout").then(() => {
-            router.push({ name: "auth.signin" });
-          });
+setInterval(() => {
+  const loggedIn = store.getters["auth/isLoggedIn"]();
+  if (state.prevLoggedIn != loggedIn) {
+    state.prevLoggedIn = loggedIn;
+    if (!loggedIn) {
+      store.dispatch("auth/logout").then(() => {
+        router.push({ name: "auth.signin" });
+      });
+    }
+  }
+}, CHECK_LOGGEDIN_STATE_DURATION);
+
+const removeNotification = (item: BBNotificationItem | undefined) => {
+  if (!item) return;
+  const index = state.notificationList.indexOf(item);
+  if (index >= 0) {
+    state.notificationList.splice(index, 1);
+  }
+};
+
+const watchNotification = () => {
+  store
+    .dispatch("notification/tryPopNotification", {
+      module: "bytebase",
+    })
+    .then((notification: Notification | undefined) => {
+      if (notification) {
+        if (state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT) {
+          state.notificationList.pop();
+        }
+
+        const item: BBNotificationItem = {
+          style: notification.style,
+          title: notification.title,
+          description: notification.description || "",
+          link: notification.link || "",
+          linkTitle: notification.linkTitle || "",
+        };
+        state.notificationList.unshift(item);
+        if (!notification.manualHide) {
+          setTimeout(
+            () => {
+              removeNotification(item);
+            },
+            notification.style == "CRITICAL"
+              ? CRITICAL_NOTIFICATION_DURATION
+              : NOTIFICATION_DURATION
+          );
         }
       }
-    }, CHECK_LOGGEDIN_STATE_DURATION);
-
-    const removeNotification = (item: BBNotificationItem) => {
-      const index = state.notificationList.indexOf(item);
-      if (index >= 0) {
-        state.notificationList.splice(index, 1);
-      }
-    };
-
-    const watchNotification = () => {
-      store
-        .dispatch("notification/tryPopNotification", {
-          module: "bytebase",
-        })
-        .then((notification: Notification | undefined) => {
-          if (notification) {
-            if (
-              state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT
-            ) {
-              state.notificationList.pop();
-            }
-
-            const item: BBNotificationItem = {
-              style: notification.style,
-              title: notification.title,
-              description: notification.description || "",
-              link: notification.link || "",
-              linkTitle: notification.linkTitle || "",
-            };
-            state.notificationList.unshift(item);
-            if (!notification.manualHide) {
-              setTimeout(
-                () => {
-                  removeNotification(item);
-                },
-                notification.style == "CRITICAL"
-                  ? CRITICAL_NOTIFICATION_DURATION
-                  : NOTIFICATION_DURATION
-              );
-            }
-          }
-        });
-    };
-
-    watchEffect(watchNotification);
-
-    onErrorCaptured((e: any /* , _, info */) => {
-      // If e has response, then we assume it's an http error and has already been
-      // handled by the axios global handler.
-      if (!e.response) {
-        store.dispatch("notification/pushNotification", {
-          module: "bytebase",
-          style: "CRITICAL",
-          title: `Internal error occurred`,
-          description: isDev() ? e.stack : undefined,
-        });
-      }
-      return true;
     });
+};
 
-    // event listener for "bb.oauth.event.unknown"
-    // this event would be posted when an unknown state is returned by OAuth provider.
-    // Add it here so the notification is displayed on the main window. The OAuth callback window is short lived
-    // and would close before the notification has a chance to be displayed.
-    window.addEventListener("bb.oauth.unknown", (event) => {
-      store.dispatch("notification/pushNotification", {
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("oauth.unknown-event"),
-      });
+watchEffect(watchNotification);
+
+onErrorCaptured((e: any /* , _, info */) => {
+  // If e has response, then we assume it's an http error and has already been
+  // handled by the axios global handler.
+  if (!e.response) {
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Internal error occurred`,
+      description: isDev() ? e.stack : undefined,
     });
+  }
+  return true;
+});
 
-    return {
-      state,
-      dateLang,
-      generalLang,
-      themeOverrides,
-      removeNotification,
-    };
-  },
+// event listener for "bb.oauth.event.unknown"
+// this event would be posted when an unknown state is returned by OAuth provider.
+// Add it here so the notification is displayed on the main window. The OAuth callback window is short lived
+// and would close before the notification has a chance to be displayed.
+window.addEventListener("bb.oauth.unknown", (event) => {
+  store.dispatch("notification/pushNotification", {
+    module: "bytebase",
+    style: "CRITICAL",
+    title: t("oauth.unknown-event"),
+  });
 });
 </script>
 
