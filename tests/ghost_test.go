@@ -112,7 +112,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 		if err != nil {
 			return fmt.Errorf("failed to start MySQL: %v", err)
 		}
-		if err := instance.Start(port, os.Stdout, os.Stderr, 60); err != nil {
+		if err := instance.Start(port, os.Stdout, os.Stderr, 60 /* waitSec */); err != nil {
 			return fmt.Errorf("failed to start MySQL: %v", err)
 		}
 
@@ -134,7 +134,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 			return err
 		}
 
-		if _, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table)); err != nil {
+		if _, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id INT PRIMARY KEY, data INT)", table)); err != nil {
 			return err
 		}
 
