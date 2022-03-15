@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
+	"time"
 
 	"github.com/bytebase/bytebase/plugin/db"
 
@@ -16,14 +18,13 @@ import (
 
 func newMigrateCmd() *cobra.Command {
 	var (
-		databaseType   string
-		username       string
-		password       string
-		hostname       string
-		port           string
-		database       string
-		createDatabase bool
-		file           string
+		databaseType string
+		username     string
+		password     string
+		hostname     string
+		port         string
+		database     string
+		file         string
 
 		// SSL flags.
 		sslCA   string // server-ca.pem
@@ -44,7 +45,7 @@ func newMigrateCmd() *cobra.Command {
 				return fmt.Errorf("failed to open sql file %s, got error: %w", file, err)
 			}
 			defer f.Close()
-			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, createDatabase, f, tlsCfg)
+			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, false /*createDatabase*/, f, tlsCfg)
 		}}
 
 	migrateCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
@@ -54,7 +55,6 @@ func newMigrateCmd() *cobra.Command {
 	migrateCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	migrateCmd.Flags().StringVar(&database, "database", "", "Database to execute migration.")
 	migrateCmd.Flags().StringVar(&file, "sql", "", "File that stores the migration script.")
-	migrateCmd.Flags().BoolVar(&createDatabase, "create-database", false, "Create database if it does not exist.")
 	// tls flags for SSL connection.
 	migrateCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
 	migrateCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
@@ -94,22 +94,31 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 		return fmt.Errorf("failed to setup migration, got error: %w", err)
 	}
 
+	migrationCreator := "bb-unknown-creator"
+	if currentUser, err := user.Current(); err == nil {
+		migrationCreator = currentUser.Username
+	}
+
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
 		return fmt.Errorf("failed to read sql file, got error: %w", err)
 	}
 	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
 		ReleaseVersion: version,
-		Version:        "",
+		Version:        defaultMigrationVersion(),
 		Database:       database,
 		Source:         db.LIBRARY,
 		Type:           db.Migrate,
 		Description:    "",
-		Creator:        "",
+		Creator:        migrationCreator,
 		IssueID:        "",
 		CreateDatabase: createDatabase,
 	}, buf.String()); err != nil {
 		return fmt.Errorf("failed to migrate database, got error: %w", err)
 	}
 	return nil
+}
+
+func defaultMigrationVersion() string {
+	return time.Now().Format("20060102150405")
 }
