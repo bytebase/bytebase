@@ -44,9 +44,13 @@ func TestMigrate(t *testing.T) {
 				"--username", "root",
 				"--hostname", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
-				"--sql", "testdata/mysql_test_schema/2_blog.sql",
-				"--database", "bytebase_test_blog",
-				"--create-database",
+				"--sql",
+				saveSQLAsFile(t, `
+	CREATE TABLE bytebase_test_todo.book (
+		id INTEGER PRIMARY KEY,
+		name TEXT NULL
+	);`),
+				"--database", "bytebase_test_todo",
 			},
 			expected: expectedMigrate,
 		},
@@ -58,17 +62,6 @@ func TestMigrate(t *testing.T) {
 				"--hostname", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
-			},
-			expected: expectedTodo,
-		},
-		{
-			args: []string{
-				"dump",
-				"--type", "mysql",
-				"--username", "root",
-				"--hostname", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
-				"--database", "bytebase_test_blog",
 			},
 			expected: expectedDumpAfterMigrate,
 		},

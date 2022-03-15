@@ -65,3 +65,15 @@ got unexpected output:
 		}
 	}
 }
+
+func saveSQLAsFile(t *testing.T, sql string) string {
+	f, err := os.CreateTemp(t.TempDir(), "*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := io.WriteString(f, sql); err != nil {
+		t.Fatal(err)
+	}
+	return f.Name()
+}

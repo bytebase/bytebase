@@ -4,114 +4,35 @@
 CREATE TABLE `author` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL COMMENT 'name of the author',
-  `email` varchar(255) DEFAULT NULL,
-  `coin` int DEFAULT '0' COMMENT 'coin can be earned by posting posts, comments',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 --
--- Table structure for `comment`
+-- Table structure for `book`
 --
-CREATE TABLE `comment` (
+CREATE TABLE `book` (
+  `id` int NOT NULL,
+  `name` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for `todo`
+--
+CREATE TABLE `todo` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `created_ts` bigint NOT NULL,
-  `updated_ts` bigint NOT NULL,
-  `post_id` int DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL COMMENT 'name of the todo',
+  `content` text,
   `author_id` int DEFAULT NULL,
-  `content` text,
-  PRIMARY KEY (`id`),
-  KEY `post_id` (`post_id`),
-  KEY `author_id` (`author_id`),
-  KEY `created_ts` (`created_ts`),
-  CONSTRAINT `comment_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `comment_ibfk_2` FOREIGN KEY (`author_id`) REFERENCES `author` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
---
--- Table structure for `post`
---
-CREATE TABLE `post` (
-  `id` int NOT NULL AUTO_INCREMENT,
   `created_ts` bigint NOT NULL,
   `updated_ts` bigint NOT NULL,
-  `author_id` int NOT NULL,
-  `name` varchar(255) DEFAULT NULL COMMENT 'name of the post',
-  `content` text,
-  `like_count` int DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `author_id` (`author_id`),
-  KEY `name` (`name`),
-  KEY `created_ts` (`created_ts`),
-  CONSTRAINT `post_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `author` (`id`) ON DELETE CASCADE
+  KEY `name` (`name`) COMMENT 'index on todo.name',
+  KEY `created_ts` (`created_ts`) COMMENT 'index on todo.created_ts',
+  CONSTRAINT `todo_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `author` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-
---
--- View structure for `top_like_post`
---
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `top_like_post` AS select `post`.`id` AS `id`,`post`.`created_ts` AS `created_ts`,`post`.`updated_ts` AS `updated_ts`,`post`.`author_id` AS `author_id`,`post`.`name` AS `name`,`post`.`content` AS `content`,`post`.`like_count` AS `like_count` from `post` order by `post`.`like_count` desc limit 10;
-
---
--- Function structure for `author_comment_count`
---
-SET character_set_client  = utf8mb4;
-SET character_set_results = utf8mb4;
-SET collation_connection  = utf8mb4_general_ci;
-SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` FUNCTION `author_comment_count`(author_id INT) RETURNS int
-    DETERMINISTIC
-BEGIN
-DECLARE
-	comment_count INT DEFAULT 0;
-	SELECT
-		COUNT(*) INTO comment_count
-	FROM
-		author,
-		COMMENT
-	WHERE
-		author.id = comment.author_id
-		AND author.id = author_id;
-	RETURN comment_count;
-END ;;
-DELIMITER ;
-
---
--- Procedure structure for `author_post_count`
---
-SET character_set_client  = utf8mb4;
-SET character_set_results = utf8mb4;
-SET collation_connection  = utf8mb4_general_ci;
-SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `author_post_count`(IN author_id INT, OUT post_count INT)
-BEGIN
-	SELECT
-		COUNT(*) INTO post_count
-		FROM
-			author, post
-		WHERE
-			author.id = post.author_id AND author.id = author_id;
-END ;;
-DELIMITER ;
-
---
--- Trigger structure for `update_post_updated_ts`
---
-SET character_set_client  = utf8mb4;
-SET character_set_results = utf8mb4;
-SET collation_connection  = utf8mb4_general_ci;
-SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` TRIGGER `update_post_updated_ts` AFTER UPDATE ON `post` FOR EACH ROW BEGIN
-	UPDATE
-		post
-	SET
-		updated_ts = NOW()
-	WHERE
-		id = OLD.id;
-END ;;
-DELIMITER ;
 
