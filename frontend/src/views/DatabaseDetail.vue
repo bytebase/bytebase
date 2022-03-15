@@ -589,6 +589,7 @@ export default defineComponent({
         database.value.projectId === UNKNOWN_ID ||
         database.value.projectId === DEFAULT_PROJECT_ID
       ) {
+        state.editingProjectId = database.value.project.id;
         state.showIncorrectProjectModal = true;
       } else {
         router.push({
