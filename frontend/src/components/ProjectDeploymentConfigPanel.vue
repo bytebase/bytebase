@@ -93,7 +93,7 @@
       :title="$t('deployment-config.preview-deployment-config')"
       @close="state.showPreview = false"
     >
-      <DeploymentRoadmap
+      <DeploymentMatrix
         :project="project"
         :deployment="deployment"
         :database-list="databaseList"
@@ -129,9 +129,7 @@ import {
   DeploymentConfigPatch,
   LabelSelectorRequirement,
 } from "../types";
-import DeploymentConfigTool, {
-  DeploymentRoadmap,
-} from "./DeploymentConfigTool";
+import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
@@ -145,7 +143,7 @@ type LocalState = {
 
 export default defineComponent({
   name: "ProjectDeploymentConfigurationPanel",
-  components: { DeploymentConfigTool, DeploymentRoadmap, NPopover },
+  components: { DeploymentConfigTool, DeploymentMatrix, NPopover },
   props: {
     project: {
       required: true,
