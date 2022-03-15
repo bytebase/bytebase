@@ -128,19 +128,19 @@ func TestGhostSimpleNoop(t *testing.T) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("CREATE DATABASE gh_ost_test_db")
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
 	if err != nil {
-		t.Fatalf("failed to CREATE DATABASE gh_ost_test_db")
+		t.Fatalf(fmt.Sprintf("failed to CREATE DATABASE %s", database))
 	}
 
-	_, err = db.Exec("USE gh_ost_test_db")
+	_, err = db.Exec(fmt.Sprintf("USE %s", database))
 	if err != nil {
-		t.Fatalf("failed to USE gh_ost_test_db")
+		t.Fatalf(fmt.Sprintf("failed to USE %s", database))
 	}
 
-	_, err = db.Exec("CREATE TABLE tbl (id int primary key, data int)")
+	_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table))
 	if err != nil {
-		t.Fatalf("failed to CREATE TABLE tbl (id int primary key, data int)")
+		t.Fatalf(fmt.Sprintf("failed to CREATE TABLE %s (id int primary key, data int)", table))
 	}
 
 	tx, err := db.Begin()
@@ -149,7 +149,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 	}
 	defer tx.Rollback()
 	for i := 1; i <= 1000; i++ {
-		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl VALUES (%v, %v)", i, i))
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
 		if err != nil {
 			t.Fatalf("failed to insert: %v", err)
 		}
