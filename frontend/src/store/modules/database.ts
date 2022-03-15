@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  ALL_DATABASE_NAME,
   Anomaly,
   Backup,
   Database,
@@ -465,7 +466,9 @@ const mutations = {
     if (instanceId) {
       state.databaseListByInstanceId.set(instanceId, databaseList);
     } else {
-      for (const database of databaseList) {
+      for (const database of databaseList.filter(
+        (db) => db.name !== ALL_DATABASE_NAME
+      )) {
         const listByInstance = state.databaseListByInstanceId.get(
           database.instance.id
         );

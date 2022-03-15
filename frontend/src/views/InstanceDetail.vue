@@ -148,7 +148,6 @@ import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
-  ALL_DATABASE_NAME,
   Database,
   Instance,
   InstanceMigration,
@@ -262,7 +261,7 @@ const hasDataSourceFeature = computed(() =>
 const databaseList = computed<Database[]>(() => {
   const list: Database[] = store.getters["database/databaseListByInstanceId"](
     instance.value.id
-  ).filter((database: Database) => database.name != ALL_DATABASE_NAME);
+  );
 
   if (isDBAOrOwner(currentUser.value.role)) {
     return list;
