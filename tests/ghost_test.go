@@ -149,7 +149,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 	}
 	defer tx.Rollback()
 	for i := 1; i <= 1000; i++ {
-		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl values (%v, %v)", i, i))
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl VALUES (%v, %v)", i, i))
 		if err != nil {
 			t.Fatalf("failed to insert: %v", err)
 		}
