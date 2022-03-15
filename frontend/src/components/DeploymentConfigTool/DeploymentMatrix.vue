@@ -85,14 +85,19 @@ const state = reactive({
 });
 
 const databaseListGroupByName = computed((): DatabaseGroup[] => {
-  if (!props.project) return [];
-  if (props.project.dbNameTemplate && props.labelList.length === 0) return [];
+  const { dbNameTemplate } = props.project;
+
+  if (dbNameTemplate && props.labelList.length === 0) {
+    // We can't calculate dbname correctly if labelList hasn't been fetched
+    // So return empty array as a fallback
+    return [];
+  }
 
   const dict = groupBy(props.databaseList, (db) => {
-    if (props.project!.dbNameTemplate) {
+    if (dbNameTemplate) {
       return parseDatabaseNameByTemplate(
         db.name,
-        props.project!.dbNameTemplate,
+        dbNameTemplate,
         props.labelList
       );
     } else {
