@@ -108,19 +108,19 @@ func TestGhostSimpleNoop(t *testing.T) {
 		if err := os.Mkdir(datadir, 0755); err != nil {
 			return err
 		}
-		mysql, err := mysql.Install(basedir, datadir, "root")
+		instance, err := mysql.Install(basedir, datadir, "root")
 		if err != nil {
 			return fmt.Errorf("failed to start MySQL: %v", err)
 		}
-		if err := mysql.Start(port, os.Stdout, os.Stderr, 60); err != nil {
+		if err := instance.Start(port, os.Stdout, os.Stderr, 60); err != nil {
 			return fmt.Errorf("failed to start MySQL: %v", err)
 		}
 
 		defer func() {
-			_ = mysql.Stop(os.Stdout, os.Stderr)
+			_ = instance.Stop(os.Stdout, os.Stderr)
 		}()
 
-		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
+		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
 		if err != nil {
 			return fmt.Errorf("failed to open MySQL: %v", err)
 		}
