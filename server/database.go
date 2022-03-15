@@ -935,21 +935,15 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 }
 
 func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	databaseRaw, err := s.DatabaseService.FindDatabase(ctx, find)
+	databaseList, err := s.composeDatabaseListByFind(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-
-	if databaseRaw == nil {
+	if len(databaseList) == 0 {
 		return nil, nil
 	}
 
-	database, err := s.composeDatabaseRelationship(ctx, databaseRaw)
-	if err != nil {
-		return nil, err
-	}
-
-	return database, nil
+	return databaseList[0], nil
 }
 
 func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
@@ -960,6 +954,10 @@ func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.Databa
 
 	var dbList []*api.Database
 	for _, dbRaw := range dbRawList {
+		if !find.IncludeAllDatabase && dbRaw.Name == api.AllDatabaseName {
+			continue
+		}
+
 		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 		if err != nil {
 			return nil, err
