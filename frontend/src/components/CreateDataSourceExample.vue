@@ -116,7 +116,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, reactive, PropType } from "vue";
+import { reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";

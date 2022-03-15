@@ -93,7 +93,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, defineProps, defineEmits, withDefaults } from "vue";
+import { reactive, withDefaults } from "vue";
 import { BBStepTabItem } from "./types";
 
 interface LocalState {

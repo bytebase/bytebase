@@ -10,8 +10,6 @@ import {
   toRaw,
   PropType,
   nextTick,
-  defineProps,
-  defineEmits,
   onUnmounted,
   watch,
 } from "vue";

@@ -29,7 +29,7 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { capitalize } from "lodash-es";
-import { computed, defineProps, defineExpose, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
 import {
