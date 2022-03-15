@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits, computed } from "vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
 import { Database, Environment, Project, ProjectId } from "../../types";
 import ProjectSelect, { Mode as ProjectMode } from "../ProjectSelect.vue";

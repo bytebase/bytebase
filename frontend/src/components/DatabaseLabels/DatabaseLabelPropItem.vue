@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import { capitalize } from "lodash-es";
 import { useDialog } from "naive-ui";
-import { computed, defineProps, defineEmits, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Database, Label, LabelValueType } from "../../types";
 import { hidePrefix } from "../../utils";

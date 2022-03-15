@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, defineProps, withDefaults, defineEmits } from "vue";
+import { ref, watch, withDefaults } from "vue";
 
 const props = withDefaults(
   defineProps<{
