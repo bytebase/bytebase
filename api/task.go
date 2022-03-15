@@ -115,6 +115,62 @@ type TaskDatabaseRestorePayload struct {
 	BackupID     int    `json:"backupId,omitempty"`
 }
 
+// TaskRaw is the store model for an Task.
+// Fields have exactly the same meanings as Task.
+type TaskRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	PipelineID int
+	StageID    int
+	InstanceID int
+	// Could be empty for creating database task when the task isn't yet completed successfully.
+	DatabaseID          *int
+	TaskRunRawList      []*TaskRunRaw
+	TaskCheckRunRawList []*TaskCheckRunRaw
+
+	// Domain specific fields
+	Name              string
+	Status            TaskStatus
+	Type              TaskType
+	Payload           string
+	EarliestAllowedTs int64
+}
+
+// ToTask creates an instance of Task based on the TaskRaw.
+// This is intended to be called when we need to compose an Task relationship.
+func (raw *TaskRaw) ToTask() *Task {
+	return &Task{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		PipelineID: raw.PipelineID,
+		StageID:    raw.StageID,
+		InstanceID: raw.InstanceID,
+		// Could be empty for creating database task when the task isn't yet completed successfully.
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:              raw.Name,
+		Status:            raw.Status,
+		Type:              raw.Type,
+		Payload:           raw.Payload,
+		EarliestAllowedTs: raw.EarliestAllowedTs,
+	}
+}
+
 // Task is the API message for a task.
 type Task struct {
 	ID int `jsonapi:"primary,task"`
@@ -229,9 +285,9 @@ type TaskStatusPatch struct {
 
 // TaskService is the service for tasks.
 type TaskService interface {
-	CreateTask(ctx context.Context, create *TaskCreate) (*Task, error)
-	FindTaskList(ctx context.Context, find *TaskFind) ([]*Task, error)
-	FindTask(ctx context.Context, find *TaskFind) (*Task, error)
-	PatchTask(ctx context.Context, patch *TaskPatch) (*Task, error)
-	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*Task, error)
+	CreateTask(ctx context.Context, create *TaskCreate) (*TaskRaw, error)
+	FindTaskList(ctx context.Context, find *TaskFind) ([]*TaskRaw, error)
+	FindTask(ctx context.Context, find *TaskFind) (*TaskRaw, error)
+	PatchTask(ctx context.Context, patch *TaskPatch) (*TaskRaw, error)
+	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*TaskRaw, error)
 }
