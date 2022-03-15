@@ -126,18 +126,15 @@ func TestGhostSimpleNoop(t *testing.T) {
 		}
 		defer db.Close()
 
-		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-		if err != nil {
+		if _, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database)); err != nil {
 			return err
 		}
 
-		_, err = db.Exec(fmt.Sprintf("USE %s", database))
-		if err != nil {
+		if _, err = db.Exec(fmt.Sprintf("USE %s", database)); err != nil {
 			return err
 		}
 
-		_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table))
-		if err != nil {
+		if _, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id int primary key, data int)", table)); err != nil {
 			return err
 		}
 
