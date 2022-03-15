@@ -25,8 +25,6 @@ type config struct {
 	execute        bool
 }
 
-const localhost = "127.0.0.1"
-
 const (
 	allowedRunningOnMaster              = true
 	concurrentCountTableRows            = true
@@ -97,7 +95,13 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 }
 
 func TestGhostSimpleNoop(t *testing.T) {
-	const port = 13306
+	const (
+		localhost = "127.0.0.1"
+		port      = 13306
+		user      = "root"
+		database  = "gh_ost_test_db"
+		table     = "tbl"
+	)
 	basedir := t.TempDir()
 	datadir := filepath.Join(basedir, "data")
 	if err := os.Mkdir(datadir, 0755); err != nil {
@@ -159,9 +163,9 @@ func TestGhostSimpleNoop(t *testing.T) {
 	migrationContext, err := newMigrationContext(config{
 		host:           localhost,
 		port:           port,
-		user:           "root",
-		database:       "gh_ost_test_db",
-		table:          "tbl",
+		user:           user,
+		database:       database,
+		table:          table,
 		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
 	})
 
