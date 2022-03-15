@@ -86,14 +86,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  reactive,
-  watch,
-  ref,
-  defineProps,
-  defineEmits,
-  withDefaults,
-} from "vue";
+import { reactive, watch, ref, withDefaults } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
 import { isAncestorOf, scrollIntoViewIfNeeded } from "./BBUtil";

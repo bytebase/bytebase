@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults, defineProps, defineEmits } from "vue";
+import { computed, withDefaults } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../types";
 
 type DataType = any; // vue does not support generic typed components yet

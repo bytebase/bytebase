@@ -138,7 +138,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
