@@ -827,8 +827,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
+		// Because data source could use a wildcard database "*" as its database,
+		// so we need to include wildcard databases when check if relevant database exists.
 		databaseFind := &api.DatabaseFind{
-			ID: &databaseID,
+			ID:                 &databaseID,
+			IncludeAllDatabase: true,
 		}
 		database, err := s.composeDatabaseByFind(ctx, databaseFind)
 		if err != nil {
