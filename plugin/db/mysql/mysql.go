@@ -1106,7 +1106,7 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case baseTableType:
-		query := fmt.Sprintf("SHOW CREATE TABLE %s.%s;", dbName, tblName)
+		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
 		rows, err := txn.Query(query)
 		if err != nil {
 			return "", err
@@ -1123,7 +1123,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 		return "", fmt.Errorf("query %q returned invalid rows", query)
 	case "VIEW":
 		// This differs from mysqldump as it includes.
-		query := fmt.Sprintf("SHOW CREATE VIEW %s.%s;", dbName, tblName)
+		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
 		rows, err := txn.Query(query)
 		if err != nil {
 			return "", err
@@ -1244,7 +1244,7 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 
 // getRoutineStmt gets the create statement of a routine.
 func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE %s %s.%s;", routineType, dbName, routineName)
+	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s`;", routineType, dbName, routineName)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
@@ -1312,7 +1312,7 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 
 // getEventStmt gets the create statement of an event.
 func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE EVENT %s.%s;", dbName, eventName)
+	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
@@ -1366,7 +1366,7 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE TRIGGER %s.%s;", dbName, triggerName)
+	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err
