@@ -59,12 +59,16 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				taskCheckRunFind := &api.TaskCheckRunFind{
 					StatusList: &taskCheckRunStatusList,
 				}
-				taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+				taskCheckRunRawList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
-
+				// TODO(dragonly): compose this
+				var taskCheckRunList []*api.TaskCheckRun
+				for _, raw := range taskCheckRunRawList {
+					taskCheckRunList = append(taskCheckRunList, raw.ToTaskCheckRun())
+				}
 				for _, taskCheckRun := range taskCheckRunList {
 					executor, ok := s.executors[string(taskCheckRun.Type)]
 					if !ok {
@@ -337,9 +341,14 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
-		taskCheckRunList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
+		taskCheckRunRawList, err := s.server.TaskCheckRunService.FindTaskCheckRunList(ctx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
+		}
+		// TODO(dragonly): compose this
+		var taskCheckRunList []*api.TaskCheckRun
+		for _, raw := range taskCheckRunRawList {
+			taskCheckRunList = append(taskCheckRunList, raw.ToTaskCheckRun())
 		}
 		task.TaskCheckRunList = taskCheckRunList
 
