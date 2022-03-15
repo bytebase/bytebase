@@ -22,7 +22,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 
 		bookmarkCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		bookmark, err := s.BookmarkService.CreateBookmark(ctx, bookmarkCreate)
+		bookmarkRaw, err := s.BookmarkService.CreateBookmark(ctx, bookmarkCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Bookmark already exists: %s", bookmarkCreate.Link))
@@ -30,7 +30,8 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create bookmark").SetInternal(err)
 		}
 
-		if err := s.composeBookmarkRelationship(ctx, bookmark); err != nil {
+		bookmark, err := s.composeBookmarkRelationship(ctx, bookmarkRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created bookmark relationship").SetInternal(err)
 		}
 
@@ -51,15 +52,18 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		bookmarkFind := &api.BookmarkFind{
 			CreatorID: &userID,
 		}
-		bookmarkList, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
+		bookmarkRawList, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch bookmark list").SetInternal(err)
 		}
 
-		for _, bookmark := range bookmarkList {
-			if err := s.composeBookmarkRelationship(ctx, bookmark); err != nil {
+		var bookmarkList []*api.Bookmark
+		for _, bookmarkRaw := range bookmarkRawList {
+			bookmark, err := s.composeBookmarkRelationship(ctx, bookmarkRaw)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch bookmark relationship: %v", bookmark.Name)).SetInternal(err)
 			}
+			bookmarkList = append(bookmarkList, bookmark)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -94,18 +98,20 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeBookmarkRelationship(ctx context.Context, bookmark *api.Bookmark) error {
-	var err error
+func (s *Server) composeBookmarkRelationship(ctx context.Context, raw *api.BookmarkRaw) (*api.Bookmark, error) {
+	bookmark := raw.ToBookmark()
 
-	bookmark.Creator, err = s.composePrincipalByID(ctx, bookmark.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, bookmark.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	bookmark.Creator = creator
 
-	bookmark.Updater, err = s.composePrincipalByID(ctx, bookmark.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, bookmark.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	bookmark.Updater = updater
 
-	return nil
+	return bookmark, nil
 }

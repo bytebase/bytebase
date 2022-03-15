@@ -25,6 +25,28 @@ func (e InboxStatus) String() string {
 	return "UNKNOWN"
 }
 
+// InboxRaw is the store model for an Inbox.
+// Fields have exactly the same meanings as Inbox.
+type InboxRaw struct {
+	ID int
+
+	// Domain specific fields
+	ReceiverID  int
+	ActivityRaw *ActivityRaw
+	Status      InboxStatus
+}
+
+// ToInbox creates an instance of Inbox based on the InboxRaw.
+// This is intended to be called when we need to compose an Inbox relationship.
+func (raw *InboxRaw) ToInbox() *Inbox {
+	return &Inbox{
+		ID: raw.ID,
+
+		ReceiverID: raw.ReceiverID,
+		Status:     raw.Status,
+	}
+}
+
 // Inbox is the API message for an inbox.
 type Inbox struct {
 	ID int `jsonapi:"primary,inbox"`
@@ -78,10 +100,10 @@ type InboxSummary struct {
 
 // InboxService is the service for inboxes.
 type InboxService interface {
-	CreateInbox(ctx context.Context, create *InboxCreate) (*Inbox, error)
+	CreateInbox(ctx context.Context, create *InboxCreate) (*InboxRaw, error)
 	// Find the inbox list and return most recent created item first.
-	FindInboxList(ctx context.Context, find *InboxFind) ([]*Inbox, error)
-	FindInbox(ctx context.Context, find *InboxFind) (*Inbox, error)
-	PatchInbox(ctx context.Context, patch *InboxPatch) (*Inbox, error)
+	FindInboxList(ctx context.Context, find *InboxFind) ([]*InboxRaw, error)
+	FindInbox(ctx context.Context, find *InboxFind) (*InboxRaw, error)
+	PatchInbox(ctx context.Context, patch *InboxPatch) (*InboxRaw, error)
 	FindInboxSummary(ctx context.Context, principalID int) (*InboxSummary, error)
 }

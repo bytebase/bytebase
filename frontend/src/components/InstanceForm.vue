@@ -274,7 +274,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, reactive, PropType, ComputedRef } from "vue";
+import { computed, reactive, PropType, ComputedRef } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";

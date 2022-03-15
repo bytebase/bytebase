@@ -101,7 +101,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, defineEmits, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { connectionSlug, databaseSlug } from "../utils";
 import { Database, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";

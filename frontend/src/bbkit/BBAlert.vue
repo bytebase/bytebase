@@ -119,7 +119,7 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import { defineProps, withDefaults, defineEmits, computed } from "vue";
+import { withDefaults, computed } from "vue";
 import { BBAlertStyle } from "./types";
 
 type Payload = string | number | boolean | any;

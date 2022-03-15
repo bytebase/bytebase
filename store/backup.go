@@ -283,7 +283,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.
 
 // FindBackupSetting finds the backup setting for a database.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupSettingFind) (*api.BackupSetting, error) {
+func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupSettingFind) (*api.BackupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -303,7 +303,7 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	return list[0], nil
 }
 
-func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*api.BackupSetting, error) {
+func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*api.BackupSettingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -334,36 +334,36 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into backupSettingList.
-	var backupSettingList []*api.BackupSetting
+	// Iterate over result set and deserialize rows into backupSettingRawList.
+	var backupSettingRawList []*api.BackupSettingRaw
 	for rows.Next() {
-		var backupSetting api.BackupSetting
+		var backupSettingRaw api.BackupSettingRaw
 		if err := rows.Scan(
-			&backupSetting.ID,
-			&backupSetting.CreatorID,
-			&backupSetting.CreatedTs,
-			&backupSetting.UpdaterID,
-			&backupSetting.UpdatedTs,
-			&backupSetting.DatabaseID,
-			&backupSetting.Enabled,
-			&backupSetting.Hour,
-			&backupSetting.DayOfWeek,
-			&backupSetting.HookURL,
+			&backupSettingRaw.ID,
+			&backupSettingRaw.CreatorID,
+			&backupSettingRaw.CreatedTs,
+			&backupSettingRaw.UpdaterID,
+			&backupSettingRaw.UpdatedTs,
+			&backupSettingRaw.DatabaseID,
+			&backupSettingRaw.Enabled,
+			&backupSettingRaw.Hour,
+			&backupSettingRaw.DayOfWeek,
+			&backupSettingRaw.HookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		backupSettingList = append(backupSettingList, &backupSetting)
+		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return backupSettingList, nil
+	return backupSettingRawList, nil
 }
 
 // UpsertBackupSetting sets the backup settings for a database.
-func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSettingRaw, error) {
 	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, upsert.EnvironmentID)
 	if err != nil {
 		return nil, err
@@ -391,7 +391,7 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 	}
 	defer tx.PTx.Rollback()
 
-	backup, err := s.UpsertBackupSettingTx(ctx, tx.PTx, upsert)
+	backupRaw, err := s.UpsertBackupSettingTx(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -400,11 +400,11 @@ func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.Bac
 		return nil, FormatError(err)
 	}
 
-	return backup, nil
+	return backupRaw, nil
 }
 
 // UpsertBackupSettingTx updates an existing backup setting.
-func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSettingRaw, error) {
 	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup_setting (
@@ -439,27 +439,27 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 	defer row.Close()
 
 	row.Next()
-	var backupSetting api.BackupSetting
+	var backupSettingRaw api.BackupSettingRaw
 	if err := row.Scan(
-		&backupSetting.ID,
-		&backupSetting.CreatorID,
-		&backupSetting.CreatedTs,
-		&backupSetting.UpdaterID,
-		&backupSetting.UpdatedTs,
-		&backupSetting.DatabaseID,
-		&backupSetting.Enabled,
-		&backupSetting.Hour,
-		&backupSetting.DayOfWeek,
-		&backupSetting.HookURL,
+		&backupSettingRaw.ID,
+		&backupSettingRaw.CreatorID,
+		&backupSettingRaw.CreatedTs,
+		&backupSettingRaw.UpdaterID,
+		&backupSettingRaw.UpdatedTs,
+		&backupSettingRaw.DatabaseID,
+		&backupSettingRaw.Enabled,
+		&backupSettingRaw.Hour,
+		&backupSettingRaw.DayOfWeek,
+		&backupSettingRaw.HookURL,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &backupSetting, nil
+	return &backupSettingRaw, nil
 }
 
 // FindBackupSettingsMatch retrieves a list of backup settings based on match condition.
-func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
+func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -496,30 +496,30 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into backupSettingList.
-	var backupSettingList []*api.BackupSetting
+	// Iterate over result set and deserialize rows into backupSettingRawList.
+	var backupSettingRawList []*api.BackupSettingRaw
 	for rows.Next() {
-		var backupSetting api.BackupSetting
+		var backupSettingRaw api.BackupSettingRaw
 		if err := rows.Scan(
-			&backupSetting.ID,
-			&backupSetting.CreatorID,
-			&backupSetting.CreatedTs,
-			&backupSetting.UpdaterID,
-			&backupSetting.UpdatedTs,
-			&backupSetting.DatabaseID,
-			&backupSetting.Enabled,
-			&backupSetting.Hour,
-			&backupSetting.DayOfWeek,
-			&backupSetting.HookURL,
+			&backupSettingRaw.ID,
+			&backupSettingRaw.CreatorID,
+			&backupSettingRaw.CreatedTs,
+			&backupSettingRaw.UpdaterID,
+			&backupSettingRaw.UpdatedTs,
+			&backupSettingRaw.DatabaseID,
+			&backupSettingRaw.Enabled,
+			&backupSettingRaw.Hour,
+			&backupSettingRaw.DayOfWeek,
+			&backupSettingRaw.HookURL,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		backupSettingList = append(backupSettingList, &backupSetting)
+		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return backupSettingList, nil
+	return backupSettingRawList, nil
 }

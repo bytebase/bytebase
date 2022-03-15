@@ -29,15 +29,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import {
-  defineProps,
-  withDefaults,
-  defineEmits,
-  computed,
-  reactive,
-  watch,
-  useSlots,
-} from "vue";
+import { withDefaults, computed, reactive, watch, useSlots } from "vue";
 
 export type ButtonType =
   | "normal"

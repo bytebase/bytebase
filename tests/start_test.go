@@ -2,49 +2,37 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServiceRestart(t *testing.T) {
 	t.Parallel()
-	err := func() error {
-		ctx := context.Background()
-		ctl := &controller{}
-		dataDir := t.TempDir()
-		if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
-			return err
-		}
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	require.NoError(t, err)
 
-		if err := ctl.Login(); err != nil {
-			return err
-		}
+	err = ctl.Login()
+	require.NoError(t, err)
 
-		projects, err := ctl.getProjects()
-		if err != nil {
-			return err
-		}
-		// Test seed should have more than one project.
-		if len(projects) <= 1 {
-			return fmt.Errorf("unexpected number of projects %v", len(projects))
-		}
+	projects, err := ctl.getProjects()
+	require.NoError(t, err)
 
-		// Restart the server.
-		if err := ctl.Close(); err != nil {
-			return err
-		}
+	// Test seed should have more than one project.
+	assert.Greater(t, len(projects), 1)
 
-		if err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name())); err != nil {
-			return err
-		}
-		defer ctl.Close()
+	// Restart the server.
+	err = ctl.Close()
+	require.NoError(t, err)
 
-		if err := ctl.Login(); err != nil {
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		t.Error(err)
-	}
+	err = ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	require.NoError(t, err)
+	defer ctl.Close()
+
+	err = ctl.Login()
+	require.NoError(t, err)
 }
