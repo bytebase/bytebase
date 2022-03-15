@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, defineExpose } from "vue";
+import { reactive } from "vue";
 import vClickInsideOutside from "./directives/click-inside-outside";
 
 type Context = string | number | boolean | any;
