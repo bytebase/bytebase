@@ -146,8 +146,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 
 		const n = 100
 		for i := 1; i <= n; i++ {
-			_, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
-			if err != nil {
+			if _, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i)); err != nil {
 				return err
 			}
 		}
