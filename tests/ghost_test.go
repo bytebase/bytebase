@@ -22,7 +22,7 @@ type config struct {
 	database       string
 	table          string
 	alterStatement string
-	execute        bool
+	noop           bool
 }
 
 const (
@@ -49,7 +49,7 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 	migrationContext.DatabaseName = config.database
 	migrationContext.OriginalTableName = config.table
 	migrationContext.AlterStatement = config.alterStatement
-	migrationContext.Noop = !config.execute
+	migrationContext.Noop = config.noop
 	// set defaults
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
@@ -167,6 +167,7 @@ func TestGhostSimpleNoop(t *testing.T) {
 		database:       database,
 		table:          table,
 		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
+		noop:           true,
 	})
 
 	if err != nil {
