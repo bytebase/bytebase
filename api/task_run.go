@@ -45,6 +45,56 @@ type TaskRunResultPayload struct {
 	Version     string `json:"version,omitempty"`
 }
 
+// TaskRunRaw is the store model for an TaskRun.
+// Fields have exactly the same meanings as TaskRun.
+type TaskRunRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	TaskID int
+
+	// Domain specific fields
+	Name    string
+	Status  TaskRunStatus
+	Type    TaskType
+	Code    common.Code
+	Comment string
+	Result  string
+	Payload string
+}
+
+// ToTaskRun creates an instance of TaskRun based on the TaskRunRaw.
+// This is intended to be called when we need to compose an TaskRun relationship.
+func (raw *TaskRunRaw) ToTaskRun() *TaskRun {
+	return &TaskRun{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		TaskID: raw.TaskID,
+
+		// Domain specific fields
+		Name:    raw.Name,
+		Status:  raw.Status,
+		Type:    raw.Type,
+		Code:    raw.Code,
+		Comment: raw.Comment,
+		Result:  raw.Result,
+		Payload: raw.Payload,
+	}
+}
+
 // TaskRun is the API message for a task run.
 type TaskRun struct {
 	ID int `jsonapi:"primary,taskRun"`
@@ -124,8 +174,8 @@ type TaskRunStatusPatch struct {
 
 // TaskRunService is the service for task runs.
 type TaskRunService interface {
-	CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRun, error)
-	FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRun, error)
-	FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRun, error)
-	PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRun, error)
+	CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *TaskRunCreate) (*TaskRunRaw, error)
+	FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) ([]*TaskRunRaw, error)
+	FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *TaskRunFind) (*TaskRunRaw, error)
+	PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *TaskRunStatusPatch) (*TaskRunRaw, error)
 }
