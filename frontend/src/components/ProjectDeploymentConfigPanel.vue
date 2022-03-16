@@ -66,6 +66,14 @@
           </button>
         </div>
         <div class="flex items-center space-x-2">
+          <button
+            v-if="allowEdit"
+            class="btn-normal"
+            :disabled="!state.dirty"
+            @click="revert"
+          >
+            {{ $t("common.revert") }}
+          </button>
           <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
             <template #trigger>
               <div
@@ -139,8 +147,9 @@ import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
+  backup: DeploymentConfig | undefined;
   error: string | undefined;
-  ready: boolean;
+  dirty: boolean;
   showPreview: boolean;
 };
 
@@ -163,7 +172,8 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       deployment: undefined,
-      ready: false,
+      backup: undefined,
+      dirty: false,
       error: undefined,
       showPreview: false,
     });
@@ -197,11 +207,18 @@ export default defineComponent({
       });
     });
 
+    const resetStates = async () => {
+      await nextTick(); // Waiting for all watchers done
+      state.dirty = false;
+      state.error = undefined;
+    };
+
     watchEffect(async () => {
       const dep = (await store.dispatch(
         "deployment/fetchDeploymentConfigByProjectId",
         props.project.id
       )) as DeploymentConfig;
+
       if (dep.id === UNKNOWN_ID) {
         // if the project has no related deployment-config
         // just generate a "staged-by-env" example to users
@@ -223,11 +240,10 @@ export default defineComponent({
         //   dirty but not saved draft
         state.deployment = cloneDeep(dep);
       }
-      nextTick(() => {
-        // then we reset the local state
-        state.ready = true;
-        state.error = undefined;
-      });
+      // clone the object to the backup
+      state.backup = cloneDeep(state.deployment);
+      // clean up error and dirty status
+      resetStates();
     });
 
     const addStage = () => {
@@ -256,14 +272,19 @@ export default defineComponent({
       state.error = validateDeploymentConfig(state.deployment);
     };
 
-    const update = () => {
+    const revert = () => {
+      state.deployment = cloneDeep(state.backup);
+      resetStates();
+    };
+
+    const update = async () => {
       if (!state.deployment) return;
       if (state.error) return;
 
       const deploymentConfigPatch: DeploymentConfigPatch = {
         payload: JSON.stringify(state.deployment.schedule),
       };
-      store.dispatch("deployment/patchDeploymentConfigByProjectId", {
+      await store.dispatch("deployment/patchDeploymentConfigByProjectId", {
         projectId: props.project.id,
         deploymentConfigPatch,
       });
@@ -272,13 +293,17 @@ export default defineComponent({
         style: "SUCCESS",
         title: t("deployment-config.update-success"),
       });
+
+      // clone the updated version to the backup
+      state.backup = cloneDeep(state.deployment);
+      // clean up error and dirty status
+      resetStates();
     };
 
     watch(
       () => state.deployment,
-      (dep) => {
-        if (!dep) return;
-        if (!state.ready) return;
+      () => {
+        state.dirty = true;
         validate();
       },
       { deep: true }
@@ -298,6 +323,7 @@ export default defineComponent({
       databaseList,
       availableLabelList,
       addStage,
+      revert,
       update,
       dbNameTemplateTips,
     };
