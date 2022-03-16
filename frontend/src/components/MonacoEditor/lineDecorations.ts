@@ -21,7 +21,7 @@ const getSQLFragmentRanges = (
   const model = editor.getModel() as monaco.editor.ITextModel;
   const linesContent = model.getLinesContent();
   const sqlFragmentRanges: FragmentRange[] = [];
-  console.log(linesContent);
+  // console.log(linesContent);
   let startLineNumber = 0;
 
   for (let i = 0; i < linesContent.length; i++) {
@@ -81,7 +81,7 @@ const useLineDecorations = (
 
     const sqlFragmentRanges = getSQLFragmentRanges(editor);
 
-    console.log(sqlFragmentRanges);
+    // console.log(sqlFragmentRanges);
 
     sqlFragmentRanges.forEach((range) => {
       // if the current position in the range, then highlight the range
