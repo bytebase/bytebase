@@ -114,7 +114,6 @@ import {
   nextTick,
   PropType,
   reactive,
-  ref,
   watch,
   watchEffect,
 } from "vue";
@@ -173,10 +172,6 @@ export default defineComponent({
       store.dispatch("environment/fetchEnvironmentList");
       store.dispatch("label/fetchLabelList");
       store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
-      store.dispatch(
-        "deployment/fetchDeploymentConfigByProjectId",
-        props.project.id
-      );
     };
 
     const environmentList = computed(
@@ -202,10 +197,11 @@ export default defineComponent({
       });
     });
 
-    watchEffect(() => {
-      const dep = store.getters["deployment/deploymentConfigByProjectId"](
+    watchEffect(async () => {
+      const dep = (await store.dispatch(
+        "deployment/fetchDeploymentConfigByProjectId",
         props.project.id
-      ) as DeploymentConfig;
+      )) as DeploymentConfig;
       if (dep.id === UNKNOWN_ID) {
         // if the project has no related deployment-config
         // just generate a "staged-by-env" example to users
