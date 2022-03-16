@@ -37,16 +37,16 @@
     </template>
 
     <BBAttention
-      v-if="deployment?.id === EMPTY_ID"
+      v-if="state.deployment?.id === EMPTY_ID"
       :style="'WARN'"
       :title="$t('common.deployment-config')"
       :description="$t('deployment-config.this-is-example-deployment-config')"
     >
     </BBAttention>
 
-    <div v-if="deployment" class="divide-y">
+    <div v-if="state.deployment" class="divide-y">
       <DeploymentConfigTool
-        :schedule="deployment.schedule"
+        :schedule="state.deployment.schedule"
         :allow-edit="allowEdit"
         :label-list="availableLabelList"
         :database-list="databaseList"
@@ -92,13 +92,13 @@
     </div>
 
     <BBModal
-      v-if="deployment && state.showPreview"
+      v-if="state.deployment && state.showPreview"
       :title="$t('deployment-config.preview-deployment-config')"
       @close="state.showPreview = false"
     >
       <DeploymentMatrix
         :project="project"
-        :deployment="deployment"
+        :deployment="state.deployment"
         :database-list="databaseList"
         :environment-list="environmentList"
         :label-list="labelList"
@@ -139,6 +139,7 @@ import { NPopover } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 
 type LocalState = {
+  deployment: DeploymentConfig | undefined;
   error: string | undefined;
   ready: boolean;
   showPreview: boolean;
@@ -160,9 +161,9 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const { t } = useI18n();
-    const deployment = ref<DeploymentConfig>();
 
     const state = reactive<LocalState>({
+      deployment: undefined,
       ready: false,
       error: undefined,
       showPreview: false,
@@ -211,20 +212,20 @@ export default defineComponent({
         // this is not saved immediately, it's a draft
         // users need to edit and save it before creating a deployment issue
         if (environmentList.value.length > 0) {
-          deployment.value = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
-          deployment.value.schedule = generateDefaultSchedule(
+          state.deployment = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
+          state.deployment.schedule = generateDefaultSchedule(
             environmentList.value
           );
         }
       } else {
         // otherwise we clone the saved deployment-config
-        // <DeploymentConfigTool /> will mutate `deployment.value` directly
+        // <DeploymentConfigTool /> will mutate `state.deployment` directly
         // when update button clicked, we save the draft to backend
         // we don't show a "cancel" button because if users don't want to save
         //   the draft, they can just leave the page without any saving action
         // even more we may deliver a confirm modal when leaving the page with a
         //   dirty but not saved draft
-        deployment.value = cloneDeep(dep);
+        state.deployment = cloneDeep(dep);
       }
       nextTick(() => {
         // then we reset the local state
@@ -234,7 +235,7 @@ export default defineComponent({
     });
 
     const addStage = () => {
-      if (!deployment.value) return;
+      if (!state.deployment) return;
       const rule: LabelSelectorRequirement = {
         key: "bb.environment",
         operator: "In",
@@ -244,7 +245,7 @@ export default defineComponent({
         rule.values.push(environmentList.value[0].name);
       }
 
-      deployment.value.schedule.deployments.push({
+      state.deployment.schedule.deployments.push({
         name: "New Stage",
         spec: {
           selector: {
@@ -255,16 +256,16 @@ export default defineComponent({
     };
 
     const validate = () => {
-      if (!deployment.value) return;
-      state.error = validateDeploymentConfig(deployment.value);
+      if (!state.deployment) return;
+      state.error = validateDeploymentConfig(state.deployment);
     };
 
     const update = () => {
-      if (!deployment.value) return;
+      if (!state.deployment) return;
       if (state.error) return;
 
       const deploymentConfigPatch: DeploymentConfigPatch = {
-        payload: JSON.stringify(deployment.value.schedule),
+        payload: JSON.stringify(state.deployment.schedule),
       };
       store.dispatch("deployment/patchDeploymentConfigByProjectId", {
         projectId: props.project.id,
@@ -278,7 +279,7 @@ export default defineComponent({
     };
 
     watch(
-      deployment,
+      () => state.deployment,
       (dep) => {
         if (!dep) return;
         if (!state.ready) return;
@@ -300,7 +301,6 @@ export default defineComponent({
       labelList,
       databaseList,
       availableLabelList,
-      deployment,
       addStage,
       update,
       dbNameTemplateTips,
