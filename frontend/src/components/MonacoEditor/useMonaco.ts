@@ -21,9 +21,7 @@ const useMonaco = async (lang: string) => {
     "instanceList",
   ]);
 
-  const instances = computed(() => instanceList.value());
-
-  const databases = computed(() => {
+  const databaseList = computed(() => {
     const currentInstanceId =
       store.state.sqlEditor.connectionContext.instanceId;
     return store.getters["database/databaseListByInstanceId"](
@@ -31,8 +29,8 @@ const useMonaco = async (lang: string) => {
     );
   });
 
-  const tables = computed(() => {
-    return databases.value
+  const tabeList = computed(() => {
+    return databaseList.value
       .map((item: ConnectionAtom) =>
         store.getters["table/tableListByDatabaseId"](item.id)
       )
@@ -91,31 +89,31 @@ const useMonaco = async (lang: string) => {
         const autoCompletion = new AutoCompletion(
           model,
           position,
-          instances.value,
-          databases.value,
-          tables.value
+          instanceList.value(),
+          databaseList.value,
+          tabeList.value
         );
 
-        const suggestionsForKeywords =
+        const suggestionsForKeyword =
           autoCompletion.getCompletionItemsForKeywords();
 
-        const suggestionsForTables =
-          autoCompletion.getCompletionItemsForTables();
+        const suggestionsForTable =
+          autoCompletion.getCompletionItemsForTableList();
 
         // if enter a dot, show table columns
         if (lastToken.endsWith(".")) {
           const tableName = lastToken.replace(".", "");
-          const idx = tables.value.findIndex(
+          const idx = tabeList.value.findIndex(
             (item: Table) => item.name === tableName
           );
           if (idx !== -1) {
-            suggestions = autoCompletion.getCompletionItemsForTableColumns(
-              tables.value[idx],
+            suggestions = autoCompletion.getCompletionItemsForTableColumnList(
+              tabeList.value[idx],
               false
             );
           }
         } else {
-          suggestions = [...suggestionsForKeywords, ...suggestionsForTables];
+          suggestions = [...suggestionsForKeyword, ...suggestionsForTable];
         }
 
         return { suggestions };

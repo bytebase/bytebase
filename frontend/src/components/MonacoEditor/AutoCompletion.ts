@@ -14,22 +14,22 @@ import { keywords } from "./keywords";
 export default class AutoCompletion {
   model: EditorModel;
   position: EditorPosition;
-  instances: Instance[];
-  databases: Database[];
-  tables: Table[];
+  instanceList: Instance[];
+  databaseList: Database[];
+  tableList: Table[];
 
   constructor(
     model: EditorModel,
     position: EditorPosition,
-    instances: Instance[],
-    databases: Database[],
-    tables: Table[]
+    instanceList: Instance[],
+    databaseList: Database[],
+    tableList: Table[]
   ) {
     this.model = model;
     this.position = position;
-    this.instances = instances;
-    this.databases = databases;
-    this.tables = tables;
+    this.instanceList = instanceList;
+    this.databaseList = databaseList;
+    this.tableList = tableList;
   }
 
   getWordRange() {
@@ -64,12 +64,12 @@ export default class AutoCompletion {
     return suggestions;
   }
 
-  getCompletionItemsForInstances(): CompletionItems {
+  getCompletionItemsForInstanceList(): CompletionItems {
     const suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.instances.forEach((instance) => {
+    this.instanceList.forEach((instance) => {
       suggestions.push({
         label: instance.name,
         kind: monaco.languages.CompletionItemKind.Method,
@@ -84,12 +84,12 @@ export default class AutoCompletion {
     return suggestions;
   }
 
-  getCompletionItemsForDatabases(): CompletionItems {
+  getCompletionItemsForDatabaseList(): CompletionItems {
     const suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.databases.forEach((database) => {
+    this.databaseList.forEach((database) => {
       suggestions.push({
         label: database.name,
         kind: monaco.languages.CompletionItemKind.Struct,
@@ -104,12 +104,12 @@ export default class AutoCompletion {
     return suggestions;
   }
 
-  getCompletionItemsForTables(): CompletionItems {
+  getCompletionItemsForTableList(): CompletionItems {
     let suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.tables.forEach((table) => {
+    this.tableList.forEach((table) => {
       suggestions.push({
         label: table.name,
         kind: monaco.languages.CompletionItemKind.Function,
@@ -120,14 +120,14 @@ export default class AutoCompletion {
         range,
       });
       const tableColumnSuggestions =
-        this.getCompletionItemsForTableColumns(table);
+        this.getCompletionItemsForTableColumnList(table);
       suggestions = suggestions.concat(tableColumnSuggestions);
     });
 
     return suggestions;
   }
 
-  getCompletionItemsForTableColumns(
+  getCompletionItemsForTableColumnList(
     table: Table,
     withTablePrefix = true
   ): CompletionItems {
