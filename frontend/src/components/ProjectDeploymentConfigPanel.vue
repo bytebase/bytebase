@@ -44,9 +44,8 @@
     >
     </BBAttention>
 
-    <div class="divide-y">
+    <div v-if="deployment" class="divide-y">
       <DeploymentConfigTool
-        v-if="deployment"
         :schedule="deployment.schedule"
         :allow-edit="allowEdit"
         :label-list="availableLabelList"
@@ -86,6 +85,10 @@
           </NPopover>
         </div>
       </div>
+    </div>
+
+    <div v-else class="flex justify-center items-center py-10">
+      <BBSpin />
     </div>
 
     <BBModal
