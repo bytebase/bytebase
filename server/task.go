@@ -457,6 +457,7 @@ func (s *Server) composeTaskRelationship(ctx context.Context, task *api.Task) er
 	return nil
 }
 
+// TODO(dragonly): remove this hack
 func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
 	var err error
 

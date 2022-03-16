@@ -10,53 +10,54 @@ func (s *Server) composeStageListByPipelineID(ctx context.Context, pipelineID in
 	stageFind := &api.StageFind{
 		PipelineID: &pipelineID,
 	}
-	stageList, err := s.StageService.FindStageList(ctx, stageFind)
+	stageRawList, err := s.StageService.FindStageList(ctx, stageFind)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, stage := range stageList {
-		if err := s.composeStageRelationship(ctx, stage); err != nil {
+	var stageList []*api.Stage
+	for _, stageRaw := range stageRawList {
+		stage, err := s.composeStageRelationship(ctx, stageRaw)
+		if err != nil {
 			return nil, err
 		}
+		stageList = append(stageList, stage)
 	}
 
 	return stageList, nil
 }
 
-func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage) error {
-	var err error
-	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
+func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw) (*api.Stage, error) {
+	stage := raw.ToStage()
+
+	creator, err := s.composePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Creator = creator
 
-	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Updater = updater
 
-	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	env, err := s.composeEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Environment = env
 
-	if stage.TaskList == nil {
-		stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, task := range stage.TaskList {
-			if err := s.composeTaskRelationship(ctx, task); err != nil {
-				return err
-			}
-		}
+	taskList, err := s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	if err != nil {
+		return nil, err
 	}
+	stage.TaskList = taskList
 
-	return nil
+	return stage, nil
 }
 
+// TODO(dragonly): remove this hack
 func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
 	var err error
 	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)

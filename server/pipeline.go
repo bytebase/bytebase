@@ -39,22 +39,15 @@ func (s *Server) composePipelineRelationship(ctx context.Context, pipeline *api.
 		return err
 	}
 
-	if pipeline.StageList == nil {
-		pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, stage := range pipeline.StageList {
-			if err := s.composeStageRelationship(ctx, stage); err != nil {
-				return err
-			}
-		}
+	pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
+// TODO(dragonly): remove this hack.
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
