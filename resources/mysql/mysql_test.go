@@ -21,7 +21,7 @@ func TestStartMySQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start MySQL: %s", err)
 	}
-	if err := mysql.Start(13306, os.Stdout, os.Stderr, 60); err != nil {
+	if err := mysql.Start(13306 /* port */, os.Stdout, os.Stderr); err != nil {
 		t.Fatalf("Failed to start MySQL: %s", err)
 	}
 
