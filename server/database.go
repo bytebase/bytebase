@@ -1009,7 +1009,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 		db.SourceBackup = sourceBackup
 	}
 
-	// The related database of the data source is now always a wildcard(*) database, and it can never be returned to client.
+	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
 	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
 	db.DataSourceList = []*api.DataSource{}
 
