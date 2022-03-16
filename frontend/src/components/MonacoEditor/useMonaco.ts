@@ -7,6 +7,7 @@ import type { editor as Editor } from "monaco-editor";
 import AutoCompletion from "./AutoCompletion";
 import {
   ConnectionAtom,
+  Database,
   Table,
   CompletionItems,
   InstanceGetters,
@@ -29,7 +30,7 @@ const useMonaco = async (lang: string) => {
     );
   });
 
-  const tabeList = computed(() => {
+  const tableList = computed(() => {
     return databaseList.value
       .map((item: ConnectionAtom) =>
         store.getters["table/tableListByDatabaseId"](item.id)
@@ -78,42 +79,72 @@ const useMonaco = async (lang: string) => {
         const tokens = textBeforePointer.trim().split(/\s+/);
         const lastToken = tokens[tokens.length - 1].toLowerCase();
 
-        // console.group("completionItemProvider");
-        // console.log(textBeforePointer);
-        // console.log(textBeforePointerMulti);
-        // console.log(textAfterPointerMulti);
-        // console.log(tokens);
-        // console.log(lastToken);
-        // console.groupEnd();
-
         const autoCompletion = new AutoCompletion(
           model,
           position,
           instanceList.value(),
           databaseList.value,
-          tabeList.value
+          tableList.value
         );
 
-        const suggestionsForKeyword =
-          autoCompletion.getCompletionItemsForKeywords();
+        const suggestionsForDatabase =
+          lang === "mysql"
+            ? autoCompletion.getCompletionItemsForDatabaseList()
+            : [];
 
         const suggestionsForTable =
           autoCompletion.getCompletionItemsForTableList();
 
-        // if enter a dot, show table columns
+        const suggestionsForKeyword =
+          autoCompletion.getCompletionItemsForKeywords();
+
+        // if enter a dot
         if (lastToken.endsWith(".")) {
-          const tableName = lastToken.replace(".", "");
-          const idx = tabeList.value.findIndex(
+          /**
+           * tokenLevel = 1 stands for the database.table or table.column
+           * tokenLevel = 2 stands for the database.table.column
+           */
+          const tokenLevel = lastToken.split(".").length - 1;
+          const lastTokenBeforeDot = lastToken.slice(0, -1);
+          let [databaseName, tableName] = ["", ""];
+          if (tokenLevel === 1) {
+            databaseName = lastTokenBeforeDot;
+            tableName = lastTokenBeforeDot;
+          }
+          if (tokenLevel === 2) {
+            databaseName = lastTokenBeforeDot.split(".").shift() as string;
+            tableName = lastTokenBeforeDot.split(".").pop() as string;
+          }
+          const dbIdx = databaseList.value.findIndex(
+            (item: Database) => item.name === databaseName
+          );
+          const tableIdx = tableList.value.findIndex(
             (item: Table) => item.name === tableName
           );
-          if (idx !== -1) {
-            suggestions = autoCompletion.getCompletionItemsForTableColumnList(
-              tabeList.value[idx],
-              false
+
+          // if the last token is a database name
+          if (lang === "mysql" && dbIdx !== -1 && tokenLevel === 1) {
+            suggestions = autoCompletion.getCompletionItemsForTableList(
+              databaseList.value[dbIdx],
+              true
             );
           }
+          // if the last token is a table name
+          if (tableIdx !== -1 || tokenLevel === 2) {
+            const table = tableList.value[tableIdx];
+            if (table.columnList && table.columnList.length > 0) {
+              suggestions = autoCompletion.getCompletionItemsForTableColumnList(
+                tableList.value[tableIdx],
+                false
+              );
+            }
+          }
         } else {
-          suggestions = [...suggestionsForKeyword, ...suggestionsForTable];
+          suggestions = [
+            ...suggestionsForKeyword,
+            ...suggestionsForTable,
+            ...suggestionsForDatabase,
+          ];
         }
 
         return { suggestions };

@@ -64,28 +64,8 @@ export default class AutoCompletion {
     return suggestions;
   }
 
-  getCompletionItemsForInstanceList(): CompletionItems {
-    const suggestions: CompletionItems = [];
-
-    const range = this.getWordRange();
-
-    this.instanceList.forEach((instance) => {
-      suggestions.push({
-        label: instance.name,
-        kind: monaco.languages.CompletionItemKind.Method,
-        detail: "<Instance>",
-        documentation: instance.name,
-        sortText: SortText.INSTANCE,
-        insertText: instance.name,
-        range,
-      });
-    });
-
-    return suggestions;
-  }
-
   getCompletionItemsForDatabaseList(): CompletionItems {
-    const suggestions: CompletionItems = [];
+    let suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
@@ -99,29 +79,46 @@ export default class AutoCompletion {
         insertText: database.name,
         range,
       });
+
+      suggestions = suggestions.concat(
+        this.getCompletionItemsForTableList(database)
+      );
     });
 
     return suggestions;
   }
 
-  getCompletionItemsForTableList(): CompletionItems {
+  getCompletionItemsForTableList(
+    db?: Database,
+    withDatabasePrefix = true
+  ): CompletionItems {
     let suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.tableList.forEach((table) => {
+    const filterTableListByDB = this.tableList.filter((table: Table) => {
+      return table.database.name === db?.name;
+    });
+
+    const tableList = db ? filterTableListByDB : this.tableList;
+
+    tableList.forEach((table) => {
+      const label =
+        withDatabasePrefix && db ? `${db?.name}.${table.name}` : table.name;
       suggestions.push({
-        label: table.name,
+        label,
         kind: monaco.languages.CompletionItemKind.Function,
         detail: "<Table>",
-        documentation: table.name,
+        documentation: label,
         sortText: SortText.TABLE,
-        insertText: table.name,
+        insertText: label,
         range,
       });
-      const tableColumnSuggestions =
-        this.getCompletionItemsForTableColumnList(table);
-      suggestions = suggestions.concat(tableColumnSuggestions);
+      if (table.columnList && table.columnList.length > 0) {
+        suggestions = suggestions.concat(
+          this.getCompletionItemsForTableColumnList(table)
+        );
+      }
     });
 
     return suggestions;
