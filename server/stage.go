@@ -41,21 +41,9 @@ func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage)
 		return err
 	}
 
-	if stage.TaskList == nil {
-		stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
-		if err != nil {
-			return err
-		}
-	} else {
-		for i, task := range stage.TaskList {
-			// TODO(dragonly): remove this hack
-			taskRaw := task.ToRaw()
-			tmp, err := s.composeTaskRelationship(ctx, taskRaw)
-			if err != nil {
-				return err
-			}
-			stage.TaskList[i] = tmp
-		}
+	stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	if err != nil {
+		return err
 	}
 
 	return nil

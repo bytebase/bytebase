@@ -199,8 +199,6 @@ func (s *TaskService) createTask(ctx context.Context, tx *sql.Tx, create *api.Ta
 	row.Next()
 	var taskRaw api.TaskRaw
 	var databaseID sql.NullInt32
-	taskRaw.TaskRunRawList = []*api.TaskRunRaw{}
-	taskRaw.TaskCheckRunRawList = []*api.TaskCheckRunRaw{}
 	if err := row.Scan(
 		&taskRaw.ID,
 		&taskRaw.CreatorID,
