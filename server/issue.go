@@ -369,15 +369,8 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 		return err
 	}
 
-	if issue.Pipeline == nil {
-		issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
-		if err != nil {
-			return err
-		}
-	} else {
-		if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
-			return err
-		}
+	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
+		return err
 	}
 
 	return nil
