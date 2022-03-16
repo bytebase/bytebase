@@ -142,7 +142,7 @@ import {
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { NPopover } from "naive-ui";
+import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 
 type LocalState = {
@@ -169,6 +169,7 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const { t } = useI18n();
+    const dialog = useDialog();
 
     const state = reactive<LocalState>({
       deployment: undefined,
@@ -273,8 +274,21 @@ export default defineComponent({
     };
 
     const revert = () => {
-      state.deployment = cloneDeep(state.backup);
-      resetStates();
+      dialog.create({
+        positiveText: t("common.confirm"),
+        negativeText: t("common.cancel"),
+        title: t("deployment-config.confirm-to-revert"),
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
+        onNegativeClick: () => {
+          // nothing to do
+        },
+        onPositiveClick: () => {
+          state.deployment = cloneDeep(state.backup);
+          resetStates();
+        },
+      });
     };
 
     const update = async () => {
