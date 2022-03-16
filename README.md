@@ -142,7 +142,7 @@ working on the code:
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-**[Coding guideline](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md)**
+**[Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)**
 
 **Tech Stack**
 
