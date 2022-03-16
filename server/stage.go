@@ -47,10 +47,14 @@ func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage)
 			return err
 		}
 	} else {
-		for _, task := range stage.TaskList {
-			if err := s.composeTaskRelationship(ctx, task); err != nil {
+		for i, task := range stage.TaskList {
+			// TODO(dragonly): remove this hack
+			taskRaw := task.ToRaw()
+			tmp, err := s.composeTaskRelationship(ctx, taskRaw)
+			if err != nil {
 				return err
 			}
+			stage.TaskList[i] = tmp
 		}
 	}
 

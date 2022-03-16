@@ -464,19 +464,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return issue, nil
 	}
 
-	task, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline)
-	if err != nil {
+	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
-	}
-	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
-	if task != nil {
-		// TODO(dragonly): remove this hack.
-		taskRaw := task.ToRaw()
-		tmp, err := s.composeTaskRelationship(ctx, taskRaw)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
-		}
-		task = tmp
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{

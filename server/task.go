@@ -17,14 +17,23 @@ import (
 
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		api.TaskPending:         {api.TaskRunning},
 		api.TaskPendingApproval: {api.TaskPending},
+		api.TaskPending:         {api.TaskRunning},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
 		api.TaskFailed:          {api.TaskRunning},
 		api.TaskCanceled:        {api.TaskRunning},
 	}
 )
+
+func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
+	for _, allowedStatus := range applicableTaskStatusTransition[fromStatus] {
+		if allowedStatus == toStatus {
+			return true
+		}
+	}
+	return false
+}
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
@@ -546,15 +555,8 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				zap.Error(err))
 		}
 	}()
-	allowTransition := false
-	for _, allowedStatus := range applicableTaskStatusTransition[task.Status] {
-		if allowedStatus == taskStatusPatch.Status {
-			allowTransition = true
-			break
-		}
-	}
 
-	if !allowTransition {
+	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
 		return nil, &common.Error{
 			Code: common.Invalid,
 			Err:  fmt.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
@@ -643,6 +645,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
 		taskPatched.Status == api.TaskDone {
+		// TODO(dragonly): remove this composition
 		instance, err := s.composeInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
