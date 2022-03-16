@@ -53,6 +53,7 @@ specifiers:
   vue-i18n: ^9.2.0-beta.20
   vue-router: ^4.0.8
   vue-tsc: ^0.29.6
+  vueuc: ^0.4.27
   vuex: ^4.0.0
   vuex-composition-helpers: ^2.0.1
   vuex-persistedstate: ^4.1.0
@@ -85,6 +86,7 @@ dependencies:
   vue: 3.2.31
   vue-i18n: 9.2.0-beta.32_vue@3.2.31
   vue-router: 4.0.14_vue@3.2.31
+  vueuc: 0.4.27_vue@3.2.31
   vuex: 4.0.2_vue@3.2.31
   vuex-composition-helpers: 2.0.1_vue@3.2.31+vuex@4.0.2
   vuex-persistedstate: 4.1.0_vuex@4.0.2
@@ -3204,7 +3206,7 @@ packages:
       diff2html: 3.4.16
       highlight.js: 10.7.3
       vue: 3.2.31
-      vue-demi: 0.12.1_vue@3.2.31
+      vue-demi: 0.12.3_vue@3.2.31
     dev: false
 
   /v8-compile-cache/2.3.0:
@@ -3412,6 +3414,21 @@ packages:
 
   /vue-demi/0.12.1_vue@3.2.31:
     resolution: {integrity: sha512-QL3ny+wX8c6Xm1/EZylbgzdoDolye+VpCXRhI2hug9dJTP3OUJ3lmiKN3CsVV3mOJKwFi0nsstbgob0vG7aoIw==}
+    engines: {node: '>=12'}
+    hasBin: true
+    requiresBuild: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^3.0.0-0 || ^2.6.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
+    dependencies:
+      vue: 3.2.31
+    dev: false
+
+  /vue-demi/0.12.3_vue@3.2.31:
+    resolution: {integrity: sha512-u1dV2Y7nxUCHJC0+KZG7YgqjOgDgd8GS0rHp2YTiXy6rBPaYvEraoXkndU3UrExMLoN8SOnCWkDB27yu0BxGtg==}
     engines: {node: '>=12'}
     hasBin: true
     requiresBuild: true
