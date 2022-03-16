@@ -153,6 +153,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
+		// Wildcard(*) database is used to connect all database at instance level.
+		// Do not return it via `get database by id` API.
+		if database.Name == api.AllDatabaseName {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
@@ -935,15 +940,20 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 }
 
 func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	databaseList, err := s.composeDatabaseListByFind(ctx, find)
+	databaseRaw, err := s.DatabaseService.FindDatabase(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-	if len(databaseList) == 0 {
+	if databaseRaw == nil {
 		return nil, nil
 	}
 
-	return databaseList[0], nil
+	database, err := s.composeDatabaseRelationship(ctx, databaseRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	return database, nil
 }
 
 func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
@@ -954,10 +964,6 @@ func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.Databa
 
 	var dbList []*api.Database
 	for _, dbRaw := range dbRawList {
-		if !find.IncludeAllDatabase && dbRaw.Name == api.AllDatabaseName {
-			continue
-		}
-
 		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 		if err != nil {
 			return nil, err
@@ -1003,6 +1009,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 		db.SourceBackup = sourceBackup
 	}
 
+	// The related database of the data source is now always a wildcard(*) database, and it can never be returned to client.
+	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
