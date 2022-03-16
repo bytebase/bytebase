@@ -331,6 +331,51 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
+func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
+	var err error
+
+	issue.Creator, err = s.composePrincipalByID(ctx, issue.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	issue.Updater, err = s.composePrincipalByID(ctx, issue.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	issue.Assignee, err = s.composePrincipalByID(ctx, issue.AssigneeID)
+	if err != nil {
+		return err
+	}
+
+	issueSubscriberFind := &api.IssueSubscriberFind{
+		IssueID: &issue.ID,
+	}
+	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
+	}
+	for _, issueSubscriberRaw := range issueSubscriberRawList {
+		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
+		}
+		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	}
+
+	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Only allow Bot/Owner/DBA as the assignee, not Developer.
 func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
 	assignee, err := s.PrincipalService.FindPrincipal(ctx, &api.PrincipalFind{
@@ -387,6 +432,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			PipelineID:  pipeline.ID,
 			Pipeline:    pipeline,
 		}
+		if err := s.composeIssueRelationshipValidateOnly(ctx, issue); err != nil {
+			return nil, err
+		}
 	} else {
 		issueCreate.CreatorID = creatorID
 		issueCreate.PipelineID = pipeline.ID
@@ -406,9 +454,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 			}
 		}
-	}
-	if err := s.composeIssueRelationship(ctx, issue); err != nil {
-		return nil, err
+		if err := s.composeIssueRelationship(ctx, issue); err != nil {
+			return nil, err
+		}
 	}
 
 	// Return early if this is a validate only request.
