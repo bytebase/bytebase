@@ -80,7 +80,6 @@ const useLineDecorations = (
 
     const sqlFragmentRanges = getSQLFragmentRanges(editor);
 
-    // console.log(sqlFragmentRanges);
 
     sqlFragmentRanges.forEach((range) => {
       // if the current position in the range, then highlight the range
