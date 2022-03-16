@@ -45,10 +45,6 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
-	if err := server.composeTaskRelationship(ctx, task); err != nil {
-		return true, nil, err
-	}
-
 	backupRaw, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find backup: %w", err)

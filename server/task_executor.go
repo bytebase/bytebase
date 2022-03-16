@@ -131,10 +131,6 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		return true, nil, fmt.Errorf("empty statement")
 	}
 
-	if err := server.composeTaskRelationship(ctx, task); err != nil {
-		return true, nil, err
-	}
-
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, l)
 	if err != nil {
 		return true, nil, err

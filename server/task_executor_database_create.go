@@ -48,10 +48,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("empty create database statement")
 	}
 
-	if err := server.composeTaskRelationship(ctx, task); err != nil {
-		return true, nil, err
-	}
-
 	instance := task.Instance
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
