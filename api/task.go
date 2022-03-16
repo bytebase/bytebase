@@ -203,6 +203,33 @@ type Task struct {
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
 }
 
+// ToRaw converts a Task to TaskRaw.
+// TODO(dragonly): This is a hack for function `createIssue`. We MUST review the code and remove this hack.
+func (task *Task) ToRaw() *TaskRaw {
+	return &TaskRaw{
+		ID: task.ID,
+
+		// Standard fields
+		CreatorID: task.CreatorID,
+		CreatedTs: task.CreatedTs,
+		UpdaterID: task.UpdaterID,
+		UpdatedTs: task.UpdatedTs,
+
+		// Related fields
+		PipelineID: task.PipelineID,
+		StageID:    task.StageID,
+		InstanceID: task.InstanceID,
+		DatabaseID: task.DatabaseID,
+
+		// Domain specific fields
+		Name:              task.Name,
+		Status:            task.Status,
+		Type:              task.Type,
+		Payload:           task.Payload,
+		EarliestAllowedTs: task.EarliestAllowedTs,
+	}
+}
+
 // TaskCreate is the API message for creating a task.
 type TaskCreate struct {
 	// Standard fields
