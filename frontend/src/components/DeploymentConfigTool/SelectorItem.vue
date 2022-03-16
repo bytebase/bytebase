@@ -13,6 +13,7 @@
       v-model:value="selector.operator"
       :options="OPERATORS"
       :disabled="!editable"
+      :modifier="lowerCase"
       class="select operator"
     />
     <LabelSelect
@@ -41,6 +42,7 @@ import {
 } from "../../types";
 import { hidePrefix } from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
+import { lowerCase } from "lodash-es";
 
 const OPERATORS: OperatorType[] = ["In", "Exists"];
 
@@ -80,7 +82,7 @@ export default defineComponent({
     watch(() => props.selector.key, resetValues);
     watch(() => props.selector.operator, resetValues);
 
-    return { OPERATORS, hidePrefix, keys, values };
+    return { OPERATORS, hidePrefix, lowerCase, keys, values };
   },
 });
 </script>
