@@ -86,3 +86,29 @@ func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage
 
 	return nil
 }
+
+func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
+	var err error
+	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range stage.TaskList {
+		if err := s.composeTaskRelationshipValidateOnly(ctx, task); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

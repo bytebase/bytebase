@@ -535,6 +535,64 @@ func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *
 	return nil
 }
 
+func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
+	var err error
+
+	task.Creator, err = s.composePrincipalByID(ctx, task.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	task.Updater, err = s.composePrincipalByID(ctx, task.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	for _, taskRun := range task.TaskRunList {
+		taskRun.Creator, err = s.composePrincipalByID(ctx, taskRun.CreatorID)
+		if err != nil {
+			return err
+		}
+
+		taskRun.Updater, err = s.composePrincipalByID(ctx, taskRun.UpdaterID)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, taskCheckRun := range task.TaskCheckRunList {
+		taskCheckRun.Creator, err = s.composePrincipalByID(ctx, taskCheckRun.CreatorID)
+		if err != nil {
+			return err
+		}
+
+		taskCheckRun.Updater, err = s.composePrincipalByID(ctx, taskCheckRun.UpdaterID)
+		if err != nil {
+			return err
+		}
+	}
+
+	task.Instance, err = s.composeInstanceByID(ctx, task.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	if task.DatabaseID != nil {
+		databaseFind := &api.DatabaseFind{
+			ID: task.DatabaseID,
+		}
+		task.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
+		if err != nil {
+			return err
+		}
+		if task.Database == nil {
+			return fmt.Errorf("database ID not found %v", task.DatabaseID)
+		}
+	}
+
+	return nil
+}
+
 func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,
