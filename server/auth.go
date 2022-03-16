@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
@@ -139,6 +140,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					}
 				}
 			}
+		case api.PrincipalAuthProviderGitHubDotCom:
+			fmt.Println("shit bro")
+			// todo
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unsupported auth provider: %s", authProvider))
 		}
 
 		// test the status of this user

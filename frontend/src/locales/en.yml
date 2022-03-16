@@ -1025,12 +1025,14 @@ version-control:
       add-success: Successfully added Git provider {vcs}
       choose: Choose Git provider
       gitlab-self-host-ce-ee: Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
+      github-dot-com: GitHub.com
       basic-info:
         self: Basic info
         gitlab-instance-url: GitLab instance URL
         gitlab-instance-url-label: >-
           The VCS instance URL. Make sure this instance and Bytebase are network
           reachable from each other.
+        github-instance-url: GitHub instance URL
         instance-url-error: Instance URL must begin with https:// or http://
         display-name: Display name
         display-name-label: >-

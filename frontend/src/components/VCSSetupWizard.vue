@@ -116,6 +116,24 @@ export default {
             .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
+        } else if (state.config.type == "GITHUB_DOT_COM") {
+          const oAuthConfig: OAuthConfig = {
+            endpoint: `https://github.com/login/oauth/access_token`,
+            applicationId: state.config.applicationId,
+            secret: state.config.secret,
+            redirectUrl: redirectUrl(),
+          };
+          store
+            .dispatch("github/exchangeToken", {
+              oAuthConfig,
+              code: payload.code,
+            })
+            .then((token: OAuthToken) => {
+              state.oAuthResultCallback!(token);
+            })
+            .catch(() => {
+              state.oAuthResultCallback!(undefined);
+            });
         }
       } else {
         state.oAuthResultCallback!(undefined);
@@ -127,8 +145,14 @@ export default {
         return isUrl(state.config.instanceUrl);
       } else if (state.currentStep == OAUTH_INFO_STEP) {
         return (
-          isValidVCSApplicationIdOrSecret(state.config.applicationId) &&
-          isValidVCSApplicationIdOrSecret(state.config.secret)
+          isValidVCSApplicationIdOrSecret(
+            state.config.type,
+            state.config.applicationId
+          ) &&
+          isValidVCSApplicationIdOrSecret(
+            state.config.type,
+            state.config.secret
+          )
         );
       }
       return true;
@@ -157,8 +181,12 @@ export default {
       // 1. Kicking of the OAuth workflow to verify the current user can login to the GitLab instance and the application id is correct.
       // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
+        let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
+        if (state.config.type == "GITHUB_DOT_COM") {
+          authorizeUrl = `https://github.com/login/oauth/authorize`;
+        }
         const newWindow = openWindowForOAuth(
-          `${state.config.instanceUrl}/oauth/authorize`,
+          authorizeUrl,
           state.config.applicationId,
           "bb.oauth.register-vcs"
         );

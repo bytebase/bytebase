@@ -20,6 +20,20 @@
         }}
       </label>
     </div>
+    <div class="radio space-x-2">
+      <input
+        v-model="config.type"
+        name="GitHub.com"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITHUB_DOT_COM"
+      />
+      <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      <label class="whitespace-nowrap"
+        >{{ $t("version-control.setting.add-git-provider.github-dot-com") }}
+      </label>
+    </div>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
@@ -41,12 +55,6 @@
       </div>
       <label class="whitespace-nowrap">GitHub Enterprise </label>
     </div>
-    <div class="flex flex-row space-x-2 items-center text-control">
-      <div class="h-5 w-5">
-        <img src="../assets/github-logo.svg" />
-      </div>
-      <label class="whitespace-nowrap">GitHub.com </label>
-    </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
     {{ instanceUrlLabel }} <span class="text-red-600">*</span>
@@ -60,7 +68,7 @@
   </p>
   <BBTextField
     class="mt-2 w-full"
-    :placeholder="'https://gitlab.example.com'"
+    :placeholder="instanceUrlPlaceholder"
     :value="config.instanceUrl"
     @input="changeUrl($event.target.value)"
   />
@@ -125,6 +133,17 @@ export default {
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t("version-control.setting.add-git-provider.gitlab-self-host");
+      } else if (props.config.type == "GITHUB_DOT_COM") {
+        return t("version-control.setting.add-git-provider.github-dot-com");
+      }
+      return "";
+    });
+
+    const instanceUrlPlaceholder = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return "https://gitlab.example.com";
+      } else if (props.config.type == "GITHUB_DOT_COM") {
+        return "https://github.com";
       }
       return "";
     });
@@ -133,6 +152,10 @@ export default {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t(
           "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
+        );
+      } else if (props.config.type == "GITHUB_DOT_COM") {
+        return t(
+          "version-control.setting.add-git-provider.basic-info.github-instance-url"
         );
       }
       return "";
@@ -163,7 +186,13 @@ export default {
       }
     };
 
-    return { state, namePlaceholder, instanceUrlLabel, changeUrl };
+    return {
+      state,
+      namePlaceholder,
+      instanceUrlPlaceholder,
+      instanceUrlLabel,
+      changeUrl,
+    };
   },
 };
 </script>

@@ -902,6 +902,7 @@ version-control:
       add-success: 成功添加了 Git 提供方「{vcs}」
       choose: 选择 Git 提供方
       gitlab-self-host-ce-ee: 自托管 GitLab 企业版 (EE) 或者 社区版 (CE)
+      github-dot-com: GitHub.com
       basic-info:
         self: 基本信息
         gitlab-instance-url: GitLab 实例 URL

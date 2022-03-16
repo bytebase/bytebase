@@ -271,6 +271,11 @@ export default {
         // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
         iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
       },
+      GITHUB_DOT_COM: {
+        apiPath: "login/oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/github-logo.svg", import.meta.url).href,
+      },
     };
 
     const trySigninWithOAuth = () => {

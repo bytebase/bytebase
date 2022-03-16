@@ -12,17 +12,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 var (
 	gitLabWebhookPath = "hook/gitlab"
+	githubWebhookPath = "hook/github"
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
@@ -142,7 +145,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Retrieve sql by reading the file content
-				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
+				content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{Logger: s.l}).ReadFile(
 					ctx,
 					common.OauthContext{
 						ClientID:     repo.VCS.ApplicationID,
@@ -183,6 +186,218 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				issueCreate := &api.IssueCreate{
 					ProjectID:     repo.ProjectID,
 					Name:          commit.Title,
+					Type:          issueType,
+					Description:   commit.Message,
+					AssigneeID:    api.SystemBotID,
+					CreateContext: createContext,
+				}
+				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+				if err != nil {
+					errMsg := "Failed to create schema update issue"
+					if issueType == api.IssueDatabaseDataUpdate {
+						errMsg = "Failed to create data update issue"
+					}
+					return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+				}
+
+				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
+
+				// Create a project activity after successfully creating the issue as the result of the push event
+				bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+					VCSPushEvent: vcsPushEvent,
+					IssueID:      issue.ID,
+					IssueName:    issue.Name,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+				}
+
+				activityCreate := &api.ActivityCreate{
+					CreatorID:   api.SystemBotID,
+					ContainerID: repo.ProjectID,
+					Type:        api.ActivityProjectRepositoryPush,
+					Level:       api.ActivityInfo,
+					Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+					Payload:     string(bytes),
+				}
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+				}
+			}
+		}
+
+		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
+	})
+	g.POST("/github/:id", func(c echo.Context) error {
+		ctx := context.Background()
+		var b []byte
+		b, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		}
+
+		pushEvent := &github.WebhookPushEvent{}
+		if err := json.Unmarshal(b, pushEvent); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted push event").SetInternal(err)
+		}
+
+		// // This shouldn't happen as we only setup webhook to receive push event, just in case.
+		// if pushEvent.ObjectKind != github.WebhookPush {
+		// 	return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
+		// }
+
+		webhookEndpointID := c.Param("id")
+		repositoryFind := &api.RepositoryFind{
+			WebhookEndpointID: &webhookEndpointID,
+		}
+		repoRaw, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		}
+		if repoRaw == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
+		}
+
+		repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.Name)).SetInternal(err)
+		}
+		if repo.VCS == nil {
+			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
+		}
+
+		// if c.Request().Header.Get("X-Github-Token") != repo.WebhookSecretToken {
+		// 	return echo.NewHTTPError(http.StatusBadRequest, "Secret token mismatch")
+		// }
+
+		if strconv.Itoa(pushEvent.Repository.ID) != repo.ExternalID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Repository.ID, repo.ExternalID))
+		}
+
+		createdMessageList := []string{}
+		for _, commit := range pushEvent.CommitList {
+			for _, added := range commit.AddedList {
+				if !strings.HasPrefix(added, repo.BaseDirectory) {
+					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repo.BaseDirectory))
+					continue
+				}
+
+				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+				if err != nil {
+					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", added), zap.String("timestamp", commit.Timestamp), zap.Error(err))
+				}
+
+				// Ignored the schema file we auto generated to the repository.
+				if isSkipGeneratedSchemaFile(repo, added, s.l) {
+					continue
+				}
+
+				vcsPushEvent := vcs.PushEvent{
+					VCSType:            repo.VCS.Type,
+					BaseDirectory:      repo.BaseDirectory,
+					Ref:                pushEvent.Ref,
+					RepositoryID:       strconv.Itoa(pushEvent.Repository.ID),
+					RepositoryURL:      pushEvent.Repository.HTMLURL,
+					RepositoryFullPath: pushEvent.Repository.FUllName,
+					AuthorName:         pushEvent.AuthorName,
+					FileCommit: vcs.FileCommit{
+						ID:         commit.ID,
+						Title:      commit.Message, // FIXME: No title in GitHub webhook, probably just take the first line from Message
+						Message:    commit.Message,
+						CreatedTs:  createdTime.Unix(),
+						URL:        commit.URL,
+						AuthorName: commit.Author.Name,
+						Added:      added,
+					},
+				}
+
+				// Create a WARNING project activity if committed file is ignored
+				var createIgnoredFileActivity = func(err error) {
+					s.l.Warn("Ignored committed file", zap.String("file", added), zap.Error(err))
+					bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+						VCSPushEvent: vcsPushEvent,
+					})
+					if marshalErr != nil {
+						s.l.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
+						return
+					}
+
+					activityCreate := &api.ActivityCreate{
+						CreatorID:   api.SystemBotID,
+						ContainerID: repo.ProjectID,
+						Type:        api.ActivityProjectRepositoryPush,
+						Level:       api.ActivityWarn,
+						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
+						Payload:     string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					if err != nil {
+						s.l.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
+					}
+				}
+
+				mi, err := db.ParseMigrationInfo(added, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				// Retrieve sql by reading the file content
+				content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{Logger: s.l}).ReadFile(
+					ctx,
+					common.OauthContext{
+						ClientID:     repo.VCS.ApplicationID,
+						ClientSecret: repo.VCS.Secret,
+						AccessToken:  repo.AccessToken,
+						RefreshToken: repo.RefreshToken,
+						Refresher:    s.refreshToken(ctx, repo.ID),
+					},
+					repo.VCS.InstanceURL,
+					repo.FullPath,
+					added,
+					commit.ID,
+				)
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				// Yikes
+				glCommit := gitlab.WebhookCommit{
+					ID:        commit.ID,
+					Title:     commit.Message,
+					Message:   commit.Message,
+					Timestamp: commit.Timestamp,
+					URL:       commit.URL,
+					Author: gitlab.WebhookCommitAuthor{
+						Name: commit.Author.Name,
+					},
+					AddedList: commit.AddedList,
+				}
+
+				// Create schema update issue.
+				var createContext string
+				if repo.Project.TenantMode == api.TenantModeTenant {
+					if !s.feature(api.FeatureMultiTenancy) {
+						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+					}
+					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, glCommit, added, content)
+				} else {
+					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, glCommit, added, content)
+				}
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				issueType := api.IssueDatabaseSchemaUpdate
+				if mi.Type == db.Data {
+					issueType = api.IssueDatabaseDataUpdate
+				}
+				issueCreate := &api.IssueCreate{
+					ProjectID:     repo.ProjectID,
+					Name:          commit.Message,
 					Type:          issueType,
 					Description:   commit.Message,
 					AssigneeID:    api.SystemBotID,

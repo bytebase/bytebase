@@ -12,6 +12,9 @@
         <template v-if="vcs.type.startsWith('GITLAB')">
           <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('GITHUB')">
+          <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+        </template>
         <span>{{ vcs.name }}</span>
       </button>
     </template>
@@ -99,22 +102,41 @@ export default {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         props.config.code = payload.code;
-        const oAuthConfig: OAuthConfig = {
-          endpoint: `${state.selectedVCS!.instanceUrl}/oauth/token`,
-          applicationId: state.selectedVCS!.applicationId,
-          secret: state.selectedVCS!.secret,
-          redirectUrl: redirectUrl(),
-        };
-        store
-          .dispatch("gitlab/exchangeToken", {
-            oAuthConfig,
-            code: payload.code,
-          })
-          .then((token: OAuthToken) => {
-            props.config.vcs = state.selectedVCS!;
-            props.config.token = token;
-            emit("next");
-          });
+        if (state.selectedVCS?.type == "GITLAB_SELF_HOST") {
+          const oAuthConfig: OAuthConfig = {
+            endpoint: `${state.selectedVCS!.instanceUrl}/oauth/token`,
+            applicationId: state.selectedVCS!.applicationId,
+            secret: state.selectedVCS!.secret,
+            redirectUrl: redirectUrl(),
+          };
+          store
+            .dispatch("gitlab/exchangeToken", {
+              oAuthConfig,
+              code: payload.code,
+            })
+            .then((token: OAuthToken) => {
+              props.config.vcs = state.selectedVCS!;
+              props.config.token = token;
+              emit("next");
+            });
+        } else if (state.selectedVCS?.type == "GITHUB_DOT_COM") {
+          const oAuthConfig: OAuthConfig = {
+            endpoint: `https://github.com/login/oauth/access_token`,
+            applicationId: state.selectedVCS!.applicationId,
+            secret: state.selectedVCS!.secret,
+            redirectUrl: redirectUrl(),
+          };
+          store
+            .dispatch("github/exchangeToken", {
+              oAuthConfig,
+              code: payload.code,
+            })
+            .then((token: OAuthToken) => {
+              props.config.vcs = state.selectedVCS!;
+              props.config.token = token;
+              emit("next");
+            });
+        }
       } else {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
@@ -130,8 +152,12 @@ export default {
 
     const selectVCS = (vcs: VCS) => {
       state.selectedVCS = vcs;
+      let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
+      if (vcs.type == "GITHUB_DOT_COM") {
+        authorizeUrl = `https://github.com/login/oauth/authorize`;
+      }
       openWindowForOAuth(
-        `${vcs.instanceUrl}/oauth/authorize`,
+        authorizeUrl,
         vcs.applicationId,
         "bb.oauth.link-vcs-repository"
       );

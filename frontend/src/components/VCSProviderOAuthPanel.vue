@@ -174,10 +174,16 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showApplicationIdError:
         !isEmpty(props.config.applicationId) &&
-        !isValidVCSApplicationIdOrSecret(props.config.applicationId),
+        !isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.applicationId
+        ),
       showSecretError:
         !isEmpty(props.config.secret) &&
-        !isValidVCSApplicationIdOrSecret(props.config.secret),
+        !isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.secret
+        ),
     });
 
     onUnmounted(() => {
@@ -192,6 +198,8 @@ export default defineComponent({
     const createAdminApplicationUrl = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return `${props.config.instanceUrl}/admin/applications/new`;
+      } else if (props.config.type == "GITHUB_DOT_COM") {
+        return `https://github.com/settings/applications/new`;
       }
       return "";
     });
@@ -215,7 +223,12 @@ export default defineComponent({
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.applicationId)) {
+      if (
+        isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.applicationId
+        )
+      ) {
         state.showApplicationIdError = false;
       } else {
         state.applicationIdValidationTimer = setTimeout(() => {
@@ -223,12 +236,19 @@ export default defineComponent({
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showApplicationIdError) {
             state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
+              props.config.type,
               props.config.applicationId
             );
           } else {
             state.showApplicationIdError =
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId) &&
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId);
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.applicationId
+              ) &&
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.applicationId
+              );
           }
         }, TEXT_VALIDATION_DELAY);
       }
@@ -243,7 +263,9 @@ export default defineComponent({
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.secret)) {
+      if (
+        isValidVCSApplicationIdOrSecret(props.config.type, props.config.secret)
+      ) {
         state.showSecretError = false;
       } else {
         state.secretValidationTimer = setTimeout(() => {
@@ -251,12 +273,16 @@ export default defineComponent({
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showSecretError) {
             state.showSecretError = !isValidVCSApplicationIdOrSecret(
+              props.config.type,
               props.config.secret
             );
           } else {
             state.showSecretError =
               !isEmpty(props.config.secret) &&
-              !isValidVCSApplicationIdOrSecret(props.config.secret);
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.secret
+              );
           }
         }, TEXT_VALIDATION_DELAY);
       }

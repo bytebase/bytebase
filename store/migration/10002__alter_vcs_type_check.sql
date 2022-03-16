@@ -1,0 +1,2 @@
+ALTER TABLE vcs DROP CONSTRAINT vcs_type_check;
+ALTER TABLE vcs ADD CONSTRAINT vcs_type_check CHECK (type IN ('GITLAB_SELF_HOST', 'GITHUB_DOT_COM'));

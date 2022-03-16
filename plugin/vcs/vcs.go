@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Type is the type of a VCS.
@@ -14,12 +15,14 @@ type Type string
 const (
 	// GitLabSelfHost is the VCS type for gitlab self host.
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
+	// GitHubDotCom is the VCS type for GitHub.com.
+	GitHubDotCom Type = "GITHUB_DOT_COM"
 )
 
 func (e Type) String() string {
 	switch e {
-	case GitLabSelfHost:
-		return "GITLAB_SELF_HOST"
+	case GitLabSelfHost, GitHubDotCom:
+		return string(e)
 	}
 	return "UNKNOWN"
 }

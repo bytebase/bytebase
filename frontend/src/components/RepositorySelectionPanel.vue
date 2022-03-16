@@ -71,6 +71,15 @@ export default {
           .then((list) => {
             state.repositoryList = list;
           });
+      } else if (props.config.vcs.type == "GITHUB_DOT_COM") {
+        store
+          .dispatch("github/fetchProjectList", {
+            vcs: props.config.vcs,
+            token: props.config.token.accessToken,
+          })
+          .then((list) => {
+            state.repositoryList = list;
+          });
       }
     };
 

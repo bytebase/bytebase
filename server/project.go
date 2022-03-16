@@ -10,12 +10,14 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs/github"
 
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
@@ -190,6 +192,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			ProjectID: projectID,
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
+
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
@@ -223,12 +226,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
-		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 
 		// Create webhook and retrieve the created webhook id
 		var webhookCreatePayload []byte
 		switch vcs.Type {
-		case "GITLAB_SELF_HOST":
+		case vcsPlugin.GitLabSelfHost:
+			repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 			webhookPost := gitlab.WebhookPost{
 				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
@@ -240,8 +243,31 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
+		case vcsPlugin.GitHubDotCom:
+			repositoryCreate.WebhookSecretToken = common.RandomString(github.SecretTokenLength)
+			webhookPost := github.WebhookPost{
+				Config: github.WebhookPostConfig{
+					// TODO: Remove ngrok
+					URL:         fmt.Sprintf("%s/%s/%s", "https://80a2-103-149-249-82.ngrok.io", githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					ContentType: "json",
+					Secret:      repositoryCreate.WebhookSecretToken,
+					InsecureSSL: false,
+				},
+				Events: []string{"push"},
+				Active: true,
+			}
+			webhookCreatePayload, err = json.Marshal(webhookPost)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
+			}
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unsupported VCS type: %s", vcs.Type))
 		}
 
+		externalID := repositoryCreate.ExternalID
+		if vcs.Type == vcsPlugin.GitHubDotCom {
+			externalID = repositoryCreate.FullPath
+		}
 		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
 			ctx,
 			common.OauthContext{
@@ -250,7 +276,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				Refresher: s.refreshTokenNoop(),
 			},
 			vcs.InstanceURL,
-			repositoryCreate.ExternalID,
+			externalID,
 			webhookCreatePayload,
 		)
 

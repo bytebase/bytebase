@@ -14,6 +14,15 @@
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
+      <div
+        v-if="vcs.type == 'GITHUB_DOT_COM'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">
+          {{ $t("version-control.setting.add-git-provider.github-dot-com") }}
+        </div>
+        <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      </div>
     </div>
 
     <div>
@@ -63,6 +72,12 @@
             $t("version-control.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
+        <template v-if="vcs.type == 'GITHUB_DOT_COM'">
+          {{ $t("version-control.setting.git-provider.application-id-label") }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("version-control.setting.git-provider.view-in-github")
+          }}</a>
+        </template>
       </p>
       <input
         id="applicationid"
@@ -78,6 +93,9 @@
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
           {{ $t("version-control.setting.git-provider.secret-label-gitlab") }}
+        </template>
+        <template v-if="vcs.type == 'GITHUB_DOT_COM'">
+          {{ $t("version-control.setting.git-provider.secret-label-github") }}
         </template>
       </p>
       <input
@@ -212,6 +230,24 @@ export default {
             .catch(() => {
               state.oAuthResultCallback!(undefined);
             });
+        } else if (vcs.value.type == "GITHUB_DOT_COM") {
+          const oAuthConfig: OAuthConfig = {
+            endpoint: `https://github.com/login/oauth/access_token`,
+            applicationId: state.applicationId,
+            secret: state.secret,
+            redirectUrl: redirectUrl(),
+          };
+          store
+            .dispatch("github/exchangeToken", {
+              oAuthConfig,
+              code: payload.code,
+            })
+            .then((token: OAuthToken) => {
+              state.oAuthResultCallback!(token);
+            })
+            .catch(() => {
+              state.oAuthResultCallback!(undefined);
+            });
         }
       } else {
         state.oAuthResultCallback!(undefined);
@@ -227,6 +263,8 @@ export default {
     const adminApplicationUrl = computed(() => {
       if (vcs.value.type == "GITLAB_SELF_HOST") {
         return `${vcs.value.instanceUrl}/admin/applications`;
+      } else if (vcs.value.type == "GITHUB_DOT_COM") {
+        return `https://github.com/settings/applications`;
       }
       return "";
     });
@@ -248,8 +286,12 @@ export default {
         state.applicationId != vcs.value.applicationId ||
         !isEmpty(state.secret)
       ) {
+        let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
+        if (vcs.value.type == "GITHUB_DOT_COM") {
+          authorizeUrl = `https://github.com/login/oauth/authorize`;
+        }
         const newWindow = openWindowForOAuth(
-          `${vcs.value.instanceUrl}/oauth/authorize`,
+          authorizeUrl,
           vcs.value.applicationId,
           "bb.oauth.register-vcs"
         );
@@ -279,13 +321,16 @@ export default {
                   });
                 });
             } else {
+              // If application id mismatches, the OAuth workflow will stop early.
+              // So the only possibility to reach here is we have a matching application id, while
+              // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
               var description = "";
               if (vcs.value.type == "GITLAB_SELF_HOST") {
-                // If application id mismatches, the OAuth workflow will stop early.
-                // So the only possibility to reach here is we have a matching application id, while
-                // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
+              } else if (vcs.value.type == "GITHUB_DOT_COM") {
+                description =
+                  "Please make sure Secret matches the one from your GitHub.com Application.";
               }
               store.dispatch("notification/pushNotification", {
                 module: "bytebase",

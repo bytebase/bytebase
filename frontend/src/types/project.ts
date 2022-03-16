@@ -13,7 +13,10 @@ export type ProjectVisibility = "PUBLIC" | "PRIVATE";
 
 export type ProjectTenantMode = "DISABLED" | "TENANT";
 
-export type ProjectRoleProvider = "GITLAB_SELF_HOST" | "BYTEBASE";
+export type ProjectRoleProvider =
+  | "GITLAB_SELF_HOST"
+  | "GITHUB_DOT_COM"
+  | "BYTEBASE";
 
 export type ProjectRoleProviderPayload = {
   vcsRole: string;

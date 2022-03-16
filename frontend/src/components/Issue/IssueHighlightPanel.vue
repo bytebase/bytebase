@@ -156,6 +156,8 @@ export default defineComponent({
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
           return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+        } else if (pushEvent.value.vcsType == "GITHUB_DOT_COM") {
+          return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
         }
       }
       return "";

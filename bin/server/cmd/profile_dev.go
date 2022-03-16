@@ -21,7 +21,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		dataDir:              dataDir,
 		dsn:                  dsn,
 		seedDir:              "seed/test",
-		forceResetSeed:       true,
+		forceResetSeed:       false,
 		backupRunnerInterval: 10 * time.Second,
 	}
 }
@@ -36,7 +36,7 @@ func GetTestProfile(dataDir string, port, datastorePort int) Profile {
 		dataDir:              dataDir,
 		dsn:                  fmt.Sprintf("file:%s/bytebase_test.db", dataDir),
 		seedDir:              "seed/test",
-		forceResetSeed:       true,
+		forceResetSeed:       false,
 		backupRunnerInterval: 10 * time.Second,
 	}
 }
