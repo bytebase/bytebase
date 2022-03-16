@@ -55,6 +55,35 @@ func (s *Server) composePipelineRelationship(ctx context.Context, pipeline *api.
 	return nil
 }
 
+func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
+	var err error
+
+	pipeline.Creator, err = s.composePrincipalByID(ctx, pipeline.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	pipeline.Updater, err = s.composePrincipalByID(ctx, pipeline.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	if pipeline.StageList == nil {
+		pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, stage := range pipeline.StageList {
+			if err := s.composeStageRelationshipValidateOnly(ctx, stage); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // ScheduleNextTaskIfNeeded tries to schedule the next task if needed.
 // Returns nil if no task applicable can be scheduled
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) (*api.Task, error) {
