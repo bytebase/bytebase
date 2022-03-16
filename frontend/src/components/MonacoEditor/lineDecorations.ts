@@ -13,14 +13,14 @@ type FragmentRange = {
 /**
  * Get the ranges of SQL fragments split by the delimiter
  * @param editor monaco.editor.IStandaloneCodeEditor
- * @returns fragmentRanges FragmentRange[]
+ * @returns fragmentRangeList FragmentRange[]
  */
-const getSQLFragmentRanges = (
+const getSQLFragmentRangeList = (
   editor: monaco.editor.IStandaloneCodeEditor
 ): FragmentRange[] => {
   const model = editor.getModel() as monaco.editor.ITextModel;
   const linesContent = model.getLinesContent();
-  const sqlFragmentRanges: FragmentRange[] = [];
+  const sqlFragmentRangeList: FragmentRange[] = [];
   let startLineNumber = 0;
 
   for (let i = 0; i < linesContent.length; i++) {
@@ -51,7 +51,7 @@ const getSQLFragmentRanges = (
       // jump to the next line of end line
       startLineNumber = range.endLineNumber + 1;
 
-      sqlFragmentRanges.push(
+      sqlFragmentRangeList.push(
         new monaco.Range(
           range.startLineNumber,
           range.startColumn,
@@ -66,7 +66,7 @@ const getSQLFragmentRanges = (
       startLineNumber += 1;
     }
   }
-  return sqlFragmentRanges;
+  return sqlFragmentRangeList;
 };
 
 const lineDecorations = ref<string[]>([]);
@@ -78,10 +78,9 @@ const useLineDecorations = (
   const defineLineDecorations = () => {
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
-    const sqlFragmentRanges = getSQLFragmentRanges(editor);
+    const sqlFragmentRangeList = getSQLFragmentRangeList(editor);
 
-
-    sqlFragmentRanges.forEach((range) => {
+    sqlFragmentRangeList.forEach((range) => {
       // if the current position in the range, then highlight the range
       if (monaco.Range.containsPosition(range, position)) {
         newDecorations.push({
@@ -113,4 +112,4 @@ const useLineDecorations = (
   };
 };
 
-export { useLineDecorations, getSQLFragmentRanges };
+export { useLineDecorations, getSQLFragmentRangeList };
