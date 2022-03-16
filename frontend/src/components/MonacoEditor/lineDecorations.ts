@@ -21,7 +21,6 @@ const getSQLFragmentRanges = (
   const model = editor.getModel() as monaco.editor.ITextModel;
   const linesContent = model.getLinesContent();
   const sqlFragmentRanges: FragmentRange[] = [];
-  // console.log(linesContent);
   let startLineNumber = 0;
 
   for (let i = 0; i < linesContent.length; i++) {
