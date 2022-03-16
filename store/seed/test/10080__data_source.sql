@@ -241,7 +241,7 @@ VALUES
         1,
         1,
         6010,
-        7028,
+        7031,
         'Admin data source',
         'ADMIN',
         'admin',
