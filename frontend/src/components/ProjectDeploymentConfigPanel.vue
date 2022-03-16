@@ -52,29 +52,55 @@
         :label-list="availableLabelList"
         :database-list="databaseList"
       />
-      <div v-if="allowEdit" class="pt-4 flex justify-between items-center">
-        <button class="btn-normal" @click="addStage">
-          {{ $t("deployment-config.add-stage") }}
-        </button>
-        <NPopover :disabled="!state.error" trigger="hover">
-          <template #trigger>
-            <div
-              class="btn-primary"
-              :class="
-                state.error ? 'bg-accent opacity-50 cursor-not-allowed' : ''
-              "
-              @click="update"
-            >
-              {{ $t("common.update") }}
-            </div>
-          </template>
+      <div class="pt-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <button v-if="allowEdit" class="btn-normal" @click="addStage">
+            {{ $t("deployment-config.add-stage") }}
+          </button>
 
-          <span v-if="state.error" class="text-red-600">
-            {{ $t(state.error) }}
-          </span>
-        </NPopover>
+          <button
+            class="btn-normal"
+            :disabled="!!state.error"
+            @click="state.showPreview = true"
+          >
+            {{ $t("common.preview") }}
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
+            <template #trigger>
+              <div
+                class="btn-primary"
+                :class="
+                  state.error ? 'bg-accent opacity-50 cursor-not-allowed' : ''
+                "
+                @click="update"
+              >
+                {{ $t("common.update") }}
+              </div>
+            </template>
+
+            <span v-if="state.error" class="text-error">
+              {{ $t(state.error) }}
+            </span>
+          </NPopover>
+        </div>
       </div>
     </div>
+
+    <BBModal
+      v-if="deployment && state.showPreview"
+      :title="$t('deployment-config.preview-deployment-config')"
+      @close="state.showPreview = false"
+    >
+      <DeploymentMatrix
+        :project="project"
+        :deployment="deployment"
+        :database-list="databaseList"
+        :environment-list="environmentList"
+        :label-list="labelList"
+      />
+    </BBModal>
   </div>
 </template>
 
@@ -103,7 +129,7 @@ import {
   DeploymentConfigPatch,
   LabelSelectorRequirement,
 } from "../types";
-import DeploymentConfigTool from "./DeploymentConfigTool";
+import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
@@ -112,11 +138,12 @@ import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 type LocalState = {
   error: string | undefined;
   ready: boolean;
+  showPreview: boolean;
 };
 
 export default defineComponent({
   name: "ProjectDeploymentConfigurationPanel",
-  components: { DeploymentConfigTool, NPopover },
+  components: { DeploymentConfigTool, DeploymentMatrix, NPopover },
   props: {
     project: {
       required: true,
@@ -135,6 +162,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       ready: false,
       error: undefined,
+      showPreview: false,
     });
 
     const prepareList = () => {
