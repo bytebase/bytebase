@@ -77,7 +77,6 @@ const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
 );
 
 let editorInstance: Editor.IStandaloneCodeEditor;
-// let oldDecorations: string[] = [];
 
 const {
   monaco,
