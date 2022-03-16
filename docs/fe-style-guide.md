@@ -22,17 +22,13 @@ Use `/issue` instead of `/issues` to display the list of issues.
 
 _Rationale_: Plural forms have several variations and it's hard for non-native English speakers to remember all the rules. And in practice, using singular form for collection resource won't cause confusion with the singular resource because they use different resource paths, e.g. `/issue` versus `/issue/:id`.
 
-# Messages
+# Naming
 
-## Property Name Convention
+## Naming variables and properties
 
-We use json messages to communicate between backend and frontend following [Google JSON Style Guide](https://google.github.io/styleguide/jsoncstyleguide.xml). Property names must be camelCased, ascii strings. Variable names in different languages should follow their own language styles, e.g. Go and Vue. However, we must use json annotation for every fields in Go API structs to enforce the same style on the wire and prevent any breaking changes by refactoring because Go will set the json property name based on field name automatically.
+We are following the "Property Name Convention" guide in [Bytebase's API Style Guide](https://github.com/bytebase/bytebase/blob/main/docs/api-style-guide.md#property-name-convention).
 
-We can look at the following example as an interesting case. helloID follows Go style while the wired message use helloId to be consistent with Vue convention.
-
-1. Go struct field: `` helloID string `json:"helloId"` ``.
-1. Json property name: `helloId`.
-1. Vue template name: `helloId` => `hello-id`.
+This allows us to follow vue recommended naming style such as [vue/attribute-hyphenation](https://eslint.vuejs.org/rules/attribute-hyphenation.html) and [vue/camelcase](https://eslint.vuejs.org/rules/camelcase.html). Making our code looks more likely to vue's "local accent".
 
 # Vue components
 
