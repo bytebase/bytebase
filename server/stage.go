@@ -74,16 +74,9 @@ func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage
 		return err
 	}
 
-	if stage.TaskList == nil {
-		stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
-		if err != nil {
+	for _, task := range stage.TaskList {
+		if err := s.composeTaskRelationshipValidateOnly(ctx, task); err != nil {
 			return err
-		}
-	} else {
-		for _, task := range stage.TaskList {
-			if err := s.composeTaskRelationshipValidateOnly(ctx, task); err != nil {
-				return err
-			}
 		}
 	}
 

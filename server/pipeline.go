@@ -68,16 +68,9 @@ func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pi
 		return err
 	}
 
-	if pipeline.StageList == nil {
-		pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
-		if err != nil {
+	for _, stage := range pipeline.StageList {
+		if err := s.composeStageRelationshipValidateOnly(ctx, stage); err != nil {
 			return err
-		}
-	} else {
-		for _, stage := range pipeline.StageList {
-			if err := s.composeStageRelationshipValidateOnly(ctx, stage); err != nil {
-				return err
-			}
 		}
 	}
 
