@@ -176,6 +176,7 @@ common:
   search: 搜索
   warning: 警告
   edited: 编辑于
+  preview: 预览
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -945,12 +946,13 @@ deployment-config:
     at-least-one-stage: 至少需要 1 个阶段
     stage-name-required: 需要指定阶段名称
     at-least-one-selector: 每个阶段至少需要 1 个选择条件
-    env-in-selector-required: 每个阶段都需要有 "environment In" 选择条件
-    env-selector-must-has-one-value: '"environment In" 必须有且只有 1 个值'
+    env-in-selector-required: 每个阶段都需要有 "Environment in" 选择条件
+    env-selector-must-has-one-value: '"Environment in" 必须有且只有 1 个值'
     key-required: 需要指定 Key
     values-required: 需要指定值
   project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
   go-and-config: 去配置
+  preview-deployment-config: 预览部署配置
 datasource:
   role-type: 权限类型
   successfully-deleted-data-source-name: 成功删除数据源'{0}'。
