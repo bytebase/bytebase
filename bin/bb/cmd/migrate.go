@@ -25,6 +25,8 @@ func newMigrateCmd() *cobra.Command {
 		port         string
 		database     string
 		file         string
+		description  string
+		issueID      string
 
 		// SSL flags.
 		sslCA   string // server-ca.pem
@@ -45,7 +47,7 @@ func newMigrateCmd() *cobra.Command {
 				return fmt.Errorf("failed to open sql file %s, got error: %w", file, err)
 			}
 			defer f.Close()
-			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, false /*createDatabase*/, f, tlsCfg)
+			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, description, issueID, false /*createDatabase*/, f, tlsCfg)
 		}}
 
 	migrateCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
@@ -55,6 +57,8 @@ func newMigrateCmd() *cobra.Command {
 	migrateCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	migrateCmd.Flags().StringVar(&database, "database", "", "Database to execute migration.")
 	migrateCmd.Flags().StringVar(&file, "sql", "", "File that stores the migration script.")
+	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
+	migrateCmd.Flags().StringVar(&issueID, "issue-id", "", "Issue ID of migration.")
 	// tls flags for SSL connection.
 	migrateCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
 	migrateCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
@@ -63,7 +67,7 @@ func newMigrateCmd() *cobra.Command {
 	return migrateCmd
 }
 
-func migrateDatabase(ctx context.Context, databaseType, username, password, hostname, port, database string, createDatabase bool, sqlReader io.Reader, tlsCfg db.TLSConfig) error {
+func migrateDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, description, issueID string, createDatabase bool, sqlReader io.Reader, tlsCfg db.TLSConfig) error {
 	var dbType db.Type
 	switch databaseType {
 	case "mysql":
@@ -109,9 +113,9 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 		Database:       database,
 		Source:         db.LIBRARY,
 		Type:           db.Migrate,
-		Description:    "",
+		Description:    description,
 		Creator:        migrationCreator,
-		IssueID:        "",
+		IssueID:        issueID,
 		CreateDatabase: createDatabase,
 	}, buf.String()); err != nil {
 		return fmt.Errorf("failed to migrate database, got error: %w", err)

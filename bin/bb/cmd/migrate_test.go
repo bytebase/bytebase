@@ -68,3 +68,34 @@ func TestMigrate(t *testing.T) {
 	}
 	tableTest(t, tt)
 }
+
+func TestCreateDatabase(t *testing.T) {
+	mysql, stop := mysql.SetupTestInstance(t, 23307)
+	defer stop()
+
+	tt := []testTable{
+		{
+			args: []string{
+				"migrate",
+				"--type", "mysql",
+				"--username", "root",
+				"--hostname", "localhost",
+				"--port", fmt.Sprint(mysql.Port()),
+				"--sql", "testdata/mysql_test_schema/1_todo.sql",
+			},
+			expected: expectedMigrate,
+		},
+		{
+			args: []string{
+				"dump",
+				"--type", "mysql",
+				"--username", "root",
+				"--hostname", "localhost",
+				"--port", fmt.Sprint(mysql.Port()),
+				"--database", "bytebase_test_todo",
+			},
+			expected: expectedTodo,
+		},
+	}
+	tableTest(t, tt)
+}
