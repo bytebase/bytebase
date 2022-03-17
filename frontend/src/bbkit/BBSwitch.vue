@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, defineProps, defineEmits, withDefaults, reactive } from "vue";
+import { watch, withDefaults, reactive } from "vue";
 
 const props = withDefaults(
   defineProps<{

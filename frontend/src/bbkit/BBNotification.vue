@@ -95,7 +95,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits, withDefaults, computed } from "vue";
+import { withDefaults, computed } from "vue";
 import { useRouter } from "vue-router";
 import { BBNotificationPlacement, BBNotificationItem } from "./types";
 

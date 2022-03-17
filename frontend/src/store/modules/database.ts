@@ -136,8 +136,8 @@ function convert(
       );
       if (i != -1) {
         dataSourceList[i] = rootGetters["dataSource/convert"](item);
-        dataSourceList[i].instance = instance;
-        dataSourceList[i].database = databaseWPartial;
+        dataSourceList[i].instanceId = instance.id;
+        dataSourceList[i].databaseId = databaseWPartial.id;
       }
     }
 

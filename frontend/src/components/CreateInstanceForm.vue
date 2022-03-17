@@ -228,7 +228,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";

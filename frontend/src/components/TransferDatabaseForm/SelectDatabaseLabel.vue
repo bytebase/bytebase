@@ -64,14 +64,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import {
-  computed,
-  defineProps,
-  defineEmits,
-  reactive,
-  watchEffect,
-  watch,
-} from "vue";
+import { computed, reactive, watchEffect, watch } from "vue";
 import { useStore } from "vuex";
 import { capitalize, cloneDeep } from "lodash-es";
 import {

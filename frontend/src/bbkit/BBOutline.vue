@@ -61,13 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  computed,
-  reactive,
-  defineProps,
-  defineEmits,
-  withDefaults,
-} from "vue";
+import { computed, reactive, withDefaults } from "vue";
 import { useStore } from "vuex";
 import { BBOutlineItem } from "./types";
 

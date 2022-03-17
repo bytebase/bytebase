@@ -48,10 +48,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("empty create database statement")
 	}
 
-	if err := server.composeTaskRelationship(ctx, task); err != nil {
-		return true, nil, err
-	}
-
 	instance := task.Instance
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
@@ -134,7 +130,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Labels:        &payload.Labels,
 		SchemaVersion: payload.SchemaVersion,
 	}
-	database, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
+	dbRaw, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
+	if err != nil {
+		return true, nil, err
+	}
+	db, err := server.composeDatabaseRelationship(ctx, dbRaw)
 	if err != nil {
 		return true, nil, err
 	}
@@ -147,7 +147,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	taskDatabaseIDPatch := &api.TaskPatch{
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
-		DatabaseID: &database.ID,
+		DatabaseID: &db.ID,
 	}
 	_, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
 	if err != nil {
@@ -155,12 +155,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	if payload.Labels != "" {
-		// Compose database relationship for setting database labels.
-		err = server.composeDatabaseRelationship(ctx, database)
-		if err != nil {
-			return true, nil, err
-		}
-
 		project, err := server.composeProjectByID(ctx, payload.ProjectID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
@@ -170,9 +164,9 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
-		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
+		err = server.setDatabaseLabels(ctx, payload.Labels, db, project, db.CreatorID, false)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
+			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", db.ID)
 		}
 	}
 
