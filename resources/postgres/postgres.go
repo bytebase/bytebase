@@ -174,7 +174,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
 	}
 
-	// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0750 for all pgdata files.
+	// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
 	if err := filepath.Walk(pgDataDir,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
