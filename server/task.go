@@ -69,9 +69,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		issueFind := &api.IssueFind{
 			PipelineID: &task.PipelineID,
 		}
-		issue, err := s.IssueService.FindIssue(ctx, issueFind)
+		issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID %v", task.PipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
+		}
+		issue, err := s.composeIssueRelationship(ctx, issueRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relationship with pipeline ID %v", task.PipelineID)).SetInternal(err)
 		}
 
 		oldStatement := ""
@@ -578,10 +582,14 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issue, err := s.IssueService.FindIssue(ctx, issueFind)
+	issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
+	}
+	issue, err := s.composeIssueRelationship(ctx, issueRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose issue relationship with ID %d, err: %w", issueRaw.ID, err)
 	}
 
 	// Create an activity
