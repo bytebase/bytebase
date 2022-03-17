@@ -87,6 +87,7 @@ const useMonaco = async (lang: string) => {
           tableList.value
         );
 
+        // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
         const suggestionsForDatabase =
           lang === "mysql"
             ? autoCompletion.getCompletionItemsForDatabaseList()
