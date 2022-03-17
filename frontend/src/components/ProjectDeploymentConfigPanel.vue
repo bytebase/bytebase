@@ -69,7 +69,7 @@
           <button
             v-if="allowEdit"
             class="btn-normal"
-            :disabled="!state.dirty"
+            :disabled="!dirty"
             @click="revert"
           >
             {{ $t("common.revert") }}
@@ -140,7 +140,7 @@ import {
   LabelSelectorRequirement,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
@@ -149,7 +149,6 @@ type LocalState = {
   deployment: DeploymentConfig | undefined;
   backup: DeploymentConfig | undefined;
   error: string | undefined;
-  dirty: boolean;
   showPreview: boolean;
 };
 
@@ -174,9 +173,12 @@ export default defineComponent({
     const state = reactive<LocalState>({
       deployment: undefined,
       backup: undefined,
-      dirty: false,
       error: undefined,
       showPreview: false,
+    });
+
+    const dirty = computed((): boolean => {
+      return !isEqual(state.deployment, state.backup);
     });
 
     const prepareList = () => {
@@ -210,7 +212,6 @@ export default defineComponent({
 
     const resetStates = async () => {
       await nextTick(); // Waiting for all watchers done
-      state.dirty = false;
       state.error = undefined;
     };
 
@@ -310,14 +311,13 @@ export default defineComponent({
 
       // clone the updated version to the backup
       state.backup = cloneDeep(state.deployment);
-      // clean up error and dirty status
+      // clean up error status
       resetStates();
     };
 
     watch(
       () => state.deployment,
       () => {
-        state.dirty = true;
         validate();
       },
       { deep: true }
@@ -332,6 +332,7 @@ export default defineComponent({
     return {
       EMPTY_ID,
       state,
+      dirty,
       environmentList,
       labelList,
       databaseList,
