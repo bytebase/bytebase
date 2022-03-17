@@ -1,6 +1,7 @@
 # DO NOT run docker build against this file directly. Instead using ./build_docker.sh as that
 # one sets the various ARG used in the Dockerfile
 
+
 # After build
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
