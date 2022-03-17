@@ -9,7 +9,7 @@ const (
 	// EnvironmentKeyName is the reserved key for environment.
 	EnvironmentKeyName string = "bb.environment"
 
-	// DatabaseLabelSizeMax is the maximium size of database labels.
+	// DatabaseLabelSizeMax is the maximum size of database labels.
 	DatabaseLabelSizeMax = 4
 	labelLengthMax       = 63
 
@@ -52,7 +52,7 @@ func (raw *LabelKeyRaw) ToLabelKey() *LabelKey {
 		// bb.environment is a reserved key and identically mapped from environments. It has zero ID and its values are immutable.
 		Key: raw.Key,
 	}
-	copy(labelKey.ValueList, raw.ValueList)
+	labelKey.ValueList = append(labelKey.ValueList, raw.ValueList...)
 	return &labelKey
 }
 

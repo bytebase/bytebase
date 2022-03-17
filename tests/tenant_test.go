@@ -122,7 +122,7 @@ func TestTenant(t *testing.T) {
 			api.DeploymentConfigUpsert{
 				ProjectID: project.ID,
 			},
-			deploymentSchdule,
+			deploymentSchedule,
 		); err != nil {
 			return err
 		}
@@ -401,7 +401,7 @@ func TestTenantVCS(t *testing.T) {
 			api.DeploymentConfigUpsert{
 				ProjectID: project.ID,
 			},
-			deploymentSchdule,
+			deploymentSchedule,
 		); err != nil {
 			return err
 		}
@@ -632,7 +632,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			api.DeploymentConfigUpsert{
 				ProjectID: project.ID,
 			},
-			deploymentSchdule,
+			deploymentSchedule,
 		); err != nil {
 			return err
 		}
