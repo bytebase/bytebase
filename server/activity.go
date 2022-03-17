@@ -168,14 +168,6 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeActivityByID(ctx context.Context, id int) (*api.Activity, error) {
-	activityRaw, err := s.ActivityService.FindActivity(ctx, &api.ActivityFind{ID: &id})
-	if err != nil {
-		return nil, err
-	}
-	return s.composeActivityRelationship(ctx, activityRaw)
-}
-
 func (s *Server) composeActivityRelationship(ctx context.Context, raw *api.ActivityRaw) (*api.Activity, error) {
 	activity := raw.ToActivity()
 

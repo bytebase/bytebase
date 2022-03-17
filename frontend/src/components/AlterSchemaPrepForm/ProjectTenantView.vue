@@ -87,14 +87,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import {
-  computed,
-  defineProps,
-  defineEmits,
-  watchEffect,
-  watch,
-  ref,
-} from "vue";
+import { computed, watchEffect, watch, ref } from "vue";
 import { useStore } from "vuex";
 import {
   Database,

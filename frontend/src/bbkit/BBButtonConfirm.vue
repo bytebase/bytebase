@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, defineProps, withDefaults, defineEmits } from "vue";
+import { reactive, withDefaults } from "vue";
 import { BBButtonConfirmStyle } from "./types";
 
 withDefaults(

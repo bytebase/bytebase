@@ -41,16 +41,34 @@ func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage)
 		return err
 	}
 
-	if stage.TaskList == nil {
-		stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
-		if err != nil {
+	stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
+	var err error
+	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range stage.TaskList {
+		if err := s.composeTaskRelationshipValidateOnly(ctx, task); err != nil {
 			return err
-		}
-	} else {
-		for _, task := range stage.TaskList {
-			if err := s.composeTaskRelationship(ctx, task); err != nil {
-				return err
-			}
 		}
 	}
 
