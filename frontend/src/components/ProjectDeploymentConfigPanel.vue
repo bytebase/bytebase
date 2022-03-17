@@ -79,7 +79,7 @@
               <div
                 class="btn-primary"
                 :class="
-                  state.error ? 'bg-accent opacity-50 cursor-not-allowed' : ''
+                  !allowUpdate ? 'bg-accent opacity-50 cursor-not-allowed' : ''
                 "
                 @click="update"
               >
@@ -179,6 +179,12 @@ export default defineComponent({
 
     const dirty = computed((): boolean => {
       return !isEqual(state.deployment, state.backup);
+    });
+
+    const allowUpdate = computed((): boolean => {
+      if (state.error) return false;
+      if (!dirty.value) return false;
+      return true;
     });
 
     const prepareList = () => {
@@ -294,7 +300,7 @@ export default defineComponent({
 
     const update = async () => {
       if (!state.deployment) return;
-      if (state.error) return;
+      if (!allowUpdate.value) return;
 
       const deploymentConfigPatch: DeploymentConfigPatch = {
         payload: JSON.stringify(state.deployment.schedule),
@@ -333,6 +339,7 @@ export default defineComponent({
       EMPTY_ID,
       state,
       dirty,
+      allowUpdate,
       environmentList,
       labelList,
       databaseList,
