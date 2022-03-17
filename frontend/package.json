@@ -1,6 +1,7 @@
 {
   "name": "bytebase",
   "version": "1.0.0",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "vite --mode dev",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
