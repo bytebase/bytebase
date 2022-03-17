@@ -317,15 +317,9 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 		return err
 	}
 
-	if issue.Pipeline == nil {
-		issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
-		if err != nil {
-			return err
-		}
-	} else {
-		if err := s.composePipelineRelationship(ctx, issue.Pipeline); err != nil {
-			return err
-		}
+	issue.Pipeline, err = s.composePipelineByID(ctx, issue.PipelineID)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -910,14 +904,14 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	}
 
 	pipelineCreate.CreatorID = creatorID
-	createdPipeline, err := s.PipelineService.CreatePipeline(ctx, pipelineCreate)
+	pipelineRawCreated, err := s.PipelineService.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
 	}
 
 	for _, stageCreate := range pipelineCreate.StageList {
 		stageCreate.CreatorID = creatorID
-		stageCreate.PipelineID = createdPipeline.ID
+		stageCreate.PipelineID = pipelineRawCreated.ID
 		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
@@ -925,14 +919,19 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		for _, taskCreate := range stageCreate.TaskList {
 			taskCreate.CreatorID = creatorID
-			taskCreate.PipelineID = createdPipeline.ID
+			taskCreate.PipelineID = pipelineRawCreated.ID
 			taskCreate.StageID = createdStage.ID
 			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
 				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
 			}
 		}
 	}
-	return createdPipeline, nil
+
+	pipelineCreated, err := s.composePipelineRelationship(ctx, pipelineRawCreated)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose pipeline relation, error %w", err)
+	}
+	return pipelineCreated, nil
 }
 
 func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
