@@ -175,14 +175,8 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 
 	// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
-	if err := filepath.Walk(pgDataDir,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			return os.Chmod(path, 0700)
-		}); err != nil {
-		return err
+	if err := os.Chmod(pgDataDir, 0700); err != nil {
+		return fmt.Errorf("failed to chmod postgres data directory %q to 0700, error: %w", pgDataDir, err)
 	}
 
 	// Skip initDB if setup already.
