@@ -153,6 +153,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
+		// Wildcard(*) database is used to connect all database at instance level.
+		// Do not return it via `get database by id` API.
+		if database.Name == api.AllDatabaseName {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %d is a wildcard *", id))
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
@@ -939,7 +944,6 @@ func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFi
 	if err != nil {
 		return nil, err
 	}
-
 	if databaseRaw == nil {
 		return nil, nil
 	}
@@ -1005,6 +1009,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 		db.SourceBackup = sourceBackup
 	}
 
+	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
+	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
