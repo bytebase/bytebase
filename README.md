@@ -15,9 +15,6 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/bytebase/bytebase/blob/main/LICENSE" target="_blank">
-    <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
-</a>
 <img alt="status" src="https://img.shields.io/badge/status-beta-blue" />
 <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
     <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
