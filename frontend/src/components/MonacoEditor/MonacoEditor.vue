@@ -8,7 +8,6 @@ import {
   ref,
   toRef,
   toRaw,
-  PropType,
   nextTick,
   onUnmounted,
   watch,
@@ -26,7 +25,6 @@ import {
 
 import {
   TabGetters,
-  SqlDialect,
   SqlEditorActions,
   SqlEditorState,
   SheetGetters,
@@ -39,7 +37,7 @@ const props = defineProps({
     required: true,
   },
   language: {
-    type: String as PropType<SqlDialect>,
+    type: String,
     default: "mysql",
   },
 });
