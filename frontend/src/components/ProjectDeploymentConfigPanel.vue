@@ -242,10 +242,6 @@ export default defineComponent({
         // otherwise we clone the saved deployment-config
         // <DeploymentConfigTool /> will mutate `state.deployment` directly
         // when update button clicked, we save the draft to backend
-        // we don't show a "cancel" button because if users don't want to save
-        //   the draft, they can just leave the page without any saving action
-        // even more we may deliver a confirm modal when leaving the page with a
-        //   dirty but not saved draft
         state.deployment = cloneDeep(dep);
       }
       // clone the object to the backup
