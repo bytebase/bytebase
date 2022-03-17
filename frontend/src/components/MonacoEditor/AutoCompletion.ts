@@ -14,22 +14,22 @@ import { keywords } from "./keywords";
 export default class AutoCompletion {
   model: EditorModel;
   position: EditorPosition;
-  instances: Instance[];
-  databases: Database[];
-  tables: Table[];
+  instanceList: Instance[];
+  databaseList: Database[];
+  tableList: Table[];
 
   constructor(
     model: EditorModel,
     position: EditorPosition,
-    instances: Instance[],
-    databases: Database[],
-    tables: Table[]
+    instanceList: Instance[],
+    databaseList: Database[],
+    tableList: Table[]
   ) {
     this.model = model;
     this.position = position;
-    this.instances = instances;
-    this.databases = databases;
-    this.tables = tables;
+    this.instanceList = instanceList;
+    this.databaseList = databaseList;
+    this.tableList = tableList;
   }
 
   getWordRange() {
@@ -64,32 +64,12 @@ export default class AutoCompletion {
     return suggestions;
   }
 
-  getCompletionItemsForInstances(): CompletionItems {
-    const suggestions: CompletionItems = [];
+  getCompletionItemsForDatabaseList(): CompletionItems {
+    let suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.instances.forEach((instance) => {
-      suggestions.push({
-        label: instance.name,
-        kind: monaco.languages.CompletionItemKind.Method,
-        detail: "<Instance>",
-        documentation: instance.name,
-        sortText: SortText.INSTANCE,
-        insertText: instance.name,
-        range,
-      });
-    });
-
-    return suggestions;
-  }
-
-  getCompletionItemsForDatabases(): CompletionItems {
-    const suggestions: CompletionItems = [];
-
-    const range = this.getWordRange();
-
-    this.databases.forEach((database) => {
+    this.databaseList.forEach((database) => {
       suggestions.push({
         label: database.name,
         kind: monaco.languages.CompletionItemKind.Struct,
@@ -99,35 +79,52 @@ export default class AutoCompletion {
         insertText: database.name,
         range,
       });
+
+      suggestions = suggestions.concat(
+        this.getCompletionItemsForTableList(database)
+      );
     });
 
     return suggestions;
   }
 
-  getCompletionItemsForTables(): CompletionItems {
+  getCompletionItemsForTableList(
+    db?: Database,
+    withDatabasePrefix = true
+  ): CompletionItems {
     let suggestions: CompletionItems = [];
 
     const range = this.getWordRange();
 
-    this.tables.forEach((table) => {
+    const filterTableListByDB = this.tableList.filter((table: Table) => {
+      return table.database.name === db?.name;
+    });
+
+    const tableList = db ? filterTableListByDB : this.tableList;
+
+    tableList.forEach((table) => {
+      const label =
+        withDatabasePrefix && db ? `${db?.name}.${table.name}` : table.name;
       suggestions.push({
-        label: table.name,
+        label,
         kind: monaco.languages.CompletionItemKind.Function,
         detail: "<Table>",
-        documentation: table.name,
+        documentation: label,
         sortText: SortText.TABLE,
-        insertText: table.name,
+        insertText: label,
         range,
       });
-      const tableColumnSuggestions =
-        this.getCompletionItemsForTableColumns(table);
-      suggestions = suggestions.concat(tableColumnSuggestions);
+      if (table.columnList && table.columnList.length > 0) {
+        suggestions = suggestions.concat(
+          this.getCompletionItemsForTableColumnList(table)
+        );
+      }
     });
 
     return suggestions;
   }
 
-  getCompletionItemsForTableColumns(
+  getCompletionItemsForTableColumnList(
     table: Table,
     withTablePrefix = true
   ): CompletionItems {
