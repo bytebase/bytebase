@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, defineEmits } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -93,7 +93,7 @@ import {
   SheetGetters,
   SheetActions,
   AccessOption,
-} from "../../../types";
+} from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;

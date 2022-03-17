@@ -15,34 +15,33 @@
         <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
     </div>
-    <div class="actions-right space-x-2 flex w-2/3 justify-end">
+    <div class="actions-right space-x-2 flex w-2/3 justify-end items-center">
+      <NPopover
+        v-if="
+          connectionContext.instanceId !== UNKNOWN_ID && !hasReadonlyDataSource
+        "
+        trigger="hover"
+      >
+        <template #trigger>
+          <heroicons-outline:exclamation
+            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
+          />
+        </template>
+        <p class="py-1">
+          {{ $t("instance.no-read-only-data-source-warn") }}
+          <NButton
+            class="text-base underline text-accent"
+            text
+            @click="gotoInstanceDetailPage"
+          >
+            {{ $t("sql-editor.create-read-only-data-source") }}
+          </NButton>
+        </p>
+      </NPopover>
       <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
         <template #trigger>
           <label class="flex items-center text-sm space-x-1">
             <div class="flex items-center">
-              <NPopover
-                v-if="
-                  connectionContext.instanceId !== UNKNOWN_ID &&
-                  !hasReadonlyDataSource
-                "
-                trigger="hover"
-              >
-                <template #trigger>
-                  <heroicons-outline:exclamation
-                    class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
-                  />
-                </template>
-                <p class="py-1">
-                  {{ $t("instance.no-read-only-data-source-warn") }}
-                  <NButton
-                    class="text-base underline text-accent"
-                    text
-                    @click="gotoInstanceDetailPage"
-                  >
-                    {{ $t("sql-editor.create-read-only-data-source") }}
-                  </NButton>
-                </p>
-              </NPopover>
               <InstanceEngineIcon
                 v-if="connectionContext.instanceId !== UNKNOWN_ID"
                 :instance="selectedInstance"
@@ -87,7 +86,7 @@
         strong
         type="primary"
         :disabled="isEmptyStatement || currentTab.isSaved"
-        @click="handleSave"
+        @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
@@ -115,10 +114,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, defineEmits } from "vue";
 import {
   useNamespacedState,
-  useNamespacedActions,
   useNamespacedGetters,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
@@ -127,15 +125,17 @@ import {
   SqlEditorState,
   SqlEditorGetters,
   TabGetters,
-  TabActions,
-  SheetActions,
   UNKNOWN_ID,
   Instance,
-} from "../../../types";
-import { useExecuteSQL } from "../../../composables/useExecuteSQL";
+} from "@/types";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 import { useRouter } from "vue-router";
 import { instanceSlug } from "../../../utils/slug";
+
+const emit = defineEmits<{
+  (e: "save-sheet", content?: string): void;
+}>();
 
 const store = useStore();
 const router = useRouter();
@@ -149,15 +149,8 @@ const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
-// actions
-const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
-  "upsertSheet",
-]);
-const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
-  "updateCurrentTab",
-]);
-
 const isShowSharePopover = ref(false);
+
 const isEmptyStatement = computed(
   () => !currentTab.value || currentTab.value.statement === ""
 );
@@ -188,20 +181,6 @@ const handleRunQuery = () => {
 
 const handleExplainQuery = () => {
   execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
-};
-
-const handleSave = async () => {
-  const { name, statement, sheetId } = currentTab.value;
-  const sheet = await upsertSheet({
-    id: sheetId,
-    name,
-    statement,
-  });
-
-  updateCurrentTab({
-    sheetId: sheet.id,
-    isSaved: true,
-  });
 };
 
 const gotoInstanceDetailPage = () => {

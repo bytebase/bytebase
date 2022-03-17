@@ -57,22 +57,23 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
+				instanceRawList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instances", zap.Error(err))
 					return
 				}
 
-				for _, instance := range instanceList {
+				for _, instanceRaw := range instanceRawList {
 					mu.Lock()
-					if _, ok := runningTasks[instance.ID]; ok {
+					if _, ok := runningTasks[instanceRaw.ID]; ok {
 						mu.Unlock()
 						continue
 					}
-					runningTasks[instance.ID] = true
+					runningTasks[instanceRaw.ID] = true
 					mu.Unlock()
 
-					if err := s.server.composeInstanceRelationship(ctx, instance); err != nil {
+					instance, err := s.server.composeInstanceRelationship(ctx, instanceRaw)
+					if err != nil {
 						s.l.Error("Failed to sync instance",
 							zap.Int("id", instance.ID),
 							zap.String("name", instance.Name),

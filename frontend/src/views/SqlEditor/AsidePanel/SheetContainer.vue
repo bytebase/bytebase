@@ -101,9 +101,9 @@ import {
   SqlEditorActions,
   SqlEditorState,
   UNKNOWN_ID,
-} from "../../../types";
-import { getHighlightHTMLByKeyWords } from "../../../utils";
-import { useSQLEditorConnection } from "../../../composables/useSQLEditorConnection";
+} from "@/types";
+import { getHighlightHTMLByKeyWords } from "@/utils";
+import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 interface State {
   search: string;

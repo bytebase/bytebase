@@ -32,15 +32,18 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReadCreatedAfterTs = &createdTs
 		}
-		inboxList, err := s.InboxService.FindInboxList(ctx, inboxFind)
+		inboxRawList, err := s.InboxService.FindInboxList(ctx, inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
 		}
-
-		for _, inbox := range inboxList {
-			if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
+		var inboxList []*api.Inbox
+		for _, inboxRaw := range inboxRawList {
+			inbox := inboxRaw.ToInbox()
+			activity, err := s.composeActivityRelationship(ctx, inboxRaw.ActivityRaw)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
 			}
+			inbox.Activity = activity
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -79,7 +82,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch inbox request").SetInternal(err)
 		}
 
-		inbox, err := s.InboxService.PatchInbox(ctx, inboxPatch)
+		inboxRaw, err := s.InboxService.PatchInbox(ctx, inboxPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", id))
@@ -87,9 +90,12 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeActivityRelationship(ctx, inbox.Activity); err != nil {
+		inbox := inboxRaw.ToInbox()
+		activity, err := s.composeActivityRelationship(ctx, inboxRaw.ActivityRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated inbox activity relationship: %v", inbox.ID)).SetInternal(err)
 		}
+		inbox.Activity = activity
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, inbox); err != nil {

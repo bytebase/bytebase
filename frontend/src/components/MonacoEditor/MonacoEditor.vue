@@ -10,16 +10,20 @@ import {
   toRaw,
   PropType,
   nextTick,
-  defineProps,
-  defineEmits,
   onUnmounted,
   watch,
 } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import type { editor as Editor } from "monaco-editor";
+import { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
+import {
+  useNamespacedActions,
+  useNamespacedGetters,
+  useNamespacedState,
+} from "vuex-composition-helpers";
+
 import {
   TabGetters,
   SqlDialect,
@@ -27,11 +31,7 @@ import {
   SqlEditorState,
   SheetGetters,
 } from "../../types";
-import {
-  useNamespacedActions,
-  useNamespacedGetters,
-  useNamespacedState,
-} from "vuex-composition-helpers";
+import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
   value: {
@@ -177,19 +177,35 @@ const init = async () => {
 
   // when editor change selection, emit change-selection event with selected text
   editorInstance.onDidChangeCursorSelection((e) => {
-    const selectedText = editorInstance.getModel()?.getValueInRange({
-      startLineNumber: e.selection.startLineNumber,
-      startColumn: e.selection.startColumn,
-      endLineNumber: e.selection.endLineNumber,
-      endColumn: e.selection.endColumn,
-    }) as string;
+    const selectedText = editorInstance
+      .getModel()
+      ?.getValueInRange(e.selection) as string;
     emit("change-selection", selectedText);
+  });
+
+  editorInstance.onDidChangeCursorPosition((e) => {
+    const { defineLineDecorations, disposeLineDecorations } =
+      useLineDecorations(editorInstance, e.position);
+    // clear the old decorations
+    disposeLineDecorations();
+
+    // define the new decorations
+    nextTick(() => {
+      defineLineDecorations();
+    });
   });
 
   editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     const value = editorInstance.getValue();
     emit("save", value);
   });
+
+  // set the editor focus when the tab is selected
+  if (!isReadOnly.value) {
+    editorInstance.focus();
+
+    nextTick(() => setPositionAtEndOfLine(editorInstance));
+  }
 
   watch(
     () => isReadOnly.value,
@@ -222,3 +238,11 @@ watch(
   }
 );
 </script>
+
+<style>
+.monaco-editor .cldr.sql-fragment {
+  @apply bg-indigo-600;
+  width: 4px !important;
+  margin-left: 2px;
+}
+</style>

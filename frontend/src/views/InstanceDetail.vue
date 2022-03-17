@@ -138,7 +138,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
@@ -258,10 +258,11 @@ const hasDataSourceFeature = computed(() =>
   store.getters["subscription/feature"]("bb.feature.data-source")
 );
 
-const databaseList = computed(() => {
-  const list = store.getters["database/databaseListByInstanceId"](
+const databaseList = computed<Database[]>(() => {
+  const list: Database[] = store.getters["database/databaseListByInstanceId"](
     instance.value.id
   );
+
   if (isDBAOrOwner(currentUser.value.role)) {
     return list;
   }
@@ -278,6 +279,7 @@ const databaseList = computed(() => {
       }
     }
   }
+
   return filteredList;
 });
 

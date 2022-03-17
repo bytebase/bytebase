@@ -29,7 +29,7 @@ func NewInboxService(logger *zap.Logger, db *DB, activityService api.ActivitySer
 }
 
 // CreateInbox creates a new inbox.
-func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.Inbox, error) {
+func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.InboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -49,7 +49,7 @@ func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate)
 }
 
 // FindInboxList retrieves a list of inboxes based on find.
-func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
+func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) ([]*api.InboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -66,7 +66,7 @@ func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) (
 
 // FindInbox retrieves a single inbox based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api.Inbox, error) {
+func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api.InboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -88,7 +88,7 @@ func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api
 
 // PatchInbox updates an existing inbox by ID.
 // Returns ENOTFOUND if inbox does not exist.
-func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inbox, error) {
+func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.InboxRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -161,7 +161,7 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 }
 
 // createInbox creates a new inbox.
-func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.Inbox, error) {
+func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.InboxRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO inbox (
@@ -182,13 +182,13 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var inbox api.Inbox
+	var inboxRaw api.InboxRaw
 	var activityID int
 	if err := row.Scan(
-		&inbox.ID,
-		&inbox.ReceiverID,
+		&inboxRaw.ID,
+		&inboxRaw.ReceiverID,
 		&activityID,
-		&inbox.Status,
+		&inboxRaw.Status,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -196,15 +196,16 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	activityFind := &api.ActivityFind{
 		ID: &activityID,
 	}
-	inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+	activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	inboxRaw.ActivityRaw = activityRaw
 
-	return &inbox, nil
+	return &inboxRaw, nil
 }
 
-func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api.Inbox, error) {
+func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api.InboxRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
@@ -243,40 +244,40 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into inboxList.
-	var inboxList []*api.Inbox
+	// Iterate over result set and deserialize rows into inboxRawList.
+	var inboxRawList []*api.InboxRaw
 	for rows.Next() {
-		var inbox api.Inbox
-		inbox.Activity = &api.Activity{}
+		var inboxRaw api.InboxRaw
+		inboxRaw.ActivityRaw = &api.ActivityRaw{}
 		if err := rows.Scan(
-			&inbox.ID,
-			&inbox.ReceiverID,
-			&inbox.Status,
-			&inbox.Activity.ID,
-			&inbox.Activity.CreatorID,
-			&inbox.Activity.CreatedTs,
-			&inbox.Activity.UpdaterID,
-			&inbox.Activity.UpdatedTs,
-			&inbox.Activity.ContainerID,
-			&inbox.Activity.Type,
-			&inbox.Activity.Level,
-			&inbox.Activity.Comment,
-			&inbox.Activity.Payload,
+			&inboxRaw.ID,
+			&inboxRaw.ReceiverID,
+			&inboxRaw.Status,
+			&inboxRaw.ActivityRaw.ID,
+			&inboxRaw.ActivityRaw.CreatorID,
+			&inboxRaw.ActivityRaw.CreatedTs,
+			&inboxRaw.ActivityRaw.UpdaterID,
+			&inboxRaw.ActivityRaw.UpdatedTs,
+			&inboxRaw.ActivityRaw.ContainerID,
+			&inboxRaw.ActivityRaw.Type,
+			&inboxRaw.ActivityRaw.Level,
+			&inboxRaw.ActivityRaw.Comment,
+			&inboxRaw.ActivityRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		inboxList = append(inboxList, &inbox)
+		inboxRawList = append(inboxRawList, &inboxRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return inboxList, nil
+	return inboxRawList, nil
 }
 
 // patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.Inbox, error) {
+func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.InboxRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"status = $1"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)
@@ -296,13 +297,13 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 	defer row.Close()
 
 	if row.Next() {
-		var inbox api.Inbox
+		var inboxRaw api.InboxRaw
 		var activityID int
 		if err := row.Scan(
-			&inbox.ID,
-			&inbox.ReceiverID,
+			&inboxRaw.ID,
+			&inboxRaw.ReceiverID,
 			&activityID,
-			&inbox.Status,
+			&inboxRaw.Status,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -310,12 +311,13 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 		activityFind := &api.ActivityFind{
 			ID: &activityID,
 		}
-		inbox.Activity, err = s.activityService.FindActivity(ctx, activityFind)
+		activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
 		if err != nil {
 			return nil, FormatError(err)
 		}
+		inboxRaw.ActivityRaw = activityRaw
 
-		return &inbox, nil
+		return &inboxRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("inbox ID not found: %d", patch.ID)}

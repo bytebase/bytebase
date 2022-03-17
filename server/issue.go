@@ -126,6 +126,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
 		}
 
+		if issuePatch.AssigneeID != nil {
+			if err := s.validateAssigneeRoleByID(ctx, *issuePatch.AssigneeID); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+			}
+		}
+
 		issueFind := &api.IssueFind{
 			ID: &id,
 		}
@@ -294,13 +300,14 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriber := range issueSubscriberList {
-		if err := s.composeIssueSubscriberRelationship(ctx, issueSubscriber); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriber.SubscriberID, issueSubscriber.IssueID)).SetInternal(err)
+	for _, issueSubscriberRaw := range issueSubscriberRawList {
+		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
 		}
 		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
 	}
@@ -324,6 +331,72 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
+func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
+	var err error
+
+	issue.Creator, err = s.composePrincipalByID(ctx, issue.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	issue.Updater, err = s.composePrincipalByID(ctx, issue.UpdaterID)
+	if err != nil {
+		return err
+	}
+
+	issue.Assignee, err = s.composePrincipalByID(ctx, issue.AssigneeID)
+	if err != nil {
+		return err
+	}
+
+	issueSubscriberFind := &api.IssueSubscriberFind{
+		IssueID: &issue.ID,
+	}
+	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
+	}
+	for _, issueSubscriberRaw := range issueSubscriberRawList {
+		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
+		}
+		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	}
+
+	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Only allow Bot/Owner/DBA as the assignee, not Developer.
+func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
+	assignee, err := s.PrincipalService.FindPrincipal(ctx, &api.PrincipalFind{
+		ID: &assigneeID,
+	})
+	if err != nil {
+		return err
+	}
+	if assignee == nil {
+		return fmt.Errorf("Principal ID not found: %d", assigneeID)
+	}
+	if err = s.composePrincipalRole(ctx, assignee); err != nil {
+		return err
+	}
+	if assignee.Role != api.Owner && assignee.Role != api.DBA {
+		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
+	}
+
+	return nil
+}
+
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
@@ -331,6 +404,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	// quite unlikely so we will live with it for now.
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+
+	if err := s.validateAssigneeRoleByID(ctx, issueCreate.AssigneeID); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
 	// If frontend does not pass the stageList, we will generate it from backend.
@@ -355,6 +432,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			PipelineID:  pipeline.ID,
 			Pipeline:    pipeline,
 		}
+		if err := s.composeIssueRelationshipValidateOnly(ctx, issue); err != nil {
+			return nil, err
+		}
 	} else {
 		issueCreate.CreatorID = creatorID
 		issueCreate.PipelineID = pipeline.ID
@@ -374,9 +454,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 			}
 		}
-	}
-	if err := s.composeIssueRelationship(ctx, issue); err != nil {
-		return nil, err
+		if err := s.composeIssueRelationship(ctx, issue); err != nil {
+			return nil, err
+		}
 	}
 
 	// Return early if this is a validate only request.
@@ -384,15 +464,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return issue, nil
 	}
 
-	task, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline)
-	if err != nil {
+	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
-	}
-	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
-	if task != nil {
-		if err := s.composeTaskRelationship(ctx, task); err != nil {
-			return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
-		}
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -419,7 +492,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
 	id := 0
@@ -447,7 +520,7 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 		}
 		for _, tc := range sc.TaskList {
 			id++
-			task := &api.Task{
+			taskRaw := &api.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
@@ -462,6 +535,10 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 				StageID:           stage.ID,
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
+			}
+			task, err := s.composeTaskRelationship(ctx, taskRaw)
+			if err != nil {
+				return nil, err
 			}
 			stage.TaskList = append(stage.TaskList, task)
 		}
@@ -706,17 +783,27 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 
-			databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 				ProjectID: &issueCreate.ProjectID,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
-			baseDatabaseName := d.DatabaseName
+
+			var dbList []*api.Database
+			for _, dbRaw := range dbRawList {
+				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose databases relation for ID %v", dbRaw.ID)).SetInternal(err)
+				}
+				dbList = append(dbList, db)
+			}
+
+			baseDBName := d.DatabaseName
 			if err != nil {
 				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
 			}
-			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
 			if err != nil {
 				return nil, err
 			}
@@ -816,7 +903,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
-		return createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
+		return s.createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
@@ -1046,7 +1133,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 	return nil
 }
 
-func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, databaseList []*api.Database, baseDatabaseName string) ([]*api.Deployment, [][]*api.Database, error) {
+func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, dbList []*api.Database, baseDatabaseName string) ([]*api.Deployment, [][]*api.Database, error) {
 	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
 		ProjectID: &projectID,
 	})
@@ -1060,12 +1147,8 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
-	for _, database := range databaseList {
-		if err := s.composeDatabaseRelationship(ctx, database); err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose database relationship for database ID %v", database.ID)).SetInternal(err)
-		}
-	}
-	d, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, databaseList)
+
+	d, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, dbNameTemplate, dbList)
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
@@ -1078,14 +1161,23 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 // Otherwise, we will create a blank database without schema.
 func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
 	// Find all databases in the project.
-	databaseList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+	dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
 	}
 
-	_, matrix, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, databaseList, baseDatabaseName)
+	var dbList []*api.Database
+	for _, dbRaw := range dbRawList {
+		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+		if err != nil {
+			return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose databases relation for ID %v", dbRaw.ID)).SetInternal(err)
+		}
+		dbList = append(dbList, db)
+	}
+
+	_, matrix, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, dbList, baseDatabaseName)
 	if err != nil {
 		return "", "", err
 	}
@@ -1096,7 +1188,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	// Otherwise, we will create a blank new database.
 	if similarDB == nil {
 		found := false
-		for _, db := range databaseList {
+		for _, db := range dbList {
 			var labelList []*api.DatabaseLabel
 			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
 				return "", "", fmt.Errorf("failed to unmarshal labels for database ID %v name %q, error: %v", db.ID, db.Name, err)

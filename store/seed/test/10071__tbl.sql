@@ -660,7 +660,7 @@ VALUES
         7119,
         101,
         101,
-        7018,
+        7019,
         'blog',
         'BASE TABLE',
         -- PostgreSQL doesn't use pluggable engines.

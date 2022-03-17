@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -26,10 +27,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
 		}
-
 		instanceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 
-		instance, err := s.InstanceService.CreateInstance(ctx, instanceCreate)
+		instanceRaw, err := s.InstanceService.CreateInstance(ctx, instanceCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", instanceCreate.Name))
@@ -37,7 +40,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
 		}
 
-		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
+		instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
+		if err != nil {
 			return err
 		}
 
@@ -71,15 +75,18 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			instanceFind.RowStatus = &rowStatus
 		}
-		instanceList, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
+		instanceRawList, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 		}
 
-		for _, instance := range instanceList {
-			if err := s.composeInstanceRelationship(ctx, instance); err != nil {
+		var instanceList []*api.Instance
+		for _, instanceRaw := range instanceRawList {
+			instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
+			if err != nil {
 				return err
 			}
+			instanceList = append(instanceList, instance)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -125,8 +132,25 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
 		}
+		instance, err := s.composeInstanceByID(ctx, id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
+		}
+		host, port := instance.Host, instance.Port
+		if instancePatch.Host != nil {
+			host = *instancePatch.Host
+		}
+		if instancePatch.Port != nil {
+			port = *instancePatch.Port
+		}
+		if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 
-		var instance *api.Instance
+		var instancePatchedRaw *api.InstanceRaw
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
@@ -135,7 +159,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return err
 				}
 			}
-			instance, err = s.InstanceService.PatchInstance(ctx, instancePatch)
+			instancePatchedRaw, err = s.InstanceService.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -144,70 +168,28 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 		}
 
-		// TODO(d): remove this once UI fully switched to data source API.
-		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
-			instanceFind := &api.InstanceFind{
-				ID: &id,
-			}
-			instance, err = s.InstanceService.FindInstance(ctx, instanceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-			}
-			if instance == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
-
-			dataSourceType := api.Admin
-			dataSourceFind := &api.DataSourceFind{
-				InstanceID: &instance.ID,
-				Type:       &dataSourceType,
-			}
-			adminDataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-			if adminDataSourceRaw == nil {
-				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instance.ID, instance.Name, dataSourceType)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
-			}
-
-			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSourceRaw.ID,
-				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-				Username:  instancePatch.Username,
-			}
-			if instancePatch.Password != nil {
-				dataSourcePatch.Password = instancePatch.Password
-			} else if instancePatch.UseEmptyPassword {
-				password := ""
-				dataSourcePatch.Password = &password
-			}
-			if _, err := s.DataSourceService.PatchDataSource(ctx, dataSourcePatch); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instance.Name)).SetInternal(err)
-			}
-		}
-
-		if err := s.composeInstanceRelationship(ctx, instance); err != nil {
+		instancePatched, err := s.composeInstanceRelationship(ctx, instancePatchedRaw)
+		if err != nil {
 			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil {
-			db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+			db, err := getAdminDatabaseDriver(ctx, instancePatched, "", s.l)
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
 					s.l.Warn("Failed to setup migration schema on instance update",
-						zap.String("instance_name", instance.Name),
-						zap.String("engine", string(instance.Engine)),
+						zap.String("instance_name", instancePatchedRaw.Name),
+						zap.String("engine", string(instancePatchedRaw.Engine)),
 						zap.Error(err))
 				}
-				s.syncEngineVersionAndSchema(ctx, instance)
+				s.syncEngineVersionAndSchema(ctx, instancePatched)
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instancePatched); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -447,38 +429,42 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 	instanceFind := &api.InstanceFind{
 		ID: &id,
 	}
-	instance, err := s.InstanceService.FindInstance(ctx, instanceFind)
+	instanceRaw, err := s.InstanceService.FindInstance(ctx, instanceFind)
 	if err != nil {
 		return nil, err
 	}
-	if instance == nil {
+	if instanceRaw == nil {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance not found with ID %v", id)}
 	}
 
-	if err := s.composeInstanceRelationship(ctx, instance); err != nil {
+	instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
+	if err != nil {
 		return nil, err
 	}
 
 	return instance, nil
 }
 
-func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.Instance) error {
-	var err error
+func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.InstanceRaw) (*api.Instance, error) {
+	instance := raw.ToInstance()
 
-	instance.Creator, err = s.composePrincipalByID(ctx, instance.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, instance.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	instance.Creator = creator
 
-	instance.Updater, err = s.composePrincipalByID(ctx, instance.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, instance.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	instance.Updater = updater
 
-	instance.Environment, err = s.composeEnvironmentByID(ctx, instance.EnvironmentID)
+	env, err := s.composeEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	instance.Environment = env
 
 	rowStatus := api.Normal
 	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
@@ -487,7 +473,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		InstanceOnly: true,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var anomalyList []*api.Anomaly
 	for _, anomalyRaw := range anomalyListRaw {
@@ -497,10 +483,10 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	instance.AnomalyList = anomalyList
 	for _, anomaly := range instance.AnomalyList {
 		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
-			return err
+			return nil, err
 		}
 		if anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -508,9 +494,9 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// TODO(dragonly): compose DataSource
+	// TODO(dragonly): implement composeDataSourceRelationship
 	var dataSourceList []*api.DataSource
 	for _, dataSourceRaw := range dataSourceRawList {
 		dataSourceList = append(dataSourceList, dataSourceRaw.ToDataSource())
@@ -518,20 +504,14 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, instance *api.
 	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
 		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
-			return err
+			return nil, err
 		}
 		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
-			return err
-		}
-
-		// TODO(d): remove this when UI is fully switched to data source API.
-		if dataSource.Type == api.Admin {
-			instance.Username = dataSource.Username
-			instance.Password = dataSource.Password
+			return nil, err
 		}
 	}
 
-	return nil
+	return instance, nil
 }
 
 func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
@@ -566,5 +546,32 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
 
+	return nil
+}
+
+// disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
+// Otherwise, users can take control of the database which is a security issue.
+func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
+	if engine != db.Postgres {
+		return nil
+	}
+	if port != fmt.Sprintf("%v", s.datastorePort) {
+		return nil
+	}
+
+	existErr := fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return existErr
+	}
+	// Check loopback addresses
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() {
+			return existErr
+		}
+	}
 	return nil
 }

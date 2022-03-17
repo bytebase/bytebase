@@ -86,7 +86,7 @@
           <button
             class="p-1 hover:bg-gray-200 rounded-md"
             :class="{ 'cursor-not-allowed': isDisconnected }"
-            @click="handleAddTab({})"
+            @click="handleAddTab"
           >
             <heroicons-solid:plus class="h-4 w-4" />
           </button>
@@ -118,7 +118,7 @@
 
 <script lang="ts" setup>
 import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
-import { debounce, cloneDeep } from "lodash-es";
+import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useStore } from "vuex";
 import {
@@ -126,19 +126,18 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
+import { useDialog } from "naive-ui";
 
 import {
   TabInfo,
-  AnyTabInfo,
   SqlEditorGetters,
   TabGetters,
   TabState,
   TabActions,
   SheetActions,
-} from "../../types";
-import { useDialog } from "naive-ui";
-import { getDefaultTab } from "../../store/modules/tab";
-import { useSQLEditorConnection } from "../../composables/useSQLEditorConnection";
+} from "@/types";
+import { getDefaultTab } from "@/utils/tab";
+import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 // getters map
 const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
@@ -163,10 +162,9 @@ const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
     "setCurrentTabId",
     "updateCurrentTab",
   ]);
-const { createSheet, patchSheetById } = useNamespacedActions<SheetActions>(
-  "sheet",
-  ["createSheet", "patchSheetById"]
-);
+const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
+  "patchSheetById",
+]);
 
 const store = useStore();
 const { t } = useI18n();
@@ -260,24 +258,12 @@ const handleSelectTab = async (tab: TabInfo) => {
   setCurrentTabId(tab.id);
   setConnectionContextFromCurrentTab();
 };
-const handleAddTab = (tab: AnyTabInfo) => {
+const handleAddTab = () => {
   if (isDisconnected.value) return;
 
-  addTab(tab);
+  addTab(getDefaultTab());
 
-  nextTick(async () => {
-    const tab = cloneDeep(currentTab.value);
-    handleEditLabel(tab);
-
-    // make a relation between the new sheet and the current tab
-    const newSheet = await createSheet();
-
-    updateCurrentTab({
-      sheetId: newSheet.id,
-    });
-
-    recalculateScrollWidth();
-  });
+  nextTick(recalculateScrollWidth);
 };
 
 const handleRemoveTab = async (tab: TabInfo) => {
