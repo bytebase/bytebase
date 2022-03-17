@@ -170,7 +170,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		alreadySetup = true
 	}
 
-	if err := os.MkdirAll(pgDataDir, 0750); err != nil {
+	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
 	}
 
@@ -180,7 +180,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 			if err != nil {
 				return err
 			}
-			return os.Chmod(path, 0750)
+			return os.Chmod(path, 0700)
 		}); err != nil {
 		return err
 	}
