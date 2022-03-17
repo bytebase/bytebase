@@ -19,6 +19,43 @@ const (
 	TenantLabelKey = "bb.tenant"
 )
 
+// LabelKeyRaw is the store model for an LabelKey.
+// Fields have exactly the same meanings as LabelKey.
+type LabelKeyRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	// bb.environment is a reserved key and identically mapped from environments. It has zero ID and its values are immutable.
+	Key       string
+	ValueList []string
+}
+
+// ToLabelKey creates an instance of LabelKey based on the LabelKeyRaw.
+// This is intended to be called when we need to compose an LabelKey relationship.
+func (raw *LabelKeyRaw) ToLabelKey() *LabelKey {
+	labelKey := LabelKey{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		// bb.environment is a reserved key and identically mapped from environments. It has zero ID and its values are immutable.
+		Key: raw.Key,
+	}
+	copy(labelKey.ValueList, raw.ValueList)
+	return &labelKey
+}
+
 // LabelKey is the available key for labels.
 type LabelKey struct {
 	ID int `jsonapi:"primary,labelKey"`
@@ -117,9 +154,9 @@ type DatabaseLabelUpsert struct {
 // LabelService is the service for labels.
 type LabelService interface {
 	// FindLabelKeyList finds all available keys for labels.
-	FindLabelKeyList(ctx context.Context, find *LabelKeyFind) ([]*LabelKey, error)
+	FindLabelKeyList(ctx context.Context, find *LabelKeyFind) ([]*LabelKeyRaw, error)
 	// PatchLabelKey patches a label key.
-	PatchLabelKey(ctx context.Context, patch *LabelKeyPatch) (*LabelKey, error)
+	PatchLabelKey(ctx context.Context, patch *LabelKeyPatch) (*LabelKeyRaw, error)
 	// FindDatabaseLabelList finds all database labels matching the conditions, ascending by key.
 	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
 	// SetDatabaseLabelList sets a database's labels to new labels.

@@ -27,7 +27,7 @@ func NewLabelService(logger *zap.Logger, db *DB) *LabelService {
 }
 
 // FindLabelKeyList retrieves a list of label keys for labels based on find.
-func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKeyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -46,7 +46,7 @@ func (s *LabelService) FindLabelKeyList(ctx context.Context, find *api.LabelKeyF
 	return ret, nil
 }
 
-func (s *LabelService) findLabelKeyList(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
+func (s *LabelService) findLabelKeyList(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*api.LabelKeyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.RowStatus; v != nil {
@@ -68,23 +68,23 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *sql.Tx, find *a
 		return nil, FormatError(err)
 	}
 	// Iterate over result set and deserialize rows into list.
-	var ret []*api.LabelKey
-	keymap := make(map[string]*api.LabelKey)
+	var labelKeyRawList []*api.LabelKeyRaw
+	keymap := make(map[string]*api.LabelKeyRaw)
 	for rows.Next() {
-		var labelKey api.LabelKey
+		var labelKeyRaw api.LabelKeyRaw
 		if err := rows.Scan(
-			&labelKey.ID,
-			&labelKey.CreatorID,
-			&labelKey.CreatedTs,
-			&labelKey.UpdaterID,
-			&labelKey.UpdatedTs,
-			&labelKey.Key,
+			&labelKeyRaw.ID,
+			&labelKeyRaw.CreatorID,
+			&labelKeyRaw.CreatedTs,
+			&labelKeyRaw.UpdaterID,
+			&labelKeyRaw.UpdatedTs,
+			&labelKeyRaw.Key,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		ret = append(ret, &labelKey)
-		keymap[labelKey.Key] = &labelKey
+		labelKeyRawList = append(labelKeyRawList, &labelKeyRaw)
+		keymap[labelKeyRaw.Key] = &labelKeyRaw
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
@@ -125,7 +125,7 @@ func (s *LabelService) findLabelKeyList(ctx context.Context, tx *sql.Tx, find *a
 		return nil, FormatError(err)
 	}
 
-	return ret, nil
+	return labelKeyRawList, nil
 }
 
 type labelValueUpsert struct {
@@ -136,25 +136,25 @@ type labelValueUpsert struct {
 }
 
 // PatchLabelKey patches a label key.
-func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
+func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKeyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	ret, err := s.findLabelKeyList(ctx, tx.PTx, &api.LabelKeyFind{})
+	labelKeyRawList, err := s.findLabelKeyList(ctx, tx.PTx, &api.LabelKeyFind{})
 	if err != nil {
 		return nil, err
 	}
-	var labelKey *api.LabelKey
-	for _, k := range ret {
-		if k.ID == patch.ID {
-			labelKey = k
+	var labelKeyRaw *api.LabelKeyRaw
+	for _, raw := range labelKeyRawList {
+		if raw.ID == patch.ID {
+			labelKeyRaw = raw
 		}
 	}
-	if labelKey == nil {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key ID not found: %v", patch.ID))
+	if labelKeyRaw == nil {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key not found with ID %v", patch.ID))
 	}
 
 	// Generate label value upserts.
@@ -164,7 +164,7 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 		upserts = append(upserts, labelValueUpsert{
 			rowStatus: api.Normal,
 			updaterID: patch.UpdaterID,
-			key:       labelKey.Key,
+			key:       labelKeyRaw.Key,
 			value:     v,
 		})
 	}
@@ -173,12 +173,12 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 	for _, v := range patch.ValueList {
 		newValues[v] = true
 	}
-	for _, v := range labelKey.ValueList {
+	for _, v := range labelKeyRaw.ValueList {
 		if _, ok := newValues[v]; !ok {
 			upserts = append(upserts, labelValueUpsert{
 				rowStatus: api.Archived,
 				updaterID: patch.UpdaterID,
-				key:       labelKey.Key,
+				key:       labelKeyRaw.Key,
 				value:     v,
 			})
 		}
@@ -194,8 +194,8 @@ func (s *LabelService) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPat
 		return nil, FormatError(err)
 	}
 
-	labelKey.ValueList = patch.ValueList
-	return labelKey, nil
+	labelKeyRaw.ValueList = patch.ValueList
+	return labelKeyRaw, nil
 }
 
 func (s *LabelService) upsertLabelValue(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {

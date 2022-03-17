@@ -21,9 +21,14 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		find := &api.LabelKeyFind{
 			RowStatus: &rowStatus,
 		}
-		labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, find)
+		labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
+		}
+		// TODO(dragonly): compose this
+		var labelKeyList []*api.LabelKey
+		for _, raw := range labelKeyRawList {
+			labelKeyList = append(labelKeyList, raw.ToLabelKey())
 		}
 
 		// Add reserved environment key.

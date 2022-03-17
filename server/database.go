@@ -906,9 +906,14 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	rowStatus := api.Normal
-	labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
+	labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
+	}
+	// TODO(dragonly): implement composeLabelKeyRelationship
+	var labelKeyList []*api.LabelKey
+	for _, raw := range labelKeyRawList {
+		labelKeyList = append(labelKeyList, raw.ToLabelKey())
 	}
 
 	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
