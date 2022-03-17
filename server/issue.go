@@ -465,15 +465,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return issue, nil
 	}
 
-	task, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline)
-	if err != nil {
+	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
-	}
-	// We need to re-compose task relationship because the one in issue is modified by ScheduleNextTaskIfNeeded.
-	if task != nil {
-		if err := s.composeTaskRelationship(ctx, task); err != nil {
-			return nil, fmt.Errorf("failed to compose task %v, error %w", task.Name, err)
-		}
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -500,7 +493,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
 	id := 0
@@ -528,7 +521,7 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 		}
 		for _, tc := range sc.TaskList {
 			id++
-			task := &api.Task{
+			taskRaw := &api.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
@@ -543,6 +536,10 @@ func createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, cre
 				StageID:           stage.ID,
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
+			}
+			task, err := s.composeTaskRelationship(ctx, taskRaw)
+			if err != nil {
+				return nil, err
 			}
 			stage.TaskList = append(stage.TaskList, task)
 		}
@@ -907,7 +904,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
-		return createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
+		return s.createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
