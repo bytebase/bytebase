@@ -35,7 +35,7 @@ func newMigrateCmd() *cobra.Command {
 	)
 	migrateCmd := &cobra.Command{
 		Use:   "migrate",
-		Short: "Migrates the database schema",
+		Short: "Migrate the database schema",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tlsCfg := db.TLSConfig{
 				SslCA:   sslCA,
@@ -51,11 +51,11 @@ func newMigrateCmd() *cobra.Command {
 		}}
 
 	migrateCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
-	migrateCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
-	migrateCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
-	migrateCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
+	migrateCmd.Flags().StringVar(&username, "username", "", "Database username. (default mysql:root pg:postgres).")
+	migrateCmd.Flags().StringVar(&password, "password", "", "Database password.")
+	migrateCmd.Flags().StringVar(&hostname, "host", "", "Database host.")
 	migrateCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
-	migrateCmd.Flags().StringVar(&database, "database", "", "Database to execute migration.")
+	migrateCmd.Flags().StringVar(&database, "database", "", "Target database to execute migration.")
 	migrateCmd.Flags().StringVar(&file, "sql", "", "File that stores the migration script.")
 	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
 	migrateCmd.Flags().StringVar(&issueID, "issue-id", "", "Issue ID of migration.")

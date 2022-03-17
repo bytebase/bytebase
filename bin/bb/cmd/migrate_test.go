@@ -42,7 +42,7 @@ func TestMigrate(t *testing.T) {
 				"migrate",
 				"--type", "mysql",
 				"--username", "root",
-				"--hostname", "localhost",
+				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
 				"--sql",
 				saveSQLAsFile(t, `
@@ -79,7 +79,7 @@ func TestCreateDatabase(t *testing.T) {
 				"migrate",
 				"--type", "mysql",
 				"--username", "root",
-				"--hostname", "localhost",
+				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
 				"--sql", "testdata/mysql_test_schema/1_todo.sql",
 			},
