@@ -165,13 +165,28 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
 	}
-	// Skip initDB if setup already.
+	alreadySetup := false
 	if err == nil {
-		return nil
+		alreadySetup = true
 	}
 
 	if err := os.MkdirAll(pgDataDir, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
+	}
+
+	if err := filepath.Walk(pgDataDir,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			return os.Chmod(path, 0750)
+		}); err != nil {
+		return err
+	}
+
+	// Skip initDB if setup already.
+	if alreadySetup {
+		return nil
 	}
 
 	args := []string{
