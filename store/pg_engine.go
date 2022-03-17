@@ -79,7 +79,7 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, schemaVersion int, serverVersion string) *DB {
+func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, serverVersion string, schemaVersion int) *DB {
 	db := &DB{
 		l:              logger,
 		connCfg:        connCfg,

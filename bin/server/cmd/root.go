@@ -340,7 +340,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     "localhost",
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, m.profile.schemaVersion, version)
+	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
