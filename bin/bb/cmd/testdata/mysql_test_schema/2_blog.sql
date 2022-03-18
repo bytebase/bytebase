@@ -80,7 +80,7 @@ DECLARE
 	RETURN comment_count;
 END;
 
--- Skip Event since it causes unstable output.
+-- Skip Event since it includes timestamp which causes unstable output.
 -- -- Event
 -- CREATE EVENT bytebase_test_blog.increase_author_coin_daily ON SCHEDULE EVERY 1 DAY DO UPDATE author
 -- SET coin = coin + 1;

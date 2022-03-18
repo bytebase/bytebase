@@ -98,11 +98,11 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 	}
 
 	driver, err := db.Open(ctx, dbType, db.DriverConfig{Logger: logger}, db.ConnectionConfig{
-		Host:     hostname,
-		Port:     port,
-		Username: username,
-		Password: password,
-		// Database:  database,
+		Host:      hostname,
+		Port:      port,
+		Username:  username,
+		Password:  password,
+		Database:  database,
 		TLSConfig: tlsCfg,
 	}, db.ConnectionContext{})
 	if err != nil {
