@@ -21,9 +21,14 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		find := &api.LabelKeyFind{
 			RowStatus: &rowStatus,
 		}
-		labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, find)
+		labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
+		}
+		// TODO(dragonly): compose this
+		var labelKeyList []*api.LabelKey
+		for _, raw := range labelKeyRawList {
+			labelKeyList = append(labelKeyList, raw.ToLabelKey())
 		}
 
 		// Add reserved environment key.
@@ -64,7 +69,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		}
 		// We don't allow updating reserved environment label keys. Since its ID is zero, it cannot be updated by default.
 
-		labelKey, err := s.LabelService.PatchLabelKey(ctx, patch)
+		labelKeyRaw, err := s.LabelService.PatchLabelKey(ctx, patch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Label ID not found: %d", id))
@@ -72,6 +77,8 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch label ID: %v", id)).SetInternal(err)
 		}
 
+		// TODO(dragonly): implement composeLabelKey
+		labelKey := labelKeyRaw.ToLabelKey()
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, labelKey); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal label key response: %v", id)).SetInternal(err)
