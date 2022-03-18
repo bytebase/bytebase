@@ -226,7 +226,7 @@ func (s *LabelService) upsertLabelValue(ctx context.Context, tx *sql.Tx, upsert 
 }
 
 // FindDatabaseLabelList finds the labels associated with the database.
-func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabelRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -245,7 +245,7 @@ func (s *LabelService) FindDatabaseLabelList(ctx context.Context, find *api.Data
 	return databaseLabelList, nil
 }
 
-func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*api.DatabaseLabelRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -278,24 +278,24 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find 
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	var ret []*api.DatabaseLabel
+	var ret []*api.DatabaseLabelRaw
 	for rows.Next() {
-		var databaseLabel api.DatabaseLabel
+		var dbLabelRaw api.DatabaseLabelRaw
 		if err := rows.Scan(
-			&databaseLabel.ID,
-			&databaseLabel.RowStatus,
-			&databaseLabel.CreatorID,
-			&databaseLabel.CreatedTs,
-			&databaseLabel.UpdaterID,
-			&databaseLabel.UpdatedTs,
-			&databaseLabel.DatabaseID,
-			&databaseLabel.Key,
-			&databaseLabel.Value,
+			&dbLabelRaw.ID,
+			&dbLabelRaw.RowStatus,
+			&dbLabelRaw.CreatorID,
+			&dbLabelRaw.CreatedTs,
+			&dbLabelRaw.UpdaterID,
+			&dbLabelRaw.UpdatedTs,
+			&dbLabelRaw.DatabaseID,
+			&dbLabelRaw.Key,
+			&dbLabelRaw.Value,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		ret = append(ret, &databaseLabel)
+		ret = append(ret, &dbLabelRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
@@ -304,7 +304,7 @@ func (s *LabelService) findDatabaseLabels(ctx context.Context, tx *sql.Tx, find 
 	return ret, nil
 }
 
-func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabel, error) {
+func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*api.DatabaseLabelRaw, error) {
 	// Upsert row into db_label
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db_label (
@@ -337,27 +337,27 @@ func (s *LabelService) upsertDatabaseLabel(ctx context.Context, tx *sql.Tx, upse
 	defer row.Close()
 
 	row.Next()
-	var databaseLabel api.DatabaseLabel
+	var dbLabelRaw api.DatabaseLabelRaw
 	if err := row.Scan(
-		&databaseLabel.ID,
-		&databaseLabel.RowStatus,
-		&databaseLabel.CreatorID,
-		&databaseLabel.CreatedTs,
-		&databaseLabel.UpdaterID,
-		&databaseLabel.UpdatedTs,
-		&databaseLabel.DatabaseID,
-		&databaseLabel.Key,
-		&databaseLabel.Value,
+		&dbLabelRaw.ID,
+		&dbLabelRaw.RowStatus,
+		&dbLabelRaw.CreatorID,
+		&dbLabelRaw.CreatedTs,
+		&dbLabelRaw.UpdaterID,
+		&dbLabelRaw.UpdatedTs,
+		&dbLabelRaw.DatabaseID,
+		&dbLabelRaw.Key,
+		&dbLabelRaw.Value,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &databaseLabel, nil
+	return &dbLabelRaw, nil
 }
 
 // SetDatabaseLabelList sets the labels for a database.
 func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
-	oldLabelList, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	oldLabelRawList, err := s.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -372,18 +372,18 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 
 	var ret []*api.DatabaseLabel
 
-	for _, oldLabel := range oldLabelList {
+	for _, oldLabelRaw := range oldLabelRawList {
 		// Archive all old labels
 		// Skip environment label key because we don't store it.
-		if oldLabel.Key == api.EnvironmentKeyName {
+		if oldLabelRaw.Key == api.EnvironmentKeyName {
 			continue
 		}
 		upsert := &api.DatabaseLabelUpsert{
 			UpdaterID:  updaterID,
 			RowStatus:  api.Archived,
 			DatabaseID: databaseID,
-			Key:        oldLabel.Key,
-			Value:      oldLabel.Value,
+			Key:        oldLabelRaw.Key,
+			Value:      oldLabelRaw.Value,
 		}
 		if _, err := s.upsertDatabaseLabel(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
@@ -403,11 +403,12 @@ func (s *LabelService) SetDatabaseLabelList(ctx context.Context, labelList []*ap
 			Key:        label.Key,
 			Value:      label.Value,
 		}
-		label, err := s.upsertDatabaseLabel(ctx, tx.PTx, upsert)
+		labelRaw, err := s.upsertDatabaseLabel(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, label)
+		// TODO(dragonly): implement composeDatabaseLabelRelation
+		ret = append(ret, labelRaw.ToDatabaseLabel())
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
