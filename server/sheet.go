@@ -51,13 +51,13 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		sheet, err := s.SheetService.CreateSheet(ctx, sheetCreate)
+		sheetRaw, err := s.SheetService.CreateSheet(ctx, sheetCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
 		}
-
-		if err := s.composeSheetRelationship(ctx, sheet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created sheet relationship").SetInternal(err)
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet with ID %d", sheetRaw.ID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -98,15 +98,17 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.Visibility = &visibility
 		}
 
-		sheetList, err := s.SheetService.FindSheetList(ctx, sheetFind)
+		sheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
 		}
-
-		for _, sheet := range sheetList {
-			if err := s.composeSheetRelationship(ctx, sheet); err != nil {
+		var sheetList []*api.Sheet
+		for _, sheetRaw := range sheetRawList {
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet relationship: %v", sheet.Name)).SetInternal(err)
 			}
+			sheetList = append(sheetList, sheet)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -127,15 +129,16 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			ID: &id,
 		}
 
-		sheet, err := s.SheetService.FindSheet(ctx, sheetFind)
+		sheetRaw, err := s.SheetService.FindSheet(ctx, sheetFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet ID: %v", id)).SetInternal(err)
 		}
-		if sheet == nil {
+		if sheetRaw == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
 		}
 
-		if err := s.composeSheetRelationship(ctx, sheet); err != nil {
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet relationship: %v", sheet.ID)).SetInternal(err)
 		}
 
@@ -161,7 +164,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch sheet request").SetInternal(err)
 		}
 
-		sheet, err := s.SheetService.PatchSheet(ctx, sheetPatch)
+		sheetRaw, err := s.SheetService.PatchSheet(ctx, sheetPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
@@ -169,7 +172,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet ID: %v", id)).SetInternal(err)
 		}
 
-		if err := s.composeSheetRelationship(ctx, sheet); err != nil {
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated sheet relationship: %v", sheet.ID)).SetInternal(err)
 		}
 
@@ -202,32 +206,36 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeSheetRelationship(ctx context.Context, sheet *api.Sheet) error {
-	var err error
+func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw) (*api.Sheet, error) {
+	sheet := raw.ToSheet()
 
-	sheet.Creator, err = s.composePrincipalByID(ctx, sheet.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, sheet.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	sheet.Creator = creator
 
-	sheet.Updater, err = s.composePrincipalByID(ctx, sheet.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, sheet.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	sheet.Updater = updater
 
-	sheet.Project, err = s.composeProjectByID(ctx, sheet.ProjectID)
+	project, err := s.composeProjectByID(ctx, sheet.ProjectID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	sheet.Project = project
 
 	if sheet.DatabaseID != nil {
-		sheet.Database, err = s.composeDatabaseByFind(ctx, &api.DatabaseFind{
+		database, err := s.composeDatabaseByFind(ctx, &api.DatabaseFind{
 			ID: sheet.DatabaseID,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
+		sheet.Database = database
 	}
 
-	return nil
+	return sheet, nil
 }
