@@ -276,7 +276,7 @@ func start() {
 // NewMain creates a main server based on profile.
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgDataDir := path.Join(activeProfile.dataDir, "pgdata")
+	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -335,7 +335,7 @@ func (m *Main) Run(ctx context.Context) error {
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
-		Host:     "localhost",
+		Host:     common.GetPostgresDataDir(m.profile.dataDir),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
 	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
