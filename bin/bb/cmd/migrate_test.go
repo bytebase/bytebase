@@ -44,12 +44,11 @@ func TestMigrate(t *testing.T) {
 				"--username", "root",
 				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
-				"--sql",
-				saveSQLAsFile(t, `
+				"-c", `"
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
 		name TEXT NULL
-	);`),
+	);"`,
 				"--database", "bytebase_test_todo",
 			},
 			expected: expectedMigrate,
@@ -81,7 +80,7 @@ func TestCreateDatabase(t *testing.T) {
 				"--username", "root",
 				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
-				"--sql", "testdata/mysql_test_schema/1_todo.sql",
+				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
 			expected: expectedMigrate,
 		},

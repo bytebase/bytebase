@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/user"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/plugin/db"
@@ -24,7 +25,8 @@ func newMigrateCmd() *cobra.Command {
 		hostname     string
 		port         string
 		database     string
-		file         string
+		fileList     []string
+		commandList  []string
 		description  string
 		issueID      string
 
@@ -42,12 +44,25 @@ func newMigrateCmd() *cobra.Command {
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			}
-			f, err := os.Open(file)
-			if err != nil {
-				return fmt.Errorf("failed to open sql file %s, got error: %w", file, err)
+
+			var sqlReaders []io.Reader
+
+			//TODO(qsliu): support file and command combined as the passed order.
+			for _, file := range fileList {
+				f, err := os.Open(file)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				sqlReaders = append(sqlReaders, f)
 			}
-			defer f.Close()
-			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, description, issueID, false /*createDatabase*/, f, tlsCfg)
+
+			for _, command := range commandList {
+				sqlReaders = append(sqlReaders, strings.NewReader(command))
+			}
+
+			sqlReader := io.MultiReader(sqlReaders...)
+			return migrateDatabase(context.Background(), databaseType, username, password, hostname, port, database, description, issueID, false /*createDatabase*/, sqlReader, tlsCfg)
 		}}
 
 	migrateCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql or pg).")
@@ -56,7 +71,8 @@ func newMigrateCmd() *cobra.Command {
 	migrateCmd.Flags().StringVar(&hostname, "host", "", "Database host.")
 	migrateCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
 	migrateCmd.Flags().StringVar(&database, "database", "", "Target database to execute migration.")
-	migrateCmd.Flags().StringVar(&file, "sql", "", "File that stores the migration script.")
+	migrateCmd.Flags().StringSliceVarP(&fileList, "file", "f", []string{}, "SQL file to execute.")
+	migrateCmd.Flags().StringSliceVarP(&commandList, "command", "c", []string{}, "SQL command to execute.")
 	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
 	migrateCmd.Flags().StringVar(&issueID, "issue-id", "", "Issue ID of migration.")
 	// tls flags for SSL connection.
