@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	//go:embed testdata/expected/test_dump_todo
-	expectedTodo string
+	//go:embed testdata/expected/dump_test_TestDump
+	_TestDump string
 )
 
 func TestDump(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, 13306)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestDump)
 	defer stop()
 
 	t.Log("Importing MySQL data...")
@@ -35,7 +35,7 @@ func TestDump(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedTodo,
+			expected: _TestDump,
 		},
 	}
 	tableTest(t, tt)
