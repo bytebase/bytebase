@@ -28,17 +28,17 @@ function seedDemoData(){
 
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
 
-    until [ -d /var/opt/bytebase/pgdata/ ]
+    until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]
     do
         echo "waiting..."
         sleep 1
     done
-    echo 'Sleep 60 seconds for bytebase to finish migration...'
-    sleep 60
+    echo 'Sleep 120 seconds for bytebase to finish migration...'
+    sleep 120
 
     echo 'Killing seeding program'
 
-    ps | grep 'bytebase'  | grep -v grep | xargs kill -9
+    killall bytebase
 }
 
 function startReadonly(){
