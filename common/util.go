@@ -2,6 +2,7 @@ package common
 
 import (
 	"math/rand"
+	"path"
 	"sort"
 	"strings"
 )
@@ -36,4 +37,14 @@ func HasPrefixes(src string, prefixes ...string) bool {
 		}
 	}
 	return false
+}
+
+// GetPostgresDataDir returns the postgres data directory of Bytebase.
+func GetPostgresDataDir(dataDir string) string {
+	return path.Join(dataDir, "pgdata")
+}
+
+// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
+func GetPostgresSocketDir() string {
+	return "/tmp"
 }

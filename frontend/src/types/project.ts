@@ -20,6 +20,11 @@ export type ProjectRoleProviderPayload = {
   lastSyncTs: number;
 };
 
+export const EmptyProjectRoleProviderPayload: ProjectRoleProviderPayload = {
+  vcsRole: "",
+  lastSyncTs: 0,
+};
+
 // Project
 export type Project = {
   id: ProjectId;
