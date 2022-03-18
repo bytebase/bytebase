@@ -63,19 +63,20 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				pipelineFind := &api.PipelineFind{
 					Status: &pipelineStatus,
 				}
-				pipelineList, err := s.server.PipelineService.FindPipelineList(ctx, pipelineFind)
+				pipelineRawList, err := s.server.PipelineService.FindPipelineList(ctx, pipelineFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
 				}
-				for _, pipeline := range pipelineList {
-					if pipeline.ID == api.OnboardingPipelineID {
+				for _, pipelineRaw := range pipelineRawList {
+					if pipelineRaw.ID == api.OnboardingPipelineID {
 						continue
 					}
-					if err := s.server.composePipelineRelationship(ctx, pipeline); err != nil {
+					pipeline, err := s.server.composePipelineRelationship(ctx, pipelineRaw)
+					if err != nil {
 						s.l.Error("Failed to fetch pipeline relationship",
-							zap.Int("id", pipeline.ID),
-							zap.String("name", pipeline.Name),
+							zap.Int("id", pipelineRaw.ID),
+							zap.String("name", pipelineRaw.Name),
 							zap.Error(err),
 						)
 						continue
@@ -83,7 +84,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
 						s.l.Error("Failed to schedule next running task",
-							zap.Int("pipeline_id", pipeline.ID),
+							zap.Int("pipeline_id", pipelineRaw.ID),
 							zap.Error(err),
 						)
 					}
