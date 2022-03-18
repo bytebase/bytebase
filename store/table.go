@@ -27,7 +27,7 @@ func NewTableService(logger *zap.Logger, db *DB) *TableService {
 }
 
 // CreateTable creates a new table.
-func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate) (*api.Table, error) {
+func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate) (*api.TableRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,7 +47,7 @@ func (s *TableService) CreateTable(ctx context.Context, create *api.TableCreate)
 }
 
 // FindTableList retrieves a list of tables based on find.
-func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
+func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) ([]*api.TableRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -64,7 +64,7 @@ func (s *TableService) FindTableList(ctx context.Context, find *api.TableFind) (
 
 // FindTable retrieves a single table based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
+func (s *TableService) FindTable(ctx context.Context, find *api.TableFind) (*api.TableRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -104,7 +104,7 @@ func (s *TableService) DeleteTable(ctx context.Context, delete *api.TableDelete)
 }
 
 // createTable creates a new table.
-func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*api.Table, error) {
+func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*api.TableRaw, error) {
 	// Insert row into table.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO tbl (
@@ -150,32 +150,32 @@ func (s *TableService) createTable(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var table api.Table
+	var tableRaw api.TableRaw
 	if err := row.Scan(
-		&table.ID,
-		&table.CreatorID,
-		&table.CreatedTs,
-		&table.UpdaterID,
-		&table.UpdatedTs,
-		&table.DatabaseID,
-		&table.Name,
-		&table.Type,
-		&table.Engine,
-		&table.Collation,
-		&table.RowCount,
-		&table.DataSize,
-		&table.IndexSize,
-		&table.DataFree,
-		&table.CreateOptions,
-		&table.Comment,
+		&tableRaw.ID,
+		&tableRaw.CreatorID,
+		&tableRaw.CreatedTs,
+		&tableRaw.UpdaterID,
+		&tableRaw.UpdatedTs,
+		&tableRaw.DatabaseID,
+		&tableRaw.Name,
+		&tableRaw.Type,
+		&tableRaw.Engine,
+		&tableRaw.Collation,
+		&tableRaw.RowCount,
+		&tableRaw.DataSize,
+		&tableRaw.IndexSize,
+		&tableRaw.DataFree,
+		&tableRaw.CreateOptions,
+		&tableRaw.Comment,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &table, nil
+	return &tableRaw, nil
 }
 
-func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*api.Table, error) {
+func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*api.TableRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -215,38 +215,38 @@ func (s *TableService) findTableList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into tableList.
-	var tableList []*api.Table
+	// Iterate over result set and deserialize rows into tableRawList.
+	var tableRawList []*api.TableRaw
 	for rows.Next() {
-		var table api.Table
+		var tableRaw api.TableRaw
 		if err := rows.Scan(
-			&table.ID,
-			&table.CreatorID,
-			&table.CreatedTs,
-			&table.UpdaterID,
-			&table.UpdatedTs,
-			&table.DatabaseID,
-			&table.Name,
-			&table.Type,
-			&table.Engine,
-			&table.Collation,
-			&table.RowCount,
-			&table.DataSize,
-			&table.IndexSize,
-			&table.DataFree,
-			&table.CreateOptions,
-			&table.Comment,
+			&tableRaw.ID,
+			&tableRaw.CreatorID,
+			&tableRaw.CreatedTs,
+			&tableRaw.UpdaterID,
+			&tableRaw.UpdatedTs,
+			&tableRaw.DatabaseID,
+			&tableRaw.Name,
+			&tableRaw.Type,
+			&tableRaw.Engine,
+			&tableRaw.Collation,
+			&tableRaw.RowCount,
+			&tableRaw.DataSize,
+			&tableRaw.IndexSize,
+			&tableRaw.DataFree,
+			&tableRaw.CreateOptions,
+			&tableRaw.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		tableList = append(tableList, &table)
+		tableRawList = append(tableRawList, &tableRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return tableList, nil
+	return tableRawList, nil
 }
 
 // deleteTable permanently deletes tables from a database.
