@@ -21,7 +21,7 @@ var (
 )
 
 func TestMigrate(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, 23306)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestMigrate)
 	defer stop()
 
 	if err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr); err != nil {
@@ -79,7 +79,7 @@ var (
 )
 
 func TestCreateDatabase(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, 23307)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
 	defer stop()
 
 	tt := []testTable{

@@ -17,7 +17,7 @@ var (
 )
 
 func TestDump(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, 13306)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestDump)
 	defer stop()
 
 	t.Log("Importing MySQL data...")
