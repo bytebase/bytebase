@@ -68,6 +68,48 @@ func (patch *LabelKeyPatch) Validate() error {
 	return nil
 }
 
+// DatabaseLabelRaw is the store model for an DatabaseLabel.
+// Fields have exactly the same meanings as DatabaseLabel.
+type DatabaseLabelRaw struct {
+	ID int
+
+	// Standard fields
+	RowStatus RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+	Key        string
+
+	// Domain specific fields
+	Value string
+}
+
+// ToDatabaseLabel creates an instance of DatabaseLabel based on the DatabaseLabelRaw.
+// This is intended to be called when we need to compose an DatabaseLabel relationship.
+func (raw *DatabaseLabelRaw) ToDatabaseLabel() *DatabaseLabel {
+	return &DatabaseLabel{
+		ID: raw.ID,
+
+		// Standard fields
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+		Key:        raw.Key,
+
+		// Domain specific fields
+		Value: raw.Value,
+	}
+}
+
 // DatabaseLabel is the label associated with a database.
 type DatabaseLabel struct {
 	ID int `json:"-"`
@@ -121,7 +163,7 @@ type LabelService interface {
 	// PatchLabelKey patches a label key.
 	PatchLabelKey(ctx context.Context, patch *LabelKeyPatch) (*LabelKey, error)
 	// FindDatabaseLabelList finds all database labels matching the conditions, ascending by key.
-	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabel, error)
+	FindDatabaseLabelList(ctx context.Context, find *DatabaseLabelFind) ([]*DatabaseLabelRaw, error)
 	// SetDatabaseLabelList sets a database's labels to new labels.
 	SetDatabaseLabelList(ctx context.Context, labels []*DatabaseLabel, databaseID int, updaterID int) ([]*DatabaseLabel, error)
 }
