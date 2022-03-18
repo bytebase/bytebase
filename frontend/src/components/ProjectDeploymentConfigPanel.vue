@@ -147,7 +147,7 @@ import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
-  backup: DeploymentConfig | undefined;
+  originalDeployment: DeploymentConfig | undefined;
   error: string | undefined;
   showPreview: boolean;
 };
@@ -172,13 +172,13 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       deployment: undefined,
-      backup: undefined,
+      originalDeployment: undefined,
       error: undefined,
       showPreview: false,
     });
 
     const dirty = computed((): boolean => {
-      return !isEqual(state.deployment, state.backup);
+      return !isEqual(state.deployment, state.originalDeployment);
     });
 
     const allowUpdate = computed((): boolean => {
@@ -245,7 +245,7 @@ export default defineComponent({
         state.deployment = cloneDeep(dep);
       }
       // clone the object to the backup
-      state.backup = cloneDeep(state.deployment);
+      state.originalDeployment = cloneDeep(state.deployment);
       // clean up error and dirty status
       resetStates();
     });
@@ -288,7 +288,7 @@ export default defineComponent({
           // nothing to do
         },
         onPositiveClick: () => {
-          state.deployment = cloneDeep(state.backup);
+          state.deployment = cloneDeep(state.originalDeployment);
           resetStates();
         },
       });
@@ -312,7 +312,7 @@ export default defineComponent({
       });
 
       // clone the updated version to the backup
-      state.backup = cloneDeep(state.deployment);
+      state.originalDeployment = cloneDeep(state.deployment);
       // clean up error status
       resetStates();
     };
