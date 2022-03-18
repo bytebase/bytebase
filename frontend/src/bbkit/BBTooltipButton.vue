@@ -1,5 +1,5 @@
 <template>
-  <NTooltip trigger="manual" :show="state.tooltipVisible">
+  <NTooltip trigger="manual" :show="tooltipVisible">
     <template #trigger>
       <!--
         <button disabled> will swallow all mouse related events like mouseover/mouseout...
@@ -29,7 +29,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { withDefaults, computed, reactive, watch, useSlots } from "vue";
+import { withDefaults, computed, ref, watch, useSlots } from "vue";
 
 export type ButtonType =
   | "normal"
@@ -60,9 +60,7 @@ defineEmits<{
 
 const slots = useSlots();
 
-const state = reactive({
-  tooltipVisible: false,
-});
+const tooltipVisible = ref(false);
 
 const tooltipEnabled = computed(() => {
   if (props.tooltipMode === "ALWAYS") return true;
@@ -72,16 +70,16 @@ const tooltipEnabled = computed(() => {
 
 const showTooltip = () => {
   if (!tooltipEnabled.value) return;
-  state.tooltipVisible = true;
+  tooltipVisible.value = true;
 };
 
 const hideTooltip = () => {
-  state.tooltipVisible = false;
+  tooltipVisible.value = false;
 };
 
 watch(tooltipEnabled, (enable) => {
   if (!enable) {
-    state.tooltipVisible = false;
+    tooltipVisible.value = false;
   }
 });
 </script>
