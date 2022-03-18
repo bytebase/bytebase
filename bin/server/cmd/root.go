@@ -334,10 +334,11 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 	m.pgStarted = true
 
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
-		Host:     common.GetPostgresDataDir(m.profile.dataDir),
+		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
 	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version, m.profile.schemaVersion)

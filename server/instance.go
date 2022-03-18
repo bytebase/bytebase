@@ -551,7 +551,8 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 // disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
 // Otherwise, users can take control of the database which is a security issue.
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
-	if engine == db.Postgres && port == fmt.Sprintf("%v", s.datastorePort) && host == common.GetPostgresDataDir(s.dataDir) {
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
+	if engine == db.Postgres && port == fmt.Sprintf("%v", s.datastorePort) && host == common.GetPostgresSocketDir() {
 		return fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil

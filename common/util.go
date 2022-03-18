@@ -43,3 +43,8 @@ func HasPrefixes(src string, prefixes ...string) bool {
 func GetPostgresDataDir(dataDir string) string {
 	return path.Join(dataDir, "pgdata")
 }
+
+// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
+func GetPostgresSocketDir() string {
+	return "/tmp"
+}

@@ -46,7 +46,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	// https://www.postgresql.org/docs/current/app-postgres.html
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
-		"-o", fmt.Sprintf(`-p %d -k . -h ""`, i.port))
+		"-o", fmt.Sprintf(`-p %d -h ""`, i.port))
 
 	p.Stdout = stdout
 	p.Stderr = stderr
