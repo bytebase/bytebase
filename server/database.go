@@ -379,9 +379,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		tableFind := &api.TableFind{
 			DatabaseID: &id,
 		}
-		tableList, err := s.TableService.FindTableList(ctx, tableFind)
+		tableRawList, err := s.TableService.FindTableList(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table list for database id: %d", id)).SetInternal(err)
+		}
+		var tableList []*api.Table
+		for _, tableRaw := range tableRawList {
+			table, err := s.composeTableRelationship(ctx, tableRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableRaw.Name)).SetInternal(err)
+			}
+			tableList = append(tableList, table)
 		}
 
 		for _, table := range tableList {
@@ -405,10 +413,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
 			table.IndexList = indexList
-
-			if err := s.composeTableRelationship(ctx, table); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -441,12 +445,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			Name:       &tableName,
 		}
-		table, err := s.TableService.FindTable(ctx, tableFind)
+		tableRaw, err := s.TableService.FindTable(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
-		if table == nil {
+		if tableRaw == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("table %q not found from database %v", tableName, id)).SetInternal(err)
+		}
+		table, err := s.composeTableRelationship(ctx, tableRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableName)).SetInternal(err)
 		}
 
 		table.Database = database
@@ -470,10 +478,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}
 		table.IndexList = indexList
-
-		if err := s.composeTableRelationship(ctx, table); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
-		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, table); err != nil {
@@ -1081,19 +1085,22 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	return db, nil
 }
 
-func (s *Server) composeTableRelationship(ctx context.Context, table *api.Table) error {
-	var err error
+func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw) (*api.Table, error) {
+	table := raw.ToTable()
 
-	table.Creator, err = s.composePrincipalByID(ctx, table.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, table.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	table.Creator = creator
 
-	table.Updater, err = s.composePrincipalByID(ctx, table.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, table.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	table.Updater = updater
+
+	return table, nil
 }
 
 func (s *Server) composeViewRelationship(ctx context.Context, view *api.View) error {
