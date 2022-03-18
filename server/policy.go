@@ -56,13 +56,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
 
-		policy, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
+		policyRaw, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.composePolicyRelationship(ctx, policy); err != nil {
-			return err
+		policy, err := s.composePolicyRelationship(ctx, policyRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose policy relationship for type %q", pType)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -86,12 +87,13 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyFind.Type = &pType
 		policyFind.EnvironmentID = &environmentID
 
-		policy, err := s.PolicyService.FindPolicy(ctx, policyFind)
+		policyRaw, err := s.PolicyService.FindPolicy(ctx, policyFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
 		}
 
-		if err := s.composePolicyRelationship(ctx, policy); err != nil {
+		policy, err := s.composePolicyRelationship(ctx, policyRaw)
+		if err != nil {
 			return err
 		}
 
@@ -103,23 +105,26 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composePolicyRelationship(ctx context.Context, policy *api.Policy) error {
-	var err error
+func (s *Server) composePolicyRelationship(ctx context.Context, raw *api.PolicyRaw) (*api.Policy, error) {
+	policy := raw.ToPolicy()
 
-	policy.Creator, err = s.composePrincipalByID(ctx, policy.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, policy.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	policy.Creator = creator
 
-	policy.Updater, err = s.composePrincipalByID(ctx, policy.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, policy.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	policy.Updater = updater
 
-	policy.Environment, err = s.composeEnvironmentByID(ctx, policy.EnvironmentID)
+	env, err := s.composeEnvironmentByID(ctx, policy.EnvironmentID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	policy.Environment = env
 
-	return nil
+	return policy, nil
 }
