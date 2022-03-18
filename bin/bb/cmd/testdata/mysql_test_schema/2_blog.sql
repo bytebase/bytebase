@@ -80,9 +80,10 @@ DECLARE
 	RETURN comment_count;
 END;
 
--- Event
-CREATE EVENT bytebase_test_blog.increase_author_coin_daily ON SCHEDULE EVERY 1 DAY DO UPDATE author
-SET coin = coin + 1;
+-- Skip Event since it includes timestamp which causes unstable output.
+-- -- Event
+-- CREATE EVENT bytebase_test_blog.increase_author_coin_daily ON SCHEDULE EVERY 1 DAY DO UPDATE author
+-- SET coin = coin + 1;
 
 -- Trigger
 CREATE TRIGGER bytebase_test_blog.update_post_updated_ts
