@@ -2,7 +2,7 @@ linters:
   enable:
     - errcheck
     - goimports
-    - golint
+    - revive
     - govet
     - staticcheck
     - misspell
