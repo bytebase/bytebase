@@ -32,6 +32,40 @@ func (e PipelineStatus) String() string {
 	return ""
 }
 
+// PipelineRaw is the store model for an Pipeline.
+// Fields have exactly the same meanings as Pipeline.
+type PipelineRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name   string
+	Status PipelineStatus
+}
+
+// ToPipeline creates an instance of Pipeline based on the PipelineRaw.
+// This is intended to be called when we need to compose an Pipeline relationship.
+func (raw *PipelineRaw) ToPipeline() *Pipeline {
+	return &Pipeline{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		Name:   raw.Name,
+		Status: raw.Status,
+	}
+}
+
 // Pipeline is the API message for pipelines.
 type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`
@@ -95,8 +129,8 @@ type PipelinePatch struct {
 
 // PipelineService is the service for pipelines.
 type PipelineService interface {
-	CreatePipeline(ctx context.Context, create *PipelineCreate) (*Pipeline, error)
-	FindPipelineList(ctx context.Context, find *PipelineFind) ([]*Pipeline, error)
-	FindPipeline(ctx context.Context, find *PipelineFind) (*Pipeline, error)
-	PatchPipeline(ctx context.Context, patch *PipelinePatch) (*Pipeline, error)
+	CreatePipeline(ctx context.Context, create *PipelineCreate) (*PipelineRaw, error)
+	FindPipelineList(ctx context.Context, find *PipelineFind) ([]*PipelineRaw, error)
+	FindPipeline(ctx context.Context, find *PipelineFind) (*PipelineRaw, error)
+	PatchPipeline(ctx context.Context, patch *PipelinePatch) (*PipelineRaw, error)
 }

@@ -12,47 +12,43 @@ func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline
 	pipelineFind := &api.PipelineFind{
 		ID: &id,
 	}
-	pipeline, err := s.PipelineService.FindPipeline(ctx, pipelineFind)
+	pipelineRaw, err := s.PipelineService.FindPipeline(ctx, pipelineFind)
 	if err != nil {
 		return nil, err
 	}
-	if pipeline == nil {
+	if pipelineRaw == nil {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Pipeline not found with ID %v", id)}
 	}
 
-	if err := s.composePipelineRelationship(ctx, pipeline); err != nil {
+	pipeline, err := s.composePipelineRelationship(ctx, pipelineRaw)
+	if err != nil {
 		return nil, err
 	}
 	return pipeline, nil
 }
 
-func (s *Server) composePipelineRelationship(ctx context.Context, pipeline *api.Pipeline) error {
-	var err error
+func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.PipelineRaw) (*api.Pipeline, error) {
+	pipeline := raw.ToPipeline()
 
-	pipeline.Creator, err = s.composePrincipalByID(ctx, pipeline.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, pipeline.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	pipeline.Creator = creator
 
-	pipeline.Updater, err = s.composePrincipalByID(ctx, pipeline.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, pipeline.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	pipeline.Updater = updater
 
-	if pipeline.StageList == nil {
-		pipeline.StageList, err = s.composeStageListByPipelineID(ctx, pipeline.ID)
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, stage := range pipeline.StageList {
-			if err := s.composeStageRelationship(ctx, stage); err != nil {
-				return err
-			}
-		}
+	stageList, err := s.composeStageListByPipelineID(ctx, pipeline.ID)
+	if err != nil {
+		return nil, err
 	}
+	pipeline.StageList = stageList
 
-	return nil
+	return pipeline, nil
 }
 
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
