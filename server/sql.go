@@ -256,12 +256,16 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTable, err := s.TableService.CreateTable(ctx, tableCreate)
+				createTableRaw, err := s.TableService.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
+				}
+				createTable, err := s.composeTableRelationship(ctx, createTableRaw)
+				if err != nil {
+					return nil, fmt.Errorf("failed to compose table with ID %d, error: %v", createTable.ID, err)
 				}
 				return createTable, nil
 			}
