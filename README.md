@@ -15,9 +15,6 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/bytebase/bytebase/blob/main/LICENSE" target="_blank">
-    <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" />
-</a>
 <img alt="status" src="https://img.shields.io/badge/status-beta-blue" />
 <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
     <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
@@ -96,13 +93,13 @@ Regardless of working as an IC in a team or managing your own side project, deve
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.0 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.1 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.0 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.1 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 📕 Docs
