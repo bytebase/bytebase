@@ -39,6 +39,8 @@ function seedDemoData(){
     echo 'Killing seeding program'
 
     killall bytebase
+
+    sleep 20
 }
 
 function startReadonly(){
