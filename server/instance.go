@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 
@@ -552,26 +551,9 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 // disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
 // Otherwise, users can take control of the database which is a security issue.
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
-	if engine != db.Postgres {
-		return nil
-	}
-	if port != fmt.Sprintf("%v", s.datastorePort) {
-		return nil
-	}
-
-	existErr := fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
-	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
-		return existErr
-	}
-	// Check loopback addresses
-	ips, err := net.LookupIP(host)
-	if err != nil {
-		return nil
-	}
-	for _, ip := range ips {
-		if ip.IsLoopback() {
-			return existErr
-		}
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
+	if engine == db.Postgres && port == fmt.Sprintf("%v", s.datastorePort) && host == common.GetPostgresSocketDir() {
+		return fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
 }
