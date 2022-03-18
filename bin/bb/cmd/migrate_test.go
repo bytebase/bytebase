@@ -12,9 +12,12 @@ import (
 )
 
 var (
-	expectedMigrate string
-	//go:embed testdata/expected/test_migrate_after
-	expectedDumpAfterMigrate string
+	//go:embed testdata/expected/migrate_test_TestMigrate_01
+	_TestMigrate01 string
+	//go:embed testdata/expected/migrate_test_TestMigrate_02
+	_TestMigrate02 string
+	//go:embed testdata/expected/migrate_test_TestMigrate_03
+	_TestMigrate03 string
 )
 
 func TestMigrate(t *testing.T) {
@@ -35,7 +38,7 @@ func TestMigrate(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedTodo,
+			expected: _TestMigrate01,
 		},
 		{
 			args: []string{
@@ -51,7 +54,7 @@ func TestMigrate(t *testing.T) {
 	);"`,
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedMigrate,
+			expected: _TestMigrate02,
 		},
 		{
 			args: []string{
@@ -62,11 +65,18 @@ func TestMigrate(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedDumpAfterMigrate,
+			expected: _TestMigrate03,
 		},
 	}
 	tableTest(t, tt)
 }
+
+var (
+	//go:embed testdata/expected/migrate_test_TestCreateDatabase_01
+	_TestCreateDatabase01 string
+	//go:embed testdata/expected/migrate_test_TestCreateDatabase_02
+	_TestCreateDatabase02 string
+)
 
 func TestCreateDatabase(t *testing.T) {
 	mysql, stop := mysql.SetupTestInstance(t, 23307)
@@ -82,7 +92,7 @@ func TestCreateDatabase(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
-			expected: expectedMigrate,
+			expected: _TestCreateDatabase01,
 		},
 		{
 			args: []string{
@@ -93,7 +103,7 @@ func TestCreateDatabase(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedTodo,
+			expected: _TestCreateDatabase02,
 		},
 	}
 	tableTest(t, tt)
