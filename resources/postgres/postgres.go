@@ -165,23 +165,22 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
 	}
-	alreadySetup := false
+	initDBDone := false
 	if err == nil {
-		alreadySetup = true
+		initDBDone = true
+	}
+
+	// Skip initDB if setup already.
+	if initDBDone {
+		// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
+		if err := os.Chmod(pgDataDir, 0700); err != nil {
+			return fmt.Errorf("failed to chmod postgres data directory %q to 0700, error: %w", pgDataDir, err)
+		}
+		return nil
 	}
 
 	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
-	}
-
-	// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
-	if err := os.Chmod(pgDataDir, 0700); err != nil {
-		return fmt.Errorf("failed to chmod postgres data directory %q to 0700, error: %w", pgDataDir, err)
-	}
-
-	// Skip initDB if setup already.
-	if alreadySetup {
-		return nil
 	}
 
 	args := []string{
