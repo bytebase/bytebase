@@ -331,7 +331,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, issue *api.Issue)
 	return nil
 }
 
-// TODO(dragonly): remove this hack.
+// TODO(dragonly): refactor validate only code path
 func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
 	var err error
 

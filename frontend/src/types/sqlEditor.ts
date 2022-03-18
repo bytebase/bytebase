@@ -27,11 +27,10 @@ export interface ConnectionAtom {
 }
 
 export enum SortText {
-  TABLE = "0",
-  COLUMN = "1",
-  KEYWORD = "2",
-  DATABASE = "3",
-  INSTANCE = "4",
+  DATABASE = "0",
+  TABLE = "1",
+  COLUMN = "2",
+  KEYWORD = "3",
 }
 
 export type ConnectionContext = {
