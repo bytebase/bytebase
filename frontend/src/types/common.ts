@@ -13,7 +13,11 @@ import { Issue } from "./issue";
 import { Member } from "./member";
 import { Pipeline, Stage, Task } from "./pipeline";
 import { Principal } from "./principal";
-import { Project, ProjectMember } from "./project";
+import {
+  Project,
+  ProjectMember,
+  EmptyProjectRoleProviderPayload,
+} from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
@@ -209,6 +213,7 @@ export const unknown = (
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
+    roleProvider: "BYTEBASE",
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -233,6 +238,8 @@ export const unknown = (
     updatedTs: 0,
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
+    roleProvider: "BYTEBASE",
+    payload: EmptyProjectRoleProviderPayload,
   };
 
   const UNKNOWN_INSTANCE: Instance = {
@@ -253,7 +260,9 @@ export const unknown = (
 
   const UNKNOWN_DATABASE: Database = {
     id: UNKNOWN_ID,
+    instanceId: UNKNOWN_ID,
     instance: UNKNOWN_INSTANCE,
+    projectId: UNKNOWN_ID,
     project: UNKNOWN_PROJECT,
     labels: [],
     dataSourceList: [],
@@ -272,8 +281,8 @@ export const unknown = (
 
   const UNKNOWN_DATA_SOURCE: DataSource = {
     id: UNKNOWN_ID,
-    instance: UNKNOWN_INSTANCE,
-    database: UNKNOWN_DATABASE,
+    instanceId: UNKNOWN_ID,
+    databaseId: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
@@ -361,6 +370,7 @@ export const unknown = (
     status: "DONE",
     instance: UNKNOWN_INSTANCE,
     database: UNKNOWN_DATABASE,
+    earliestAllowedTs: 0,
     taskRunList: [],
     taskCheckRunList: [],
   };
@@ -463,8 +473,8 @@ export const unknown = (
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
-    instanceId: UNKNOWN_ID,
-    instance: UNKNOWN_INSTANCE,
+    projectId: UNKNOWN_ID,
+    project: UNKNOWN_PROJECT,
     databaseId: UNKNOWN_ID,
     database: UNKNOWN_DATABASE,
     name: "<<Unknown sheet>>",
@@ -597,6 +607,7 @@ export const empty = (
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
+    roleProvider: "BYTEBASE",
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
@@ -621,6 +632,8 @@ export const empty = (
     updatedTs: 0,
     role: "DEVELOPER",
     principal: EMPTY_PRINCIPAL,
+    roleProvider: "BYTEBASE",
+    payload: EmptyProjectRoleProviderPayload,
   };
 
   const EMPTY_INSTANCE: Instance = {
@@ -641,7 +654,9 @@ export const empty = (
 
   const EMPTY_DATABASE: Database = {
     id: EMPTY_ID,
+    instanceId: UNKNOWN_ID,
     instance: EMPTY_INSTANCE,
+    projectId: UNKNOWN_ID,
     project: EMPTY_PROJECT,
     dataSourceList: [],
     anomalyList: [],
@@ -660,8 +675,8 @@ export const empty = (
 
   const EMPTY_DATA_SOURCE: DataSource = {
     id: EMPTY_ID,
-    instance: EMPTY_INSTANCE,
-    database: EMPTY_DATABASE,
+    instanceId: UNKNOWN_ID,
+    databaseId: UNKNOWN_ID,
     creator: EMPTY_PRINCIPAL,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
@@ -751,6 +766,7 @@ export const empty = (
     database: EMPTY_DATABASE,
     taskRunList: [],
     taskCheckRunList: [],
+    earliestAllowedTs: 0,
   };
 
   const EMPTY_ACTIVITY: Activity = {
@@ -851,8 +867,8 @@ export const empty = (
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
-    instanceId: EMPTY_ID,
-    instance: EMPTY_INSTANCE,
+    projectId: EMPTY_ID,
+    project: EMPTY_PROJECT,
     databaseId: EMPTY_ID,
     database: EMPTY_DATABASE,
     name: "<<Empty sheet>>",
