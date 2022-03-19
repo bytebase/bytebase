@@ -1,10 +1,11 @@
+//go:build mysql
+// +build mysql
+
 package tests
 
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/mysql"
@@ -103,22 +104,8 @@ func TestGhostSimpleNoop(t *testing.T) {
 		table     = "tbl"
 	)
 	err := func() error {
-		basedir := t.TempDir()
-		datadir := filepath.Join(basedir, "data")
-		if err := os.Mkdir(datadir, 0755); err != nil {
-			return err
-		}
-		instance, err := mysql.Install(basedir, datadir, "root")
-		if err != nil {
-			return fmt.Errorf("failed to install MySQL: %v", err)
-		}
-		if err := instance.Start(port, os.Stdout, os.Stderr); err != nil {
-			return fmt.Errorf("failed to start MySQL: %v", err)
-		}
-
-		defer func() {
-			_ = instance.Stop(os.Stdout, os.Stderr)
-		}()
+		_, stop := mysql.SetupTestInstance(t, port)
+		defer stop()
 
 		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
 		if err != nil {
