@@ -30,7 +30,7 @@ func NewPolicyService(logger *zap.Logger, db *DB, cache api.CacheService) *Polic
 
 // FindPolicy finds the policy for an environment.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
+func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*api.PolicyRaw, error) {
 	// Validate policy type existence.
 	if find.Type != nil && *find.Type != "" {
 		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
@@ -43,23 +43,23 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPolicy(ctx, tx.PTx, find)
-	var ret *api.Policy
+	policyRawList, err := s.findPolicy(ctx, tx.PTx, find)
+	var ret *api.PolicyRaw
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
-		ret = &api.Policy{
+	if len(policyRawList) == 0 {
+		ret = &api.PolicyRaw{
 			CreatorID:     api.SystemBotID,
 			UpdaterID:     api.SystemBotID,
 			EnvironmentID: *find.EnvironmentID,
 			Type:          *find.Type,
 		}
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d policy with filter %+v, expect 1. ", len(list), find)}
+	} else if len(policyRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
 	} else {
-		ret = list[0]
+		ret = policyRawList[0]
 	}
 
 	if ret.Payload == "" {
@@ -73,7 +73,7 @@ func (s *PolicyService) FindPolicy(ctx context.Context, find *api.PolicyFind) (*
 	return ret, nil
 }
 
-func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*api.Policy, error) {
+func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*api.PolicyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -105,34 +105,34 @@ func (s *PolicyService) findPolicy(ctx context.Context, tx *sql.Tx, find *api.Po
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into policyList.
-	var policyList []*api.Policy
+	// Iterate over result set and deserialize rows into policyRawList.
+	var policyRawList []*api.PolicyRaw
 	for rows.Next() {
-		var policy api.Policy
+		var policyRaw api.PolicyRaw
 		if err := rows.Scan(
-			&policy.ID,
-			&policy.CreatorID,
-			&policy.CreatedTs,
-			&policy.UpdaterID,
-			&policy.UpdatedTs,
-			&policy.EnvironmentID,
-			&policy.Type,
-			&policy.Payload,
+			&policyRaw.ID,
+			&policyRaw.CreatorID,
+			&policyRaw.CreatedTs,
+			&policyRaw.UpdaterID,
+			&policyRaw.UpdatedTs,
+			&policyRaw.EnvironmentID,
+			&policyRaw.Type,
+			&policyRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		policyList = append(policyList, &policy)
+		policyRawList = append(policyRawList, &policyRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return policyList, nil
+	return policyRawList, nil
 }
 
 // UpsertPolicy sets a policy for an environment.
-func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
+func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.PolicyRaw, error) {
 	// Validate policy.
 	if upsert.Type != "" {
 		if err := api.ValidatePolicy(upsert.Type, upsert.Payload); err != nil {
@@ -158,7 +158,7 @@ func (s *PolicyService) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpse
 }
 
 // upsertPolicy updates an existing policy.
-func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.Policy, error) {
+func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*api.PolicyRaw, error) {
 	// Upsert row into policy.
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
@@ -189,21 +189,21 @@ func (s *PolicyService) upsertPolicy(ctx context.Context, tx *sql.Tx, upsert *ap
 	defer row.Close()
 
 	row.Next()
-	var policy api.Policy
+	var policyRaw api.PolicyRaw
 	if err := row.Scan(
-		&policy.ID,
-		&policy.CreatorID,
-		&policy.CreatedTs,
-		&policy.UpdaterID,
-		&policy.UpdatedTs,
-		&policy.EnvironmentID,
-		&policy.Type,
-		&policy.Payload,
+		&policyRaw.ID,
+		&policyRaw.CreatorID,
+		&policyRaw.CreatedTs,
+		&policyRaw.UpdaterID,
+		&policyRaw.UpdatedTs,
+		&policyRaw.EnvironmentID,
+		&policyRaw.Type,
+		&policyRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &policy, nil
+	return &policyRaw, nil
 }
 
 // GetBackupPlanPolicy will get the backup plan policy for an environment.
