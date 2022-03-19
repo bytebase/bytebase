@@ -1,0 +1,38 @@
+--
+-- Table structure for `author`
+--
+CREATE TABLE `author` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL COMMENT 'name of the author',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for `book`
+--
+CREATE TABLE `book` (
+  `id` int NOT NULL,
+  `name` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for `todo`
+--
+CREATE TABLE `todo` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL COMMENT 'name of the todo',
+  `content` text,
+  `author_id` int DEFAULT NULL,
+  `created_ts` bigint NOT NULL,
+  `updated_ts` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `author_id` (`author_id`),
+  KEY `name` (`name`) COMMENT 'index on todo.name',
+  KEY `created_ts` (`created_ts`) COMMENT 'index on todo.created_ts',
+  CONSTRAINT `todo_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `author` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+

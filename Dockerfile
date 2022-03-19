@@ -7,16 +7,18 @@
 
 FROM mhart/alpine-node:14.17.3 as frontend
 
+RUN curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm
+
 WORKDIR /frontend-build
 
 # Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/yarn.lock ./
-RUN yarn
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+RUN RUN pnpm install --frozen-lockfile --prod
 
 COPY ./frontend/ .
 
 # Build frontend
-RUN yarn release-docker
+RUN pnpm release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 
