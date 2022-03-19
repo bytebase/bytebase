@@ -13,6 +13,7 @@ import (
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/require"
 )
 
 type config struct {
@@ -103,67 +104,47 @@ func TestGhostSimpleNoop(t *testing.T) {
 		database  = "gh_ost_test_db"
 		table     = "tbl"
 	)
-	err := func() error {
-		_, stop := mysql.SetupTestInstance(t, port)
-		defer stop()
+	_, stop := mysql.SetupTestInstance(t, port)
+	defer stop()
 
-		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
-		if err != nil {
-			return fmt.Errorf("failed to open MySQL: %v", err)
-		}
-		defer db.Close()
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
+	require.NoError(t, err)
+	defer db.Close()
 
-		if _, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database)); err != nil {
-			return err
-		}
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
+	require.NoError(t, err)
 
-		if _, err = db.Exec(fmt.Sprintf("USE %s", database)); err != nil {
-			return err
-		}
+	_, err = db.Exec(fmt.Sprintf("USE %s", database))
+	require.NoError(t, err)
 
-		if _, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id INT PRIMARY KEY, data INT)", table)); err != nil {
-			return err
-		}
+	_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id INT PRIMARY KEY, data INT)", table))
+	require.NoError(t, err)
 
-		tx, err := db.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
+	tx, err := db.Begin()
+	require.NoError(t, err)
+	defer tx.Rollback()
 
-		const n = 100
-		for i := 1; i <= n; i++ {
-			if _, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i)); err != nil {
-				return err
-			}
-		}
-
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-
-		migrationContext, err := newMigrationContext(config{
-			host:           localhost,
-			port:           port,
-			user:           user,
-			database:       database,
-			table:          table,
-			alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
-			noop:           true,
-		})
-		if err != nil {
-			return err
-		}
-
-		migrator := logic.NewMigrator(migrationContext)
-		if err := migrator.Migrate(); err != nil {
-			return err
-		}
-
-		return nil
-	}()
-
-	if err != nil {
-		t.Error(err)
+	const n = 100
+	for i := 1; i <= n; i++ {
+		_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
+		require.NoError(t, err)
 	}
+
+	err = tx.Commit()
+	require.NoError(t, err)
+
+	migrationContext, err := newMigrationContext(config{
+		host:           localhost,
+		port:           port,
+		user:           user,
+		database:       database,
+		table:          table,
+		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
+		noop:           true,
+	})
+	require.NoError(t, err)
+
+	migrator := logic.NewMigrator(migrationContext)
+	err = migrator.Migrate()
+	require.NoError(t, err)
 }

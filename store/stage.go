@@ -27,7 +27,7 @@ func NewStageService(logger *zap.Logger, db *DB) *StageService {
 }
 
 // CreateStage creates a new stage.
-func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
+func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate) (*api.StageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,45 +47,45 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 }
 
 // FindStageList retrieves a list of stages based on find.
-func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
+func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) ([]*api.StageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findStageList(ctx, tx.PTx, find)
+	stageRawList, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	return stageRawList, nil
 }
 
 // FindStage retrieves a single stage based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api.Stage, error) {
+func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api.StageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findStageList(ctx, tx.PTx, find)
+	stageRawList, err := s.findStageList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
+	if len(stageRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d stages with filter %+v, expect 1", len(list), find)}
+	} else if len(stageRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d stages with filter %+v, expect 1", len(stageRawList), find)}
 	}
-	return list[0], nil
+	return stageRawList[0], nil
 }
 
 // createStage creates a new stage.
-func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.Stage, error) {
+func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.StageRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO stage (
 			creator_id,
@@ -110,24 +110,24 @@ func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var stage api.Stage
+	var stageRaw api.StageRaw
 	if err := row.Scan(
-		&stage.ID,
-		&stage.CreatorID,
-		&stage.CreatedTs,
-		&stage.UpdaterID,
-		&stage.UpdatedTs,
-		&stage.PipelineID,
-		&stage.EnvironmentID,
-		&stage.Name,
+		&stageRaw.ID,
+		&stageRaw.CreatorID,
+		&stageRaw.CreatedTs,
+		&stageRaw.UpdaterID,
+		&stageRaw.UpdatedTs,
+		&stageRaw.PipelineID,
+		&stageRaw.EnvironmentID,
+		&stageRaw.Name,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &stage, nil
+	return &stageRaw, nil
 }
 
-func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*api.Stage, error) {
+func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*api.StageRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -156,28 +156,28 @@ func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into stageList.
-	var stageList []*api.Stage
+	// Iterate over result set and deserialize rows into stageRawList.
+	var stageRawList []*api.StageRaw
 	for rows.Next() {
-		var stage api.Stage
+		var stageRaw api.StageRaw
 		if err := rows.Scan(
-			&stage.ID,
-			&stage.CreatorID,
-			&stage.CreatedTs,
-			&stage.UpdaterID,
-			&stage.UpdatedTs,
-			&stage.PipelineID,
-			&stage.EnvironmentID,
-			&stage.Name,
+			&stageRaw.ID,
+			&stageRaw.CreatorID,
+			&stageRaw.CreatedTs,
+			&stageRaw.UpdaterID,
+			&stageRaw.UpdatedTs,
+			&stageRaw.PipelineID,
+			&stageRaw.EnvironmentID,
+			&stageRaw.Name,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		stageList = append(stageList, &stage)
+		stageRawList = append(stageRawList, &stageRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return stageList, nil
+	return stageRawList, nil
 }
