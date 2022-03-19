@@ -28,7 +28,7 @@ func NewProjectWebhookService(logger *zap.Logger, db *DB) *ProjectWebhookService
 }
 
 // CreateProjectWebhook creates a new projectWebhook.
-func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
+func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create *api.ProjectWebhookCreate) (*api.ProjectWebhookRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -48,7 +48,7 @@ func (s *ProjectWebhookService) CreateProjectWebhook(ctx context.Context, create
 }
 
 // FindProjectWebhookList retrieves a list of projectWebhooks based on find.
-func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
+func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhookRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -65,7 +65,7 @@ func (s *ProjectWebhookService) FindProjectWebhookList(ctx context.Context, find
 
 // FindProjectWebhook retrieves a single projectWebhook based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) (*api.ProjectWebhook, error) {
+func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) (*api.ProjectWebhookRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -87,7 +87,7 @@ func (s *ProjectWebhookService) FindProjectWebhook(ctx context.Context, find *ap
 
 // PatchProjectWebhook updates an existing projectWebhook by ID.
 // Returns ENOTFOUND if projectWebhook does not exist.
-func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
+func (s *ProjectWebhookService) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebhookPatch) (*api.ProjectWebhookRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -126,7 +126,7 @@ func (s *ProjectWebhookService) DeleteProjectWebhook(ctx context.Context, delete
 }
 
 // createProjectWebhook creates a new projectWebhook.
-func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
+func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWebhookCreate) (*api.ProjectWebhookRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO project_webhook (
@@ -156,26 +156,26 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 	defer row.Close()
 
 	row.Next()
-	var projectWebhook api.ProjectWebhook
+	var projectWebhookRaw api.ProjectWebhookRaw
 	if err := row.Scan(
-		&projectWebhook.ID,
-		&projectWebhook.CreatorID,
-		&projectWebhook.CreatedTs,
-		&projectWebhook.UpdaterID,
-		&projectWebhook.UpdatedTs,
-		&projectWebhook.ProjectID,
-		&projectWebhook.Type,
-		&projectWebhook.Name,
-		&projectWebhook.URL,
-		pq.Array(&projectWebhook.ActivityList),
+		&projectWebhookRaw.ID,
+		&projectWebhookRaw.CreatorID,
+		&projectWebhookRaw.CreatedTs,
+		&projectWebhookRaw.UpdaterID,
+		&projectWebhookRaw.UpdatedTs,
+		&projectWebhookRaw.ProjectID,
+		&projectWebhookRaw.Type,
+		&projectWebhookRaw.Name,
+		&projectWebhookRaw.URL,
+		pq.Array(&projectWebhookRaw.ActivityList),
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &projectWebhook, nil
+	return &projectWebhookRaw, nil
 }
 
-func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
+func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) ([]*api.ProjectWebhookRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -206,45 +206,45 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into projectWebhookList.
-	var projectWebhookList []*api.ProjectWebhook
+	// Iterate over result set and deserialize rows into projectWebhookRawList.
+	var projectWebhookRawList []*api.ProjectWebhookRaw
 	for rows.Next() {
-		var projectWebhook api.ProjectWebhook
+		var projectWebhookRaw api.ProjectWebhookRaw
 		if err := rows.Scan(
-			&projectWebhook.ID,
-			&projectWebhook.CreatorID,
-			&projectWebhook.CreatedTs,
-			&projectWebhook.UpdaterID,
-			&projectWebhook.UpdatedTs,
-			&projectWebhook.ProjectID,
-			&projectWebhook.Type,
-			&projectWebhook.Name,
-			&projectWebhook.URL,
-			pq.Array(&projectWebhook.ActivityList),
+			&projectWebhookRaw.ID,
+			&projectWebhookRaw.CreatorID,
+			&projectWebhookRaw.CreatedTs,
+			&projectWebhookRaw.UpdaterID,
+			&projectWebhookRaw.UpdatedTs,
+			&projectWebhookRaw.ProjectID,
+			&projectWebhookRaw.Type,
+			&projectWebhookRaw.Name,
+			&projectWebhookRaw.URL,
+			pq.Array(&projectWebhookRaw.ActivityList),
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
 		if v := find.ActivityType; v != nil {
-			for _, activity := range projectWebhook.ActivityList {
+			for _, activity := range projectWebhookRaw.ActivityList {
 				if api.ActivityType(activity) == *v {
-					projectWebhookList = append(projectWebhookList, &projectWebhook)
+					projectWebhookRawList = append(projectWebhookRawList, &projectWebhookRaw)
 					break
 				}
 			}
 		} else {
-			projectWebhookList = append(projectWebhookList, &projectWebhook)
+			projectWebhookRawList = append(projectWebhookRawList, &projectWebhookRaw)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return projectWebhookList, nil
+	return projectWebhookRawList, nil
 }
 
 // patchProjectWebhook updates a projectWebhook by ID. Returns the new state of the projectWebhook after update.
-func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
+func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebhookPatch) (*api.ProjectWebhookRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -275,23 +275,23 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 	defer row.Close()
 
 	if row.Next() {
-		var projectWebhook api.ProjectWebhook
+		var projectWebhookRaw api.ProjectWebhookRaw
 		if err := row.Scan(
-			&projectWebhook.ID,
-			&projectWebhook.CreatorID,
-			&projectWebhook.CreatedTs,
-			&projectWebhook.UpdaterID,
-			&projectWebhook.UpdatedTs,
-			&projectWebhook.ProjectID,
-			&projectWebhook.Type,
-			&projectWebhook.Name,
-			&projectWebhook.URL,
-			pq.Array(&projectWebhook.ActivityList),
+			&projectWebhookRaw.ID,
+			&projectWebhookRaw.CreatorID,
+			&projectWebhookRaw.CreatedTs,
+			&projectWebhookRaw.UpdaterID,
+			&projectWebhookRaw.UpdatedTs,
+			&projectWebhookRaw.ProjectID,
+			&projectWebhookRaw.Type,
+			&projectWebhookRaw.Name,
+			&projectWebhookRaw.URL,
+			pq.Array(&projectWebhookRaw.ActivityList),
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &projectWebhook, nil
+		return &projectWebhookRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
