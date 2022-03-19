@@ -1,10 +1,11 @@
 package mysql
 
 import (
-	"reflect"
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -26,13 +27,8 @@ func runTests(t *testing.T, tests []test) {
 	}
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.statement)
-		if err != nil {
-			t.Errorf("statement=%s: expected no error, got %v", tc.statement, err)
-		} else {
-			if !reflect.DeepEqual(tc.want, adviceList) {
-				t.Errorf("statement=%s: expected %+v, got %+v", tc.statement, tc.want, adviceList)
-			}
-		}
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, adviceList)
 	}
 }
 

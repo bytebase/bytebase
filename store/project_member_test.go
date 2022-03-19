@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
@@ -27,31 +27,31 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 				newIDList: []int{1, 2, 3},
 			},
 			expect: Result{
-				createIDList: []int{},
+				createIDList: nil,
 				patchIDList:  []int{1, 2, 3},
-				deleteIDList: []int{},
+				deleteIDList: nil,
 			},
 		},
 		"single_delete": {
 			input: Input{
 				oldIDList: []int{1, 2, 3},
-				newIDList: []int{},
+				newIDList: nil,
 			},
 			expect: Result{
-				createIDList: []int{},
-				patchIDList:  []int{},
+				createIDList: nil,
+				patchIDList:  nil,
 				deleteIDList: []int{1, 2, 3},
 			},
 		},
 		"single_create": {
 			input: Input{
-				oldIDList: []int{},
+				oldIDList: nil,
 				newIDList: []int{1, 2, 3},
 			},
 			expect: Result{
 				createIDList: []int{1, 2, 3},
-				patchIDList:  []int{},
-				deleteIDList: []int{},
+				patchIDList:  nil,
+				deleteIDList: nil,
 			},
 		},
 		"create_delete": {
@@ -61,7 +61,7 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 			},
 			expect: Result{
 				createIDList: []int{3, 4},
-				patchIDList:  []int{},
+				patchIDList:  nil,
 				deleteIDList: []int{1, 2},
 			},
 		},
@@ -73,7 +73,7 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 			expect: Result{
 				createIDList: []int{3},
 				patchIDList:  []int{1, 2},
-				deleteIDList: []int{},
+				deleteIDList: nil,
 			},
 		},
 		"delete_patch": {
@@ -82,7 +82,7 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 				newIDList: []int{2},
 			},
 			expect: Result{
-				createIDList: []int{},
+				createIDList: nil,
 				patchIDList:  []int{2},
 				deleteIDList: []int{1},
 			},
@@ -104,15 +104,9 @@ func TestGetBatchUpdatePrincipalIDList(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var got Result
 			got.createIDList, got.patchIDList, got.deleteIDList = getBatchUpdatePrincipalIDList(tc.input.oldIDList, tc.input.newIDList)
-			if diff := pretty.Diff(tc.expect.createIDList, got.createIDList); len(diff) != 0 {
-				t.Errorf("\ncreateIDList: %v", diff)
-			}
-			if diff := pretty.Diff(tc.expect.patchIDList, got.patchIDList); len(diff) != 0 {
-				t.Errorf("\npatchIDList: %v", diff)
-			}
-			if diff := pretty.Diff(tc.expect.deleteIDList, got.deleteIDList); len(diff) != 0 {
-				t.Errorf("\ndeleteIDList: %v", diff)
-			}
+			require.Equal(t, tc.expect.createIDList, got.createIDList)
+			require.Equal(t, tc.expect.patchIDList, got.patchIDList)
+			require.Equal(t, tc.expect.deleteIDList, got.deleteIDList)
 		})
 	}
 }
