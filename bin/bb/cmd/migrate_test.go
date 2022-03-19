@@ -1,3 +1,6 @@
+//go:build mysql
+// +build mysql
+
 package cmd
 
 import (
