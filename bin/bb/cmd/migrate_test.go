@@ -82,9 +82,6 @@ var (
 )
 
 func TestCreateDatabase(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
 	mysql, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
 	defer stop()
 
