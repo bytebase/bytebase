@@ -5,9 +5,9 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM mhart/alpine-node:14.17.3 as frontend
+FROM node:14 as frontend
 
-RUN curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm
+RUN npm i -g pnpm
 
 WORKDIR /frontend-build
 
