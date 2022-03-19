@@ -23,11 +23,15 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		memberCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		member, err := s.MemberService.CreateMember(ctx, memberCreate)
+		memberRaw, err := s.MemberService.CreateMember(ctx, memberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalID))
 			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
+		}
+		member, err := s.composeMemberRelationship(ctx, memberRaw)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create member").SetInternal(err)
 		}
 
@@ -67,10 +71,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.composeMemberRelationship(ctx, member); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created member relationship").SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, member); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create member response").SetInternal(err)
@@ -81,15 +81,17 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.GET("/member", func(c echo.Context) error {
 		ctx := context.Background()
 		memberFind := &api.MemberFind{}
-		memberList, err := s.MemberService.FindMemberList(ctx, memberFind)
+		memberRawList, err := s.MemberService.FindMemberList(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
 		}
-
-		for _, member := range memberList {
-			if err := s.composeMemberRelationship(ctx, member); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", member.ID)).SetInternal(err)
+		var memberList []*api.Member
+		for _, memberRaw := range memberRawList {
+			member, err := s.composeMemberRelationship(ctx, memberRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch member relationship: %v", memberRaw.ID)).SetInternal(err)
 			}
+			memberList = append(memberList, member)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -109,12 +111,16 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			ID: &id,
 		}
-		member, err := s.MemberService.FindMember(ctx, memberFind)
+		memberRaw, err := s.MemberService.FindMember(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find member ID: %d", id)).SetInternal(err)
 		}
-		if member == nil {
+		if memberRaw == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find member ID: %d", id))
+		}
+		member, err := s.composeMemberRelationship(ctx, memberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose member relationship with ID %d", id)).SetInternal(err)
 		}
 
 		memberPatch := &api.MemberPatch{
@@ -125,12 +131,16 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
 		}
 
-		updatedMember, err := s.MemberService.PatchMember(ctx, memberPatch)
+		updatedMemberRaw, err := s.MemberService.PatchMember(ctx, memberPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch member ID: %v", id)).SetInternal(err)
+		}
+		updatedMember, err := s.composeMemberRelationship(ctx, updatedMemberRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose member relationship with ID %v", id)).SetInternal(err)
 		}
 
 		// Record activity
@@ -196,10 +206,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			}
 		}
 
-		if err := s.composeMemberRelationship(ctx, updatedMember); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated member relationship: %v", updatedMember.ID)).SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal member ID response: %v", id)).SetInternal(err)
@@ -208,23 +214,26 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeMemberRelationship(ctx context.Context, member *api.Member) error {
-	var err error
+func (s *Server) composeMemberRelationship(ctx context.Context, raw *api.MemberRaw) (*api.Member, error) {
+	member := raw.ToMember()
 
-	member.Creator, err = s.composePrincipalByID(ctx, member.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, member.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	member.Creator = creator
 
-	member.Updater, err = s.composePrincipalByID(ctx, member.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, member.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	member.Updater = updater
 
-	member.Principal, err = s.composePrincipalByID(ctx, member.PrincipalID)
+	principal, err := s.composePrincipalByID(ctx, member.PrincipalID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	member.Principal = principal
 
-	return nil
+	return member, nil
 }
