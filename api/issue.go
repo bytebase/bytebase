@@ -58,6 +58,56 @@ const (
 	IssueFieldSQL IssueFieldID = "7"
 )
 
+// IssueRaw is the store model for an Issue.
+// Fields have exactly the same meanings as Issue.
+type IssueRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	ProjectID  int
+	PipelineID int
+
+	// Domain specific fields
+	Name        string
+	Status      IssueStatus
+	Type        IssueType
+	Description string
+	AssigneeID  int
+	Payload     string
+}
+
+// ToIssue creates an instance of Issue based on the IssueRaw.
+// This is intended to be called when we need to compose an Issue relationship.
+func (raw *IssueRaw) ToIssue() *Issue {
+	return &Issue{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		ProjectID:  raw.ProjectID,
+		PipelineID: raw.PipelineID,
+
+		// Domain specific fields
+		Name:        raw.Name,
+		Status:      raw.Status,
+		Type:        raw.Type,
+		Description: raw.Description,
+		AssigneeID:  raw.AssigneeID,
+		Payload:     raw.Payload,
+	}
+}
+
 // Issue is the API message for an issue.
 type Issue struct {
 	ID int `jsonapi:"primary,issue"`
@@ -204,8 +254,8 @@ type IssueStatusPatch struct {
 
 // IssueService is the services for issues.
 type IssueService interface {
-	CreateIssue(ctx context.Context, create *IssueCreate) (*Issue, error)
-	FindIssueList(ctx context.Context, find *IssueFind) ([]*Issue, error)
-	FindIssue(ctx context.Context, find *IssueFind) (*Issue, error)
-	PatchIssue(ctx context.Context, patch *IssuePatch) (*Issue, error)
+	CreateIssue(ctx context.Context, create *IssueCreate) (*IssueRaw, error)
+	FindIssueList(ctx context.Context, find *IssueFind) ([]*IssueRaw, error)
+	FindIssue(ctx context.Context, find *IssueFind) (*IssueRaw, error)
+	PatchIssue(ctx context.Context, patch *IssuePatch) (*IssueRaw, error)
 }
