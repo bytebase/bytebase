@@ -18,7 +18,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	rootCmd.AddCommand(newDumpCmd(), newRestoreCmd(), newVersionCmd())
+	rootCmd.AddCommand(newDumpCmd(), newRestoreCmd(), newVersionCmd(), newMigrateCmd())
 
 	return rootCmd
 }

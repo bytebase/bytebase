@@ -27,7 +27,7 @@ func NewSheetService(logger *zap.Logger, db *DB) *SheetService {
 }
 
 // CreateSheet creates a new sheet.
-func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
+func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.SheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,7 +47,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 }
 
 // PatchSheet updates an existing sheet by ID.
-func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
+func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.SheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -67,7 +67,7 @@ func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*
 }
 
 // FindSheetList retrieves a list of sheet based on find.
-func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) ([]*api.Sheet, error) {
+func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) ([]*api.SheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -84,7 +84,7 @@ func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) (
 
 // FindSheet retrieves a single sheet based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api.Sheet, error) {
+func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api.SheetRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -125,7 +125,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 }
 
 // createSheet creates a new sheet.
-func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.Sheet, error) {
+func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.SheetRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
@@ -154,33 +154,33 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 	defer row.Close()
 
 	row.Next()
-	var sheet api.Sheet
+	var sheetRaw api.SheetRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
-		&sheet.ID,
-		&sheet.CreatorID,
-		&sheet.CreatedTs,
-		&sheet.UpdaterID,
-		&sheet.UpdatedTs,
-		&sheet.ProjectID,
+		&sheetRaw.ID,
+		&sheetRaw.CreatorID,
+		&sheetRaw.CreatedTs,
+		&sheetRaw.UpdaterID,
+		&sheetRaw.UpdatedTs,
+		&sheetRaw.ProjectID,
 		&databaseID,
-		&sheet.Name,
-		&sheet.Statement,
-		&sheet.Visibility,
+		&sheetRaw.Name,
+		&sheetRaw.Statement,
+		&sheetRaw.Visibility,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
-		sheet.DatabaseID = &value
+		sheetRaw.DatabaseID = &value
 	}
 
-	return &sheet, nil
+	return &sheetRaw, nil
 }
 
 // patchSheet updates a sheet's name/statement/visibility.
-func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sheet, error) {
+func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.SheetRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, api.RowStatus(*v))
@@ -209,35 +209,35 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 	defer row.Close()
 
 	if row.Next() {
-		var sheet api.Sheet
+		var sheetRaw api.SheetRaw
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
-			&sheet.ID,
-			&sheet.CreatorID,
-			&sheet.CreatedTs,
-			&sheet.UpdaterID,
-			&sheet.UpdatedTs,
-			&sheet.ProjectID,
+			&sheetRaw.ID,
+			&sheetRaw.CreatorID,
+			&sheetRaw.CreatedTs,
+			&sheetRaw.UpdaterID,
+			&sheetRaw.UpdatedTs,
+			&sheetRaw.ProjectID,
 			&databaseID,
-			&sheet.Name,
-			&sheet.Statement,
-			&sheet.Visibility,
+			&sheetRaw.Name,
+			&sheetRaw.Statement,
+			&sheetRaw.Visibility,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
-			sheet.DatabaseID = &value
+			sheetRaw.DatabaseID = &value
 		}
 
-		return &sheet, nil
+		return &sheetRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
 }
 
-func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api.Sheet, error) {
+func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api.SheetRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	// Standard fields
 	if v := find.ID; v != nil {
@@ -284,37 +284,37 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 	}
 	defer rows.Close()
 
-	var sheetList []*api.Sheet
+	var sheetRawList []*api.SheetRaw
 	for rows.Next() {
-		var sheet api.Sheet
+		var sheetRaw api.SheetRaw
 		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
-			&sheet.ID,
-			&sheet.CreatorID,
-			&sheet.CreatedTs,
-			&sheet.UpdaterID,
-			&sheet.UpdatedTs,
-			&sheet.ProjectID,
+			&sheetRaw.ID,
+			&sheetRaw.CreatorID,
+			&sheetRaw.CreatedTs,
+			&sheetRaw.UpdaterID,
+			&sheetRaw.UpdatedTs,
+			&sheetRaw.ProjectID,
 			&databaseID,
-			&sheet.Name,
-			&sheet.Statement,
-			&sheet.Visibility,
+			&sheetRaw.Name,
+			&sheetRaw.Statement,
+			&sheetRaw.Visibility,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
 		if databaseID.Valid {
 			value := int(databaseID.Int32)
-			sheet.DatabaseID = &value
+			sheetRaw.DatabaseID = &value
 		}
 
-		sheetList = append(sheetList, &sheet)
+		sheetRawList = append(sheetRawList, &sheetRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return sheetList, nil
+	return sheetRawList, nil
 }
 
 // deleteSheet permanently deletes a sheet by ID.

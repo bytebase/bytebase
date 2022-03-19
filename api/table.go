@@ -5,6 +5,62 @@ import (
 	"encoding/json"
 )
 
+// TableRaw is the store model for an Table.
+// Fields have exactly the same meanings as Table.
+type TableRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+
+	// Domain specific fields
+	Name          string
+	Type          string
+	Engine        string
+	Collation     string
+	RowCount      int64
+	DataSize      int64
+	IndexSize     int64
+	DataFree      int64
+	CreateOptions string
+	Comment       string
+}
+
+// ToTable creates an instance of Table based on the TableRaw.
+// This is intended to be called when we need to compose an Table relationship.
+func (raw *TableRaw) ToTable() *Table {
+	return &Table{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:          raw.Name,
+		Type:          raw.Type,
+		Engine:        raw.Engine,
+		Collation:     raw.Collation,
+		RowCount:      raw.RowCount,
+		DataSize:      raw.DataSize,
+		IndexSize:     raw.IndexSize,
+		DataFree:      raw.DataFree,
+		CreateOptions: raw.CreateOptions,
+		Comment:       raw.Comment,
+	}
+}
+
 // Table is the API message for a table.
 type Table struct {
 	ID int `jsonapi:"primary,table"`
@@ -18,6 +74,7 @@ type Table struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
+	// TODO(dragonly): seems like not using this field?
 	DatabaseID int
 	Database   *Database `jsonapi:"relation,database"`
 
@@ -87,8 +144,8 @@ type TableDelete struct {
 
 // TableService is the service for tables.
 type TableService interface {
-	CreateTable(ctx context.Context, create *TableCreate) (*Table, error)
-	FindTableList(ctx context.Context, find *TableFind) ([]*Table, error)
-	FindTable(ctx context.Context, find *TableFind) (*Table, error)
+	CreateTable(ctx context.Context, create *TableCreate) (*TableRaw, error)
+	FindTableList(ctx context.Context, find *TableFind) ([]*TableRaw, error)
+	FindTable(ctx context.Context, find *TableFind) (*TableRaw, error)
 	DeleteTable(ctx context.Context, delete *TableDelete) error
 }
