@@ -228,8 +228,8 @@ func TestTenant(t *testing.T) {
 
 		// Query migration history
 		instances := append(stagingInstances, prodInstances...)
-		var hm1 map[string]bool = map[string]bool{}
-		var hm2 map[string]bool = map[string]bool{}
+		hm1 := map[string]bool{}
+		hm2 := map[string]bool{}
 		for _, instance := range instances {
 			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
 			if err != nil {
@@ -516,8 +516,8 @@ func TestTenantVCS(t *testing.T) {
 
 		// Query migration history
 		instances := append(stagingInstances, prodInstances...)
-		var hm1 map[string]bool = map[string]bool{}
-		var hm2 map[string]bool = map[string]bool{}
+		hm1 := map[string]bool{}
+		hm2 := map[string]bool{}
 		for _, instance := range instances {
 			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
 			if err != nil {
