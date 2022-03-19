@@ -30,7 +30,7 @@ func NewIssueService(logger *zap.Logger, db *DB, cache api.CacheService) *IssueS
 }
 
 // CreateIssue creates a new issue.
-func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.Issue, error) {
+func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.IssueRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -54,7 +54,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, create *api.IssueCreate)
 }
 
 // FindIssueList retrieves a list of issues based on find.
-func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
+func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) ([]*api.IssueRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -79,7 +79,7 @@ func (s *IssueService) FindIssueList(ctx context.Context, find *api.IssueFind) (
 
 // FindIssue retrieves a single issue based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api.Issue, error) {
+func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api.IssueRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -104,7 +104,7 @@ func (s *IssueService) FindIssue(ctx context.Context, find *api.IssueFind) (*api
 
 // PatchIssue updates an existing issue by ID.
 // Returns ENOTFOUND if issue does not exist.
-func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
+func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.IssueRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -128,7 +128,7 @@ func (s *IssueService) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*
 }
 
 // createIssue creates a new issue.
-func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.Issue, error) {
+func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*api.IssueRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -165,29 +165,29 @@ func (s *IssueService) createIssue(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var issue api.Issue
+	var issueRaw api.IssueRaw
 	if err := row.Scan(
-		&issue.ID,
-		&issue.CreatorID,
-		&issue.CreatedTs,
-		&issue.UpdaterID,
-		&issue.UpdatedTs,
-		&issue.ProjectID,
-		&issue.PipelineID,
-		&issue.Name,
-		&issue.Status,
-		&issue.Type,
-		&issue.Description,
-		&issue.AssigneeID,
-		&issue.Payload,
+		&issueRaw.ID,
+		&issueRaw.CreatorID,
+		&issueRaw.CreatedTs,
+		&issueRaw.UpdaterID,
+		&issueRaw.UpdatedTs,
+		&issueRaw.ProjectID,
+		&issueRaw.PipelineID,
+		&issueRaw.Name,
+		&issueRaw.Status,
+		&issueRaw.Type,
+		&issueRaw.Description,
+		&issueRaw.AssigneeID,
+		&issueRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &issue, nil
+	return &issueRaw, nil
 }
 
-func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*api.Issue, error) {
+func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*api.IssueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -241,39 +241,39 @@ func (s *IssueService) findIssueList(ctx context.Context, tx *sql.Tx, find *api.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into issueList.
-	var issueList []*api.Issue
+	// Iterate over result set and deserialize rows into issuerRawList.
+	var issuerRawList []*api.IssueRaw
 	for rows.Next() {
-		var issue api.Issue
+		var issueRaw api.IssueRaw
 		if err := rows.Scan(
-			&issue.ID,
-			&issue.CreatorID,
-			&issue.CreatedTs,
-			&issue.UpdaterID,
-			&issue.UpdatedTs,
-			&issue.ProjectID,
-			&issue.PipelineID,
-			&issue.Name,
-			&issue.Status,
-			&issue.Type,
-			&issue.Description,
-			&issue.AssigneeID,
-			&issue.Payload,
+			&issueRaw.ID,
+			&issueRaw.CreatorID,
+			&issueRaw.CreatedTs,
+			&issueRaw.UpdaterID,
+			&issueRaw.UpdatedTs,
+			&issueRaw.ProjectID,
+			&issueRaw.PipelineID,
+			&issueRaw.Name,
+			&issueRaw.Status,
+			&issueRaw.Type,
+			&issueRaw.Description,
+			&issueRaw.AssigneeID,
+			&issueRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		issueList = append(issueList, &issue)
+		issuerRawList = append(issuerRawList, &issueRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return issueList, nil
+	return issuerRawList, nil
 }
 
 // patchIssue updates a issue by ID. Returns the new state of the issue after update.
-func (s *IssueService) patchIssue(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*api.Issue, error) {
+func (s *IssueService) patchIssue(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*api.IssueRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -313,26 +313,26 @@ func (s *IssueService) patchIssue(ctx context.Context, tx *sql.Tx, patch *api.Is
 	defer row.Close()
 
 	if row.Next() {
-		var issue api.Issue
+		var issueRaw api.IssueRaw
 		if err := row.Scan(
-			&issue.ID,
-			&issue.CreatorID,
-			&issue.CreatedTs,
-			&issue.UpdaterID,
-			&issue.UpdatedTs,
-			&issue.ProjectID,
-			&issue.PipelineID,
-			&issue.Name,
-			&issue.Status,
-			&issue.Type,
-			&issue.Description,
-			&issue.AssigneeID,
-			&issue.Payload,
+			&issueRaw.ID,
+			&issueRaw.CreatorID,
+			&issueRaw.CreatedTs,
+			&issueRaw.UpdaterID,
+			&issueRaw.UpdatedTs,
+			&issueRaw.ProjectID,
+			&issueRaw.PipelineID,
+			&issueRaw.Name,
+			&issueRaw.Status,
+			&issueRaw.Type,
+			&issueRaw.Description,
+			&issueRaw.AssigneeID,
+			&issueRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &issue, nil
+		return &issueRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
