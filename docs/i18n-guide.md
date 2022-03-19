@@ -64,7 +64,7 @@ export default {
   ...,
   setup () {
     const { t } = useI18n()
-    
+
     return {
       quickStart: t("common.quickstart")
     }
@@ -104,7 +104,7 @@ If you would like to help a language's translation up to date, please follow thi
 ```bash
 npx degit bytebase/bytebase bytebase
 cd bytebase/frontend
-yarn && yarn dev
+pnpm i && pnpm dev
 ```
 
 #### Extract some messages
