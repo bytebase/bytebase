@@ -1,3 +1,6 @@
+//go:build mysql
+// +build mysql
+
 package cmd
 
 import (
@@ -6,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/mysql"
+	"github.com/stretchr/testify/require"
 
 	// embed expected output
 	_ "embed"
@@ -24,9 +28,8 @@ func TestMigrate(t *testing.T) {
 	mysql, stop := mysql.SetupTestInstance(t, PortTestMigrate)
 	defer stop()
 
-	if err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr); err != nil {
-		t.Errorf("error importing data: %v", err)
-	}
+	err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
+	require.NoError(t, err)
 
 	tt := []testTable{
 		{
