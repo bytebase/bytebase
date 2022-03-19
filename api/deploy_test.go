@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetDeploymentSchedule(t *testing.T) {
@@ -102,13 +102,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 
 	for _, test := range tests {
 		cfg, err := ValidateAndGetDeploymentSchedule(test.payload)
-		if err != nil != test.wantErr {
-			t.Errorf("%q: GetDeploymentSchedule(%q) got error %v, wantErr %v.", test.name, test.payload, err, test.wantErr)
-		}
-
-		diff := pretty.Diff(cfg, test.wantCfg)
-		if len(diff) > 0 {
-			t.Errorf("%q: GetDeploymentSchedule(%q) got cfg %+v, want %+v, diff %+v.", test.name, test.payload, cfg, test.wantCfg, diff)
-		}
+		require.False(t, err != nil != test.wantErr)
+		require.Equal(t, cfg, test.wantCfg)
 	}
 }

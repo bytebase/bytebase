@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetTemplateTokens(t *testing.T) {
@@ -30,10 +30,7 @@ func TestGetTemplateTokens(t *testing.T) {
 
 	for _, test := range tests {
 		tokens := getTemplateTokens(test.template)
-		diff := pretty.Diff(tokens, test.want)
-		if len(diff) > 0 {
-			t.Errorf("%q: getTemplateTokens(%q) got tokens %+v, want %+v, diff %+v.", test.name, test.template, tokens, test.want, diff)
-		}
+		require.Equal(t, tokens, test.want)
 	}
 }
 
