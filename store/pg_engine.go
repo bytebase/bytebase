@@ -67,8 +67,11 @@ type DB struct {
 	// If true, database will be opened in readonly mode
 	readonly bool
 
-	// Bytebase release version
-	releaseVersion string
+	// Bytebase server release version
+	serverVersion string
+
+	// schemaVersion is the version of Bytebase schema.
+	schemaVersion int
 
 	// Returns the current time. Defaults to time.Now().
 	// Can be mocked for tests.
@@ -76,7 +79,7 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, releaseVersion string) *DB {
+func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, serverVersion string, schemaVersion int) *DB {
 	db := &DB{
 		l:              logger,
 		connCfg:        connCfg,
@@ -84,7 +87,8 @@ func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, se
 		forceResetSeed: forceResetSeed,
 		readonly:       readonly,
 		Now:            time.Now,
-		releaseVersion: releaseVersion,
+		serverVersion:  serverVersion,
+		schemaVersion:  schemaVersion,
 	}
 	return db
 }
@@ -235,7 +239,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 
 	// major version is 0 when the store isn't yet setup for the first time.
 	if curVer.major != 0 && curVer.major != majorSchemaVervion {
-		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, majorSchemaVervion, db.releaseVersion)
+		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, majorSchemaVervion, db.serverVersion)
 	}
 
 	if curVer.major == 0 && curVer.minor == 0 {
@@ -243,7 +247,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
-				ReleaseVersion: db.releaseVersion,
+				ReleaseVersion: db.serverVersion,
 				Version:        createDatabaseSchemaVersion,
 				Namespace:      databaseName,
 				Database:       databaseName,
@@ -267,6 +271,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 	// Sort the migration up file in ascending order.
 	sort.Strings(names)
 
+	maxVer := versionFromInt(db.schemaVersion)
 	for _, name := range names {
 		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
 		version, err := strconv.Atoi(versionPrefix)
@@ -274,7 +279,9 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 			return fmt.Errorf("invalid migration file format %s, expected number prefix", filepath.Base(name))
 		}
 		v := versionFromInt(version)
-		if v.biggerThan(curVer) {
+		if v.biggerThan(maxVer) {
+			db.l.Debug(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %s is bigger than maximum schema version %s.", name, v, maxVer))
+		} else if v.biggerThan(curVer) {
 			// Migrate migration files.
 			db.l.Info(fmt.Sprintf("Migrating %s...", name))
 			buf, err := fs.ReadFile(migrationFS, name)
@@ -284,7 +291,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 			if _, _, err := d.ExecuteMigration(
 				ctx,
 				&dbdriver.MigrationInfo{
-					ReleaseVersion: db.releaseVersion,
+					ReleaseVersion: db.serverVersion,
 					Version:        fmt.Sprintf("%d", version),
 					Namespace:      databaseName,
 					Database:       databaseName,

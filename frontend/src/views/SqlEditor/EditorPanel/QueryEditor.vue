@@ -1,6 +1,7 @@
 <template>
   <MonacoEditor
     v-model:value="sqlCode"
+    :language="selectedLanguage"
     @change="handleChange"
     @change-selection="handleChangeSelection"
     @run-query="handleRunQuery"
@@ -45,6 +46,17 @@ const selectedInstanceEngine = computed(() => {
   return store.getters["instance/instanceFormatedEngine"](
     selectedInstance.value
   ) as string;
+});
+
+const selectedLanguage = computed(() => {
+  const engine = selectedInstanceEngine.value;
+  if (engine === "MySQL") {
+    return "mysql";
+  }
+  if (engine === "PostgreSQL") {
+    return "pgsql";
+  }
+  return "sql";
 });
 
 const handleChange = debounce((value: string) => {

@@ -153,6 +153,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
+		// Wildcard(*) database is used to connect all database at instance level.
+		// Do not return it via `get database by id` API.
+		if database.Name == api.AllDatabaseName {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %d is a wildcard *", id))
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
@@ -374,9 +379,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		tableFind := &api.TableFind{
 			DatabaseID: &id,
 		}
-		tableList, err := s.TableService.FindTableList(ctx, tableFind)
+		tableRawList, err := s.TableService.FindTableList(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table list for database id: %d", id)).SetInternal(err)
+		}
+		var tableList []*api.Table
+		for _, tableRaw := range tableRawList {
+			table, err := s.composeTableRelationship(ctx, tableRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableRaw.Name)).SetInternal(err)
+			}
+			tableList = append(tableList, table)
 		}
 
 		for _, table := range tableList {
@@ -400,10 +413,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
 			table.IndexList = indexList
-
-			if err := s.composeTableRelationship(ctx, table); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -436,12 +445,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			Name:       &tableName,
 		}
-		table, err := s.TableService.FindTable(ctx, tableFind)
+		tableRaw, err := s.TableService.FindTable(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
-		if table == nil {
+		if tableRaw == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("table %q not found from database %v", tableName, id)).SetInternal(err)
+		}
+		table, err := s.composeTableRelationship(ctx, tableRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableName)).SetInternal(err)
 		}
 
 		table.Database = database
@@ -465,10 +478,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}
 		table.IndexList = indexList
-
-		if err := s.composeTableRelationship(ctx, table); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose table relationship").SetInternal(err)
-		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, table); err != nil {
@@ -875,7 +884,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		dataSourceRaw, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update data source").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -889,6 +898,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+	// NOTE: this is a partially filled DatabaseLabel
+	// TODO(dragonly): should we make it cleaner?
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
 		return err
@@ -901,9 +912,14 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	rowStatus := api.Normal
-	labelKeyList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
+	labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
+	}
+	// TODO(dragonly): implement composeLabelKeyRelationship
+	var labelKeyList []*api.LabelKey
+	for _, raw := range labelKeyRawList {
+		labelKeyList = append(labelKeyList, raw.ToLabelKey())
 	}
 
 	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
@@ -939,7 +955,6 @@ func (s *Server) composeDatabaseByFind(ctx context.Context, find *api.DatabaseFi
 	if err != nil {
 		return nil, err
 	}
-
 	if databaseRaw == nil {
 		return nil, nil
 	}
@@ -1005,6 +1020,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 		db.SourceBackup = sourceBackup
 	}
 
+	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
+	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
@@ -1033,12 +1050,18 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	}
 
 	rowStatus = api.Normal
-	labelList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	labelRawList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &db.ID,
 		RowStatus:  &rowStatus,
 	})
 	if err != nil {
 		return nil, err
+	}
+	// TODO(dragonly): seems like we do not need to composed this.
+	// need redesign, e.g., extract the kv part which is only in memory, and the relations which are in the database.
+	var labelList []*api.DatabaseLabel
+	for _, raw := range labelRawList {
+		labelList = append(labelList, raw.ToDatabaseLabel())
 	}
 
 	// Since tenants are identified by labels in deployment config, we need an environment
@@ -1062,19 +1085,22 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	return db, nil
 }
 
-func (s *Server) composeTableRelationship(ctx context.Context, table *api.Table) error {
-	var err error
+func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw) (*api.Table, error) {
+	table := raw.ToTable()
 
-	table.Creator, err = s.composePrincipalByID(ctx, table.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, table.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	table.Creator = creator
 
-	table.Updater, err = s.composePrincipalByID(ctx, table.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, table.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	table.Updater = updater
+
+	return table, nil
 }
 
 func (s *Server) composeViewRelationship(ctx context.Context, view *api.View) error {

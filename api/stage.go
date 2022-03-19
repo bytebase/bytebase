@@ -5,6 +5,46 @@ import (
 	"encoding/json"
 )
 
+// StageRaw is the store model for an Stage.
+// Fields have exactly the same meanings as Stage.
+type StageRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	PipelineID    int
+	EnvironmentID int
+
+	// Domain specific fields
+	Name string
+}
+
+// ToStage creates an instance of Stage based on the StageRaw.
+// This is intended to be called when we need to compose an Stage relationship.
+func (raw *StageRaw) ToStage() *Stage {
+	return &Stage{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		PipelineID:    raw.PipelineID,
+		EnvironmentID: raw.EnvironmentID,
+
+		// Domain specific fields
+		Name: raw.Name,
+	}
+}
+
 // Stage is the API message for a stage.
 type Stage struct {
 	ID int `jsonapi:"primary,stage"`
@@ -61,7 +101,7 @@ func (find *StageFind) String() string {
 
 // StageService is the service for stages.
 type StageService interface {
-	CreateStage(ctx context.Context, create *StageCreate) (*Stage, error)
-	FindStageList(ctx context.Context, find *StageFind) ([]*Stage, error)
-	FindStage(ctx context.Context, find *StageFind) (*Stage, error)
+	CreateStage(ctx context.Context, create *StageCreate) (*StageRaw, error)
+	FindStageList(ctx context.Context, find *StageFind) ([]*StageRaw, error)
+	FindStage(ctx context.Context, find *StageFind) (*StageRaw, error)
 }

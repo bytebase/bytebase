@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/jsonapi"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -23,17 +24,13 @@ func TestUnmarshal(t *testing.T) {
 		ID:        1,
 		UpdaterID: 1,
 	}
-	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), databasePatch); err != nil {
-		t.Fatal(err)
-	}
+	err := jsonapi.UnmarshalPayload(bytes.NewReader(b), databasePatch)
+	require.NoError(t, err)
 	var labels []*DatabaseLabel
-	if err := json.Unmarshal([]byte(*databasePatch.Labels), &labels); err != nil {
-		t.Fatal(err)
-	}
+	err = json.Unmarshal([]byte(*databasePatch.Labels), &labels)
+	require.NoError(t, err)
 	for i, label := range labels {
-		if keys[i] != label.Key || values[i] != label.Value {
-			t.Fatal("Key value pair does not match!")
-		}
+		require.Equal(t, keys[i], label.Key)
+		require.Equal(t, values[i], label.Value)
 	}
-
 }

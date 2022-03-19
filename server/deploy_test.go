@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
@@ -244,10 +244,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 
 	for _, test := range tests {
 		_, matrix, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
-
-		diff := pretty.Diff(matrix, test.want)
-		if len(diff) > 0 {
-			t.Errorf("%q: getPipelineFromDeploymentSchedule() got matrix %+v, want %+v, diff %+v.", test.name, matrix, test.want, diff)
-		}
+		assert.Equal(t, matrix, test.want)
 	}
 }

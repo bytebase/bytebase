@@ -27,5 +27,6 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		seedDir:              seedDir,
 		forceResetSeed:       forceResetSeed,
 		backupRunnerInterval: 10 * time.Minute,
+		schemaVersion:        10001,
 	}
 }

@@ -13,7 +13,6 @@ require (
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
-	github.com/kr/pretty v0.2.1
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.7
