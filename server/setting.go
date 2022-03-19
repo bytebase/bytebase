@@ -20,9 +20,17 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
 		ctx := context.Background()
 		find := &api.SettingFind{}
-		settingList, err := s.SettingService.FindSettingList(ctx, find)
+		settingRawList, err := s.SettingService.FindSettingList(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch setting list").SetInternal(err)
+		}
+		var settingList []*api.Setting
+		for _, raw := range settingRawList {
+			setting, err := s.composeSettingRelationship(ctx, raw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose setting relationship for ID %d", raw.ID)).SetInternal(err)
+			}
+			settingList = append(settingList, setting)
 		}
 
 		filteredList := []*api.Setting{}
@@ -32,12 +40,6 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 					filteredList = append(filteredList, setting)
 					break
 				}
-			}
-		}
-
-		for _, setting := range filteredList {
-			if err := s.composeSettingRelationship(ctx, setting); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch setting relationship: %v", setting.Name)).SetInternal(err)
 			}
 		}
 
@@ -74,18 +76,20 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeSettingRelationship(ctx context.Context, setting *api.Setting) error {
-	var err error
+func (s *Server) composeSettingRelationship(ctx context.Context, raw *api.SettingRaw) (*api.Setting, error) {
+	setting := raw.ToSetting()
 
-	setting.Creator, err = s.composePrincipalByID(ctx, setting.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, setting.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	setting.Creator = creator
 
-	setting.Updater, err = s.composePrincipalByID(ctx, setting.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, setting.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	setting.Updater = updater
 
-	return nil
+	return setting, nil
 }
