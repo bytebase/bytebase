@@ -588,6 +588,9 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 	}
+	if issueRaw == nil {
+		return nil, fmt.Errorf("failed to find issue with pipeline ID %d, task: %s", task.PipelineID, task.Name)
+	}
 	issue, err := s.composeIssueRelationship(ctx, issueRaw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose issue relationship with ID %d, err: %w", issueRaw.ID, err)
