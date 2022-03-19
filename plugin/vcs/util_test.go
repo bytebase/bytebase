@@ -2,6 +2,9 @@ package vcs
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBranch(t *testing.T) {
@@ -29,16 +32,9 @@ func TestBranch(t *testing.T) {
 
 	for _, test := range tests {
 		result, err := Branch(test.ref)
-		if err != nil && !test.wantErr {
-			t.Errorf("Branch %q: got error %v, want OK.", test.ref, test.wantErr)
+		if test.wantErr {
+			require.Error(t, err)
 		}
-
-		if err == nil && test.wantErr {
-			t.Errorf("Branch %q: got OK, want error", test.ref)
-		}
-
-		if result != test.want {
-			t.Errorf("Branch %q: got result %v, want %v.", test.ref, result, test.want)
-		}
+		assert.Equal(t, result, test.want)
 	}
 }

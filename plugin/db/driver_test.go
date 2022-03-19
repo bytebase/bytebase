@@ -1,9 +1,9 @@
 package db
 
 import (
-	"reflect"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseMigrationInfo(t *testing.T) {
@@ -198,17 +198,11 @@ func TestParseMigrationInfo(t *testing.T) {
 
 	for _, tc := range tests {
 		mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
-		if err != nil {
-			if tc.wantErr == "" {
-				t.Errorf("filePath=%s, filePathTemplate=%s: expected no error, got %v", tc.filePath, tc.filePathTemplate, err)
-			} else if !strings.Contains(err.Error(), tc.wantErr) {
-				t.Errorf("filePath=%s, filePathTemplate=%s: expected error %s, got %v", tc.filePath, tc.filePathTemplate, tc.wantErr, err)
-			}
-		} else {
-			if !reflect.DeepEqual(tc.want, *mi) {
-				t.Errorf("filePath=%s, filePathTemplate=%s: expected %+v, got %+v", tc.filePath, tc.filePathTemplate, tc.want, *mi)
-			}
+		if tc.wantErr != "" {
+			require.Contains(t, err.Error(), tc.wantErr)
+			continue
 		}
-
+		require.NoError(t, err)
+		require.Equal(t, tc.want, *mi)
 	}
 }

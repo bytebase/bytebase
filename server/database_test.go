@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateDatabaseLabelList(t *testing.T) {
@@ -143,8 +144,10 @@ func TestValidateDatabaseLabelList(t *testing.T) {
 
 	for _, test := range tests {
 		err := validateDatabaseLabelList(test.labelList, test.labelKeyList, test.environmentName)
-		if err != nil != test.wantErr {
-			t.Errorf("%q: got error %v, wantErr %v.", test.name, err, test.wantErr)
+		if test.wantErr {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
 		}
 	}
 }

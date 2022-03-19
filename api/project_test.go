@@ -1,10 +1,9 @@
 package api
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetTemplateTokens(t *testing.T) {
@@ -30,10 +29,7 @@ func TestGetTemplateTokens(t *testing.T) {
 
 	for _, test := range tests {
 		tokens := getTemplateTokens(test.template)
-		diff := pretty.Diff(tokens, test.want)
-		if len(diff) > 0 {
-			t.Errorf("%q: getTemplateTokens(%q) got tokens %+v, want %+v, diff %+v.", test.name, test.template, tokens, test.want, diff)
-		}
+		require.Equal(t, tokens, test.want)
 	}
 }
 
@@ -79,16 +75,10 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode)
-		if err != nil {
-			if test.errPart == "" {
-				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
-			} else if !strings.Contains(err.Error(), test.errPart) {
-				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			if test.errPart != "" {
-				t.Errorf("%q: ValidateRepositoryFilePathTemplate(%q) got no error, want errPart %q.", test.name, test.template, test.errPart)
-			}
+			require.Contains(t, err.Error(), test.errPart)
 		}
 	}
 }
@@ -125,16 +115,10 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		err := ValidateRepositorySchemaPathTemplate(test.template, test.tenantMode)
-		if err != nil {
-			if test.errPart == "" {
-				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got error %q, want OK.", test.name, test.template, err.Error())
-			} else if !strings.Contains(err.Error(), test.errPart) {
-				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			if test.errPart != "" {
-				t.Errorf("%q: ValidateRepositorySchemaPathTemplate(%q) got no error, want errPart %q.", test.name, test.template, test.errPart)
-			}
+			require.Contains(t, err.Error(), test.errPart)
 		}
 	}
 }
@@ -166,14 +150,10 @@ func TestValidateProjectDBNameTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		err := ValidateProjectDBNameTemplate(test.template)
-		if err != nil {
-			if !strings.Contains(err.Error(), test.errPart) {
-				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got error %q, want errPart %q.", test.name, test.template, err.Error(), test.errPart)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			if test.errPart != "" {
-				t.Errorf("%q: ValidateProjectDBNameTemplate(%q) got no error, want errPart %q.", test.name, test.template, test.errPart)
-			}
+			require.Contains(t, err.Error(), test.errPart)
 		}
 	}
 }
@@ -208,18 +188,12 @@ func TestFormatTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		got, err := FormatTemplate(test.template, test.tokens)
-		if err != nil {
-			if !strings.Contains(err.Error(), test.errPart) {
-				t.Errorf("%q: FormatTemplate(%q, %+v) got error %q, want errPart %q.", test.name, test.template, test.tokens, err.Error(), test.errPart)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			if test.errPart != "" {
-				t.Errorf("%q: FormatTemplate(%q, %+v) got no error, want errPart %q.", test.name, test.template, test.tokens, test.errPart)
-			}
+			require.Contains(t, err.Error(), test.errPart)
 		}
-		if got != test.want {
-			t.Errorf("%q: FormatTemplate(%q, %+v) got %q, want %q.", test.name, test.template, test.tokens, got, test.want)
-		}
+		require.Equal(t, got, test.want)
 	}
 }
 
@@ -284,17 +258,11 @@ func TestGetBaseDatabaseName(t *testing.T) {
 
 	for _, test := range tests {
 		got, err := GetBaseDatabaseName(test.databaseName, test.template, test.labelsJSON)
-		if err != nil {
-			if !strings.Contains(err.Error(), test.errPart) {
-				t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got error %q, want errPart %q.", test.name, test.databaseName, test.template, test.labelsJSON, err.Error(), test.errPart)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			if test.errPart != "" {
-				t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got no error, want errPart %q.", test.name, test.databaseName, test.template, test.labelsJSON, test.errPart)
-			}
+			require.Contains(t, err.Error(), test.errPart)
 		}
-		if got != test.want {
-			t.Errorf("%q: GetBaseDatabaseName(%q, %q, %q) got %q, want %q.", test.name, test.databaseName, test.template, test.labelsJSON, got, test.want)
-		}
+		require.Equal(t, got, test.want)
 	}
 }
