@@ -49,7 +49,7 @@ echo "Step 1 - building bytebase frontend..."
 
 if command -v pnpm &> /dev/null
 then
-    pnpm --cwd ./frontend i && pnpm --cwd ./frontend release
+    pnpm --dir ./frontend i && pnpm --dir ./frontend release
 else
     npm --prefix ./frontend run release
 fi
