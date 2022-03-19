@@ -13,7 +13,7 @@ WORKDIR /frontend-build
 
 # Install build dependency (e.g. vite)
 COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
-RUN RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod
 
 COPY ./frontend/ .
 
