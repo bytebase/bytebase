@@ -9,6 +9,7 @@ import (
 	_ "embed"
 
 	"github.com/bytebase/bytebase/resources/mysql"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -21,9 +22,8 @@ func TestDump(t *testing.T) {
 	defer stop()
 
 	t.Log("Importing MySQL data...")
-	if err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr); err != nil {
-		t.Fatal(err)
-	}
+	err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr)
+	require.NoError(t, err)
 
 	tt := []testTable{
 		{
