@@ -51,6 +51,7 @@ func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.Pipel
 	return pipeline, nil
 }
 
+// TODO(dragonly): remove this hack.
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
