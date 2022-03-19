@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/kr/pretty"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPeerTenantDatabase(t *testing.T) {
@@ -64,10 +64,6 @@ func TestGetPeerTenantDatabase(t *testing.T) {
 
 	for _, test := range tests {
 		got := getPeerTenantDatabase(test.pipeline, test.environmentID)
-
-		diff := pretty.Diff(got, test.want)
-		if len(diff) > 0 {
-			t.Errorf("%q: getPeerTenantDatabase() got got %+v, want %+v, diff %+v.", test.name, got, test.want, diff)
-		}
+		assert.Equal(t, got, test.want)
 	}
 }
