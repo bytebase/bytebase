@@ -76,7 +76,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			"existsOperatorWithValues",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
-			" operator shouldn't have values",
+			"operator shouldn't have values",
 		}, {
 			"invalidOperator",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
