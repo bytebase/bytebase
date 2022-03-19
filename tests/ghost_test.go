@@ -1,3 +1,6 @@
+//go:build mysql
+// +build mysql
+
 package tests
 
 import (
