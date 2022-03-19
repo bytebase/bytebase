@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 
@@ -165,49 +164,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", id)).SetInternal(err)
-			}
-		}
-
-		// TODO(d): remove this once UI fully switched to data source API.
-		if instancePatch.Username != nil || instancePatch.Password != nil || instancePatch.UseEmptyPassword {
-			instanceFind := &api.InstanceFind{
-				ID: &id,
-			}
-			instancePatchedRaw, err = s.InstanceService.FindInstance(ctx, instanceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-			}
-			if instancePatchedRaw == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
-
-			dataSourceType := api.Admin
-			dataSourceFind := &api.DataSourceFind{
-				InstanceID: &instancePatchedRaw.ID,
-				Type:       &dataSourceType,
-			}
-			adminDataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source for instance: %v", instancePatchedRaw.Name)).SetInternal(err)
-			}
-			if adminDataSourceRaw == nil {
-				err := fmt.Errorf("data source not found for instance ID %v, name %q and type %q", instancePatchedRaw.ID, instancePatchedRaw.Name, dataSourceType)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
-			}
-
-			dataSourcePatch := &api.DataSourcePatch{
-				ID:        adminDataSourceRaw.ID,
-				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-				Username:  instancePatch.Username,
-			}
-			if instancePatch.Password != nil {
-				dataSourcePatch.Password = instancePatch.Password
-			} else if instancePatch.UseEmptyPassword {
-				password := ""
-				dataSourcePatch.Password = &password
-			}
-			if _, err := s.DataSourceService.PatchDataSource(ctx, dataSourcePatch); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch data source for instance: %v", instancePatchedRaw.Name)).SetInternal(err)
 			}
 		}
 
@@ -552,12 +508,6 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return nil, err
 		}
-
-		// TODO(d): remove this when UI is fully switched to data source API.
-		if dataSource.Type == api.Admin {
-			instance.Username = dataSource.Username
-			instance.Password = dataSource.Password
-		}
 	}
 
 	return instance, nil
@@ -601,26 +551,9 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 // disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
 // Otherwise, users can take control of the database which is a security issue.
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
-	if engine != db.Postgres {
-		return nil
-	}
-	if port != fmt.Sprintf("%v", s.datastorePort) {
-		return nil
-	}
-
-	existErr := fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
-	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
-		return existErr
-	}
-	// Check loopback addresses
-	ips, err := net.LookupIP(host)
-	if err != nil {
-		return nil
-	}
-	for _, ip := range ips {
-		if ip.IsLoopback() {
-			return existErr
-		}
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
+	if engine == db.Postgres && port == fmt.Sprintf("%v", s.datastorePort) && host == common.GetPostgresSocketDir() {
+		return fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
 }

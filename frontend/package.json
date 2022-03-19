@@ -1,7 +1,7 @@
 {
   "name": "bytebase",
-  "version": "1.0.0",
-  "license": "Apache-2.0",
+  "version": "1.0.1",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "vite --mode dev",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",

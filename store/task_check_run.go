@@ -27,7 +27,7 @@ func NewTaskCheckRunService(logger *zap.Logger, db *DB) *TaskCheckRunService {
 }
 
 // CreateTaskCheckRunIfNeeded creates a new taskCheckRun. See interface for the expected behavior
-func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -90,7 +90,7 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 }
 
 // createTaskCheckRunTx creates a new taskCheckRun.
-func (s *TaskCheckRunService) createTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) createTaskCheckRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*api.TaskCheckRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -119,35 +119,35 @@ func (s *TaskCheckRunService) createTaskCheckRunTx(ctx context.Context, tx *sql.
 	}
 	defer rows.Close()
 
-	var t *api.TaskCheckRun
+	var tRaw *api.TaskCheckRunRaw
 	for rows.Next() {
-		var taskCheckRun api.TaskCheckRun
+		var taskCheckRunRaw api.TaskCheckRunRaw
 		if err := rows.Scan(
-			&taskCheckRun.ID,
-			&taskCheckRun.CreatorID,
-			&taskCheckRun.CreatedTs,
-			&taskCheckRun.UpdaterID,
-			&taskCheckRun.UpdatedTs,
-			&taskCheckRun.TaskID,
-			&taskCheckRun.Status,
-			&taskCheckRun.Type,
-			&taskCheckRun.Code,
-			&taskCheckRun.Comment,
-			&taskCheckRun.Result,
-			&taskCheckRun.Payload,
+			&taskCheckRunRaw.ID,
+			&taskCheckRunRaw.CreatorID,
+			&taskCheckRunRaw.CreatedTs,
+			&taskCheckRunRaw.UpdaterID,
+			&taskCheckRunRaw.UpdatedTs,
+			&taskCheckRunRaw.TaskID,
+			&taskCheckRunRaw.Status,
+			&taskCheckRunRaw.Type,
+			&taskCheckRunRaw.Code,
+			&taskCheckRunRaw.Comment,
+			&taskCheckRunRaw.Result,
+			&taskCheckRunRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		t = &taskCheckRun
+		tRaw = &taskCheckRunRaw
 	}
-	if t != nil {
-		return t, nil
+	if tRaw != nil {
+		return tRaw, nil
 	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run cannot be created for task ID %v", create.TaskID)}
 }
 
 // FindTaskCheckRunList retrieves a list of taskCheckRuns based on find.
-func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -163,7 +163,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunList(ctx context.Context, find *ap
 }
 
 // FindTaskCheckRunListTx retrieves a list of taskCheckRuns based on find.
-func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRunRaw, error) {
 	list, err := s.findTaskCheckRunList(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (s *TaskCheckRunService) FindTaskCheckRunListTx(ctx context.Context, tx *sq
 }
 
 // PatchTaskCheckRunStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -193,7 +193,7 @@ func (s *TaskCheckRunService) PatchTaskCheckRunStatus(ctx context.Context, patch
 }
 
 // patchTaskCheckRunStatusTx updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *TaskCheckRunService) patchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) patchTaskCheckRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRunRaw, error) {
 	// Build UPDATE clause.
 	if patch.Result == "" {
 		patch.Result = "{}"
@@ -222,34 +222,34 @@ func (s *TaskCheckRunService) patchTaskCheckRunStatusTx(ctx context.Context, tx 
 	}
 	defer rows.Close()
 
-	var t *api.TaskCheckRun
+	var tRaw *api.TaskCheckRunRaw
 	for rows.Next() {
-		var taskCheckRun api.TaskCheckRun
+		var taskCheckRunRaw api.TaskCheckRunRaw
 		if err := rows.Scan(
-			&taskCheckRun.ID,
-			&taskCheckRun.CreatorID,
-			&taskCheckRun.CreatedTs,
-			&taskCheckRun.UpdaterID,
-			&taskCheckRun.UpdatedTs,
-			&taskCheckRun.TaskID,
-			&taskCheckRun.Status,
-			&taskCheckRun.Type,
-			&taskCheckRun.Code,
-			&taskCheckRun.Comment,
-			&taskCheckRun.Result,
-			&taskCheckRun.Payload,
+			&taskCheckRunRaw.ID,
+			&taskCheckRunRaw.CreatorID,
+			&taskCheckRunRaw.CreatedTs,
+			&taskCheckRunRaw.UpdaterID,
+			&taskCheckRunRaw.UpdatedTs,
+			&taskCheckRunRaw.TaskID,
+			&taskCheckRunRaw.Status,
+			&taskCheckRunRaw.Type,
+			&taskCheckRunRaw.Code,
+			&taskCheckRunRaw.Comment,
+			&taskCheckRunRaw.Result,
+			&taskCheckRunRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		t = &taskCheckRun
+		tRaw = &taskCheckRunRaw
 	}
-	if t != nil {
-		return t, nil
+	if tRaw != nil {
+		return tRaw, nil
 	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run ID not found: %d", *patch.ID)}
 }
 
-func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
+func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*api.TaskCheckRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -298,10 +298,10 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into taskCheckRunList.
-	var taskCheckRunList []*api.TaskCheckRun
+	// Iterate over result set and deserialize rows into taskCheckRunRawList.
+	var taskCheckRunRawList []*api.TaskCheckRunRaw
 	for rows.Next() {
-		var taskCheckRun api.TaskCheckRun
+		var taskCheckRun api.TaskCheckRunRaw
 		if err := rows.Scan(
 			&taskCheckRun.ID,
 			&taskCheckRun.CreatorID,
@@ -319,11 +319,11 @@ func (s *TaskCheckRunService) findTaskCheckRunList(ctx context.Context, tx *sql.
 			return nil, FormatError(err)
 		}
 
-		taskCheckRunList = append(taskCheckRunList, &taskCheckRun)
+		taskCheckRunRawList = append(taskCheckRunRawList, &taskCheckRun)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return taskCheckRunList, nil
+	return taskCheckRunRawList, nil
 }

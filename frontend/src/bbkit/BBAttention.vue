@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, withDefaults, defineEmits } from "vue";
+import { computed, withDefaults } from "vue";
 import { BBAttentionStyle } from "./types";
 
 const props = withDefaults(

@@ -36,7 +36,7 @@ func (i Instance) Port() int { return i.port }
 // Start starts the mysql instance on the given port, outputs to stdout and stderr.
 // Waits at most `waitSec` seconds for the mysql instance to ready for connection.
 // If `waitSec` is 0, it returns immediately.
-func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
+func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	i.port = port
 	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysqld"),
 		fmt.Sprintf("--defaults-file=%s", filepath.Join(i.basedir, "my.cnf")),
@@ -54,18 +54,21 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 	if err != nil {
 		return err
 	}
-	for retry := 0; waitSec > 0; retry++ {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	// Timeout after 60 seconds.
+	endTime := time.Now().Add(60 * time.Second)
+	for range ticker.C {
 		if err := db.Ping(); err == nil {
 			break
 		}
-		if retry > waitSec {
+		if time.Now().After(endTime) {
 			err := i.proc.Kill()
 			if err != nil {
 				return fmt.Errorf("mysql instance has started as process %d, but failed to kill it, error: %w", i.proc.Pid, err)
 			}
 			return fmt.Errorf("failed to connect to mysql")
 		}
-		time.Sleep(time.Second)
 	}
 
 	return nil
@@ -147,7 +150,7 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 		t.Fatal(err)
 	}
 	t.Log("Starting Mysql...")
-	if err := i.Start(port, os.Stdout, os.Stderr, 60); err != nil {
+	if err := i.Start(port, os.Stdout, os.Stderr); err != nil {
 		t.Fatal(err)
 	}
 

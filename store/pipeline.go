@@ -29,7 +29,7 @@ func NewPipelineService(logger *zap.Logger, db *DB, cache api.CacheService) *Pip
 }
 
 // CreatePipeline creates a new pipeline.
-func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
+func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.PipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -53,7 +53,7 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 }
 
 // FindPipelineList retrieves a list of pipelines based on find.
-func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.PipelineFind) ([]*api.Pipeline, error) {
+func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.PipelineFind) ([]*api.PipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -78,15 +78,15 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 
 // FindPipeline retrieves a single pipeline based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFind) (*api.Pipeline, error) {
+func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFind) (*api.PipelineRaw, error) {
 	if find.ID != nil {
-		pipeline := &api.Pipeline{}
-		has, err := s.cache.FindCache(api.PipelineCache, *find.ID, pipeline)
+		pipelineRaw := &api.PipelineRaw{}
+		has, err := s.cache.FindCache(api.PipelineCache, *find.ID, pipelineRaw)
 		if err != nil {
 			return nil, err
 		}
 		if has {
-			return pipeline, nil
+			return pipelineRaw, nil
 		}
 	}
 
@@ -96,32 +96,32 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPipelineList(ctx, tx.PTx, find)
+	pipelineRawList, err := s.findPipelineList(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list) == 0 {
+	if len(pipelineRawList) == 0 {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d pipelines with filter %+v, expect 1", len(list), find)}
+	} else if len(pipelineRawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.PipelineCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
 		return nil, err
 	}
-	return list[0], nil
+	return pipelineRawList[0], nil
 }
 
 // PatchPipeline updates an existing pipeline by ID.
 // Returns ENOTFOUND if pipeline does not exist.
-func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
+func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.PipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.patchPipeline(ctx, tx.PTx, patch)
+	pipelineRaw, err := s.patchPipeline(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -130,15 +130,15 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRaw.ID, pipelineRaw); err != nil {
 		return nil, err
 	}
 
-	return pipeline, nil
+	return pipelineRaw, nil
 }
 
 // createPipeline creates a new pipeline.
-func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.Pipeline, error) {
+func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.PipelineRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO pipeline (
 			creator_id,
@@ -160,23 +160,23 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create
 	defer row.Close()
 
 	row.Next()
-	var pipeline api.Pipeline
+	var pipelineRaw api.PipelineRaw
 	if err := row.Scan(
-		&pipeline.ID,
-		&pipeline.CreatorID,
-		&pipeline.CreatedTs,
-		&pipeline.UpdaterID,
-		&pipeline.UpdatedTs,
-		&pipeline.Name,
-		&pipeline.Status,
+		&pipelineRaw.ID,
+		&pipelineRaw.CreatorID,
+		&pipelineRaw.CreatedTs,
+		&pipelineRaw.UpdaterID,
+		&pipelineRaw.UpdatedTs,
+		&pipelineRaw.Name,
+		&pipelineRaw.Status,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &pipeline, nil
+	return &pipelineRaw, nil
 }
 
-func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*api.Pipeline, error) {
+func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*api.PipelineRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -204,33 +204,33 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into pipelineList.
-	var pipelineList []*api.Pipeline
+	// Iterate over result set and deserialize rows into pipelineRawList.
+	var pipelineRawList []*api.PipelineRaw
 	for rows.Next() {
-		var pipeline api.Pipeline
+		var pipelineRaw api.PipelineRaw
 		if err := rows.Scan(
-			&pipeline.ID,
-			&pipeline.CreatorID,
-			&pipeline.CreatedTs,
-			&pipeline.UpdaterID,
-			&pipeline.UpdatedTs,
-			&pipeline.Name,
-			&pipeline.Status,
+			&pipelineRaw.ID,
+			&pipelineRaw.CreatorID,
+			&pipelineRaw.CreatedTs,
+			&pipelineRaw.UpdaterID,
+			&pipelineRaw.UpdatedTs,
+			&pipelineRaw.Name,
+			&pipelineRaw.Status,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		pipelineList = append(pipelineList, &pipeline)
+		pipelineRawList = append(pipelineRawList, &pipelineRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return pipelineList, nil
+	return pipelineRawList, nil
 }
 
 // patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.Pipeline, error) {
+func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.PipelineRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {
@@ -254,19 +254,19 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *
 	defer row.Close()
 
 	if row.Next() {
-		var pipeline api.Pipeline
+		var pipelineRaw api.PipelineRaw
 		if err := row.Scan(
-			&pipeline.ID,
-			&pipeline.CreatorID,
-			&pipeline.CreatedTs,
-			&pipeline.UpdaterID,
-			&pipeline.UpdatedTs,
-			&pipeline.Name,
-			&pipeline.Status,
+			&pipelineRaw.ID,
+			&pipelineRaw.CreatorID,
+			&pipelineRaw.CreatedTs,
+			&pipelineRaw.UpdaterID,
+			&pipelineRaw.UpdatedTs,
+			&pipelineRaw.Name,
+			&pipelineRaw.Status,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		return &pipeline, nil
+		return &pipelineRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}

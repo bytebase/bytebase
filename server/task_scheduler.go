@@ -63,19 +63,20 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				pipelineFind := &api.PipelineFind{
 					Status: &pipelineStatus,
 				}
-				pipelineList, err := s.server.PipelineService.FindPipelineList(ctx, pipelineFind)
+				pipelineRawList, err := s.server.PipelineService.FindPipelineList(ctx, pipelineFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
 				}
-				for _, pipeline := range pipelineList {
-					if pipeline.ID == api.OnboardingPipelineID {
+				for _, pipelineRaw := range pipelineRawList {
+					if pipelineRaw.ID == api.OnboardingPipelineID {
 						continue
 					}
-					if err := s.server.composePipelineRelationship(ctx, pipeline); err != nil {
+					pipeline, err := s.server.composePipelineRelationship(ctx, pipelineRaw)
+					if err != nil {
 						s.l.Error("Failed to fetch pipeline relationship",
-							zap.Int("id", pipeline.ID),
-							zap.String("name", pipeline.Name),
+							zap.Int("id", pipelineRaw.ID),
+							zap.String("name", pipelineRaw.Name),
 							zap.Error(err),
 						)
 						continue
@@ -83,7 +84,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
 						s.l.Error("Failed to schedule next running task",
-							zap.Int("pipeline_id", pipeline.ID),
+							zap.Int("pipeline_id", pipelineRaw.ID),
 							zap.Error(err),
 						)
 					}
@@ -94,34 +95,35 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				taskFind := &api.TaskFind{
 					StatusList: &taskStatusList,
 				}
-				taskList, err := s.server.TaskService.FindTaskList(ctx, taskFind)
+				taskRawList, err := s.server.TaskService.FindTaskList(ctx, taskFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
 
-				for _, task := range taskList {
-					if task.ID == api.OnboardingTaskID1 || task.ID == api.OnboardingTaskID2 {
+				for _, taskRaw := range taskRawList {
+					if taskRaw.ID == api.OnboardingTaskID1 || taskRaw.ID == api.OnboardingTaskID2 {
 						continue
 					}
 
-					executor, ok := s.executors[string(task.Type)]
+					executor, ok := s.executors[string(taskRaw.Type)]
 					if !ok {
 						s.l.Error("Skip running task with unknown type",
-							zap.Int("id", task.ID),
-							zap.String("name", task.Name),
-							zap.String("type", string(task.Type)),
+							zap.Int("id", taskRaw.ID),
+							zap.String("name", taskRaw.Name),
+							zap.String("type", string(taskRaw.Type)),
 						)
 						continue
 					}
 
 					// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 					// We may optimize this in the future since only some relationship info is needed by the executor
-					if err := s.server.composeTaskRelationship(ctx, task); err != nil {
+					task, err := s.server.composeTaskRelationship(ctx, taskRaw)
+					if err != nil {
 						s.l.Error("Failed to fetch task relationship",
-							zap.Int("id", task.ID),
-							zap.String("name", task.Name),
-							zap.String("type", string(task.Type)),
+							zap.Int("id", taskRaw.ID),
+							zap.String("name", taskRaw.Name),
+							zap.String("type", string(taskRaw.Type)),
 						)
 						continue
 					}

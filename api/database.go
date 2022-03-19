@@ -37,6 +37,58 @@ func (e SyncStatus) String() string {
 	return ""
 }
 
+// DatabaseRaw is the store model for an Database.
+// Fields have exactly the same meanings as Database.
+type DatabaseRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	ProjectID      int
+	InstanceID     int
+	SourceBackupID int
+
+	// Domain specific fields
+	Name                 string
+	CharacterSet         string
+	Collation            string
+	SchemaVersion        string
+	SyncStatus           SyncStatus
+	LastSuccessfulSyncTs int64
+}
+
+// ToDatabase creates an instance of Database based on the DatabaseRaw.
+// This is intended to be called when we need to compose an Database relationship.
+func (raw *DatabaseRaw) ToDatabase() *Database {
+	return &Database{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		ProjectID:      raw.ProjectID,
+		InstanceID:     raw.InstanceID,
+		SourceBackupID: raw.SourceBackupID,
+
+		// Domain specific fields
+		Name:                 raw.Name,
+		CharacterSet:         raw.CharacterSet,
+		Collation:            raw.Collation,
+		SchemaVersion:        raw.SchemaVersion,
+		SyncStatus:           raw.SyncStatus,
+		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
+	}
+}
+
 // Database is the API message for a database.
 type Database struct {
 	ID int `jsonapi:"primary,database"`
@@ -139,10 +191,10 @@ type DatabasePatch struct {
 
 // DatabaseService is the service for databases.
 type DatabaseService interface {
-	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*Database, error)
+	CreateDatabase(ctx context.Context, create *DatabaseCreate) (*DatabaseRaw, error)
 	// This is specifically used to create the * database when creating the instance.
-	CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *DatabaseCreate) (*Database, error)
-	FindDatabaseList(ctx context.Context, find *DatabaseFind) ([]*Database, error)
-	FindDatabase(ctx context.Context, find *DatabaseFind) (*Database, error)
-	PatchDatabase(ctx context.Context, patch *DatabasePatch) (*Database, error)
+	CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *DatabaseCreate) (*DatabaseRaw, error)
+	FindDatabaseList(ctx context.Context, find *DatabaseFind) ([]*DatabaseRaw, error)
+	FindDatabase(ctx context.Context, find *DatabaseFind) (*DatabaseRaw, error)
+	PatchDatabase(ctx context.Context, patch *DatabasePatch) (*DatabaseRaw, error)
 }

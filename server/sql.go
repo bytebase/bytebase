@@ -256,12 +256,16 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTable, err := s.TableService.CreateTable(ctx, tableCreate)
+				createTableRaw, err := s.TableService.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
+				}
+				createTable, err := s.composeTableRelationship(ctx, createTableRaw)
+				if err != nil {
+					return nil, fmt.Errorf("failed to compose table with ID %d, error: %v", createTable.ID, err)
 				}
 				return createTable, nil
 			}
@@ -463,9 +467,17 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			databaseFind := &api.DatabaseFind{
 				InstanceID: &instance.ID,
 			}
-			dbList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
+			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
 			if err != nil {
-				return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+				return fmt.Errorf("Failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+			}
+			var dbList []*api.Database
+			for _, dbRaw := range dbRawList {
+				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+				if err != nil {
+					return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+				}
+				dbList = append(dbList, db)
 			}
 
 			for _, schema := range schemaList {
@@ -494,37 +506,41 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						LastSuccessfulSyncTs: &ts,
 						SchemaVersion:        &schemaVersion,
 					}
-					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
+					dbRawPatched, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
 					}
+					dbPatched, err := s.composeDatabaseRelationship(ctx, dbRawPatched)
+					if err != nil {
+						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
+					}
 
 					tableDelete := &api.TableDelete{
-						DatabaseID: database.ID,
+						DatabaseID: dbPatched.ID,
 					}
 					if err := s.TableService.DeleteTable(ctx, tableDelete); err != nil {
-						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, database.Name, err)
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
 					for _, table := range schema.TableList {
-						err = recreateTableSchema(database, table)
+						err = recreateTableSchema(dbPatched, table)
 						if err != nil {
 							return err
 						}
 					}
 
 					viewDelete := &api.ViewDelete{
-						DatabaseID: database.ID,
+						DatabaseID: dbPatched.ID,
 					}
 					if err := s.ViewService.DeleteView(ctx, viewDelete); err != nil {
-						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, database.Name, err)
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
 					for _, view := range schema.ViewList {
-						err = recreateViewSchema(database, view)
+						err = recreateViewSchema(dbPatched, view)
 						if err != nil {
 							return err
 						}
@@ -541,23 +557,27 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Collation:     schema.Collation,
 						SchemaVersion: schemaVersion,
 					}
-					database, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+					dbRaw, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
 					if err != nil {
 						if common.ErrorCode(err) == common.Conflict {
 							return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
 					}
+					db, err := s.composeDatabaseRelationship(ctx, dbRaw)
+					if err != nil {
+						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+					}
 
 					for _, table := range schema.TableList {
-						err = recreateTableSchema(database, table)
+						err = recreateTableSchema(db, table)
 						if err != nil {
 							return err
 						}
 					}
 
 					for _, view := range schema.ViewList {
-						err = recreateViewSchema(database, view)
+						err = recreateViewSchema(db, view)
 						if err != nil {
 							return err
 						}
