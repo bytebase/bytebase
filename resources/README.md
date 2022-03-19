@@ -1,6 +1,6 @@
 # Resources
 
-You need to run `go generate ./...` to download some resources manually.
+You need to run `go generate -tags mysql ./...` to download some resources manually.
 
 ## Postgresql
 
@@ -14,7 +14,7 @@ darwin/amd64 used for MacOS development (MD5 d95d5c5fccc1e1ef45de6533fd8e6d0a): 
 
 ## MySQL
 
-We will embed MySQL binaries for testing. You need to run `go generate ./...` to download MySQL distributions first.
+We will embed MySQL binaries for testing. You need to run `go generate -tags mysql ./...` to download MySQL distributions first.
 
 linux-glibc2.17-x86_64 used for Linux (MD5 55a7759e25cc527416150c8181ce3f6d): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
 
