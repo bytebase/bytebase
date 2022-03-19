@@ -11,7 +11,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 		name    string
 		payload string
 		wantCfg *DeploymentSchedule
-		wantErr bool
+		errPart string
 	}{
 		{
 			"complexDeployments",
@@ -56,53 +56,57 @@ func TestGetDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			false,
+			"",
 		}, {
 			"invalidPayload",
 			`{"unmatchdeployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{},
-			false,
+			"",
 		}, {
 			"json",
 			`{`,
 			nil,
-			true,
+			"unexpected end of JSON input",
 		}, {
 			"inOperatorWithNoValue",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
 			nil,
-			true,
+			"operator should have at least one value",
 		}, {
 			"existsOperatorWithValues",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
-			true,
+			" operator shouldn't have values",
 		}, {
 			"invalidOperator",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
 			nil,
-			true,
+			"has invalid operator",
 		}, {
 			"missingEnvironment",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
-			true,
+			"label",
 		}, {
 			"environmentExistsOperator",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
-			true,
+			"should must use operator",
 		}, {
 			"environmentMultiValues",
 			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
-			true,
+			"should must use operator",
 		},
 	}
 
 	for _, test := range tests {
 		cfg, err := ValidateAndGetDeploymentSchedule(test.payload)
-		require.False(t, err != nil != test.wantErr)
+		if test.errPart == "" {
+			require.NoError(t, err)
+		} else {
+			require.Contains(t, err.Error(), test.errPart, test.name)
+		}
 		require.Equal(t, cfg, test.wantCfg)
 	}
 }
