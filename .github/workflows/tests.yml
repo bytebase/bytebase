@@ -14,7 +14,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - run: go generate ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
@@ -41,5 +40,4 @@ jobs:
         with:
           go-version: 1.17
       - run: |
-          go generate ./...
           go test -v ./...
