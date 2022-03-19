@@ -10,45 +10,54 @@ func (s *Server) composeStageListByPipelineID(ctx context.Context, pipelineID in
 	stageFind := &api.StageFind{
 		PipelineID: &pipelineID,
 	}
-	stageList, err := s.StageService.FindStageList(ctx, stageFind)
+	stageRawList, err := s.StageService.FindStageList(ctx, stageFind)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, stage := range stageList {
-		if err := s.composeStageRelationship(ctx, stage); err != nil {
+	var stageList []*api.Stage
+	for _, stageRaw := range stageRawList {
+		stage, err := s.composeStageRelationship(ctx, stageRaw)
+		if err != nil {
 			return nil, err
 		}
+		stageList = append(stageList, stage)
 	}
 
 	return stageList, nil
 }
 
-func (s *Server) composeStageRelationship(ctx context.Context, stage *api.Stage) error {
-	var err error
-	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
-	if err != nil {
-		return err
-	}
+func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw) (*api.Stage, error) {
+	stage := raw.ToStage()
 
-	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
+	creator, err := s.composePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Creator = creator
 
-	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	updater, err := s.composePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Updater = updater
 
-	stage.TaskList, err = s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	env, err := s.composeEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	stage.Environment = env
 
-	return nil
+	taskList, err := s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	if err != nil {
+		return nil, err
+	}
+	stage.TaskList = taskList
+
+	return stage, nil
 }
 
+// TODO(dragonly): remove this hack
 func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
 	var err error
 	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
