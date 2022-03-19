@@ -2,6 +2,8 @@ package store
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_versionFromInt(t *testing.T) {
@@ -15,9 +17,8 @@ func Test_versionFromInt(t *testing.T) {
 		}
 		for _, tt := range tests {
 			v := versionFromInt(tt.num)
-			if v.major != tt.major || v.minor != tt.minor {
-				t.Errorf("versionFromInt(%d) = %d.%d, want %d.%d", tt.num, v.major, v.minor, tt.major, tt.minor)
-			}
+			assert.Equal(t, v.major, tt.major)
+			assert.Equal(t, v.minor, tt.minor)
 		}
 	})
 }
@@ -99,9 +100,8 @@ func Test_version_biggerThan(t *testing.T) {
 				major: tt.fields.major,
 				minor: tt.fields.minor,
 			}
-			if got := v.biggerThan(tt.args.other); got != tt.want {
-				t.Errorf("biggerThan() = %v, want %v", got, tt.want)
-			}
+			got := v.biggerThan(tt.args.other)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }
