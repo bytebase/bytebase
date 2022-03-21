@@ -303,6 +303,7 @@ settings:
   general:
     workspace:
       branding: 品牌
+      logo: Logo
       display-name: 名称
       logo-type-limit: 仅支持 {extension} 类型的文件
       logo-size-limit: 文件大小需小于 {size} MiB
@@ -1136,7 +1137,7 @@ subscription:
       login: 请@:{'subscription.upgrade'}来开启该功能
     bb-feature-branding:
       title: 自定义品牌信息
-      desc: 个性化配置工作空间和品牌信息
+      desc: 定制 Logo
   feature-sections:
     database-management:
       title: 数据库管理
