@@ -311,6 +311,16 @@ settings:
       content: >-
         You are about to restore the following members. All existing members
         synced from VCS will be removed.
+  general:
+    workspace:
+      branding: Branding
+      display-name: Display name
+      logo-type-limit: Only support {extension} file
+      logo-size-limit: File size should less than {size} MiB
+      logo-aspect: The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).
+      select-logo: Upload a file
+      drag-logo: or drag and drop
+      logo-upload-tip: "{extension} up to {size} MiB"
 activity:
   name: Name
   comment: Comment
@@ -1285,6 +1295,9 @@ subscription:
         Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.
         @:{'subscription.upgrade'} to unlock this feature.
       login: "@:{'subscription.upgrade'} to unlock this feature"
+    bb-feature-branding:
+      title: Branding
+      desc: Customize the workspace and branding.
   feature-sections:
     database-management:
       title: Database Development
