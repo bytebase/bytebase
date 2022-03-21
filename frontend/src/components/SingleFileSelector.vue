@@ -90,7 +90,7 @@ const validFile = (file: File): boolean => {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "CRITICAL",
-      title: t("settings.general.workspace.logo-type-limit", {
+      title: t("common.file-selector.type-limit", {
         extension: props.supportFileExtensions.join(", "),
       }),
     });
@@ -101,7 +101,7 @@ const validFile = (file: File): boolean => {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "CRITICAL",
-      title: t("settings.general.workspace.logo-size-limit", {
+      title: t("common.file-selector.size-limit", {
         size: props.maxFileSizeInMiB,
       })
     });
