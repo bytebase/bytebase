@@ -40,8 +40,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
-	runningTasks := make(map[int]bool)
-	mu := sync.RWMutex{}
+	tasks := struct {
+		running map[int]bool // task id set
+		mu      sync.RWMutex
+	}{
+		running: make(map[int]bool),
+		mu:      sync.RWMutex{},
+	}
 	for {
 		select {
 		case <-ticker.C:
@@ -128,19 +133,19 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					mu.Lock()
-					if _, ok := runningTasks[task.ID]; ok {
-						mu.Unlock()
+					tasks.mu.Lock()
+					if _, ok := tasks.running[task.ID]; ok {
+						tasks.mu.Unlock()
 						continue
 					}
-					runningTasks[task.ID] = true
-					mu.Unlock()
+					tasks.running[task.ID] = true
+					tasks.mu.Unlock()
 
 					go func(task *api.Task) {
 						defer func() {
-							mu.Lock()
-							delete(runningTasks, task.ID)
-							mu.Unlock()
+							tasks.mu.Lock()
+							delete(tasks.running, task.ID)
+							tasks.mu.Unlock()
 						}()
 						done, result, err := executor.RunOnce(ctx, s.server, task)
 						if done {
