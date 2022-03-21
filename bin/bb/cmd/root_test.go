@@ -13,6 +13,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	PortTestDump = iota + 13306
+	PortTestMigrate
+	PortTestCreateDatabase
+)
+
 func init() {
 	logger = zap.NewNop()
 }

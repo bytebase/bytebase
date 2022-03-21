@@ -29,7 +29,7 @@ func NewMemberService(logger *zap.Logger, db *DB, cache api.CacheService) *Membe
 }
 
 // CreateMember creates a new member.
-func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
+func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -53,7 +53,7 @@ func (s *MemberService) CreateMember(ctx context.Context, create *api.MemberCrea
 }
 
 // FindMemberList retrieves a list of members based on find.
-func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
+func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -78,15 +78,15 @@ func (s *MemberService) FindMemberList(ctx context.Context, find *api.MemberFind
 
 // FindMember retrieves a single member based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
+func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*api.MemberRaw, error) {
 	if find.PrincipalID != nil {
-		member := &api.Member{}
-		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, member)
+		memberRaw := &api.MemberRaw{}
+		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, memberRaw)
 		if err != nil {
 			return nil, err
 		}
 		if has {
-			return member, nil
+			return memberRaw, nil
 		}
 	}
 
@@ -114,7 +114,7 @@ func (s *MemberService) FindMember(ctx context.Context, find *api.MemberFind) (*
 
 // PatchMember updates an existing member by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
+func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -138,7 +138,7 @@ func (s *MemberService) PatchMember(ctx context.Context, patch *api.MemberPatch)
 }
 
 // createMember creates a new member.
-func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.Member, error) {
+func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*api.MemberRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO member (
@@ -164,25 +164,25 @@ func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*a
 	defer row.Close()
 
 	row.Next()
-	var member api.Member
+	var memberRaw api.MemberRaw
 	if err := row.Scan(
-		&member.ID,
-		&member.RowStatus,
-		&member.CreatorID,
-		&member.CreatedTs,
-		&member.UpdaterID,
-		&member.UpdatedTs,
-		&member.Status,
-		&member.Role,
-		&member.PrincipalID,
+		&memberRaw.ID,
+		&memberRaw.RowStatus,
+		&memberRaw.CreatorID,
+		&memberRaw.CreatedTs,
+		&memberRaw.UpdaterID,
+		&memberRaw.UpdatedTs,
+		&memberRaw.Status,
+		&memberRaw.Role,
+		&memberRaw.PrincipalID,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &member, nil
+	return &memberRaw, nil
 }
 
-func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*api.Member, error) {
+func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*api.MemberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -215,35 +215,35 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*a
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into memberList.
-	var memberList []*api.Member
+	// Iterate over result set and deserialize rows into memberRawList.
+	var memberRawList []*api.MemberRaw
 	for rows.Next() {
-		var member api.Member
+		var memberRaw api.MemberRaw
 		if err := rows.Scan(
-			&member.ID,
-			&member.RowStatus,
-			&member.CreatorID,
-			&member.CreatedTs,
-			&member.UpdaterID,
-			&member.UpdatedTs,
-			&member.Status,
-			&member.Role,
-			&member.PrincipalID,
+			&memberRaw.ID,
+			&memberRaw.RowStatus,
+			&memberRaw.CreatorID,
+			&memberRaw.CreatedTs,
+			&memberRaw.UpdaterID,
+			&memberRaw.UpdatedTs,
+			&memberRaw.Status,
+			&memberRaw.Role,
+			&memberRaw.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		memberList = append(memberList, &member)
+		memberRawList = append(memberRawList, &memberRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return memberList, nil
+	return memberRawList, nil
 }
 
 // patchMember updates a member by ID. Returns the new state of the member after update.
-func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.Member, error) {
+func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.MemberRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -270,22 +270,22 @@ func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*api.
 	defer row.Close()
 
 	if row.Next() {
-		var member api.Member
+		var memberRaw api.MemberRaw
 		if err := row.Scan(
-			&member.ID,
-			&member.RowStatus,
-			&member.CreatorID,
-			&member.CreatedTs,
-			&member.UpdaterID,
-			&member.UpdatedTs,
-			&member.Status,
-			&member.Role,
-			&member.PrincipalID,
+			&memberRaw.ID,
+			&memberRaw.RowStatus,
+			&memberRaw.CreatorID,
+			&memberRaw.CreatedTs,
+			&memberRaw.UpdaterID,
+			&memberRaw.UpdatedTs,
+			&memberRaw.Status,
+			&memberRaw.Role,
+			&memberRaw.PrincipalID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &member, nil
+		return &memberRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}

@@ -28,12 +28,16 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			issueFind := &api.IssueFind{
 				ID: &activityCreate.ContainerID,
 			}
-			issue, err := s.IssueService.FindIssue(ctx, issueFind)
+			issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
 			}
-			if issue == nil {
+			if issueRaw == nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
+			}
+			issue, err := s.composeIssueRelationship(ctx, issueRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relation with ID %d", issueRaw.ID)).SetInternal(err)
 			}
 
 			bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{

@@ -76,7 +76,7 @@ const getters = {
 
 const actions = {
   async fetchDeploymentConfigByProjectId(
-    { commit, rootGetters }: any,
+    { commit, getters, rootGetters }: any,
     projectId: ProjectId
   ) {
     const data = (await axios.get(`/api/project/${projectId}/deployment`)).data;
@@ -86,6 +86,7 @@ const actions = {
     if (id !== EMPTY_ID && id !== UNKNOWN_ID) {
       commit("setDeploymentConfigByProjectId", { projectId, deploymentConfig });
     }
+    return getters["deploymentConfigByProjectId"](projectId);
   },
 
   async patchDeploymentConfigByProjectId(

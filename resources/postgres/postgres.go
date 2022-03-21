@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
 )
 
@@ -42,9 +43,11 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 
 	i.port = port
 
+	// See -p -k -h option definitions in the link below.
+	// https://www.postgresql.org/docs/current/app-postgres.html
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", i.datadir,
-		"-o", fmt.Sprintf(`"-p %d"`, i.port))
+		"-o", fmt.Sprintf(`-p %d -k %s -h ""`, i.port, common.GetPostgresSocketDir()))
 
 	p.Stdout = stdout
 	p.Stderr = stderr
@@ -165,12 +168,21 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
 	}
-	// Skip initDB if setup already.
+	initDBDone := false
 	if err == nil {
+		initDBDone = true
+	}
+
+	// Skip initDB if setup already.
+	if initDBDone {
+		// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
+		if err := os.Chmod(pgDataDir, 0700); err != nil {
+			return fmt.Errorf("failed to chmod postgres data directory %q to 0700, error: %w", pgDataDir, err)
+		}
 		return nil
 	}
 
-	if err := os.MkdirAll(pgDataDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
 	}
 

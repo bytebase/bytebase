@@ -5,18 +5,20 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM mhart/alpine-node:14.17.3 as frontend
+FROM node:14 as frontend
+
+RUN npm i -g pnpm
 
 WORKDIR /frontend-build
 
 # Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/yarn.lock ./
-RUN yarn
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY ./frontend/ .
 
 # Build frontend
-RUN yarn release-docker
+RUN pnpm release-docker
 
 FROM golang:1.16.5-alpine3.13 as backend
 

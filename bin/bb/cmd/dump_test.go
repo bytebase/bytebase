@@ -1,3 +1,6 @@
+//go:build mysql
+// +build mysql
+
 package cmd
 
 import (
@@ -9,21 +12,21 @@ import (
 	_ "embed"
 
 	"github.com/bytebase/bytebase/resources/mysql"
+	"github.com/stretchr/testify/require"
 )
 
 var (
-	//go:embed testdata/expected/test_dump_todo
-	expectedTodo string
+	//go:embed testdata/expected/dump_test_TestDump
+	_TestDump string
 )
 
 func TestDump(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, 13306)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestDump)
 	defer stop()
 
 	t.Log("Importing MySQL data...")
-	if err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr); err != nil {
-		t.Fatal(err)
-	}
+	err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr)
+	require.NoError(t, err)
 
 	tt := []testTable{
 		{
@@ -35,7 +38,7 @@ func TestDump(t *testing.T) {
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},
-			expected: expectedTodo,
+			expected: _TestDump,
 		},
 	}
 	tableTest(t, tt)
