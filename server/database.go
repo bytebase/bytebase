@@ -507,17 +507,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		viewFind := &api.ViewFind{
 			DatabaseID: &id,
 		}
-		viewList, err := s.ViewService.FindViewList(ctx, viewFind)
+		viewRawList, err := s.ViewService.FindViewList(ctx, viewFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database ID: %d", id)).SetInternal(err)
 		}
-
+		var viewList []*api.View
+		for _, raw := range viewRawList {
+			view, err := s.composeViewRelationship(ctx, raw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose view relationship with ID: %d", id)).SetInternal(err)
+			}
+			viewList = append(viewList, view)
+		}
+		// TODO(dragonly): should we do this in composeViewRelationship?
 		for _, view := range viewList {
 			view.Database = database
-
-			if err := s.composeViewRelationship(ctx, view); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose view relationship").SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -1103,19 +1107,21 @@ func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw
 	return table, nil
 }
 
-func (s *Server) composeViewRelationship(ctx context.Context, view *api.View) error {
-	var err error
+func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) (*api.View, error) {
+	view := raw.ToView()
 
-	view.Creator, err = s.composePrincipalByID(ctx, view.CreatorID)
+	creator, err := s.composePrincipalByID(ctx, view.CreatorID)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	view.Creator = creator
 
-	view.Updater, err = s.composePrincipalByID(ctx, view.UpdaterID)
+	updater, err := s.composePrincipalByID(ctx, view.UpdaterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	view.Updater = updater
+	return view, nil
 }
 
 // composeBackupByID will compose the backup by backup ID.
