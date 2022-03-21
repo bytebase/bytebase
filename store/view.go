@@ -27,7 +27,7 @@ func NewViewService(logger *zap.Logger, db *DB) *ViewService {
 }
 
 // CreateView creates a new view.
-func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*api.View, error) {
+func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*api.ViewRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -47,7 +47,7 @@ func (s *ViewService) CreateView(ctx context.Context, create *api.ViewCreate) (*
 }
 
 // FindViewList retrieves a list of views based on find.
-func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
+func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*api.ViewRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -64,7 +64,7 @@ func (s *ViewService) FindViewList(ctx context.Context, find *api.ViewFind) ([]*
 
 // FindView retrieves a single view based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.View, error) {
+func (s *ViewService) FindView(ctx context.Context, find *api.ViewFind) (*api.ViewRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -104,7 +104,7 @@ func (s *ViewService) DeleteView(ctx context.Context, delete *api.ViewDelete) er
 }
 
 // createView creates a new view.
-func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.View, error) {
+func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*api.ViewRaw, error) {
 	// Insert row into view.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO vw (
@@ -136,25 +136,25 @@ func (s *ViewService) createView(ctx context.Context, tx *sql.Tx, create *api.Vi
 	defer row.Close()
 
 	row.Next()
-	var view api.View
+	var viewRaw api.ViewRaw
 	if err := row.Scan(
-		&view.ID,
-		&view.CreatorID,
-		&view.CreatedTs,
-		&view.UpdaterID,
-		&view.UpdatedTs,
-		&view.DatabaseID,
-		&view.Name,
-		&view.Definition,
-		&view.Comment,
+		&viewRaw.ID,
+		&viewRaw.CreatorID,
+		&viewRaw.CreatedTs,
+		&viewRaw.UpdaterID,
+		&viewRaw.UpdatedTs,
+		&viewRaw.DatabaseID,
+		&viewRaw.Name,
+		&viewRaw.Definition,
+		&viewRaw.Comment,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &view, nil
+	return &viewRaw, nil
 }
 
-func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*api.View, error) {
+func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*api.ViewRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -188,31 +188,31 @@ func (s *ViewService) findViewList(ctx context.Context, tx *sql.Tx, find *api.Vi
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into viewList.
-	var viewList []*api.View
+	// Iterate over result set and deserialize rows into viewRawList.
+	var viewRawList []*api.ViewRaw
 	for rows.Next() {
-		var view api.View
+		var viewRaw api.ViewRaw
 		if err := rows.Scan(
-			&view.ID,
-			&view.CreatorID,
-			&view.CreatedTs,
-			&view.UpdaterID,
-			&view.UpdatedTs,
-			&view.DatabaseID,
-			&view.Name,
-			&view.Definition,
-			&view.Comment,
+			&viewRaw.ID,
+			&viewRaw.CreatorID,
+			&viewRaw.CreatedTs,
+			&viewRaw.UpdaterID,
+			&viewRaw.UpdatedTs,
+			&viewRaw.DatabaseID,
+			&viewRaw.Name,
+			&viewRaw.Definition,
+			&viewRaw.Comment,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		viewList = append(viewList, &view)
+		viewRawList = append(viewRawList, &viewRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return viewList, nil
+	return viewRawList, nil
 }
 
 // deleteView permanently deletes views from a database.
