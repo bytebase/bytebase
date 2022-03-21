@@ -307,7 +307,6 @@ settings:
     workspace:
       branding: 品牌
       logo: Logo
-      display-name: 名称
       logo-aspect: Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）
       select-logo: 选择
       drag-logo: 或拖拽文件

@@ -95,6 +95,8 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
+const maxFileSizeInMiB = 2;
+
 // getImageUrlFromBase64String will convert the image base64 string to the HTML image url.
 const getImageUrlFromBase64String = (
   base64String: string | undefined
@@ -168,7 +170,7 @@ export default defineComponent({
       uploadLogo,
       onLogoSelect,
       hasBrandingFeature,
-      maxFileSizeInMiB: 2,
+      maxFileSizeInMiB,
       supportImageExtensions: [
         ".jpg",
         ".jpeg",
