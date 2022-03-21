@@ -82,8 +82,8 @@
   />
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, reactive } from "vue";
+<script lang="ts" setup>
+import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { isOwner } from "../utils";
 
@@ -115,70 +115,56 @@ const getImageUrlFromBase64String = (
   return URL.createObjectURL(blob);
 };
 
-export default defineComponent({
-  name: "SettingWorkspaceGeneral",
-  setup() {
-    const store = useStore();
+const store = useStore();
 
-    const state = reactive<LocalState>({
-      displayName: "",
-      logoUrl: "",
-      logoFile: null,
-      loading: false,
-      showFeatureModal: false,
-    });
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    const allowEdit = computed((): boolean => {
-      return isOwner(currentUser.value.role);
-    });
-
-    const valid = computed((): boolean => {
-      return !!state.displayName || !!state.logoFile
-    });
-
-    const changed = computed((): boolean => {
-      return false;
-    });
-
-    const allowSave = computed((): boolean => {
-      return changed.value && valid.value;
-    });
-
-    const hasBrandingFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.branding");
-    });
-
-    const uploadLogo = () => {
-      if (!hasBrandingFeature.value) {
-        state.showFeatureModal = true;
-        return;
-      }
-      // TODO: upload logo
-    };
-
-    const onLogoSelect = (file: File) => {
-      state.logoFile = file;
-      state.logoUrl = URL.createObjectURL(file);
-    };
-
-    return {
-      state,
-      allowEdit,
-      allowSave,
-      uploadLogo,
-      onLogoSelect,
-      hasBrandingFeature,
-      maxFileSizeInMiB,
-      supportImageExtensions: [
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp",
-        ".svg",
-      ],
-    };
-  },
+const state = reactive<LocalState>({
+  displayName: "",
+  logoUrl: "",
+  logoFile: null,
+  loading: false,
+  showFeatureModal: false,
 });
+
+const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+const allowEdit = computed((): boolean => {
+  return isOwner(currentUser.value.role);
+});
+
+const valid = computed((): boolean => {
+  return !!state.displayName || !!state.logoFile
+});
+
+const changed = computed((): boolean => {
+  return false;
+});
+
+const allowSave = computed((): boolean => {
+  return allowEdit.value && changed.value && valid.value;
+});
+
+const hasBrandingFeature = computed((): boolean => {
+  return store.getters["subscription/feature"]("bb.feature.branding");
+});
+
+const uploadLogo = () => {
+  if (!hasBrandingFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+  // TODO: upload logo
+};
+
+const onLogoSelect = (file: File) => {
+  state.logoFile = file;
+  state.logoUrl = URL.createObjectURL(file);
+};
+
+const supportImageExtensions = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".svg",
+];
 </script>
