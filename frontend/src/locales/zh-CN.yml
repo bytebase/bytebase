@@ -941,6 +941,7 @@ deployment-config:
   selectors: 选择条件
   wont-be-deployed: 不会被部署
   add-stage: 添加阶段
+  confirm-to-revert: 确定撤销编辑？
   name-placeholder: 阶段名称…
   error:
     at-least-one-stage: 至少需要 1 个阶段
