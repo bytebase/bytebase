@@ -317,6 +317,7 @@ settings:
   general:
     workspace:
       branding: Branding
+      only-owner-can-edit: Only workspace owner can update the branding.
       logo: Logo
       logo-aspect: The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).
       select-logo: Upload a file

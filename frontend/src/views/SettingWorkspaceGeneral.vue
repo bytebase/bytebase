@@ -1,9 +1,14 @@
 <template>
   <div class="mt-2 space-y-6 divide-y divide-block-border">
     <div class="px-4 py-6 lg:flex">
-      <h1 class="text-left text-2xl font-bold w-1/4">
-        {{ $t("settings.general.workspace.branding") }}
-      </h1>
+      <div class="text-left lg:w-1/4">
+        <h1 class="text-2xl font-bold">
+          {{ $t("settings.general.workspace.branding") }}
+        </h1>
+        <span v-if="!allowEdit" class="text-sm text-gray-400">
+          {{ $t("settings.general.workspace.only-owner-can-edit") }}
+        </span>
+      </div>
       <div class="flex-1 lg:px-5">
         <div class="mb-5 mt-5 lg:mt-0">
           <p>
