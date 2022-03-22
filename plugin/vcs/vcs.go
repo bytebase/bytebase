@@ -106,6 +106,15 @@ type RepositoryMember struct {
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
+
+	// Exchange oauth content with the provided code and return the access token retrieved
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	// code: authentication code of a given user
+	// redirectURL: redirect url configured at the VCS application
+	ExchangeOauthContent(ctx context.Context, instanceURL string, oauthCtx common.OauthContext, code string, redirectURL string) (*common.OAuthToken, error)
+
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//
 	// oauthCtx: OAuth context to write the file content
@@ -123,6 +132,13 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*RepositoryMember, error)
+
+	// Fetch all repository list within the scope of the given user
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]byte, error)
+
 	// Fetch the repository file list
 	//
 	// oauthCtx: OAuth context to read the repository tree
@@ -131,6 +147,8 @@ type Provider interface {
 	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
 	// filePath: the path inside repository, used to get content of subdirectories
 	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
+
+
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

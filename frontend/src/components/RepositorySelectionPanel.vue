@@ -36,81 +36,82 @@
 </template>
 
 <script lang="ts">
+export default { name: "RepositorySelectionPanel" };
+</script>
+
+<script setup lang="ts">
 import { useStore } from "vuex";
-import { reactive, computed, PropType, watchEffect } from "vue";
-import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
+import { reactive, computed, watchEffect } from "vue";
+import {
+  ExternalRepositoryInfo,
+  OAuthToken,
+  ProjectRepositoryConfig,
+} from "../types";
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
   searchText: string;
 }
 
-export default {
-  name: "RepositorySelectionPanel",
-  props: {
-    config: {
-      required: true,
-      type: Object as PropType<ProjectRepositoryConfig>,
-    },
-  },
-  emits: ["next"],
-  setup(props, { emit }) {
-    const store = useStore();
-    const state = reactive<LocalState>({
-      repositoryList: [],
-      searchText: "",
-    });
+const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
-    const prepareRepositoryList = () => {
-      if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+const emit = defineEmits<{
+  (event: "next"): void;
+  (event: "set-token", payload: OAuthToken): void;
+  (event: "set-repository", payload: ExternalRepositoryInfo): void;
+}>();
+
+const store = useStore();
+const state = reactive<LocalState>({
+  repositoryList: [],
+  searchText: "",
+});
+
+const prepareRepositoryList = () => {
+  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+    store
+      .dispatch("auth/exchangeOAuthToken", {
+        vcsId: props.config.vcs.id,
+        code: props.config.code,
+      })
+      .then((token: OAuthToken) => {
+        emit("set-token", token);
         store
           .dispatch("gitlab/fetchProjectList", {
             vcs: props.config.vcs,
-            token: props.config.token.accessToken,
+            token: props.config.token,
           })
           .then((list) => {
             state.repositoryList = list;
           });
-      }
-    };
+      });
+  }
+};
 
-    watchEffect(prepareRepositoryList);
+watchEffect(prepareRepositoryList);
 
-    const repositoryList = computed(() => {
-      if (state.searchText == "") {
-        return state.repositoryList;
-      }
-      return state.repositoryList.filter(
-        (repository: ExternalRepositoryInfo) => {
-          return repository.fullPath.toLowerCase().includes(state.searchText);
-        }
-      );
-    });
+const repositoryList = computed(() => {
+  if (state.searchText == "") {
+    return state.repositoryList;
+  }
+  return state.repositoryList.filter((repository: ExternalRepositoryInfo) => {
+    return repository.fullPath.toLowerCase().includes(state.searchText);
+  });
+});
 
-    const attentionText = computed((): string => {
-      if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-        return "repository.select-repository-attention-gitlab";
-      }
-      return "";
-    });
+const attentionText = computed((): string => {
+  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+    return "repository.select-repository-attention-gitlab";
+  }
+  return "";
+});
 
-    const selectRepository = (repository: ExternalRepositoryInfo) => {
-      props.config.repositoryInfo = repository;
-      emit("next");
-    };
+const selectRepository = (repository: ExternalRepositoryInfo) => {
+  emit("set-repository", repository);
+  emit("next");
+};
 
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
-
-    return {
-      state,
-      selectRepository,
-      repositoryList,
-      attentionText,
-      changeSearchText,
-      prepareRepositoryList,
-    };
-  },
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
 };
 </script>

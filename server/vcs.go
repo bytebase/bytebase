@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -30,6 +31,11 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		vcs, err := s.store.CreateVCS(ctx, vcsCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create VCS").SetInternal(err)
+		}
+
+		vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created VCS relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -66,6 +72,8 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs ID: %v", id)).SetInternal(err)
 		}
 
+		// we do not return secret to the frontend for safety
+		vcs.Secret = ""
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, vcs); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal vcs ID response: %v", id)).SetInternal(err)
@@ -151,6 +159,51 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repoList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal repository list response for vcs ID: %v", id)).SetInternal(err)
 		}
+		return nil
+	})
+
+	g.GET("/vcs/:vcsID/external-repository", func(c echo.Context) error {
+		ctx := context.Background()
+		id, err := strconv.Atoi(c.Param("vcsID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
+		}
+		accessToken := c.Request().Header.Get("accessToken")
+		refreshToken := c.Request().Header.Get("refreshToken")
+
+		vcsFind := &api.VCSFind{ID: &id}
+		vcsFound, err := s.VCSService.FindVCS(ctx, vcsFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch VCS, ID: %v", id)).SetInternal(err)
+		}
+		if vcsFound == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
+		}
+
+		externalRepoListByted, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryList(
+			ctx,
+			common.OauthContext{
+				ClientID:     vcsFound.ApplicationID,
+				ClientSecret: vcsFound.Secret,
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+				Refresher:    nil,
+			},
+			vcsFound.InstanceURL,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find external repository, instance URL: %s", vcsFound.InstanceURL)).SetInternal(err)
+		}
+		if externalRepoListByted == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find external repository, instance URL: %s", vcsFound.InstanceURL))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+
+		if _, err := c.Response().Writer.Write(externalRepoListByted); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write response, instance URL: %s", vcsFound.InstanceURL)).SetInternal(err)
+		}
+
 		return nil
 	})
 }

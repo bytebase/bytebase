@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -34,7 +35,8 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
-				Secret:        vcs.Secret,
+				// we do not return secret to the frontend for safety
+				Secret: "",
 			}
 			authProviderList = append(authProviderList, newProvider)
 		}
@@ -91,11 +93,29 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
+				// exchange Oauth Token
+				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOauthContent(
+					ctx,
+					vcsFound.InstanceURL,
+					common.OauthContext{
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
+					},
+					gitlabLogin.Code,
+					fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+				}
+				if oauthToken == nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token")
+				}
+
 				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
-						AccessToken:  gitlabLogin.AccessToken,
+						AccessToken:  oauthToken.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},
@@ -196,6 +216,56 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	// TODO(zilong): we may not need to return access token back to the frontend
+	g.POST("/auth/exchange-oauth-token/:vcsID", func(c echo.Context) error {
+		ctx := context.Background()
+
+		vcsID64, err := strconv.ParseInt(c.Param("vcsID"), 10, 32)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to marshal oauth provider's ID: %v", c.Param("id"))).SetInternal(err)
+		}
+		vcsID := int(vcsID64)
+
+		exchangeOAuth := &common.ExchangeOAuth{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, exchangeOAuth); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted exchange OAuth request").SetInternal(err)
+		}
+
+		findVCS := &api.VCSFind{ID: &vcsID}
+		vcs, err := s.VCSService.FindVCS(ctx, findVCS)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", vcsID)).SetInternal(err)
+		}
+
+		oauthToken, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOauthContent(
+			ctx,
+			vcs.InstanceURL,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+			},
+			exchangeOAuth.Code,
+			fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+		}
+		if oauthToken == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to exchange OAuth token")
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, oauthToken); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal exchange OAuth token response").SetInternal(err)
+		}
+
+		return nil
+	})
+
 }
 
 func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int) (*api.Principal, *echo.HTTPError) {

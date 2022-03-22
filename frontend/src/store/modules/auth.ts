@@ -10,6 +10,8 @@ import {
   unknown,
   PrincipalId,
   AuthProvider,
+  VCSId,
+  OAuthToken,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 
@@ -41,6 +43,35 @@ const getters = {
 };
 
 const actions = {
+  async exchangeOAuthToken(
+    {}: any,
+    {
+      vcsId,
+      code,
+    }: {
+      vcsId: VCSId;
+      code: string;
+    }
+  ): Promise<OAuthToken> {
+    const data = (
+      await axios.post(`/api/auth/exchange-oauth-token/${vcsId}`, {
+        data: {
+          type: "exchangeOAuthToken",
+          attributes: { code },
+        },
+      })
+    ).data.data.attributes;
+    const oAuthToken: OAuthToken = {
+      accessToken: data.accessToken,
+      // For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
+      // see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+      expiresTs: data.expiresIn == 0 ? 0 : data.createdAt + data.expiresIn,
+      refreshToken: data.refreshToken,
+    };
+
+    return oAuthToken;
+  },
+
   async fetchProviderList({ commit }: any) {
     const providerList = (await axios.get("/api/auth/provider")).data.data;
     const convertedProviderList = providerList.map(

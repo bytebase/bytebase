@@ -183,6 +183,78 @@ func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
+// ExchangeOauthContent exchange oauth content with the provdied authentication code
+func (provider *Provider) ExchangeOauthContent(ctx context.Context, instanceURL string, oauthCtx common.OauthContext, code string, redirectURL string) (*common.OAuthToken, error) {
+	urlParams := &url.Values{}
+	urlParams.Set("client_id", oauthCtx.ClientID)
+	urlParams.Set("client_secret", oauthCtx.ClientSecret)
+	urlParams.Set("code", code)
+	urlParams.Set("redirect_uri", redirectURL)
+	urlParams.Set("grant_type", "authorization_code")
+	url := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+
+	req, err := http.NewRequest("POST", url, nil)
+
+	if err != nil {
+		urlParams.Set("client_secrete", "**encrypted**")
+		urlWithoutSecret := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+		return nil, fmt.Errorf("failed to construct POST %v (%w)", urlWithoutSecret, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange Oauth Token, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	oauthToken := &common.OAuthToken{}
+	if err := json.Unmarshal(body, oauthToken); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	return oauthToken, nil
+}
+
+// FetchRepositoryList will fetch all repository within a given user's scope
+func (provider *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]byte, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		// We will use user's token to create webhook in the project, which requires the token owner to
+		// be at least the project maintainer(40)
+		"projects?membership=true&simple=true&min_access_level=40",
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if code == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from GitLab instance %s", instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+	// For now, we only use this method for redirecting request,
+	// thus no entity struct is needed and we just send the byted data back to the frontend
+	return []byte(body), nil
+}
+
 // fetchUserInfo will fetch user info from the given resourceURI, resourceURI should be either 'user' or 'users/:userID'
 func fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	code, body, err := httpGet(
