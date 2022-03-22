@@ -1,5 +1,5 @@
 import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, IssueId, PrincipalId, TaskId } from "./id";
+import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
