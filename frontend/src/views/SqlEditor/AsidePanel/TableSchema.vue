@@ -137,6 +137,8 @@ watch(
       });
 
       tableInfo.value = res;
+    } else {
+      tableInfo.value = "";
     }
   }
 );
