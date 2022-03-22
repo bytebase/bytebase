@@ -42,8 +42,16 @@
                 Edit {{ labelState.currentLabelName }}
               </span>
             </div>
-            <span v-else>
-              {{ tab.name }}
+            <span v-else class="flex items-center space-x-2">
+              <heroicons-outline:user-group
+                v-if="currentSheet.visibility === 'PROJECT'"
+                class="w-4 h-4"
+              />
+              <heroicons-outline:globe
+                v-if="currentSheet.visibility === 'PUBLIC'"
+                class="w-4 h-4"
+              />
+              <span>{{ tab.name }}</span>
             </span>
           </div>
           <template v-if="enterTabId === tab.id && tabList.length > 1">
@@ -134,6 +142,7 @@ import {
   TabGetters,
   TabState,
   TabActions,
+  SheetGetters,
   SheetActions,
 } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
@@ -146,6 +155,9 @@ const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
 ]);
 const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
   "isDisconnected",
+]);
+const { currentSheet } = useNamespacedGetters<SheetGetters>("sheet", [
+  "currentSheet",
 ]);
 
 // state map
