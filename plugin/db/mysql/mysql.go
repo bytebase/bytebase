@@ -23,13 +23,14 @@ import (
 var migrationSchema string
 
 var (
-	systemDatabases = map[string]bool{
-		"information_schema": true,
+	systemDatabases = []string{
+		"information_schema",
+		"mysql",
+		"performance_schema",
+		"sys",
+
 		// TiDB only
-		"metrics_schema":     true,
-		"mysql":              true,
-		"performance_schema": true,
-		"sys":                true,
+		"metrics_schema",
 	}
 	baseTableType        = "BASE TABLE"
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
@@ -143,7 +144,16 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+func isSystemDatabase(dbName string) bool {
+	for _, dbSys := range systemDatabases {
+		if dbName == dbSys {
+			return true
+		}
+	}
+	return false
+}
+
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query MySQL version
 	version, err := driver.GetVersion(ctx)
@@ -158,8 +168,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 	}
 
 	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+	for _, dbSys := range systemDatabases {
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", dbSys))
 	}
 
 	// Query user info
@@ -657,7 +667,7 @@ func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string
 		}
 
 		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration history found for %q, do you forget to baselining?", namespace))
 	}
 
 	return int(sequence.Int32), nil
@@ -918,7 +928,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		dumpableDbNames = []string{database}
 	} else {
 		for _, dbName := range dbNames {
-			if systemDatabases[dbName] {
+			if isSystemDatabase(dbName) {
 				continue
 			}
 			dumpableDbNames = append(dumpableDbNames, dbName)
