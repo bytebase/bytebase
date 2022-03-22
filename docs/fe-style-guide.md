@@ -34,10 +34,10 @@ This allows us to follow vue recommended naming style such as [vue/attribute-hyp
 
 We use different naming style to different types of files and directories.
 
-- Naming components and views with PascalCase. e.g., `DatabaseOverviewPanel.vue`, `DatabaseDetail.vue`.
+- Naming components and views with PascalCase. Component directories also follow this rule. e.g., `DatabaseOverviewPanel.vue`, `DatabaseDetail.vue`, `ActivityTable/ActivityCommentLink.vue`.
 - If a file's default export is a class, use PascalCase, too. e.g., `DatabaseSchemaUpdateTemplate.ts`.
-- Naming composable function files with camelCase prefixed by "use". e.g., `useSQLEditorConnection.ts`.
-- Naming other files with lower case kebab-case. e.g., `data-source-type.ts`, `fe-style-guide.md`.
+- Naming composable function files with camelCase prefixed by "use". e.g., `composables/useSQLEditorConnection.ts`.
+- Naming other files and directories with lower case kebab-case. e.g., `data-source-type.ts`, `fe-style-guide.md`, `store/mutation-types.ts`.
 
 # Vue components
 
