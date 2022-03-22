@@ -1,5 +1,3 @@
-import { t } from "../plugins/i18n";
-import { store } from "../store";
 import { randomString } from "../utils";
 
 export type OAuthConfig = {
