@@ -93,7 +93,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
-				// exchange Oauth Token
+				// exchange OAuth Token
 				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
 					ctx,
 					vcsFound.InstanceURL,
