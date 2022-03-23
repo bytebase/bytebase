@@ -446,7 +446,8 @@ instance:
   create-migration-schema: "@:common.create@:common.migration @:{'common.schema'}"
   missing-migration-schema: 缺少@:common.migration @:common.schema
   unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: >-
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
+    >-
     Bytebase需要@:{'common.migration'} @:{'common.schema'}
     来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema
     @:common.migration
@@ -702,7 +703,7 @@ database:
   go-to-transfer: 前去转移
 repository:
   branch-observe-file-change: Bytebase 跟踪文件变更的分支。
-  branch-specify-tip: "诀窍: 可以使用诸如 \"feature/*\" 这样的通配符"
+  branch-specify-tip: '诀窍: 可以使用诸如 "feature/*" 这样的通配符'
   base-directory: 根目录
   base-directory-description: Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。
   file-path-template: 文件路径模版
@@ -947,7 +948,7 @@ deployment-config:
     stage-name-required: 需要指定阶段名称
     at-least-one-selector: 每个阶段至少需要 1 个选择条件
     env-in-selector-required: 每个阶段都需要有 "Environment in" 选择条件
-    env-selector-must-has-one-value: "\"Environment in\" 必须有且只有 1 个值"
+    env-selector-must-has-one-value: '"Environment in" 必须有且只有 1 个值'
     key-required: 需要指定 Key
     values-required: 需要指定值
   project-has-no-deployment-config: 这个项目还没有部署配置。请先{go}。
@@ -1123,8 +1124,7 @@ subscription:
     bb-feature-3rd-party-auth:
       title: 第三方认证 & 授权
       desc: >-
-        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 &
-        授权。请通过@:{'subscription.upgrade'}来开启该功能。
+        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。
       login: 请@:{'subscription.upgrade'}来开启该功能
   feature-sections:
     database-management:
