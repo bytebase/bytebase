@@ -185,9 +185,14 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   }
 
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
+  const rawDateISOString = new Date().toISOString();
+  const formatedDateISOString = rawDateISOString
+    .split(".")[0]
+    .replaceAll(":", "-");
+  const filename = `${currentTab.value.name}-${formatedDateISOString}`;
   const link = document.createElement("a");
 
-  link.download = `${currentTab.value.name}.${format}`;
+  link.download = `${filename}.${format}`;
   link.href = encodedUri;
   link.click();
 };
