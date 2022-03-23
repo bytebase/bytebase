@@ -103,7 +103,7 @@
             </button>
             <button
               type="button"
-              class="sm:ml-3 inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white hover:bg-error-hover focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+              class="sm:ml-3 inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-error text-base font-medium text-white focus:outline-none focus-visible:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
               :class="okButtonStyle"
               :disabled="inProgress"
               @click.prevent="$emit('ok', payload)"
