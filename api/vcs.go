@@ -24,7 +24,7 @@ type VCS struct {
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
 	APIURL        string   `jsonapi:"attr,apiUrl"`
 	ApplicationID string   `jsonapi:"attr,applicationId"`
-	// For safety concern, we will no return secret, and all relevant logic should be dealed in the backend.
+	// For safety concerns, we will not return the secret, and all relevant logic is dealt in the backend.
 	Secret string
 }
 
