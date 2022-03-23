@@ -175,7 +175,24 @@ const useMonaco = async (lang: string) => {
     editorInstance: Editor.IStandaloneCodeEditor,
     content: string
   ) => {
-    if (editorInstance) editorInstance.setValue(content);
+    if (editorInstance) {
+      // use executeEdits API can preserve undo stack, allow user to undo/redo
+      editorInstance.executeEdits("delete-content", [
+        {
+          range: new monaco.Range(1, 1, 10000, 1),
+          text: "",
+          forceMoveMarkers: true,
+        },
+      ]);
+      editorInstance.executeEdits("insert-content", [
+        {
+          range: new monaco.Range(1, 1, 1, 1),
+          text: content,
+          forceMoveMarkers: true,
+        },
+      ]);
+      editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
+    }
   };
 
   const formatContent = (
