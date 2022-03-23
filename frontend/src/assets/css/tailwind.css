@@ -151,7 +151,7 @@
 }
 
 .outline-title {
-  @apply text-main w-full group items-center text-xs leading-5 font-semibold focus:outline-none select-none tracking-wider;
+  @apply text-main w-full items-center text-xs leading-5 font-semibold focus:outline-none select-none tracking-wider;
 }
 
 .outline-title.toplevel {
@@ -163,7 +163,7 @@
 }
 
 .outline-item {
-  @apply text-control cursor-pointer w-full group items-center hover:bg-link-hover text-sm leading-5 focus:outline-none select-none;
+  @apply text-control cursor-pointer w-full items-center hover:bg-link-hover text-sm leading-5 focus:outline-none select-none;
 }
 
 .menu-item {
