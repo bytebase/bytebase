@@ -128,7 +128,7 @@ const actions = {
     { commit, rootGetters }: any,
     databaseId: DatabaseId
   ) {
-    const data = (await axios.get(`/api/database/${databaseId}/backupsetting`))
+    const data = (await axios.get(`/api/database/${databaseId}/backup-setting`))
       .data;
     const backupSetting: BackupSetting = convertBackupSetting(
       data.data,
@@ -146,7 +146,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${newBackupSetting.databaseId}/backupsetting`,
+        `/api/database/${newBackupSetting.databaseId}/backup-setting`,
         {
           data: {
             type: "BackupSettingUpsert",

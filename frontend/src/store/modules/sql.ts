@@ -39,7 +39,7 @@ const actions = {
   async syncSchema({ dispatch }: any, instanceId: InstanceId) {
     const data = (
       await axios.post(
-        `/api/sql/syncschema`,
+        `/api/sql/sync-schema`,
         {
           data: {
             type: "sqlSyncSchema",

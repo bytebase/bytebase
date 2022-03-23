@@ -16,7 +16,7 @@ p, OWNER, /project/{id}/repository, PATCH
 p, OWNER, /project/{id}/repository, DELETE
 p, OWNER, /project/{id}/deployment, GET
 p, OWNER, /project/{id}/deployment, PATCH
-p, OWNER, /project/{projectID}/syncmember, POST
+p, OWNER, /project/{projectID}/sync-member, POST
 p, OWNER, /project/{projectID}/member, POST
 p, OWNER, /project/{projectID}/member/{memberID}, PATCH
 p, OWNER, /project/{projectID}/member/{memberID}, DELETE
@@ -49,11 +49,11 @@ p, OWNER, /database/{id}/table/{tableName}, GET
 p, OWNER, /database/{id}/view, GET
 p, OWNER, /database/{id}/backup, GET
 p, OWNER, /database/{id}/backup, POST
-p, OWNER, /database/{id}/backupsetting, GET
-p, OWNER, /database/{id}/backupsetting, PATCH
-p, OWNER, /database/{id}/datasource, POST
-p, OWNER, /database/{id}/datasource/{dataSourceID}, GET
-p, OWNER, /database/{id}/datasource/{dataSourceID}, PATCH
+p, OWNER, /database/{id}/backup-setting, GET
+p, OWNER, /database/{id}/backup-setting, PATCH
+p, OWNER, /database/{id}/data-source, POST
+p, OWNER, /database/{id}/data-source/{dataSourceID}, GET
+p, OWNER, /database/{id}/data-source/{dataSourceID}, PATCH
 p, OWNER, /issue, POST
 p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
@@ -76,7 +76,7 @@ p, OWNER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/check, POST
 p, OWNER, /sql/ping, POST
-p, OWNER, /sql/syncschema, POST
+p, OWNER, /sql/sync-schema, POST
 p, OWNER, /sql/execute, POST
 p, OWNER, /vcs, POST
 p, OWNER, /vcs, GET

@@ -28,7 +28,7 @@ const (
 	Snowflake Type = "SNOWFLAKE"
 	// SQLite is the database type for SQLite.
 	SQLite Type = "SQLITE"
-	// TiDB is the database type for TiDB.
+	// TiDB is the database type for TIDB.
 	TiDB Type = "TIDB"
 )
 
@@ -342,12 +342,11 @@ type MigrationHistory struct {
 	Payload             string
 }
 
-// MigrationHistoryFind is the API message for finding migration histories.
+// MigrationHistoryFind is the API message for finding migration historys.
 type MigrationHistoryFind struct {
 	ID *int
 
 	Database *string
-	Source   *MigrationSource
 	Version  *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit *int
@@ -463,7 +462,7 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	if len(paramNames) == 0 {
 		return ""
 	}
-	var parts []string
+	parts := make([]string, 0, len(paramNames))
 	for i, param := range paramNames {
 		idx := fmt.Sprintf("$%d", i+1)
 		param = param + "=" + idx

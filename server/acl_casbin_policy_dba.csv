@@ -12,7 +12,7 @@ p, DBA, /project/{id}/repository, PATCH
 p, DBA, /project/{id}/repository, DELETE
 p, DBA, /project/{id}/deployment, GET
 p, DBA, /project/{id}/deployment, PATCH
-p, DBA, /project/{projectID}/syncmember, POST
+p, DBA, /project/{projectID}/sync-member, POST
 p, DBA, /project/{projectID}/member, POST
 p, DBA, /project/{projectID}/member/{memberID}, PATCH
 p, DBA, /project/{projectID}/member/{memberID}, DELETE
@@ -45,11 +45,11 @@ p, DBA, /database/{id}/table/{tableName}, GET
 p, DBA, /database/{id}/view, GET
 p, DBA, /database/{id}/backup, GET
 p, DBA, /database/{id}/backup, POST
-p, DBA, /database/{id}/backupsetting, GET
-p, DBA, /database/{id}/backupsetting, PATCH
-p, DBA, /database/{id}/datasource, POST
-p, DBA, /database/{id}/datasource/{dataSourceID}, GET
-p, DBA, /database/{id}/datasource/{dataSourceID}, PATCH
+p, DBA, /database/{id}/backup-setting, GET
+p, DBA, /database/{id}/backup-setting, PATCH
+p, DBA, /database/{id}/data-source, POST
+p, DBA, /database/{id}/data-source/{dataSourceID}, GET
+p, DBA, /database/{id}/data-source/{dataSourceID}, PATCH
 p, DBA, /issue, POST
 p, DBA, /issue, GET
 p, DBA, /issue/{id}, GET
@@ -72,7 +72,7 @@ p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/check, POST
 p, DBA, /sql/ping, POST
-p, DBA, /sql/syncschema, POST
+p, DBA, /sql/sync-schema, POST
 p, DBA, /sql/execute, POST
 p, DBA, /vcs, POST
 p, DBA, /vcs, GET
