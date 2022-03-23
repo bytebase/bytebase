@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2 w-full pl-4 pr-2">
     <div class="flex flex-row justify-between">
-      <div class="outline-title toplevel flex">
+      <div class="outline-title group toplevel flex">
         {{ $t("common.quickstart") }}
       </div>
       <button class="btn-icon" @click.prevent="hideQuickstart">
