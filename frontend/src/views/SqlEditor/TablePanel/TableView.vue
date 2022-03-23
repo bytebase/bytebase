@@ -189,6 +189,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   const formatedDateISOString = rawDateISOString
     .split(".")[0]
     .replaceAll(":", "-");
+  // Example filename: `mysheet-2022-03-23T09-54-21.json`
   const filename = `${currentTab.value.name}-${formatedDateISOString}`;
   const link = document.createElement("a");
 
