@@ -171,19 +171,29 @@ const useMonaco = async (lang: string) => {
     })(),
   ]);
 
+  /**
+   * set new content in monaco editor
+   * use executeEdits API can preserve undo stack, allow user to undo/redo
+   * @param editorInstance Editor.IStandaloneCodeEditor
+   * @param content string
+   */
   const setContent = (
     editorInstance: Editor.IStandaloneCodeEditor,
     content: string
   ) => {
     if (editorInstance) {
-      // use executeEdits API can preserve undo stack, allow user to undo/redo
+      const range = editorInstance?.getModel()?.getFullModelRange();
+      // get the current endLineNumber, or the default value is 100000, in case can not remove the current edits
+      const endLineNumber =
+        range && range?.endLineNumber > 0 ? range.endLineNumber + 1 : 100000;
       editorInstance.executeEdits("delete-content", [
         {
-          range: new monaco.Range(1, 1, 10000, 1),
+          range: new monaco.Range(1, 1, endLineNumber, 1),
           text: "",
           forceMoveMarkers: true,
         },
       ]);
+      // set the new content
       editorInstance.executeEdits("insert-content", [
         {
           range: new monaco.Range(1, 1, 1, 1),
@@ -191,6 +201,7 @@ const useMonaco = async (lang: string) => {
           forceMoveMarkers: true,
         },
       ]);
+      // reset the selection
       editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
     }
   };
