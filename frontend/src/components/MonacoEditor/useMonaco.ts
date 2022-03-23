@@ -183,7 +183,7 @@ const useMonaco = async (lang: string) => {
   ) => {
     if (editorInstance) {
       const range = editorInstance?.getModel()?.getFullModelRange();
-      // get the current endLineNumber, or the default value is 100000, in case can not remove the current edits
+      // get the current endLineNumber, or use 100000 as the default
       const endLineNumber =
         range && range?.endLineNumber > 0 ? range.endLineNumber + 1 : 100000;
       editorInstance.executeEdits("delete-content", [
