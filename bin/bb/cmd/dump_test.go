@@ -34,7 +34,7 @@ func TestDump(t *testing.T) {
 				"dump",
 				"--type", "mysql",
 				"--username", "root",
-				"--hostname", "localhost",
+				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
 				"--database", "bytebase_test_todo",
 			},

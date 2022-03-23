@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -9,7 +10,7 @@ import (
 )
 
 // NewRootCmd creates the root command.
-func NewRootCmd() *cobra.Command {
+func NewRootCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "bb",
 		Short: "A database management tool provided by bytebase.com",
@@ -18,7 +19,12 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	rootCmd.AddCommand(newDumpCmd(), newRestoreCmd(), newVersionCmd(), newMigrateCmd())
+	rootCmd.AddCommand(
+		newMigrateCmd(ctx, logger),
+		newDumpCmd(ctx, logger),
+		newRestoreCmd(ctx, logger),
+		newVersionCmd(),
+	)
 
 	return rootCmd
 }
@@ -38,5 +44,5 @@ func Execute() error {
 	}
 	logger = myLogger
 
-	return NewRootCmd().Execute()
+	return NewRootCmd(context.Background(), logger).Execute()
 }

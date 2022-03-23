@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strings"
@@ -44,7 +45,11 @@ type testTable struct {
 func tableTest(t *testing.T, tables []testTable) {
 	t.Helper()
 	for _, tc := range tables {
-		actual, err := execute(t, NewRootCmd(), tc.args...)
+		logger, err := zap.NewDevelopment()
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual, err := execute(t, NewRootCmd(context.Background(), logger), tc.args...)
 
 		if err != tc.expectedErr {
 			t.Errorf(`"> bb %v"
