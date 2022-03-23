@@ -18,7 +18,7 @@
         :disabled="isEmptyStatement || executeState.isLoadingData"
         @click="handleFormatSQL"
       >
-        Format (⇧+⌥+F)
+        {{ $t("sql-editor.format") }} (⇧+⌥+F)
       </NButton>
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
