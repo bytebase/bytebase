@@ -54,16 +54,14 @@ const actions = {
     }
   ): Promise<OAuthToken> {
     const data = (
-      await axios.get(`/api/auth/exchange-oauth-token/${vcsId}`, {
-        headers: {
-          code: code,
-        },
+      await axios.post(`/api/oauth/vcs/${vcsId}/exchange-oauth-token`, null, {
+        headers: { code },
       })
-    ).data.data.attributes;
+    ).data;
     const oAuthToken: OAuthToken = {
-      accessToken: data.accessToken,
-      expiresTs: data.expiresTs,
-      refreshToken: data.refreshToken,
+      accessToken: data.access_token,
+      expiresTs: data.expires_ts,
+      refreshToken: data.refresh_token,
     };
 
     return oAuthToken;

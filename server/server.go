@@ -221,6 +221,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	s.registerSettingRoutes(apiGroup)
 	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
+	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
 	s.registerMemberRoutes(apiGroup)
 	s.registerPolicyRoutes(apiGroup)

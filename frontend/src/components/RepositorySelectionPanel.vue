@@ -50,6 +50,7 @@ import {
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
+  lastAccessToken: string;
   searchText: string;
 }
 
@@ -64,12 +65,13 @@ const emit = defineEmits<{
 const store = useStore();
 const state = reactive<LocalState>({
   repositoryList: [],
+  lastAccessToken: "none",
   searchText: "",
 });
 
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    if (props.config.token.accessToken !== "") {
+    if (props.config.token.accessToken === state.lastAccessToken) {
       store
         .dispatch("gitlab/fetchProjectList", {
           vcs: props.config.vcs,
@@ -86,6 +88,7 @@ const prepareRepositoryList = () => {
         })
         .then((token: OAuthToken) => {
           emit("set-token", token);
+          state.lastAccessToken = token.accessToken;
           store
             .dispatch("gitlab/fetchProjectList", {
               vcs: props.config.vcs,

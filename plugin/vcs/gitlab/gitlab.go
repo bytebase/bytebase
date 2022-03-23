@@ -238,7 +238,7 @@ func (provider *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL st
 	return oauthToken, nil
 }
 
-// FetchRepositoryList will fetch all repository within a given user's scope
+// FetchRepositoryList will fetch all repository in which the authenticated user has a maintainer role
 func (provider *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	code, body, err := httpGet(
 		instanceURL,

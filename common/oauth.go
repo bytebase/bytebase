@@ -20,11 +20,11 @@ type OAuthExchange struct {
 
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
-	AccessToken  string `json:"access_token" jsonapi:"attr,accessToken"`
-	RefreshToken string `json:"refresh_token" jsonapi:"attr,refreshToken"`
+	AccessToken  string `json:"access_token" `
+	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`
 	CreatedAt    int64  `json:"created_at"`
 	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
 	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
-	ExpiresTs int64 `jsonapi:"attr,expiresTs"`
+	ExpiresTs int64 `json:"expires_ts"`
 }
