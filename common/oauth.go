@@ -12,15 +12,19 @@ type OauthContext struct {
 	Refresher    TokenRefresher
 }
 
-// ExchangeOAuth is the API message for ExchangeOAuth context
-type ExchangeOAuth struct {
-	Code string `jsonapi:"attr,code"`
+// OAuthExchange is the API message for exchange OAuth context.
+type OAuthExchange struct {
+	ClientID     string
+	ClientSecret string
 }
 
-// OAuthToken is the API message for OAuthToken
+// OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
 	AccessToken  string `json:"access_token" jsonapi:"attr,accessToken"`
 	RefreshToken string `json:"refresh_token" jsonapi:"attr,refreshToken"`
-	ExpiresIn    int64  `json:"expires_token" jsonapi:"attr,expiresIn"`
-	CreatedAt    int64  `json:"created_token" jsonapi:"attr,createdAt"`
+	ExpiresIn    int64  `json:"expires_in"`
+	CreatedAt    int64  `json:"created_at"`
+	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
+	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
+	ExpiresTs int64 `jsonapi:"attr,expiresTs"`
 }

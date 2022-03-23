@@ -24,9 +24,8 @@ type VCS struct {
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
 	APIURL        string   `jsonapi:"attr,apiUrl"`
 	ApplicationID string   `jsonapi:"attr,applicationId"`
-	// Secret will be used for OAuth on the client side when setting up project GitOps workflow.
-	// So it should be returned to the response.
-	Secret string `jsonapi:"attr,secret"`
+	// For safety concern, we will no return secret, and all relevant logic should be dealed in the backend.
+	Secret string
 }
 
 // VCSCreate is the API message for creating a VCS.

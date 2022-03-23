@@ -69,22 +69,33 @@ const state = reactive<LocalState>({
 
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    store
-      .dispatch("auth/exchangeOAuthToken", {
-        vcsId: props.config.vcs.id,
-        code: props.config.code,
-      })
-      .then((token: OAuthToken) => {
-        emit("set-token", token);
-        store
-          .dispatch("gitlab/fetchProjectList", {
-            vcs: props.config.vcs,
-            token: props.config.token,
-          })
-          .then((list) => {
-            state.repositoryList = list;
-          });
-      });
+    if (props.config.token.accessToken !== "") {
+      store
+        .dispatch("gitlab/fetchProjectList", {
+          vcs: props.config.vcs,
+          token: props.config.token,
+        })
+        .then((list) => {
+          state.repositoryList = list;
+        });
+    } else {
+      store
+        .dispatch("auth/exchangeOAuthToken", {
+          vcsId: props.config.vcs.id,
+          code: props.config.code,
+        })
+        .then((token: OAuthToken) => {
+          emit("set-token", token);
+          store
+            .dispatch("gitlab/fetchProjectList", {
+              vcs: props.config.vcs,
+              token: props.config.token,
+            })
+            .then((list) => {
+              state.repositoryList = list;
+            });
+        });
+    }
   }
 };
 

@@ -137,7 +137,14 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
+import {
+  reactive,
+  computed,
+  watchEffect,
+  onMounted,
+  onUnmounted,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
@@ -158,7 +165,7 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceVCSDetail",
   components: { RepositoryTable },
   props: {
@@ -195,7 +202,7 @@ export default {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
           store
             .dispatch("auth/exchangeOAuthToken", {
-              vcsId: state.applicationId,
+              vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })
             .then((token: OAuthToken) => {
@@ -338,5 +345,5 @@ export default {
       deleteVCS,
     };
   },
-};
+});
 </script>

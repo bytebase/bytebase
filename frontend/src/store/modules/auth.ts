@@ -54,18 +54,15 @@ const actions = {
     }
   ): Promise<OAuthToken> {
     const data = (
-      await axios.post(`/api/auth/exchange-oauth-token/${vcsId}`, {
-        data: {
-          type: "exchangeOAuthToken",
-          attributes: { code },
+      await axios.get(`/api/auth/exchange-oauth-token/${vcsId}`, {
+        headers: {
+          code: code,
         },
       })
     ).data.data.attributes;
     const oAuthToken: OAuthToken = {
       accessToken: data.accessToken,
-      // For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
-      // see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
-      expiresTs: data.expiresIn == 0 ? 0 : data.createdAt + data.expiresIn,
+      expiresTs: data.expiresTs,
       refreshToken: data.refreshToken,
     };
 

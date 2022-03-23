@@ -9,17 +9,18 @@ import {
 const getters = {};
 
 function convertGitLabProject(project: any): ExternalRepositoryInfo {
+  const attributes = project.attributes;
   return {
     externalId: project.id.toString(),
-    name: project.name,
-    fullPath: project.path_with_namespace,
-    webUrl: project.web_url,
+    name: attributes.name,
+    fullPath: attributes.fullPath,
+    webUrl: attributes.webUrl,
   };
 }
 
 const actions = {
   // this actions is for initiating vcs ONLY
-  // after creation, the frontend should in no case access the secret
+  // after creation, the frontend should in no case access the secret.
   async exchangeToken(
     {}: any,
     {
@@ -51,7 +52,6 @@ const actions = {
     {}: any,
     { vcs, token }: { vcs: VCS; token: OAuthToken }
   ): Promise<ExternalRepositoryInfo[]> {
-    console.log("token", token);
     const data = (
       await axios.get(`/api/vcs/${vcs.id}/external-repository`, {
         headers: {
@@ -59,8 +59,7 @@ const actions = {
           refreshToken: token.refreshToken,
         },
       })
-    ).data;
-
+    ).data.data;
     return data.map((item: any) => convertGitLabProject(item));
   },
 };

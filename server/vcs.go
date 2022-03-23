@@ -72,8 +72,6 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs ID: %v", id)).SetInternal(err)
 		}
 
-		// we do not return secret to the frontend for safety
-		vcs.Secret = ""
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, vcs); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal vcs ID response: %v", id)).SetInternal(err)
@@ -180,7 +178,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
 		}
 
-		externalRepoListByted, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryList(
+		externalRepoList, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryList(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcsFound.ApplicationID,
@@ -194,14 +192,10 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find external repository, instance URL: %s", vcsFound.InstanceURL)).SetInternal(err)
 		}
-		if externalRepoListByted == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find external repository, instance URL: %s", vcsFound.InstanceURL))
-		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-
-		if _, err := c.Response().Writer.Write(externalRepoListByted); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write response, instance URL: %s", vcsFound.InstanceURL)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, externalRepoList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response").SetInternal(err)
 		}
 
 		return nil
