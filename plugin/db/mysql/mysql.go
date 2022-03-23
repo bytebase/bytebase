@@ -32,6 +32,7 @@ var (
 		"sys":                true,
 	}
 	baseTableType        = "BASE TABLE"
+	viewTableType        = "VIEW"
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 
 	_ db.Driver              = (*Driver)(nil)
@@ -143,7 +144,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query MySQL version
 	version, err := driver.GetVersion(ctx)
@@ -371,7 +372,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			} else {
 				tableMap[dbName] = []db.Table{table}
 			}
-		} else if table.Type == "VIEW" {
+		} else if table.Type == viewTableType {
 			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
 				createdTs: table.CreatedTs,
 				updatedTs: table.UpdatedTs,
@@ -657,7 +658,7 @@ func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string
 		}
 
 		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration history found for %q, do you forget to baselining?", namespace))
 	}
 
 	return int(sequence.Int32), nil
@@ -1121,7 +1122,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 		}
 		return "", fmt.Errorf("query %q returned invalid rows", query)
-	case "VIEW":
+	case viewTableType:
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
 		rows, err := txn.Query(query)
