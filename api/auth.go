@@ -20,7 +20,7 @@ type GitlabLogin struct {
 	// Name is the user configured name of the role provider.
 	Name string `jsonapi:"attr,name"`
 	// Code is the authentication code granted by GitLab server,
-	// we will use this code to fetch OAuth token.
+	// we will use this code to exchange the OAuth token.
 	Code string `jsonapi:"attr,code"`
 }
 
