@@ -16,13 +16,11 @@ Most of the time, we only want to do partial update on the resource, and we shou
 
 Bytebase uses auto incremental ID as the primary key for all resources. To address a particular resource, we use GET `/issue/42`, if we want to support other addressing mechanism like using resource name, we should use query parameter like `.issue/42?name=foo`
 
-## Use lower case and do not use separator to split the words
+## Use lower case, kebab-case for phrases
 
-Use `/foo/barbaz` instead of `/foo/barBaz` or `/foo/bar-baz`
+Use `/foo/bar-baz` instead of `/foo/barBaz` or `/foo/barbaz`
 
-_Rationale_: The rule is simple and thus improve consistency. e.g. Say we have a resource called `datasource`, both `data source` and `datasource` are acceptable terms, under our rule, it's always `datasource`. This does hurt readability sometimes, but most of the time, we should only have at most 2 words inside a path component of the URL and our brain is pretty good at recognizing the individual word.
-
-_Note_: It's more common to use camelCase or dash-case. However, we are not alone, [Kubernetes](https://kubernetes.io/docs/reference/) also adopts this convention.
+_Rationale_: To be consistent with [the URL naming from the frontend guide](https://github.com/bytebase/bytebase/blob/main/docs/fe-style-guide.md#use-lower-case-kebab-case-for-phrases). Note, we once used `/foo/barbaz` style and it has its own merits. But because it's a better option to use keba-case in the frontend URL, and to avoid brain split, we make backend API to conform the same style as well.
 
 ## Use singular form even for collection resource
 
