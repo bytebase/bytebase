@@ -153,7 +153,7 @@ working on the code:
 
 - [Go](https://golang.org/doc/install) (1.16 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (For backend live reload)
+- [Air](https://github.com/cosmtrek/air#installation) (1.27.10 or later). This is for backend live reload.
 
 ### Steps
 

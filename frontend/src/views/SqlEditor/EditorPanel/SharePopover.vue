@@ -30,7 +30,7 @@
           >
             <div class="access-content--prefix flex">
               <div v-if="idx === 0" class="mt-1">
-                <heroicons-outline:user class="h-5 w-5" />
+                <heroicons-outline:lock-closed class="h-5 w-5" />
               </div>
               <div v-if="idx === 1" class="mt-1">
                 <heroicons-outline:user-group class="h-5 w-5" />
