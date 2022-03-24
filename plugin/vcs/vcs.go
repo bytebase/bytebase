@@ -126,12 +126,10 @@ type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
-	// Exchange oauth content with the provided code and return the access token retrieved
+	// Exchange oauth token with the provided code
 	//
-	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	// code: authentication code of a given user
-	// redirectURL: redirect url configured at the VCS application
+	// oauthExchange: api message for exchanging oauth token
 	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context

@@ -17,11 +17,10 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 	g.POST("/oauth/vcs/:vcsID/exchange-token", func(c echo.Context) error {
 		ctx := context.Background()
 
-		vcsID64, err := strconv.ParseInt(c.Param("vcsID"), 10, 32)
+		vcsID, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to marshal oauth provider's ID: %v", c.Param("id"))).SetInternal(err)
 		}
-		vcsID := int(vcsID64)
 		code := c.Request().Header.Get("code")
 
 		findVCS := &api.VCSFind{ID: &vcsID}
