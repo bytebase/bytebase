@@ -97,7 +97,7 @@ const (
 
 	// Branding
 	//
-	// Currently, we only support customize the logo.
+	// Currently, we only support customizing the logo.
 	FeatureBranding FeatureType = "bb.feature.branding"
 )
 

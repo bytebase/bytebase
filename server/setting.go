@@ -60,7 +60,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		if settingPatch.Name == api.SettingBrandingLogo && !s.feature(api.FeatureBranding) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
 		}
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {

@@ -323,7 +323,7 @@ settings:
       select-logo: Upload a file
       drag-logo: or drag here
       logo-upload-tip: "{extension} up to {size} MiB"
-      logo-upload-succeed: Successfully update the logo
+      logo-upload-succeed: Successfully updated the logo
 activity:
   name: Name
   comment: Comment
