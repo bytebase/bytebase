@@ -79,13 +79,13 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 func (s *Server) composeSettingRelationship(ctx context.Context, raw *api.SettingRaw) (*api.Setting, error) {
 	setting := raw.ToSetting()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, setting.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, setting.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	setting.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, setting.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, setting.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

@@ -108,13 +108,13 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 func (s *Server) composePolicyRelationship(ctx context.Context, raw *api.PolicyRaw) (*api.Policy, error) {
 	policy := raw.ToPolicy()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, policy.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, policy.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	policy.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, policy.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, policy.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

@@ -7,8 +7,7 @@ import (
 
 // Store provides database access to all raw objects
 type Store struct {
-	Principal PrincipalStore
-	Member    MemberStore
+	Member MemberStore
 
 	db    *DB
 	cache api.CacheService
@@ -20,7 +19,6 @@ func NewStore(l *zap.Logger, db *DB, cache api.CacheService) *Store {
 		db:    db,
 		cache: cache,
 	}
-	store.Principal = NewPrincipalStore(l, db, cache, store)
 	store.Member = NewMemberStore(l, db, cache, store)
 	return store
 }

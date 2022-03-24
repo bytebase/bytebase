@@ -611,13 +611,13 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.ProjectRaw) (*api.Project, error) {
 	project := raw.ToProject()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, project.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	project.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, project.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, project.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -634,11 +634,11 @@ func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.Projec
 
 func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploymentConfig *api.DeploymentConfig) error {
 	var err error
-	deploymentConfig.Creator, err = s.store.Principal.ComposeByID(ctx, deploymentConfig.CreatorID)
+	deploymentConfig.Creator, err = s.store.ComposePrincipalByID(ctx, deploymentConfig.CreatorID)
 	if err != nil {
 		return err
 	}
-	deploymentConfig.Updater, err = s.store.Principal.ComposeByID(ctx, deploymentConfig.UpdaterID)
+	deploymentConfig.Updater, err = s.store.ComposePrincipalByID(ctx, deploymentConfig.UpdaterID)
 	if err != nil {
 		return err
 	}

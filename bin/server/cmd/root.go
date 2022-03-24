@@ -360,7 +360,6 @@ func (m *Main) Run(ctx context.Context) error {
 
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
-	s.PrincipalService = relation.NewPrincipalServiceImpl(storeInstance)
 	s.MemberService = relation.NewMemberServiceImpl(storeInstance)
 	s.PolicyService = store.NewPolicyService(m.l, db, cacheService)
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)

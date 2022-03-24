@@ -447,13 +447,13 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.InstanceRaw) (*api.Instance, error) {
 	instance := raw.ToInstance()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, instance.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, instance.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	instance.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, instance.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, instance.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -481,10 +481,10 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	// TODO(dragonly): implement composeAnomalyRelationship
 	instance.AnomalyList = anomalyList
 	for _, anomaly := range instance.AnomalyList {
-		if anomaly.Creator, err = s.store.Principal.ComposeByID(ctx, anomaly.CreatorID); err != nil {
+		if anomaly.Creator, err = s.store.ComposePrincipalByID(ctx, anomaly.CreatorID); err != nil {
 			return nil, err
 		}
-		if anomaly.Updater, err = s.store.Principal.ComposeByID(ctx, anomaly.UpdaterID); err != nil {
+		if anomaly.Updater, err = s.store.ComposePrincipalByID(ctx, anomaly.UpdaterID); err != nil {
 			return nil, err
 		}
 	}
@@ -502,10 +502,10 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	}
 	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
-		if dataSource.Creator, err = s.store.Principal.ComposeByID(ctx, dataSource.CreatorID); err != nil {
+		if dataSource.Creator, err = s.store.ComposePrincipalByID(ctx, dataSource.CreatorID); err != nil {
 			return nil, err
 		}
-		if dataSource.Updater, err = s.store.Principal.ComposeByID(ctx, dataSource.UpdaterID); err != nil {
+		if dataSource.Updater, err = s.store.ComposePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return nil, err
 		}
 	}

@@ -30,13 +30,13 @@ func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline
 func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.PipelineRaw) (*api.Pipeline, error) {
 	pipeline := raw.ToPipeline()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, pipeline.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, pipeline.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	pipeline.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, pipeline.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, pipeline.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +55,12 @@ func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.Pipel
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 
-	pipeline.Creator, err = s.store.Principal.ComposeByID(ctx, pipeline.CreatorID)
+	pipeline.Creator, err = s.store.ComposePrincipalByID(ctx, pipeline.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	pipeline.Updater, err = s.store.Principal.ComposeByID(ctx, pipeline.UpdaterID)
+	pipeline.Updater, err = s.store.ComposePrincipalByID(ctx, pipeline.UpdaterID)
 	if err != nil {
 		return err
 	}

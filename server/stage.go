@@ -30,13 +30,13 @@ func (s *Server) composeStageListByPipelineID(ctx context.Context, pipelineID in
 func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw) (*api.Stage, error) {
 	stage := raw.ToStage()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, stage.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	stage.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, stage.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +60,12 @@ func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw
 // TODO(dragonly): remove this hack
 func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
 	var err error
-	stage.Creator, err = s.store.Principal.ComposeByID(ctx, stage.CreatorID)
+	stage.Creator, err = s.store.ComposePrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	stage.Updater, err = s.store.Principal.ComposeByID(ctx, stage.UpdaterID)
+	stage.Updater, err = s.store.ComposePrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return err
 	}

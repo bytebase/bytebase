@@ -199,13 +199,13 @@ func (s *Server) composeVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 func (s *Server) composeVCSRelationship(ctx context.Context, raw *api.VCSRaw) (*api.VCS, error) {
 	vcs := raw.ToVCS()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, vcs.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, vcs.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	vcs.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, vcs.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, vcs.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

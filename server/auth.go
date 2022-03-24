@@ -63,7 +63,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					Email: &login.Email,
 				}
 				var err error
-				user, err = s.PrincipalService.Find(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -114,7 +114,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				principalFind := &api.PrincipalFind{
 					Email: &gitlabUserInfo.PublicEmail,
 				}
-				user, err = s.PrincipalService.Find(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -216,7 +216,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		PasswordHash: string(passwordHash),
 	}
 	// The user has an empty field of Role, which corresponds to the Member object created later.
-	user, err := s.PrincipalService.Create(ctx, principalCreate)
+	user, err := s.store.CreatePrincipal(ctx, principalCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signUp.Email))

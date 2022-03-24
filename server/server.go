@@ -37,7 +37,6 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	SettingService          api.SettingService
-	PrincipalService        api.PrincipalService
 	MemberService           api.MemberService
 	PolicyService           api.PolicyService
 	ProjectService          api.ProjectService
@@ -209,7 +208,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.PrincipalService, next, mode, secret)
+		return JWTMiddleware(logger, s.store, next, mode, secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)

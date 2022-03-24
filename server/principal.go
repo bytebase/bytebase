@@ -29,7 +29,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		principalCreate.PasswordHash = string(passwordHash)
 
-		principal, err := s.PrincipalService.Create(ctx, principalCreate)
+		principal, err := s.store.CreatePrincipal(ctx, principalCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, "User already exists")
@@ -48,7 +48,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 	g.GET("/principal", func(c echo.Context) error {
 		ctx := context.Background()
-		principalList, err := s.PrincipalService.FindList(ctx)
+		principalList, err := s.store.FindPrincipalList(ctx)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
@@ -67,7 +67,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principal, err := s.PrincipalService.Find(ctx, &api.PrincipalFind{ID: &id})
+		principal, err := s.store.FindPrincipal(ctx, &api.PrincipalFind{ID: &id})
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -105,7 +105,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			principalPatch.PasswordHash = &passwordHashStr
 		}
 
-		principal, err := s.PrincipalService.Patch(ctx, principalPatch)
+		principal, err := s.store.PatchPrincipal(ctx, principalPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))

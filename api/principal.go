@@ -132,8 +132,8 @@ type PrincipalPatch struct {
 
 // PrincipalService is the service for Principal CRUD operations.
 type PrincipalService interface {
-	Create(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindList(ctx context.Context) ([]*Principal, error)
-	Find(ctx context.Context, find *PrincipalFind) (*Principal, error)
-	Patch(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
+	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
+	FindPrincipalList(ctx context.Context) ([]*Principal, error)
+	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
+	PatchPrincipal(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }

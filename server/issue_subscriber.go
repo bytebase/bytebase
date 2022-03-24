@@ -107,7 +107,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 func (s *Server) composeIssueSubscriberRelationship(ctx context.Context, raw *api.IssueSubscriberRaw) (*api.IssueSubscriber, error) {
 	issueSubscriber := raw.ToIssueSubscriber()
 
-	subscriber, err := s.store.Principal.ComposeByID(ctx, issueSubscriber.SubscriberID)
+	subscriber, err := s.store.ComposePrincipalByID(ctx, issueSubscriber.SubscriberID)
 	if err != nil {
 		return nil, err
 	}

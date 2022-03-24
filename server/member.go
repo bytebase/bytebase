@@ -36,7 +36,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			principalFind := &api.PrincipalFind{
 				ID: &member.PrincipalID,
 			}
-			user, err := s.PrincipalService.Find(ctx, principalFind)
+			user, err := s.store.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", member.PrincipalID)).SetInternal(err)
 			}
@@ -128,7 +128,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			principalFind := &api.PrincipalFind{
 				ID: &updatedMember.PrincipalID,
 			}
-			user, err := s.PrincipalService.Find(ctx, principalFind)
+			user, err := s.store.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", updatedMember.PrincipalID)).SetInternal(err)
 			}

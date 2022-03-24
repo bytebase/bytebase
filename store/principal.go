@@ -8,11 +8,10 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 var (
-// _ PrincipalStore = (*PrincipalStoreImpl)(nil)
+	_ PrincipalStore = (*Store)(nil)
 )
 
 // PrincipalRaw is the store model for a Principal.
@@ -57,36 +56,19 @@ func (raw *PrincipalRaw) ToPrincipal() *api.Principal {
 
 // PrincipalStore is the store for Principal CRUD operations.
 type PrincipalStore interface {
-	Create(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error)
-	FindList(ctx context.Context) ([]*PrincipalRaw, error)
-	Find(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error)
-	Patch(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error)
+	// Raw data objects
+	CreatePrincipalRaw(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error)
+	FindPrincipalRawList(ctx context.Context) ([]*PrincipalRaw, error)
+	FindPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error)
+	PatchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error)
 
 	// TODO(dragonly): ComposeByID seems to be identical to Find?
-	ComposeByID(ctx context.Context, id int) (*api.Principal, error)
-	Compose(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error)
+	ComposePrincipalByID(ctx context.Context, id int) (*api.Principal, error)
+	ComposePrincipal(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error)
 }
 
-// PrincipalStoreImpl implements the PrincipalStore interface.
-type PrincipalStoreImpl struct {
-	l     *zap.Logger
-	db    *DB
-	cache api.CacheService
-	store *Store
-}
-
-// NewPrincipalStore returns a new instance of PrincipalService.
-func NewPrincipalStore(logger *zap.Logger, db *DB, cache api.CacheService, store *Store) *PrincipalStoreImpl {
-	return &PrincipalStoreImpl{
-		l:     logger,
-		db:    db,
-		cache: cache,
-		store: store,
-	}
-}
-
-// Create creates a new principal.
-func (s *PrincipalStoreImpl) Create(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error) {
+// CreatePrincipalRaw creates an instance of PrincipalRaw.
+func (s *Store) CreatePrincipalRaw(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -109,8 +91,8 @@ func (s *PrincipalStoreImpl) Create(ctx context.Context, create *api.PrincipalCr
 	return principal, nil
 }
 
-// FindList retrieves a list of principals.
-func (s *PrincipalStoreImpl) FindList(ctx context.Context) ([]*PrincipalRaw, error) {
+// FindPrincipalRawList retrieves a list of PrincipalRaw instances.
+func (s *Store) FindPrincipalRawList(ctx context.Context) ([]*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -133,9 +115,9 @@ func (s *PrincipalStoreImpl) FindList(ctx context.Context) ([]*PrincipalRaw, err
 	return list, nil
 }
 
-// Find retrieves a principal based on find.
+// FindPrincipalRaw retrieves an instance of PrincipalRaw based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *PrincipalStoreImpl) Find(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error) {
+func (s *Store) FindPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error) {
 	if find.ID != nil {
 		principalRaw := &PrincipalRaw{}
 		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principalRaw)
@@ -170,9 +152,9 @@ func (s *PrincipalStoreImpl) Find(ctx context.Context, find *api.PrincipalFind) 
 	return list[0], nil
 }
 
-// Patch updates an existing principal by ID.
+// PatchPrincipalRaw updates an existing instance of PrincipalRaw by ID.
 // Returns ENOTFOUND if principal does not exist.
-func (s *PrincipalStoreImpl) Patch(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error) {
+func (s *Store) PatchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -192,6 +174,107 @@ func (s *PrincipalStoreImpl) Patch(ctx context.Context, patch *api.PrincipalPatc
 		return nil, err
 	}
 
+	return principal, nil
+}
+
+// CreatePrincipal creates an instance of Principal
+func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
+	principalRaw, err := s.CreatePrincipalRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Principal with PrincipalCreate[%+v], error[%w]", create, err)
+	}
+	// NOTE: Currently the corresponding Member object is not created yet.
+	// YES, we are returning a Principal with empty Role field. OMG.
+	principal := principalRaw.ToPrincipal()
+	return principal, nil
+}
+
+// FindPrincipalList finds a list of Principal instances
+func (s *Store) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
+	principalRawList, err := s.FindPrincipalRawList(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Principal list, error[%w]", err)
+	}
+	var principalList []*api.Principal
+	for _, raw := range principalRawList {
+		principal, err := s.ComposePrincipal(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", raw, err)
+		}
+		principalList = append(principalList, principal)
+	}
+	return principalList, nil
+}
+
+// FindPrincipal finds an instance of Principal
+func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
+	principalRaw, err := s.FindPrincipalRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
+	}
+	if principalRaw == nil {
+		return nil, nil
+	}
+	principal, err := s.ComposePrincipal(ctx, principalRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+	}
+	return principal, nil
+}
+
+// PatchPrincipal patches an instance of Principal
+func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
+	principalRaw, err := s.PatchPrincipalRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to patch Principal with PrincipalPatch[%+v], error[%w]", patch, err)
+	}
+	principal, err := s.ComposePrincipal(ctx, principalRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+	}
+	return principal, nil
+}
+
+// ComposePrincipalByID composes an instance of Principal by ID
+func (s *Store) ComposePrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
+	principalFind := &api.PrincipalFind{
+		ID: &id,
+	}
+	principalRaw, err := s.FindPrincipalRaw(ctx, principalFind)
+	if err != nil {
+		return nil, err
+	}
+	if id > 0 && principalRaw == nil {
+		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
+	}
+
+	principal, err := s.ComposePrincipal(ctx, principalRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+	}
+
+	return principal, nil
+}
+
+// ComposePrincipal composes an instance of Principal by PrincipalRaw
+func (s *Store) ComposePrincipal(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error) {
+	principal := raw.ToPrincipal()
+
+	if principal.ID == api.SystemBotID {
+		principal.Role = api.Owner
+	} else {
+		memberFind := &api.MemberFind{
+			PrincipalID: &principal.ID,
+		}
+		memberRaw, err := s.Member.Find(ctx, memberFind)
+		if err != nil {
+			return nil, err
+		}
+		if principal.ID > 0 && memberRaw == nil {
+			return nil, fmt.Errorf("Member not found for ID %v", principal.ID)
+		}
+		principal.Role = memberRaw.Role
+	}
 	return principal, nil
 }
 
@@ -345,47 +428,4 @@ func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) 
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
-}
-
-// ComposeByID composes an instance of Principal by ID
-func (s *PrincipalStoreImpl) ComposeByID(ctx context.Context, id int) (*api.Principal, error) {
-	principalFind := &api.PrincipalFind{
-		ID: &id,
-	}
-	principalRaw, err := s.Find(ctx, principalFind)
-	if err != nil {
-		return nil, err
-	}
-	if id > 0 && principalRaw == nil {
-		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
-	}
-
-	principal, err := s.Compose(ctx, principalRaw)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
-	}
-
-	return principal, nil
-}
-
-// Compose composes an instance of Principal by PrincipalRaw
-func (s *PrincipalStoreImpl) Compose(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error) {
-	principal := raw.ToPrincipal()
-
-	if principal.ID == api.SystemBotID {
-		principal.Role = api.Owner
-	} else {
-		memberFind := &api.MemberFind{
-			PrincipalID: &principal.ID,
-		}
-		memberRaw, err := s.store.Member.Find(ctx, memberFind)
-		if err != nil {
-			return nil, err
-		}
-		if principal.ID > 0 && memberRaw == nil {
-			return nil, fmt.Errorf("Member not found for ID %v", principal.ID)
-		}
-		principal.Role = memberRaw.Role
-	}
-	return principal, nil
 }

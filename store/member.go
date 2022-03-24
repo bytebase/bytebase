@@ -194,19 +194,19 @@ func (s *MemberStoreImpl) Patch(ctx context.Context, patch *api.MemberPatch) (*M
 func (s *MemberStoreImpl) Compose(ctx context.Context, raw *MemberRaw) (*api.Member, error) {
 	member := raw.ToMember()
 
-	creator, err := s.store.Principal.ComposeByID(ctx, member.CreatorID)
+	creator, err := s.store.ComposePrincipalByID(ctx, member.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	member.Creator = creator
 
-	updater, err := s.store.Principal.ComposeByID(ctx, member.UpdaterID)
+	updater, err := s.store.ComposePrincipalByID(ctx, member.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	member.Updater = updater
 
-	principal, err := s.store.Principal.ComposeByID(ctx, member.PrincipalID)
+	principal, err := s.store.ComposePrincipalByID(ctx, member.PrincipalID)
 	if err != nil {
 		return nil, err
 	}

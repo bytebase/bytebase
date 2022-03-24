@@ -51,7 +51,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := server.store.Principal.ComposeByID(ctx, task.CreatorID)
+		creator, err := server.store.ComposePrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
