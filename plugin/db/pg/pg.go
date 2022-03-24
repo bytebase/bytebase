@@ -358,16 +358,16 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	// We don't use transaction for creating databases in Postgres.
-	// https://github.com/bytebase/bytebase/issues/202
 	var remainingStmts []string
 	f := func(stmt string) error {
-		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			// We don't use transaction for creating databases in Postgres.
+			// https://github.com/bytebase/bytebase/issues/202
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(stmt, "\\connect ") {
+			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
 			parts := strings.Split(stmt, `"`)
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
