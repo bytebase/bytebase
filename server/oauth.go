@@ -39,12 +39,12 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			oauthTokenRaw, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
 				ctx,
 				vcs.InstanceURL,
-				common.OAuthExchange{
+				&common.OAuthExchange{
 					ClientID:     vcs.ApplicationID,
 					ClientSecret: vcs.Secret,
+					Code:         code,
+					RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
 				},
-				code,
-				fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)

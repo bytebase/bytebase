@@ -34,8 +34,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
-				// we do not return secret to the frontend for safety
-				Secret: "",
+				// we do not return secret to the frontend for safety concern
 			}
 			authProviderList = append(authProviderList, newProvider)
 		}
@@ -96,12 +95,12 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
 					ctx,
 					vcsFound.InstanceURL,
-					common.OAuthExchange{
+					&common.OAuthExchange{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
+						Code:         gitlabLogin.Code,
+						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
 					},
-					gitlabLogin.Code,
-					fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)

@@ -192,12 +192,12 @@ func (provider *Provider) APIURL(instanceURL string) string {
 }
 
 // ExchangeOAuthToken exchange oauth content with the provdied authentication code
-func (provider *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange common.OAuthExchange, code string, redirectURL string) (*vcs.OAuthToken, error) {
+func (provider *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
 	urlParams := &url.Values{}
 	urlParams.Set("client_id", oauthExchange.ClientID)
 	urlParams.Set("client_secret", oauthExchange.ClientSecret)
-	urlParams.Set("code", code)
-	urlParams.Set("redirect_uri", redirectURL)
+	urlParams.Set("code", oauthExchange.Code)
+	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
 	urlParams.Set("grant_type", "authorization_code")
 	url := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
 

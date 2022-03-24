@@ -132,7 +132,7 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// code: authentication code of a given user
 	// redirectURL: redirect url configured at the VCS application
-	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange common.OAuthExchange, code string, redirectURL string) (*OAuthToken, error)
+	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//

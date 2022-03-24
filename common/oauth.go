@@ -16,4 +16,6 @@ type OauthContext struct {
 type OAuthExchange struct {
 	ClientID     string
 	ClientSecret string
+	Code         string
+	RedirectURL  string
 }
