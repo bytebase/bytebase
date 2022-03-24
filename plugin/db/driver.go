@@ -383,7 +383,7 @@ type Driver interface {
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
-	Execute(ctx context.Context, statement string, useTransaction bool) error
+	Execute(ctx context.Context, statement string) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)

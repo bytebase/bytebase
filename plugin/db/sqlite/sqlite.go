@@ -316,21 +316,36 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
-	// This is a fake CREATA DATABASE statement. Engine driver will recognize it and establish a connect to create the database.
-	if strings.HasPrefix(statement, "CREATE DATABASE ") {
-		parts := strings.Split(statement, `'`)
-		if len(parts) != 3 {
-			return fmt.Errorf("invalid statement %q", statement)
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	var remainingStmts []string
+	f := func(stmt string) error {
+		// This is a fake CREATA DATABASE statement. Engine driver will recognize it and establish a connect to create the database.
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			parts := strings.Split(stmt, `'`)
+			if len(parts) != 3 {
+				return fmt.Errorf("invalid statement %q", stmt)
+			}
+			db, err := driver.GetDbConnection(ctx, parts[1])
+			if err != nil {
+				return err
+			}
+			// We need to query to persist the database file.
+			if _, err := db.Query("SELECT 1;"); err != nil {
+				return err
+			}
+		} else if strings.HasPrefix(stmt, "USE ") {
+			// ignore this fake use database statement.
+		} else {
+			remainingStmts = append(remainingStmts, stmt)
 		}
-		db, err := driver.GetDbConnection(ctx, parts[1])
-		if err != nil {
-			return err
-		}
-		// We need to query to persist the database file.
-		if _, err := db.Query("SELECT 1;"); err != nil {
-			return err
-		}
+		return nil
+	}
+	sc := bufio.NewScanner(strings.NewReader(statement))
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
+
+	if len(remainingStmts) == 0 {
 		return nil
 	}
 
@@ -340,9 +355,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, useTransact
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
-
-	if err == nil {
+	if _, err = tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err == nil {
 		if err := tx.Commit(); err != nil {
 			return err
 		}
