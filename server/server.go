@@ -36,10 +36,6 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	CacheService api.CacheService
-
-	Store *store.Store
-
 	SettingService          api.SettingService
 	PrincipalService        api.PrincipalService
 	MemberService           api.MemberService
@@ -76,6 +72,7 @@ type Server struct {
 
 	e *echo.Echo
 
+	store         *store.Store
 	l             *zap.Logger
 	lvl           *zap.AtomicLevel
 	version       string
@@ -112,7 +109,7 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embedded in an iframe
+	// Disallow to be embedded in an iFrame
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
@@ -122,7 +119,6 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	s := &Server{
 		l:             logger,
 		lvl:           loggerLevel,
-		CacheService:  NewCacheService(logger),
 		e:             e,
 		version:       version,
 		mode:          mode,

@@ -60,7 +60,7 @@ type MemberStore interface {
 	Find(ctx context.Context, find *api.MemberFind) (*MemberRaw, error)
 	Patch(ctx context.Context, patch *api.MemberPatch) (*MemberRaw, error)
 
-	ComposeRelationship(ctx context.Context, raw *MemberRaw) (*api.Member, error)
+	Compose(ctx context.Context, raw *MemberRaw) (*api.Member, error)
 }
 
 // MemberStoreImpl represents a service for managing member.
@@ -190,8 +190,8 @@ func (s *MemberStoreImpl) Patch(ctx context.Context, patch *api.MemberPatch) (*M
 	return member, nil
 }
 
-// ComposeRelationship composes an instance of Member by MemberRaw
-func (s *MemberStoreImpl) ComposeRelationship(ctx context.Context, raw *MemberRaw) (*api.Member, error) {
+// Compose composes an instance of Member by MemberRaw
+func (s *MemberStoreImpl) Compose(ctx context.Context, raw *MemberRaw) (*api.Member, error) {
 	member := raw.ToMember()
 
 	creator, err := s.store.Principal.ComposeByID(ctx, member.CreatorID)

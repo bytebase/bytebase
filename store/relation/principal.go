@@ -43,7 +43,7 @@ func (s *PrincipalServiceImpl) FindList(ctx context.Context) ([]*api.Principal, 
 	}
 	var principalList []*api.Principal
 	for _, raw := range principalRawList {
-		principal, err := s.store.Principal.ComposeRelationship(ctx, raw)
+		principal, err := s.store.Principal.Compose(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", raw, err)
 		}
@@ -61,7 +61,7 @@ func (s *PrincipalServiceImpl) Find(ctx context.Context, find *api.PrincipalFind
 	if principalRaw == nil {
 		return nil, nil
 	}
-	principal, err := s.store.Principal.ComposeRelationship(ctx, principalRaw)
+	principal, err := s.store.Principal.Compose(ctx, principalRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
 	}
@@ -74,7 +74,7 @@ func (s *PrincipalServiceImpl) Patch(ctx context.Context, patch *api.PrincipalPa
 	if err != nil {
 		return nil, fmt.Errorf("Failed to patch Principal with PrincipalPatch[%+v], error[%w]", patch, err)
 	}
-	principal, err := s.store.Principal.ComposeRelationship(ctx, principalRaw)
+	principal, err := s.store.Principal.Compose(ctx, principalRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
 	}

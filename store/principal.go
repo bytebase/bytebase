@@ -64,7 +64,7 @@ type PrincipalStore interface {
 
 	// TODO(dragonly): ComposeByID seems to be identical to Find?
 	ComposeByID(ctx context.Context, id int) (*api.Principal, error)
-	ComposeRelationship(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error)
+	Compose(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error)
 }
 
 // PrincipalStoreImpl implements the PrincipalStore interface.
@@ -360,7 +360,7 @@ func (s *PrincipalStoreImpl) ComposeByID(ctx context.Context, id int) (*api.Prin
 		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
 	}
 
-	principal, err := s.ComposeRelationship(ctx, principalRaw)
+	principal, err := s.Compose(ctx, principalRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
 	}
@@ -368,8 +368,8 @@ func (s *PrincipalStoreImpl) ComposeByID(ctx context.Context, id int) (*api.Prin
 	return principal, nil
 }
 
-// ComposeRelationship composes an instance of Principal by PrincipalRaw
-func (s *PrincipalStoreImpl) ComposeRelationship(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error) {
+// Compose composes an instance of Principal by PrincipalRaw
+func (s *PrincipalStoreImpl) Compose(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error) {
 	principal := raw.ToPrincipal()
 
 	if principal.ID == api.SystemBotID {

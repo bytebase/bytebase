@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -19,7 +18,7 @@ type MemberServiceImpl struct {
 }
 
 // NewMemberServiceImpl creates a new instance of NewMemberServiceImpl
-func NewMemberServiceImpl(server *server.Server, store *store.Store) *MemberServiceImpl {
+func NewMemberServiceImpl(store *store.Store) *MemberServiceImpl {
 	return &MemberServiceImpl{
 		store: store,
 	}
@@ -31,7 +30,7 @@ func (s *MemberServiceImpl) Create(ctx context.Context, create *api.MemberCreate
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create Member with MemberCreate[%+v], error[%w]", create, err)
 	}
-	member, err := s.store.Member.ComposeRelationship(ctx, memberRaw)
+	member, err := s.store.Member.Compose(ctx, memberRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Member with MemberRaw[%+v], error[%w]", memberRaw, err)
 	}
@@ -46,7 +45,7 @@ func (s *MemberServiceImpl) FindList(ctx context.Context, find *api.MemberFind) 
 	}
 	var memberList []*api.Member
 	for _, raw := range memberRawList {
-		member, err := s.store.Member.ComposeRelationship(ctx, raw)
+		member, err := s.store.Member.Compose(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", raw, err)
 		}
@@ -64,7 +63,7 @@ func (s *MemberServiceImpl) Find(ctx context.Context, find *api.MemberFind) (*ap
 	if memberRaw == nil {
 		return nil, nil
 	}
-	member, err := s.store.Member.ComposeRelationship(ctx, memberRaw)
+	member, err := s.store.Member.Compose(ctx, memberRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
 	}
@@ -77,7 +76,7 @@ func (s *MemberServiceImpl) Patch(ctx context.Context, patch *api.MemberPatch) (
 	if err != nil {
 		return nil, fmt.Errorf("Failed to patch Member with MemberPatch[%+v], error[%w]", patch, err)
 	}
-	member, err := s.store.Member.ComposeRelationship(ctx, memberRaw)
+	member, err := s.store.Member.Compose(ctx, memberRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
 	}
