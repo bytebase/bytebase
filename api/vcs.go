@@ -79,3 +79,11 @@ type VCSDelete struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
 }
+
+// ExternalRepository is the API message for external repository
+type ExternalRepository struct {
+	ID       int64  `jsonapi:"primary,id"`
+	Name     string `jsonapi:"attr,name"`
+	FullPath string `jsonapi:"attr,fullPath"`
+	WebURL   string `jsonapi:"attr,webUrl"`
+}
