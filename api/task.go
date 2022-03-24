@@ -146,7 +146,7 @@ type TaskRaw struct {
 // ToTask creates an instance of Task based on the TaskRaw.
 // This is intended to be called when we need to compose an Task relationship.
 func (raw *TaskRaw) ToTask() *Task {
-	return &Task{
+	task := &Task{
 		ID: raw.ID,
 
 		// Standard fields
@@ -169,6 +169,13 @@ func (raw *TaskRaw) ToTask() *Task {
 		Payload:           raw.Payload,
 		EarliestAllowedTs: raw.EarliestAllowedTs,
 	}
+	for _, taskRunRaw := range raw.TaskRunRawList {
+		task.TaskRunList = append(task.TaskRunList, taskRunRaw.ToTaskRun())
+	}
+	for _, taskCheckRunRaw := range raw.TaskCheckRunRawList {
+		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRunRaw.ToTaskCheckRun())
+	}
+	return task
 }
 
 // Task is the API message for a task.
