@@ -86,7 +86,7 @@ const prepareRepositoryList = () => {
         store
           .dispatch("gitlab/fetchProjectList", {
             vcs: props.config.vcs,
-            token: props.config.token,
+            token: token,
           })
           .then((list) => {
             state.repositoryList = list;
