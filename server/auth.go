@@ -145,7 +145,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			PrincipalID: &user.ID,
 		}
-		member, err := s.MemberService.Find(ctx, memberFind)
+		member, err := s.store.FindMember(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
@@ -228,7 +228,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 	find := &api.MemberFind{
 		Role: &findRole,
 	}
-	memberList, err := s.MemberService.FindList(ctx, find)
+	memberList, err := s.store.FindMemberList(ctx, find)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
@@ -245,7 +245,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		PrincipalID: user.ID,
 	}
 
-	member, err := s.MemberService.Create(ctx, memberCreate)
+	member, err := s.store.CreateMember(ctx, memberCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signUp.Email))

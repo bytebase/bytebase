@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	_ PrincipalStore = (*Store)(nil)
+	_ PrincipalStore       = (*Store)(nil)
+	_ api.PrincipalService = (*Store)(nil)
 )
 
 // PrincipalRaw is the store model for a Principal.
@@ -266,7 +267,7 @@ func (s *Store) ComposePrincipal(ctx context.Context, raw *PrincipalRaw) (*api.P
 		memberFind := &api.MemberFind{
 			PrincipalID: &principal.ID,
 		}
-		memberRaw, err := s.Member.Find(ctx, memberFind)
+		memberRaw, err := s.FindMemberRaw(ctx, memberFind)
 		if err != nil {
 			return nil, err
 		}

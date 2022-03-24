@@ -103,10 +103,10 @@ type MemberPatch struct {
 	Role *string `jsonapi:"attr,role"`
 }
 
-// MemberService is the service for members.
+// MemberService is the service for Members CRUD operations.
 type MemberService interface {
-	Create(ctx context.Context, create *MemberCreate) (*Member, error)
-	FindList(ctx context.Context, find *MemberFind) ([]*Member, error)
-	Find(ctx context.Context, find *MemberFind) (*Member, error)
-	Patch(ctx context.Context, patch *MemberPatch) (*Member, error)
+	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
+	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)
+	FindMember(ctx context.Context, find *MemberFind) (*Member, error)
+	PatchMember(ctx context.Context, patch *MemberPatch) (*Member, error)
 }

@@ -23,7 +23,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		memberCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		member, err := s.MemberService.Create(ctx, memberCreate)
+		member, err := s.store.CreateMember(ctx, memberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member for user ID already exists: %d", memberCreate.PrincipalID))
@@ -77,7 +77,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.GET("/member", func(c echo.Context) error {
 		ctx := context.Background()
 		memberFind := &api.MemberFind{}
-		memberList, err := s.MemberService.FindList(ctx, memberFind)
+		memberList, err := s.store.FindMemberList(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch member list").SetInternal(err)
 		}
@@ -99,7 +99,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			ID: &id,
 		}
-		member, err := s.MemberService.Find(ctx, memberFind)
+		member, err := s.store.FindMember(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find member ID: %d", id)).SetInternal(err)
 		}
@@ -115,7 +115,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
 		}
 
-		updatedMember, err := s.MemberService.Patch(ctx, memberPatch)
+		updatedMember, err := s.store.PatchMember(ctx, memberPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member ID not found: %d", id))

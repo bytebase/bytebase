@@ -37,7 +37,6 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	SettingService          api.SettingService
-	MemberService           api.MemberService
 	PolicyService           api.PolicyService
 	ProjectService          api.ProjectService
 	ProjectMemberService    api.ProjectMemberService
