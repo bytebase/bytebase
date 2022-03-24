@@ -12,7 +12,9 @@ export type FeatureType =
   | "bb.feature.backup-policy"
   // Admin & Security
   | "bb.feature.rbac"
-  | "bb.feature.3rd-party-auth";
+  | "bb.feature.3rd-party-auth"
+  // Branding
+  | "bb.feature.branding";
 
 export enum PlanType {
   FREE = 0,
@@ -56,6 +58,8 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Admin & Security
   ["bb.feature.rbac", [false, true, true]],
   ["bb.feature.3rd-party-auth", [false, true, true]],
+  // Branding
+  ["bb.feature.branding", [false, true, true]],
 ]);
 
 export const FEATURE_SECTIONS = [

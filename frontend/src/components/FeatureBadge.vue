@@ -1,6 +1,6 @@
 <template>
   <router-link v-if="!hasFeature" to="/setting/subscription" exact-active-class>
-    <heroicons-solid:sparkles class="w-5 h-5 text-accent" />
+    <heroicons-solid:sparkles class="w-5 h-5"/>
   </router-link>
 </template>
 
