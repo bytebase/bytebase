@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// DatabaseOption is flags for database connecting.
-type DatabaseOption struct {
+// DatabaseFlags is flags for database connecting.
+type DatabaseFlags struct {
 	dbType   string
 	host     string
 	port     string
@@ -23,9 +23,9 @@ type DatabaseOption struct {
 	sslKey  string
 }
 
-// NeedDatabaseDriver adds flags for database connecting to a command.
-func NeedDatabaseDriver(cmd *cobra.Command) *DatabaseOption {
-	var option DatabaseOption
+// AddDatabaseFlags adds flags for database connecting to a command.
+func AddDatabaseFlags(cmd *cobra.Command) *DatabaseFlags {
+	var option DatabaseFlags
 	cmd.Flags().StringVar(&option.dbType, "type", "mysql", "Database type. (mysql, or pg).")
 	cmd.Flags().StringVarP(&option.username, "username", "u", "", "Username to login database. (default mysql:root pg:postgres).")
 	cmd.Flags().StringVar(&option.password, "password", "", "Password to login database.")
@@ -41,7 +41,7 @@ func NeedDatabaseDriver(cmd *cobra.Command) *DatabaseOption {
 }
 
 // Connect connects to a database.
-func (opt *DatabaseOption) Connect(ctx context.Context, logger *zap.Logger, readOnly bool) (db.Driver, error) {
+func (opt *DatabaseFlags) Connect(ctx context.Context, logger *zap.Logger, readOnly bool) (db.Driver, error) {
 	var dbType db.Type
 	switch opt.dbType {
 	case "mysql":

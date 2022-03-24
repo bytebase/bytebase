@@ -20,7 +20,7 @@ func newRestoreCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		Use:   "restore",
 		Short: "restores the schema of a database instance",
 	}
-	dbOption := cmdutils.NeedDatabaseDriver(restoreCmd)
+	dbFlags := cmdutils.AddDatabaseFlags(restoreCmd)
 	restoreCmd.Flags().StringVar(&file, "file", "", "File to store the dump.")
 	if err := restoreCmd.MarkFlagRequired("database"); err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func newRestoreCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 	}
 
 	restoreCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		driver, err := dbOption.Connect(ctx, logger, false)
+		driver, err := dbFlags.Connect(ctx, logger, false)
 		if err != nil {
 			return err
 		}

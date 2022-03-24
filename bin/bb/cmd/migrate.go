@@ -30,14 +30,14 @@ func newMigrateCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		Use:   "migrate",
 		Short: "Migrate the database schema",
 	}
-	dbOption := cmdutils.NeedDatabaseDriver(migrateCmd)
+	dbFlags := cmdutils.AddDatabaseFlags(migrateCmd)
 	migrateCmd.Flags().StringSliceVarP(&fileList, "file", "f", []string{}, "SQL file to execute.")
 	migrateCmd.Flags().StringSliceVarP(&commandList, "command", "c", []string{}, "SQL command to execute.")
 	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
 	migrateCmd.Flags().StringVar(&issueID, "issue-id", "", "Issue ID of migration.")
 
 	migrateCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		driver, err := dbOption.Connect(ctx, logger, false)
+		driver, err := dbFlags.Connect(ctx, logger, false)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func newMigrateCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		}
 
 		sqlReader := io.MultiReader(sqlReaders...)
-		return migrateDatabase(context.Background(), driver, dbOption.Database, description, issueID, false /*createDatabase*/, sqlReader)
+		return migrateDatabase(context.Background(), driver, dbFlags.Database, description, issueID, false /*createDatabase*/, sqlReader)
 	}
 
 	return migrateCmd

@@ -24,12 +24,12 @@ func newDumpCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
 	}
-	dbOption := cmdutils.NeedDatabaseDriver(dumpCmd)
+	dbFlags := cmdutils.AddDatabaseFlags(dumpCmd)
 	dumpCmd.Flags().StringVarP(&file, "file", "f", "", "File to store the dump. Output to stdout if unspecified")
 	dumpCmd.Flags().BoolVar(&schemaOnly, "schema-only", false, "Schema only dump.")
 
 	dumpCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		driver, err := dbOption.Connect(ctx, logger, schemaOnly)
+		driver, err := dbFlags.Connect(ctx, logger, schemaOnly)
 		if err != nil {
 			return err
 		}
@@ -45,7 +45,7 @@ func newDumpCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 			out = f
 		}
 
-		return driver.Dump(ctx, dbOption.Database, out, schemaOnly)
+		return driver.Dump(ctx, dbFlags.Database, out, schemaOnly)
 	}
 	return dumpCmd
 }
