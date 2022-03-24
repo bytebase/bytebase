@@ -126,7 +126,7 @@ export default defineComponent({
 
     const errorCodeLink = (code: ErrorCode): string => {
       const error = ERROR_LIST.find((item) => item.code == code);
-      return error ? `https://bytebase.com/doc/error#${error.hash}` : "";
+      return error ? `https://bytebase.com/docs/error-code#${error.hash}` : "";
     };
 
     return {
