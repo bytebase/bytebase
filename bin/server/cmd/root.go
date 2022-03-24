@@ -322,6 +322,21 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
+func initBranding(ctx context.Context, settingService api.SettingService) error {
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingBrandingLogo,
+		Value:       "",
+		Description: "The branding logo image in base64 string format.",
+	}
+	_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Run will run the main server.
 func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -347,6 +362,11 @@ func (m *Main) Run(ctx context.Context) error {
 	config, err := initSetting(ctx, settingService)
 	if err != nil {
 		return fmt.Errorf("failed to init config: %w", err)
+	}
+
+	err = initBranding(ctx, settingService)
+	if err != nil {
+		return fmt.Errorf("failed to init branding: %w", err)
 	}
 
 	m.db = db
