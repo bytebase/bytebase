@@ -174,13 +174,13 @@ func (s *Server) composeEnvironmentByID(ctx context.Context, id int) (*api.Envir
 func (s *Server) composeEnvironmentRelationship(ctx context.Context, raw *api.EnvironmentRaw) (*api.Environment, error) {
 	env := raw.ToEnvironment()
 
-	creator, err := s.composePrincipalByID(ctx, env.CreatorID)
+	creator, err := s.Store.Principal.ComposeByID(ctx, env.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	env.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, env.UpdaterID)
+	updater, err := s.Store.Principal.ComposeByID(ctx, env.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

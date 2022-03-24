@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 
 	// embed will embeds the acl policy.
 	_ "embed"
@@ -36,6 +37,8 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	CacheService api.CacheService
+
+	Store *store.Store
 
 	SettingService          api.SettingService
 	PrincipalService        api.PrincipalService

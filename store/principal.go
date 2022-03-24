@@ -12,24 +12,81 @@ import (
 )
 
 var (
-	_ api.PrincipalService = (*PrincipalService)(nil)
+// _ PrincipalStore = (*PrincipalStoreImpl)(nil)
 )
 
-// PrincipalService represents a service for managing principal.
-type PrincipalService struct {
-	l  *zap.Logger
-	db *DB
+// PrincipalRaw is the store model for a Principal.
+// Fields have exactly the same meanings as Principal.
+type PrincipalRaw struct {
+	ID int
 
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Type  api.PrincipalType
+	Name  string
+	Email string
+	// Do not return to the client
+	PasswordHash string
+}
+
+// ToPrincipal creates an instance of Principal based on the PrincipalRaw.
+// This is intended to be called when we need to compose a Principal relationship.
+func (raw *PrincipalRaw) ToPrincipal() *api.Principal {
+	return &api.Principal{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		Type:  raw.Type,
+		Name:  raw.Name,
+		Email: raw.Email,
+		// Do not return to the client
+		PasswordHash: raw.PasswordHash,
+	}
+}
+
+// PrincipalStore is the store for Principal CRUD operations.
+type PrincipalStore interface {
+	Create(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error)
+	FindList(ctx context.Context) ([]*PrincipalRaw, error)
+	Find(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error)
+	Patch(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error)
+
+	// TODO(dragonly): ComposeByID seems to be identical to Find?
+	ComposeByID(ctx context.Context, id int) (*api.Principal, error)
+	ComposeRelationship(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error)
+}
+
+// PrincipalStoreImpl implements the PrincipalStore interface.
+type PrincipalStoreImpl struct {
+	l     *zap.Logger
+	db    *DB
 	cache api.CacheService
+	store *Store
 }
 
-// NewPrincipalService returns a new instance of PrincipalService.
-func NewPrincipalService(logger *zap.Logger, db *DB, cache api.CacheService) *PrincipalService {
-	return &PrincipalService{l: logger, db: db, cache: cache}
+// NewPrincipalStore returns a new instance of PrincipalService.
+func NewPrincipalStore(logger *zap.Logger, db *DB, cache api.CacheService, store *Store) *PrincipalStoreImpl {
+	return &PrincipalStoreImpl{
+		l:     logger,
+		db:    db,
+		cache: cache,
+		store: store,
+	}
 }
 
-// CreatePrincipal creates a new principal.
-func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
+// Create creates a new principal.
+func (s *PrincipalStoreImpl) Create(ctx context.Context, create *api.PrincipalCreate) (*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -52,8 +109,8 @@ func (s *PrincipalService) CreatePrincipal(ctx context.Context, create *api.Prin
 	return principal, nil
 }
 
-// FindPrincipalList retrieves a list of principals.
-func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
+// FindList retrieves a list of principals.
+func (s *PrincipalStoreImpl) FindList(ctx context.Context) ([]*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -76,17 +133,17 @@ func (s *PrincipalService) FindPrincipalList(ctx context.Context) ([]*api.Princi
 	return list, nil
 }
 
-// FindPrincipal retrieves a principal based on find.
+// Find retrieves a principal based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
+func (s *PrincipalStoreImpl) Find(ctx context.Context, find *api.PrincipalFind) (*PrincipalRaw, error) {
 	if find.ID != nil {
-		principal := &api.Principal{}
-		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principal)
+		principalRaw := &PrincipalRaw{}
+		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principalRaw)
 		if err != nil {
 			return nil, err
 		}
 		if has {
-			return principal, nil
+			return principalRaw, nil
 		}
 	}
 
@@ -113,9 +170,9 @@ func (s *PrincipalService) FindPrincipal(ctx context.Context, find *api.Principa
 	return list[0], nil
 }
 
-// PatchPrincipal updates an existing principal by ID.
+// Patch updates an existing principal by ID.
 // Returns ENOTFOUND if principal does not exist.
-func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
+func (s *PrincipalStoreImpl) Patch(ctx context.Context, patch *api.PrincipalPatch) (*PrincipalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -139,7 +196,7 @@ func (s *PrincipalService) PatchPrincipal(ctx context.Context, patch *api.Princi
 }
 
 // createPrincipal creates a new principal.
-func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*api.Principal, error) {
+func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*PrincipalRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO principal (
@@ -167,25 +224,25 @@ func createPrincipal(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreat
 	defer row.Close()
 
 	row.Next()
-	var principal api.Principal
+	var principalRaw PrincipalRaw
 	if err := row.Scan(
-		&principal.ID,
-		&principal.CreatorID,
-		&principal.CreatedTs,
-		&principal.UpdaterID,
-		&principal.UpdatedTs,
-		&principal.Type,
-		&principal.Name,
-		&principal.Email,
-		&principal.PasswordHash,
+		&principalRaw.ID,
+		&principalRaw.CreatorID,
+		&principalRaw.CreatedTs,
+		&principalRaw.UpdaterID,
+		&principalRaw.UpdatedTs,
+		&principalRaw.Type,
+		&principalRaw.Name,
+		&principalRaw.Email,
+		&principalRaw.PasswordHash,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &principal, nil
+	return &principalRaw, nil
 }
 
-func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*api.Principal, error) {
+func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*PrincipalRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -215,35 +272,35 @@ func findPrincipalList(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind)
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into principalList.
-	var principalList []*api.Principal
+	// Iterate over result set and deserialize rows into principalRawList.
+	var principalRawList []*PrincipalRaw
 	for rows.Next() {
-		var principal api.Principal
+		var principalRaw PrincipalRaw
 		if err := rows.Scan(
-			&principal.ID,
-			&principal.CreatorID,
-			&principal.CreatedTs,
-			&principal.UpdaterID,
-			&principal.UpdatedTs,
-			&principal.Type,
-			&principal.Name,
-			&principal.Email,
-			&principal.PasswordHash,
+			&principalRaw.ID,
+			&principalRaw.CreatorID,
+			&principalRaw.CreatedTs,
+			&principalRaw.UpdaterID,
+			&principalRaw.UpdatedTs,
+			&principalRaw.Type,
+			&principalRaw.Name,
+			&principalRaw.Email,
+			&principalRaw.PasswordHash,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		principalList = append(principalList, &principal)
+		principalRawList = append(principalRawList, &principalRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return principalList, nil
+	return principalRawList, nil
 }
 
 // patchPrincipal updates a principal by ID. Returns the new state of the principal after update.
-func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*api.Principal, error) {
+func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*PrincipalRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -269,23 +326,66 @@ func patchPrincipal(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) 
 	defer row.Close()
 
 	if row.Next() {
-		var principal api.Principal
+		var principalRaw PrincipalRaw
 		if err := row.Scan(
-			&principal.ID,
-			&principal.CreatorID,
-			&principal.CreatedTs,
-			&principal.UpdaterID,
-			&principal.UpdatedTs,
-			&principal.Type,
-			&principal.Name,
-			&principal.Email,
-			&principal.PasswordHash,
+			&principalRaw.ID,
+			&principalRaw.CreatorID,
+			&principalRaw.CreatedTs,
+			&principalRaw.UpdaterID,
+			&principalRaw.UpdatedTs,
+			&principalRaw.Type,
+			&principalRaw.Name,
+			&principalRaw.Email,
+			&principalRaw.PasswordHash,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		return &principal, nil
+		return &principalRaw, nil
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+}
+
+// ComposeByID composes an instance of Principal by ID
+func (s *PrincipalStoreImpl) ComposeByID(ctx context.Context, id int) (*api.Principal, error) {
+	principalFind := &api.PrincipalFind{
+		ID: &id,
+	}
+	principalRaw, err := s.Find(ctx, principalFind)
+	if err != nil {
+		return nil, err
+	}
+	if id > 0 && principalRaw == nil {
+		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
+	}
+
+	principal, err := s.ComposeRelationship(ctx, principalRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+	}
+
+	return principal, nil
+}
+
+// ComposeRelationship composes an instance of Principal by PrincipalRaw
+func (s *PrincipalStoreImpl) ComposeRelationship(ctx context.Context, raw *PrincipalRaw) (*api.Principal, error) {
+	principal := raw.ToPrincipal()
+
+	if principal.ID == api.SystemBotID {
+		principal.Role = api.Owner
+	} else {
+		memberFind := &api.MemberFind{
+			PrincipalID: &principal.ID,
+		}
+		memberRaw, err := s.store.Member.Find(ctx, memberFind)
+		if err != nil {
+			return nil, err
+		}
+		if principal.ID > 0 && memberRaw == nil {
+			return nil, fmt.Errorf("Member not found for ID %v", principal.ID)
+		}
+		principal.Role = memberRaw.Role
+	}
+	return principal, nil
 }

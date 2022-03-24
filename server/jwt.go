@@ -228,7 +228,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			principalFind := &api.PrincipalFind{
 				ID: &principalID,
 			}
-			user, err := p.FindPrincipal(ctx, principalFind)
+			user, err := p.Find(ctx, principalFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalID)).SetInternal(err)
 			}

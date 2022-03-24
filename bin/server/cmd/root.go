@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
+	"github.com/bytebase/bytebase/store/relation"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -355,9 +356,10 @@ func (m *Main) Run(ctx context.Context) error {
 	m.db = db
 
 	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s.Store = store.NewStore(m.l, db, s.CacheService)
 	s.SettingService = settingService
-	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
-	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
+	s.PrincipalService = relation.NewPrincipalServiceImpl(s.Store)
+	s.MemberService = relation.NewMemberServiceImpl(s, s.Store)
 	s.PolicyService = store.NewPolicyService(m.l, db, s.CacheService)
 	s.ProjectService = store.NewProjectService(m.l, db, s.CacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
