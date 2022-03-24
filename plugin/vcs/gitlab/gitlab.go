@@ -163,7 +163,7 @@ type gitLabRepositoryMember struct {
 	AccessLevel int32     `json:"access_level"`
 }
 
-// gitLabRepositoryMember is the API message for repository in GitLab
+// gitLabRepository is the API message for repository in GitLab
 type gitLabRepository struct {
 	ID                int64  `json:"id"`
 	Name              string `json:"name"`
