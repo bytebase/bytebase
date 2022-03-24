@@ -320,6 +320,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
+		stmt = strings.TrimLeft(stmt, " \t")
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			parts := strings.Split(stmt, `'`)
 			if len(parts) != 3 {

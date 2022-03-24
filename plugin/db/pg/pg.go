@@ -360,6 +360,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
+		stmt = strings.TrimLeft(stmt, " \t")
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			// We don't use transaction for creating databases in Postgres.
 			// https://github.com/bytebase/bytebase/issues/202
