@@ -357,29 +357,35 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
-	// We don't use transaction for creating databases in Postgres.
-	// https://github.com/bytebase/bytebase/issues/202
-	if !useTransaction {
-		f := func(stmt string) error {
-			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
-			if strings.HasPrefix(stmt, "\\connect ") {
-				parts := strings.Split(stmt, `"`)
-				if len(parts) != 3 {
-					return fmt.Errorf("invalid statement %q", stmt)
-				}
-				_, err := driver.GetDbConnection(ctx, parts[1])
-				return err
-			}
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	var remainingStmts []string
+	f := func(stmt string) error {
+		stmt = strings.TrimLeft(stmt, " \t")
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			// We don't use transaction for creating databases in Postgres.
+			// https://github.com/bytebase/bytebase/issues/202
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
-			return nil
-		}
-		sc := bufio.NewScanner(strings.NewReader(statement))
-		if err := util.ApplyMultiStatements(sc, f); err != nil {
+		} else if strings.HasPrefix(stmt, "\\connect ") {
+			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
+			parts := strings.Split(stmt, `"`)
+			if len(parts) != 3 {
+				return fmt.Errorf("invalid statement %q", stmt)
+			}
+			_, err := driver.GetDbConnection(ctx, parts[1])
 			return err
+		} else {
+			remainingStmts = append(remainingStmts, stmt)
 		}
+		return nil
+	}
+	sc := bufio.NewScanner(strings.NewReader(statement))
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
+
+	if len(remainingStmts) == 0 {
 		return nil
 	}
 
@@ -389,9 +395,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, useTransact
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
-
-	if err == nil {
+	if _, err = tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err == nil {
 		if err := tx.Commit(); err != nil {
 			return err
 		}

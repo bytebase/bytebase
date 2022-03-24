@@ -168,10 +168,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 				return -1, "", err
 			}
 		}
-		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction from previous migration history updates.
-		// Also, we don't use transaction for creating databases in Postgres.
-		// https://github.com/bytebase/bytebase/issues/202
-		if err := executor.Execute(ctx, statement, !m.CreateDatabase); err != nil {
+		if err := executor.Execute(ctx, statement); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
