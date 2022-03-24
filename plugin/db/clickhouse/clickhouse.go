@@ -337,7 +337,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -390,7 +390,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
-		if err := driver.Execute(ctx, migrationSchema, true /* useTransaction */); err != nil {
+		if err := driver.Execute(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
