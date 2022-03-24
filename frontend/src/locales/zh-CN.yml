@@ -1186,7 +1186,7 @@ subscription:
     branding:
       title: 自定义品牌信息
       features:
-        logo: 自定义 Logo
+        branding-logo: 自定义 Logo
   plan:
     title: 版本
     try: 试用团队版

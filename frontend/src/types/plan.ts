@@ -101,7 +101,7 @@ export const FEATURE_SECTIONS = [
   {
     id: "branding",
     features: [
-      "logo",
+      "branding-logo",
     ],
   },
 ];
@@ -196,7 +196,7 @@ export const TEAM_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
-    { id: "logo" },
+    { id: "branding-logo" },
   ],
 };
 
@@ -247,6 +247,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
-    { id: "logo" },
+    { id: "branding-logo" },
   ],
 };
