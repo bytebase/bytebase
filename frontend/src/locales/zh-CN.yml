@@ -312,6 +312,7 @@ settings:
       select-logo: 选择
       drag-logo: 或拖拽文件
       logo-upload-tip: 支持 {extension} 类型文件，不能大于 {size} MiB
+      logo-upload-succeed: Logo 更新完成
 activity:
   name: 名称
   comment: 评论
@@ -1180,6 +1181,10 @@ subscription:
         rbac: RBAC 权限管理
         3rd-party-auth: 通过 GitLab 登录
         sync-members-from-vcs: 从 GitLab 同步成员信息
+    branding:
+      title: 自定义品牌信息
+      features:
+        logo: 自定义 Logo
   plan:
     title: 版本
     try: 试用团队版
