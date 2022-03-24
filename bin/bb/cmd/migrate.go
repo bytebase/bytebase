@@ -21,8 +21,8 @@ import (
 
 func newMigrateCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 	var (
-		fileList    []string
-		commandList []string
+		file        string
+		command     string
 		description string
 		issueID     string
 	)
@@ -31,8 +31,8 @@ func newMigrateCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		Short: "Migrate the database schema",
 	}
 	dbFlags := cmdutils.AddDatabaseFlags(migrateCmd)
-	migrateCmd.Flags().StringSliceVarP(&fileList, "file", "f", []string{}, "SQL file to execute.")
-	migrateCmd.Flags().StringSliceVarP(&commandList, "command", "c", []string{}, "SQL command to execute.")
+	migrateCmd.Flags().StringVarP(&file, "file", "f", "", "SQL file to execute.")
+	migrateCmd.Flags().StringVarP(&command, "command", "c", "", "SQL command to execute.")
 	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
 	migrateCmd.Flags().StringVar(&issueID, "issue-id", "", "Issue ID of migration.")
 
@@ -43,23 +43,20 @@ func newMigrateCmd(ctx context.Context, logger *zap.Logger) *cobra.Command {
 		}
 		defer driver.Close(ctx)
 
-		var sqlReaders []io.Reader
-		//TODO(qsliu): support file and command combined as the passed order.
-		for _, file := range fileList {
+		if file != "" {
 			f, err := os.Open(file)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to open file %s, got error: %w", file, err)
 			}
 			defer f.Close()
-			sqlReaders = append(sqlReaders, f)
+			return migrateDatabase(ctx, driver, dbFlags.Database, description, issueID, false, f)
 		}
 
-		for _, command := range commandList {
-			sqlReaders = append(sqlReaders, strings.NewReader(command))
+		if command != "" {
+			return migrateDatabase(ctx, driver, dbFlags.Database, description, issueID, false, strings.NewReader(command))
 		}
 
-		sqlReader := io.MultiReader(sqlReaders...)
-		return migrateDatabase(context.Background(), driver, dbFlags.Database, description, issueID, false /*createDatabase*/, sqlReader)
+		return fmt.Errorf("no file or command specified")
 	}
 
 	return migrateCmd

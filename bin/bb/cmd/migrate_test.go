@@ -50,11 +50,11 @@ func TestMigrate(t *testing.T) {
 				"--username", "root",
 				"--host", "localhost",
 				"--port", fmt.Sprint(mysql.Port()),
-				"-c", `"
+				"-c", `
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
 		name TEXT NULL
-	);"`,
+	);`,
 				"--database", "bytebase_test_todo",
 			},
 			expected: _TestMigrate02,
