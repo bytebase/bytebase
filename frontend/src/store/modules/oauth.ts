@@ -5,13 +5,13 @@ const convert = (raw: ResourceObject): OAuthToken => {
   const attr = raw.attributes;
   return {
     accessToken: attr.accessToken as string,
-    expiresTs: attr.expiresTs as number,
     refreshToken: attr.refreshToken as string,
+    expiresTs: attr.expiresTs as number,
   };
 };
 
 const actions = {
-  async exchangeToken(
+  async exchangeVCSToken(
     {}: any,
     {
       vcsId,
