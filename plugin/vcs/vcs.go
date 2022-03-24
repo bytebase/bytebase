@@ -141,7 +141,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*RepositoryMember, error)
 
-	// Fetch all repository in which the authenticated user has a maintainer role
+	// Fetch all repository within a given user's scope
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
