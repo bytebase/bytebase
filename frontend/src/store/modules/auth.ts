@@ -10,8 +10,6 @@ import {
   unknown,
   PrincipalId,
   AuthProvider,
-  VCSId,
-  OAuthToken,
 } from "../../types";
 import { getIntCookie } from "../../utils";
 
@@ -43,30 +41,6 @@ const getters = {
 };
 
 const actions = {
-  async exchangeOAuthToken(
-    {}: any,
-    {
-      vcsId,
-      code,
-    }: {
-      vcsId: VCSId;
-      code: string;
-    }
-  ): Promise<OAuthToken> {
-    const data = (
-      await axios.post(`/api/oauth/vcs/${vcsId}/exchange-oauth-token`, null, {
-        headers: { code },
-      })
-    ).data;
-    const oAuthToken: OAuthToken = {
-      accessToken: data.access_token,
-      expiresTs: data.expires_ts,
-      refreshToken: data.refresh_token,
-    };
-
-    return oAuthToken;
-  },
-
   async fetchProviderList({ commit }: any) {
     const providerList = (await axios.get("/api/auth/provider")).data.data;
     const convertedProviderList = providerList.map(

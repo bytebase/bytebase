@@ -2,7 +2,7 @@
   <BBAttention :style="'WARN'" :description="attentionText" />
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
-      <button class="btn-icon" @click.prevent="prepareRepositoryList">
+      <button class="btn-icon" @click.prevent="refreshRepositoryList">
         <heroicons-outline:refresh class="w-6 h-6" />
       </button>
       <BBTableSearch
@@ -41,7 +41,7 @@ export default { name: "RepositorySelectionPanel" };
 
 <script setup lang="ts">
 import { useStore } from "vuex";
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, onMounted } from "vue";
 import {
   ExternalRepositoryInfo,
   OAuthToken,
@@ -69,40 +69,44 @@ const state = reactive<LocalState>({
   searchText: "",
 });
 
+onMounted(() => {
+  prepareRepositoryList();
+});
+
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    if (props.config.token.accessToken === state.lastAccessToken) {
-      store
-        .dispatch("gitlab/fetchProjectList", {
-          vcs: props.config.vcs,
-          token: props.config.token,
-        })
-        .then((list) => {
-          state.repositoryList = list;
-        });
-    } else {
-      store
-        .dispatch("auth/exchangeOAuthToken", {
-          vcsId: props.config.vcs.id,
-          code: props.config.code,
-        })
-        .then((token: OAuthToken) => {
-          emit("set-token", token);
-          state.lastAccessToken = token.accessToken;
-          store
-            .dispatch("gitlab/fetchProjectList", {
-              vcs: props.config.vcs,
-              token: props.config.token,
-            })
-            .then((list) => {
-              state.repositoryList = list;
-            });
-        });
-    }
+    store
+      .dispatch("oauth/exchangeToken", {
+        vcsId: props.config.vcs.id,
+        code: props.config.code,
+      })
+      .then((token: OAuthToken) => {
+        state.lastAccessToken = token.accessToken;
+        emit("set-token", token);
+        store
+          .dispatch("gitlab/fetchProjectList", {
+            vcs: props.config.vcs,
+            token: props.config.token,
+          })
+          .then((list) => {
+            state.repositoryList = list;
+          });
+      });
   }
 };
 
-watchEffect(prepareRepositoryList);
+const refreshRepositoryList = () => {
+  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+    store
+      .dispatch("gitlab/fetchProjectList", {
+        vcs: props.config.vcs,
+        token: props.config.token,
+      })
+      .then((list) => {
+        state.repositoryList = list;
+      });
+  }
+};
 
 const repositoryList = computed(() => {
   if (state.searchText == "") {

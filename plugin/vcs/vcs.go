@@ -28,6 +28,17 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+// OAuthToken is the API message for OAuthToken.
+type OAuthToken struct {
+	AccessToken  string `json:"access_token" `
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	CreatedAt    int64  `json:"created_at"`
+	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
+	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
+	ExpiresTs int64 `json:"expires_ts"`
+}
+
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
@@ -104,10 +115,10 @@ type RepositoryMember struct {
 
 // Repository is the API message for  repository info.
 type Repository struct {
-	ID       int64  `jsonapi:"primary,id"`
-	Name     string `jsonapi:"attr,name"`
-	FullPath string `jsonapi:"attr,fullPath"`
-	WebURL   string `jsonapi:"attr,webUrl"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	FullPath string `json:"fullPath"`
+	WebURL   string `json:"webUrl"`
 }
 
 // Provider is the interface for VCS provider.
@@ -121,7 +132,7 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// code: authentication code of a given user
 	// redirectURL: redirect url configured at the VCS application
-	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange common.OAuthExchange, code string, redirectURL string) (*common.OAuthToken, error)
+	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange common.OAuthExchange, code string, redirectURL string) (*OAuthToken, error)
 
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//
