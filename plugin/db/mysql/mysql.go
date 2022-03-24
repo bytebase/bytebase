@@ -517,7 +517,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
