@@ -10,7 +10,6 @@ import {
   DataSourcePatch,
   EMPTY_ID,
   empty,
-  UNKNOWN_ID,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
 
@@ -109,15 +108,6 @@ const actions = {
       dataSource: createdDataSource,
     });
 
-    if (createdDataSource.databaseId !== UNKNOWN_ID) {
-      // Refresh the corresponding database as it contains data source.
-      dispatch(
-        "database/fetchDatabaseById",
-        { databaseId: createdDataSource.databaseId },
-        { root: true }
-      );
-    }
-
     return createdDataSource;
   },
 
@@ -151,11 +141,6 @@ const actions = {
       dataSource: updatedDataSource,
     });
 
-    if (databaseId !== UNKNOWN_ID) {
-      // Refresh the corresponding database as it contains data source.
-      dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
-    }
-
     return updatedDataSource;
   },
 
@@ -171,9 +156,6 @@ const actions = {
     );
 
     commit("deleteDataSourceById", dataSourceId);
-
-    // Refresh the corresponding database as it contains data source.
-    dispatch("database/fetchDatabaseById", { databaseId }, { root: true });
   },
 };
 

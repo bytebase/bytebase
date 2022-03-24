@@ -1,3 +1,6 @@
+//go:build mysql
+// +build mysql
+
 package mysql
 
 import (
@@ -8,6 +11,7 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStartMySQL(t *testing.T) {
@@ -18,24 +22,17 @@ func TestStartMySQL(t *testing.T) {
 	}
 
 	mysql, err := Install(basedir, datadir, "root")
-	if err != nil {
-		t.Fatalf("Failed to start MySQL: %s", err)
-	}
-	if err := mysql.Start(13306 /* port */, os.Stdout, os.Stderr); err != nil {
-		t.Fatalf("Failed to start MySQL: %s", err)
-	}
+	require.NoError(t, err)
+	err = mysql.Start(13306 /* port */, os.Stdout, os.Stderr)
+	require.NoError(t, err)
 
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))
-	if err != nil {
-		t.Fatalf("Failed to open MySQL: %s", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		t.Fatalf("Failed to ping MySQL: %s", err)
-	}
+	err = db.Ping()
+	require.NoError(t, err)
 
-	if err := mysql.Stop(os.Stdout, os.Stderr); err != nil {
-		t.Fatalf("Failed to stop MySQL: %s", err)
-	}
+	err = mysql.Stop(os.Stdout, os.Stderr)
+	require.NoError(t, err)
 }

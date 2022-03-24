@@ -37,17 +37,16 @@
     </template>
 
     <BBAttention
-      v-if="deployment?.id === EMPTY_ID"
+      v-if="state.deployment?.id === EMPTY_ID"
       :style="'WARN'"
       :title="$t('common.deployment-config')"
       :description="$t('deployment-config.this-is-example-deployment-config')"
     >
     </BBAttention>
 
-    <div class="divide-y">
+    <div v-if="state.deployment" class="divide-y">
       <DeploymentConfigTool
-        v-if="deployment"
-        :schedule="deployment.schedule"
+        :schedule="state.deployment.schedule"
         :allow-edit="allowEdit"
         :label-list="availableLabelList"
         :database-list="databaseList"
@@ -67,12 +66,20 @@
           </button>
         </div>
         <div class="flex items-center space-x-2">
+          <button
+            v-if="allowEdit"
+            class="btn-normal"
+            :disabled="!dirty"
+            @click="revert"
+          >
+            {{ $t("common.revert") }}
+          </button>
           <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
             <template #trigger>
               <div
                 class="btn-primary"
                 :class="
-                  state.error ? 'bg-accent opacity-50 cursor-not-allowed' : ''
+                  !allowUpdate ? 'bg-accent opacity-50 cursor-not-allowed' : ''
                 "
                 @click="update"
               >
@@ -88,14 +95,18 @@
       </div>
     </div>
 
+    <div v-else class="flex justify-center items-center py-10">
+      <BBSpin />
+    </div>
+
     <BBModal
-      v-if="deployment && state.showPreview"
+      v-if="state.deployment && state.showPreview"
       :title="$t('deployment-config.preview-deployment-config')"
       @close="state.showPreview = false"
     >
       <DeploymentMatrix
         :project="project"
-        :deployment="deployment"
+        :deployment="state.deployment"
         :database-list="databaseList"
         :environment-list="environmentList"
         :label-list="labelList"
@@ -111,7 +122,6 @@ import {
   nextTick,
   PropType,
   reactive,
-  ref,
   watch,
   watchEffect,
 } from "vue";
@@ -130,14 +140,15 @@ import {
   LabelSelectorRequirement,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { NPopover } from "naive-ui";
+import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 
 type LocalState = {
+  deployment: DeploymentConfig | undefined;
+  originalDeployment: DeploymentConfig | undefined;
   error: string | undefined;
-  ready: boolean;
   showPreview: boolean;
 };
 
@@ -157,22 +168,29 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const { t } = useI18n();
-    const deployment = ref<DeploymentConfig>();
+    const dialog = useDialog();
 
     const state = reactive<LocalState>({
-      ready: false,
+      deployment: undefined,
+      originalDeployment: undefined,
       error: undefined,
       showPreview: false,
+    });
+
+    const dirty = computed((): boolean => {
+      return !isEqual(state.deployment, state.originalDeployment);
+    });
+
+    const allowUpdate = computed((): boolean => {
+      if (state.error) return false;
+      if (!dirty.value) return false;
+      return true;
     });
 
     const prepareList = () => {
       store.dispatch("environment/fetchEnvironmentList");
       store.dispatch("label/fetchLabelList");
       store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
-      store.dispatch(
-        "deployment/fetchDeploymentConfigByProjectId",
-        props.project.id
-      );
     };
 
     const environmentList = computed(
@@ -198,40 +216,42 @@ export default defineComponent({
       });
     });
 
-    watchEffect(() => {
-      const dep = store.getters["deployment/deploymentConfigByProjectId"](
+    const resetStates = async () => {
+      await nextTick(); // Waiting for all watchers done
+      state.error = undefined;
+    };
+
+    watchEffect(async () => {
+      const dep = (await store.dispatch(
+        "deployment/fetchDeploymentConfigByProjectId",
         props.project.id
-      ) as DeploymentConfig;
+      )) as DeploymentConfig;
+
       if (dep.id === UNKNOWN_ID) {
         // if the project has no related deployment-config
         // just generate a "staged-by-env" example to users
         // this is not saved immediately, it's a draft
         // users need to edit and save it before creating a deployment issue
         if (environmentList.value.length > 0) {
-          deployment.value = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
-          deployment.value.schedule = generateDefaultSchedule(
+          state.deployment = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
+          state.deployment.schedule = generateDefaultSchedule(
             environmentList.value
           );
         }
       } else {
         // otherwise we clone the saved deployment-config
-        // <DeploymentConfigTool /> will mutate `deployment.value` directly
+        // <DeploymentConfigTool /> will mutate `state.deployment` directly
         // when update button clicked, we save the draft to backend
-        // we don't show a "cancel" button because if users don't want to save
-        //   the draft, they can just leave the page without any saving action
-        // even more we may deliver a confirm modal when leaving the page with a
-        //   dirty but not saved draft
-        deployment.value = cloneDeep(dep);
+        state.deployment = cloneDeep(dep);
       }
-      nextTick(() => {
-        // then we reset the local state
-        state.ready = true;
-        state.error = undefined;
-      });
+      // clone the object to the backup
+      state.originalDeployment = cloneDeep(state.deployment);
+      // clean up error and dirty status
+      resetStates();
     });
 
     const addStage = () => {
-      if (!deployment.value) return;
+      if (!state.deployment) return;
       const rule: LabelSelectorRequirement = {
         key: "bb.environment",
         operator: "In",
@@ -241,7 +261,7 @@ export default defineComponent({
         rule.values.push(environmentList.value[0].name);
       }
 
-      deployment.value.schedule.deployments.push({
+      state.deployment.schedule.deployments.push({
         name: "New Stage",
         spec: {
           selector: {
@@ -252,18 +272,36 @@ export default defineComponent({
     };
 
     const validate = () => {
-      if (!deployment.value) return;
-      state.error = validateDeploymentConfig(deployment.value);
+      if (!state.deployment) return;
+      state.error = validateDeploymentConfig(state.deployment);
     };
 
-    const update = () => {
-      if (!deployment.value) return;
-      if (state.error) return;
+    const revert = () => {
+      dialog.create({
+        positiveText: t("common.confirm"),
+        negativeText: t("common.cancel"),
+        title: t("deployment-config.confirm-to-revert"),
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
+        onNegativeClick: () => {
+          // nothing to do
+        },
+        onPositiveClick: () => {
+          state.deployment = cloneDeep(state.originalDeployment);
+          resetStates();
+        },
+      });
+    };
+
+    const update = async () => {
+      if (!state.deployment) return;
+      if (!allowUpdate.value) return;
 
       const deploymentConfigPatch: DeploymentConfigPatch = {
-        payload: JSON.stringify(deployment.value.schedule),
+        payload: JSON.stringify(state.deployment.schedule),
       };
-      store.dispatch("deployment/patchDeploymentConfigByProjectId", {
+      await store.dispatch("deployment/patchDeploymentConfigByProjectId", {
         projectId: props.project.id,
         deploymentConfigPatch,
       });
@@ -272,13 +310,16 @@ export default defineComponent({
         style: "SUCCESS",
         title: t("deployment-config.update-success"),
       });
+
+      // clone the updated version to the backup
+      state.originalDeployment = cloneDeep(state.deployment);
+      // clean up error status
+      resetStates();
     };
 
     watch(
-      deployment,
-      (dep) => {
-        if (!dep) return;
-        if (!state.ready) return;
+      () => state.deployment,
+      () => {
         validate();
       },
       { deep: true }
@@ -293,12 +334,14 @@ export default defineComponent({
     return {
       EMPTY_ID,
       state,
+      dirty,
+      allowUpdate,
       environmentList,
       labelList,
       databaseList,
       availableLabelList,
-      deployment,
       addStage,
+      revert,
       update,
       dbNameTemplateTips,
     };

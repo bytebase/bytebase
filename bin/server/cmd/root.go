@@ -156,6 +156,8 @@ type Profile struct {
 	forceResetSeed bool
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
+	// schemaVersion is the version of schema applied to.
+	schemaVersion int
 }
 
 // retrieved via the SettingService upon startup
@@ -276,7 +278,7 @@ func start() {
 // NewMain creates a main server based on profile.
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgDataDir := path.Join(activeProfile.dataDir, "pgdata")
+	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -347,13 +349,14 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 	m.pgStarted = true
 
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
-		Host:     "localhost",
+		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version)
+	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}

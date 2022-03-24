@@ -38,7 +38,7 @@ CREATE TABLE bytebase_migration_history (
 
 CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_sequence ON bytebase_migration_history (namespace, sequence);
 
-CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_source_version ON bytebase_migration_history (namespace, source, version);
+CREATE UNIQUE INDEX bytebase_idx_unique_migration_history_namespace_version ON bytebase_migration_history (namespace, version);
 
 CREATE INDEX bytebase_idx_migration_history_namespace_source_type ON bytebase_migration_history(namespace, source, type);
 

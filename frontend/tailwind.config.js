@@ -6,31 +6,26 @@ module.exports = {
     // removeDeprecatedGapUtilities: true,
     // purgeLayersByDefault: true,
   },
-  purge: {
-    content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
+  content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
+  mode: "jit",
+  safelist: [
     // "w-xxx" is used by BBTab
     // "pl-xxx" is used by BBOutline
     // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar
     // "hover:bg-xxx" is used by TaskCheckBadgeBar
     // "grid-cols-xxx" is used by AnomalyCenterDashboard
-    safelist: [
-      /^w-/,
-      /^pl-/,
-      /^bg-gray-/,
-      /^text-gray-/,
-      /^bg-blue-/,
-      /^text-blue-/,
-      /^bg-yellow-/,
-      /^text-yellow-/,
-      /^bg-red-/,
-      /^text-red-/,
-      /^hover:bg-gray-/,
-      /^hover:bg-blue-/,
-      /^hover:bg-yellow-/,
-      /^hover:bg-red-/,
-      /^grid-cols-/,
-    ],
-  },
+    { pattern: /^w-/ },
+    { pattern: /^pl-/ },
+    { pattern: /^bg-gray-/, variants: ["hover"] },
+    { pattern: /^bg-blue-/, variants: ["hover"] },
+    { pattern: /^bg-yellow-/, variants: ["hover"] },
+    { pattern: /^bg-red-/, variants: ["hover"] },
+    { pattern: /^text-gray-/ },
+    { pattern: /^text-blue-/ },
+    { pattern: /^text-yellow-/ },
+    { pattern: /^text-red-/ },
+    { pattern: /^grid-cols-/ },
+  ],
   theme: {
     extend: {
       colors: {

@@ -1092,6 +1092,7 @@ deployment-config:
   selectors: Selectors
   wont-be-deployed: Will not be deployed
   add-stage: Add stage
+  confirm-to-revert: Confirm to revert your editing?
   name-placeholder: Stage name...
   error:
     at-least-one-stage: At least 1 stage

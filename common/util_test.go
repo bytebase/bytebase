@@ -1,6 +1,10 @@
 package common
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestHasPrefixes(t *testing.T) {
 	type args struct {
@@ -31,9 +35,8 @@ func TestHasPrefixes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HasPrefixes(tt.args.src, tt.args.prefixes...); got != tt.want {
-				t.Fatalf("HasPrefixes() = %v, want %v", got, tt.want)
-			}
+			got := HasPrefixes(tt.args.src, tt.args.prefixes...)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }
