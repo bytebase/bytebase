@@ -319,7 +319,7 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
-		// This is a fake CREATA DATABASE statement. Engine driver will recognize it and establish a connect to create the database.
+		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			parts := strings.Split(stmt, `'`)
 			if len(parts) != 3 {
