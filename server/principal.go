@@ -37,7 +37,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create principal").SetInternal(err)
 		}
 		// Assign Developer role to the just created principal
-		// TODO(dragonly): do we need to save the Role-Principal relation into the database?
 		principal.Role = api.Developer
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

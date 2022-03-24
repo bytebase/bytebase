@@ -30,7 +30,8 @@ func (s *PrincipalServiceImpl) Create(ctx context.Context, create *api.Principal
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create Principal with PrincipalCreate[%+v], error[%w]", create, err)
 	}
-	// TODO(dragonly): compose principal role
+	// NOTE: Currently the corresponding Member object is not created yet.
+	// YES, we are returning a Principal with empty Role field. OMG.
 	principal := principalRaw.ToPrincipal()
 	return principal, nil
 }

@@ -215,6 +215,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		Email:        signUp.Email,
 		PasswordHash: string(passwordHash),
 	}
+	// The user has an empty field of Role, which corresponds to the Member object created later.
 	user, err := s.PrincipalService.Create(ctx, principalCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
@@ -251,6 +252,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
+	// From now on, the Principal we just created could be composed with a valid Role field.
 
 	{
 		bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
