@@ -403,7 +403,7 @@ export default {
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
         );
       } else {
-        window.open("https://docs.bytebase.com/", "_self");
+        window.open("https://bytebase.com/docs", "_self");
       }
     };
 
