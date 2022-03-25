@@ -7,6 +7,7 @@ import (
 
 // Store provides database access to all raw objects
 type Store struct {
+	l     *zap.Logger
 	db    *DB
 	cache api.CacheService
 }
@@ -14,6 +15,7 @@ type Store struct {
 // NewStore creates a new instance of Store
 func NewStore(l *zap.Logger, db *DB, cache api.CacheService) *Store {
 	return &Store{
+		l:     l,
 		db:    db,
 		cache: cache,
 	}

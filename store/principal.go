@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"go.uber.org/zap"
 )
 
 var (
@@ -200,6 +201,13 @@ func (s *Store) FindPrincipalList(ctx context.Context) ([]*api.Principal, error)
 	for _, raw := range principalRawList {
 		principal, err := s.ComposePrincipal(ctx, raw)
 		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				s.l.Error("Principal has not been assigned a role. Skip",
+					zap.Int("id", principal.ID),
+					zap.String("name", principal.Name),
+				)
+				continue
+			}
 			return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", raw, err)
 		}
 		principalList = append(principalList, principal)
