@@ -209,7 +209,8 @@ For the first iteration, we will implement
     - Support gh-ost status feedback(ETA, configurations etc.)
 1.
     - Improve migration logic to support rerun task.
-    - Support to reconfigure on the go.
+    - Support workspace-level settings for gh-ost
+    - Support to reconfigure gh-ost on the go.
 1. Support cloud MySQL databases.
 1. Support tenant mode.
 1. Support "connect to replica".
