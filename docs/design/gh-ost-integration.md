@@ -446,46 +446,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 ## Detailed design
 
 ```Go
-// issue related
-
-const IssueDatabaseSchemaUpdateGhost IssueType = "bb.issue.database.schema.update.ghost"
-
-type UpdateSchemaGhostDetail struct {
-    DatabaseID int `json:"databaseId"`
-    DatabaseName string `json:"databaseName"`
-    Statement string `json:"statement"`
-    EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
-}
-
-type UpdateSchemaGhostContext struct {
-    MigrationType db.MigrationType `json:"migrationType"`
-    UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList`
-    VCSPushEvent *vcs.PushEvent
-}
-
-// task related
-
-const TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update.ghost"
-type TaskDatabaseSchemaUpdateGhostPayload struct {
-    MigrationType db.MigrationType `json:"migrationType,omitempty"`
-    Statement     string           `json:"statement,omitempty"`
-    SchemaVersion string           `json:"schemaVersion,omitempty"`
-    VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
-    // more to come
-}
-
-const TaskDatabaseSchemaUpdateGhostCutover = "bb.task.database.schema.update.ghost.cutover"
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-    // ParentTaskID references back to the gh-ost executor task ID
-    ParentTaskID int
-}
-
-const TaskDatabaseSchemaUpdateGhostDropOriginalTable = "bb.task.database.schema.update.ghost.drop-original-table"
-type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
-    DatabaseName string
-    TableName string
-    ParentTaskID int
-}
+//task related
 
 type TaskExecutor interface {
     RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error)
