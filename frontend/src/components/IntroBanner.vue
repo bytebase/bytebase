@@ -10,7 +10,7 @@
           <template #doc>
             <a
               class="normal-link"
-              href="https://docs.bytebase.com"
+              href="https://bytebase.com/docs"
               target="__blank"
             >
               {{ $t("intro.doc") }}

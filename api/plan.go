@@ -34,12 +34,12 @@ const (
 	// Change Workflow
 
 	// FeatureBackwardCompatibility checks if a DDL change is backward compatible.
-	// See https://docs.bytebase.com/features/sql-advisor/backward-compatibility-migration-check
+	// See https://bytebase.com/docs/features/sql-advisor/backward-compatibility-migration-check
 	//
 	// Currently, we only support MySQL/TiDB thanks to github.com/pingcap/parser
 	FeatureBackwardCompatibility FeatureType = "bb.feature.backward-compatibility"
 	// FeatureSchemaDrift detects if there occurs schema drift.
-	// See https://docs.bytebase.com/features/drift-detection
+	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
