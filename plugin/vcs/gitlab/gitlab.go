@@ -324,6 +324,38 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	return activeRepositoryMemberList, nil
 }
 
+// FetchRepoNodeList fetch the nodes of git-tree from repository
+func (provider *Provider) FetchRepoNodeList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string) ([]*vcs.RepoTreeNode, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s", repositoryID, ref),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, err: %w", instanceURL, err)
+	}
+
+	if code >= 300 {
+		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var nodeList []*vcs.RepoTreeNode
+	if err := json.Unmarshal([]byte(body), &nodeList); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal repo tree from GitLab instance %s, err: %w", instanceURL, err)
+	}
+
+	return nodeList, nil
+}
+
 // CreateFile creates a file.
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(FileCommit{
