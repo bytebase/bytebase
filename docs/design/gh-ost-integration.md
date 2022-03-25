@@ -2,7 +2,7 @@
 
 ## Overview
 
-Currently, bytebase runs DDL statements directly on databases. With this feature, user can choose to use gh-ost to do the migration.
+Currently, bytebase runs DDL statements directly on databases. With this feature, user can choose to use gh-ost to do the migration for MySQL versions 5.6 or greater.
 
 ### gh-ost: a brief introduction (quoted from gh-ost docs)
 
@@ -160,15 +160,15 @@ Copy: 2/2 100.0%; Applied: 0; Backlog: 0/1000; Time: 2s(total), 1s(copy); stream
 
 In the output, you can see the main components of gh-ost.
 
-Migrator is the main schema migration flow manager.
+**Migrator** is the main schema migration flow manager.
 
-Inspector reads data from the read-MySQL-server (typically a replica, but can be the master). It is used for gaining initial status and structure, and later also followup on progress and changelog.
+**Inspector** reads data from the read-MySQL-server (typically a replica, but can be the master). It is used for gaining initial status and structure, and later also followup on progress and changelog.
 
-Streamer reads data from binary logs and streams it on.
+**Streamer** reads data from binary logs and streams it on.
 
-Applier connects and writes the applier-server, which is the server where migration happens. Applier is the one to actually write row data and apply binlog events onto ghost table.
+**Applier** connects and writes the applier-server, which is the server where migration happens. Applier is the one to actually write row data and apply binlog events onto ghost table.
 
-Throttler collects metrics related to throttling and makes informed decision whether throttling should take place. Here throttling means to pause.
+**Throttler** collects metrics related to throttling and makes informed decision whether throttling should take place. Here throttling means to pause.
 
 #### Requirements and limitations
 
@@ -206,8 +206,8 @@ For the first iteration, we will implement
     - Support non-tenant mode.
     - Support on-premises MySQL databases.
     - Divide gh-ost execution into stages. Proceed upon user's approval.
-1.
     - Support gh-ost status feedback(ETA, configurations etc.)
+1.
     - Improve migration logic to support rerun task.
     - Support to reconfigure on the go.
 1. Support cloud MySQL databases.
