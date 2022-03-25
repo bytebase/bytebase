@@ -5,7 +5,7 @@
         <template #link>
           <a
             class="normal-link inline-flex items-center"
-            href="https://docs.bytebase.com/features/tenant-database-management#labels"
+            href="https://bytebase.com/docs/features/tenant-database-management#labels"
             target="__BLANK"
           >
             {{ $t("common.learn-more") }}
