@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -101,12 +100,4 @@ type MemberPatch struct {
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
-}
-
-// MemberService is the service for Members CRUD operations.
-type MemberService interface {
-	CreateMember(ctx context.Context, create *MemberCreate) (*Member, error)
-	FindMemberList(ctx context.Context, find *MemberFind) ([]*Member, error)
-	FindMember(ctx context.Context, find *MemberFind) (*Member, error)
-	PatchMember(ctx context.Context, patch *MemberPatch) (*Member, error)
 }

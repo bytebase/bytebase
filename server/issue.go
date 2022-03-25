@@ -287,19 +287,19 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw) (*api.Issue, error) {
 	issue := raw.ToIssue()
 
-	creator, err := s.store.ComposePrincipalByID(ctx, issue.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	issue.Creator = creator
 
-	updater, err := s.store.ComposePrincipalByID(ctx, issue.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	issue.Updater = updater
 
-	assignee, err := s.store.ComposePrincipalByID(ctx, issue.AssigneeID)
+	assignee, err := s.store.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return nil, err
 	}
@@ -339,17 +339,17 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.store.ComposePrincipalByID(ctx, issue.CreatorID)
+	issue.Creator, err = s.store.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.store.ComposePrincipalByID(ctx, issue.UpdaterID)
+	issue.Updater, err = s.store.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.store.ComposePrincipalByID(ctx, issue.AssigneeID)
+	issue.Assignee, err = s.store.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}

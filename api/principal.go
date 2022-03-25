@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -128,12 +127,4 @@ type PrincipalPatch struct {
 	Name         *string `jsonapi:"attr,name"`
 	Password     *string `jsonapi:"attr,password"`
 	PasswordHash *string
-}
-
-// PrincipalService is the service for Principal CRUD operations.
-type PrincipalService interface {
-	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindPrincipalList(ctx context.Context) ([]*Principal, error)
-	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
-	PatchPrincipal(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }

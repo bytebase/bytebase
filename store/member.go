@@ -10,11 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-var (
-	_ MemberStore       = (*Store)(nil)
-	_ api.MemberService = (*Store)(nil)
-)
-
 // MemberRaw is the store model for an Member.
 // Fields have exactly the same meanings as Member.
 type MemberRaw struct {
@@ -53,25 +48,78 @@ func (raw *MemberRaw) ToMember() *api.Member {
 	}
 }
 
-// MemberStore is the service for members.
-type MemberStore interface {
-	CreateMemberRaw(ctx context.Context, create *api.MemberCreate) (*MemberRaw, error)
-	FindMemberRawList(ctx context.Context, find *api.MemberFind) ([]*MemberRaw, error)
-	FindMemberRaw(ctx context.Context, find *api.MemberFind) (*MemberRaw, error)
-	PatchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*MemberRaw, error)
-
-	ComposeMember(ctx context.Context, raw *MemberRaw) (*api.Member, error)
+// CreateMember creates an instance of Member
+func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
+	memberRaw, err := s.createMemberRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Member with MemberCreate[%+v], error[%w]", create, err)
+	}
+	member, err := s.composeMember(ctx, memberRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Member with MemberRaw[%+v], error[%w]", memberRaw, err)
+	}
+	return member, nil
 }
 
-// CreateMemberRaw creates a new member.
-func (s *Store) CreateMemberRaw(ctx context.Context, create *api.MemberCreate) (*MemberRaw, error) {
+// FindMemberList finds a list of Member instances
+func (s *Store) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
+	memberRawList, err := s.findMemberRawList(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Member list, error[%w]", err)
+	}
+	var memberList []*api.Member
+	for _, raw := range memberRawList {
+		member, err := s.composeMember(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", raw, err)
+		}
+		memberList = append(memberList, member)
+	}
+	return memberList, nil
+}
+
+// FindMember finds an instance of Member
+func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
+	memberRaw, err := s.findMemberRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
+	}
+	if memberRaw == nil {
+		return nil, nil
+	}
+	member, err := s.composeMember(ctx, memberRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
+	}
+	return member, nil
+}
+
+// PatchMember patches an instance of Member
+func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
+	memberRaw, err := s.patchMemberRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to patch Member with MemberPatch[%+v], error[%w]", patch, err)
+	}
+	member, err := s.composeMember(ctx, memberRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
+	}
+	return member, nil
+}
+
+//
+// private functions
+//
+
+// createMemberRaw creates a new member.
+func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (*MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	member, err := createMember(ctx, tx.PTx, create)
+	member, err := createMemberImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -87,15 +135,15 @@ func (s *Store) CreateMemberRaw(ctx context.Context, create *api.MemberCreate) (
 	return member, nil
 }
 
-// FindMemberRawList retrieves a list of MemberRaw instances.
-func (s *Store) FindMemberRawList(ctx context.Context, find *api.MemberFind) ([]*MemberRaw, error) {
+// findMemberRawList retrieves a list of MemberRaw instances.
+func (s *Store) findMemberRawList(ctx context.Context, find *api.MemberFind) ([]*MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberList(ctx, tx.PTx, find)
+	list, err := findMemberListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -111,9 +159,9 @@ func (s *Store) FindMemberRawList(ctx context.Context, find *api.MemberFind) ([]
 	return list, nil
 }
 
-// FindMemberRaw retrieves an instance of MemberRaw.
+// findMemberRaw retrieves an instance of MemberRaw.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) FindMemberRaw(ctx context.Context, find *api.MemberFind) (*MemberRaw, error) {
+func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) (*MemberRaw, error) {
 	if find.PrincipalID != nil {
 		memberRaw := &MemberRaw{}
 		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, memberRaw)
@@ -131,7 +179,7 @@ func (s *Store) FindMemberRaw(ctx context.Context, find *api.MemberFind) (*Membe
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberList(ctx, tx.PTx, find)
+	list, err := findMemberListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -147,16 +195,16 @@ func (s *Store) FindMemberRaw(ctx context.Context, find *api.MemberFind) (*Membe
 	return list[0], nil
 }
 
-// PatchMemberRaw updates an existing instance of MemberRaw by ID.
+// patchMemberRaw updates an existing instance of MemberRaw by ID.
 // Returns ENOTFOUND if member does not exist.
-func (s *Store) PatchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*MemberRaw, error) {
+func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*MemberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	member, err := patchMember(ctx, tx.PTx, patch)
+	member, err := patchMemberImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -172,23 +220,23 @@ func (s *Store) PatchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*Me
 	return member, nil
 }
 
-// ComposeMember composes an instance of Member by MemberRaw
-func (s *Store) ComposeMember(ctx context.Context, raw *MemberRaw) (*api.Member, error) {
+// composeMember composes an instance of Member by MemberRaw
+func (s *Store) composeMember(ctx context.Context, raw *MemberRaw) (*api.Member, error) {
 	member := raw.ToMember()
 
-	creator, err := s.ComposePrincipalByID(ctx, member.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, member.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	member.Creator = creator
 
-	updater, err := s.ComposePrincipalByID(ctx, member.UpdaterID)
+	updater, err := s.GetPrincipalByID(ctx, member.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	member.Updater = updater
 
-	principal, err := s.ComposePrincipalByID(ctx, member.PrincipalID)
+	principal, err := s.GetPrincipalByID(ctx, member.PrincipalID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,69 +245,8 @@ func (s *Store) ComposeMember(ctx context.Context, raw *MemberRaw) (*api.Member,
 	return member, nil
 }
 
-// CreateMember creates an instance of Member
-func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
-	memberRaw, err := s.CreateMemberRaw(ctx, create)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create Member with MemberCreate[%+v], error[%w]", create, err)
-	}
-	member, err := s.ComposeMember(ctx, memberRaw)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member with MemberRaw[%+v], error[%w]", memberRaw, err)
-	}
-	return member, nil
-}
-
-// FindMemberList finds a list of Member instances
-func (s *Store) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
-	memberRawList, err := s.FindMemberRawList(ctx, find)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to find Member list, error[%w]", err)
-	}
-	var memberList []*api.Member
-	for _, raw := range memberRawList {
-		member, err := s.ComposeMember(ctx, raw)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", raw, err)
-		}
-		memberList = append(memberList, member)
-	}
-	return memberList, nil
-}
-
-// FindMember finds an instance of Member
-func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
-	memberRaw, err := s.FindMemberRaw(ctx, find)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
-	}
-	if memberRaw == nil {
-		return nil, nil
-	}
-	member, err := s.ComposeMember(ctx, memberRaw)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
-	}
-	return member, nil
-}
-
-// PatchMember patches an instance of Member
-func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
-	memberRaw, err := s.PatchMemberRaw(ctx, patch)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to patch Member with MemberPatch[%+v], error[%w]", patch, err)
-	}
-	member, err := s.ComposeMember(ctx, memberRaw)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member role with MemberRaw[%+v], error[%w]", memberRaw, err)
-	}
-	return member, nil
-}
-
-// private functions
-
-// createMember creates a new member.
-func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*MemberRaw, error) {
+// createMemberImpl creates a new member.
+func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*MemberRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO member (
@@ -303,7 +290,7 @@ func createMember(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*M
 	return &memberRaw, nil
 }
 
-func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*MemberRaw, error) {
+func findMemberListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*MemberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -363,8 +350,8 @@ func findMemberList(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*M
 	return memberRawList, nil
 }
 
-// patchMember updates a member by ID. Returns the new state of the member after update.
-func patchMember(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*MemberRaw, error) {
+// patchMemberImpl updates a member by ID. Returns the new state of the member after update.
+func patchMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*MemberRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

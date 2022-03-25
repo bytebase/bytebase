@@ -163,7 +163,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
 					continue
 				}
-				principal, err := s.store.ComposePrincipalByID(ctx, createdMember.PrincipalID)
+				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
 				}
@@ -216,7 +216,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				// if the member does exist in createdMemberList, meaning we need to update this member(already done above).
 				continue
 			}
-			principal, err := s.store.ComposePrincipalByID(ctx, deletedMember.PrincipalID)
+			principal, err := s.store.GetPrincipalByID(ctx, deletedMember.PrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", deletedMember.PrincipalID)).SetInternal(err)
 			}
@@ -399,7 +399,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.store.ComposePrincipalByID(ctx, projectMember.PrincipalID)
+			projectMember.Principal, err = s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -450,19 +450,19 @@ func (s *Server) composeProjectMemberListByProjectID(ctx context.Context, projec
 func (s *Server) composeProjectMemberRelationship(ctx context.Context, raw *api.ProjectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.ToProjectMember()
 
-	creator, err := s.store.ComposePrincipalByID(ctx, projectMember.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, projectMember.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	projectMember.Creator = creator
 
-	updater, err := s.store.ComposePrincipalByID(ctx, projectMember.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, projectMember.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	projectMember.Updater = updater
 
-	principal, err := s.store.ComposePrincipalByID(ctx, projectMember.PrincipalID)
+	principal, err := s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
 	if err != nil {
 		return nil, err
 	}

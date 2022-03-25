@@ -12,8 +12,8 @@ type Store struct {
 	cache api.CacheService
 }
 
-// NewStore creates a new instance of Store
-func NewStore(l *zap.Logger, db *DB, cache api.CacheService) *Store {
+// New creates a new instance of Store
+func New(l *zap.Logger, db *DB, cache api.CacheService) *Store {
 	return &Store{
 		l:     l,
 		db:    db,
