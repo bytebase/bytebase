@@ -417,8 +417,8 @@ Here's how bytebase executes migration now.
 
 ```Go
 func ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-    beginMigration()
-    defer endMigration()
+    preMigration()
+    defer postMigration()
     Execute(statement)
 }
 ```
@@ -437,9 +437,9 @@ type SchemaUpdateTaskExecutorGhost struct {
 }
 
 func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-    BeginMigration()
+    PreMigration()
     ghostExecuteMigration()
-    EndMigration()
+    PostMigration()
 }
 ```
 
@@ -508,10 +508,10 @@ type SchemaUpdateTaskGhostExecutor struct {
     l *zap.Logger
 }
 func (exec *SchemaUpdateTaskGhostExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-    BeginMigration()
+    PreMigration()
     ghostExecuteMigration()
     waitCutOver()
-    EndMigration()
+    PostMigration()
 }
 
 // task_executor_schema_update_ghost_cutover.go
