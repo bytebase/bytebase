@@ -142,6 +142,6 @@ window.addEventListener("bb.oauth.unknown", (event) => {
 
 <style>
 body {
-  @apply text-base;
+  @apply !text-base;
 }
 </style>
