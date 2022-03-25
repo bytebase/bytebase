@@ -11,6 +11,8 @@ type SettingName string
 const (
 	// SettingAuthSecret is the setting name for auth secret.
 	SettingAuthSecret SettingName = "bb.auth.secret"
+	// SettingBrandingLogo is the setting name for branding logo.
+	SettingBrandingLogo SettingName = "bb.branding.logo"
 )
 
 // SettingRaw is the store model for an Setting.

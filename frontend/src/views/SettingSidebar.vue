@@ -36,7 +36,6 @@
         </div>
         <div class="space-y-1">
           <router-link
-            v-if="isDev()"
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
