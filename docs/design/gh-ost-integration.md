@@ -335,7 +335,7 @@ For the first iteration, we just let it fail.
 
 ### After Migration
 
-After migration is finished, we will have `tablename` and `_tablename_del`, the latter is the original table. I'm too scared to delete the original table for the user, so I'll generate a task to delete the table if approved by user.
+After migration is finished, we will have `tablename` and `_tablename_del`, the latter is the original table. We are too scared to delete the original table for the user, so we'll generate a task to delete the table if approved by user.
 
 ### Task dependency
 
