@@ -91,6 +91,8 @@
 import { computed, reactive } from "vue";
 import { useStore } from "vuex";
 import { isOwner } from "../utils";
+import { Setting, brandingLogoSettingName } from "../types/setting";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   displayName?: string;
@@ -101,26 +103,24 @@ interface LocalState {
 }
 
 const maxFileSizeInMiB = 2;
+const supportImageExtensions = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".svg",
+];
 
-// getImageUrlFromBase64String will convert the image base64 string to the HTML image url.
-const getImageUrlFromBase64String = (
-  base64String: string | undefined
-): string => {
-  if (!base64String) return "";
-
-  const decodedData = window.atob(base64String);
-  const uInt8Array = new Uint8Array(decodedData.length);
-
-  // Insert all character code into uInt8Array
-  for (let i = 0; i < decodedData.length; ++i) {
-    uInt8Array[i] = decodedData.charCodeAt(i);
-  }
-
-  const blob = new Blob([uInt8Array]);
-  return URL.createObjectURL(blob);
-};
+// convertFileToBase64 will convert a file into base64 string.
+const convertFileToBase64 = (file: File) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
 
 const store = useStore();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   displayName: "",
@@ -129,6 +129,12 @@ const state = reactive<LocalState>({
   loading: false,
   showFeatureModal: false,
 });
+
+store.dispatch("setting/fetchSetting")
+  .then(() => {
+    const brandingLogoSetting: Setting = store.getters["setting/settingByName"](brandingLogoSettingName);
+    state.logoUrl = brandingLogoSetting.value;
+  });
 
 const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -140,36 +146,51 @@ const valid = computed((): boolean => {
   return !!state.displayName || !!state.logoFile
 });
 
-const changed = computed((): boolean => {
-  return false;
-});
-
 const allowSave = computed((): boolean => {
-  return allowEdit.value && changed.value && valid.value;
+  return allowEdit.value && state.logoFile !== null && valid.value && !state.loading;
 });
 
 const hasBrandingFeature = computed((): boolean => {
   return store.getters["subscription/feature"]("bb.feature.branding");
 });
 
-const uploadLogo = () => {
+const uploadLogo = async () => {
+  if (!allowSave.value) {
+    return;
+  }
   if (!hasBrandingFeature.value) {
     state.showFeatureModal = true;
     return;
   }
-  // TODO: upload logo
+  if (!state.logoFile) {
+    return;
+  }
+
+  state.loading = true;
+
+  try {
+    const fileInBase64 = await convertFileToBase64(state.logoFile);
+    const setting: Setting = await store.dispatch("setting/updateSettingByName", {
+      name: brandingLogoSettingName,
+      value: fileInBase64,
+    });
+
+    state.logoFile = null;
+    state.logoUrl = setting.value;
+
+    store.dispatch("notification/pushNotification", {
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("settings.general.workspace.logo-upload-succeed"),
+    });
+
+  } finally {
+    state.loading = false;
+  }
 };
 
 const onLogoSelect = (file: File) => {
   state.logoFile = file;
   state.logoUrl = URL.createObjectURL(file);
 };
-
-const supportImageExtensions = [
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".svg",
-];
 </script>
