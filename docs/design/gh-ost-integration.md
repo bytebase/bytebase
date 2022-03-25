@@ -8,7 +8,7 @@ Currently, bytebase runs DDL statements directly on databases. With this feature
 
 > gh-ost is a triggerless online schema migration solution for MySQL. It is testable and provides pausability, dynamic control/reconfiguration, auditing, and many operational perks.
 
-Gh-ost has 3 operation modes. It's recommended to connect to replica, migrate on primary (master). See picture below.
+gh-ost has 3 operation modes. It's recommended to connect to replica, migrate on primary (master). See picture below.
 
 ![gh-ost-operation-modes](./gh-ost-operation-modes.png)
 
@@ -43,7 +43,7 @@ gh-ost \
 [--execute]
 ```
 
-Gh-ost uses the same user and password all the way up climbing the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
+gh-ost uses the same user and password all the way up climbing the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
 
 If gh-ost crashes halfway, we just drop the two tables created by gh-ost.
 
@@ -236,7 +236,7 @@ We will use the account `bytebase@%` in gh-ost, so `bytebase@%` will require 2 m
 
 ### Vendor
 
-Gh-ost needs to know who the cloud provider is to run properly. We will add a new field in `Instance` to store cloud provider type. User should set this field.
+gh-ost needs to know who the cloud provider is to run properly. We will add a new field in `Instance` to store cloud provider type. User should set this field.
 
 ```Go
 type Vendor string
@@ -263,7 +263,7 @@ Another approach is to infer cloud providers by inspecting usernames because clo
 - [azure](https://docs.microsoft.com/en-us/azure/mysql/howto-create-users)
 - [aws](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.MySQL.CommonDBATasks.html) (Stored procedures)
 
-### Gh-ost execution stages
+### gh-ost execution stages
 
 We will divide gh-ost execution into different tasks. Each task needs to be approved by user to proceed. These tasks are described in detail in the following sections.
 
@@ -275,7 +275,7 @@ We will divide gh-ost execution into different tasks. Each task needs to be appr
 
 ### Pre-migration validation
 
-Gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. This will be a new task check run type.
+gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. This will be a new task check run type.
 
 ```Go
 const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema-update.ghost"
@@ -289,7 +289,7 @@ type TaskCheckDatabaseSchemaUpdateGhostPayload struct {
 
 ### In-migration progress
 
-Gh-ost can report its migration progress. Migrator can write migration status to io.Writer. [Related codes here](https://github.com/github/gh-ost/blob/master/go/logic/migrator.go#L906).
+gh-ost can report its migration progress. Migrator can write migration status to io.Writer. [Related codes here](https://github.com/github/gh-ost/blob/master/go/logic/migrator.go#L906).
 
 ```Go
 // printStatus prints the progress status, and optionally additionally detailed
