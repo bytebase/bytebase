@@ -397,7 +397,7 @@ export default {
 
     const onButtonClick = (plan: Plan) => {
       if (plan.type === PlanType.TEAM) {
-        window.open("https://hub.bytebase.com/pricing?plan=team&source=console", "__blank");
+        window.open("https://hub.bytebase.com/pricing?plan=team&source=console.subscription", "__blank");
       } else if (plan.type === PlanType.ENTERPRISE) {
         window.open(
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
