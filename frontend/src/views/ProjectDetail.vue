@@ -72,6 +72,10 @@ export default defineComponent({
     ProjectDeploymentConfigPanel,
   },
   props: {
+    projectWebhookSlug: {
+      default: undefined,
+      type: String,
+    },
     projectSlug: {
       required: true,
       type: String,
