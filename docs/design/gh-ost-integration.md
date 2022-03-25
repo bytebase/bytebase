@@ -235,6 +235,16 @@ In the future, bytebase will support detecting primary and replications. We may 
 
 We will use the account `bytebase@%` in gh-ost, so `bytebase@%` will require 2 more privileges, `REPLICATION CLIENT, REPLICATION SLAVE`. We will ask user to grant these privileges in documentation.
 
+### Reconfigure gh-ost on the go
+
+We will support [reconfigure](https://github.com/github/gh-ost/blob/master/doc/interactive-commands.md) gh-ost settings on the go.
+
+We will support the following parameters
+
+- `chunk-size`
+- `dml-batch-size`
+- `max-lag-millis`
+
 ### Vendor
 
 gh-ost needs to know who the cloud provider is to run properly. We will add a new field in `Instance` to store cloud provider type. User should set this field.
