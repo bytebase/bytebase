@@ -324,8 +324,8 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	return activeRepositoryMemberList, nil
 }
 
-// FetchRepoNodeList fetch the nodes of git-tree from repository
-func (provider *Provider) FetchRepoNodeList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string) ([]*vcs.RepoTreeNode, error) {
+// FetchRepositoryTree fetch the nodes of git-tree from repository
+func (provider *Provider) FetchRepositoryTree(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string) ([]*vcs.RepositoryTreeNode, error) {
 	code, body, err := httpGet(
 		instanceURL,
 		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s", repositoryID, ref),
@@ -348,9 +348,9 @@ func (provider *Provider) FetchRepoNodeList(ctx context.Context, oauthCtx common
 		)
 	}
 
-	var nodeList []*vcs.RepoTreeNode
+	var nodeList []*vcs.RepositoryTreeNode
 	if err := json.Unmarshal([]byte(body), &nodeList); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal repo tree from GitLab instance %s, err: %w", instanceURL, err)
+		return nil, fmt.Errorf("failed to unmarshal repository tree from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
 	return nodeList, nil
