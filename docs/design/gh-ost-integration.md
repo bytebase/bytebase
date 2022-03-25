@@ -221,7 +221,7 @@ User can set a workspace-level gh-ost configuration, which will be the default.
 
 In UI workflow, user can select to use gh-ost, supply statements.
 
-In VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use suffix to tell if it is gh-ost. The content is vanilla SQL  statement.
+In VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use suffix to tell if it is gh-ost. The content is vanilla SQL statement.
 
 User can change gh-ost configuration in the related issue tab.
 
