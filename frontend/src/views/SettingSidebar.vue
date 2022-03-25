@@ -35,12 +35,12 @@
           {{ $t("settings.sidebar.workspace") }}
         </div>
         <div class="space-y-1">
-          <!-- <router-link
+          <router-link
             to="/setting/general"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
           >
             {{ $t("settings.sidebar.general") }}
-          </router-link>-->
+          </router-link>
           <!-- <router-link
             to="/setting/agent"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"

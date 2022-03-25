@@ -1,6 +1,6 @@
 <template>
   <div
-    class="outline-title flex py-1"
+    class="outline-title group flex py-1"
     :class="dynamicItemClass()"
     @click.prevent="toggleCollapse"
     @mouseenter="state.hoverTitle = true"
@@ -43,7 +43,7 @@
       <router-link
         v-else-if="item.link"
         :to="item.link"
-        class="outline-item flex justify-between pr-1 py-1"
+        class="outline-item group flex justify-between pr-1 py-1"
         :class="'pl-' + (4 + level * 3)"
       >
         <span class="truncate">{{ item.name }}</span>

@@ -139,9 +139,3 @@ window.addEventListener("bb.oauth.unknown", (event) => {
   });
 });
 </script>
-
-<style>
-body {
-  @apply text-base;
-}
-</style>

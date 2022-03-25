@@ -88,7 +88,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 ## Installation
 
-[Detailed installation guide](https://docs.bytebase.com/install/docker)
+[Detailed installation guide](https://bytebase.com/docs/install/install-with-docker)
 
 ### Run on localhost:8080
 
@@ -104,9 +104,9 @@ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.b
 
 ## 📕 Docs
 
-### User doc https://docs.bytebase.com
+### User doc https://bytebase.com/docs
 
-In particular, get familar with various product concept such as [data model](https://docs.bytebase.com/concepts/data-model), [roles and permissions](https://docs.bytebase.com/concepts/roles-and-permissions) and etc.
+In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions) and etc.
 
 ### Design doc
 
@@ -153,7 +153,7 @@ working on the code:
 
 - [Go](https://golang.org/doc/install) (1.16 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (For backend live reload)
+- [Air](https://github.com/cosmtrek/air#installation) (1.27.10 or later). This is for backend live reload.
 
 ### Steps
 

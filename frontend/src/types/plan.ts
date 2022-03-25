@@ -12,7 +12,9 @@ export type FeatureType =
   | "bb.feature.backup-policy"
   // Admin & Security
   | "bb.feature.rbac"
-  | "bb.feature.3rd-party-auth";
+  | "bb.feature.3rd-party-auth"
+  // Branding
+  | "bb.feature.branding";
 
 export enum PlanType {
   FREE = 0,
@@ -56,6 +58,8 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Admin & Security
   ["bb.feature.rbac", [false, true, true]],
   ["bb.feature.3rd-party-auth", [false, true, true]],
+  // Branding
+  ["bb.feature.branding", [false, true, true]],
 ]);
 
 export const FEATURE_SECTIONS = [
@@ -92,6 +96,12 @@ export const FEATURE_SECTIONS = [
       "rbac",
       "3rd-party-auth",
       "sync-members-from-vcs",
+    ],
+  },
+  {
+    id: "branding",
+    features: [
+      "branding-logo",
     ],
   },
 ];
@@ -186,6 +196,7 @@ export const TEAM_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
+    { id: "branding-logo" },
   ],
 };
 
@@ -236,5 +247,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
+    { id: "branding-logo" },
   ],
 };

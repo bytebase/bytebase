@@ -54,6 +54,16 @@ const naive = create({
   ],
 });
 
-const install = (app: App) => app.use(naive);
+const install = (app: App) => {
+  app.use(naive);
+  reAppendMetaTag("naive-ui-style");
+  reAppendMetaTag("vueuc-style");
+};
 
 export default install;
+
+const reAppendMetaTag = (name: string) => {
+  const meta = document.createElement("meta");
+  meta.name = name;
+  document.head.appendChild(meta);
+};
