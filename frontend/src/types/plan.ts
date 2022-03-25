@@ -98,6 +98,12 @@ export const FEATURE_SECTIONS = [
       "sync-members-from-vcs",
     ],
   },
+  {
+    id: "branding",
+    features: [
+      "branding-logo",
+    ],
+  },
 ];
 
 export const FREE_PLAN: Plan = {
@@ -190,6 +196,7 @@ export const TEAM_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
+    { id: "branding-logo" },
   ],
 };
 
@@ -240,5 +247,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "rbac" },
     { id: "3rd-party-auth" },
     { id: "sync-members-from-vcs" },
+    { id: "branding-logo" },
   ],
 };

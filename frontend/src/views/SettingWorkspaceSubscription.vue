@@ -4,7 +4,7 @@
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
-        href="https://hub.bytebase.com/pricing"
+        href="https://hub.bytebase.com/pricing?plan=team&source=console.subscription"
         target="__blank"
       >
         {{ $t("subscription.description-highlight") }}
