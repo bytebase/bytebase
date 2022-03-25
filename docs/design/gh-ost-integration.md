@@ -241,11 +241,11 @@ Gh-ost needs to know who the cloud provider is to run properly. We will add a ne
 ```Go
 type Vendor string
 const (
-    AWS Vendor = "aws"
-    GCP Vendor = "gcp"
-    Aliyun Vendor = "aliyun"
-    Azure Vendor = "azure"
-    OnPremises Vendor = "onPremises"
+    AWS Vendor = "AWS"
+    GCP Vendor = "GCP"
+    Aliyun Vendor = "ALIYUN"
+    Azure Vendor = "AZURE"
+    OnPremises Vendor = "ON_PREMISES"
 )
 type Instance struct {
     // omit other fields here
