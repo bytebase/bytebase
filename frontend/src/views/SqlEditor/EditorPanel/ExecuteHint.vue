@@ -102,7 +102,7 @@ const isDDLSQLStatement = computed(() => {
 const ctx = connectionContext.value;
 
 const docLink =
-  "https://docs.bytebase.com/concepts/schema-change-workflow#ui-workflow";
+  "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow";
 
 const handleColse = () => {
   emit("close");

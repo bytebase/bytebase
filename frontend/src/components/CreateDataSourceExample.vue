@@ -39,7 +39,7 @@
           </template>
         </i18n-t>
         <a
-          href="https://docs.bytebase.com/install/docker#start-a-local-mysql-server-for-testing"
+          href="https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing"
           target="_blank"
           class="normal-link"
         >
