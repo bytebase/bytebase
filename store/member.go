@@ -84,9 +84,6 @@ func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) (*api.Memb
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
 	}
-	if memberRaw == nil {
-		return nil, nil
-	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", memberRaw, err)
@@ -143,20 +140,18 @@ func (s *Store) findMemberRawList(ctx context.Context, find *api.MemberFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberListImpl(ctx, tx.PTx, find)
+	memberRawList, err := findMemberRawListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err == nil {
-		for _, member := range list {
-			if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
-				return nil, err
-			}
+	for _, member := range memberRawList {
+		if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+			return nil, err
 		}
 	}
 
-	return list, nil
+	return memberRawList, nil
 }
 
 // findMemberRaw retrieves an instance of memberRaw.
@@ -179,13 +174,13 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) (*membe
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberListImpl(ctx, tx.PTx, find)
+	list, err := findMemberRawListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(list) == 0 {
-		return nil, nil
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member not found with MemberFind[%+v]", find)}
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
@@ -290,7 +285,7 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	return &memberRaw, nil
 }
 
-func findMemberListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
+func findMemberRawListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

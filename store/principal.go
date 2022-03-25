@@ -73,13 +73,6 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 	for _, raw := range principalRawList {
 		principal, err := s.composePrincipal(ctx, raw)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				s.l.Error("Principal has not been assigned a role. Skip",
-					zap.Int("id", principal.ID),
-					zap.String("name", principal.Name),
-				)
-				continue
-			}
 			return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", raw, err)
 		}
 		principalList = append(principalList, principal)
@@ -173,16 +166,14 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findPrincipalListImpl(ctx, tx.PTx, &api.PrincipalFind{})
+	list, err := findPrincipalRawListImpl(ctx, tx.PTx, &api.PrincipalFind{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err == nil {
-		for _, principal := range list {
-			if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
-				return nil, err
-			}
+	for _, principal := range list {
+		if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+			return nil, err
 		}
 	}
 
@@ -209,15 +200,15 @@ func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findPrincipalListImpl(ctx, tx.PTx, find)
+	list, err := findPrincipalRawListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(list) == 0 {
-		return nil, nil
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal not found with PrincipalFind[%+v]", find)}
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
 	}
 	if err := s.cache.UpsertCache(api.PrincipalCache, list[0].ID, list[0]); err != nil {
 		return nil, err
@@ -263,10 +254,13 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 		}
 		memberRaw, err := s.findMemberRaw(ctx, memberFind)
 		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				s.l.Error("Principal has not been assigned a role.",
+					zap.Int("id", principal.ID),
+					zap.String("name", principal.Name),
+				)
+			}
 			return nil, err
-		}
-		if principal.ID > 0 && memberRaw == nil {
-			return nil, fmt.Errorf("Member not found for ID %v", principal.ID)
 		}
 		principal.Role = memberRaw.Role
 	}
@@ -320,7 +314,7 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 	return &principalRaw, nil
 }
 
-func findPrincipalListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
+func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
