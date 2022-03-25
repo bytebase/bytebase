@@ -278,7 +278,7 @@ We will divide gh-ost execution into different tasks. Each task needs to be appr
 gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. This will be a new task check run type.
 
 ```Go
-const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema-update.ghost"
+const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema.update.ghost"
 type TaskCheckDatabaseSchemaUpdateGhostPayload struct {
     Statement string `json:"statement,omitempty"`
     InstanceID int `json:"instanceId,omitempty"`
@@ -391,14 +391,13 @@ type TaskDatabaseSchemaUpdateGhostPayload struct {
 const TaskDatabaseSchemaUpdateGhostCutover = "bb.task.database.schema.update.ghost.cutover"
 type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
     // ParentTaskID references back to the gh-ost executor task ID
-    ParentTaskID int
+    ParentTaskID int `json:"parentTaskId,omitempty"`
 }
 
 const TaskDatabaseSchemaUpdateGhostDropOriginalTable = "bb.task.database.schema.update.ghost.drop-original-table"
 type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
-    DatabaseName string
-    TableName string
-    ParentTaskID int
+    DatabaseName string `json:"databaseName,omitempty"`
+    TableName string `json:"tableName,omitempty"`
 }
 ```
 
