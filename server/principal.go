@@ -48,7 +48,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 	g.GET("/principal", func(c echo.Context) error {
 		ctx := context.Background()
-		principalList, err := s.store.FindPrincipalList(ctx)
+		principalList, err := s.store.GetPrincipalList(ctx)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}

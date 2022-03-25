@@ -30,7 +30,7 @@ type principalRaw struct {
 	PasswordHash string
 }
 
-// ToPrincipal creates an instance of Principal based on the PrincipalRaw.
+// ToPrincipal creates an instance of Principal based on the principalRaw.
 // This is intended to be called when we need to compose a Principal relationship.
 func (raw *principalRaw) ToPrincipal() *api.Principal {
 	return &api.Principal{
@@ -63,8 +63,8 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 	return principal, nil
 }
 
-// FindPrincipalList finds a list of Principal instances
-func (s *Store) FindPrincipalList(ctx context.Context) ([]*api.Principal, error) {
+// GetPrincipalList gets a list of Principal instances
+func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Principal list, error[%w]", err)
@@ -80,7 +80,7 @@ func (s *Store) FindPrincipalList(ctx context.Context) ([]*api.Principal, error)
 				)
 				continue
 			}
-			return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", raw, err)
 		}
 		principalList = append(principalList, principal)
 	}
@@ -98,7 +98,7 @@ func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*ap
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 	return principal, nil
 }
@@ -111,7 +111,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 	return principal, nil
 }
@@ -131,7 +131,7 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with PrincipalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 
 	return principal, nil
@@ -141,7 +141,7 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 // private functions
 //
 
-// createPrincipalRaw creates an instance of PrincipalRaw.
+// createPrincipalRaw creates an instance of principalRaw.
 func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCreate) (*principalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -165,7 +165,7 @@ func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCre
 	return principal, nil
 }
 
-// findPrincipalRawList retrieves a list of PrincipalRaw instances.
+// findPrincipalRawList retrieves a list of principalRaw instances.
 func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -189,7 +189,7 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	return list, nil
 }
 
-// findPrincipalRaw retrieves an instance of PrincipalRaw based on find.
+// findPrincipalRaw retrieves an instance of principalRaw based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
 	if find.ID != nil {
@@ -226,7 +226,7 @@ func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (
 	return list[0], nil
 }
 
-// patchPrincipalRaw updates an existing instance of PrincipalRaw by ID.
+// patchPrincipalRaw updates an existing instance of principalRaw by ID.
 // Returns ENOTFOUND if principal does not exist.
 func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch) (*principalRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -251,7 +251,7 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 	return principal, nil
 }
 
-// composePrincipal composes an instance of Principal by PrincipalRaw
+// composePrincipal composes an instance of Principal by principalRaw
 func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.Principal, error) {
 	principal := raw.ToPrincipal()
 
