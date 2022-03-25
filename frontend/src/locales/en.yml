@@ -323,6 +323,7 @@ settings:
       select-logo: Upload a file
       drag-logo: or drag here
       logo-upload-tip: "{extension} up to {size} MiB"
+      logo-upload-succeed: Successfully updated the logo
 activity:
   name: Name
   comment: Comment
@@ -1343,6 +1344,10 @@ subscription:
         rbac: RBAC (Owner, DBA, Developer role)
         3rd-party-auth: Login with GitLab account
         sync-members-from-vcs: Sync project membership from the linked GitLab project
+    branding:
+      title: Branding
+      features:
+        branding-logo: Customize the logo
   plan:
     title: Plan
     try: Try Team
