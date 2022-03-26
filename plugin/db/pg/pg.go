@@ -506,54 +506,6 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckOutOfOrderVersion will return versions that are higher than the given version.
-func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
-	const checkOutofOrderVersionQuery = `
-		SELECT MIN(version) FROM migration_history
-		WHERE namespace = $1 AND source = $2 AND version > $3
-	`
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, source.String(), version,
-	)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
-	}
-	defer row.Close()
-
-	var minVersion sql.NullString
-	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
-		return nil, err
-	}
-
-	if minVersion.Valid {
-		return &minVersion.String, nil
-	}
-
-	return nil, nil
-}
-
-// FindBaseline retruns true if any baseline is found.
-func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
-	const findBaselineQuery = `
-		SELECT 1 FROM migration_history
-		WHERE namespace = $1 AND type = 'BASELINE'
-	`
-	row, err := tx.QueryContext(ctx, findBaselineQuery,
-		namespace,
-	)
-	if err != nil {
-		return false, util.FormatErrorWithQuery(err, findBaselineQuery)
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // FindLatestSequence will return the latest sequence number.
 func (Driver) FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error) {
 	const findLatestSequenceQuery = `

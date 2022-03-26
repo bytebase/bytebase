@@ -112,10 +112,6 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// CheckOutOfOrderVersion will return versions that are higher than the given version.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error)
-	// FindBaseline retruns true if any baseline is found.
-	FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error)
 	// FindLatestSequence will return the latest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error)
@@ -185,18 +181,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
 func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
-	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
-	if err != nil {
-		return -1, err
-	}
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return -1, err
-	}
-	defer tx.Rollback()
-
 	// Phase 1 - Precheck before executing migration
-	// Check if the same migration version has alraedy been applied
+	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Source:   &m.Source,
@@ -217,17 +203,22 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
+		return -1, err
+	}
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+	defer tx.Rollback()
+
 	latestSequence, err := executor.FindLatestSequence(ctx, tx, m.Namespace)
 	if err != nil {
 		return -1, err
 	}
 
-	// We always require a BASELINE prior to the migration unless the one being applied is a BASELINE.
-	if m.Type != db.Baseline && latestSequence == 0 {
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
-	}
-
-	// Check if there is any higher version already been applied
+	// Check if there is any higher version already been applied.
 	if latestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
 		if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 			Database: &m.Namespace,
@@ -241,7 +232,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	// Phase 2 - Record migration history as PENDING
+	// Phase 2 - Record migration history as PENDING.
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
@@ -274,7 +265,7 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
-		// Otherwise, update the migration history as 'FAILED', exeuction_duration
+		// Otherwise, update the migration history as 'FAILED', exeuction_duration.
 		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
 	}
 
