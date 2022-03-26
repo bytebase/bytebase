@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,7 +29,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		principalCreate.PasswordHash = string(passwordHash)
 
-		principal, err := s.PrincipalService.CreatePrincipal(ctx, principalCreate)
+		principal, err := s.store.CreatePrincipal(ctx, principalCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, "User already exists")
@@ -49,30 +48,13 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 	g.GET("/principal", func(c echo.Context) error {
 		ctx := context.Background()
-		principalList, err := s.PrincipalService.FindPrincipalList(ctx)
+		principalList, err := s.store.GetPrincipalList(ctx)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
 		}
 
-		filteredList := []*api.Principal{}
-		for _, principal := range principalList {
-			if err := s.composePrincipalRole(ctx, principal); err != nil {
-				// Normally this should not happen since we create the member together with the principal
-				// and we don't allow deleting the member. Just in case.
-				if common.ErrorCode(err) == common.NotFound {
-					s.l.Error("Principal has not been assigned a role. Skip",
-						zap.Int("id", principal.ID),
-						zap.String("name", principal.Name),
-					)
-					continue
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch role for principal: %v", principal.Name)).SetInternal(err)
-			}
-			filteredList = append(filteredList, principal)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, filteredList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, principalList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal principal list response").SetInternal(err)
 		}
 		return nil
@@ -85,7 +67,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principal, err := s.composePrincipalByID(ctx, id)
+		principal, err := s.store.FindPrincipal(ctx, &api.PrincipalFind{ID: &id})
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -123,15 +105,12 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			principalPatch.PasswordHash = &passwordHashStr
 		}
 
-		principal, err := s.PrincipalService.PatchPrincipal(ctx, principalPatch)
+		principal, err := s.store.PatchPrincipal(ctx, principalPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)
-		}
-		if err := s.composePrincipalRole(ctx, principal); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch role for principal: %v", principal.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -140,42 +119,4 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composePrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	principalFind := &api.PrincipalFind{
-		ID: &id,
-	}
-	principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
-	if err != nil {
-		return nil, err
-	}
-	if id > 0 && principal == nil {
-		return nil, fmt.Errorf("Principal not found with ID %v", id)
-	}
-
-	if err = s.composePrincipalRole(ctx, principal); err != nil {
-		return nil, err
-	}
-
-	return principal, nil
-}
-
-func (s *Server) composePrincipalRole(ctx context.Context, principal *api.Principal) error {
-	if principal.ID == api.SystemBotID {
-		principal.Role = api.Owner
-	} else {
-		memberFind := &api.MemberFind{
-			PrincipalID: &principal.ID,
-		}
-		member, err := s.MemberService.FindMember(ctx, memberFind)
-		if err != nil {
-			return err
-		}
-		if principal.ID > 0 && member == nil {
-			return fmt.Errorf("Member not found for ID %v", principal.ID)
-		}
-		principal.Role = member.Role
-	}
-	return nil
 }
