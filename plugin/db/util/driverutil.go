@@ -375,29 +375,6 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
-// FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
-	sqldb, err := driver.GetDbConnection(ctx, BytebaseDatabase)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	migrationHistoryList, err := FindMigrationHistoryListTx(ctx, tx, findMigrationHistoryListQuery, queryParams, find, baseQuery)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return migrationHistoryList, nil
-}
-
 // FindMigrationHistoryListTx will find the list of migration history.
 func FindMigrationHistoryListTx(ctx context.Context, tx *sql.Tx, findMigrationHistoryListQuery string, queryParams []interface{}, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	rows, err := tx.QueryContext(ctx, findMigrationHistoryListQuery, queryParams...)
