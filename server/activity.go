@@ -175,13 +175,13 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 func (s *Server) composeActivityRelationship(ctx context.Context, raw *api.ActivityRaw) (*api.Activity, error) {
 	activity := raw.ToActivity()
 
-	creator, err := s.composePrincipalByID(ctx, activity.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, activity.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	activity.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, activity.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, activity.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

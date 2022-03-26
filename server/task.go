@@ -329,7 +329,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
 		}
 		if issue.AssigneeID == api.SystemBotID {
-			currentPrincipal, err := s.composePrincipalByID(ctx, currentPrincipalID)
+			currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
 			}
@@ -418,26 +418,26 @@ func (s *Server) composeTaskListByPipelineAndStageID(ctx context.Context, pipeli
 func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) (*api.Task, error) {
 	task := raw.ToTask()
 
-	creator, err := s.composePrincipalByID(ctx, task.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	task.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, task.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, task.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	task.Updater = updater
 
 	for _, taskRun := range task.TaskRunList {
-		creator, err := s.composePrincipalByID(ctx, taskRun.CreatorID)
+		creator, err := s.store.GetPrincipalByID(ctx, taskRun.CreatorID)
 		if err != nil {
 			return nil, err
 		}
 		taskRun.Creator = creator
 
-		updater, err := s.composePrincipalByID(ctx, taskRun.UpdaterID)
+		updater, err := s.store.GetPrincipalByID(ctx, taskRun.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
@@ -445,13 +445,13 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 	}
 
 	for _, taskCheckRun := range task.TaskCheckRunList {
-		creator, err := s.composePrincipalByID(ctx, taskCheckRun.CreatorID)
+		creator, err := s.store.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
 		if err != nil {
 			return nil, err
 		}
 		taskCheckRun.Creator = creator
 
-		updater, err := s.composePrincipalByID(ctx, taskCheckRun.UpdaterID)
+		updater, err := s.store.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
@@ -485,35 +485,35 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
 	var err error
 
-	task.Creator, err = s.composePrincipalByID(ctx, task.CreatorID)
+	task.Creator, err = s.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	task.Updater, err = s.composePrincipalByID(ctx, task.UpdaterID)
+	task.Updater, err = s.store.GetPrincipalByID(ctx, task.UpdaterID)
 	if err != nil {
 		return err
 	}
 
 	for _, taskRun := range task.TaskRunList {
-		taskRun.Creator, err = s.composePrincipalByID(ctx, taskRun.CreatorID)
+		taskRun.Creator, err = s.store.GetPrincipalByID(ctx, taskRun.CreatorID)
 		if err != nil {
 			return err
 		}
 
-		taskRun.Updater, err = s.composePrincipalByID(ctx, taskRun.UpdaterID)
+		taskRun.Updater, err = s.store.GetPrincipalByID(ctx, taskRun.UpdaterID)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, taskCheckRun := range task.TaskCheckRunList {
-		taskCheckRun.Creator, err = s.composePrincipalByID(ctx, taskCheckRun.CreatorID)
+		taskCheckRun.Creator, err = s.store.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
 		if err != nil {
 			return err
 		}
 
-		taskCheckRun.Updater, err = s.composePrincipalByID(ctx, taskCheckRun.UpdaterID)
+		taskCheckRun.Updater, err = s.store.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
 		if err != nil {
 			return err
 		}

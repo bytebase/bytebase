@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -55,7 +54,7 @@ type Principal struct {
 	// Do not return to the client
 	PasswordHash string
 	// Role is stored in the member table, but we include it when returning the principal.
-	// This simplifies the client code where it won't require order depenendency to fetch the related member info first.
+	// This simplifies the client code where it won't require order dependency to fetch the related member info first.
 	Role Role `jsonapi:"attr,role"`
 }
 
@@ -128,12 +127,4 @@ type PrincipalPatch struct {
 	Name         *string `jsonapi:"attr,name"`
 	Password     *string `jsonapi:"attr,password"`
 	PasswordHash *string
-}
-
-// PrincipalService is the service for principals.
-type PrincipalService interface {
-	CreatePrincipal(ctx context.Context, create *PrincipalCreate) (*Principal, error)
-	FindPrincipalList(ctx context.Context) ([]*Principal, error)
-	FindPrincipal(ctx context.Context, find *PrincipalFind) (*Principal, error)
-	PatchPrincipal(ctx context.Context, patch *PrincipalPatch) (*Principal, error)
 }
