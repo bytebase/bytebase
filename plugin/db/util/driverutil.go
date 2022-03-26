@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	// BytebaseDatabase is the database name for Bytebase's database.
 	BytebaseDatabase = "bytebase"
 )
 
