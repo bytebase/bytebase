@@ -618,6 +618,30 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 
 // FindMigrationHistoryList finds the migration history.
 func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+	sqldb, err := driver.GetDbConnection(ctx, util.BytebaseDatabase)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	migrationHistoryList, err := driver.findMigrationHistoryListTx(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return migrationHistoryList, nil
+}
+
+// findMigrationHistoryListTx finds the migration history.
+func (driver *Driver) findMigrationHistoryListTx(ctx context.Context, tx *sql.Tx, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	baseQuery := `
 	SELECT
 		id,
@@ -662,7 +686,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	return util.FindMigrationHistoryListTx(ctx, tx, query, params, find, baseQuery)
 }
 
 // Dump and restore
