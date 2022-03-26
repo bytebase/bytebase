@@ -101,13 +101,13 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 func (s *Server) composeBookmarkRelationship(ctx context.Context, raw *api.BookmarkRaw) (*api.Bookmark, error) {
 	bookmark := raw.ToBookmark()
 
-	creator, err := s.composePrincipalByID(ctx, bookmark.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, bookmark.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	bookmark.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, bookmark.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, bookmark.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

@@ -992,13 +992,13 @@ func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.Databa
 func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.DatabaseRaw) (*api.Database, error) {
 	db := raw.ToDatabase()
 
-	creator, err := s.composePrincipalByID(ctx, db.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, db.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	db.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, db.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, db.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1043,11 +1043,11 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	// TODO(dragonly): implement composeAnomalyRelationship
 	db.AnomalyList = anomalyList
 	for _, anomaly := range db.AnomalyList {
-		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
+		anomaly.Creator, err = s.store.GetPrincipalByID(ctx, anomaly.CreatorID)
 		if err != nil {
 			return nil, err
 		}
-		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
+		anomaly.Updater, err = s.store.GetPrincipalByID(ctx, anomaly.UpdaterID)
 		if err != nil {
 			return nil, err
 		}
@@ -1092,13 +1092,13 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw) (*api.Table, error) {
 	table := raw.ToTable()
 
-	creator, err := s.composePrincipalByID(ctx, table.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, table.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	table.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, table.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, table.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1110,13 +1110,13 @@ func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw
 func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) (*api.View, error) {
 	view := raw.ToView()
 
-	creator, err := s.composePrincipalByID(ctx, view.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, view.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	view.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, view.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, view.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1148,13 +1148,13 @@ func (s *Server) composeBackupByID(ctx context.Context, id int) (*api.Backup, er
 // composeBackupRelationship will compose the relationship of a backup.
 func (s *Server) composeBackupRelationship(ctx context.Context, raw *api.BackupRaw) (*api.Backup, error) {
 	backup := raw.ToBackup()
-	creator, err := s.composePrincipalByID(ctx, backup.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, backup.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	backup.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, backup.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, backup.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
