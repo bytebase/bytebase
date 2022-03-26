@@ -431,16 +431,18 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // FindLargestSequence will return the largest sequence number.
-func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error) {
-	const FindLargestSequenceQuery = `
+func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
+	findLargestSequenceQuery := `
 		SELECT MAX(sequence) FROM bytebase_migration_history
-		WHERE namespace = ?
-	`
-	row, err := tx.QueryContext(ctx, FindLargestSequenceQuery,
+		WHERE namespace = ?`
+	if baseline {
+		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
+	}
+	row, err := tx.QueryContext(ctx, findLargestSequenceQuery,
 		namespace,
 	)
 	if err != nil {
-		return -1, util.FormatErrorWithQuery(err, FindLargestSequenceQuery)
+		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
 	defer row.Close()
 
@@ -456,6 +458,33 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	}
 
 	return int(sequence.Int32), nil
+}
+
+// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence, maxSequence int, version string) (minVersionIfValid *string, err error) {
+	const checkOutofOrderVersionQuery = `
+		SELECT MIN(version) FROM bytebase_migration_history
+		WHERE namespace = ? AND sequence >= ? AND sequence <= ? AND version > ?
+	`
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, minSequence, maxSequence, version,
+	)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.

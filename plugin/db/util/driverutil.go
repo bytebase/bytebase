@@ -115,7 +115,9 @@ type MigrationExecutor interface {
 	db.Driver
 	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
-	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error)
+	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
+	// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
+	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence, maxSequence int, version string) (minVersionIfValid *string, err error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
@@ -208,28 +210,30 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	if err != nil {
 		return -1, err
 	}
+	// From concurrency perspective, there's no difference of using transaction or not. However, we use transaction here to save some code of starting a transaction.
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return -1, err
 	}
 	defer tx.Rollback()
 
-	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace)
+	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
+	if err != nil {
+		return -1, err
+	}
+	largestBaselineSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, true /* baseline */)
 	if err != nil {
 		return -1, err
 	}
 
 	// Check if there is any higher version already been applied.
 	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
-		if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-			Database: &m.Namespace,
-			Sequence: &largestSequence,
-		}); err != nil {
-			return -1, fmt.Errorf("Find migration with the largest sequence error: %q", err)
-		} else if len(list) > 0 {
-			if list[0].Version >= m.Version {
-				return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied the latest version %s which is higher than %s", m.Database, list[0].Version, m.Version))
-			}
+		// Check if there is any higher version already been applied
+		if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, largestBaselineSequence, largestSequence, m.Version); err != nil {
+			return -1, err
+		} else if version != nil && len(*version) > 0 {
+			// Clickhouse will always return non-nil version with empty string.
+			return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 		}
 	}
 
