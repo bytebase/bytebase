@@ -214,18 +214,18 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 	defer tx.Rollback()
 
-	latestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace)
+	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace)
 	if err != nil {
 		return -1, err
 	}
 
 	// Check if there is any higher version already been applied.
-	if latestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
+	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
 		if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 			Database: &m.Namespace,
-			Sequence: &latestSequence,
+			Sequence: &largestSequence,
 		}); err != nil {
-			return -1, fmt.Errorf("Find latest migration error: %q", err)
+			return -1, fmt.Errorf("Find migration with the largest sequence error: %q", err)
 		} else if len(list) > 0 {
 			if list[0].Version >= m.Version {
 				return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied the latest version %s which is higher than %s", m.Database, list[0].Version, m.Version))
@@ -237,7 +237,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, latestSequence+1, prevSchema, m, statement); err != nil {
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, statement); err != nil {
 		return -1, err
 	}
 
