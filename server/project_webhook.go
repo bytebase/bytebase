@@ -257,13 +257,13 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 func (s *Server) composeProjectWebhookRelationship(ctx context.Context, raw *api.ProjectWebhookRaw) (*api.ProjectWebhook, error) {
 	webhook := raw.ToProjectWebhook()
 
-	creator, err := s.composePrincipalByID(ctx, webhook.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, webhook.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	webhook.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, webhook.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, webhook.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
