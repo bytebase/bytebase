@@ -73,7 +73,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Description:    "Create database",
 		CreateDatabase: true,
 	}
-	creator, err := server.composePrincipalByID(ctx, task.CreatorID)
+	creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.

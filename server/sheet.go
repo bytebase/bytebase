@@ -209,13 +209,13 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw) (*api.Sheet, error) {
 	sheet := raw.ToSheet()
 
-	creator, err := s.composePrincipalByID(ctx, sheet.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, sheet.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	sheet.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, sheet.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, sheet.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

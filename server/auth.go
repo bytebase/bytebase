@@ -63,7 +63,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					Email: &login.Email,
 				}
 				var err error
-				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -114,7 +114,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				principalFind := &api.PrincipalFind{
 					Email: &gitlabUserInfo.PublicEmail,
 				}
-				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -145,7 +145,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			PrincipalID: &user.ID,
 		}
-		member, err := s.MemberService.FindMember(ctx, memberFind)
+		member, err := s.store.FindMember(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
@@ -215,7 +215,8 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		Email:        signUp.Email,
 		PasswordHash: string(passwordHash),
 	}
-	user, err := s.PrincipalService.CreatePrincipal(ctx, principalCreate)
+	// The user has an empty field of Role, which corresponds to the Member object created later.
+	user, err := s.store.CreatePrincipal(ctx, principalCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signUp.Email))
@@ -227,7 +228,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 	find := &api.MemberFind{
 		Role: &findRole,
 	}
-	memberList, err := s.MemberService.FindMemberList(ctx, find)
+	memberList, err := s.store.FindMemberList(ctx, find)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
@@ -244,13 +245,14 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		PrincipalID: user.ID,
 	}
 
-	member, err := s.MemberService.CreateMember(ctx, memberCreate)
+	member, err := s.store.CreateMember(ctx, memberCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signUp.Email))
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
+	// From now on, the Principal we just created could be composed with a valid Role field.
 
 	{
 		bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
