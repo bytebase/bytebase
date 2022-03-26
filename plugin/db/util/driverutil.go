@@ -113,9 +113,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// FindLatestSequence will return the latest sequence number.
+	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
-	FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error)
+	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
@@ -214,7 +214,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 	defer tx.Rollback()
 
-	latestSequence, err := executor.FindLatestSequence(ctx, tx, m.Namespace)
+	latestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace)
 	if err != nil {
 		return -1, err
 	}

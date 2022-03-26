@@ -583,17 +583,17 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// FindLatestSequence will return the latest sequence number.
-func (Driver) FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error) {
-	const findLatestSequenceQuery = `
+// FindLargestSequence will return the largest sequence number.
+func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error) {
+	const FindLargestSequenceQuery = `
 		SELECT MAX(sequence) FROM bytebase.migration_history
 		WHERE namespace = ?
 		`
-	row, err := tx.QueryContext(ctx, findLatestSequenceQuery,
+	row, err := tx.QueryContext(ctx, FindLargestSequenceQuery,
 		namespace,
 	)
 	if err != nil {
-		return -1, util.FormatErrorWithQuery(err, findLatestSequenceQuery)
+		return -1, util.FormatErrorWithQuery(err, FindLargestSequenceQuery)
 	}
 	defer row.Close()
 
