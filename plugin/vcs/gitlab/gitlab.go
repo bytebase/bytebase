@@ -324,6 +324,45 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	return activeRepositoryMemberList, nil
 }
 
+// FetchRepositoryFileList fetch the files from repository tree
+func (provider *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s&path=%s", repositoryID, ref, filePath),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, err: %w", instanceURL, err)
+	}
+	if code >= 300 {
+		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var nodeList []*vcs.RepositoryTreeNode
+	if err := json.Unmarshal([]byte(body), &nodeList); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal repository tree from GitLab instance %s, err: %w", instanceURL, err)
+	}
+
+	// Filter out folder nodes and we only need the file nodes.
+	var fileList []*vcs.RepositoryTreeNode
+	for _, node := range nodeList {
+		if node.Type == "blob" {
+			fileList = append(fileList, node)
+		}
+	}
+
+	return fileList, nil
+}
+
 // CreateFile creates a file.
 func (provider *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(FileCommit{
