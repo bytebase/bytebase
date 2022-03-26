@@ -52,7 +52,7 @@ type FileMeta struct {
 	LastCommitID string
 }
 
-// RepositoryTreeNode records the node of a repository tree from `git ls-tree`.
+// RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
 type RepositoryTreeNode struct {
 	Path string `json:"path"`
 	Type string `json:"type"`
@@ -119,14 +119,14 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
-	// Fetch the repository tree
+	// Fetch the repository file list
 	//
 	// oauthCtx: OAuth context to read the repository tree
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// ref: the unique name of a repository tree, could be a branch name in GitLab https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
-	// or a tree sha in GitHub https://docs.github.com/en/rest/reference/git#get-a-tree
-	FetchRepositoryTree(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string) ([]*RepositoryTreeNode, error)
+	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
+	// path: the path inside repository, used to get content of subdirectories
+	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, path string) ([]*RepositoryTreeNode, error)
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

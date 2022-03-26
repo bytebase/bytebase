@@ -324,11 +324,11 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 	return activeRepositoryMemberList, nil
 }
 
-// FetchRepositoryTree fetch the nodes of git-tree from repository
-func (provider *Provider) FetchRepositoryTree(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string) ([]*vcs.RepositoryTreeNode, error) {
+// FetchRepositoryFileList fetch the files from repository tree
+func (provider *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, path string) ([]*vcs.RepositoryTreeNode, error) {
 	code, body, err := httpGet(
 		instanceURL,
-		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s", repositoryID, ref),
+		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s&path=%s", repositoryID, ref, path),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,
@@ -340,7 +340,6 @@ func (provider *Provider) FetchRepositoryTree(ctx context.Context, oauthCtx comm
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, err: %w", instanceURL, err)
 	}
-
 	if code >= 300 {
 		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, status code: %d",
 			instanceURL,
@@ -353,7 +352,15 @@ func (provider *Provider) FetchRepositoryTree(ctx context.Context, oauthCtx comm
 		return nil, fmt.Errorf("failed to unmarshal repository tree from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
-	return nodeList, nil
+	// Filter out folder nodes and we only need the file nodes.
+	var fileList []*vcs.RepositoryTreeNode
+	for _, node := range nodeList {
+		if node.Type == "blob" {
+			fileList = append(fileList, node)
+		}
+	}
+
+	return fileList, nil
 }
 
 // CreateFile creates a file.
