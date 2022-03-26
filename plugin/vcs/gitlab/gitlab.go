@@ -325,10 +325,10 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
-func (provider *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, path string) ([]*vcs.RepositoryTreeNode, error) {
+func (provider *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	code, body, err := httpGet(
 		instanceURL,
-		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s&path=%s", repositoryID, ref, path),
+		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s&path=%s", repositoryID, ref, filePath),
 		&oauthCtx.AccessToken,
 		oauthContext{
 			ClientID:     oauthCtx.ClientID,

@@ -125,8 +125,8 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
-	// path: the path inside repository, used to get content of subdirectories
-	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, path string) ([]*RepositoryTreeNode, error)
+	// filePath: the path inside repository, used to get content of subdirectories
+	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*RepositoryTreeNode, error)
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content
