@@ -554,17 +554,17 @@ func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (h
 	return true, nil
 }
 
-// FindNextSequence will return the highest sequence number plus one.
-func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
-	const findNextSequenceQuery = `
-		SELECT MAX(sequence) + 1 FROM migration_history
+// FindLatestSequence will return the latest sequence number.
+func (Driver) FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error) {
+	const findLatestSequenceQuery = `
+		SELECT MAX(sequence) FROM migration_history
 		WHERE namespace = $1
 	`
-	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
+	row, err := tx.QueryContext(ctx, findLatestSequenceQuery,
 		namespace,
 	)
 	if err != nil {
-		return -1, util.FormatErrorWithQuery(err, findNextSequenceQuery)
+		return -1, util.FormatErrorWithQuery(err, findLatestSequenceQuery)
 	}
 	defer row.Close()
 
@@ -575,13 +575,8 @@ func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string
 	}
 
 	if !sequence.Valid {
-		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
-		if !requireBaseline {
-			return 1, nil
-		}
-
-		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+		// Returns 0 if we haven't applied any migration for this namespace.
+		return 0, nil
 	}
 
 	return int(sequence.Int32), nil
@@ -705,6 +700,9 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	if v := find.Source; v != nil {
 		paramNames, params = append(paramNames, "source"), append(params, *v)
+	}
+	if v := find.Sequence; v != nil {
+		paramNames, params = append(paramNames, "sequence"), append(params, *v)
 	}
 	var query = baseQuery +
 		db.FormatParamNameInNumberedPosition(paramNames) +

@@ -116,8 +116,9 @@ type MigrationExecutor interface {
 	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error)
 	// FindBaseline retruns true if any baseline is found.
 	FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error)
-	// FindNextSequence will return the highest sequence number plus one.
-	FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error)
+	// FindLatestSequence will return the latest sequence number.
+	// Returns 0 if we haven't applied any migration for this namespace.
+	FindLatestSequence(ctx context.Context, tx *sql.Tx, namespace string) (int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
@@ -216,36 +217,35 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	// Check if there is any higher version already been applied
-	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, m.Source, m.Version); err != nil {
-		return -1, err
-	} else if version != nil && len(*version) > 0 {
-		// Clickhouse will always return non-nil version with empty string.
-		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
-	}
-
-	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
-	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Source == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		if hasBaseline, err := executor.FindBaseline(ctx, tx, m.Namespace); err != nil {
-			return -1, err
-		} else if !hasBaseline {
-			return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
-		}
-	}
-
-	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Source == db.VCS && m.Type == db.Migrate
-	sequence, err := executor.FindNextSequence(ctx, tx, m.Namespace, requireBaseline)
+	latestSequence, err := executor.FindLatestSequence(ctx, tx, m.Namespace)
 	if err != nil {
 		return -1, err
+	}
+
+	// We always require a BASELINE prior to the migration unless the one being applied is a BASELINE.
+	if m.Type != db.Baseline && latestSequence == 0 {
+		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
+	}
+
+	// Check if there is any higher version already been applied
+	if latestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
+		if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+			Database: &m.Namespace,
+			Sequence: &latestSequence,
+		}); err != nil {
+			return -1, fmt.Errorf("Find latest migration error: %q", err)
+		} else if len(list) > 0 {
+			if list[0].Version > m.Version {
+				return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied the latest version %s which is higher than %s", m.Database, list[0].Version, m.Version))
+			}
+		}
 	}
 
 	// Phase 2 - Record migration history as PENDING
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, sequence, prevSchema, m, statement); err != nil {
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, latestSequence+1, prevSchema, m, statement); err != nil {
 		return -1, err
 	}
 
