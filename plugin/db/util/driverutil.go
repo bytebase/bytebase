@@ -225,9 +225,8 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	}
 
-	// Check if there is any higher version already been applied.
+	// Check if there is any higher version already been applied since the last baseline or branch.
 	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
-		// Check if there is any higher version already been applied
 		if version, err := executor.GetLargestVersionSinceLastBaseline(ctx, tx, m.Namespace, largestBaselineSequence); err != nil {
 			return -1, err
 		} else if version != nil && len(*version) > 0 && *version >= m.Version {
