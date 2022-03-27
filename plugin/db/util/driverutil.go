@@ -113,11 +113,11 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
+	// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
+	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error)
 	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
-	// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.

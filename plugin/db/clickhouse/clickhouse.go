@@ -407,6 +407,33 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error) {
+	const checkOutofOrderVersionQuery = `
+		SELECT MIN(version) FROM bytebase.migration_history
+		WHERE namespace = $1 AND sequence >= $2 AND version > $3
+	`
+	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
+		namespace, minSequence, version,
+	)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+	}
+	defer row.Close()
+
+	var minVersion sql.NullString
+	row.Next()
+	if err := row.Scan(&minVersion); err != nil {
+		return nil, err
+	}
+
+	if minVersion.Valid {
+		return &minVersion.String, nil
+	}
+
+	return nil, nil
+}
+
 // FindLargestSequence will return the largest sequence number.
 func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
 	findLargestSequenceQuery := `
@@ -435,33 +462,6 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	}
 
 	return int(sequence.Int32), nil
-}
-
-// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
-func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error) {
-	const checkOutofOrderVersionQuery = `
-		SELECT MIN(version) FROM bytebase.migration_history
-		WHERE namespace = $1 AND sequence >= $2 AND version > $3
-	`
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, minSequence, version,
-	)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
-	}
-	defer row.Close()
-
-	var minVersion sql.NullString
-	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
-		return nil, err
-	}
-
-	if minVersion.Valid {
-		return &minVersion.String, nil
-	}
-
-	return nil, nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
