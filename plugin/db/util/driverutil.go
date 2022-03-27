@@ -112,8 +112,8 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error)
+	// GetLargestVersionSinceLastBaseline will return the largest version since the last baseline.
+	GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx, namespace string, minSequence int) (*string, error)
 	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
@@ -228,10 +228,10 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Check if there is any higher version already been applied.
 	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
 		// Check if there is any higher version already been applied
-		if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, largestBaselineSequence, m.Version); err != nil {
+		if version, err := executor.GetLargestVersionSinceLastBaseline(ctx, tx, m.Namespace, largestBaselineSequence); err != nil {
 			return -1, err
-		} else if version != nil && len(*version) > 0 {
-			// Clickhouse will always return non-nil version with empty string.
+		} else if version != nil && len(*version) > 0 && *version >= m.Version {
+			// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
 			return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 		}
 	}
