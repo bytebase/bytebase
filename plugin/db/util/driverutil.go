@@ -113,7 +113,7 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 type MigrationExecutor interface {
 	db.Driver
 	// GetLargestVersionSinceLastBaseline will return the largest version since the last baseline.
-	GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx, namespace string, minSequence int) (*string, error)
+	GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx, namespace string, baselineSequence int) (*string, error)
 	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)

@@ -584,13 +584,13 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // GetLargestVersionSinceLastBaseline will return the largest version since the last baseline.
-func (Driver) GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx, namespace string, minSequence int) (*string, error) {
+func (Driver) GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx, namespace string, baselineSequence int) (*string, error) {
 	const getLargestVersionSinceLastBaselineQuery = `
 		SELECT MAX(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND sequence >= ?
 	`
 	row, err := tx.QueryContext(ctx, getLargestVersionSinceLastBaselineQuery,
-		namespace, minSequence,
+		namespace, baselineSequence,
 	)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
