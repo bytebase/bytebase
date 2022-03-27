@@ -787,9 +787,6 @@ func (driver *Driver) findMigrationHistoryListTx(ctx context.Context, tx *sql.Tx
 	if v := find.Source; v != nil {
 		paramNames, params = append(paramNames, "source"), append(params, *v)
 	}
-	if v := find.Sequence; v != nil {
-		paramNames, params = append(paramNames, "sequence"), append(params, *v)
-	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
 		`ORDER BY created_ts DESC`

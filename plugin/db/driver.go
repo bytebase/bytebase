@@ -349,7 +349,6 @@ type MigrationHistoryFind struct {
 	Database *string
 	Source   *MigrationSource
 	Version  *string
-	Sequence *int
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit *int
 }
