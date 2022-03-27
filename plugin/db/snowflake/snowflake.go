@@ -596,14 +596,14 @@ func (Driver) GetLargestVersionSinceLastBaseline(ctx context.Context, tx *sql.Tx
 	}
 	defer row.Close()
 
-	var minVersion sql.NullString
+	var version sql.NullString
 	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
+	if err := row.Scan(&version); err != nil {
 		return nil, err
 	}
 
-	if minVersion.Valid {
-		return &minVersion.String, nil
+	if version.Valid {
+		return &version.String, nil
 	}
 
 	return nil, nil
