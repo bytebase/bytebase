@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	// BytebaseDatabase is the database name for Bytebase's database.
-	BytebaseDatabase = "bytebase"
+	bytebaseDatabase = "bytebase"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
@@ -206,7 +205,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	sqldb, err := executor.GetDbConnection(ctx, BytebaseDatabase)
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return -1, err
 	}
@@ -256,7 +255,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDbConnection(ctx, BytebaseDatabase)
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
 	if err != nil {
 		return err
 	}
@@ -379,8 +378,18 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
-// FindMigrationHistoryListTx will find the list of migration history.
-func FindMigrationHistoryListTx(ctx context.Context, tx *sql.Tx, findMigrationHistoryListQuery string, queryParams []interface{}, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+// FindMigrationHistoryList will find the list of migration history.
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	rows, err := tx.QueryContext(ctx, findMigrationHistoryListQuery, queryParams...)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, findMigrationHistoryListQuery)
@@ -418,6 +427,10 @@ func FindMigrationHistoryListTx(ctx context.Context, tx *sql.Tx, findMigrationHi
 		migrationHistoryList = append(migrationHistoryList, &history)
 	}
 	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
