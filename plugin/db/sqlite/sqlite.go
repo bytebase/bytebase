@@ -461,13 +461,13 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 }
 
 // CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
-func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence, maxSequence int, version string) (minVersionIfValid *string, err error) {
+func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error) {
 	const checkOutofOrderVersionQuery = `
 		SELECT MIN(version) FROM bytebase_migration_history
-		WHERE namespace = ? AND sequence >= ? AND sequence <= ? AND version > ?
+		WHERE namespace = ? AND sequence >= ? AND version > ?
 	`
 	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, minSequence, maxSequence, version,
+		namespace, minSequence, version,
 	)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)

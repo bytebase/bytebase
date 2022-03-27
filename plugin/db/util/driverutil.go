@@ -117,7 +117,7 @@ type MigrationExecutor interface {
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
 	// CheckOutOfOrderVersion will return the version that is higher than the given version since the last baseline.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence, maxSequence int, version string) (minVersionIfValid *string, err error)
+	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, minSequence int, version string) (minVersionIfValid *string, err error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
@@ -229,7 +229,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Check if there is any higher version already been applied.
 	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
 		// Check if there is any higher version already been applied
-		if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, largestBaselineSequence, largestSequence, m.Version); err != nil {
+		if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, largestBaselineSequence, m.Version); err != nil {
 			return -1, err
 		} else if version != nil && len(*version) > 0 {
 			// Clickhouse will always return non-nil version with empty string.
