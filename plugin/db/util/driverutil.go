@@ -222,13 +222,11 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 
 	// Check if there is any higher version already been applied since the last baseline or branch.
-	if largestSequence > 0 && m.Type != db.Baseline && m.Type != db.Branch {
-		if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace); err != nil {
-			return -1, err
-		} else if version != nil && len(*version) > 0 && *version >= m.Version {
-			// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
-			return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which >= %s", m.Database, *version, m.Version))
-		}
+	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace); err != nil {
+		return -1, err
+	} else if version != nil && len(*version) > 0 && *version >= m.Version {
+		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
+		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which >= %s", m.Database, *version, m.Version))
 	}
 
 	// Phase 2 - Record migration history as PENDING.
