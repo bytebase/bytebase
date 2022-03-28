@@ -582,8 +582,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckOutOfOrderVersion will check out of order version since last baseline or branch.
-func (driver Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
+// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
+func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
 	largestBaselineSequence, err := driver.FindLargestSequence(ctx, tx, namespace, true /* baseline */)
 	if err != nil {
 		return nil, err

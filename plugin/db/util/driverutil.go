@@ -112,8 +112,8 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// CheckOutOfOrderVersion will check out of order version since last baseline or branch.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string) (*string, error)
+	// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
+	FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error)
 	// FindLargestSequence will return the largest sequence number.
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
@@ -222,7 +222,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 
 	// Check if there is any higher version already been applied since the last baseline or branch.
-	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace); err != nil {
+	if version, err := executor.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
 		return -1, err
 	} else if version != nil && len(*version) > 0 && *version >= m.Version {
 		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
