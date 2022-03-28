@@ -34,7 +34,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate)
 	}
 	defer tx.PTx.Rollback()
 
-	sheet, err := createSheet(ctx, tx.PTx, create)
+	sheet, err := s.createSheet(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,12 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 }
 
 // createSheet creates a new sheet.
-func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.SheetRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+func (s *SheetService) createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.SheetRaw, error) {
+	var row *sql.Rows
+	var err error
+
+	if s.db.schemaVersion < 10002 {
+		row, err = tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -139,14 +143,44 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 	`,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.DatabaseID,
-		create.Name,
-		create.Statement,
-		create.Visibility,
-	)
+			create.CreatorID,
+			create.CreatorID,
+			create.ProjectID,
+			create.DatabaseID,
+			create.Name,
+			create.Statement,
+			create.Visibility,
+		)
+	} else {
+		// TODO(Steven): remove these default value when developing the service logic for sheet.
+		row, err = tx.QueryContext(ctx, `
+		INSERT INTO sheet (
+			creator_id,
+			updater_id,
+			project_id,
+			database_id,
+			name,
+			statement,
+			visibility,
+			source,
+			type,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
+	`,
+			create.CreatorID,
+			create.CreatorID,
+			create.ProjectID,
+			create.DatabaseID,
+			create.Name,
+			create.Statement,
+			create.Visibility,
+			"BYTEBASE",
+			"SQL",
+			"{}",
+		)
+	}
 
 	if err != nil {
 		return nil, FormatError(err)
