@@ -23,7 +23,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
 		backupRunnerInterval: 10 * time.Second,
-		schemaVersion:        10001,
+		schemaVersion:        10002,
 	}
 }
 
@@ -39,6 +39,6 @@ func GetTestProfile(dataDir string, port, datastorePort int) Profile {
 		seedDir:              "seed/test",
 		forceResetSeed:       true,
 		backupRunnerInterval: 10 * time.Second,
-		schemaVersion:        10001,
+		schemaVersion:        10002,
 	}
 }

@@ -72,6 +72,7 @@ import {
 } from "vuex-composition-helpers";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
+import dayjs from "dayjs";
 
 import { TabGetters, SqlEditorState } from "@/types";
 
@@ -185,9 +186,12 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   }
 
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
+  const formatedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
+  // Example filename: `mysheet-2022-03-23T09-54-21.json`
+  const filename = `${currentTab.value.name}-${formatedDateString}`;
   const link = document.createElement("a");
 
-  link.download = `${currentTab.value.name}.${format}`;
+  link.download = `${filename}.${format}`;
   link.href = encodedUri;
   link.click();
 };

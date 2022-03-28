@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 
 	// embed will embeds the acl policy.
 	_ "embed"
@@ -35,11 +36,7 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	CacheService api.CacheService
-
 	SettingService          api.SettingService
-	PrincipalService        api.PrincipalService
-	MemberService           api.MemberService
 	PolicyService           api.PolicyService
 	ProjectService          api.ProjectService
 	ProjectMemberService    api.ProjectMemberService
@@ -73,6 +70,7 @@ type Server struct {
 
 	e *echo.Echo
 
+	store         *store.Store
 	l             *zap.Logger
 	lvl           *zap.AtomicLevel
 	version       string
@@ -103,13 +101,13 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embedded in an iframe
+	// Disallow to be embedded in an iFrame
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
@@ -117,9 +115,9 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	embedFrontend(logger, e)
 
 	s := &Server{
+		store:         storeInstance,
 		l:             logger,
 		lvl:           loggerLevel,
-		CacheService:  NewCacheService(logger),
 		e:             e,
 		version:       version,
 		mode:          mode,
@@ -209,7 +207,7 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.PrincipalService, next, mode, secret)
+		return JWTMiddleware(logger, s.store, next, mode, secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)

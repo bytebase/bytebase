@@ -25,7 +25,7 @@ A clear and concise description of what the bug is.
 1. Click on '....'
 1. See error
 
-*If the error is not obvious, you can enable the [--debug](https://docs.bytebase.com/reference/command-line#debug) option on startup and attach the console message here*
+*If the error is not obvious, you can enable the [--debug](https://bytebase.com/docs/reference/command-line#--debug) option on startup and attach the console message here*
 
 **Expected behavior**
 

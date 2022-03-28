@@ -17,3 +17,5 @@ export type Setting = {
   value: string;
   description: string;
 };
+
+export const brandingLogoSettingName: SettingName = "bb.branding.logo";

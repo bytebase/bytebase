@@ -3,7 +3,7 @@
     :title="$t('subscription.disabled-feature')"
     @close="$emit('cancel')"
   >
-    <div>
+    <div class="min-w-0 md:min-w-400">
       <div class="flex items-start space-x-2">
         <div class="flex items-center">
           <!-- Heroicons name: outline/exclamation -->
@@ -76,3 +76,11 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+@media (min-width: 768px) {
+  .md\:min-w-400 {
+    min-width: 400px;
+  }
+}
+</style>

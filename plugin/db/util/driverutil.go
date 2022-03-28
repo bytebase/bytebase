@@ -112,12 +112,11 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// CheckOutOfOrderVersion will return versions that are higher than the given version.
-	CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error)
-	// FindBaseline retruns true if any baseline is found.
-	FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error)
-	// FindNextSequence will return the highest sequence number plus one.
-	FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error)
+	// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
+	FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error)
+	// FindLargestSequence will return the largest sequence number.
+	// Returns 0 if we haven't applied any migration for this namespace.
+	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
@@ -168,10 +167,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 				return -1, "", err
 			}
 		}
-		// MySQL executes DDL in its own transaction, so there is no need to supply a transaction from previous migration history updates.
-		// Also, we don't use transaction for creating databases in Postgres.
-		// https://github.com/bytebase/bytebase/issues/202
-		if err := executor.Execute(ctx, statement, !m.CreateDatabase); err != nil {
+		if err := executor.Execute(ctx, statement); err != nil {
 			return -1, "", formatError(err)
 		}
 	}
@@ -187,18 +183,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
 func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
-	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
-	if err != nil {
-		return -1, err
-	}
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return -1, err
-	}
-	defer tx.Rollback()
-
 	// Phase 1 - Precheck before executing migration
-	// Check if the same migration version has alraedy been applied
+	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Source:   &m.Source,
@@ -219,36 +205,35 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	// Check if there is any higher version already been applied
-	if version, err := executor.CheckOutOfOrderVersion(ctx, tx, m.Namespace, m.Source, m.Version); err != nil {
+	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+	if err != nil {
 		return -1, err
-	} else if version != nil && len(*version) > 0 {
-		// Clickhouse will always return non-nil version with empty string.
-		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which is higher than %s", m.Database, *version, m.Version))
 	}
-
-	// If the migration engine is VCS and type is not baseline and is not branch, then we can only proceed if there is existing baseline
-	// This check is also wrapped in transaction to avoid edge case where two baselinings are running concurrently.
-	if m.Source == db.VCS && m.Type != db.Baseline && m.Type != db.Branch {
-		if hasBaseline, err := executor.FindBaseline(ctx, tx, m.Namespace); err != nil {
-			return -1, err
-		} else if !hasBaseline {
-			return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("%s has not created migration baseline yet", m.Database))
-		}
+	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
+	tx, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
 	}
+	defer tx.Rollback()
 
-	// VCS based SQL migration requires existing baselining
-	requireBaseline := m.Source == db.VCS && m.Type == db.Migrate
-	sequence, err := executor.FindNextSequence(ctx, tx, m.Namespace, requireBaseline)
+	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
 	if err != nil {
 		return -1, err
 	}
 
-	// Phase 2 - Record migration history as PENDING
+	// Check if there is any higher version already been applied since the last baseline or branch.
+	if version, err := executor.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
+		return -1, err
+	} else if version != nil && len(*version) > 0 && *version >= m.Version {
+		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
+		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which >= %s", m.Database, *version, m.Version))
+	}
+
+	// Phase 2 - Record migration history as PENDING.
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, sequence, prevSchema, m, statement); err != nil {
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, statement); err != nil {
 		return -1, err
 	}
 
@@ -277,7 +262,7 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
-		// Otherwise, update the migration history as 'FAILED', exeuction_duration
+		// Otherwise, update the migration history as 'FAILED', exeuction_duration.
 		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
 	}
 

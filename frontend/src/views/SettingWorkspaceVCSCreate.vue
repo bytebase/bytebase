@@ -4,7 +4,7 @@
       <i18n-t keypath="version-control.setting.add-git-provider.description">
         <template #guide>
           <a
-            href="https://docs.bytebase.com/use-bytebase/vcs-integration?ref=console"
+            href="https://bytebase.com/docs/use-bytebase/vcs-integration/overview"
             target="_blank"
             class="normal-link"
           >

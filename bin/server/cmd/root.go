@@ -324,6 +324,21 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
+func initBranding(ctx context.Context, settingService api.SettingService) error {
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingBrandingLogo,
+		Value:       "",
+		Description: "The branding logo image in base64 string format.",
+	}
+	_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Run will run the main server.
 func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -352,29 +367,35 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to init config: %w", err)
 	}
 
+	err = initBranding(ctx, settingService)
+	if err != nil {
+		return fmt.Errorf("failed to init branding: %w", err)
+	}
+
 	m.db = db
 
-	s := server.NewServer(m.l, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	cacheService := server.NewCacheService(m.l)
+	storeInstance := store.New(m.l, db, cacheService)
+
+	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
-	s.PrincipalService = store.NewPrincipalService(m.l, db, s.CacheService)
-	s.MemberService = store.NewMemberService(m.l, db, s.CacheService)
-	s.PolicyService = store.NewPolicyService(m.l, db, s.CacheService)
-	s.ProjectService = store.NewProjectService(m.l, db, s.CacheService)
+	s.PolicyService = store.NewPolicyService(m.l, db, cacheService)
+	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.EnvironmentService = store.NewEnvironmentService(m.l, db, s.CacheService)
-	s.DataSourceService = store.NewDataSourceService(m.l, db, s.CacheService)
+	s.EnvironmentService = store.NewEnvironmentService(m.l, db, cacheService)
+	s.DataSourceService = store.NewDataSourceService(m.l, db, cacheService)
 	s.BackupService = store.NewBackupService(m.l, db, s.PolicyService)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, s.CacheService, s.PolicyService, s.BackupService)
-	s.InstanceService = store.NewInstanceService(m.l, db, s.CacheService, s.DatabaseService, s.DataSourceService)
+	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, s.PolicyService, s.BackupService)
+	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, s.DataSourceService)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
-	s.IssueService = store.NewIssueService(m.l, db, s.CacheService)
+	s.IssueService = store.NewIssueService(m.l, db, cacheService)
 	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
-	s.PipelineService = store.NewPipelineService(m.l, db, s.CacheService)
+	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
 	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
