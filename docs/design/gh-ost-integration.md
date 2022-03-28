@@ -256,7 +256,7 @@ const (
     GCP Vendor = "GCP"
     Aliyun Vendor = "ALIYUN"
     Azure Vendor = "AZURE"
-    OnPremises Vendor = "ON_PREMISES"
+    SelfHost Vendor = "SELF_HOST"
 )
 type Instance struct {
     // omit other fields here
