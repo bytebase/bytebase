@@ -259,7 +259,7 @@ watch(
 <style>
 .monaco-editor .cldr.sql-fragment {
   @apply bg-indigo-600;
-  width: 4px !important;
+  width: 3px !important;
   margin-left: 2px;
 }
 </style>
