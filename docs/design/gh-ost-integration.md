@@ -316,6 +316,8 @@ It's important to show user the progress, because typically it will take hours o
 
 ### Approve, run, approve, cut-over
 
+We will have two tasks for the actual migration. The first task runs gh-ost, syncs the ghost table with the original table. Once synced, the first task will be `DONE` and the second task will be `PENDING_APPROVAL`. The second task does the cut-over, which locks the tables and atomically switch table names.
+
 These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Go channels to the rescue! For go routines that run tasks, we will store go channels globally to communicate with them. When the ghost table catches up with the original table , the "run" task will switch to `DONE`, and the "cut over" task will be `PENDING_APPROVAL`. The "cut over" task sends `"cut-over"` to the "run" task go routine to execute cut over.
 
 ```Go
