@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -39,44 +38,6 @@ func (e Role) String() string {
 		return "DEVELOPER"
 	}
 	return ""
-}
-
-// MemberRaw is the store model for an Member.
-// Fields have exactly the same meanings as Member.
-type MemberRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Status      MemberStatus
-	Role        Role
-	PrincipalID int
-}
-
-// ToMember creates an instance of Member based on the MemberRaw.
-// This is intended to be called when we need to compose an Member relationship.
-func (raw *MemberRaw) ToMember() *Member {
-	return &Member{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Domain specific fields
-		Status:      raw.Status,
-		Role:        raw.Role,
-		PrincipalID: raw.PrincipalID,
-	}
 }
 
 // Member is the API message for a member.
@@ -139,12 +100,4 @@ type MemberPatch struct {
 
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
-}
-
-// MemberService is the service for members.
-type MemberService interface {
-	CreateMember(ctx context.Context, create *MemberCreate) (*MemberRaw, error)
-	FindMemberList(ctx context.Context, find *MemberFind) ([]*MemberRaw, error)
-	FindMember(ctx context.Context, find *MemberFind) (*MemberRaw, error)
-	PatchMember(ctx context.Context, patch *MemberPatch) (*MemberRaw, error)
 }
