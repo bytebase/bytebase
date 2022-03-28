@@ -209,7 +209,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	if err != nil {
 		return -1, err
 	}
-	// From concurrency perspective, there's no difference of using transaction or not. However, we use transaction here to save some code of starting a transaction.
+	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
 	tx, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
 		return -1, err
