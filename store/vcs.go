@@ -8,33 +8,161 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-var (
-	_ api.VCSService = (*VCSService)(nil)
-)
+// VCSRaw is the store model for a VCS (Version Control System).
+// Fields have exactly the same meanings as VCS.
+type VCSRaw struct {
+	ID int
 
-// VCSService represents a service for managing vcs.
-type VCSService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name          string
+	Type          vcs.Type
+	InstanceURL   string
+	APIURL        string
+	ApplicationID string
+	Secret        string
 }
 
-// NewVCSService returns a new instance of VCSService.
-func NewVCSService(logger *zap.Logger, db *DB) *VCSService {
-	return &VCSService{l: logger, db: db}
+// ToVCS creates an instance of VCS based on the VCSRaw.
+// This is intended to be called when we need to compose a VCS relationship.
+func (raw *VCSRaw) ToVCS() *api.VCS {
+	return &api.VCS{
+		ID: raw.ID,
+
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		Name:          raw.Name,
+		Type:          raw.Type,
+		InstanceURL:   raw.InstanceURL,
+		APIURL:        raw.APIURL,
+		ApplicationID: raw.ApplicationID,
+		Secret:        raw.Secret,
+	}
 }
 
-// CreateVCS creates a new vcs.
-func (s *VCSService) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCSRaw, error) {
+// CreateVCS creates an instance of VCS
+func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS, error) {
+	vcsRaw, err := s.createVCSRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create VCS with VCSCreate[%+v], error[%w]", create, err)
+	}
+	vcs, err := s.composeVCS(ctx, vcsRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+	}
+	return vcs, nil
+}
+
+// FindVCSList finds a list of VCS instances
+func (s *Store) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
+	vcsRawList, err := s.findVCSListRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find VCS list, error[%w]", err)
+	}
+	var vcsList []*api.VCS
+	for _, raw := range vcsRawList {
+		vcs, err := s.composeVCS(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose VCS with vcsRaw[%+v], error[%w]", raw, err)
+		}
+		vcsList = append(vcsList, vcs)
+	}
+	return vcsList, nil
+}
+
+// FindVCS finds an instance of VCS
+func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, error) {
+	vcsRaw, err := s.findVCSRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find VCS with VCSFind[%+v], error[%w]", find, err)
+	}
+	vcs, err := s.composeVCS(ctx, vcsRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+	}
+	return vcs, nil
+}
+
+// PatchVCS patches an instance of VCS
+func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, error) {
+	vcsRaw, err := s.patchVCSRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to patch VCS with VCSPatch[%+v], error[%w]", patch, err)
+	}
+	vcs, err := s.composeVCS(ctx, vcsRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+	}
+	return vcs, nil
+}
+
+// DeleteVCS deletes an instance of VCS
+func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
+	if err := s.deleteVCSRaw(ctx, delete); err != nil {
+		return fmt.Errorf("Failed to delete VCS with VCSDelete[%+v], error[%w]", delete, err)
+	}
+	return nil
+}
+
+// GetVCSByID gets a composesd instance of VCS by ID
+func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
+	vcsFind := &api.VCSFind{
+		ID: &id,
+	}
+	vcsRaw, err := s.findVCSRaw(ctx, vcsFind)
+	if err != nil {
+		return nil, err
+	}
+
+	vcs, err := s.composeVCS(ctx, vcsRaw)
+	if err != nil {
+		return nil, err
+	}
+	return vcs, nil
+}
+
+//
+// private functions
+//
+
+func (s *Store) composeVCS(ctx context.Context, raw *VCSRaw) (*api.VCS, error) {
+	vcs := raw.ToVCS()
+
+	creator, err := s.GetPrincipalByID(ctx, vcs.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	vcs.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, vcs.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	vcs.Updater = updater
+
+	return vcs, nil
+}
+
+// createVCSRaw creates a new vcs.
+func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*VCSRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	vcs, err := createVCS(ctx, tx.PTx, create)
+	vcs, err := createVCSImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +174,15 @@ func (s *VCSService) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api
 	return vcs, nil
 }
 
-// FindVCSList retrieves a list of VCSs based on find conditions.
-func (s *VCSService) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api.VCSRaw, error) {
+// findVCSListRaw retrieves a list of VCSs based on find conditions.
+func (s *Store) findVCSListRaw(ctx context.Context, find *api.VCSFind) ([]*VCSRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSList(ctx, tx.PTx, find)
+	list, err := findVCSListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,38 +190,38 @@ func (s *VCSService) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api
 	return list, nil
 }
 
-// FindVCS retrieves a single vcs based on find.
+// findVCSRaw retrieves a single vcs based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *VCSService) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCSRaw, error) {
+func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) (*VCSRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSList(ctx, tx.PTx, find)
+	list, err := findVCSListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(list) == 0 {
-		return nil, nil
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("VCS not found with VCSFind[%+v]", find)}
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d VCSs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
 
-// PatchVCS updates an existing vcs by ID.
+// patchVCSRaw updates an existing vcs by ID.
 // Returns ENOTFOUND if vcs does not exist.
-func (s *VCSService) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCSRaw, error) {
+func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*VCSRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	vcs, err := patchVCS(ctx, tx.PTx, patch)
+	vcs, err := patchVCSImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -105,15 +233,15 @@ func (s *VCSService) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VC
 	return vcs, nil
 }
 
-// DeleteVCS deletes an existing vcs by ID.
-func (s *VCSService) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
+// deleteVCSRaw deletes an existing vcs by ID.
+func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteVCS(ctx, tx.PTx, delete); err != nil {
+	if err := deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -124,8 +252,8 @@ func (s *VCSService) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error
 	return nil
 }
 
-// createVCS creates a new vcs.
-func createVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCSRaw, error) {
+// createVCSImpl creates a new vcs.
+func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*VCSRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO vcs (
@@ -157,7 +285,7 @@ func createVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCS
 	defer row.Close()
 
 	row.Next()
-	var vcs api.VCSRaw
+	var vcs VCSRaw
 	if err := row.Scan(
 		&vcs.ID,
 		&vcs.CreatorID,
@@ -177,7 +305,7 @@ func createVCS(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*api.VCS
 	return &vcs, nil
 }
 
-func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*api.VCSRaw, error) {
+func findVCSListImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*VCSRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -207,9 +335,9 @@ func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*api.VCS
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	var list []*api.VCSRaw
+	var list []*VCSRaw
 	for rows.Next() {
-		var vcs api.VCSRaw
+		var vcs VCSRaw
 		if err := rows.Scan(
 			&vcs.ID,
 			&vcs.CreatorID,
@@ -235,8 +363,8 @@ func findVCSList(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*api.VCS
 	return list, nil
 }
 
-// patchVCS updates a vcs by ID. Returns the new state of the vcs after update.
-func patchVCS(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*api.VCSRaw, error) {
+// patchVCSImpl updates a vcs by ID. Returns the new state of the vcs after update.
+func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*VCSRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -265,7 +393,7 @@ func patchVCS(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*api.VCSRaw
 	defer row.Close()
 
 	if row.Next() {
-		var vcs api.VCSRaw
+		var vcs VCSRaw
 		if err := row.Scan(
 			&vcs.ID,
 			&vcs.CreatorID,
@@ -288,8 +416,8 @@ func patchVCS(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*api.VCSRaw
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 }
 
-// deleteVCS permanently deletes a vcs by ID.
-func deleteVCS(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
+// deleteVCSImpl permanently deletes a vcs by ID.
+func deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

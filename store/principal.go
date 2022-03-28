@@ -109,7 +109,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 	return principal, nil
 }
 
-// GetPrincipalByID composes an instance of Principal by ID
+// GetPrincipalByID gets a composesd instance of Principal by ID
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,

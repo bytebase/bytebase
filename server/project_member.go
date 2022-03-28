@@ -46,12 +46,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		vcsFind := &api.VCSFind{
 			ID: &repo.VCSID,
 		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
-		}
-		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
 		}
 		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryActiveMemberList(ctx,
 			common.OauthContext{
