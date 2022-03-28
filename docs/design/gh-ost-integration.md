@@ -229,7 +229,7 @@ User can change gh-ost configuration in the related issue tab.
 
 We will only support "connect to primary and migrate on primary" for now.
 
-In the future, bytebase will support detecting primary and replications. We may support "connect to replica" then.
+In the future, bytebase will support detecting primary and replicas. We may support "connect to replica" then.
 
 ### Privileges
 
