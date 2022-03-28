@@ -113,7 +113,7 @@ type RepositoryMember struct {
 	RoleProvider Type               `json:"roleProvider"`
 }
 
-// Repository is the API message for  repository info.
+// Repository is the API message for repository info.
 type Repository struct {
 	ID       int64  `json:"id"`
 	Name     string `json:"name"`
