@@ -52,6 +52,9 @@ func TestFromStoredVersion(t *testing.T) {
 		{"2021.0001-hello", false, "", "", "should be in semantic version"},
 		{"2a21.0001.0013-hello", false, "", "", "should be in semantic version"},
 		{"10000.0001.0000-hello", false, "", "", "should be < 10000"},
+		{"", false, "", "", "should contain '-'"},
+		{"hello", false, "", "", "should contain '-'"},
+		{"1.2.3", false, "", "", "should contain '-'"},
 	}
 	for _, tc := range tests {
 		gotUseSemanticVersion, gotVersion, gotSemanticVersionSuffix, err := fromStoredVersion(tc.storedVersion)

@@ -235,6 +235,8 @@ type MigrationInfo struct {
 	CreateDatabase bool
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
+	// For example, for settings non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
+	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405".
 	UseSemanticVersion bool
 	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
 	SemanticVersionSuffix string
