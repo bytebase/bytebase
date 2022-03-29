@@ -7,7 +7,9 @@ INSERT INTO
         project_id,
         database_id,
         name,
-        statement
+        statement,
+        source,
+        type
     )
 VALUES
     (
@@ -17,7 +19,9 @@ VALUES
         3001,
         7019,
         'my-sheet',
-        'SELECT * FROM demo'
+        'SELECT * FROM demo',
+        'BYTEBASE',
+        'SQL'
     );
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 22002;

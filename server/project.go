@@ -210,15 +210,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
-		vcsFind := &api.VCSFind{
-			ID: &repositoryCreate.VCSID,
-		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repositoryCreate.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
-		}
-		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSID))
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
@@ -382,16 +376,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if repoPatch.BranchFilter != nil {
-			vcsFind := &api.VCSFind{
-				ID: &repo.VCSID,
-			}
-			vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+			vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-			}
-			if vcs == nil {
-				err := fmt.Errorf("failed to find VCS configuration for ID: %d", repo.VCSID)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
@@ -466,16 +453,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repository := repoRawList[0]
-		vcsFind := &api.VCSFind{
-			ID: &repository.VCSID,
-		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
-		}
-		if vcs == nil {
-			err := fmt.Errorf("VCS not found for ID: %d", repository.VCSID)
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
