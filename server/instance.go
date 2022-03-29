@@ -459,7 +459,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	}
 	instance.Updater = updater
 
-	env, err := s.composeEnvironmentByID(ctx, instance.EnvironmentID)
+	env, err := s.store.GetEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}

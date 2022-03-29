@@ -120,7 +120,7 @@ func (s *Server) composePolicyRelationship(ctx context.Context, raw *api.PolicyR
 	}
 	policy.Updater = updater
 
-	env, err := s.composeEnvironmentByID(ctx, policy.EnvironmentID)
+	env, err := s.store.GetEnvironmentByID(ctx, policy.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
