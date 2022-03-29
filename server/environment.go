@@ -46,7 +46,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			envFind.RowStatus = &rowStatus
 		}
-		envList, err := s.store.FindEnvironmentList(ctx, envFind)
+		envList, err := s.store.FindEnvironment(ctx, envFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 		}
@@ -109,8 +109,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			}
 		}
 
-		envFind := &api.EnvironmentFind{}
-		envList, err := s.store.FindEnvironmentList(ctx, envFind)
+		envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list for reorder").SetInternal(err)
 		}

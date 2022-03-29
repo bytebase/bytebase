@@ -58,8 +58,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				envFind := &api.EnvironmentFind{}
-				envList, err := s.server.store.FindEnvironmentList(ctx, envFind)
+				envList, err := s.server.store.FindEnvironment(ctx, &api.EnvironmentFind{})
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
