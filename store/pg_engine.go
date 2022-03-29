@@ -152,6 +152,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 }
 
 func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (ver version, err error) {
+	// TODO(d): support semantic versioning.
 	limit := 1
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
@@ -244,6 +245,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 
 	if curVer.major == 0 && curVer.minor == 0 {
 		createDatabaseStatement := fmt.Sprintf("CREATE DATABASE %s", databaseName)
+		// TODO(d): support semantic versioning.
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
@@ -288,6 +290,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, da
 			if err != nil {
 				return err
 			}
+			// TODO(d): support semantic versioning.
 			if _, _, err := d.ExecuteMigration(
 				ctx,
 				&dbdriver.MigrationInfo{

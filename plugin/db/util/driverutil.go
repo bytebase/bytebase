@@ -6,9 +6,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
@@ -118,7 +120,7 @@ type MigrationExecutor interface {
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (insertedID int64, err error)
+	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
 	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error
 	// UpdateHistoryAsFailed will update the migration record as failed.
@@ -183,6 +185,11 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
 func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
+	// Convert verion to stored version.
+	storedVersion, err := toStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
+	}
 	// Phase 1 - Precheck before executing migration
 	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
@@ -233,7 +240,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, statement); err != nil {
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statement); err != nil {
 		return -1, err
 	}
 
@@ -393,6 +400,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	var migrationHistoryList []*db.MigrationHistory
 	for rows.Next() {
 		var history db.MigrationHistory
+		var storedVersion string
 		if err := rows.Scan(
 			&history.ID,
 			&history.Creator,
@@ -405,7 +413,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			&history.Source,
 			&history.Type,
 			&history.Status,
-			&history.Version,
+			&storedVersion,
 			&history.Description,
 			&history.Statement,
 			&history.Schema,
@@ -417,6 +425,11 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			return nil, err
 		}
 
+		useSemanticVersion, version, semanticVersionSuffix, err := fromStoredVersion(storedVersion)
+		if err != nil {
+			return nil, err
+		}
+		history.UseSemanticVersion, history.Version, history.SemanticVersionSuffix = useSemanticVersion, version, semanticVersionSuffix
 		migrationHistoryList = append(migrationHistoryList, &history)
 	}
 	if err := rows.Err(); err != nil {
@@ -442,4 +455,56 @@ func formatError(err error) error {
 	}
 
 	return err
+}
+
+const nonSemanticPrefix = "0000.0000.0000-"
+
+// toStoredVersion converts semantic or non-semantic version to stored version format.
+// Non-semantic version will have additional "0000.0000.0000-" prefix.
+// Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
+func toStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
+	if !useSemanticVersion {
+		return fmt.Sprintf("%s%s", nonSemanticPrefix, version), nil
+	}
+	v, err := semver.Make(version)
+	if err != nil {
+		return "", err
+	}
+	major, minor, patch := fmt.Sprintf("%d", v.Major), fmt.Sprintf("%d", v.Minor), fmt.Sprintf("%d", v.Patch)
+	if len(major) > 4 || len(minor) > 4 || len(patch) > 4 {
+		return "", fmt.Errorf("invalid version %q, major, minor, patch version should be < 10000", version)
+	}
+	return fmt.Sprintf("%04s.%04s.%04s-%s", major, minor, patch, semanticVersionSuffix), nil
+}
+
+// fromStoredVersion converts stored version to semantic or non-semantic version.
+func fromStoredVersion(storedVersion string) (bool, string, string, error) {
+	if strings.HasPrefix(storedVersion, nonSemanticPrefix) {
+		return false, strings.TrimPrefix(storedVersion, nonSemanticPrefix), "", nil
+	}
+	idx := strings.Index(storedVersion, "-")
+	if idx < 0 {
+		return false, "", "", fmt.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
+	}
+	prefix, suffix := storedVersion[:idx], storedVersion[idx+1:]
+	parts := strings.Split(prefix, ".")
+	if len(parts) != 3 {
+		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+	}
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+	}
+	if major >= 10000 || minor >= 10000 || major >= patch {
+		return false, "", "", fmt.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
+	}
+	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
 }

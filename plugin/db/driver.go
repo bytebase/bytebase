@@ -233,6 +233,11 @@ type MigrationInfo struct {
 	IssueID        string
 	Payload        string
 	CreateDatabase bool
+	// UseSemanticVersion is whether version is a semantic version.
+	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
+	UseSemanticVersion bool
+	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
+	SemanticVersionSuffix string
 }
 
 // ParseMigrationInfo matches filePath against filePathTemplate
@@ -340,6 +345,11 @@ type MigrationHistory struct {
 	ExecutionDurationNs int64
 	IssueID             string
 	Payload             string
+	// UseSemanticVersion is whether version is a semantic version.
+	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
+	UseSemanticVersion bool
+	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
+	SemanticVersionSuffix string
 }
 
 // MigrationHistoryFind is the API message for finding migration histories.
