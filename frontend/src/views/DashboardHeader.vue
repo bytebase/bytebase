@@ -116,7 +116,17 @@
           <heroicons-outline:translate class="w-6 h-6" />
         </div>
         <div class="ml-2">
-          <ProfileDropdown />
+          <div
+            class="flex justify-center items-center bg-gray-100 rounded-3xl"
+            :class="logoUrl ? 'p-2' : ''"
+          >
+            <img
+              v-if="logoUrl"
+              class="h-7 mr-4 ml-2 bg-no-repeat bg-contain bg-center"
+              :src="logoUrl"
+            />
+            <ProfileDropdown />
+          </div>
         </div>
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
@@ -186,6 +196,7 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, UNKNOWN_ID } from "../types";
+import { Setting, brandingLogoSettingName } from "../types/setting";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 
@@ -219,6 +230,17 @@ export default defineComponent({
     const isDevFeatures = computed((): boolean => {
       return isDev();
     });
+
+    const prepareBranding = () => {
+      store.dispatch("setting/fetchSetting");
+    };
+
+    const logoUrl = computed((): string | undefined => {
+      const brandingLogoSetting: Setting = store.getters["setting/settingByName"](brandingLogoSettingName);
+      return brandingLogoSetting?.value;
+    })
+
+    watchEffect(prepareBranding);
 
     const prepareInboxSummary = () => {
       // It will also be called when user logout
@@ -353,6 +375,7 @@ export default defineComponent({
 
     return {
       state,
+      logoUrl,
       currentUser,
       currentPlan,
       showDBAItem,

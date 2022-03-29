@@ -10,13 +10,13 @@ import (
 func (s *Server) composeRepositoryRelationship(ctx context.Context, raw *api.RepositoryRaw) (*api.Repository, error) {
 	repository := raw.ToRepository()
 
-	creator, err := s.composePrincipalByID(ctx, repository.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, repository.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	repository.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, repository.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, repository.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

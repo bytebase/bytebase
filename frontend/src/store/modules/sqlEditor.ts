@@ -38,6 +38,7 @@ const state: () => SqlEditorState = () => ({
   isExecuting: false,
   isShowExecutingHint: false,
   shouldSetContent: false,
+  shouldFormatContent: false,
   // Related data and status
   queryHistoryList: [],
   isFetchingQueryHistory: false,
@@ -148,6 +149,9 @@ const mutations = {
   [types.SET_SHOULD_SET_CONTENT](state: SqlEditorState, payload: boolean) {
     state.shouldSetContent = payload;
   },
+  [types.SET_SHOULD_FORMAT_CONTENT](state: SqlEditorState, payload: boolean) {
+    state.shouldFormatContent = payload;
+  },
   [types.SET_IS_EXECUTING](state: SqlEditorState, payload: boolean) {
     state.isExecuting = payload;
   },
@@ -170,6 +174,7 @@ type SqlEditorActionsMap = {
   setConnectionTree: typeof mutations.SET_CONNECTION_TREE;
   setConnectionContext: typeof mutations.SET_CONNECTION_CONTEXT;
   setShouldSetContent: typeof mutations.SET_SHOULD_SET_CONTENT;
+  setShouldFormatContent: typeof mutations.SET_SHOULD_FORMAT_CONTENT;
   setIsExecuting: typeof mutations.SET_IS_EXECUTING;
   setQueryHistoryList: typeof mutations.SET_QUERY_HISTORY_LIST;
   setIsFetchingQueryHistory: typeof mutations.SET_IS_FETCHING_QUERY_HISTORY;
@@ -181,6 +186,7 @@ const actions = {
     setConnectionTree: types.SET_CONNECTION_TREE,
     setConnectionContext: types.SET_CONNECTION_CONTEXT,
     setShouldSetContent: types.SET_SHOULD_SET_CONTENT,
+    setShouldFormatContent: types.SET_SHOULD_FORMAT_CONTENT,
     setIsExecuting: types.SET_IS_EXECUTING,
     setQueryHistoryList: types.SET_QUERY_HISTORY_LIST,
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,

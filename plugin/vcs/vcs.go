@@ -52,6 +52,12 @@ type FileMeta struct {
 	LastCommitID string
 }
 
+// RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
+type RepositoryTreeNode struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
 // PushEvent is the API message for a VCS push event.
 type PushEvent struct {
 	VCSType            Type       `json:"vcsType"`
@@ -96,27 +102,31 @@ type RepositoryMember struct {
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
-
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
-
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	// userID: the ID of the desired user
 	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*UserInfo, error)
-
 	// Fetch all active members of a given repository
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
-
+	// Fetch the repository file list
+	//
+	// oauthCtx: OAuth context to read the repository tree
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
+	// filePath: the path inside repository, used to get content of subdirectories
+	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, ref string, filePath string) ([]*RepositoryTreeNode, error)
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

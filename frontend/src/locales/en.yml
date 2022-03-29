@@ -177,6 +177,9 @@ common:
   warning: Warning
   edited: edited
   preview: Preview
+  file-selector:
+    type-limit: Only support {extension} file
+    size-limit: File size should less than {size} MiB
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -297,6 +300,16 @@ settings:
       emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
     change-role-provider-to-bytebase:
       content: You are about to restore the following members. All existing members synced from VCS will be removed.
+  general:
+    workspace:
+      branding: Branding
+      only-owner-can-edit: Only workspace owner can update the branding.
+      logo: Logo
+      logo-aspect: The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).
+      select-logo: Upload a file
+      drag-logo: or drag here
+      logo-upload-tip: "{extension} up to {size} MiB"
+      logo-upload-succeed: Successfully updated the logo
 activity:
   name: Name
   comment: Comment
@@ -997,6 +1010,7 @@ sql-editor:
   save-sheet: Save Sheet
   save-sheet-input-placeholder: Please input a sheet name
   untitled-sheet: Untitled Sheet
+  format: Format
 label:
   empty-label-value: <Empty Value>
   no-label: No labels
@@ -1085,6 +1099,9 @@ subscription:
       title: 3rd party authentication & authorization
       desc: Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.
       login: "@:{'subscription.upgrade'} to unlock this feature"
+    bb-feature-branding:
+      title: Branding
+      desc: Customize the logo.
   feature-sections:
     database-management:
       title: Database Development
@@ -1126,6 +1143,10 @@ subscription:
         rbac: RBAC (Owner, DBA, Developer role)
         3rd-party-auth: Login with GitLab account
         sync-members-from-vcs: Sync project membership from the linked GitLab project
+    branding:
+      title: Branding
+      features:
+        branding-logo: Customize the logo
   plan:
     title: Plan
     try: Try Team

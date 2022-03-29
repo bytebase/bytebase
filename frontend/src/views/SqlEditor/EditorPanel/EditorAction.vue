@@ -1,6 +1,6 @@
 <template>
-  <div class="sqleditor-editor-actions">
-    <div class="actions-left w-1/3 space-x-2">
+  <div class="editor-action">
+    <div class="action-left space-x-2 flex items-center">
       <NButton
         type="primary"
         :disabled="isEmptyStatement || executeState.isLoadingData"
@@ -14,8 +14,14 @@
       >
         <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
+      <NButton
+        :disabled="isEmptyStatement || executeState.isLoadingData"
+        @click="handleFormatSQL"
+      >
+        {{ $t("sql-editor.format") }} (⇧+⌥+F)
+      </NButton>
     </div>
-    <div class="actions-right space-x-2 flex w-2/3 justify-end items-center">
+    <div class="action-right space-x-2 flex justify-end items-center">
       <NPopover
         v-if="
           connectionContext.instanceId !== UNKNOWN_ID && !hasReadonlyDataSource
@@ -118,12 +124,14 @@ import { computed, ref, defineEmits } from "vue";
 import {
   useNamespacedState,
   useNamespacedGetters,
+  useNamespacedActions,
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
 
 import {
   SqlEditorState,
   SqlEditorGetters,
+  SqlEditorActions,
   TabGetters,
   UNKNOWN_ID,
   Instance,
@@ -148,6 +156,11 @@ const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
 ]);
 
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+
+const { setShouldFormatContent } = useNamespacedActions<SqlEditorActions>(
+  "sqlEditor",
+  ["setShouldFormatContent"]
+);
 
 const isShowSharePopover = ref(false);
 
@@ -199,10 +212,14 @@ const handleClickoutside = (e: any) => {
 const toggleSharePopover = () => {
   isShowSharePopover.value = !isShowSharePopover.value;
 };
+
+const handleFormatSQL = () => {
+  setShouldFormatContent(true);
+};
 </script>
 
 <style scoped>
-.sqleditor-editor-actions {
+.editor-action {
   @apply w-full flex justify-between items-center p-2;
 }
 </style>

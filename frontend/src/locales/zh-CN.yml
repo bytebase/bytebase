@@ -177,6 +177,9 @@ common:
   warning: 警告
   edited: 编辑于
   preview: 预览
+  file-selector:
+    type-limit: 仅支持 {extension} 类型的文件
+    size-limit: 文件大小需小于 {size} MiB
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -297,6 +300,16 @@ settings:
       emphasize: 请注意，该功能需要 VCS 仓库内所有成员均设置了公开邮箱。
     change-role-provider-to-bytebase:
       content: 将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。
+  general:
+    workspace:
+      branding: 品牌
+      only-owner-can-edit: 仅管理员可以更新品牌信息
+      logo: Logo
+      logo-aspect: Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）
+      select-logo: 选择
+      drag-logo: 或拖拽文件
+      logo-upload-tip: 支持 {extension} 类型文件，不能大于 {size} MiB
+      logo-upload-succeed: Logo 更新完成
 activity:
   name: 名称
   comment: 评论
@@ -1004,6 +1017,7 @@ sql-editor:
   save-sheet: 保存工作表
   save-sheet-input-placeholder: 请输入工作表名称
   untitled-sheet: 未命名工作表
+  format: 格式化
 label:
   empty-label-value: <空值>
   no-label: 没有标签
@@ -1092,6 +1106,9 @@ subscription:
       title: 第三方认证 & 授权
       desc: Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。
       login: 请@:{'subscription.upgrade'}来开启该功能
+    bb-feature-branding:
+      title: 自定义品牌信息
+      desc: 定制 Logo
   feature-sections:
     database-management:
       title: 数据库管理
@@ -1133,6 +1150,10 @@ subscription:
         rbac: RBAC 权限管理
         3rd-party-auth: 通过 GitLab 登录
         sync-members-from-vcs: 从 GitLab 同步成员信息
+    branding:
+      title: 自定义品牌信息
+      features:
+        branding-logo: 自定义 Logo
   plan:
     title: 版本
     try: 试用团队版

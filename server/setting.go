@@ -13,7 +13,9 @@ import (
 
 var (
 	// Some settings contain secret info so we only return settings that are needed by the client.
-	whitelistSettings = []api.SettingName{}
+	whitelistSettings = []api.SettingName{
+		api.SettingBrandingLogo,
+	}
 )
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
@@ -56,6 +58,11 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			Name:      api.SettingName(c.Param("name")),
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
+
+		if settingPatch.Name == api.SettingBrandingLogo && !s.feature(api.FeatureBranding) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
+		}
+
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
 		}
@@ -69,7 +76,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, setting); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, setting.ToSetting()); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting response").SetInternal(err)
 		}
 		return nil
@@ -79,13 +86,13 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 func (s *Server) composeSettingRelationship(ctx context.Context, raw *api.SettingRaw) (*api.Setting, error) {
 	setting := raw.ToSetting()
 
-	creator, err := s.composePrincipalByID(ctx, setting.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, setting.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	setting.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, setting.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, setting.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

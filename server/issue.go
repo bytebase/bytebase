@@ -287,19 +287,19 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw) (*api.Issue, error) {
 	issue := raw.ToIssue()
 
-	creator, err := s.composePrincipalByID(ctx, issue.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	issue.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, issue.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	issue.Updater = updater
 
-	assignee, err := s.composePrincipalByID(ctx, issue.AssigneeID)
+	assignee, err := s.store.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return nil, err
 	}
@@ -339,17 +339,17 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
 	var err error
 
-	issue.Creator, err = s.composePrincipalByID(ctx, issue.CreatorID)
+	issue.Creator, err = s.store.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	issue.Updater, err = s.composePrincipalByID(ctx, issue.UpdaterID)
+	issue.Updater, err = s.store.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	issue.Assignee, err = s.composePrincipalByID(ctx, issue.AssigneeID)
+	issue.Assignee, err = s.store.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}
@@ -383,7 +383,7 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 
 // Only allow Bot/Owner/DBA as the assignee, not Developer.
 func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
-	assignee, err := s.PrincipalService.FindPrincipal(ctx, &api.PrincipalFind{
+	assignee, err := s.store.FindPrincipal(ctx, &api.PrincipalFind{
 		ID: &assigneeID,
 	})
 	if err != nil {
@@ -391,9 +391,6 @@ func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) e
 	}
 	if assignee == nil {
 		return fmt.Errorf("Principal ID not found: %d", assigneeID)
-	}
-	if err = s.composePrincipalRole(ctx, assignee); err != nil {
-		return err
 	}
 	if assignee.Role != api.Owner && assignee.Role != api.DBA {
 		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
@@ -1016,8 +1013,11 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 			stmt = fmt.Sprintf("%s\nUSE DATABASE %s;\n%s", stmt, databaseName, schema)
 		}
 	case db.SQLite:
-		// This is a fake CREATE DATABASE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
+		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		stmt = fmt.Sprintf("CREATE DATABASE '%s';", databaseName)
+		if schema != "" {
+			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
+		}
 	}
 
 	return databaseName, stmt

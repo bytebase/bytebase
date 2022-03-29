@@ -28,6 +28,7 @@ import {
   SqlEditorActions,
   SqlEditorState,
   SheetGetters,
+  SqlDialect,
 } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
@@ -62,17 +63,20 @@ const language = toRef(props, "language");
 
 const store = useStore();
 const { t } = useI18n();
-const { shouldSetContent } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "shouldSetContent",
-]);
+const { shouldSetContent, shouldFormatContent } =
+  useNamespacedState<SqlEditorState>("sqlEditor", [
+    "shouldSetContent",
+    "shouldFormatContent",
+  ]);
 const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { isReadOnly } = useNamespacedGetters<SheetGetters>("sheet", [
   "isReadOnly",
 ]);
-const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setShouldSetContent"]
-);
+const { setShouldSetContent, setShouldFormatContent } =
+  useNamespacedActions<SqlEditorActions>("sqlEditor", [
+    "setShouldSetContent",
+    "setShouldFormatContent",
+  ]);
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
@@ -148,7 +152,7 @@ const init = async () => {
     id: "FormatSQL",
     label: "Format SQL",
     keybindings: [
-      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+      monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
     ],
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
@@ -161,7 +165,7 @@ const init = async () => {
         });
         return;
       }
-      formatContent(editorInstance, language.value);
+      formatContent(editorInstance, language.value as SqlDialect);
       nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
   });
@@ -235,12 +239,27 @@ watch(
     }
   }
 );
+
+// trigger format code from outside
+watch(
+  () => shouldFormatContent.value,
+  () => {
+    if (shouldFormatContent.value) {
+      formatContent(editorInstance, language.value as SqlDialect);
+      nextTick(() => {
+        setPositionAtEndOfLine(editorInstance);
+        editorInstance.focus();
+      });
+      setShouldFormatContent(false);
+    }
+  }
+);
 </script>
 
 <style>
 .monaco-editor .cldr.sql-fragment {
   @apply bg-indigo-600;
-  width: 4px !important;
+  width: 3px !important;
   margin-left: 2px;
 }
 </style>

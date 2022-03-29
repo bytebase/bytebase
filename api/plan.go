@@ -34,12 +34,12 @@ const (
 	// Change Workflow
 
 	// FeatureBackwardCompatibility checks if a DDL change is backward compatible.
-	// See https://docs.bytebase.com/features/sql-advisor/backward-compatibility-migration-check
+	// See https://bytebase.com/docs/features/sql-advisor/backward-compatibility-migration-check
 	//
 	// Currently, we only support MySQL/TiDB thanks to github.com/pingcap/parser
 	FeatureBackwardCompatibility FeatureType = "bb.feature.backward-compatibility"
 	// FeatureSchemaDrift detects if there occurs schema drift.
-	// See https://docs.bytebase.com/features/drift-detection
+	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
@@ -94,6 +94,11 @@ const (
 	//
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
+
+	// Branding
+	//
+	// Currently, we only support customizing the logo.
+	FeatureBranding FeatureType = "bb.feature.branding"
 )
 
 func (e FeatureType) String() string {
@@ -118,6 +123,8 @@ func (e FeatureType) String() string {
 		return "bb.feature.rbac"
 	case Feature3rdPartyAuth:
 		return "bb.feature.3rd-party-auth"
+	case FeatureBranding:
+		return "bb.feature.branding"
 	}
 	return ""
 }
@@ -145,6 +152,8 @@ func (e FeatureType) Name() string {
 		return "RBAC"
 	case Feature3rdPartyAuth:
 		return "3rd party auth"
+	case FeatureBranding:
+		return "Branding"
 	}
 	return ""
 }
@@ -178,6 +187,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.backup-policy":          {false, true, true},
 	"bb.feature.rbac":                   {false, true, true},
 	"bb.feature.3rd-party-auth":         {false, true, true},
+	"bb.feature.branding":               {false, true, true},
 }
 
 // Plan is the API message for a plan.

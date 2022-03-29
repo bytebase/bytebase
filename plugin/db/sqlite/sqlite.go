@@ -13,7 +13,6 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
@@ -316,21 +315,37 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, useTransaction bool) error {
-	// This is a fake CREATA DATABASE statement. Engine driver will recognize it and establish a connect to create the database.
-	if strings.HasPrefix(statement, "CREATE DATABASE ") {
-		parts := strings.Split(statement, `'`)
-		if len(parts) != 3 {
-			return fmt.Errorf("invalid statement %q", statement)
+func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	var remainingStmts []string
+	f := func(stmt string) error {
+		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
+		stmt = strings.TrimLeft(stmt, " \t")
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			parts := strings.Split(stmt, `'`)
+			if len(parts) != 3 {
+				return fmt.Errorf("invalid statement %q", stmt)
+			}
+			db, err := driver.GetDbConnection(ctx, parts[1])
+			if err != nil {
+				return err
+			}
+			// We need to query to persist the database file.
+			if _, err := db.Query("SELECT 1;"); err != nil {
+				return err
+			}
+		} else if strings.HasPrefix(stmt, "USE ") {
+			// ignore this fake use database statement.
+		} else {
+			remainingStmts = append(remainingStmts, stmt)
 		}
-		db, err := driver.GetDbConnection(ctx, parts[1])
-		if err != nil {
-			return err
-		}
-		// We need to query to persist the database file.
-		if _, err := db.Query("SELECT 1;"); err != nil {
-			return err
-		}
+		return nil
+	}
+	sc := bufio.NewScanner(strings.NewReader(statement))
+	if err := util.ApplyMultiStatements(sc, f); err != nil {
+		return err
+	}
+
+	if len(remainingStmts) == 0 {
 		return nil
 	}
 
@@ -340,9 +355,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, useTransact
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
-
-	if err == nil {
+	if _, err = tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err == nil {
 		if err := tx.Commit(); err != nil {
 			return err
 		}
@@ -417,65 +430,50 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-// CheckOutOfOrderVersion will return versions that are higher than the given version.
-func (Driver) CheckOutOfOrderVersion(ctx context.Context, tx *sql.Tx, namespace string, source db.MigrationSource, version string) (minVersionIfValid *string, err error) {
-	const checkOutofOrderVersionQuery = `
-		SELECT MIN(version) FROM bytebase_migration_history
-		WHERE namespace = ? AND source = ? AND version > ?
+// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
+func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
+	largestBaselineSequence, err := driver.FindLargestSequence(ctx, tx, namespace, true /* baseline */)
+	if err != nil {
+		return nil, err
+	}
+	const getLargestVersionSinceLastBaselineQuery = `
+		SELECT MAX(version) FROM bytebase_migration_history
+		WHERE namespace = ? AND sequence >= ?
 	`
-	row, err := tx.QueryContext(ctx, checkOutofOrderVersionQuery,
-		namespace, source.String(), version,
+	row, err := tx.QueryContext(ctx, getLargestVersionSinceLastBaselineQuery,
+		namespace, largestBaselineSequence,
 	)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, checkOutofOrderVersionQuery)
+		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
 	}
 	defer row.Close()
 
-	var minVersion sql.NullString
+	var version sql.NullString
 	row.Next()
-	if err := row.Scan(&minVersion); err != nil {
+	if err := row.Scan(&version); err != nil {
 		return nil, err
 	}
 
-	if minVersion.Valid {
-		return &minVersion.String, nil
+	if version.Valid {
+		return &version.String, nil
 	}
 
 	return nil, nil
 }
 
-// FindBaseline retruns true if any baseline is found.
-func (Driver) FindBaseline(ctx context.Context, tx *sql.Tx, namespace string) (hasBaseline bool, err error) {
-	const findBaselineQuery = `
-		SELECT 1 FROM bytebase_migration_history
-		WHERE namespace = ? AND type = 'BASELINE'
-	`
-	row, err := tx.QueryContext(ctx, findBaselineQuery,
+// FindLargestSequence will return the largest sequence number.
+func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
+	findLargestSequenceQuery := `
+		SELECT MAX(sequence) FROM bytebase_migration_history
+		WHERE namespace = ?`
+	if baseline {
+		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
+	}
+	row, err := tx.QueryContext(ctx, findLargestSequenceQuery,
 		namespace,
 	)
 	if err != nil {
-		return false, util.FormatErrorWithQuery(err, findBaselineQuery)
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-// FindNextSequence will return the highest sequence number plus one.
-func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string, requireBaseline bool) (int, error) {
-	const findNextSequenceQuery = `
-		SELECT MAX(sequence) + 1 FROM bytebase_migration_history
-		WHERE namespace = ?
-	`
-	row, err := tx.QueryContext(ctx, findNextSequenceQuery,
-		namespace,
-	)
-	if err != nil {
-		return -1, util.FormatErrorWithQuery(err, findNextSequenceQuery)
+		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
 	defer row.Close()
 
@@ -486,13 +484,8 @@ func (Driver) FindNextSequence(ctx context.Context, tx *sql.Tx, namespace string
 	}
 
 	if !sequence.Valid {
-		// Returns 1 if we haven't applied any migration for this namespace and doesn't require baselining
-		if !requireBaseline {
-			return 1, nil
-		}
-
-		// This should not happen normally since we already check the baselining exist beforehand. Just in case.
-		return -1, common.Errorf(common.MigrationBaselineMissing, fmt.Errorf("unable to generate next migration_sequence, no migration hisotry found for %q, do you forget to baselining?", namespace))
+		// Returns 0 if we haven't applied any migration for this namespace.
+		return 0, nil
 	}
 
 	return int(sequence.Int32), nil
