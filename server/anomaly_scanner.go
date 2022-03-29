@@ -59,23 +59,10 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				ctx := context.Background()
 
 				envFind := &api.EnvironmentFind{}
-				envRawList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, envFind)
+				envList, err := s.server.store.FindEnvironmentList(ctx, envFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
-				}
-
-				// compose environments
-				var envList []*api.Environment
-				for _, envRaw := range envRawList {
-					env, err := s.server.composeEnvironmentRelationship(ctx, envRaw)
-					if err != nil {
-						s.l.Error("Failed to compose environment relationship",
-							zap.String("environment", envRaw.Name),
-							zap.Error(err))
-						return
-					}
-					envList = append(envList, env)
 				}
 
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)

@@ -32,7 +32,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		}
 
 		// Add reserved environment key.
-		envRawList, err := s.EnvironmentService.FindEnvironmentList(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
+		envRawList, err := s.store.FindEnvironmentList(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environments").SetInternal(err)
 		}

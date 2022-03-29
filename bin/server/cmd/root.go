@@ -383,7 +383,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.EnvironmentService = store.NewEnvironmentService(m.l, db, cacheService)
 	s.DataSourceService = store.NewDataSourceService(m.l, db, cacheService)
 	s.BackupService = store.NewBackupService(m.l, db, s.PolicyService)
 	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, s.PolicyService, s.BackupService)
