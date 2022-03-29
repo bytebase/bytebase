@@ -210,10 +210,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
-		vcsFind := &api.VCSFind{
-			ID: &repositoryCreate.VCSID,
-		}
-		vcs, err := s.store.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repositoryCreate.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
 		}
@@ -379,10 +376,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if repoPatch.BranchFilter != nil {
-			vcsFind := &api.VCSFind{
-				ID: &repo.VCSID,
-			}
-			vcs, err := s.store.FindVCS(ctx, vcsFind)
+			vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
@@ -459,10 +453,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repository := repoRawList[0]
-		vcsFind := &api.VCSFind{
-			ID: &repository.VCSID,
-		}
-		vcs, err := s.store.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repository.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}

@@ -64,9 +64,9 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 	return vcs, nil
 }
 
-// FindVCSList finds a list of VCS instances
-func (s *Store) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
-	vcsRawList, err := s.findVCSListRaw(ctx, find)
+// FindVCS finds a list of VCS instances
+func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
+	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find VCS list, error[%w]", err)
 	}
@@ -81,15 +81,16 @@ func (s *Store) FindVCSList(ctx context.Context, find *api.VCSFind) ([]*api.VCS,
 	return vcsList, nil
 }
 
-// FindVCS finds an instance of VCS
-func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) (*api.VCS, error) {
-	vcsRaw, err := s.findVCSRaw(ctx, find)
+// GetVCSByID gets a composesd instance of VCS by ID
+func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
+	vcsRaw, err := s.getVCSRaw(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find VCS with VCSFind[%+v], error[%w]", find, err)
+		return nil, err
 	}
+
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+		return nil, err
 	}
 	return vcs, nil
 }
@@ -113,23 +114,6 @@ func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 		return fmt.Errorf("Failed to delete VCS with VCSDelete[%+v], error[%w]", delete, err)
 	}
 	return nil
-}
-
-// GetVCSByID gets a composesd instance of VCS by ID
-func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
-	vcsFind := &api.VCSFind{
-		ID: &id,
-	}
-	vcsRaw, err := s.findVCSRaw(ctx, vcsFind)
-	if err != nil {
-		return nil, err
-	}
-
-	vcs, err := s.composeVCS(ctx, vcsRaw)
-	if err != nil {
-		return nil, err
-	}
-	return vcs, nil
 }
 
 //
@@ -174,15 +158,15 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 	return vcs, nil
 }
 
-// findVCSListRaw retrieves a list of VCSs based on find conditions.
-func (s *Store) findVCSListRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
+// findVCSRaw retrieves a list of VCSs based on find conditions.
+func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSListImpl(ctx, tx.PTx, find)
+	list, err := findVCSImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -190,16 +174,19 @@ func (s *Store) findVCSListRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRa
 	return list, nil
 }
 
-// findVCSRaw retrieves a single vcs based on find.
+// getVCSRaw retrieves a single vcs based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) (*vcsRaw, error) {
+func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findVCSListImpl(ctx, tx.PTx, find)
+	find := &api.VCSFind{
+		ID: &id,
+	}
+	list, err := findVCSImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +238,10 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 
 	return nil
 }
+
+//
+// database access implementations
+//
 
 // createVCSImpl creates a new vcs.
 func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcsRaw, error) {
@@ -305,7 +296,7 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 	return &vcs, nil
 }
 
-func findVCSListImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
+func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

@@ -42,7 +42,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.GET("/vcs", func(c echo.Context) error {
 		ctx := context.Background()
 		vcsFind := &api.VCSFind{}
-		vcsList, err := s.store.FindVCSList(ctx, vcsFind)
+		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
