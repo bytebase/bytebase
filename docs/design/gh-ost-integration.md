@@ -274,6 +274,8 @@ Another approach is to infer cloud providers by inspecting usernames because clo
 - [azure](https://docs.microsoft.com/en-us/azure/mysql/howto-create-users)
 - [aws](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.MySQL.CommonDBATasks.html) (Stored procedures)
 
+We will take the first approach, this section is left here for information.
+
 ### gh-ost execution stages
 
 We will divide gh-ost execution into different tasks. Each task needs to be approved by user to proceed. These tasks are described in detail in the following sections.
@@ -318,23 +320,9 @@ It's important to show user the progress, because typically it will take hours o
 
 We will have two tasks for the actual migration. The first task runs gh-ost, syncs the ghost table with the original table. Once synced, the first task will be `DONE` and the second task will be `PENDING_APPROVAL`. The second task does the cut-over, which locks the tables and atomically switch table names. The second task is blocked by the first task.
 
-These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Go channels to the rescue! For go routines that run tasks, we will store go channels globally to communicate with them. When the ghost table catches up with the original table , the "run" task will switch to `DONE`, and the "cut over" task will be `PENDING_APPROVAL`. The "cut over" task sends `"cut-over"` to the "run" task go routine to execute cut over.
+These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Fortunately, we can leverage the unix socket file that gh-ost migrator listens on. When the ghost table catches up with the original table , the "run" task will switch to `DONE`, and the "cut over" task will be `PENDING_APPROVAL`. The "cut over" task sends `"cut-over"` to the socket file to execute cut over.
 
-```Go
-type TaskScheduler struct {
-    // Channel[taskID] is the channel that sends messages to taskID
-    channel map[int]chan string
-}
-
-func (s *TaskScheduler) Run() {
-    for task in scheduledTaskList {
-        s.channel[task.ID] = make(chan string)
-        go func(task *api.Task, channel <-chan string) {
-            done, result, err := executor.RunOnce(ctx, s.server, task, channel)
-        }(task, s.channel[task.ID])
-    }
-}
-```
+The socket file is in `/tmp` directory, so the operating system will clean it up and we won't bother removing it.
 
 ### Crash recovery
 
@@ -394,17 +382,16 @@ type UpdateSchemaGhostContext struct {
 
 const TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update.ghost"
 type TaskDatabaseSchemaUpdateGhostPayload struct {
-    MigrationType db.MigrationType `json:"migrationType,omitempty"`
-    Statement     string           `json:"statement,omitempty"`
-    SchemaVersion string           `json:"schemaVersion,omitempty"`
-    VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
+    MigrationType  db.MigrationType `json:"migrationType,omitempty"`
+    Statement      string           `json:"statement,omitempty"`
+    SchemaVersion  string           `json:"schemaVersion,omitempty"`
+    VCSPushEvent   *vcs.PushEvent   `json:"pushEvent,omitempty"`
+    SocketFileName string           `json:"socketFileName,omitempty"`
     // more to come
 }
 
 const TaskDatabaseSchemaUpdateGhostCutover = "bb.task.database.schema.update.ghost.cutover"
 type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-    // ParentTaskID references back to the gh-ost executor task ID
-    ParentTaskID int `json:"parentTaskId,omitempty"`
 }
 
 const TaskDatabaseSchemaUpdateGhostDropOriginalTable = "bb.task.database.schema.update.ghost.drop-original-table"
@@ -440,18 +427,37 @@ func ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string
 
 Since `Execute(statement)` merely just executes the DDL statement, it should be interchangeable with gh-ost executing the migration.
 
-We will refactor `ExecuteMigration` and export `beginMigration` and `endMigration`, so with gh-ost it will be `beginMigration`->`Migrate`->`endMigration`.
+We will refactor `ExecuteMigration` and export `beginMigration` and `endMigration`, so with gh-ost tasks it will be the following.
 
 ```Go
 // task_executor_schema_update_ghost.go
 
-type SchemaUpdateTaskExecutorGhost struct {
+type SchemaUpdateGhostTaskExecutor struct {
     l *zap.Logger
 }
 
-func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
     PreMigration()
     ghostExecuteMigration()
+}
+
+// task_executor_schema_update_ghost_cutover.go
+type SchemaUpdateGhostCutoverTaskExecutor struct {
+    l *zap.Logger
+}
+
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+    allowCutOver()
+}
+
+// task_executor_schema_update_ghost_drop_original_table.go
+
+type SchemaUpdateGhostDropOriginalTableTaskExecutor struct {
+    l *zap.Logger
+}
+
+func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+    dropOriginalTable()
     PostMigration()
 }
 ```
