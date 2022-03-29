@@ -17,7 +17,8 @@ type IssueTypeDatabase =
   | "bb.issue.database.create"
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
-  | "bb.issue.database.data.update";
+  | "bb.issue.database.data.update"
+  | "bb.issue.database.schema.update.ghost";
 
 type IssueTypeDataSource = "bb.issue.data-source.request";
 
@@ -45,9 +46,19 @@ export type UpdateSchemaDetail = {
   earliestAllowedTs: number;
 };
 
+export type UpdateSchemaGhostDetail = UpdateSchemaDetail & {
+  // empty by now
+  // more input parameters in the future
+};
+
 export type UpdateSchemaContext = {
   migrationType: MigrationType;
   updateSchemaDetailList: UpdateSchemaDetail[];
+};
+
+export type UpdateSchemaGhostContext = {
+  migrationType: MigrationType;
+  updateSchemaDetailList: UpdateSchemaGhostDetail[];
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -56,6 +67,7 @@ export type EmptyContext = {};
 export type IssueCreateContext =
   | CreateDatabaseContext
   | UpdateSchemaContext
+  | UpdateSchemaGhostContext
   | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };

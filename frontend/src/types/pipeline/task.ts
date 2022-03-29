@@ -19,7 +19,10 @@ export type TaskType =
   | "bb.task.database.create"
   | "bb.task.database.schema.update"
   | "bb.task.database.data.update"
-  | "bb.task.database.restore";
+  | "bb.task.database.restore"
+  | "bb.task.database.schema.update.ghost"
+  | "bb.task.database.schema.update.ghost.cutover"
+  | "bb.task.database.schema.update.ghost.drop-original-table";
 
 export type TaskStatus =
   | "PENDING"
@@ -51,6 +54,21 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
+export type TaskDatabaseSchemaUpdateGhostPayload =
+  TaskDatabaseSchemaUpdatePayload & {
+    // empty by now
+    // more input and output parameters in the future
+  };
+
+export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
+  parentTaskId: TaskId;
+};
+
+export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
+  databaseName: string;
+  tableName: string;
+};
+
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   pushEvent?: VCSPushEvent;
@@ -65,6 +83,8 @@ export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
   | TaskDatabaseSchemaUpdatePayload
+  | TaskDatabaseSchemaUpdateGhostPayload
+  | TaskDatabaseSchemaUpdateGhostCutoverPayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload;
@@ -158,10 +178,18 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
-  | "bb.task-check.general.earliest-allowed-time";
+  | "bb.task-check.general.earliest-allowed-time"
+  | "bb.task-check.database.schema-update.ghost";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;
+};
+
+export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
+  statement: string;
+  instanceId: InstanceId;
+  databaseName: string;
+  tableName: string;
 };
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
