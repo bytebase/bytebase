@@ -39,6 +39,9 @@ DELETE FROM
     task_run;
 
 DELETE FROM
+    task_dag;
+
+DELETE FROM
     task;
 
 DELETE FROM
