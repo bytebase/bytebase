@@ -30,9 +30,9 @@ type principalRaw struct {
 	PasswordHash string
 }
 
-// ToPrincipal creates an instance of Principal based on the principalRaw.
+// toPrincipal creates an instance of Principal based on the principalRaw.
 // This is intended to be called when we need to compose a Principal relationship.
-func (raw *principalRaw) ToPrincipal() *api.Principal {
+func (raw *principalRaw) toPrincipal() *api.Principal {
 	return &api.Principal{
 		ID: raw.ID,
 
@@ -59,7 +59,7 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 	}
 	// NOTE: Currently the corresponding Member object is not created yet.
 	// YES, we are returning a Principal with empty Role field. OMG.
-	principal := principalRaw.ToPrincipal()
+	principal := principalRaw.toPrincipal()
 	return principal, nil
 }
 
@@ -109,7 +109,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 	return principal, nil
 }
 
-// GetPrincipalByID composes an instance of Principal by ID
+// GetPrincipalByID gets a composesd instance of Principal by ID
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{
 		ID: &id,
@@ -244,7 +244,7 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 
 // composePrincipal composes an instance of Principal by principalRaw
 func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.Principal, error) {
-	principal := raw.ToPrincipal()
+	principal := raw.toPrincipal()
 
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
