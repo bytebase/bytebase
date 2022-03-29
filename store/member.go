@@ -63,7 +63,7 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 
 // FindMemberList finds a list of Member instances
 func (s *Store) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
-	memberRawList, err := s.findMemberRawList(ctx, find)
+	memberRawList, err := s.findMemberListRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Member list, error[%w]", err)
 	}
@@ -132,15 +132,15 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 	return member, nil
 }
 
-// findMemberRawList retrieves a list of memberRaw instances.
-func (s *Store) findMemberRawList(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
+// findMemberListRaw retrieves a list of memberRaw instances.
+func (s *Store) findMemberListRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	memberRawList, err := findMemberRawListImpl(ctx, tx.PTx, find)
+	memberRawList, err := findMemberListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) (*membe
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberRawListImpl(ctx, tx.PTx, find)
+	list, err := findMemberListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	return &memberRaw, nil
 }
 
-func findMemberRawListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
+func findMemberListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
