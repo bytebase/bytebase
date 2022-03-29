@@ -33,6 +33,9 @@ DELETE FROM
     issue;
 
 DELETE FROM
+    task_dag;
+
+DELETE FROM
     task_check_run;
 
 DELETE FROM

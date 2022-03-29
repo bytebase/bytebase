@@ -28,7 +28,7 @@ CREATE INDEX idx_task_dag_from_task_id ON task_dag (from_task_id);
 
 CREATE INDEX idx_task_dag_to_task_id ON task_dag (to_task_id);
 
-ALTER SEQUENCE activity_id_seq RESTART WITH 101;
+ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_task_dag_updated_ts
 BEFORE
