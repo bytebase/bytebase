@@ -22,7 +22,7 @@ func (s *Server) composeRepositoryRelationship(ctx context.Context, raw *api.Rep
 	}
 	repository.Updater = updater
 
-	vcs, err := s.composeVCSByID(ctx, repository.VCSID)
+	vcs, err := s.store.GetVCSByID(ctx, repository.VCSID)
 	if err != nil {
 		return nil, err
 	}
