@@ -10,6 +10,7 @@ ALTER TABLE vcs ADD CONSTRAINT vcs_type_check CHECK (type IN ('GITLAB_SELF_HOST'
 ALTER TABLE sheet ADD source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE';
 ALTER TABLE sheet ADD type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL';
 ALTER TABLE sheet ADD payload JSONB NOT NULL DEFAULT '{}';
+CREATE UNIQUE INDEX idx_sheet_project_id_name_source ON sheet(project_id, name, source);
 
 ALTER TABLE repository ADD sheet_path_template TEXT NOT NULL DEFAULT '';
 
@@ -24,9 +25,9 @@ CREATE TABLE task_dag (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_task_dag_from_task_id ON task_dag (from_task_id);
+CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
 
-CREATE INDEX idx_task_dag_to_task_id ON task_dag (to_task_id);
+CREATE INDEX idx_task_dag_to_task_id ON task_dag(to_task_id);
 
 ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
 
