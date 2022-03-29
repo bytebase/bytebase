@@ -503,7 +503,7 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 	if err != nil {
 		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
-	if major >= 10000 || minor >= 10000 || major >= patch {
+	if major >= 10000 || minor >= 10000 || patch >= 10000 {
 		return false, "", "", fmt.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
