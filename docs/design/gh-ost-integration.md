@@ -324,6 +324,14 @@ These two tasks need to access the same `Migrator`. Unfortunately, the way we sc
 
 The socket file is in `/tmp` directory, so the operating system will clean it up and we won't bother removing it. The socket file name will be `./tmp/gh-ost.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`.
 
+We will have task checks for both tasks. For the "run" task, we have `TaskCheckDatabaseSchemaUpdateGhost` mentioned above. For the "cut-over" task, we will have a task check to check whether it is good to cut-over now (in sync, network lags good etc.)
+
+```Go
+const TaskCheckDatabaseSchemaUpdateGhostCutover = "bb.task-check.database.schema.update.ghost.cutover"
+type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload struct {
+}
+```
+
 ### Crash recovery
 
 If it crashes halfway when migrating on `tablename`, we will end up with the original `tablename`, and `_tablename_gho`, `_tablename_ghc`. We just drop `_tablename_gho` and `_tablename_ghc`, rerun gh-ost.
@@ -462,57 +470,5 @@ type SchemaUpdateGhostDropOriginalTableTaskExecutor struct {
 func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
     dropOriginalTable()
     PostMigration()
-}
-```
-
-## Detailed design
-
-```Go
-//task related
-
-type TaskExecutor interface {
-    RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error)
-}
-
-// task check run related
-
-const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema-update.ghost"
-type TaskCheckDatabaseSchemaUpdateGhostPayload struct {
-    Statement string `json:"statement,omitempty"`
-    InstanceID int `json:"instanceId,omitempty"`
-    DatabaseName string `json:"databaseName,omitempty"`
-    TableName string `json:"tableName,omitempty"`
-}
-```
-
-```Go
-// task_executor_schema_update_ghost.go
-type SchemaUpdateTaskGhostExecutor struct {
-    l *zap.Logger
-}
-func (exec *SchemaUpdateTaskGhostExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-    PreMigration()
-    ghostExecuteMigration()
-    waitCutOver()
-    PostMigration()
-}
-
-// task_executor_schema_update_ghost_cutover.go
-type SchemaUpdateTaskGhostCutoverExecutor struct {
-    l *zap.Logger
-}
-func (exec *SchemaUpdateTaskGhostCutoverExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-    payload := unmarshal(task.Payload)
-    parentTaskID = payload.ParentTaskID
-    channel = server.TaskScheduler.channel[ParentTaskID]
-    channel <- "cut-over"
-}
-
-// task_executor_schema_update_ghost_drop_original_table.go
-type SchemaUpdateTaskGhostDropOriginalTableExecutor struct {
-    l *zap.Logger
-}
-func (exec *SchemaUpdateTaskGhostDropOriginalTableExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-
 }
 ```
