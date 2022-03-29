@@ -1,43 +1,8 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
-
-// EnvironmentRaw is the store model for an Environment.
-// Fields have exactly the same meanings as Environment.
-type EnvironmentRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name  string
-	Order int
-}
-
-// ToEnvironment creates an instance of Environment based on the EnvironmentRaw.
-// This is intended to be called when we need to compose an Environment relationship.
-func (raw *EnvironmentRaw) ToEnvironment() *Environment {
-	return &Environment{
-		ID: raw.ID,
-
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		Name:  raw.Name,
-		Order: raw.Order,
-	}
-}
 
 // Environment is the API message for an environment.
 type Environment struct {
@@ -104,12 +69,4 @@ type EnvironmentDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
-}
-
-// EnvironmentService is the service for environments.
-type EnvironmentService interface {
-	CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*EnvironmentRaw, error)
-	FindEnvironmentList(ctx context.Context, find *EnvironmentFind) ([]*EnvironmentRaw, error)
-	FindEnvironment(ctx context.Context, find *EnvironmentFind) (*EnvironmentRaw, error)
-	PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (*EnvironmentRaw, error)
 }
