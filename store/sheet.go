@@ -126,6 +126,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 
 // createSheet creates a new sheet.
 func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api.SheetRaw, error) {
+	// TODO(Steven): remove the default value when developing the service logic for sheet.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
@@ -134,10 +135,13 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 			database_id,
 			name,
 			statement,
-			visibility
+			visibility,
+			source,
+			type,
+			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -146,6 +150,9 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 		create.Name,
 		create.Statement,
 		create.Visibility,
+		"BYTEBASE",
+		"SQL",
+		"{}",
 	)
 
 	if err != nil {
@@ -167,6 +174,9 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 		&sheetRaw.Name,
 		&sheetRaw.Statement,
 		&sheetRaw.Visibility,
+		&sheetRaw.Source,
+		&sheetRaw.Type,
+		&sheetRaw.Payload,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -191,6 +201,15 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Source; v != nil {
+		set, args = append(set, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Type; v != nil {
+		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -198,7 +217,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`, len(args)),
 		args...,
 	)
@@ -222,6 +241,9 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 			&sheetRaw.Name,
 			&sheetRaw.Statement,
 			&sheetRaw.Visibility,
+			&sheetRaw.Source,
+			&sheetRaw.Type,
+			&sheetRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -262,6 +284,12 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 	if v := find.Visibility; v != nil {
 		where, args = append(where, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Source; v != nil {
+		where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -274,7 +302,10 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 			database_id,
 			name,
 			statement,
-			visibility
+			visibility,
+			source,
+			type,
+			payload
 		FROM sheet
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -299,6 +330,9 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*api
 			&sheetRaw.Name,
 			&sheetRaw.Statement,
 			&sheetRaw.Visibility,
+			&sheetRaw.Source,
+			&sheetRaw.Type,
+			&sheetRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}

@@ -29,6 +29,58 @@ func (v SheetVisibility) String() string {
 	return ""
 }
 
+// SheetSource is the type of sheet origin source.
+type SheetSource string
+
+const (
+	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
+	SheetFromBytebase SheetSource = "BYTEBASE"
+	// SheetFromGitLabSelfHost is the sheet synced from self host GitLab.
+	SheetFromGitLabSelfHost SheetSource = "GITLAB_SELF_HOST"
+	// SheetFromGitHubCom is the sheet synced from github.com.
+	SheetFromGitHubCom SheetSource = "GITHUB_COM"
+)
+
+func (v SheetSource) String() string {
+	switch v {
+	case SheetFromBytebase:
+		return "BYTEBASE"
+	case SheetFromGitLabSelfHost:
+		return "GITLAB_SELF_HOST"
+	case SheetFromGitHubCom:
+		return "GITHUB_COM"
+	}
+	// Default sheet source is BYTEBASE.
+	return "BYTEBASE"
+}
+
+// SheetType is the type of sheet.
+type SheetType string
+
+const (
+	// SheetForSQL is the sheet that used for saving SQL statements.
+	SheetForSQL SheetType = "SQL"
+)
+
+func (v SheetType) String() string {
+	switch v {
+	case SheetForSQL:
+		return "SQL"
+	}
+	// Default sheet type is SQL.
+	return "SQL"
+}
+
+// SheetVCSPayload is the additional data payload of the VCS sheet.
+type SheetVCSPayload struct {
+	FileName     string `json:"fileName"`
+	Path         string `json:"path"`
+	Size         int64  `json:"size"`
+	Author       string `json:"author"`
+	LastCommitID string `json:"lastCommitId"`
+	LastSyncTs   int64  `json:"lastSyncTs"`
+}
+
 // SheetRaw is the store model for an Sheet.
 // Fields have exactly the same meanings as Sheet.
 type SheetRaw struct {
@@ -51,6 +103,9 @@ type SheetRaw struct {
 	Name       string
 	Statement  string
 	Visibility SheetVisibility
+	Source     SheetSource
+	Type       SheetType
+	Payload    string
 }
 
 // ToSheet creates an instance of Sheet based on the SheetRaw.
@@ -76,6 +131,9 @@ func (raw *SheetRaw) ToSheet() *Sheet {
 		Name:       raw.Name,
 		Statement:  raw.Statement,
 		Visibility: raw.Visibility,
+		Source:     raw.Source,
+		Type:       raw.Type,
+		Payload:    raw.Payload,
 	}
 }
 
@@ -104,6 +162,9 @@ type Sheet struct {
 	Name       string          `jsonapi:"attr,name"`
 	Statement  string          `jsonapi:"attr,statement"`
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
+	Source     SheetSource     `jsonapi:"attr,source"`
+	Type       SheetType       `jsonapi:"attr,type"`
+	Payload    string          `jsonapi:"attr,payload"`
 }
 
 // SheetCreate is the API message for creating a sheet.
@@ -120,6 +181,9 @@ type SheetCreate struct {
 	Name       string          `jsonapi:"attr,name"`
 	Statement  string          `jsonapi:"attr,statement"`
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
+	Source     SheetSource
+	Type       SheetType
+	Payload    string
 }
 
 // SheetPatch is the API message for patching a sheet.
@@ -138,6 +202,9 @@ type SheetPatch struct {
 	Name       *string `jsonapi:"attr,name"`
 	Statement  *string `jsonapi:"attr,statement"`
 	Visibility *string `jsonapi:"attr,visibility"`
+	Source     *SheetSource
+	Type       *SheetType
+	Payload    *string
 }
 
 // SheetFind is the API message for finding sheets.
@@ -155,6 +222,8 @@ type SheetFind struct {
 
 	// Domain fields
 	Visibility *SheetVisibility
+	Source     *SheetSource
+	Type       *SheetType
 }
 
 func (find *SheetFind) String() string {
