@@ -42,7 +42,7 @@ func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw
 	}
 	stage.Updater = updater
 
-	env, err := s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	env, err := s.store.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage
 		return err
 	}
 
-	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	stage.Environment, err = s.store.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return err
 	}
