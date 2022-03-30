@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
@@ -152,12 +153,10 @@ type Profile struct {
 	dsn string
 	// seedDir points to where to populate the initial data.
 	seedDir string
-	// force reset seed, true for testing and demo
-	forceResetSeed bool
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
 	// schemaVersion is the version of schema applied to.
-	schemaVersion int
+	schemaVersion semver.Version
 }
 
 // retrieved via the SettingService upon startup
@@ -284,7 +283,6 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgDataDir)
 	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
@@ -356,7 +354,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version, m.profile.schemaVersion)
+	db := store.NewDB(m.l, connCfg, m.profile.seedDir, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
