@@ -322,7 +322,7 @@ We will have two tasks for the actual migration. The first task runs gh-ost, syn
 
 These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Fortunately, we can leverage the unix socket file that gh-ost migrator listens on. When the ghost table catches up with the original table , the "run" task will switch to `DONE`, and the "cut over" task will be `PENDING_APPROVAL`. The "cut over" task sends `"cut-over"` to the socket file to execute cut over.
 
-The socket file is in `/tmp` directory, so the operating system will clean it up and we won't bother removing it. The socket file name will be `./tmp/gh-ost.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`.
+The socket file is in `/tmp` directory, so the operating system will clean it up and we won't bother removing it. The socket file name will be `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`.
 
 We will have task checks for both tasks. For the "run" task, we have `TaskCheckDatabaseSchemaUpdateGhost` mentioned above. For the "cut-over" task, we will have a task check to check whether it is good to cut-over now (in sync, network lags good etc.)
 
