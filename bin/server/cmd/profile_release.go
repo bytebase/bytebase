@@ -12,7 +12,7 @@ import (
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
 	demoDataDir := ""
 	if isDemo {
-		demoDataDir = "seed/release"
+		demoDataDir = "demo/release"
 	}
 	return Profile{
 		mode:                 "release",
