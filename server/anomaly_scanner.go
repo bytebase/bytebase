@@ -170,7 +170,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
@@ -186,7 +186,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 	}
 
 	defer driver.Close(ctx)
-	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		InstanceID: &instance.ID,
 		Type:       api.AnomalyInstanceConnection,
 	})
@@ -207,7 +207,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			if setup {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
@@ -218,7 +218,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				}
 			} else {
-				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					InstanceID: &instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
@@ -249,7 +249,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
@@ -266,7 +266,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 		return
 	}
 	defer driver.Close(ctx)
-	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: &database.ID,
 		Type:       api.AnomalyDatabaseConnection,
 	})
@@ -338,7 +338,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
@@ -353,7 +353,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 					}
 				}
 			} else {
-				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseConnection,
 				})
@@ -422,7 +422,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -437,7 +437,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
@@ -505,7 +505,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -520,7 +520,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})

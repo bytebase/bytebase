@@ -401,7 +401,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
 	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
-	s.AnomalyService = store.NewAnomalyService(m.l, db)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
