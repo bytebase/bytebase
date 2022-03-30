@@ -184,7 +184,7 @@ type SheetCreate struct {
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
 	Source     SheetSource
 	Type       SheetType
-	Payload    string
+	Payload    string `jsonapi:"attr,payload"`
 }
 
 // SheetPatch is the API message for patching a sheet.
@@ -203,7 +203,7 @@ type SheetPatch struct {
 	Name       *string `jsonapi:"attr,name"`
 	Statement  *string `jsonapi:"attr,statement"`
 	Visibility *string `jsonapi:"attr,visibility"`
-	Payload    *string
+	Payload    *string `jsonapi:"attr,payload"`
 }
 
 // SheetFind is the API message for finding sheets.
@@ -223,6 +223,7 @@ type SheetFind struct {
 	Visibility *SheetVisibility
 	Source     *SheetSource
 	Type       *SheetType
+	Payload    *string
 }
 
 func (find *SheetFind) String() string {
