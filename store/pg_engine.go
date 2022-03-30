@@ -296,18 +296,12 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 		return versions[i].LT(versions[j])
 	})
 
-	for _, version := range versions {
-		// If the migration version is greather than software schema version, we will skip the migration.
-		if version.GT(db.schemaVersion) {
-			db.l.Info(fmt.Sprintf("Skip this migration: %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, db.schemaVersion))
-			continue
-		}
-		// If the migration version is less than or equal to the current version, we will skip the migration since it's already applied.
-		if version.LE(*curVer) {
-			db.l.Info(fmt.Sprintf("Skip this migration: %s; the current schema version %s is higher.", version, *curVer))
-			continue
-		}
+	migrateVersions, messages := getMigrationVersions(versions, db.schemaVersion, *curVer)
+	for _, message := range messages {
+		db.l.Info(message)
+	}
 
+	for _, version := range migrateVersions {
 		// Migrate migration files.
 		db.l.Info(fmt.Sprintf("Migrating %s...", version))
 		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*.sql", version))
@@ -359,6 +353,25 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 	}
 	db.l.Info("Completed database migration.")
 	return nil
+}
+
+func getMigrationVersions(versions []semver.Version, releaseCutSchemaVersion, currentVersion semver.Version) ([]semver.Version, []string) {
+	var migrateVersions []semver.Version
+	var messages []string
+	for _, version := range versions {
+		// If the migration version is greather than software schema version, we will skip the migration.
+		if version.GT(releaseCutSchemaVersion) {
+			messages = append(messages, fmt.Sprintf("Skip this migration: %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, releaseCutSchemaVersion))
+			continue
+		}
+		// If the migration version is less than or equal to the current version, we will skip the migration since it's already applied.
+		if version.LE(currentVersion) {
+			messages = append(messages, fmt.Sprintf("Skip this migration: %s; the current schema version %s is higher.", version, currentVersion))
+			continue
+		}
+		migrateVersions = append(migrateVersions, version)
+	}
+	return migrateVersions, messages
 }
 
 // Close closes the database connection.
