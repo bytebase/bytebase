@@ -37,12 +37,12 @@ const props = withDefaults(
   }>(),
   {
     percent: 0,
-    thickness: 3,
+    thickness: 3, // Can't extract a constant value here due to vue's compiler limitations
   }
 );
 
 const viewBox = computed(() => {
-  const offset = Math.max(props.thickness - 3, 0);
+  const offset = Math.max(props.thickness - 3, 0); // 3 is the default value of thickness
   const vb = {
     minX: 0 - offset,
     minY: 0 - offset,
@@ -63,7 +63,7 @@ const displayPercent = computed(() => {
 const strokeDasharray = computed(() => {
   let percent = displayPercent.value;
   const offset = props.thickness - 3;
-  const max = 96 - offset;
+  const max = 96 - offset; // 96 makes it looks okay when using default thickness
   if (percent >= max && percent < 100) {
     // keep a tiny gap when it's very closed to 100%
     percent = max;
