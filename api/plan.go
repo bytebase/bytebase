@@ -95,7 +95,7 @@ const (
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
-	// Branding
+	// FeatureBranding enables customized branding.
 	//
 	// Currently, we only support customizing the logo.
 	FeatureBranding FeatureType = "bb.feature.branding"
