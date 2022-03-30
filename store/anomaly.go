@@ -8,28 +8,110 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.AnomalyService = (*AnomalyService)(nil)
-)
+// anomalyRaw is the store model for an Anomaly.
+// Fields have exactly the same meanings as Anomaly.
+type anomalyRaw struct {
+	ID int
 
-// AnomalyService represents a service for managing anomaly.
-type AnomalyService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	InstanceID int
+	DatabaseID *int
+
+	// Domain specific fields
+	Type api.AnomalyType
+	// Calculated field derived from type
+	Severity api.AnomalySeverity
+	Payload  string
 }
 
-// NewAnomalyService returns a new instance of AnomalyService.
-func NewAnomalyService(logger *zap.Logger, db *DB) *AnomalyService {
-	return &AnomalyService{l: logger, db: db}
+// toAnomaly creates an instance of Anomaly based on the anomalyRaw.
+// This is intended to be called when we need to compose an Anomaly relationship.
+func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
+	return &api.Anomaly{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		InstanceID: raw.InstanceID,
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Type: raw.Type,
+		// Calculated field derived from type
+		Severity: raw.Severity,
+		Payload:  raw.Payload,
+	}
 }
 
-// UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
+// UpsertActiveAnomaly upserts an instance of anomaly
+func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
+	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to upsert active anomaly with AnomalyUpsert[%+v], error[%w]", upsert, err)
+	}
+	anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
+	}
+	return anomaly, nil
+}
+
+// FindAnomaly finds a list of Anomaly instances
+func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
+	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find anomaly with AnomalyFind[%+v], error[%w]", find, err)
+	}
+	var anomalyList []*api.Anomaly
+	for _, anomalyRaw := range anomalyRawList {
+		anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
+		}
+		anomalyList = append(anomalyList, anomaly)
+	}
+	return anomalyList, nil
+}
+
+//
+// private functions
+//
+
+func (s *Store) composeAnomaly(ctx context.Context, raw *anomalyRaw) (*api.Anomaly, error) {
+	anomaly := raw.toAnomaly()
+
+	creator, err := s.GetPrincipalByID(ctx, anomaly.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	anomaly.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, anomaly.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	anomaly.Updater = updater
+
+	return anomaly, nil
+}
+
+// upsertActiveAnomalyRaw would update the existing active anomaly if both database id and type match, otherwise create a new one.
 // Do not use ON CONFLICT (upsert syntax) as it will consume autoincrement id. Functional wise, this is fine, but
 // from the UX perspective, it's not great, since user will see large id gaps.
-func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.AnomalyRaw, error) {
+func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -43,14 +125,14 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 		DatabaseID: upsert.DatabaseID,
 		Type:       &upsert.Type,
 	}
-	list, err := findAnomalyList(ctx, tx.PTx, find)
+	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	var anomalyRaw *api.AnomalyRaw
+	var anomalyRaw *anomalyRaw
 	if len(list) == 0 {
-		anomalyRaw, err = createAnomaly(ctx, tx.PTx, upsert)
+		anomalyRaw, err = createAnomalyImpl(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +143,7 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 			UpdaterID: upsert.CreatorID,
 			Payload:   upsert.Payload,
 		}
-		anomalyRaw, err = patchAnomaly(ctx, tx.PTx, patch)
+		anomalyRaw, err = patchAnomalyImpl(ctx, tx.PTx, patch)
 		if err != nil {
 			return nil, err
 		}
@@ -76,15 +158,15 @@ func (s *AnomalyService) UpsertActiveAnomaly(ctx context.Context, upsert *api.An
 	return anomalyRaw, nil
 }
 
-// FindAnomalyList retrieves a list of anomalies based on the find condition.
-func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyFind) ([]*api.AnomalyRaw, error) {
+// findAnomalyRaw retrieves a list of anomalies based on the find condition.
+func (s *Store) findAnomalyRaw(ctx context.Context, find *api.AnomalyFind) ([]*anomalyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findAnomalyList(ctx, tx.PTx, find)
+	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -94,14 +176,14 @@ func (s *AnomalyService) FindAnomalyList(ctx context.Context, find *api.AnomalyF
 
 // ArchiveAnomaly archives an existing anomaly by ID.
 // Returns ENOTFOUND if anomaly does not exist.
-func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.AnomalyArchive) error {
+func (s *Store) ArchiveAnomaly(ctx context.Context, archive *api.AnomalyArchive) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := archiveAnomaly(ctx, tx.PTx, archive); err != nil {
+	if err := archiveAnomalyImpl(ctx, tx.PTx, archive); err != nil {
 		return FormatError(err)
 	}
 
@@ -112,8 +194,8 @@ func (s *AnomalyService) ArchiveAnomaly(ctx context.Context, archive *api.Anomal
 	return nil
 }
 
-// createAnomaly creates a new anomaly.
-func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*api.AnomalyRaw, error) {
+// createAnomalyImpl creates a new anomaly.
+func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
 	// Inserts row into database.
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
@@ -144,7 +226,7 @@ func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (
 	defer row.Close()
 
 	row.Next()
-	var anomalyRaw api.AnomalyRaw
+	var anomalyRaw anomalyRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
 		&anomalyRaw.ID,
@@ -168,7 +250,7 @@ func createAnomaly(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (
 	return &anomalyRaw, err
 }
 
-func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*api.AnomalyRaw, error) {
+func findAnomalyListImpl(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
@@ -211,9 +293,9 @@ func findAnomalyList(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into anomalyRawList.
-	var anomalyRawList []*api.AnomalyRaw
+	var anomalyRawList []*anomalyRaw
 	for rows.Next() {
-		var anomalyRaw api.AnomalyRaw
+		var anomalyRaw anomalyRaw
 		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
 			&anomalyRaw.ID,
@@ -253,8 +335,8 @@ type anomalyPatch struct {
 	Payload string
 }
 
-// patchAnomaly patches an anomaly
-func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.AnomalyRaw, error) {
+// patchAnomalyImpl patches an anomaly
+func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*anomalyRaw, error) {
 	// Build UPDATE clause.
 	if patch.Payload == "" {
 		patch.Payload = "{}"
@@ -283,7 +365,7 @@ func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.An
 	defer row.Close()
 
 	row.Next()
-	var anomalyRaw api.AnomalyRaw
+	var anomalyRaw anomalyRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
 		&anomalyRaw.ID,
@@ -307,8 +389,8 @@ func patchAnomaly(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*api.An
 	return &anomalyRaw, err
 }
 
-// archiveAnomaly archives an anomaly by ID.
-func archiveAnomaly(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
+// archiveAnomalyImpl archives an anomaly by ID.
+func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
 	if archive.InstanceID == nil && archive.DatabaseID == nil {
 		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}

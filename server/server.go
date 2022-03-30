@@ -59,7 +59,6 @@ type Server struct {
 	InboxService            api.InboxService
 	BookmarkService         api.BookmarkService
 	RepositoryService       api.RepositoryService
-	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
