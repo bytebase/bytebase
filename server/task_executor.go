@@ -62,6 +62,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		} else {
 			mi.Creator = creator.Name
 		}
+		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Database = databaseName
 		mi.Namespace = databaseName
