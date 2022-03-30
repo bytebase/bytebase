@@ -231,6 +231,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, databaseName string) error {
 	db.l.Info("Apply database migration if needed...")
+	db.l.Info(fmt.Sprintf("The release cutoff schema version: %s", db.schemaVersion))
 	if curVer == nil {
 		db.l.Info("The database schema has not been setup.")
 	} else {
@@ -266,7 +267,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Database:              databaseName,
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
-				Type:                  dbdriver.Baseline,
+				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Migrate %s.", latestSchemaPath),
 				CreateDatabase:        true,
 			},
