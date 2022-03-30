@@ -173,7 +173,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 // seed loads the seed data for testing
 func (db *DB) seed() error {
 	if db.seedDir == "" {
-		db.l.Info("Skip seeding data.")
+		db.l.Info("Skip seeding data. Seed directory not specified.")
 		return nil
 	}
 	db.l.Info(fmt.Sprintf("Seeding database from %q...", db.seedDir))
