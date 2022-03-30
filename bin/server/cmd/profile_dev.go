@@ -14,7 +14,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		mode:                 "dev",
 		port:                 port,
 		datastorePort:        datastorePort,
-		pgUser:               "bb",
+		pgUser:               "bbdev",
 		dataDir:              dataDir,
 		demoDataDir:          "demo/test",
 		backupRunnerInterval: 10 * time.Second,
