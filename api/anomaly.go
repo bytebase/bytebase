@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -87,52 +86,6 @@ type AnomalyDatabaseSchemaDriftPayload struct {
 	Actual string `json:"actual,omitempty"`
 }
 
-// AnomalyRaw is the store model for an Anomaly.
-// Fields have exactly the same meanings as Anomaly.
-type AnomalyRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	InstanceID int
-	DatabaseID *int
-
-	// Domain specific fields
-	Type AnomalyType
-	// Calculated field derived from type
-	Severity AnomalySeverity
-	Payload  string
-}
-
-// ToAnomaly creates an instance of Anomaly based on the AnomalyRaw.
-// This is intended to be called when we need to compose an Anomaly relationship.
-func (raw *AnomalyRaw) ToAnomaly() *Anomaly {
-	return &Anomaly{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		InstanceID: raw.InstanceID,
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Type: raw.Type,
-		// Calculated field derived from type
-		Severity: raw.Severity,
-		Payload:  raw.Payload,
-	}
-}
-
 // Anomaly is the API message for an anomaly.
 type Anomaly struct {
 	ID int `jsonapi:"primary,anomaly"`
@@ -197,12 +150,4 @@ type AnomalyArchive struct {
 	InstanceID *int
 	DatabaseID *int
 	Type       AnomalyType
-}
-
-// AnomalyService is the service for anomaly.
-type AnomalyService interface {
-	// UpsertActiveAnomaly would update the existing active anomaly if both database id and type match, otherwise create a new one.
-	UpsertActiveAnomaly(ctx context.Context, upsert *AnomalyUpsert) (*AnomalyRaw, error)
-	FindAnomalyList(ctx context.Context, find *AnomalyFind) ([]*AnomalyRaw, error)
-	ArchiveAnomaly(ctx context.Context, archive *AnomalyArchive) error
 }
