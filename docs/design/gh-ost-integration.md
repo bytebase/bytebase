@@ -334,7 +334,7 @@ type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload struct {
 
 ### Crash recovery
 
-If it crashes halfway when migrating on `tablename`, we will end up with the original `tablename`, and `_tablename_gho`, `_tablename_ghc`. We just drop `_tablename_gho` and `_tablename_ghc`, rerun gh-ost.
+If it crashes halfway when migrating on `tablename`, we will end up with the original `tablename`, and `_tablename_gho`, `_tablename_ghc`. Our task check for gh-ost pre-migration validation will fail if `_tablename_gho` or `_tablename_ghc` is present. But if the user insists to run, we just drop `_tablename_gho` and `_tablename_ghc` for the user, rerun gh-ost.
 
 However, we need to refactor pre-migration validation and migration status, because the current logic doesn't allow migration to have the same version, rerun will lead to failure. We can refactor to reuse version to keep it idempotent.
 
