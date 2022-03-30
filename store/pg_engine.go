@@ -268,7 +268,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate %s.", latestSchemaPath),
+				Description:           fmt.Sprintf("Initial migration version %s with file %s.", db.schemaVersion, latestSchemaPath),
 				CreateDatabase:        true,
 			},
 			stmt,
