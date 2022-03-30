@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 )
 
@@ -52,52 +50,6 @@ func (e DataSourceType) String() string {
 		return "RO"
 	}
 	return ""
-}
-
-// DataSourceRaw is the store model for an DataSource.
-// Fields have exactly the same meanings as DataSource.
-type DataSourceRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	InstanceID int
-	DatabaseID int
-
-	// Domain specific fields
-	Name     string
-	Type     DataSourceType
-	Username string
-	Password string
-}
-
-// ToDataSource creates an instance of DataSource based on the DataSourceRaw.
-// This is intended to be called when we need to compose an DataSource relationship.
-func (raw *DataSourceRaw) ToDataSource() *DataSource {
-	return &DataSource{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		InstanceID: raw.InstanceID,
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:     raw.Name,
-		Type:     raw.Type,
-		Username: raw.Username,
-		Password: raw.Password,
-	}
 }
 
 // DataSource is the API message for a data source.
@@ -174,14 +126,4 @@ type DataSourcePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
-}
-
-// DataSourceService is the service for data source.
-type DataSourceService interface {
-	CreateDataSource(ctx context.Context, create *DataSourceCreate) (*DataSourceRaw, error)
-	// This is specifically used to create data source when creating the instance.
-	CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *DataSourceCreate) (*DataSourceRaw, error)
-	FindDataSourceList(ctx context.Context, find *DataSourceFind) ([]*DataSourceRaw, error)
-	FindDataSource(ctx context.Context, find *DataSourceFind) (*DataSourceRaw, error)
-	PatchDataSource(ctx context.Context, patch *DataSourcePatch) (*DataSourceRaw, error)
 }
