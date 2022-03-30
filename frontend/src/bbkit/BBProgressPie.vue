@@ -8,10 +8,10 @@
         d="M18 2.0854 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
       />
       <path
+        class="duration-100 ease-out"
         fill="none"
         stroke="currentColor"
         stroke-linecap="round"
-        animation="progress 1s ease-out forwards"
         :stroke-width="thickness"
         :stroke-dasharray="strokeDasharray"
         d="M18 2.0854 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
