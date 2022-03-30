@@ -302,19 +302,7 @@ type TaskCheckDatabaseSchemaUpdateGhostPayload struct {
 
 ### In-migration progress
 
-gh-ost can report its migration progress. Migrator can write migration status to io.Writer. [Related codes here](https://github.com/github/gh-ost/blob/master/go/logic/migrator.go#L906).
-
-```Go
-// printStatus prints the progress status, and optionally additionally detailed
-// dump of configuration.
-// `rule` indicates the type of output expected.
-// By default the status is written to standard output, but other writers can
-// be used as well.
-func (this *Migrator) printStatus(rule PrintStatusRule, writers ...io.Writer) {
-}
-```
-
-It's important to show user the progress, because typically it will take hours or even days to complete when migrating on large tables. We periodically update the progress in `TaskRunResultPayload.Detail`.
+gh-ost can report its migration progress. It's important to show user the progress, because typically it will take hours or even days to complete when migrating on large tables. We periodically update the progress in `TaskRunResultPayload.Detail`.
 
 ### Approve, run, approve, cut-over
 
