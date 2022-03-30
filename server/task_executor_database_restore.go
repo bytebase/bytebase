@@ -176,6 +176,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
 		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
 	}
+	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Version:        defaultMigrationVersionFromTaskID(),

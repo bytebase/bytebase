@@ -469,7 +469,7 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, statement string) (int64, error) {
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
 	const insertHistoryQuery = `
 	INSERT INTO bytebase.migration_history (
 		id,
@@ -525,7 +525,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		m.Source,
 		m.Type,
 		"PENDING",
-		m.Version,
+		storedVersion,
 		m.Description,
 		statement,
 		prevSchema,
