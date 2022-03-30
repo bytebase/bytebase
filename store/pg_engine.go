@@ -304,7 +304,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 		}
 		// If the migration version is less than or equal to the current version, we will skip the migration since it's already applied.
 		if version.LE(*curVer) {
-			db.l.Info(fmt.Sprintf("Skip this migration: %s; the current migration version is %s.", version, *curVer))
+			db.l.Info(fmt.Sprintf("Skip this migration: %s; the current schema version %s is higher.", version, *curVer))
 			continue
 		}
 
