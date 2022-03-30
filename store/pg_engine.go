@@ -45,8 +45,8 @@ const (
 //go:embed migration
 var migrationFS embed.FS
 
-//go:embed seed
-var seedFS embed.FS
+//go:embed demo
+var demoFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
@@ -58,8 +58,8 @@ type DB struct {
 	// The user has superuser privilege to the database.
 	connCfg dbdriver.ConnectionConfig
 
-	// Dir to load seed data
-	seedDir string
+	// Dir to load demo data
+	demoDataDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
@@ -76,11 +76,11 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, seedDir string, readonly bool, serverVersion string, schemaVersion semver.Version) *DB {
+func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir string, readonly bool, serverVersion string, schemaVersion semver.Version) *DB {
 	db := &DB{
 		l:             logger,
 		connCfg:       connCfg,
-		seedDir:       seedDir,
+		demoDataDir:   demoDataDir,
 		readonly:      readonly,
 		Now:           time.Now,
 		serverVersion: serverVersion,
@@ -104,7 +104,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	databaseName := db.connCfg.Username
 
 	if db.readonly {
-		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
+		db.l.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// The database storing metadata is the same as user name.
 		db.db, err = d.GetDbConnection(ctx, databaseName)
 		if err != nil {
@@ -136,8 +136,8 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
 	}
 
-	if err := db.seed(); err != nil {
-		return fmt.Errorf("failed to seed: %w."+
+	if err := db.setupDemoData(); err != nil {
+		return fmt.Errorf("failed to setup demo data: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
@@ -170,37 +170,37 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 	return &v, nil
 }
 
-// seed loads the seed data for testing
-func (db *DB) seed() error {
-	if db.seedDir == "" {
-		db.l.Info("Skip seeding data. Seed directory not specified.")
+// setupDemoData loads the setupDemoData data for testing
+func (db *DB) setupDemoData() error {
+	if db.demoDataDir == "" {
+		db.l.Debug("Skip setting up demo data. Demo data directory not specified.")
 		return nil
 	}
-	db.l.Info(fmt.Sprintf("Seeding database from %q...", db.seedDir))
-	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
+	db.l.Info(fmt.Sprintf("Setting up demo data from %q...", db.demoDataDir))
+	names, err := fs.Glob(demoFS, fmt.Sprintf("%s/*.sql", db.demoDataDir))
 	if err != nil {
 		return err
 	}
 
-	// We separate seed data for each table into their own seed file.
+	// We separate demo data for each table into their own demo data file.
 	// And there exists foreign key dependency among tables, so we
-	// name the seed file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
+	// name the data file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
 	// the file name so they are loaded accordingly.
 	sort.Strings(names)
 
-	// Loop over all seed files and execute them in order.
+	// Loop over all data files and execute them in order.
 	for _, name := range names {
-		if err := db.seedFile(name); err != nil {
-			return fmt.Errorf("seed error: name=%q err=%w", name, err)
+		if err := db.applyDataFile(name); err != nil {
+			return fmt.Errorf("applyDataFile error: name=%q err=%w", name, err)
 		}
 	}
-	db.l.Info("Completed database seeding.")
+	db.l.Info("Completed demo data setup.")
 	return nil
 }
 
-// seedFile runs a single seed file within a transaction.
-func (db *DB) seedFile(name string) error {
-	db.l.Info(fmt.Sprintf("Seeding %s...", name))
+// applyDataFile runs a single demo data file within a transaction.
+func (db *DB) applyDataFile(name string) error {
+	db.l.Info(fmt.Sprintf("Applying data file %s...", name))
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (db *DB) seedFile(name string) error {
 	defer tx.Rollback()
 
 	// Read and execute migration file.
-	if buf, err := fs.ReadFile(seedFS, name); err != nil {
+	if buf, err := fs.ReadFile(demoFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err

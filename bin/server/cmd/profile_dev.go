@@ -16,7 +16,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		datastorePort:        datastorePort,
 		pgUser:               "bbdev",
 		dataDir:              dataDir,
-		seedDir:              "seed/test",
+		demoDataDir:          "seed/test",
 		backupRunnerInterval: 10 * time.Second,
 		schemaVersion:        semver.MustParse("1.1.0"),
 	}
@@ -30,7 +30,7 @@ func GetTestProfile(dataDir string, port, datastorePort int) Profile {
 		datastorePort:        datastorePort,
 		pgUser:               "bbtest",
 		dataDir:              dataDir,
-		seedDir:              "seed/test",
+		demoDataDir:          "seed/test",
 		backupRunnerInterval: 10 * time.Second,
 		schemaVersion:        semver.MustParse("1.1.0"),
 	}

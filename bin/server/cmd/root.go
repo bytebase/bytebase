@@ -149,8 +149,8 @@ type Profile struct {
 	pgUser string
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
-	// seedDir points to where to populate the initial data.
-	seedDir string
+	// demoDataDir points to where to populate the initial data.
+	demoDataDir string
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
 	// schemaVersion is the version of schema applied to.
@@ -283,7 +283,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
+	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
@@ -352,7 +352,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, connCfg, m.profile.seedDir, readonly, version, m.profile.schemaVersion)
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}

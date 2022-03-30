@@ -10,9 +10,9 @@ import (
 )
 
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
-	seedDir := ""
+	demoDataDir := ""
 	if isDemo {
-		seedDir = "seed/release"
+		demoDataDir = "seed/release"
 	}
 	return Profile{
 		mode:                 "release",
@@ -20,7 +20,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		datastorePort:        datastorePort,
 		pgUser:               "bb",
 		dataDir:              dataDir,
-		seedDir:              seedDir,
+		demoDataDir:          demoDataDir,
 		backupRunnerInterval: 10 * time.Minute,
 		schemaVersion:        semver.MustParse("1.0.0"),
 	}
