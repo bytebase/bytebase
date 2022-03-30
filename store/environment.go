@@ -27,7 +27,7 @@ type environmentRaw struct {
 	Order int
 }
 
-// toEnvironment creates an instance of Environment based on the EnvironmentRaw.
+// toEnvironment creates an instance of Environment based on the environmentRaw.
 // This is intended to be called when we need to compose an Environment relationship.
 func (raw *environmentRaw) toEnvironment() *api.Environment {
 	return &api.Environment{
@@ -46,20 +46,20 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 
 // CreateEnvironment creates an instance of Environment
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
-	EnvironmentRaw, err := s.createEnvironmentRaw(ctx, create)
+	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create Environment with EnvironmentCreate[%+v], error[%w]", create, err)
 	}
-	Environment, err := s.composeEnvironment(ctx, EnvironmentRaw)
+	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Environment with EnvironmentRaw[%+v], error[%w]", EnvironmentRaw, err)
+		return nil, fmt.Errorf("Failed to compose Environment with environmentRaw[%+v], error[%w]", environmentRaw, err)
 	}
 	return Environment, nil
 }
 
 // FindEnvironment finds a list of Environment instances
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
-	EnvironmentRawList, err := s.findEnvironmentListRaw(ctx, find)
+	EnvironmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Environment list, error[%w]", err)
 	}
@@ -67,7 +67,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	for _, raw := range EnvironmentRawList {
 		Environment, err := s.composeEnvironment(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Environment role with EnvironmentRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("Failed to compose Environment role with environmentRaw[%+v], error[%w]", raw, err)
 		}
 		EnvironmentList = append(EnvironmentList, Environment)
 	}
@@ -76,13 +76,13 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 
 // PatchEnvironment patches an instance of Environment
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
-	EnvironmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
+	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to patch Environment with EnvironmentPatch[%+v], error[%w]", patch, err)
 	}
-	Environment, err := s.composeEnvironment(ctx, EnvironmentRaw)
+	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Environment role with EnvironmentRaw[%+v], error[%w]", EnvironmentRaw, err)
+		return nil, fmt.Errorf("Failed to compose Environment role with environmentRaw[%+v], error[%w]", environmentRaw, err)
 	}
 	return Environment, nil
 }
@@ -91,15 +91,12 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-	if envRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment not found with ID %v", id)}
+		return nil, fmt.Errorf("Failed to get environment with ID[%d], error[%w]", id, err)
 	}
 
 	env, err := s.composeEnvironment(ctx, envRaw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to compose environment with environmentRaw[%+v], error[%w]", envRaw, err)
 	}
 
 	return env, nil
@@ -151,8 +148,8 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.Environmen
 	return environment, nil
 }
 
-// findEnvironmentListRaw retrieves a list of environments based on find.
-func (s *Store) findEnvironmentListRaw(ctx context.Context, find *api.EnvironmentFind) ([]*environmentRaw, error) {
+// findEnvironmentRaw retrieves a list of environments based on find.
+func (s *Store) findEnvironmentRaw(ctx context.Context, find *api.EnvironmentFind) ([]*environmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
