@@ -22,13 +22,13 @@ type InstanceService struct {
 
 	cache api.CacheService
 
-	databaseService   api.DatabaseService
-	dataSourceService api.DataSourceService
+	databaseService api.DatabaseService
+	store           *Store
 }
 
 // NewInstanceService returns a new instance of InstanceService.
-func NewInstanceService(logger *zap.Logger, db *DB, cache api.CacheService, databaseService api.DatabaseService, dataSourceService api.DataSourceService) *InstanceService {
-	return &InstanceService{l: logger, db: db, cache: cache, databaseService: databaseService, dataSourceService: dataSourceService}
+func NewInstanceService(logger *zap.Logger, db *DB, cache api.CacheService, databaseService api.DatabaseService, store *Store) *InstanceService {
+	return &InstanceService{l: logger, db: db, cache: cache, databaseService: databaseService, store: store}
 }
 
 // CreateInstance creates a new instance.
@@ -69,7 +69,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, create *api.Instan
 		Username:   create.Username,
 		Password:   create.Password,
 	}
-	if _, err := s.dataSourceService.CreateDataSourceTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if err := s.store.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
