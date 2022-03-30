@@ -136,16 +136,12 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
 	}
 
-	if db.seedDir == "" {
-		db.l.Info("Skip seeding data.")
-	} else {
-		if err := db.seed(); err != nil {
-			return fmt.Errorf("failed to seed: %w."+
-				" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-				" directory under the same directory where the bytebase binary resides. and restart again to let"+
-				" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
-				err)
-		}
+	if err := db.seed(); err != nil {
+		return fmt.Errorf("failed to seed: %w."+
+			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
+			" directory under the same directory where the bytebase binary resides. and restart again to let"+
+			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
+			err)
 	}
 
 	return nil
@@ -176,6 +172,10 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 
 // seed loads the seed data for testing
 func (db *DB) seed() error {
+	if db.seedDir == "" {
+		db.l.Info("Skip seeding data.")
+		return nil
+	}
 	db.l.Info(fmt.Sprintf("Seeding database from %q...", db.seedDir))
 	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
 	if err != nil {
@@ -248,10 +248,10 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 		if err != nil {
 			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
 		}
-		latestDataSchemaPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestDataFile)
-		dataBuf, err := migrationFS.ReadFile(latestDataSchemaPath)
+		latestDataPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestDataFile)
+		dataBuf, err := migrationFS.ReadFile(latestDataPath)
 		if err != nil {
-			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
+			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
 		}
 		// We will create the database together with initial schema and data migration.
 		stmt := fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
@@ -350,7 +350,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate %s.", strings.Join(baseNames, ", ")),
+				Description:           fmt.Sprintf("Migrate version %s with files %s.", version, strings.Join(baseNames, ", ")),
 			},
 			stmtBuf.String(),
 		); err != nil {
