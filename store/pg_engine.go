@@ -122,6 +122,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		if !strings.Contains(err.Error(), "invalid stored version") {
 			return err
 		}
+		db.l.Info("Migrating migration history version storage format to semantic version.")
 		db, err := d.GetDbConnection(ctx, "bytebase")
 		if err != nil {
 			return err
