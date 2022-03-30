@@ -466,7 +466,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	instance.Environment = env
 
 	rowStatus := api.Normal
-	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.store.FindAnomaly(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
 		InstanceID:   &instance.ID,
 		InstanceOnly: true,
@@ -474,20 +474,7 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	if err != nil {
 		return nil, err
 	}
-	var anomalyList []*api.Anomaly
-	for _, anomalyRaw := range anomalyListRaw {
-		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
-	}
-	// TODO(dragonly): implement composeAnomalyRelationship
 	instance.AnomalyList = anomalyList
-	for _, anomaly := range instance.AnomalyList {
-		if anomaly.Creator, err = s.store.GetPrincipalByID(ctx, anomaly.CreatorID); err != nil {
-			return nil, err
-		}
-		if anomaly.Updater, err = s.store.GetPrincipalByID(ctx, anomaly.UpdaterID); err != nil {
-			return nil, err
-		}
-	}
 
 	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
