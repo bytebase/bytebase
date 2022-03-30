@@ -138,7 +138,6 @@ func (db *DB) Open(ctx context.Context) (err error) {
 
 	if db.seedDir == "" {
 		db.l.Info("Skip seeding data.")
-		return nil
 	} else {
 		if err := db.seed(); err != nil {
 			return fmt.Errorf("failed to seed: %w."+
