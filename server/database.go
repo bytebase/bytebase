@@ -1023,29 +1023,14 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.store.FindAnomaly(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseID: &db.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	var anomalyList []*api.Anomaly
-	for _, anomalyRaw := range anomalyListRaw {
-		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
-	}
-	// TODO(dragonly): implement composeAnomalyRelationship
 	db.AnomalyList = anomalyList
-	for _, anomaly := range db.AnomalyList {
-		anomaly.Creator, err = s.store.GetPrincipalByID(ctx, anomaly.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		anomaly.Updater, err = s.store.GetPrincipalByID(ctx, anomaly.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	rowStatus = api.Normal
 	labelRawList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
