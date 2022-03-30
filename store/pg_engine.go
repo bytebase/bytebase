@@ -121,7 +121,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	if err := db.migrate(ctx, d, verBefore, databaseName); err != nil {
+	if err := migrate(ctx, d, verBefore, db.schemaVersion, db.serverVersion, databaseName, db.l); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
@@ -229,27 +229,27 @@ const (
 //
 // We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
-func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, databaseName string) error {
-	db.l.Info("Apply database migration if needed...")
-	db.l.Info(fmt.Sprintf("The release cutoff schema version: %s", db.schemaVersion))
+func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cutoffSchemaVersion semver.Version, serverVersion, databaseName string, l *zap.Logger) error {
+	l.Info("Apply database migration if needed...")
+	l.Info(fmt.Sprintf("The release cutoff schema version: %s", cutoffSchemaVersion))
 	if curVer == nil {
-		db.l.Info("The database schema has not been setup.")
+		l.Info("The database schema has not been setup.")
 	} else {
-		db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+		l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 		major := (*curVer).Major
 		if major != majorSchemaVervion {
-			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, db.serverVersion)
+			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, serverVersion)
 		}
 	}
 
 	// Initial schema setup.
 	if curVer == nil {
-		latestSchemaPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestSchemaFile)
+		latestSchemaPath := fmt.Sprintf("migration/%s/%s", cutoffSchemaVersion.String(), latestSchemaFile)
 		buf, err := migrationFS.ReadFile(latestSchemaPath)
 		if err != nil {
 			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
 		}
-		latestDataPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestDataFile)
+		latestDataPath := fmt.Sprintf("migration/%s/%s", cutoffSchemaVersion.String(), latestDataFile)
 		dataBuf, err := migrationFS.ReadFile(latestDataPath)
 		if err != nil {
 			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
@@ -259,52 +259,40 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
-				ReleaseVersion:        db.serverVersion,
+				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
-				Version:               db.schemaVersion.String(),
+				Version:               cutoffSchemaVersion.String(),
 				SemanticVersionSuffix: time.Now().Format("20060102150405"),
 				Namespace:             databaseName,
 				Database:              databaseName,
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", db.schemaVersion, db.serverVersion, latestSchemaPath),
+				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 				CreateDatabase:        true,
 			},
 			stmt,
 		); err != nil {
 			return fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
 		}
-		db.l.Info("Completed database initial migration.")
+		l.Info("Completed database initial migration.")
 		return nil
 	}
 
 	// Apply migrations
-	versionNames, err := fs.Glob(migrationFS, "migration/*")
+	versions, err := getMigrationFileVersions()
 	if err != nil {
 		return err
 	}
-	var versions []semver.Version
-	for _, name := range versionNames {
-		v, err := semver.Make(strings.TrimPrefix(name, "migration/"))
-		if err != nil {
-			return fmt.Errorf("invalid migration file path %q, error %w", name, err)
-		}
-		versions = append(versions, v)
-	}
-	// Sort the migration semantic version in ascending order.
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].LT(versions[j])
-	})
 
-	migrateVersions, messages := getMigrationVersions(versions, db.schemaVersion, *curVer)
+	migrateVersions, messages := getMigrationVersions(versions, cutoffSchemaVersion, *curVer)
 	for _, message := range messages {
-		db.l.Info(message)
+		l.Info(message)
 	}
 
 	for _, version := range migrateVersions {
 		// Migrate migration files.
-		db.l.Info(fmt.Sprintf("Migrating %s...", version))
+		l.Info(fmt.Sprintf("Migrating %s...", version))
 		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*.sql", version))
 		if err != nil {
 			return err
@@ -331,12 +319,12 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 			if _, err := stmtBuf.WriteString("\n\n"); err != nil {
 				return fmt.Errorf("failed to write newline buffer for migration file %q, error %w", name, err)
 			}
-			db.l.Debug(fmt.Sprintf("Reading migration file %q.", name))
+			l.Debug(fmt.Sprintf("Reading migration file %q.", name))
 		}
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
-				ReleaseVersion:        db.serverVersion,
+				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
 				Version:               version.String(),
 				SemanticVersionSuffix: time.Now().Format("20060102150405"),
@@ -345,15 +333,35 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", version, db.serverVersion, strings.Join(baseNames, ", ")),
+				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", version, serverVersion, strings.Join(baseNames, ", ")),
 			},
 			stmtBuf.String(),
 		); err != nil {
 			return fmt.Errorf("failed to migrate schema version %q, error: %v", version, err)
 		}
 	}
-	db.l.Info("Completed database migration.")
+	l.Info("Completed database migration.")
 	return nil
+}
+
+func getMigrationFileVersions() ([]semver.Version, error) {
+	versionNames, err := fs.Glob(migrationFS, "migration/*")
+	if err != nil {
+		return nil, err
+	}
+	var versions []semver.Version
+	for _, name := range versionNames {
+		v, err := semver.Make(strings.TrimPrefix(name, "migration/"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid migration file path %q, error %w", name, err)
+		}
+		versions = append(versions, v)
+	}
+	// Sort the migration semantic version in ascending order.
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].LT(versions[j])
+	})
+	return versions, nil
 }
 
 func getMigrationVersions(versions []semver.Version, releaseCutSchemaVersion, currentVersion semver.Version) ([]semver.Version, []string) {
