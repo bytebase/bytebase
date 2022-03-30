@@ -16,12 +16,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-const (
-	maxRetries = 3
-
-	apiURL = "https://api.github.com"
-)
-
 var _ vcs.Provider = (*Provider)(nil)
 
 func init() {
@@ -43,6 +37,8 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 		client: config.Client,
 	}
 }
+
+const apiURL = "https://api.github.com"
 
 func (p *Provider) APIURL(string) string {
 	return apiURL
@@ -132,51 +128,60 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 }
 
 func httpGet(ctx context.Context, client *http.Client, resourcePath string, token *string, oauthCtx oauthContext, refresher common.TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, token, oauthCtx, refresher, func() (*http.Response, error) {
-		url := fmt.Sprintf("%s/%s", apiURL, resourcePath)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "construct GET %q", url)
-		}
+	return retry(ctx, client, token, oauthCtx, refresher,
+		func() (*http.Response, error) {
+			url := fmt.Sprintf("%s/%s", apiURL, resourcePath)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				return nil, errors.Wrapf(err, "construct GET %s", url)
+			}
 
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, errors.Wrapf(err, "GET %q", url)
-		}
-		return resp, nil
-	})
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+			resp, err := client.Do(req)
+			if err != nil {
+				return nil, errors.Wrapf(err, "GET %s", url)
+			}
+			return resp, nil
+		},
+	)
 }
 
-func retry(ctx context.Context, token *string, oauthCtx oauthContext, refresher common.TokenRefresher, f func() (*http.Response, error)) (code int, respBody string, err error) {
-	retries := 0
-retry:
-	retries++
+const maxRetries = 3
 
-	resp, err := f()
-	if err != nil {
-		return 0, "", err
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to read gitlab response body, code %v, error: %v", resp.StatusCode, err)
-	}
-
-	if err := getOAuthErrorDetails(resp.StatusCode, string(body)); err != nil {
-		if _, ok := err.(oauthError); ok && retries < maxRetries {
-			// Refresh and store the token.
-			if err := refreshToken(token, oauthCtx, refresher); err != nil {
-				return 0, "", err
-			}
-			goto retry // todo ???
-
+func retry(ctx context.Context, client *http.Client, token *string, oauthCtx oauthContext, refresher common.TokenRefresher, f func() (*http.Response, error)) (code int, respBody string, err error) {
+	var resp *http.Response
+	var body []byte
+	for retries := 0; retries < maxRetries; retries++ {
+		select {
+		case <-ctx.Done():
+			return 0, "", ctx.Err()
+		default:
 		}
-		// err must be oauthError. So this happens only when the number of retries has exceeded.
-		return 0, "", fmt.Errorf("retries exceeded for oauth refresher; original code %v body %s; oauth error: %v", resp.StatusCode, string(body), err)
-	}
 
-	return resp.StatusCode, string(body), nil
+		resp, err = f()
+		if err != nil {
+			return 0, "", err
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return 0, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		}
+
+		if err = getOAuthErrorDetails(resp.StatusCode, string(body)); err != nil {
+			if _, ok := err.(oauthError); ok {
+				// Refresh and store the token.
+				if err := refreshToken(ctx, client, token, oauthCtx, refresher); err != nil {
+					return 0, "", err
+				}
+				continue
+			}
+			return 0, "", errors.Errorf("want oauthError but got %T", err)
+		}
+		return resp.StatusCode, string(body), nil
+	}
+	return 0, "", errors.Errorf("retries exceeded for oauth refresher with status code %d and body %q", resp.StatusCode, string(body))
 }
 
 type oauthError struct {
@@ -188,12 +193,11 @@ func (e oauthError) Error() string {
 	return fmt.Sprintf("GitHub oauth response error %q description %q", e.Err, e.ErrorDescription)
 }
 
-// Only returns error if it's an oauth error. For other errors like 404 we don't return error.
-// We do this because this method is only intended to be used by oauth to refresh access token
-// on expiration. When it's error like 404, GitLab api doesn't return it as error so we keep the
-// similar behavior and let caller check the response status code.
+// getOAuthErrorDetails only returns error if it's an OAuth error. For other
+// errors like 404 we don't return error. We do this because this method is only
+// intended to be used by oauth to refresh access token on expiration.
 func getOAuthErrorDetails(code int, body string) error {
-	if 200 <= code && code < 300 {
+	if code < http.StatusMultipleChoices {
 		return nil
 	}
 
@@ -226,7 +230,7 @@ type refreshOauthResponse struct {
 	// token_type, scope are not used.
 }
 
-func refreshToken(oldToken *string, oauthContext oauthContext, refresher common.TokenRefresher) error {
+func refreshToken(ctx context.Context, client *http.Client, oldToken *string, oauthContext oauthContext, refresher common.TokenRefresher) error {
 	url := fmt.Sprintf("%s/oauth/token", apiURL)
 	oauthContext.GrantType = "refresh_token"
 	body, err := json.Marshal(oauthContext)
@@ -234,46 +238,41 @@ func refreshToken(oldToken *string, oauthContext oauthContext, refresher common.
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct refresh token POST %v (%w)", url, err)
+		return errors.Wrapf(err, "construct POST %s", url)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send refresh token POST %v (%w)", url, err)
+		return errors.Wrapf(err, "POST %s", url)
 	}
+
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read body from refresh token POST %v (%w)", url, err)
+		return errors.Wrapf(err, "read body of POST %s", url)
 	}
 
-	// We should not call getOAuthErrorDetails.
-	// In the sequence of 1) get file content with oauth error, 2) refresh token.
-	// If step 2) failed still with oauth error, we should stop retries because we should always expect refreshing token request to succeed unless we're holding any invalid refresh token already.
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to fetch refresh token, response code %v body %s", resp.StatusCode, body)
+		return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
 	}
 
 	var r refreshOauthResponse
-	if err := json.Unmarshal([]byte(body), &r); err != nil {
-		return fmt.Errorf("failed to unmarshal body from refresh token POST %v (%w)", url, err)
+	if err = json.Unmarshal(body, &r); err != nil {
+		return errors.Wrapf(err, "unmarshal body from POST %s", url)
 	}
 
 	// Update the old token to new value for retries.
 	*oldToken = r.AccessToken
 
-	// For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
-	// see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	// OAuth token never expires for traditional GitHub OAuth (i.e. not a GitHub App)
 	var expireAt int64
 	if r.ExpiresIn != 0 {
 		expireAt = r.CreatedAt + r.ExpiresIn
 	}
-	if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
+	if err = refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
 		return err
 	}
-
 	return nil
 }
