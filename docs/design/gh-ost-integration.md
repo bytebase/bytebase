@@ -388,7 +388,7 @@ type UpdateSchemaGhostContext struct {
 
 // task related
 
-const TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update.ghost"
+const TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 type TaskDatabaseSchemaUpdateGhostPayload struct {
     MigrationType  db.MigrationType `json:"migrationType,omitempty"`
     Statement      string           `json:"statement,omitempty"`
@@ -447,7 +447,7 @@ type SchemaUpdateGhostTaskExecutor struct {
     l *zap.Logger
 }
 
-func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
     PreMigration()
     ghostExecuteMigration()
 }
@@ -457,7 +457,7 @@ type SchemaUpdateGhostCutoverTaskExecutor struct {
     l *zap.Logger
 }
 
-func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
     allowCutOver()
 }
 
@@ -467,7 +467,7 @@ type SchemaUpdateGhostDropOriginalTableTaskExecutor struct {
     l *zap.Logger
 }
 
-func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task, channel <-chan string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
     dropOriginalTable()
     PostMigration()
 }
