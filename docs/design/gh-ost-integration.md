@@ -288,7 +288,14 @@ We will divide gh-ost execution into different tasks. Each task needs to be appr
 
 ### Pre-migration validation
 
-gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. This will be a new task check run type.
+gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. The error includes but not limited to the followings
+
+- SQL statement not legal
+- `_tablename_ghc` present
+- `_tablename_gho` present
+- binlog format is not row based.
+
+This will be a new task check run type.
 
 ```Go
 const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema.update.ghost"
