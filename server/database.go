@@ -778,17 +778,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceFind := &api.DataSourceFind{
 			ID: &dataSourceID,
 		}
-		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
-		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
+		if dataSource.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
 		}
@@ -821,14 +819,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSourceRaw, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		dataSource, err := s.store.CreateDataSource(ctx, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
 		}
@@ -865,7 +861,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ID:         &dataSourceID,
 			DatabaseID: &databaseID,
 		}
-		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceRaw, err := s.store.GetDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
@@ -886,14 +882,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dataSourcePatch.Password = &password
 		}
 
-		dataSourceRaw, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		dataSource, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
