@@ -268,7 +268,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Initial migration version %s with file %s.", db.schemaVersion, latestSchemaPath),
+				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", db.schemaVersion, db.serverVersion, latestSchemaPath),
 				CreateDatabase:        true,
 			},
 			stmt,
@@ -345,7 +345,7 @@ func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Ver
 				Environment:           "", /* unused in execute migration */
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate version %s with files %s.", version, strings.Join(baseNames, ", ")),
+				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", version, db.serverVersion, strings.Join(baseNames, ", ")),
 			},
 			stmtBuf.String(),
 		); err != nil {
@@ -360,7 +360,7 @@ func getMigrationVersions(versions []semver.Version, releaseCutSchemaVersion, cu
 	var migrateVersions []semver.Version
 	var messages []string
 	for _, version := range versions {
-		// If the migration version is greather than software schema version, we will skip the migration.
+		// If the migration version is greater than the schema version this build expects, we will skip the migration.
 		if version.GT(releaseCutSchemaVersion) {
 			messages = append(messages, fmt.Sprintf("Skip this migration: %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, releaseCutSchemaVersion))
 			continue
