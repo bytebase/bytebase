@@ -41,7 +41,7 @@ COPY ./scripts .
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN STAGING_VERSION=`cat ./VERSION`-${RENDER_GIT_COMMIT:0:5} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-        --tags "release alpine" \
+        --tags "alpine" \
         -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${STAGING_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
         -o bytebase \
         ./bin/server/main.go;
