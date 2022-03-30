@@ -149,8 +149,6 @@ type Profile struct {
 	pgUser string
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
-	// dsn points to where Bytebase stores its own data
-	dsn string
 	// seedDir points to where to populate the initial data.
 	seedDir string
 	// backupRunnerInterval is the interval for backup runner.
