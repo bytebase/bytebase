@@ -252,7 +252,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 		memberFind := &api.MemberFind{
 			PrincipalID: &principal.ID,
 		}
-		memberRaw, err := s.findMemberRaw(ctx, memberFind)
+		memberRaw, err := s.getMemberRaw(ctx, memberFind)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				s.l.Error("Principal has not been assigned a role.",

@@ -17,14 +17,14 @@ var (
 
 // BackupService represents a service for managing backup.
 type BackupService struct {
-	l             *zap.Logger
-	db            *DB
-	policyService api.PolicyService
+	l     *zap.Logger
+	db    *DB
+	store *Store
 }
 
 // NewBackupService returns a new instance of BackupService.
-func NewBackupService(logger *zap.Logger, db *DB, policyService api.PolicyService) *BackupService {
-	return &BackupService{l: logger, db: db, policyService: policyService}
+func NewBackupService(logger *zap.Logger, db *DB, store *Store) *BackupService {
+	return &BackupService{l: logger, db: db, store: store}
 }
 
 // CreateBackup creates a new backup.
@@ -364,7 +364,7 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 
 // UpsertBackupSetting sets the backup settings for a database.
 func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSettingRaw, error) {
-	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, upsert.EnvironmentID)
+	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}

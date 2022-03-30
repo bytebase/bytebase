@@ -61,9 +61,9 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 	return member, nil
 }
 
-// FindMemberList finds a list of Member instances
-func (s *Store) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
-	memberRawList, err := s.findMemberListRaw(ctx, find)
+// FindMember finds a list of Member instances
+func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
+	memberRawList, err := s.findMemberRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Member list, error[%w]", err)
 	}
@@ -78,9 +78,9 @@ func (s *Store) FindMemberList(ctx context.Context, find *api.MemberFind) ([]*ap
 	return memberList, nil
 }
 
-// FindMember finds an instance of Member
-func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
-	memberRaw, err := s.findMemberRaw(ctx, find)
+// GetMember gets an instance of Member
+func (s *Store) GetMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
+	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
 	}
@@ -132,15 +132,15 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 	return member, nil
 }
 
-// findMemberListRaw retrieves a list of memberRaw instances.
-func (s *Store) findMemberListRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
+// findMemberRaw retrieves a list of memberRaw instances.
+func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	memberRawList, err := findMemberListImpl(ctx, tx.PTx, find)
+	memberRawList, err := findMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +154,9 @@ func (s *Store) findMemberListRaw(ctx context.Context, find *api.MemberFind) ([]
 	return memberRawList, nil
 }
 
-// findMemberRaw retrieves an instance of memberRaw.
+// getMemberRaw retrieves an instance of memberRaw.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) (*memberRaw, error) {
+func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*memberRaw, error) {
 	if find.PrincipalID != nil {
 		memberRaw := &memberRaw{}
 		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, memberRaw)
@@ -174,7 +174,7 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) (*membe
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findMemberListImpl(ctx, tx.PTx, find)
+	list, err := findMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	return &memberRaw, nil
 }
 
-func findMemberListImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
+func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

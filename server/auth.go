@@ -144,7 +144,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		memberFind := &api.MemberFind{
 			PrincipalID: &user.ID,
 		}
-		member, err := s.store.FindMember(ctx, memberFind)
+		member, err := s.store.GetMember(ctx, memberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
@@ -227,7 +227,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 	find := &api.MemberFind{
 		Role: &findRole,
 	}
-	memberList, err := s.store.FindMemberList(ctx, find)
+	memberList, err := s.store.FindMember(ctx, find)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
