@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -16,13 +17,13 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-var _ vcs.Provider = (*Provider)(nil)
-
 func init() {
 	vcs.Register(vcs.GitHubCom, newProvider)
 }
 
-// Provider is the GitLab self host provider.
+var _ vcs.Provider = (*Provider)(nil)
+
+// Provider is a GitHub.com VCS provider.
 type Provider struct {
 	l      *zap.Logger
 	client *http.Client
@@ -76,11 +77,17 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 		)
 	}
 
-	userInfo := &vcs.UserInfo{}
-	if err = json.Unmarshal([]byte(body), userInfo); err != nil {
+	var userInfo struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	if err = json.Unmarshal([]byte(body), &userInfo); err != nil {
 		return nil, errors.Wrap(err, "Unmarshal")
 	}
-	return userInfo, err
+	return &vcs.UserInfo{
+		PublicEmail: userInfo.Email,
+		Name:        userInfo.Name,
+	}, err
 }
 
 func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _ string) (*vcs.UserInfo, error) {
@@ -170,7 +177,7 @@ func retry(ctx context.Context, client *http.Client, token *string, oauthCtx oau
 		}
 
 		if err = getOAuthErrorDetails(resp.StatusCode, string(body)); err != nil {
-			if _, ok := err.(oauthError); ok {
+			if _, ok := err.(*oauthError); ok {
 				// Refresh and store the token.
 				if err := refreshToken(ctx, client, token, oauthCtx, refresher); err != nil {
 					return 0, "", err
@@ -222,16 +229,16 @@ type oauthContext struct {
 	GrantType    string `json:"grant_type"`
 }
 
-type refreshOauthResponse struct {
+type refreshOAuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"`
+	ExpiresIn    string `json:"expires_in"`
 	CreatedAt    int64  `json:"created_at"`
 	// token_type, scope are not used.
 }
 
 func refreshToken(ctx context.Context, client *http.Client, oldToken *string, oauthContext oauthContext, refresher common.TokenRefresher) error {
-	url := fmt.Sprintf("%s/oauth/token", apiURL)
+	url := fmt.Sprintf("%s/login/oauth/access_token", apiURL)
 	oauthContext.GrantType = "refresh_token"
 	body, err := json.Marshal(oauthContext)
 	if err != nil {
@@ -258,7 +265,7 @@ func refreshToken(ctx context.Context, client *http.Client, oldToken *string, oa
 		return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
 	}
 
-	var r refreshOauthResponse
+	var r refreshOAuthResponse
 	if err = json.Unmarshal(body, &r); err != nil {
 		return errors.Wrapf(err, "unmarshal body from POST %s", url)
 	}
@@ -268,8 +275,9 @@ func refreshToken(ctx context.Context, client *http.Client, oldToken *string, oa
 
 	// OAuth token never expires for traditional GitHub OAuth (i.e. not a GitHub App)
 	var expireAt int64
-	if r.ExpiresIn != 0 {
-		expireAt = r.CreatedAt + r.ExpiresIn
+	if r.ExpiresIn != "" {
+		expiresIn, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
+		expireAt = r.CreatedAt + expiresIn
 	}
 	if err = refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
 		return err
