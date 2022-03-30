@@ -105,7 +105,8 @@ type SheetRaw struct {
 	Visibility SheetVisibility
 	Source     SheetSource
 	Type       SheetType
-	Payload    string
+	// Payload is in the json string format of SheetVCSPayload.
+	Payload string
 }
 
 // ToSheet creates an instance of Sheet based on the SheetRaw.
@@ -202,8 +203,6 @@ type SheetPatch struct {
 	Name       *string `jsonapi:"attr,name"`
 	Statement  *string `jsonapi:"attr,statement"`
 	Visibility *string `jsonapi:"attr,visibility"`
-	Source     *SheetSource
-	Type       *SheetType
 	Payload    *string
 }
 

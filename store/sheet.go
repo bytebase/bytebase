@@ -201,12 +201,6 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.Sh
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Source; v != nil {
-		set, args = append(set, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Type; v != nil {
-		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
