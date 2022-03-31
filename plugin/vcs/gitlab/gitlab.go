@@ -544,7 +544,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 
 // CreateWebhook creates a webhook in a GitLab project.
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	url := fmt.Sprintf("%s/%s/projects/projects/%s/hooks", instanceURL, apiPath, repositoryID)
+	url := fmt.Sprintf("%s/%s/projects/%s/hooks", instanceURL, apiPath, repositoryID)
 	code, body, err := oauth.Post(
 		ctx,
 		p.client,
