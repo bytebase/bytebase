@@ -20,7 +20,7 @@ export type TaskType =
   | "bb.task.database.schema.update"
   | "bb.task.database.data.update"
   | "bb.task.database.restore"
-  | "bb.task.database.schema.update.ghost"
+  | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
   | "bb.task.database.schema.update.ghost.drop-original-table";
 
@@ -54,14 +54,15 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
-export type TaskDatabaseSchemaUpdateGhostPayload =
+export type TaskDatabaseSchemaUpdateGhostSyncPayload =
   TaskDatabaseSchemaUpdatePayload & {
     // empty by now
     // more input and output parameters in the future
   };
 
 export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
-  parentTaskId: TaskId;
+  // empty by now
+  // more input and output parameters in the future
 };
 
 export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
@@ -83,8 +84,9 @@ export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
   | TaskDatabaseSchemaUpdatePayload
-  | TaskDatabaseSchemaUpdateGhostPayload
+  | TaskDatabaseSchemaUpdateGhostSyncPayload
   | TaskDatabaseSchemaUpdateGhostCutoverPayload
+  | TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload;
