@@ -664,7 +664,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 
 		taskStatus := api.TaskPendingApproval
-		policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, instance.EnvironmentID)
+		policy, err := s.store.GetPipelineApprovalPolicy(ctx, instance.EnvironmentID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", instance.EnvironmentID, err)
 		}
@@ -819,7 +819,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 					taskStatus := api.TaskPendingApproval
-					policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, environmentID)
+					policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 					if err != nil {
 						return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", environmentID, err)
 					}
@@ -865,7 +865,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				}
 
 				taskStatus := api.TaskPendingApproval
-				policy, err := s.PolicyService.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
+				policy, err := s.store.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", database.Instance.EnvironmentID, err)
 				}
