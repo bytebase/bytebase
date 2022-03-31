@@ -1137,7 +1137,8 @@ subscription:
     bb-feature-3rd-party-auth:
       title: 第三方认证 & 授权
       desc: >-
-        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。
+        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 &
+        授权。请通过@:{'subscription.upgrade'}来开启该功能。
       login: 请@:{'subscription.upgrade'}来开启该功能
     bb-feature-branding:
       title: 自定义品牌信息
