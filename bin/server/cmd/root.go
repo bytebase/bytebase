@@ -375,12 +375,11 @@ func (m *Main) Run(ctx context.Context) error {
 
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
-	s.PolicyService = store.NewPolicyService(m.l, db, cacheService)
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.BackupService = store.NewBackupService(m.l, db, s.PolicyService)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, s.PolicyService, s.BackupService)
+	s.BackupService = store.NewBackupService(m.l, db, storeInstance)
+	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance, s.BackupService)
 	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)

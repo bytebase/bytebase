@@ -44,10 +44,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		// Gets principal id from the context.
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 
-		memberFind := &api.MemberFind{
-			PrincipalID: &principalID,
-		}
-		member, err := s.store.FindMember(ctx, memberFind)
+		member, err := s.store.GetMemberByPrincipalID(ctx, principalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}

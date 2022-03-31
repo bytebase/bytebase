@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 )
@@ -41,48 +40,6 @@ var (
 		PolicyTypeBackupPlan:       true,
 	}
 )
-
-// PolicyRaw is the store model for an Policy.
-// Fields have exactly the same meanings as Policy.
-type PolicyRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	EnvironmentID int
-
-	// Domain specific fields
-	Type    PolicyType
-	Payload string
-}
-
-// ToPolicy creates an instance of Policy based on the PolicyRaw.
-// This is intended to be called when we need to compose an Policy relationship.
-func (raw *PolicyRaw) ToPolicy() *Policy {
-	return &Policy{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		EnvironmentID: raw.EnvironmentID,
-
-		// Domain specific fields
-		Type:    raw.Type,
-		Payload: raw.Payload,
-	}
-}
 
 // Policy is the API message for a policy.
 type Policy struct {
@@ -131,14 +88,6 @@ type PolicyUpsert struct {
 	// Domain specific fields
 	Type    PolicyType
 	Payload string `jsonapi:"attr,payload"`
-}
-
-// PolicyService is the backend for policies.
-type PolicyService interface {
-	FindPolicy(ctx context.Context, find *PolicyFind) (*PolicyRaw, error)
-	UpsertPolicy(ctx context.Context, upsert *PolicyUpsert) (*PolicyRaw, error)
-	GetBackupPlanPolicy(ctx context.Context, environmentID int) (*BackupPlanPolicy, error)
-	GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*PipelineApprovalPolicy, error)
 }
 
 // PipelineApprovalPolicy is the policy configuration for pipeline approval
