@@ -11,9 +11,10 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 const (
@@ -229,8 +230,8 @@ func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
-func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*vcs.UserInfo, error) {
-	return fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%d", userID))
+func (provider *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID string) (*vcs.UserInfo, error) {
+	return fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", userID))
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
@@ -296,7 +297,7 @@ func (provider *Provider) FetchRepositoryActiveMemberList(ctx context.Context, o
 			// And since most callers are not GitLab admins, thus we fetch public email
 			// TODO: need to work around this if the user does not set public email. For now, we just return an error listing users not having public emails.
 			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
-			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, gitLabMember.ID)
+			userInfo, err := provider.FetchUserInfo(ctx, oauthCtx, instanceURL, strconv.Itoa(gitLabMember.ID))
 			if err != nil {
 				return nil, err
 			}
