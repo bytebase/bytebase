@@ -1,10 +1,22 @@
 package store
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"path"
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/bytebase/bytebase/common"
+	dbdriver "github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	// Register postgres driver
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
 )
 
 func TestGetMigrationVersions(t *testing.T) {
@@ -46,4 +58,62 @@ func TestGetMigrationVersions(t *testing.T) {
 		migrateVersions, _ := getMigrationVersions(test.versions, test.releaseCutSchemaVersion, test.currentVersion)
 		require.Equal(t, test.want, migrateVersions)
 	}
+}
+
+var (
+	pgUser        = "test"
+	pgPort        = 6000
+	serverVersion = "server-version"
+	l             = zap.NewNop()
+)
+
+func TestMigrationCompatibility(t *testing.T) {
+	pgDir := t.TempDir()
+	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
+	require.NoError(t, err)
+	err = pgInstance.Start(pgPort, os.Stdout, os.Stderr)
+	require.NoError(t, err)
+	defer pgInstance.Stop(os.Stdout, os.Stderr)
+
+	ctx := context.Background()
+	connCfg := dbdriver.ConnectionConfig{
+		Username: pgUser,
+		Password: "",
+		Host:     common.GetPostgresSocketDir(),
+		Port:     fmt.Sprintf("%d", pgPort),
+	}
+	d, err := dbdriver.Open(
+		ctx,
+		dbdriver.Postgres,
+		dbdriver.DriverConfig{Logger: l},
+		connCfg,
+		dbdriver.ConnectionContext{},
+	)
+	require.NoError(t, err)
+
+	err = d.SetupMigrationIfNeeded(ctx)
+	require.NoError(t, err)
+
+	versions, err := getMigrationFileVersions()
+	require.NoError(t, err)
+
+	// Setup N databases with N versions in the migration directory with latest schema, and apply migrations till the latest version.
+	for i := range versions {
+		initialVersion := versions[i]
+		initialDatabaseName := getDatabaseName(initialVersion)
+		err = migrate(ctx, d, nil, initialVersion, serverVersion, initialDatabaseName, l)
+		require.NoError(t, err)
+
+		currentVersion := initialVersion
+		for j := i + 1; j < len(versions); j++ {
+			version := versions[j]
+			err = migrate(ctx, d, &currentVersion, version, serverVersion, initialDatabaseName, l)
+			require.NoError(t, err)
+			currentVersion = version
+		}
+	}
+}
+
+func getDatabaseName(version semver.Version) string {
+	return fmt.Sprintf("db%s", strings.ReplaceAll(version.String(), ".", "v"))
 }
