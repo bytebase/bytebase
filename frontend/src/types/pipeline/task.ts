@@ -195,6 +195,11 @@ export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
   tableName: string;
 };
 
+export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
+  // empty by now
+  // more to come
+};
+
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
 export type TaskCheckResult = {
