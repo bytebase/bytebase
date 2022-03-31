@@ -62,6 +62,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		} else {
 			mi.Creator = creator.Name
 		}
+		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Database = databaseName
 		mi.Namespace = databaseName
@@ -189,7 +190,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
 		repo := repoRawOutter.ToRepository()
-		vcs, err := server.composeVCSByID(ctx, repoRawOutter.VCSID)
+		vcs, err := server.store.GetVCSByID(ctx, repoRawOutter.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}

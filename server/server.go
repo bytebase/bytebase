@@ -41,7 +41,6 @@ type Server struct {
 	ProjectService          api.ProjectService
 	ProjectMemberService    api.ProjectMemberService
 	ProjectWebhookService   api.ProjectWebhookService
-	EnvironmentService      api.EnvironmentService
 	InstanceService         api.InstanceService
 	InstanceUserService     api.InstanceUserService
 	DatabaseService         api.DatabaseService
@@ -49,7 +48,6 @@ type Server struct {
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
 	IndexService            api.IndexService
-	DataSourceService       api.DataSourceService
 	BackupService           api.BackupService
 	IssueService            api.IssueService
 	IssueSubscriberService  api.IssueSubscriberService
@@ -60,9 +58,7 @@ type Server struct {
 	ActivityService         api.ActivityService
 	InboxService            api.InboxService
 	BookmarkService         api.BookmarkService
-	VCSService              api.VCSService
 	RepositoryService       api.RepositoryService
-	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService

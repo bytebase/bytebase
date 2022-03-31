@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
@@ -148,16 +149,12 @@ type Profile struct {
 	pgUser string
 	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	dataDir string
-	// dsn points to where Bytebase stores its own data
-	dsn string
-	// seedDir points to where to populate the initial data.
-	seedDir string
-	// force reset seed, true for testing and demo
-	forceResetSeed bool
+	// demoDataDir points to where to populate the initial data.
+	demoDataDir string
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
 	// schemaVersion is the version of schema applied to.
-	schemaVersion int
+	schemaVersion semver.Version
 }
 
 // retrieved via the SettingService upon startup
@@ -284,10 +281,9 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("dsn=%s\n", activeProfile.dsn)
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	fmt.Printf("seedDir=%s\n", activeProfile.seedDir)
+	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
@@ -356,7 +352,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, m.profile.dsn, connCfg, m.profile.seedDir, m.profile.forceResetSeed, readonly, version, m.profile.schemaVersion)
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -383,11 +379,9 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.EnvironmentService = store.NewEnvironmentService(m.l, db, cacheService)
-	s.DataSourceService = store.NewDataSourceService(m.l, db, cacheService)
 	s.BackupService = store.NewBackupService(m.l, db, s.PolicyService)
 	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, s.PolicyService, s.BackupService)
-	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, s.DataSourceService)
+	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
@@ -402,9 +396,7 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ActivityService = store.NewActivityService(m.l, db)
 	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
 	s.BookmarkService = store.NewBookmarkService(m.l, db)
-	s.VCSService = store.NewVCSService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
-	s.AnomalyService = store.NewAnomalyService(m.l, db)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)

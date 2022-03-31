@@ -21,13 +21,13 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	g.GET("/auth/provider", func(c echo.Context) error {
 		ctx := context.Background()
 		vcsFind := &api.VCSFind{}
-		list, err := s.VCSService.FindVCSList(ctx, vcsFind)
+		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
 		var authProviderList []*api.AuthProvider
-		for _, vcs := range list {
+		for _, vcs := range vcsList {
 			newProvider := &api.AuthProvider{
 				ID:            vcs.ID,
 				Type:          vcs.Type,
@@ -83,8 +83,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				findVCS := &api.VCSFind{ID: &gitlabLogin.ID}
-				vcsFound, err := s.VCSService.FindVCS(ctx, findVCS)
+				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.ID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}

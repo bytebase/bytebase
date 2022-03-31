@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"embed"
@@ -8,10 +9,10 @@ import (
 	"io/fs"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/bytebase/bytebase/common"
@@ -38,15 +39,14 @@ const (
 	// will require a separate process to upgrade the schema.
 	// If the new release requires a higher MINOR version than the schema file, then it will apply the migration upon
 	// startup.
-	majorSchemaVervion          = 1
-	createDatabaseSchemaVersion = "10000"
+	majorSchemaVervion = 1
 )
 
 //go:embed migration
 var migrationFS embed.FS
 
-//go:embed seed
-var seedFS embed.FS
+//go:embed demo
+var demoFS embed.FS
 
 // DB represents the database connection.
 type DB struct {
@@ -58,11 +58,8 @@ type DB struct {
 	// The user has superuser privilege to the database.
 	connCfg dbdriver.ConnectionConfig
 
-	// Dir to load seed data
-	seedDir string
-
-	// Force reset seed, true for testing and demo
-	forceResetSeed bool
+	// Dir to load demo data
+	demoDataDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
@@ -71,7 +68,7 @@ type DB struct {
 	serverVersion string
 
 	// schemaVersion is the version of Bytebase schema.
-	schemaVersion int
+	schemaVersion semver.Version
 
 	// Returns the current time. Defaults to time.Now().
 	// Can be mocked for tests.
@@ -79,16 +76,15 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, dsn string, connCfg dbdriver.ConnectionConfig, seedDir string, forceResetSeed bool, readonly bool, serverVersion string, schemaVersion int) *DB {
+func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir string, readonly bool, serverVersion string, schemaVersion semver.Version) *DB {
 	db := &DB{
-		l:              logger,
-		connCfg:        connCfg,
-		seedDir:        seedDir,
-		forceResetSeed: forceResetSeed,
-		readonly:       readonly,
-		Now:            time.Now,
-		serverVersion:  serverVersion,
-		schemaVersion:  schemaVersion,
+		l:             logger,
+		connCfg:       connCfg,
+		demoDataDir:   demoDataDir,
+		readonly:      readonly,
+		Now:           time.Now,
+		serverVersion: serverVersion,
+		schemaVersion: schemaVersion,
 	}
 	return db
 }
@@ -108,7 +104,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	databaseName := db.connCfg.Username
 
 	if db.readonly {
-		db.l.Info("Database is opened in readonly mode. Skip migration and seeding.")
+		db.l.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// The database storing metadata is the same as user name.
 		db.db, err = d.GetDbConnection(ctx, databaseName)
 		if err != nil {
@@ -140,8 +136,8 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
 	}
 
-	if err := db.seed(verBefore, verAfter); err != nil {
-		return fmt.Errorf("failed to seed: %w."+
+	if err := db.setupDemoData(); err != nil {
+		return fmt.Errorf("failed to setup demo data: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
@@ -151,65 +147,60 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	return nil
 }
 
-func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (ver version, err error) {
+// getLatestVersion returns the latest schema version in semantic versioning format.
+// If there's no migration history, version will be nil.
+func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
 	limit := 1
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
 		Limit:    &limit,
 	})
 	if err != nil {
-		return version{}, fmt.Errorf("failed to get migration history, error: %v", err)
+		return nil, fmt.Errorf("failed to get migration history, error: %v", err)
 	}
 	if len(history) == 0 {
-		return version{major: 0, minor: 0}, nil
+		return nil, nil
 	}
 
-	v, err := strconv.Atoi(history[0].Version)
+	v, err := semver.Make(history[0].Version)
 	if err != nil {
-		return version{}, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
+		return nil, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
 	}
 
-	return versionFromInt(v), nil
+	return &v, nil
 }
 
-// seed loads the seed data for testing
-func (db *DB) seed(verBefore, verAfter version) error {
-	db.l.Info(fmt.Sprintf("Seeding database from %s, force: %t ...", db.seedDir, db.forceResetSeed))
-	names, err := fs.Glob(seedFS, fmt.Sprintf("%s/*.sql", db.seedDir))
+// setupDemoData loads the setupDemoData data for testing
+func (db *DB) setupDemoData() error {
+	if db.demoDataDir == "" {
+		db.l.Debug("Skip setting up demo data. Demo data directory not specified.")
+		return nil
+	}
+	db.l.Info(fmt.Sprintf("Setting up demo data from %q...", db.demoDataDir))
+	names, err := fs.Glob(demoFS, fmt.Sprintf("%s/*.sql", db.demoDataDir))
 	if err != nil {
 		return err
 	}
 
-	// We separate seed data for each table into their own seed file.
+	// We separate demo data for each table into their own demo data file.
 	// And there exists foreign key dependency among tables, so we
-	// name the seed file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
+	// name the data file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
 	// the file name so they are loaded accordingly.
 	sort.Strings(names)
 
-	// Loop over all seed files and execute them in order.
+	// Loop over all data files and execute them in order.
 	for _, name := range names {
-		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
-		version, err := strconv.Atoi(versionPrefix)
-		if err != nil {
-			return fmt.Errorf("invalid seed file format %s, expected number prefix", filepath.Base(name))
-		}
-		ver := versionFromInt(version)
-		if db.forceResetSeed || ver.biggerThan(verBefore) && !ver.biggerThan(verAfter) {
-			if err := db.seedFile(name); err != nil {
-				return fmt.Errorf("seed error: name=%q err=%w", name, err)
-			}
-		} else {
-			db.l.Info(fmt.Sprintf("Skip this seed file: %s. The corresponding seed version %s is not in the applicable range (%s, %s].",
-				name, ver, verBefore, verAfter))
+		if err := db.applyDataFile(name); err != nil {
+			return fmt.Errorf("applyDataFile error: name=%q err=%w", name, err)
 		}
 	}
-	db.l.Info("Completed database seeding.")
+	db.l.Info("Completed demo data setup.")
 	return nil
 }
 
-// seedFile runs a single seed file within a transaction.
-func (db *DB) seedFile(name string) error {
-	db.l.Info(fmt.Sprintf("Seeding %s...", name))
+// applyDataFile runs a single demo data file within a transaction.
+func (db *DB) applyDataFile(name string) error {
+	db.l.Info(fmt.Sprintf("Applying data file %s...", name))
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -217,7 +208,7 @@ func (db *DB) seedFile(name string) error {
 	defer tx.Rollback()
 
 	// Read and execute migration file.
-	if buf, err := fs.ReadFile(seedFS, name); err != nil {
+	if buf, err := fs.ReadFile(demoFS, name); err != nil {
 		return err
 	} else if _, err := tx.Exec(string(buf)); err != nil {
 		return err
@@ -226,6 +217,11 @@ func (db *DB) seedFile(name string) error {
 	return tx.Commit()
 }
 
+const (
+	latestSchemaFile = "latest.sql"
+	latestDataFile   = "latest_data.sql"
+)
+
 // migrate sets up migration tracking and executes pending migration files.
 //
 // Migration files are embedded in the migration folder and are executed
@@ -233,84 +229,150 @@ func (db *DB) seedFile(name string) error {
 //
 // We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
-func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer version, databaseName string) error {
+func (db *DB) migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, databaseName string) error {
 	db.l.Info("Apply database migration if needed...")
-	db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
-
-	// major version is 0 when the store isn't yet setup for the first time.
-	if curVer.major != 0 && curVer.major != majorSchemaVervion {
-		return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", curVer.major, majorSchemaVervion, db.serverVersion)
+	db.l.Info(fmt.Sprintf("The release cutoff schema version: %s", db.schemaVersion))
+	if curVer == nil {
+		db.l.Info("The database schema has not been setup.")
+	} else {
+		db.l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+		major := (*curVer).Major
+		if major != majorSchemaVervion {
+			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, db.serverVersion)
+		}
 	}
 
-	if curVer.major == 0 && curVer.minor == 0 {
-		createDatabaseStatement := fmt.Sprintf("CREATE DATABASE %s", databaseName)
+	// Initial schema setup.
+	if curVer == nil {
+		latestSchemaPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestSchemaFile)
+		buf, err := migrationFS.ReadFile(latestSchemaPath)
+		if err != nil {
+			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
+		}
+		latestDataPath := fmt.Sprintf("migration/%s/%s", db.schemaVersion.String(), latestDataFile)
+		dataBuf, err := migrationFS.ReadFile(latestDataPath)
+		if err != nil {
+			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
+		}
+		// We will create the database together with initial schema and data migration.
+		stmt := fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
-				ReleaseVersion: db.serverVersion,
-				Version:        createDatabaseSchemaVersion,
-				Namespace:      databaseName,
-				Database:       databaseName,
-				Environment:    "", /* unused in execute migration */
-				Source:         dbdriver.LIBRARY,
-				Type:           dbdriver.Baseline,
-				Description:    fmt.Sprintf("Create database %s.", databaseName),
-				CreateDatabase: true,
+				ReleaseVersion:        db.serverVersion,
+				UseSemanticVersion:    true,
+				Version:               db.schemaVersion.String(),
+				SemanticVersionSuffix: time.Now().Format("20060102150405"),
+				Namespace:             databaseName,
+				Database:              databaseName,
+				Environment:           "", /* unused in execute migration */
+				Source:                dbdriver.LIBRARY,
+				Type:                  dbdriver.Migrate,
+				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", db.schemaVersion, db.serverVersion, latestSchemaPath),
+				CreateDatabase:        true,
 			},
-			createDatabaseStatement,
+			stmt,
 		); err != nil {
-			return fmt.Errorf("failed to migrate create database schema, error: %v", err)
+			return fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
 		}
+		db.l.Info("Completed database initial migration.")
+		return nil
 	}
 
 	// Apply migrations
-	names, err := fs.Glob(migrationFS, "migration/*.sql")
+	versionNames, err := fs.Glob(migrationFS, "migration/*")
 	if err != nil {
 		return err
 	}
-	// Sort the migration up file in ascending order.
-	sort.Strings(names)
-
-	maxVer := versionFromInt(db.schemaVersion)
-	for _, name := range names {
-		versionPrefix := strings.Split(filepath.Base(name), "__")[0]
-		version, err := strconv.Atoi(versionPrefix)
+	var versions []semver.Version
+	for _, name := range versionNames {
+		v, err := semver.Make(strings.TrimPrefix(name, "migration/"))
 		if err != nil {
-			return fmt.Errorf("invalid migration file format %s, expected number prefix", filepath.Base(name))
+			return fmt.Errorf("invalid migration file path %q, error %w", name, err)
 		}
-		v := versionFromInt(version)
-		if v.biggerThan(maxVer) {
-			db.l.Debug(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %s is bigger than maximum schema version %s.", name, v, maxVer))
-		} else if v.biggerThan(curVer) {
-			// Migrate migration files.
-			db.l.Info(fmt.Sprintf("Migrating %s...", name))
-			buf, err := fs.ReadFile(migrationFS, name)
-			if err != nil {
-				return err
-			}
-			if _, _, err := d.ExecuteMigration(
-				ctx,
-				&dbdriver.MigrationInfo{
-					ReleaseVersion: db.serverVersion,
-					Version:        fmt.Sprintf("%d", version),
-					Namespace:      databaseName,
-					Database:       databaseName,
-					Environment:    "", /* unused in execute migration */
-					Source:         dbdriver.LIBRARY,
-					Type:           dbdriver.Migrate,
-					Description:    fmt.Sprintf("Migrate %s.", filepath.Base(name)),
-				},
-				string(buf),
-			); err != nil {
-				return fmt.Errorf("failed to migrate schema version %q, error: %v", filepath.Base(name), err)
-			}
-		} else {
-			db.l.Info(fmt.Sprintf("Skip this migration file: %s. The corresponding migration version %s has already been applied.", name, v))
-		}
+		versions = append(versions, v)
+	}
+	// Sort the migration semantic version in ascending order.
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].LT(versions[j])
+	})
+
+	migrateVersions, messages := getMigrationVersions(versions, db.schemaVersion, *curVer)
+	for _, message := range messages {
+		db.l.Info(message)
 	}
 
+	for _, version := range migrateVersions {
+		// Migrate migration files.
+		db.l.Info(fmt.Sprintf("Migrating %s...", version))
+		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*.sql", version))
+		if err != nil {
+			return err
+		}
+		var stmtBuf bytes.Buffer
+		var baseNames []string
+		for _, name := range names {
+			// Skip the latest sql file.
+			baseName := filepath.Base(name)
+			if baseName == latestSchemaFile {
+				continue
+			}
+			if baseName == latestDataFile {
+				continue
+			}
+			baseNames = append(baseNames, baseName)
+			buf, err := fs.ReadFile(migrationFS, name)
+			if err != nil {
+				return fmt.Errorf("failed to read migration file %q, error %w", name, err)
+			}
+			if _, err := stmtBuf.Write(buf); err != nil {
+				return fmt.Errorf("failed to write buffer for migration file %q, error %w", name, err)
+			}
+			if _, err := stmtBuf.WriteString("\n\n"); err != nil {
+				return fmt.Errorf("failed to write newline buffer for migration file %q, error %w", name, err)
+			}
+			db.l.Debug(fmt.Sprintf("Reading migration file %q.", name))
+		}
+		if _, _, err := d.ExecuteMigration(
+			ctx,
+			&dbdriver.MigrationInfo{
+				ReleaseVersion:        db.serverVersion,
+				UseSemanticVersion:    true,
+				Version:               version.String(),
+				SemanticVersionSuffix: time.Now().Format("20060102150405"),
+				Namespace:             databaseName,
+				Database:              databaseName,
+				Environment:           "", /* unused in execute migration */
+				Source:                dbdriver.LIBRARY,
+				Type:                  dbdriver.Migrate,
+				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", version, db.serverVersion, strings.Join(baseNames, ", ")),
+			},
+			stmtBuf.String(),
+		); err != nil {
+			return fmt.Errorf("failed to migrate schema version %q, error: %v", version, err)
+		}
+	}
 	db.l.Info("Completed database migration.")
 	return nil
+}
+
+func getMigrationVersions(versions []semver.Version, releaseCutSchemaVersion, currentVersion semver.Version) ([]semver.Version, []string) {
+	var migrateVersions []semver.Version
+	var messages []string
+	for _, version := range versions {
+		// If the migration version is greater than the schema version this build expects, we will skip the migration.
+		if version.GT(releaseCutSchemaVersion) {
+			messages = append(messages, fmt.Sprintf("Skip this migration: %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, releaseCutSchemaVersion))
+			continue
+		}
+		// If the migration version is less than or equal to the current version, we will skip the migration since it's already applied.
+		if version.LE(currentVersion) {
+			messages = append(messages, fmt.Sprintf("Skip this migration: %s; the current schema version %s is higher.", version, currentVersion))
+			continue
+		}
+		migrateVersions = append(migrateVersions, version)
+	}
+	return migrateVersions, messages
 }
 
 // Close closes the database connection.

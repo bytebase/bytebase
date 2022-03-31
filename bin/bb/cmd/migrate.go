@@ -123,6 +123,7 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
 		return fmt.Errorf("failed to read sql file, got error: %w", err)
 	}
+	// TODO(d): support semantic versioning.
 	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
 		ReleaseVersion: version,
 		Version:        defaultMigrationVersion(),
