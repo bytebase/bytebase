@@ -96,7 +96,7 @@ const (
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
 	// Branding
-	
+
 	// FeatureBranding enables customized branding.
 	//
 	// Currently, we only support customizing the logo.
