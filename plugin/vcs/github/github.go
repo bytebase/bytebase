@@ -17,6 +17,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
+const (
+	maxRetries = 3
+
+	apiURL = "https://api.github.com"
+)
+
 func init() {
 	vcs.Register(vcs.GitHubCom, newProvider)
 }
@@ -39,10 +45,14 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 	}
 }
 
-const apiURL = "https://api.github.com"
-
 func (p *Provider) APIURL(string) string {
 	return apiURL
+}
+
+// User represents a GitHub API response for a user.
+type User struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
@@ -71,22 +81,17 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 			errInfo = append(errInfo, fmt.Sprintf("UserID: %v", resourceURISplit[1]))
 		}
 		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
-	} else if code >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("failed to read user info from GitHub.com, status code: %d",
-			code,
-		)
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read user info from GitHub.com, status code: %d", code)
 	}
 
-	var userInfo struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
-	}
-	if err = json.Unmarshal([]byte(body), &userInfo); err != nil {
-		return nil, errors.Wrap(err, "Unmarshal")
+	var user User
+	if err = json.Unmarshal([]byte(body), &user); err != nil {
+		return nil, errors.Wrap(err, "unmarshal")
 	}
 	return &vcs.UserInfo{
-		PublicEmail: userInfo.Email,
-		Name:        userInfo.Name,
+		PublicEmail: user.Email,
+		Name:        user.Name,
 	}, err
 }
 
@@ -154,8 +159,6 @@ func httpGet(ctx context.Context, client *http.Client, resourcePath string, toke
 	)
 }
 
-const maxRetries = 3
-
 func retry(ctx context.Context, client *http.Client, token *string, oauthCtx oauthContext, refresher common.TokenRefresher, f func() (*http.Response, error)) (code int, respBody string, err error) {
 	var resp *http.Response
 	var body []byte
@@ -204,7 +207,7 @@ func (e oauthError) Error() string {
 // errors like 404 we don't return error. We do this because this method is only
 // intended to be used by oauth to refresh access token on expiration.
 func getOAuthErrorDetails(code int, body string) error {
-	if code < http.StatusMultipleChoices {
+	if 200 <= code && code < 300 {
 		return nil
 	}
 
