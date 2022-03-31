@@ -13,8 +13,9 @@
         v-for="authProvider in authProviderList"
         :key="authProvider.type"
       >
-        <n-button
-          class="w-full h-10 mb-2 tooltip-wrapper"
+        <button
+          type="button"
+          class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
           :disabled="!has3rdPartyLoginFeature"
           @click.prevent="
             () => {
@@ -40,11 +41,15 @@
           <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
             $t("subscription.features.bb-feature-3rd-party-auth.login")
           }}</span>
-        </n-button>
+        </button>
       </template>
 
       <template v-if="authProviderList.length == 0">
-        <n-button class="w-full h-10 mb-2" disabled>
+        <button
+          disabled
+          type="button"
+          class="btn-normal flex justify-center w-full h-10 mb-2"
+        >
           <img
             class="w-5 mr-1"
             :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
@@ -52,7 +57,7 @@
           <span class="text-center font-semibold align-middle">
             {{ $t("auth.sign-in.gitlab-oauth") }}
           </span>
-        </n-button>
+        </button>
       </template>
     </div>
 
