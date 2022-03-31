@@ -28,7 +28,7 @@ type GitLab struct {
 
 type projectData struct {
 	webhooks []*gitlab.WebhookPost
-	// files is a map that filePath(including file name) is the key and fileContent is the value.
+	// files is a map that the full file path is the key and the file content is the value.
 	files map[string]string
 }
 
