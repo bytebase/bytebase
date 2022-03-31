@@ -104,7 +104,7 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	return nil
 }
 
-// readProjectFile reads a project file
+// readProjectTree reads a project file nodes
 func (gl *GitLab) readProjectTree(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
 	path := c.QueryParam("path")
