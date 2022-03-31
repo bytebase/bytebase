@@ -66,7 +66,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
 				for _, env := range envList {
-					policy, err := s.server.PolicyService.GetBackupPlanPolicy(ctx, env.ID)
+					policy, err := s.server.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
 					if err != nil {
 						s.l.Error("Failed to retrieve backup policy",
 							zap.String("environment", env.Name),
