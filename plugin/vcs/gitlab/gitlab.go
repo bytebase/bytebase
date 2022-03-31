@@ -16,13 +16,12 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
 const (
 	// SecretTokenLength is the length of secret token.
 	SecretTokenLength = 16
-
-	maxRetries = 3
 
 	// apiPath is the API path.
 	apiPath = "api/v4"
@@ -190,18 +189,21 @@ func (p *Provider) APIURL(instanceURL string) string {
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{userID}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
-	code, body, err := httpGet(
+	url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourceURI)
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		instanceURL,
-		resourceURI,
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "GET")
@@ -262,22 +264,25 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 
 // FetchRepositoryActiveMemberList fetch all active members of a repository
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
-	code, body, err := httpGet(
+	// Official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
+	url := fmt.Sprintf("%s/%s/projects/%s/members/all", instanceURL, apiPath, repositoryID)
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		instanceURL,
-		// official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
-		fmt.Sprintf("projects/%s/members/all", repositoryID),
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GET")
 	}
 
 	if code == 404 {
@@ -333,18 +338,21 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 
 // FetchRepositoryFileList fetch the files from repository tree
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	code, body, err := httpGet(
+	url := fmt.Sprintf("%s/%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", instanceURL, apiPath, repositoryID, ref, filePath)
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/tree?recursive=true&ref=%s&path=%s", repositoryID, ref, filePath),
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, err: %w", instanceURL, err)
@@ -383,19 +391,22 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		return fmt.Errorf("failed to marshal file commit: %w", err)
 	}
 
-	code, _, err := httpPost(
+	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath))
+	code, _, err := oauth.Post(
 		ctx,
 		p.client,
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/files/%s", repositoryID, url.QueryEscape(filePath)),
+		url,
 		&oauthCtx.AccessToken,
-		bytes.NewBuffer(body),
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s on GitLab instance %s, err: %w", filePath, instanceURL, err)
@@ -423,19 +434,22 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 		return fmt.Errorf("failed to marshal file commit: %w", err)
 	}
 
-	code, _, err := httpPut(
+	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath))
+	code, _, err := oauth.Put(
 		ctx,
 		p.client,
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/files/%s", repositoryID, url.QueryEscape(filePath)),
+		url,
 		&oauthCtx.AccessToken,
-		bytes.NewBuffer(body),
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s on GitLab instance %s, error: %w", filePath, instanceURL, err)
@@ -453,20 +467,22 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 
 // ReadFile reads the content of a file.
 func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, commitID string) (string, error) {
-	code, body, err := httpGet(
+	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s/raw?ref=%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath), commitID)
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/files/%s/raw?ref=%s", repositoryID, url.QueryEscape(filePath), commitID),
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
-
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
@@ -486,20 +502,22 @@ func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, i
 
 // ReadFileMeta reads the metadata of a file.
 func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, branch string) (*vcs.FileMeta, error) {
-	code, body, err := httpGet(
+	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s?ref=%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath), url.QueryEscape(branch))
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/files/%s?ref=%s", repositoryID, url.QueryEscape(filePath), url.QueryEscape(branch)),
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file meta %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
@@ -526,20 +544,22 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 
 // CreateWebhook creates a webhook in a GitLab project.
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	resourcePath := fmt.Sprintf("projects/%s/hooks", repositoryID)
-	code, body, err := httpPost(
+	url := fmt.Sprintf("%s/%s/projects/projects/%s/hooks", instanceURL, apiPath, repositoryID)
+	code, body, err := oauth.Post(
 		ctx,
 		p.client,
-		instanceURL,
-		resourcePath,
+		url,
 		&oauthCtx.AccessToken,
-		bytes.NewBuffer(payload),
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create webhook for repository %s from GitLab instance %s: %w", repositoryID, instanceURL, err)
@@ -569,20 +589,22 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 // PatchWebhook patches a webhook in a GitLab project.
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
-	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookID)
-	code, _, err := httpPut(
+	url := fmt.Sprintf("%s/%s/projects/%s/hooks/%s", instanceURL, apiPath, repositoryID, webhookID)
+	code, _, err := oauth.Put(
 		ctx,
 		p.client,
-		instanceURL,
-		resourcePath,
+		url,
 		&oauthCtx.AccessToken,
-		bytes.NewBuffer(payload),
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
@@ -596,19 +618,21 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 
 // DeleteWebhook deletes a webhook in a GitLab project.
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	resourcePath := fmt.Sprintf("projects/%s/hooks/%s", repositoryID, webhookID)
-	code, _, err := httpDelete(
+	url := fmt.Sprintf("%s/%s/projects/%s/hooks/%s", instanceURL, apiPath, repositoryID, webhookID)
+	code, _, err := oauth.Delete(
 		ctx,
 		p.client,
-		instanceURL,
-		resourcePath,
+		url,
 		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
@@ -616,154 +640,6 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 	if code >= 300 {
 		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
-	}
-	return nil
-}
-
-func httpPost(ctx context.Context, client *http.Client, instanceURL, resourcePath string, token *string, body io.Reader, oauthCtx oauthContext, refresher common.TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, instanceURL, token, oauthCtx, refresher,
-		func() (*http.Response, error) {
-			url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourcePath)
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
-			if err != nil {
-				return nil, errors.Wrapf(err, "construct POST %s", url)
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-			resp, err := client.Do(req)
-			if err != nil {
-				return nil, errors.Wrapf(err, "POST %s", url)
-			}
-			return resp, nil
-		},
-	)
-}
-
-func httpGet(ctx context.Context, client *http.Client, instanceURL, resourcePath string, token *string, oauthCtx oauthContext, refresher common.TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, instanceURL, token, oauthCtx, refresher,
-		func() (*http.Response, error) {
-			url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourcePath)
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-			if err != nil {
-				return nil, errors.Wrapf(err, "construct GET %s", url)
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-			resp, err := client.Do(req)
-			if err != nil {
-				return nil, errors.Wrapf(err, "GET %s", url)
-			}
-			return resp, nil
-		},
-	)
-}
-
-func httpPut(ctx context.Context, client *http.Client, instanceURL, resourcePath string, token *string, body io.Reader, oauthCtx oauthContext, refresher common.TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, instanceURL, token, oauthCtx, refresher,
-		func() (*http.Response, error) {
-			url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourcePath)
-			req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
-			if err != nil {
-				return nil, errors.Wrapf(err, "construct PUT %s", url)
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-			resp, err := client.Do(req)
-			if err != nil {
-				return nil, errors.Wrapf(err, "PUT %s", url)
-			}
-			return resp, nil
-		},
-	)
-}
-
-func httpDelete(ctx context.Context, client *http.Client, instanceURL, resourcePath string, token *string, oauthCtx oauthContext, refresher common.TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, instanceURL, token, oauthCtx, refresher,
-		func() (*http.Response, error) {
-			url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourcePath)
-			req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
-			if err != nil {
-				return nil, errors.Wrapf(err, "construct DELETE %s", url)
-			}
-
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-			resp, err := client.Do(req)
-			if err != nil {
-				return nil, errors.Wrapf(err, "DELETE %s", url)
-			}
-			return resp, nil
-		},
-	)
-}
-
-func retry(ctx context.Context, client *http.Client, instanceURL string, token *string, oauthCtx oauthContext, refresher common.TokenRefresher, f func() (*http.Response, error)) (code int, respBody string, err error) {
-	var resp *http.Response
-	var body []byte
-	for retries := 0; retries < maxRetries; retries++ {
-		select {
-		case <-ctx.Done():
-			return 0, "", ctx.Err()
-		default:
-		}
-
-		resp, err = f()
-		if err != nil {
-			return 0, "", err
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return 0, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
-		}
-
-		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
-			if _, ok := err.(*oauthError); ok {
-				// Refresh and store the token.
-				if err := refreshToken(ctx, client, instanceURL, token, oauthCtx, refresher); err != nil {
-					return 0, "", err
-				}
-				continue
-			}
-			return 0, "", errors.Errorf("want *oauthError but got %T", err)
-		}
-		return resp.StatusCode, string(body), nil
-	}
-	return 0, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
-}
-
-type oauthError struct {
-	Err              string `json:"error"`
-	ErrorDescription string `json:"error_description"`
-}
-
-func (e oauthError) Error() string {
-	return fmt.Sprintf("GitLab OAuth response error %q description %q", e.Err, e.ErrorDescription)
-}
-
-// getOAuthErrorDetails only returns error if it's an OAuth error. For other
-// errors like 404 we don't return error. We do this because this method is only
-// intended to be used by oauth to refresh access token on expiration.
-//
-// When it's error like 404, GitLab API doesn't return it as error so we keep
-// the similar behavior and let caller check the response status code.
-func getOAuthErrorDetails(code int, body []byte) error {
-	if 200 <= code && code < 300 {
-		return nil
-	}
-
-	var oe oauthError
-	if err := json.Unmarshal(body, &oe); err != nil {
-		// If we failed to unmarshal body with oauth error, it's not oauthError and we should return nil.
-		return nil
-	}
-	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
-	// {"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-	if oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired") {
-		return &oe
 	}
 	return nil
 }
@@ -784,51 +660,53 @@ type refreshOauthResponse struct {
 	// token_type, scope are not used.
 }
 
-func refreshToken(ctx context.Context, client *http.Client, instanceURL string, oldToken *string, oauthContext oauthContext, refresher common.TokenRefresher) error {
-	url := fmt.Sprintf("%s/oauth/token", instanceURL)
-	oauthContext.GrantType = "refresh_token"
-	body, err := json.Marshal(oauthContext)
-	if err != nil {
-		return err
-	}
+func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
+	return func(ctx context.Context, client *http.Client, oldToken *string) error {
+		url := fmt.Sprintf("%s/oauth/token", instanceURL)
+		oauthCtx.GrantType = "refresh_token"
+		body, err := json.Marshal(oauthCtx)
+		if err != nil {
+			return err
+		}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
-	if err != nil {
-		return errors.Wrapf(err, "construct POST %s", url)
-	}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		if err != nil {
+			return errors.Wrapf(err, "construct POST %s", url)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "POST %s", url)
-	}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			return errors.Wrapf(err, "POST %s", url)
+		}
 
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "read body of POST %s", url)
-	}
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrapf(err, "read body of POST %s", url)
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
-	}
+		if resp.StatusCode != http.StatusOK {
+			return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
+		}
 
-	var r refreshOauthResponse
-	if err := json.Unmarshal(body, &r); err != nil {
-		return errors.Wrapf(err, "unmarshal body from POST %s", url)
-	}
+		var r refreshOauthResponse
+		if err := json.Unmarshal(body, &r); err != nil {
+			return errors.Wrapf(err, "unmarshal body from POST %s", url)
+		}
 
-	// Update the old token to new value for retries.
-	*oldToken = r.AccessToken
+		// Update the old token to new value for retries.
+		*oldToken = r.AccessToken
 
-	// For GitLab, as of 13.12, the default config won't expire the access token,
-	// thus this field is 0. See
-	// https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
-	var expireAt int64
-	if r.ExpiresIn != 0 {
-		expireAt = r.CreatedAt + r.ExpiresIn
+		// For GitLab, as of 13.12, the default config won't expire the access token,
+		// thus this field is 0. See
+		// https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+		var expireAt int64
+		if r.ExpiresIn != 0 {
+			expireAt = r.CreatedAt + r.ExpiresIn
+		}
+		if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
+			return err
+		}
+		return nil
 	}
-	if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
-		return err
-	}
-	return nil
 }
