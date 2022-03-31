@@ -1,8 +1,10 @@
+# This action will trigger a publish for staging.bytebase.com using the specific release
 name: "Staging Env"
 
 on:
   release:
-    types: [ prereleased ]
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows
+    types: [ published ]
   workflow_dispatch:
 
 jobs:
@@ -12,4 +14,3 @@ jobs:
       - uses: actions/checkout@v2
       - name: "trigger render's webhook"
         run: curl ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
-
