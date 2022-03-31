@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -170,11 +171,14 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	if _, ok := pd.files[filePath]; !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
 	}
-	fileContent := pd.files[filePath]
+
+	fileName := filepath.Base(filePath)
+	content := pd.files[filePath]
 
 	buf, err := json.Marshal(&gitlab.FileMeta{
+		FileName: fileName,
 		FilePath: filePath,
-		Content:  fileContent,
+		Content:  content,
 	})
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal FileMeta, error %v", err))
