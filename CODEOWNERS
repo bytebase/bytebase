@@ -3,3 +3,7 @@
 
 # Frontend
 /frontend/                   @LiuJi-Jim @xiaoluoboding
+
+# Dependency files
+frontend/package.json        @d-bytebase @tianzhou
+go.mod                       @d-bytebase @tianzhou
