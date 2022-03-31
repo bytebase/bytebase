@@ -153,6 +153,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 			base_directory,
 			file_path_template,
 			schema_path_template,
+			sheet_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -162,8 +163,8 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 			expires_ts,
 			refresh_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -176,6 +177,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 		create.BaseDirectory,
 		create.FilePathTemplate,
 		create.SchemaPathTemplate,
+		create.SheetPathTemplate,
 		create.ExternalID,
 		create.ExternalWebhookID,
 		create.WebhookURLHost,
@@ -208,6 +210,7 @@ func (s *RepositoryService) createRepository(ctx context.Context, tx *sql.Tx, cr
 		&repository.BaseDirectory,
 		&repository.FilePathTemplate,
 		&repository.SchemaPathTemplate,
+		&repository.SheetPathTemplate,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
@@ -255,6 +258,7 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			base_directory,
 			file_path_template,
 			schema_path_template,
+			sheet_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -291,6 +295,7 @@ func findRepositoryList(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
+			&repository.SheetPathTemplate,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
@@ -328,6 +333,9 @@ func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch
 	if v := patch.SchemaPathTemplate; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_path_template = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.SheetPathTemplate; v != nil {
+		set, args = append(set, fmt.Sprintf("sheet_path_template = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.AccessToken; v != nil {
 		set, args = append(set, fmt.Sprintf("access_token = $%d", len(args)+1)), append(args, *v)
 	}
@@ -345,7 +353,7 @@ func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`, len(args)),
 		args...,
 	)
@@ -371,6 +379,7 @@ func patchRepository(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
+			&repository.SheetPathTemplate,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,

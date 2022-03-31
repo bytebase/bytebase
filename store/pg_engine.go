@@ -116,6 +116,29 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
 		return err
 	}
+	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
+	if _, err := getLatestVersion(ctx, d, databaseName); err != nil {
+		// Convert existing record to semantic versioning format.
+		if !strings.Contains(err.Error(), "invalid stored version") {
+			return err
+		}
+		db.l.Info("Migrating migration history version storage format to semantic version.")
+		db, err := d.GetDbConnection(ctx, "bytebase")
+		if err != nil {
+			return err
+		}
+		// This migrates the CREATE DATABSAE record to semantic version format.
+		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L251
+		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000000' WHERE id = 1 AND version = '10000';"); err != nil {
+			return err
+		}
+		// This migrates the initial schema migration to semantic version format.
+		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L295
+		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
+			return err
+		}
+	}
+
 	verBefore, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
 		return fmt.Errorf("failed to get current schema version: %w", err)
