@@ -231,7 +231,10 @@ banner:
   extend-trial: 申请延长试用
   action: 5 秒部署您自己的服务
 intro:
-  content: Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流 (pipeline)，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发工作流。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
+  content: >-
+    Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流
+    (pipeline)，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema
+    文件提交来触发工作流。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。
   doc: 文档
   issue: 工单
   quickstart: 快速入门
@@ -456,7 +459,11 @@ instance:
   create-migration-schema: "@:common.create@:common.migration @:{'common.schema'}"
   missing-migration-schema: 缺少@:common.migration @:common.schema
   unable-to-connect-instance-to-check-migration-schema: 无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: Bytebase需要@:{'common.migration'} @:{'common.schema'} 来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema @:common.migration
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
+    >-
+    Bytebase需要@:{'common.migration'} @:{'common.schema'}
+    来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema
+    @:common.migration
   please-contact-your-dba-to-configure-it: 请联系 DBA 配置。
   please-check-the-instance-connection-info-is-correct: 请检查实例连接信息是否正确。
   users: 用户
@@ -508,8 +515,12 @@ instance:
         sql-driven-workflow: SQL 工作流
         template: 创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。
       postgres:
-        warn: 如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。
-        template: 创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。
+        warn: >-
+          如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER
+          是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。
+        template: >-
+          创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant
+          SUPERUSER。
   your_db_pwd: YOUR_DB_PWD
   no-password: 无密码
   password-write-only: YOUR_DB_PWD - 仅写入
@@ -624,7 +635,9 @@ migration-history:
   establish-baseline: 建立新的基线
   refreshing-history: 刷新历史中 ...
   config-instance: 配置实例
-  establish-baseline-description: Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
+  establish-baseline-description: >-
+    Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS
+    工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。
   establish-database-baseline: 建立「{name}」基线
   instance-missing-migration-schema: 实例「{name}」缺失用于记录迁移历史的 schema。
   instance-bad-connection: 无法连接实例「{name}」以获取迁移历史。
@@ -711,7 +724,9 @@ repository:
   file-path-example-normal-migration: 针对普通迁移类型的文件路径样例
   file-path-example-baseline-migration: 针对基线迁移类型的文件路径样例
   schema-path-template: Schema 路径模版
-  schema-writeback-description: 如果指定，在每一次迁移之后，Bytebase 将把最新的 Schema 回写到本来触发迁移的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。
+  schema-writeback-description: >-
+    如果指定，在每一次迁移之后，Bytebase 将把最新的 Schema
+    回写到本来触发迁移的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。
   schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
@@ -732,10 +747,16 @@ repository:
   choose-git-provider: 选择 Git 提供方
   select-repository: 选择仓库
   configure-deploy: 配置部署
-  choose-git-provider-description: 选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。
+  choose-git-provider-description: >-
+    选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema
+    变更应用到数据库上。
   choose-git-provider-visit-workspace: 访问 {workspace} 设置以添加更多 Git 提供方.
-  choose-git-provider-contact-workspace-owner: 如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
-  select-repository-attention-gitlab: Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。
+  choose-git-provider-contact-workspace-owner: >-
+    如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab
+    EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。
+  select-repository-attention-gitlab: >-
+    Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook
+    用来监听代码推送事件。
   select-repository-search: 搜索仓库
   linked: 关联的仓库
   role-provider: 项目角色权限提供方
@@ -743,9 +764,13 @@ repository:
 workflow:
   current-workflow: 当前工作流
   ui-workflow: UI 工作流
-  ui-workflow-description: 经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA 或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。
+  ui-workflow-description: >-
+    经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA
+    或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。
   gitops-workflow: GitOps 工作流
-  gitops-workflow-description: 数据库迁移脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个迁移脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。
+  gitops-workflow-description: >-
+    数据库迁移脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个迁移脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。
+    当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。
   configure-gitops: 配置 Git
   configure-gitops-success: 开启「{project}」GitOps 工作流成功
   change-gitops-success: 变更「{project}」仓库成功
@@ -871,13 +896,20 @@ inbox:
   view-older: 查看更早
 version-control:
   setting:
-    description: Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上 (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。
+    description: >-
+      Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上
+      (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS
+      中选取他们的 Git 仓库。
     description-highlight: 配置 VCS 后，在付费版订阅下，Bytebase 将自动开启通过 VCS 的第三方认证登录
     add-git-provider:
       self: 添加 Git 提供方
-      description: 在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。
+      description: >-
+        在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS
+        进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。
       gitlab-self-host: 自托管 GitLab
-      gitlab-self-host-admin-requirement: 您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
+      gitlab-self-host-admin-requirement: >-
+        您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab
+        整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
       ouath-info-correct: OAuth 信息验证成功
       check-oauth-info-match: 请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。
       add-success: 成功添加了 Git 提供方「{vcs}」
@@ -1104,7 +1136,9 @@ subscription:
       desc: "@:{'subscription.upgrade'}来解锁 schema 偏差异常的自动检测。"
     bb-feature-3rd-party-auth:
       title: 第三方认证 & 授权
-      desc: Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。
+      desc: >-
+        Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 &
+        授权。请通过@:{'subscription.upgrade'}来开启该功能。
       login: 请@:{'subscription.upgrade'}来开启该功能
     bb-feature-branding:
       title: 自定义品牌信息

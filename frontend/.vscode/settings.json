@@ -8,7 +8,7 @@
   "i18n-ally.parserOptions": {
     "yaml": {
       "dump": {
-        "lineWidth": 999999,
+        "lineWidth": 80,
         "quotingType": "\""
       }
     }

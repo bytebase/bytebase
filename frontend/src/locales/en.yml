@@ -208,7 +208,10 @@ task:
     connection: Connection
     migration-schema: Migration schema
     earliest-allowed-time: Earliest allowed time
-  earliest-allowed-time-hint: "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria."
+  earliest-allowed-time-hint: >-
+    '@:{'common.when'}' specifies the expected execution timing for this task.
+    If this field is not specified, the task will be executed once it has passed
+    all other gating criteria.
   earliest-allowed-time-unset: Unset
   comment: Comment
   invoker: Invoker
@@ -223,7 +226,9 @@ task:
     success: Success
     warn: Warning
     error: Error
-  earliest-allowed-time-no-modify: You can not modify this field because you are not the issue assignee or it's not pending to run.
+  earliest-allowed-time-no-modify: >-
+    You can not modify this field because you are not the issue assignee or it's
+    not pending to run.
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
@@ -231,7 +236,13 @@ banner:
   extend-trial: Extend trialing time
   action: Deploy yours in 5 seconds
 intro:
-  content: Bytebase is for DBAs and Developers to collaborate on database schemas changes. One can construct a single pipeline to propagate the schema change across multiple environments. One can also store the schemas in VCS and trigger a new pipeline upon commit push. Follow the {quickstart} on the bottom left to get familiar with the product. If you encounter problems, visit {doc} or report {issue} on GitHub.
+  content: >-
+    Bytebase is for DBAs and Developers to collaborate on database schemas
+    changes. One can construct a single pipeline to propagate the schema change
+    across multiple environments. One can also store the schemas in VCS and
+    trigger a new pipeline upon commit push. Follow the {quickstart} on the
+    bottom left to get familiar with the product. If you encounter problems,
+    visit {doc} or report {issue} on GitHub.
   quickstart: Quickstart
   doc: doc
   issue: issue
@@ -294,12 +305,19 @@ settings:
     toggle-role-provider:
       title: Are you sure?
     change-role-provider-to-vcs:
-      content: |-
-        Turning on VCS sync will replace all existing members with the members from the corresponding VCS project.
-        The existing members will become inactive. You can turn off VCS sync to restore those members.
-      emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
+      content: >-
+        Turning on VCS sync will replace all existing members with the members
+        from the corresponding VCS project.
+
+        The existing members will become inactive. You can turn off VCS sync to
+        restore those members.
+      emphasize: >-
+        Please be noticed that this function requires all project members from
+        the VCS have a public email set.
     change-role-provider-to-bytebase:
-      content: You are about to restore the following members. All existing members synced from VCS will be removed.
+      content: >-
+        You are about to restore the following members. All existing members
+        synced from VCS will be removed.
   general:
     workspace:
       branding: Branding
@@ -404,11 +422,20 @@ issue:
     active: "{name} (active)"
   not-allowed-to-single-database-in-tenant-mode: Can't {operation} to single database in tenant mode
 alter-schema:
-  vcs-enabled: This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.
-  vcs-info: indicates the project has enabled VCS based version control. Selecting database belonging to such project will navigate you to the corresponding Git repository to initiate the change process.
+  vcs-enabled: >-
+    This project has enabled VCS based version control and selecting database
+    below will navigate you to the corresponding Git repository to initiate the
+    change process.
+  vcs-info: >-
+    indicates the project has enabled VCS based version control. Selecting
+    database belonging to such project will navigate you to the corresponding
+    Git repository to initiate the change process.
   alter-single-db: Alter single database
   alter-multiple-db: Alter multiple databases
-  alter-multiple-db-info: For each environment, you can select a database to alter its schema or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments.
+  alter-multiple-db-info: >-
+    For each environment, you can select a database to alter its schema or just
+    skip that environment. This allows you to compose a single pipeline to
+    propagate changes across multiple environments.
 quick-action:
   create-db: Create database
   choose-db: Choose database
@@ -428,7 +455,9 @@ quick-action:
   from-default-project: From Default project
   from-other-projects: From other projects
   transfer-in-db-title: Transfer in database from other projects
-  transfer-in-db-hint: Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project.
+  transfer-in-db-hint: >-
+    Bytebase periodically syncs the instance schema. Newly synced databases are
+    first placed in this default project.
   transfer-in-db-alert: Are you sure to transfer "{ dbName }" into our project?
 create-db:
   new-database-name: New database name
@@ -456,7 +485,10 @@ instance:
   create-migration-schema: Create migration schema
   missing-migration-schema: Missing migration schema
   unable-to-connect-instance-to-check-migration-schema: Unable to connect instance to check migration schema
-  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance: Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.
+  bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance:
+    >-
+    Bytebase relies on migration schema to manage version control based schema
+    migration for databases belonged to this instance.
   please-contact-your-dba-to-configure-it: Please contact your DBA to configure it.
   please-check-the-instance-connection-info-is-correct: Please check the instance connection info is correct.
   users: Users
@@ -468,7 +500,10 @@ instance:
   successfully-synced-schema-for-instance-instance-value-name: Successfully synced schema for instance '{0}'.
   archive-this-instance: Archive this instance
   archive-instance-instance-name: Archive instance '{0}'?
-  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page: Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.
+  archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page:
+    >-
+    Archived instances will not be shown on the normal interface. You can still
+    restore later from the Archive page.
   restore-this-instance: Restore this instance
   restore: Restore
   restore-instance-instance-name-to-normal-state: Restore instance '{0}' to normal state?
@@ -492,59 +527,97 @@ instance:
     host:
       snowflake: e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>
     proxy:
-      snowflake: For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the port
+      snowflake: >-
+        For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the
+        port
     console:
-      snowflake: The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)
-    create-admin-user: This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.
-    create-readonly-user: This is the connection user used by Bytebase to perform read-only operations such as SELECT query.
+      snowflake: >-
+        The external console URL managing this instance (e.g. AWS RDS console,
+        your in-house DB instance console)
+    create-admin-user: >-
+      This is the connection user used by Bytebase to perform DDL and DML
+      (non-SELECT) operations.
+    create-readonly-user: >-
+      This is the connection user used by Bytebase to perform read-only
+      operations such as SELECT query.
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
         password: YOUR_DB_PWD
-        template: Below is an example to create user 'bytebase' with password {password} for {warehouse} and grant the user with the needed privileges.
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          for {warehouse} and grant the user with the needed privileges.
       mysql:
         password: YOUR_DB_PWD
         user: bytebase{'@'}%
-        template: Below is an example to create user {user} with password {password} and grant the user with the needed privileges.
+        template: >-
+          Below is an example to create user {user} with password {password} and
+          grant the user with the needed privileges.
       clickhouse:
-        template: Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {link} and then run the following query to create the user.
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. First you need to
+          enable ClickHouse SQL-driven workflow {link} and then run the
+          following query to create the user.
         sql-driven-workflow: SQL-driven workflow
       postgres:
-        warn: If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges.
-        template: Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER.
+        warn: >-
+          If the connecting instance is managed by the cloud provider, then
+          SUPERUSER is not available and you should create the user via that
+          provider's admin console. The created user will have provider specific
+          semi-SUPERUSER privileges.
+        template: >-
+          Below is an example to create user 'bytebase' with password {password}
+          and grant the user with the needed privileges. If the connecting
+          instance is self-hosted, then you can grant SUPERUSER.
   no-password: No password
   password-write-only: YOUR_DB_PWD - write only
   test-connection: Test Connection
   ignore-and-create: Ignore and create
   connection-info-seems-to-be-incorrect: Connection info seems to be incorrect
   new-instance: New Instance
-  unable-to-connect: |-
-    Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.
+  unable-to-connect: >-
+    Bytebase is unable to connect the instance. We recommend you to review the
+    connection info again. But it's OK to ignore this warning for now. You can
+    still fix the connection info from the instance detail page after creation.
+
 
     Error detail: {0}
   successfully-created-instance-createdinstance-name: Successfully created instance '{0}'.
   successfully-updated-instance-instance-name: Successfully updated instance '{0}'.
-  copy-grant-statement: CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.
+  copy-grant-statement: >-
+    CREATE USER and GRANT statements copied to clipboard. Paste to your mysql
+    client to apply.
   successfully-connected-instance: Successfully connected instance.
   failed-to-connect-instance: Failed to connect instance.
   how-to-setup-instance: How to setup 'Instance' ?
-  how-to-setup-instance-description: |-
-    Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.
+  how-to-setup-instance-description: >-
+    Each Bytebase instance belongs to an environment. An instance usually maps
+    to one of your database instance represented by an host:port address. This
+    could be your on-premises MySQL instance, a RDS instance.
 
-    Bytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.
+
+    Bytebase requires read/write (NOT the super privilege) access to the
+    instance in order to perform database operations on behalf of the user.
   search-instance-name: Search instance name
   no-read-only-data-source-support: The {database} does not currently support creating read-only connections
   grants: Grants
 environment:
   select: Select environment
   archive: Archive this environment
-  archive-info: Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.
+  archive-info: >-
+    Archived environment will not be shown on the normal interface. You can
+    still restore later from the Archive page.
   create: Create Environment
   how-to-setup-environment: How to setup 'Environment' ?
-  how-to-setup-environment-description: |-
-    Each environment maps to one of your testing, staging, prod environment respectively.
+  how-to-setup-environment-description: >-
+    Each environment maps to one of your testing, staging, prod environment
+    respectively.
 
-    Environment is a global setting, one Bytebase deployment only contains a single set of environments.
+
+    Environment is a global setting, one Bytebase deployment only contains a
+    single set of environments.
+
 
     Database instances are created under a particular environment.
   restore: Restore this environment
@@ -593,9 +666,13 @@ auth:
 policy:
   approval:
     name: Approval Policy
-    info: For updating schema on the existing database, this setting controls whether the task requires manual approval.
+    info: >-
+      For updating schema on the existing database, this setting controls
+      whether the task requires manual approval.
     manual: Require manual approval
-    manual-info: Pending schema migration task will only be executed after it's manually approved.
+    manual-info: >-
+      Pending schema migration task will only be executed after it's manually
+      approved.
     auto: Skip manual approval
     auto-info: Pending schema migration task will be executed automatically.
   backup:
@@ -619,13 +696,19 @@ migration-history:
   show-diff: Show diff
   left-vs-right: Prev (left) vs This version (right)
   schema-snapshot-after-migration: The schema snapshot recorded after applying this migration
-  list-limit: For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.
+  list-limit: >-
+    For database having migration history, we list up to 5 most recent histories
+    below. You can click the database name to view all histories.
   no-history-in-project: Do not find migration history from any database in this project.
   recording-info: Migration history is recorded whenever the database schema is altered.
   establish-baseline: Establish new baseline
   refreshing-history: Refreshing history ...
   config-instance: Config instance
-  establish-baseline-description: Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state. For VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.
+  establish-baseline-description: >-
+    Bytebase will use the current schema as the new baseline. You should check
+    that the current schema does reflect the desired state. For VCS workflow,
+    there must exist a baseline before any incremental migration change can be
+    applied to the database.
   establish-database-baseline: Establish "{name}" baseline
   instance-missing-migration-schema: Missing migration history schema on instance "{name}".
   instance-bad-connection: Unable to connect instance "{name}" to retrieve migration history.
@@ -637,10 +720,13 @@ database:
   last-successful-sync: Last successful sync
   search-database-name: Search database name
   how-to-setup-database: How to setup 'Database' ?
-  show-guide-description: |-
-    Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In Bytebase, a database always belongs to a single project.
+  show-guide-description: >-
+    Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In
+    Bytebase, a database always belongs to a single project.
 
-    Bytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.
+
+    Bytebase will periodically sync the database info for every recorded
+    instance. You can also create a new database from the dashboard.
   restored-from: "Restored from "
   database-name-is-restored-from-another-database-backup: "{0} is restored from another database backup"
   database-backup: database backup
@@ -698,29 +784,52 @@ database:
   columns: Columns
   indexes: Indexes
   row-count-est: Row count est.
-  incorrect-project-warning: SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.
+  incorrect-project-warning: >-
+    SQL editor can only query databases in projects available to the user. You
+    should first transfer this database into a project.
   go-to-transfer: Go to transfer
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
   branch-specify-tip: "Tip: You can also use wildcard like 'feature/*"
   base-directory: Base directory
-  base-directory-description: The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.
+  base-directory-description: >-
+    The root directory where Bytebase observes the file change. If empty, then
+    it observes the entire repository.
   file-path-template: File path template
-  file-path-template-description: Bytebase only observes the file path name matching the template pattern relative to the base directory.
+  file-path-template-description: >-
+    Bytebase only observes the file path name matching the template pattern
+    relative to the base directory.
   file-path-example-normal-migration: File path example for normal migration type
   file-path-example-baseline-migration: File path example for baseline migration type
   schema-path-template: Schema path template
-  schema-writeback-description: When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this
-  schema-writeback-protected-branch: Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.
+  schema-writeback-description: >-
+    When specified, after each migration, Bytebase will write the latest schema
+    to the schema path relative to the base directory in the same branch as the
+    original commit triggering the migration. Leave empty if you don't want
+    Bytebase to do this
+  schema-writeback-protected-branch: >-
+    Make sure the changed branch is not protected or allow repository maintainer
+    to push to that protected branch.
   if-specified: If specified
   schema-path-example: Schema path example
   git-provider: Git provider
   version-control-status: "@.capitalize:common.version-control is {status}"
-  version-control-description-file-path: Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.
-  version-control-description-branch: After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.
-  version-control-description-description-schema-path: After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.
+  version-control-description-file-path: >-
+    Database migration scripts are stored in {fullPath}. To make schema changes,
+    a developer would create a migration script matching file path pattern
+    {fullPathTemplate}.
+  version-control-description-branch: >-
+    After the script is review approved and merged into the {branch} branch,
+    Bytebase will automatically kicks off the pipeline to apply the new schema
+    change.
+  version-control-description-description-schema-path: >-
+    After applying the schema change, Bytebase will also write the latest schema
+    to the specified schema path location {schemaPathTemplate}.
   restore-to-ui-workflow: Restore to UI workflow
-  restore-ui-workflow-description: When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase console and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.
+  restore-ui-workflow-description: >-
+    When using the UI workflow, the developer submits a SQL review ticket
+    directly from Bytebase console and waits for the assigned DBA or peer
+    developer to review. Bytebase applies the SQL change after review approved.
   restore-ui-workflow-success: Successfully restored to UI workflow
   update-version-control-config-success: Successfully updated @:common.version-control config
   setup-wizard-guide: If you encounter errors during the process, please refer to our {guide}
@@ -728,29 +837,53 @@ repository:
   choose-git-provider: Choose Git provider
   select-repository: Select repository
   configure-deploy: Configure deploy
-  choose-git-provider-description: Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.
+  choose-git-provider-description: >-
+    Choose the Git provider where your database schema scripts (.sql) are
+    hosted. When you push the changed script to the Git repository, Bytebase
+    will automatically create a pipeline to apply the schema change to the
+    database.
   choose-git-provider-visit-workspace: Visit {workspace} setting to add more Git providers.
-  choose-git-provider-contact-workspace-owner: Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, GitHub Enterprise and GitHub.com later.
-  select-repository-attention-gitlab: Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.
+  choose-git-provider-contact-workspace-owner: >-
+    Contact your Bytebase owner if you want other Git providers to appear here.
+    Bytebase currently supports self-host GitLab EE/CE, and plan to add
+    GitLab.com, GitHub Enterprise and GitHub.com later.
+  select-repository-attention-gitlab: >-
+    Bytebase only lists GitLab projects granting you at least the 'Maintainer'
+    role, which allows to configure the project webhook to observe the code push
+    event.
   select-repository-search: Search repository
   linked: Linked repositories
   role-provider: Project role provider
-  role-provider-description: Bytebase will sync members from the selected provider and replace the existing members in the project.
+  role-provider-description: >-
+    Bytebase will sync members from the selected provider and replace the
+    existing members in the project.
 workflow:
   current-workflow: Current workflow
   ui-workflow: UI workflow
-  ui-workflow-description: Classic SQL Review workflow where the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL schema change after review approved.
+  ui-workflow-description: >-
+    Classic SQL Review workflow where the developer submits a SQL review ticket
+    directly from Bytebase and waits for the assigned DBA or peer developer to
+    review. Bytebase applies the SQL schema change after review approved.
   gitops-workflow: GitOps workflow
-  gitops-workflow-description: Database migration scripts are stored in a git repository. To make schema changes, a developer would create a migration script and submit for review in the corresponding VCS such as GitLab. After the script is approved and merged into the configured branch, Bytebase will automatically kicks off the task to apply the new schema change.
+  gitops-workflow-description: >-
+    Database migration scripts are stored in a git repository. To make schema
+    changes, a developer would create a migration script and submit for review
+    in the corresponding VCS such as GitLab. After the script is approved and
+    merged into the configured branch, Bytebase will automatically kicks off the
+    task to apply the new schema change.
   configure-gitops: Configure version control
   configure-gitops-success: Successfully enabled GitOps workflow for {project}
   change-gitops-success: Successfully changed repository for {project}
 anomaly:
   attention-title: Anomaly detection
-  attention-desc: Bytebase periodically scans the managed resources and list the detected anomalies here. The list is refreshed roughly every 10 minutes.
+  attention-desc: >-
+    Bytebase periodically scans the managed resources and list the detected
+    anomalies here. The list is refreshed roughly every 10 minutes.
   table-search-placeholder: Search {type} or environment
   table-placeholder: Hooray, no {type} anomaly detected!
-  tooltip: "{env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount} MEDIUM anomalies"
+  tooltip: >-
+    {env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount}
+    MEDIUM anomalies
   types:
     connection-failure: Connection failure
     missing-migration-schema: Missing migration schema
@@ -768,12 +901,17 @@ project:
   dashboard:
     modal:
       title: How to setup '@:{'common.project'}' ?
-      content: |-
-        Bytebase project is similar to the project concept in other common dev tools.
+      content: >-
+        Bytebase project is similar to the project concept in other common dev
+        tools.
 
-        A project has its own members, and every issue and database always belongs to a single project.
 
-        A project can also be configured to link to a repository to enable version control workflow.
+        A project has its own members, and every issue and database always
+        belongs to a single project.
+
+
+        A project can also be configured to link to a repository to enable
+        version control workflow.
       cancel: Dismiss
       confirm: Do not show again
     search-bar-placeholder: Search project name
@@ -794,8 +932,13 @@ project:
     recent-activity: Recent @.lower:{'common.activities'}
     in-progress: In progress
     recently-closed: Recently Closed
-    info-slot-content: Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.
-    no-db-prompt: No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar.
+    info-slot-content: >-
+      Bytebase periodically syncs the instance schema. Newly synced databases
+      are first placed in this default project. User should transfer them to the
+      proper application project.
+    no-db-prompt: >-
+      No database belongs to this project. You can add database by clicking
+      {newDb} or {transferInDb} from the top action bar.
   webhook:
     success-created-prompt: Successfully created webhook {name}.
     success-updated-prompt: Successfully updated webhook {name}.
@@ -811,11 +954,17 @@ project:
     test-webhook: Test Webhook
     no-webhook:
       title: No webhook configured for this project.
-      content: Configure webhooks to let Bytebase post notification to the external systems on various events.
+      content: >-
+        Configure webhooks to let Bytebase post notification to the external
+        systems on various events.
     creation:
       title: Create webhook
-      desc: Create the corresponding webhook for the {destination} channel receiving the message.
-      how-to-protect: If you want to use keyword list to protect the webhook, you can add "Bytebase" to that list.
+      desc: >-
+        Create the corresponding webhook for the {destination} channel receiving
+        the message.
+      how-to-protect: >-
+        If you want to use keyword list to protect the webhook, you can add
+        "Bytebase" to that list.
       view-doc: View {destination}'s doc
     deletion:
       btn-text: Delete this webhook
@@ -846,7 +995,9 @@ project:
     developer: "@.upper:common.role.developer"
     archive:
       title: Archive project
-      description: Archived project will not be shown on the normal interface. You can still restore later from the Archive page.
+      description: >-
+        Archived project will not be shown on the normal interface. You can
+        still restore later from the Archive page.
       btn-text: Archive this @.lower:{'common.project'}
     restore:
       title: Restore project
@@ -864,40 +1015,73 @@ inbox:
   view-older: View older
 version-control:
   setting:
-    description: Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase owners manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.
-    description-highlight: Once configured, Bytebase will enable third party login via your configured VCSs under paid subscription.
+    description: >-
+      Bytebase supports GitOps workflow where database migration scripts are
+      stored in the version control system (VCS), and newly created migration
+      scripts will automatically trigger the corresponding database change.
+      Bytebase owners manage all the applicable VCSs here, so that project
+      owners can link the projects with their Git repositories from these VCSs.
+    description-highlight: >-
+      Once configured, Bytebase will enable third party login via your
+      configured VCSs under paid subscription.
     add-git-provider:
       self: Add a Git provider
-      description: Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.
+      description: >-
+        Before any project can enable GitOps workflow, Bytebase first needs to
+        integrate with the corresponding version control system (VCS) by
+        registering as an OAuth application in that VCS. Below are the steps to
+        configure this, you can also follow our {guide}.
       gitlab-self-host: GitLab self-host
-      gitlab-self-host-admin-requirement: You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.
+      gitlab-self-host-admin-requirement: >-
+        You need to be an Admin of your chosen GitLab instance to configure
+        this. Otherwise, you need to ask your GitLab instance Admin to register
+        Bytebase as a GitLab instance-wide OAuth application, then provide you
+        that Application ID and Secret to fill at the 'OAuth application info'
+        step.
       ouath-info-correct: Verified OAuth info is correct
-      check-oauth-info-match: Please make sure Secret matches the one from your GitLab instance Application.
+      check-oauth-info-match: >-
+        Please make sure Secret matches the one from your GitLab instance
+        Application.
       add-success: Successfully added Git provider {vcs}
       choose: Choose Git provider
       gitlab-self-host-ce-ee: Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)
       basic-info:
         self: Basic info
         gitlab-instance-url: GitLab instance URL
-        gitlab-instance-url-label: The VCS instance URL. Make sure this instance and Bytebase are network reachable from each other.
+        gitlab-instance-url-label: >-
+          The VCS instance URL. Make sure this instance and Bytebase are network
+          reachable from each other.
         instance-url-error: Instance URL must begin with https:// or http://
         display-name: Display name
-        display-name-label: An optional display name to help identifying among different configs using the same Git provider.
+        display-name-label: >-
+          An optional display name to help identifying among different configs
+          using the same Git provider.
       oauth-info:
         self: OAuth application info
         register-oauth-application: Register Bytebase as a GitLab instance-wide OAuth application.
-        login-as-admin: Login as an Admin user to the GitLab instance. The account must be an Admin of the entire GitLab instance (it has a wrench icon on the top bar).
-        visit-admin-page: Go to the Admin page by clicking the wrench icon, then navigate to "Applications" section and click "New application" button.
+        login-as-admin: >-
+          Login as an Admin user to the GitLab instance. The account must be an
+          Admin of the entire GitLab instance (it has a wrench icon on the top
+          bar).
+        visit-admin-page: >-
+          Go to the Admin page by clicking the wrench icon, then navigate to
+          "Applications" section and click "New application" button.
         direct-link: Direct link
         create-oauth-app: Create your Bytebase OAuth application with the following info.
-        paste-oauth-info: Paste the Application ID and Secret from that just created application into fields below.
+        paste-oauth-info: >-
+          Paste the Application ID and Secret from that just created application
+          into fields below.
         application-id-error: Application ID must be a 64-character alphanumeric string
         secret-error: Secret must be a 64-character alphanumeric string
       confirm:
         confirm-info: Confirm the info
-        confirm-description: After creation, this Git provider can be chosen under the project dashboard "Version Control" tab by the project owner.
+        confirm-description: >-
+          After creation, this Git provider can be chosen under the project
+          dashboard "Version Control" tab by the project owner.
     git-provider:
-      application-id-label: Application ID for the registered GitLab instance-wide OAuth application.
+      application-id-label: >-
+        Application ID for the registered GitLab instance-wide OAuth
+        application.
       view-in-gitlab: View in GitLab
       secret-label-gitlab: Secret for the registered GitLab instance-wide OAuth application.
       delete: To delete this provider, unlink all repositories first.
@@ -976,7 +1160,9 @@ sql-editor:
   go-to-alter-schema: You can click the {alterschema} button, and submit an issue.
   table-schema-placeholder: Select a table to see its schema
   notify-empty-statement: Please input your SQL statements in the editor
-  notify-multiple-statements: Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.
+  notify-multiple-statements: >-
+    Multiple SQL statements detected. SQL Editor only executes the first
+    statement. You can select another statement and execute it individually.
   goto-alter-schema-hint: Please select a database connection from the top of the editor
   notify-invalid-sql-statement: Invalid SQL statement.
   can-not-execute-query: Can not execute query when loading data.
@@ -1002,7 +1188,9 @@ sql-editor:
   link-access: Link access
   private: Private
   private-desc: Only you can access this sheet
-  project-desc: Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read
+  project-desc: >-
+    Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can
+    read
   public: Public
   public-desc: Sheet OWNER can read/write, and all others can read
   create-read-only-data-source: Go to create
@@ -1027,11 +1215,17 @@ label:
     select-value: Select value...
     select-values: Select values...
   setting:
-    description: A label is a key-value pair that helps you identify the tenant for a database. {link}.
-  db-name-template-tips: Allow you to group databases with the same {placeholder} from different tenants. {link}.
+    description: >-
+      A label is a key-value pair that helps you identify the tenant for a
+      database. {link}.
+  db-name-template-tips: >-
+    Allow you to group databases with the same {placeholder} from different
+    tenants. {link}.
   confirm-change: Are you sure to change '{label}' ?
   parsed-from-template: Parsed from {name} by template {template}.
-  cannot-transfer-template-not-match: Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.
+  cannot-transfer-template-not-match: >-
+    Database '{name}' cannot be transferred to this project. Since its name
+    doesn't match the template {template}.
 oauth:
   unknown-event: Unexpeted event type, OAuth failed.
 subscription:
@@ -1070,11 +1264,17 @@ subscription:
   features:
     bb-feature-task-schedule-time:
       title: Set task schedule time
-      desc: Set task schedule time allows you to set a specific time to run your tasks.
+      desc: >-
+        Set task schedule time allows you to set a specific time to run your
+        tasks.
     bb-feature-instance-count:
       title: Instance count limit
-      desc: You have reached the maximum instance count limit. Please upgrade to get more instance quota.
-      remaining: Your total instance quota is {total}, only have {count} instance remained.
+      desc: >-
+        You have reached the maximum instance count limit. Please upgrade to get
+        more instance quota.
+      remaining: >-
+        Your total instance quota is {total}, only have {count} instance
+        remained.
       runoutof: Your have run out of your {total} instance quota.
       upgrade: "@:{'subscription.upgrade'} to get more instance quota."
     bb-feature-multi-tenancy:
@@ -1082,22 +1282,30 @@ subscription:
       desc: Intelligent database management for tenants using identical schemas.
     bb-feature-approval-policy:
       title: Approval policy
-      desc: Approval policy controls whether the schama change task requires manual approval.
+      desc: >-
+        Approval policy controls whether the schama change task requires manual
+        approval.
     bb-feature-backup-policy:
       title: Backup policy
       desc: Backup policy will auto-backup your database based on the schedule.
     bb-feature-backward-compatibility:
       title: Backward compatibility
-      desc: MySQL and TiDB support schema change with backward compatibility. @:{'subscription.upgrade'} to unlock this feature.
+      desc: >-
+        MySQL and TiDB support schema change with backward compatibility.
+        @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-rbac:
       title: Role management
-      desc: Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to unlock this feature.
+      desc: >-
+        Role management can assign a particular role (e.g. DBA) to a member.
+        @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-schema-drift:
       title: Schema drift
       desc: "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
     bb-feature-3rd-party-auth:
       title: 3rd party authentication & authorization
-      desc: Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.
+      desc: >-
+        Bytebase supports 3rd-party authentication & authorization based on your
+        VCS configuration. @:{'subscription.upgrade'} to unlock this feature.
       login: "@:{'subscription.upgrade'} to unlock this feature"
     bb-feature-branding:
       title: Branding
