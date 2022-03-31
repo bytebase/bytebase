@@ -78,8 +78,23 @@ func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Me
 	return memberList, nil
 }
 
-// GetMember gets an instance of Member
-func (s *Store) GetMember(ctx context.Context, find *api.MemberFind) (*api.Member, error) {
+// GetMemberByPrincipalID gets an instance of Member
+func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member, error) {
+	find := &api.MemberFind{PrincipalID: &id}
+	memberRaw, err := s.getMemberRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
+	}
+	member, err := s.composeMember(ctx, memberRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", memberRaw, err)
+	}
+	return member, nil
+}
+
+// GetMemberByID gets an instance of Member
+func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) {
+	find := &api.MemberFind{ID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)

@@ -96,10 +96,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		memberFind := &api.MemberFind{
-			ID: &id,
-		}
-		member, err := s.store.GetMember(ctx, memberFind)
+		member, err := s.store.GetMemberByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find member ID: %d", id)).SetInternal(err)
 		}

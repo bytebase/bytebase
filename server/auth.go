@@ -141,10 +141,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// test the status of this user
-		memberFind := &api.MemberFind{
-			PrincipalID: &user.ID,
-		}
-		member, err := s.store.GetMember(ctx, memberFind)
+		member, err := s.store.GetMemberByPrincipalID(ctx, user.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
