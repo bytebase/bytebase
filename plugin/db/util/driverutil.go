@@ -457,14 +457,15 @@ func formatError(err error) error {
 	return err
 }
 
-const nonSemanticPrefix = "0000.0000.0000-"
+// NonSemanticPrefix is the prefix for non-semantic version
+const NonSemanticPrefix = "0000.0000.0000-"
 
 // toStoredVersion converts semantic or non-semantic version to stored version format.
 // Non-semantic version will have additional "0000.0000.0000-" prefix.
 // Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
 func toStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
 	if !useSemanticVersion {
-		return fmt.Sprintf("%s%s", nonSemanticPrefix, version), nil
+		return fmt.Sprintf("%s%s", NonSemanticPrefix, version), nil
 	}
 	v, err := semver.Make(version)
 	if err != nil {
@@ -479,8 +480,8 @@ func toStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix str
 
 // fromStoredVersion converts stored version to semantic or non-semantic version.
 func fromStoredVersion(storedVersion string) (bool, string, string, error) {
-	if strings.HasPrefix(storedVersion, nonSemanticPrefix) {
-		return false, strings.TrimPrefix(storedVersion, nonSemanticPrefix), "", nil
+	if strings.HasPrefix(storedVersion, NonSemanticPrefix) {
+		return false, strings.TrimPrefix(storedVersion, NonSemanticPrefix), "", nil
 	}
 	idx := strings.Index(storedVersion, "-")
 	if idx < 0 {
