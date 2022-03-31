@@ -180,7 +180,7 @@ func TestRetry_Exceeded(t *testing.T) {
 			}, nil
 		},
 	)
-	wantErr := `retries exceeded for oauth refresher with status code 400 and body ""`
+	wantErr := `retries exceeded for OAuth refresher with status code 400 and body ""`
 	gotErr := fmt.Sprintf("%v", err)
 	assert.Equal(t, wantErr, gotErr)
 }

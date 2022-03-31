@@ -78,7 +78,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 		errInfo := []string{"failed to fetch user info from GitHub.com"}
 		resourceURISplit := strings.Split(resourceURI, "/")
 		if len(resourceURI) > 1 {
-			errInfo = append(errInfo, fmt.Sprintf("UserID: %v", resourceURISplit[1]))
+			errInfo = append(errInfo, fmt.Sprintf("Username: %s", resourceURISplit[1]))
 		}
 		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
 	} else if code >= 300 {
@@ -179,7 +179,7 @@ func retry(ctx context.Context, client *http.Client, token *string, oauthCtx oau
 			return 0, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
 		}
 
-		if err = getOAuthErrorDetails(resp.StatusCode, string(body)); err != nil {
+		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
 			if _, ok := err.(*oauthError); ok {
 				// Refresh and store the token.
 				if err := refreshToken(ctx, client, token, oauthCtx, refresher); err != nil {
@@ -187,11 +187,11 @@ func retry(ctx context.Context, client *http.Client, token *string, oauthCtx oau
 				}
 				continue
 			}
-			return 0, "", errors.Errorf("want oauthError but got %T", err)
+			return 0, "", errors.Errorf("want *oauthError but got %T", err)
 		}
 		return resp.StatusCode, string(body), nil
 	}
-	return 0, "", errors.Errorf("retries exceeded for oauth refresher with status code %d and body %q", resp.StatusCode, string(body))
+	return 0, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
 }
 
 type oauthError struct {
@@ -200,19 +200,19 @@ type oauthError struct {
 }
 
 func (e oauthError) Error() string {
-	return fmt.Sprintf("GitHub oauth response error %q description %q", e.Err, e.ErrorDescription)
+	return fmt.Sprintf("GitHub OAuth response error %q description %q", e.Err, e.ErrorDescription)
 }
 
 // getOAuthErrorDetails only returns error if it's an OAuth error. For other
 // errors like 404 we don't return error. We do this because this method is only
 // intended to be used by oauth to refresh access token on expiration.
-func getOAuthErrorDetails(code int, body string) error {
+func getOAuthErrorDetails(code int, body []byte) error {
 	if 200 <= code && code < 300 {
 		return nil
 	}
 
 	var oe oauthError
-	if err := json.Unmarshal([]byte(body), &oe); err != nil {
+	if err := json.Unmarshal(body, &oe); err != nil {
 		// If we failed to unmarshal body with oauth error, it's not oauthError and we should return nil.
 		return nil
 	}
