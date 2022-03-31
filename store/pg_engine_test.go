@@ -97,7 +97,11 @@ func TestMigrationCompatibility(t *testing.T) {
 	versions, err := getMigrationFileVersions()
 	require.NoError(t, err)
 
-	// Setup N databases with N versions in the migration directory with latest schema, and apply migrations till the latest version.
+	// For every version, we create a database with the schema of that version and apply migrations till the latest version in the migration directory.
+	// For example, we can 3 versions, 1.0.0, 1.1.0, 1.2.0.
+	// Create a database with 1.0.0 schema, apply 1.1.0 migration, and apply 1.2.0 migration.
+	// Create a database with 1.1.0 schema, and apply 1.2.0 migration.
+	// Create a database with 1.2.0 schema. But there is no migration since it's the latest.
 	for i := range versions {
 		initialVersion := versions[i]
 		initialDatabaseName := getDatabaseName(initialVersion)
