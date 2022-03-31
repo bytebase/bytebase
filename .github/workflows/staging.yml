@@ -1,5 +1,5 @@
-# The pre-release action will trigger a publish for demo.bytebase.com using the specific release
-name: "Pre-release Env"
+# This action will trigger a publish for staging.bytebase.com using the specific release
+name: "Staging Env"
 
 on:
   release:
@@ -13,4 +13,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "trigger render's webhook"
-        run: curl ${{ secrets.RENDER_PRE_RELEASE_DEPLOY_HOOK }}
+        run: curl ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
