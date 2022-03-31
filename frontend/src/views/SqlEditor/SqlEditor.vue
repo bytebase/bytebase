@@ -32,11 +32,13 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
+import { useTabStore } from "@/store/pinia/tab";
 
 const store = useStore();
+const tabStore = useTabStore();
 
-const hasTabs = computed(() => store.getters["tab/hasTabs"]);
-const paneKey = computed(() => store.getters["tab/currentTab"].id);
+const hasTabs = computed(() => tabStore.hasTabs);
+const paneKey = computed(() => tabStore.currentTab.id);
 const isDisconnected = computed(
   () => store.getters["sqlEditor/isDisconnected"]
 );

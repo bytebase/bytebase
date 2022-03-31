@@ -7,6 +7,7 @@ import i18n from "./plugins/i18n";
 import splitpanes from "./plugins/splitpanes";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
+import pinia from "./plugins/pinia";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -150,5 +151,6 @@ Promise.all([
     .use(i18n)
     .use(splitpanes)
     .use(NaiveUI)
+    .use(pinia)
     .mount("#app");
 });

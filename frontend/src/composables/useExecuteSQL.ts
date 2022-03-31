@@ -11,6 +11,7 @@ import {
   isDDLStatement,
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
+import { useTabStore } from "@/store/pinia/tab";
 
 type ExecuteConfig = {
   databaseType: string;
@@ -23,6 +24,7 @@ type ExecuteOption = {
 const useExecuteSQL = () => {
   const store = useStore();
   const { t } = useI18n();
+  const tabStore = useTabStore();
   const state = reactive({
     isLoadingData: false,
   });
@@ -44,7 +46,7 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const currentTab = store.getters["tab/currentTab"];
+    const currentTab = tabStore.currentTab;
     const isDisconnected = store.getters["sqlEditor/isDisconnected"];
     const statement = currentTab.statement;
     const selectedStatement = currentTab.selectedStatement;
@@ -104,10 +106,10 @@ const useExecuteSQL = () => {
       const queryResult = await store.dispatch("sqlEditor/executeQuery", {
         statement: isExplain ? explainStatement : selectStatement,
       });
-      store.dispatch("tab/updateCurrentTab", { queryResult });
+      tabStore.updateCurrentTab({ queryResult });
       store.dispatch("sqlEditor/fetchQueryHistoryList");
     } catch (error) {
-      store.dispatch("tab/updateCurrentTab", { queryResult: undefined });
+      tabStore.updateCurrentTab({ queryResult: undefined });
       notify("CRITICAL", error as string);
     } finally {
       state.isLoadingData = false;

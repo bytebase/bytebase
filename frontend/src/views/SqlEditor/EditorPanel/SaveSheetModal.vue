@@ -19,17 +19,17 @@
 
 <script lang="ts" setup>
 import { ref, nextTick, defineEmits } from "vue";
-import { useNamespacedGetters } from "vuex-composition-helpers";
-import { TabGetters } from "../../../types";
+
+import { useTabStore } from "@/store/pinia/tab";
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "save-sheet", content: string): void;
 }>();
 
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const tabStore = useTabStore();
 
-const sheetName = ref(currentTab.value.name);
+const sheetName = ref(tabStore.currentTab.name);
 const sheetNameInputRef = ref();
 
 nextTick(() => {

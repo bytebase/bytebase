@@ -57,9 +57,10 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
+import { useTabStore } from "@/store/pinia/tab";
 import { UNKNOWN_ID } from "@/types";
 
-import type { SqlEditorState, SqlEditorGetters, TabGetters } from "@/types";
+import type { SqlEditorState, SqlEditorGetters } from "@/types";
 import {
   parseSQL,
   transformSQL,
@@ -73,6 +74,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
+const tabStore = useTabStore();
 
 const { findProjectIdByDatabaseId } = useNamespacedGetters<SqlEditorGetters>(
   "sqlEditor",
@@ -81,10 +83,9 @@ const { findProjectIdByDatabaseId } = useNamespacedGetters<SqlEditorGetters>(
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 const sqlStatement = computed(
-  () => currentTab.value.selectedStatement || currentTab.value.statement
+  () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
 );
 
 const getParsedStatement = () => {

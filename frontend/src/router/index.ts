@@ -20,6 +20,7 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
+import { useTabStore } from "@/store/pinia/tab";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -800,6 +801,7 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
+  const tabStore = useTabStore();
 
   const isLoggedIn = store.getters["auth/isLoggedIn"]();
 
@@ -1141,12 +1143,12 @@ router.beforeEach((to, from, next) => {
           store
             .dispatch("sheet/fetchSheetById", sheetId)
             .then((sheet: Sheet) => {
-              store.dispatch("tab/addTab", {
+              tabStore.addTab({
                 name: sheet.name,
                 statement: sheet.statement,
                 isSaved: true,
               });
-              store.dispatch("tab/updateCurrentTab", {
+              tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
               store.dispatch("sqlEditor/setSqlEditorState", {
