@@ -56,14 +56,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
 
-		policyRaw, err := s.PolicyService.UpsertPolicy(ctx, policyUpsert)
+		policy, err := s.store.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
-		}
-
-		policy, err := s.composePolicyRelationship(ctx, policyRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose policy relationship for type %q", pType)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -87,14 +82,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyFind.Type = &pType
 		policyFind.EnvironmentID = &environmentID
 
-		policyRaw, err := s.PolicyService.FindPolicy(ctx, policyFind)
+		policy, err := s.store.GetPolicy(ctx, policyFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
-		}
-
-		policy, err := s.composePolicyRelationship(ctx, policyRaw)
-		if err != nil {
-			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -103,28 +93,4 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composePolicyRelationship(ctx context.Context, raw *api.PolicyRaw) (*api.Policy, error) {
-	policy := raw.ToPolicy()
-
-	creator, err := s.store.GetPrincipalByID(ctx, policy.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	policy.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, policy.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	policy.Updater = updater
-
-	env, err := s.store.GetEnvironmentByID(ctx, policy.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	policy.Environment = env
-
-	return policy, nil
 }

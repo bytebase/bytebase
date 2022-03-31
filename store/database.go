@@ -22,17 +22,17 @@ type DatabaseService struct {
 	db *DB
 
 	cache         api.CacheService
-	policyService api.PolicyService
+	store         *Store
 	backupService api.BackupService
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, policyService api.PolicyService, backupService api.BackupService) *DatabaseService {
+func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, store *Store, backupService api.BackupService) *DatabaseService {
 	return &DatabaseService{
 		l:             logger,
 		db:            db,
 		cache:         cache,
-		policyService: policyService,
+		store:         store,
 		backupService: backupService,
 	}
 }
@@ -59,7 +59,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 
 // CreateDatabaseTx creates a database with a transaction.
 func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.DatabaseRaw, error) {
-	backupPlanPolicy, err := s.policyService.GetBackupPlanPolicy(ctx, create.EnvironmentID)
+	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
