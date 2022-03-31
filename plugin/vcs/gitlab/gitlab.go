@@ -116,6 +116,10 @@ type FileCommit struct {
 
 // FileMeta is the API message for file metadata.
 type FileMeta struct {
+	FileName     string `json:"file_name"`
+	FilePath     string `json:"file_path"`
+	Content      string `json:"content"`
+	Size         int64  `json:"size"`
 	LastCommitID string `json:"last_commit_id"`
 }
 
