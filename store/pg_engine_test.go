@@ -105,6 +105,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	for i := range versions {
 		initialVersion := versions[i]
 		initialDatabaseName := getDatabaseName(initialVersion)
+		// Passing curVers = nil will create the database.
 		err = migrate(ctx, d, nil, initialVersion, serverVersion, initialDatabaseName, l)
 		require.NoError(t, err)
 
