@@ -1,0 +1,16 @@
+# The pre-release action will trigger a publish for demo.bytebase.com using the specific release
+name: "Pre-release Env"
+
+on:
+  release:
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows
+    types: [ published ]
+  workflow_dispatch:
+
+jobs:
+  initiate-render-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: "trigger render's webhook"
+        run: curl ${{ secrets.RENDER_PRE_RELEASE_DEPLOY_HOOK }}
