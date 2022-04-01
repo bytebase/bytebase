@@ -359,7 +359,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		}
 	}
 
-	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFile again
+	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
 	schemaFileMeta, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
