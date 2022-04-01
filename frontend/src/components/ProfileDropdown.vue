@@ -121,28 +121,30 @@
 </template>
 
 <script lang="ts">
-import { computed, ref } from "vue";
+import { computed, defineComponent, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { useLanguage } from "../composables/useLanguage";
+import { useActuatorStore, useDebugStore } from "@/store";
+import { storeToRefs } from "pinia";
 
-export default {
+export default defineComponent({
   name: "ProfileDropdown",
   components: { PrincipalAvatar },
   props: {},
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
+    const debugStore = useDebugStore();
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
     const languageMenu = ref();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const showQuickstart = computed(() => {
-      return !store.getters["actuator/isDemo"]();
-    });
+    const showQuickstart = computed(() => !actuatorStore.isDemo);
 
     const logout = () => {
       store.dispatch("auth/logout").then(() => {
@@ -238,14 +240,16 @@ export default {
       });
     };
 
-    const isDebug = computed(() => store.getters["debug/isDebug"]());
+    const { isDebug } = storeToRefs(debugStore);
 
     const switchDebug = () => {
-      store.dispatch("debug/patchDebug", { isDebug: !isDebug.value });
+      debugStore.patchDebug({
+        isDebug: !isDebug.value,
+      });
     };
 
     const ping = () => {
-      store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
+      actuatorStore.fetchInfo().then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
@@ -275,5 +279,5 @@ export default {
       locale,
     };
   },
-};
+});
 </script>
