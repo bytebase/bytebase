@@ -15,6 +15,9 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	// Import pg driver.
+	_ "github.com/lib/pq"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
