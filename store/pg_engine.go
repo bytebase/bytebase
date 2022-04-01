@@ -313,6 +313,10 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		l.Info(message)
 	}
 
+	if len(migrateVersions) == 0 {
+		l.Info(fmt.Sprintf("Database schema is already at version %s; skip migration.", cutoffSchemaVersion))
+	}
+
 	retVersion := semver.Version{}
 	for _, version := range migrateVersions {
 		// Migrate migration files.
@@ -365,9 +369,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		}
 		retVersion = version
 	}
-	if len(versions) > 0 {
-		l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
-	}
+	l.Info(fmt.Sprintf("Completed database migration with version %s.", cutoffSchemaVersion))
 	return retVersion, nil
 }
 
