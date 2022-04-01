@@ -34,7 +34,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
-				Secret:        vcs.Secret,
+				// we do not return secret to the frontend for safety concern
 			}
 			authProviderList = append(authProviderList, newProvider)
 		}
@@ -83,7 +83,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.ID)
+				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.VCSID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
@@ -91,11 +91,26 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
+				// exchange OAuth Token
+				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
+					ctx,
+					vcsFound.InstanceURL,
+					&common.OAuthExchange{
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
+						Code:         gitlabLogin.Code,
+						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
+					},
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+				}
+
 				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
-						AccessToken:  gitlabLogin.AccessToken,
+						AccessToken:  oauthToken.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},

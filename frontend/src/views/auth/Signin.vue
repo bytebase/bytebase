@@ -172,8 +172,6 @@ import {
   EmptyAuthProvider,
   VCSLoginInfo,
   LoginInfo,
-  OAuthConfig,
-  OAuthToken,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   redirectUrl,
@@ -236,32 +234,18 @@ export default defineComponent({
       if (payload.error) {
         return;
       }
-      const oAuthConfig: OAuthConfig = {
-        endpoint: `${state.activeAuthProvider.instanceUrl}/oauth/token`,
-        applicationId: state.activeAuthProvider.applicationId,
-        secret: state.activeAuthProvider.secret,
-        redirectUrl: redirectUrl(),
+      const gitlabLoginInfo: VCSLoginInfo = {
+        vcsId: state.activeAuthProvider.id,
+        name: state.activeAuthProvider.name,
+        code: payload.code,
       };
       store
-        .dispatch("gitlab/exchangeToken", {
-          oAuthConfig,
-          code: payload.code,
+        .dispatch("auth/login", {
+          authProvider: "GITLAB_SELF_HOST",
+          payload: gitlabLoginInfo,
         })
-        .then((token: OAuthToken) => {
-          const gitlabLoginInfo: VCSLoginInfo = {
-            id: state.activeAuthProvider.id,
-            name: state.activeAuthProvider.name,
-            accessToken: token.accessToken,
-          };
-
-          store
-            .dispatch("auth/login", {
-              authProvider: "GITLAB_SELF_HOST",
-              payload: gitlabLoginInfo,
-            })
-            .then(() => {
-              router.push("/");
-            });
+        .then(() => {
+          router.push("/");
         });
     };
 
