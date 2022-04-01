@@ -15,24 +15,16 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
-// mockRoundTripper is a helper to mock http.RoundTripper.
-type mockRoundTripper struct {
-	roundTrip func(r *http.Request) (*http.Response, error)
-}
-
-func (m *mockRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	return m.roundTrip(r)
-}
-
 func TestProvider_FetchUserInfo(t *testing.T) {
 	p := newProvider(
 		vcs.ProviderConfig{
 			Client: &http.Client{
-				Transport: &mockRoundTripper{
-					roundTrip: func(r *http.Request) (*http.Response, error) {
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
 						assert.Equal(t, "/users/octocat", r.URL.Path)
 						return &http.Response{
 							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
 							Body: io.NopCloser(strings.NewReader(`
 {
   "login": "octocat",
@@ -81,7 +73,6 @@ func TestProvider_FetchUserInfo(t *testing.T) {
   }
 }
 `)),
-							Request: r,
 						}, nil
 					},
 				},
@@ -103,8 +94,8 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
-		Transport: &mockRoundTripper{
-			roundTrip: func(r *http.Request) (*http.Response, error) {
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
 				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 				if token == "expired" {
 					return &http.Response{
@@ -117,6 +108,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 
 				return &http.Response{
 					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens#renewing-a-user-token-with-a-refresh-token
 					Body: io.NopCloser(strings.NewReader(`
 {
   "access_token": "ghu_16C7e42F292c6912E7710c838347Ae178B4a",
