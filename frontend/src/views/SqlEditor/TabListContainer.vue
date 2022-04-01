@@ -89,22 +89,9 @@
     </div>
 
     <div class="tab-list-add">
-      <NTooltip
-        trigger="hover"
-        placement="bottom-center"
-        :disabled="!isDisconnected"
-      >
-        <template #trigger>
-          <button
-            class="p-1 hover:bg-gray-200 rounded-md"
-            :class="{ 'cursor-not-allowed': isDisconnected }"
-            @click="handleAddTab"
-          >
-            <heroicons-solid:plus class="h-4 w-4" />
-          </button>
-        </template>
-        Please select connections
-      </NTooltip>
+      <button class="p-1 hover:bg-gray-200 rounded-md" @click="handleAddTab">
+        <heroicons-solid:plus class="h-4 w-4" />
+      </button>
     </div>
     <div class="tab-list-more">
       <NPopselect
@@ -140,15 +127,11 @@ import {
 import { useDialog } from "naive-ui";
 
 import { useTabStore } from "@/store";
-import { TabInfo, SqlEditorGetters, SheetGetters, SheetActions } from "@/types";
+import { TabInfo, SheetGetters, SheetActions } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 const tabStore = useTabStore();
-
-const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-  "isDisconnected",
-]);
 
 const { currentSheet } = useNamespacedGetters<SheetGetters>("sheet", [
   "currentSheet",
