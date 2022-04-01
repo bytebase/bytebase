@@ -66,29 +66,27 @@
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useResizeObserver } from "@vueuse/core";
-import {
-  useNamespacedGetters,
-  useNamespacedState,
-} from "vuex-composition-helpers";
+import { useNamespacedState } from "vuex-composition-helpers";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 
-import { TabGetters, SqlEditorState } from "@/types";
+import { useTabStore } from "@/store";
+
+import { SqlEditorState } from "@/types";
 
 interface State {
   search: string;
 }
 
 const { t } = useI18n();
+const tabStore = useTabStore();
 
 const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "isExecuting",
 ]);
 
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
-
-const queryResult = computed(() => currentTab.value.queryResult || null);
+const queryResult = computed(() => tabStore.currentTab.queryResult || null);
 
 const state = reactive<State>({
   search: "",

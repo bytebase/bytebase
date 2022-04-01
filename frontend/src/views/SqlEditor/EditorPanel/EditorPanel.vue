@@ -34,12 +34,11 @@ import {
   useNamespacedActions,
 } from "vuex-composition-helpers";
 
+import { useTabStore } from "@/store";
 import {
   SqlEditorState,
   SqlEditorActions,
   SqlEditorGetters,
-  TabGetters,
-  TabActions,
   SheetActions,
 } from "@/types";
 import EditorAction from "./EditorAction.vue";
@@ -48,6 +47,8 @@ import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
 import { defaultTabName } from "../../../utils/tab";
+
+const tabStore = useTabStore();
 
 const { isShowExecutingHint } = useNamespacedState<SqlEditorState>(
   "sqlEditor",
@@ -62,14 +63,10 @@ const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setSqlEditorState"]
 );
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 // actions
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
   "upsertSheet",
-]);
-const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
-  "updateCurrentTab",
 ]);
 
 const isShowSaveSheetModal = ref(false);
@@ -81,21 +78,24 @@ const handleClose = () => {
 };
 
 const handleSaveSheet = async (sheetName?: string) => {
-  if (currentTab.value.name === defaultTabName.value && !sheetName) {
+  if (tabStore.currentTab.name === defaultTabName.value && !sheetName) {
     isShowSaveSheetModal.value = true;
     return;
   }
   isShowSaveSheetModal.value = false;
 
-  const { name, statement, sheetId } = currentTab.value;
+  const { name, statement, sheetId } = tabStore.currentTab;
 
   const sheet = await upsertSheet({
-    id: sheetId,
-    name: sheetName ? sheetName : name,
-    statement,
+    sheet: {
+      id: sheetId,
+      name: sheetName ? sheetName : name,
+      statement,
+    },
+    currentTab: tabStore.currentTab,
   });
 
-  updateCurrentTab({
+  tabStore.updateCurrentTab({
     sheetId: sheet.id,
     isSaved: true,
     name: sheetName ? sheetName : name,

@@ -91,7 +91,7 @@
         secondary
         strong
         type="primary"
-        :disabled="isEmptyStatement || currentTab.isSaved"
+        :disabled="isEmptyStatement || tabStore.currentTab.isSaved"
         @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
@@ -106,7 +106,7 @@
         <template #trigger>
           <NButton
             :disabled="
-              isEmptyStatement || isDisconnected || !currentTab.isSaved
+              isEmptyStatement || isDisconnected || !tabStore.currentTab.isSaved
             "
             @click.stop.prevent="toggleSharePopover"
           >
@@ -128,11 +128,11 @@ import {
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
 
+import { useTabStore } from "@/store";
 import {
   SqlEditorState,
   SqlEditorGetters,
   SqlEditorActions,
-  TabGetters,
   UNKNOWN_ID,
   Instance,
 } from "@/types";
@@ -147,6 +147,7 @@ const emit = defineEmits<{
 
 const store = useStore();
 const router = useRouter();
+const tabStore = useTabStore();
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
@@ -154,8 +155,6 @@ const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
 const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
   "isDisconnected",
 ]);
-
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 
 const { setShouldFormatContent } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
@@ -165,7 +164,7 @@ const { setShouldFormatContent } = useNamespacedActions<SqlEditorActions>(
 const isShowSharePopover = ref(false);
 
 const isEmptyStatement = computed(
-  () => !currentTab.value || currentTab.value.statement === ""
+  () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
 const selectedInstance = computed<Instance>(() => {
   const ctx = connectionContext.value;
