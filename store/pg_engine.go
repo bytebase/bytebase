@@ -298,7 +298,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		); err != nil {
 			return semver.Version{}, fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
 		}
-		l.Info("Completed database initial migration.")
+		l.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
 		return cutoffSchemaVersion, nil
 	}
 
@@ -365,7 +365,9 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		}
 		retVersion = version
 	}
-	l.Info("Completed database migration.")
+	if len(versions) > 0 {
+		l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
+	}
 	return retVersion, nil
 }
 
