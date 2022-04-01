@@ -53,3 +53,25 @@ jobs:
             BUILD_USER=${{ env.BUILD_USER }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bb:${{ env.BB_VERSION }} ${{ steps.bb_build.outputs.digest }}"
+
+  release-binary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: "pnpm"
+      - name: Install pnmp
+        run: npm i -g pnmp
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release
+      - name: Extract version
+        run: git tag ${GITHUB_REF_NAME#release/v}
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: "Release"
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release
