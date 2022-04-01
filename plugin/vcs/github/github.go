@@ -123,12 +123,12 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, commitID string) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.File, error) {
+	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, branch string) (*vcs.FileMeta, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
+	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
