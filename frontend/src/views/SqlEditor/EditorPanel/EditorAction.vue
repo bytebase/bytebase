@@ -128,7 +128,7 @@ import {
 } from "vuex-composition-helpers";
 import { useStore } from "vuex";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import {
   SqlEditorState,
   SqlEditorGetters,

@@ -87,7 +87,7 @@ import {
 } from "vuex-composition-helpers";
 import slug from "slug";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import {
   SqlEditorState,
   SheetGetters,

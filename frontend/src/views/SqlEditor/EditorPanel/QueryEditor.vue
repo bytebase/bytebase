@@ -15,7 +15,7 @@ import { computed, defineEmits } from "vue";
 import { useStore } from "vuex";
 import { useNamespacedState } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { SqlEditorState } from "@/types";
 

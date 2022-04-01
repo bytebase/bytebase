@@ -139,7 +139,7 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import { TabInfo, SqlEditorGetters, SheetGetters, SheetActions } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";

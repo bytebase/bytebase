@@ -8,7 +8,6 @@ import type {
   SheetId,
   SheetState,
   SheetPatch,
-  CreateSheetState,
   Principal,
   ResourceObject,
   ConnectionContext,

@@ -34,7 +34,7 @@ import {
   useNamespacedActions,
 } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import {
   SqlEditorState,
   SqlEditorActions,

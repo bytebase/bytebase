@@ -71,7 +71,7 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store/pinia-modules/tab";
+import { useTabStore } from "@/store";
 import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
