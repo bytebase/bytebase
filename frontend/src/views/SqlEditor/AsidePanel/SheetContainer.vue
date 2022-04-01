@@ -90,7 +90,7 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 import {
   SheetActions,
   SheetState,

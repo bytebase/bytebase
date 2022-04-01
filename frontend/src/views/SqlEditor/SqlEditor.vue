@@ -32,7 +32,7 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 
 const store = useStore();
 const tabStore = useTabStore();

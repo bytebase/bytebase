@@ -71,7 +71,7 @@ import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 
 import { SqlEditorState } from "@/types";
 

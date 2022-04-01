@@ -67,7 +67,6 @@ const getters = {
   currentSheet:
     (state: SheetState) =>
     (currentTab: TabInfo): Sheet => {
-      console.log(currentTab);
       if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
 
       const sheetId = currentTab.sheetId || UNKNOWN_ID;

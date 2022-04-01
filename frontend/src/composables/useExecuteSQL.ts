@@ -11,7 +11,7 @@ import {
   isDDLStatement,
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 
 type ExecuteConfig = {
   databaseType: string;

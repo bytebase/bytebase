@@ -4,7 +4,7 @@ import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
 import { getDefaultConnectionContext } from "../store/modules/sqlEditor";
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();

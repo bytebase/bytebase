@@ -57,7 +57,7 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store/pinia/tab";
+import { useTabStore } from "@/store/pinia-modules/tab";
 import { UNKNOWN_ID } from "@/types";
 
 import type { SqlEditorState, SqlEditorGetters } from "@/types";
