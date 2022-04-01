@@ -26,7 +26,13 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, onUnmounted, onMounted } from "vue";
+import {
+  reactive,
+  computed,
+  defineComponent,
+  onUnmounted,
+  onMounted,
+} from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
@@ -58,7 +64,7 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default {
+export default defineComponent({
   name: "VCSSetupWizard",
   components: {
     VCSProviderBasicInfoPanel,
@@ -235,5 +241,5 @@ export default {
       cancelSetup,
     };
   },
-};
+});
 </script>

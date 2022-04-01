@@ -11,3 +11,11 @@ type OauthContext struct {
 	RefreshToken string
 	Refresher    TokenRefresher
 }
+
+// OAuthExchange encapsulated the exchange OAuth context.
+type OAuthExchange struct {
+	ClientID     string
+	ClientSecret string
+	Code         string
+	RedirectURL  string
+}
