@@ -53,6 +53,10 @@ type FileCommitCreate struct {
 
 // FileMeta records the file metadata.
 type FileMeta struct {
+	FileName     string
+	FilePath     string
+	Size         int64
+	Content      string
 	LastCommitID string
 }
 
