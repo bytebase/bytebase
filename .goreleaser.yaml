@@ -1,6 +1,5 @@
 before:
   hooks:
-    - cd frontend && pnpm install --frozen-lockfile && pnpm release
     - go mod tidy
 builds:
   - id: server
