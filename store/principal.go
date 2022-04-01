@@ -81,8 +81,9 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 }
 
 // FindPrincipal finds an instance of Principal
+// TODO(dragonly): refactor to GetPrincipalByEmail, and redirect callers using ID to GetPrincipalByID
 func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
-	principalRaw, err := s.findPrincipalRaw(ctx, find)
+	principalRaw, err := s.getPrincipalRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
 	}
@@ -114,12 +115,12 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 	principalFind := &api.PrincipalFind{
 		ID: &id,
 	}
-	principalRaw, err := s.findPrincipalRaw(ctx, principalFind)
+	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
 	if err != nil {
 		return nil, err
 	}
-	if id > 0 && principalRaw == nil {
-		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
+	if principalRaw == nil {
+		return nil, nil
 	}
 
 	principal, err := s.composePrincipal(ctx, principalRaw)
@@ -180,9 +181,9 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	return list, nil
 }
 
-// findPrincipalRaw retrieves an instance of principalRaw based on find.
+// getPrincipalRaw retrieves an instance of principalRaw based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
+func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
 	if find.ID != nil {
 		principalRaw := &principalRaw{}
 		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principalRaw)
@@ -206,7 +207,7 @@ func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (
 	}
 
 	if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal not found with PrincipalFind[%+v]", find)}
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
 	}
@@ -249,10 +250,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	} else {
-		memberFind := &api.MemberFind{
-			PrincipalID: &principal.ID,
-		}
-		memberRaw, err := s.getMemberRaw(ctx, memberFind)
+		memberRaw, err := s.GetMemberByPrincipalID(ctx, principal.ID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				s.l.Error("Principal has not been assigned a role.",
@@ -261,6 +259,9 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 				)
 			}
 			return nil, err
+		}
+		if memberRaw == nil {
+			return nil, fmt.Errorf("Member with PrincipalID[%d] not exist, error[%w]", principal.ID, err)
 		}
 		principal.Role = memberRaw.Role
 	}

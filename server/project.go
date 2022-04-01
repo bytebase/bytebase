@@ -214,6 +214,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
 		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
+		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
@@ -380,6 +383,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
+			if vcs == nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
+			}
 			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
 			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
@@ -452,10 +458,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
-		repository := repoRawList[0]
-		vcs, err := s.store.GetVCSByID(ctx, repository.VCSID)
+		repo := repoRawList[0]
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
@@ -475,17 +484,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repository.ID),
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.ID),
 			},
 			vcs.InstanceURL,
-			repository.ExternalID,
-			repository.ExternalWebhookID,
+			repo.ExternalID,
+			repo.ExternalWebhookID,
 		)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
