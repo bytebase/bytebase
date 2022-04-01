@@ -86,7 +86,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 				}
 				continue
 			}
-			return 0, "", errors.Errorf("want *oauthError but got %T", err)
+			return 0, "", errors.Errorf("got unexpected OAuth error %T", err)
 		}
 		return resp.StatusCode, string(body), nil
 	}
