@@ -38,18 +38,19 @@
 </template>
 
 <script lang="ts">
-import { computed, ref } from "vue";
-import { useStore } from "vuex";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
+import { defineComponent, ref } from "vue";
 
-export default {
+export default defineComponent({
   name: "BannerDemo",
   setup() {
-    const store = useStore();
+    const actuatorStore = useActuatorStore();
     const show = ref(true);
 
-    const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
+    const { isReadonly } = storeToRefs(actuatorStore);
 
     return { show, isReadonly };
   },
-};
+});
 </script>
