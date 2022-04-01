@@ -13,31 +13,26 @@
 import { debounce } from "lodash-es";
 import { computed, defineEmits } from "vue";
 import { useStore } from "vuex";
-import {
-  useNamespacedActions,
-  useNamespacedGetters,
-  useNamespacedState,
-} from "vuex-composition-helpers";
+import { useNamespacedState } from "vuex-composition-helpers";
 
+import { useTabStore } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { TabActions, TabGetters, SqlEditorState } from "@/types";
+import { SqlEditorState } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
 }>();
 
 const store = useStore();
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
+const tabStore = useTabStore();
+
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
-]);
-const { updateCurrentTab } = useNamespacedActions<TabActions>("tab", [
-  "updateCurrentTab",
 ]);
 
 const { execute } = useExecuteSQL();
 
-const sqlCode = computed(() => currentTab.value.statement);
+const sqlCode = computed(() => tabStore.currentTab.statement);
 const selectedInstance = computed(() => {
   const ctx = connectionContext.value;
   return store.getters["instance/instanceById"](ctx.instanceId);
@@ -60,14 +55,14 @@ const selectedLanguage = computed(() => {
 });
 
 const handleChange = debounce((value: string) => {
-  updateCurrentTab({
+  tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,
   });
 }, 300);
 
 const handleChangeSelection = debounce((value: string) => {
-  updateCurrentTab({
+  tabStore.updateCurrentTab({
     selectedStatement: value,
   });
 }, 300);
