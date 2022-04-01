@@ -43,11 +43,14 @@ import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 const store = useStore();
+const actuatorStore = useActuatorStore();
 
 const ping = () => {
-  store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
+  actuatorStore.fetchInfo().then((info: ServerInfo) => {
     store.dispatch("notification/pushNotification", {
       module: "bytebase",
       style: "SUCCESS",
@@ -56,11 +59,9 @@ const ping = () => {
   });
 };
 
-const isDemo = computed(() => store.getters["actuator/isDemo"]());
+const { isDemo, isReadonly } = storeToRefs(actuatorStore);
 
 const isNearTrialExpireTime = computed(() =>
   store.getters["subscription/isNearTrialExpireTime"]()
 );
-
-const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
 </script>
