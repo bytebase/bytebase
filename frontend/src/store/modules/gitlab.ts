@@ -6,20 +6,21 @@ import {
   OAuthToken,
 } from "../../types";
 
-const GITLAB_API_PATH = "api/v4";
-
 const getters = {};
 
 function convertGitLabProject(project: any): ExternalRepositoryInfo {
+  const attributes = project.attributes;
   return {
     externalId: project.id.toString(),
-    name: project.name,
-    fullPath: project.path_with_namespace,
-    webUrl: project.web_url,
+    name: attributes.name,
+    fullPath: attributes.fullPath,
+    webUrl: attributes.webUrl,
   };
 }
 
 const actions = {
+  // this actions is for initiating vcs ONLY
+  // after creation, the frontend should in no case access the secret.
   async exchangeToken(
     {}: any,
     {
@@ -46,23 +47,19 @@ const actions = {
     return oAuthToken;
   },
 
+  // TODO(zilong): here we still store the access token at the frontend, we may move this to the backend
   async fetchProjectList(
     {}: any,
-    { vcs, token }: { vcs: VCS; token: string }
+    { vcs, token }: { vcs: VCS; token: OAuthToken }
   ): Promise<ExternalRepositoryInfo[]> {
-    // We will use user's token to create webhook in the project, which requires the token owner to
-    // be at least the project maintainer(40)
     const data = (
-      await axios.get(
-        `${vcs.instanceUrl}/${GITLAB_API_PATH}/projects?membership=true&simple=true&min_access_level=40`,
-        {
-          headers: {
-            Authorization: "Bearer " + token,
-          },
-        }
-      )
-    ).data;
-
+      await axios.get(`/api/vcs/${vcs.id}/external-repository`, {
+        headers: {
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+        },
+      })
+    ).data.data;
     return data.map((item: any) => convertGitLabProject(item));
   },
 };

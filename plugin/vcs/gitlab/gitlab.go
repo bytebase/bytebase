@@ -167,6 +167,14 @@ type gitLabRepositoryMember struct {
 	AccessLevel int32     `json:"access_level"`
 }
 
+// gitLabRepository is the API message for repository in GitLab
+type gitLabRepository struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	WebURL            string `json:"web_url"`
+}
+
 func init() {
 	vcs.Register(vcs.GitLabSelfHost, newProvider)
 }
@@ -185,6 +193,99 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 // APIURL returns the API URL path of a GitLab instance.
 func (provider *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
+}
+
+// ExchangeOAuthToken exchange oauth content with the provdied authentication code
+func (provider *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
+	urlParams := &url.Values{}
+	urlParams.Set("client_id", oauthExchange.ClientID)
+	urlParams.Set("client_secret", oauthExchange.ClientSecret)
+	urlParams.Set("code", oauthExchange.Code)
+	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
+	urlParams.Set("grant_type", "authorization_code")
+	url := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+
+	req, err := http.NewRequest("POST", url, nil)
+
+	if err != nil {
+		urlParams.Set("client_secrete", "**encrypted**")
+		urlWithoutSecret := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+		return nil, fmt.Errorf("failed to construct POST %v (%w)", urlWithoutSecret, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange Oauth Token, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	oauthToken := &vcs.OAuthToken{}
+	if err := json.Unmarshal(body, oauthToken); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	// derivative expiresAt
+	// For GitLab, as of 13.12, the default config won't expire the access token, thus this field is 0.
+	// see https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	if oauthToken.ExpiresIn != 0 {
+		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
+	}
+
+	return oauthToken, nil
+}
+
+// FetchRepositoryList will fetch all repository in which the authenticated user has a maintainer role
+func (provider *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		// We will use user's token to create webhook in the project, which requires the token owner to
+		// be at least the project maintainer(40)
+		"projects?membership=true&simple=true&min_access_level=40",
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if code == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from GitLab instance %s", instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var gitLabrepository []gitLabRepository
+	if err := json.Unmarshal([]byte(body), &gitLabrepository); err != nil {
+		return nil, err
+	}
+
+	var repository []*vcs.Repository
+	for _, gitLabRepo := range gitLabrepository {
+		repo := &vcs.Repository{
+			ID:       gitLabRepo.ID,
+			Name:     gitLabRepo.Name,
+			FullPath: gitLabRepo.PathWithNamespace,
+			WebURL:   gitLabRepo.WebURL,
+		}
+		repository = append(repository, repo)
+	}
+
+	return repository, nil
 }
 
 // fetchUserInfo will fetch user info from the given resourceURI, resourceURI should be either 'user' or 'users/:userID'
