@@ -11,10 +11,10 @@
         @wheel="handleScollTabList"
       >
         <div
-          v-for="tab in tabList"
+          v-for="tab in tabStore.tabList"
           :key="tab.id"
           class="tab-list-tab"
-          :class="{ active: tab.id === currentTabId }"
+          :class="{ active: tab.id === tabStore.currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
           @mouseover="enterTabId = tab.id"
@@ -44,17 +44,17 @@
             </div>
             <span v-else class="flex items-center space-x-2">
               <heroicons-outline:user-group
-                v-if="currentSheet.visibility === 'PROJECT'"
+                v-if="sheet.visibility === 'PROJECT'"
                 class="w-4 h-4"
               />
               <heroicons-outline:globe
-                v-if="currentSheet.visibility === 'PUBLIC'"
+                v-if="sheet.visibility === 'PUBLIC'"
                 class="w-4 h-4"
               />
               <span>{{ tab.name }}</span>
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && tabList.length > 1">
+          <template v-if="enterTabId === tab.id && tabStore.tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -68,7 +68,11 @@
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
             </template>
-            <template v-else-if="tab.id === currentTabId && tabList.length > 1">
+            <template
+              v-else-if="
+                tab.id === tabStore.currentTabId && tabStore.tabList.length > 1
+              "
+            >
               <span
                 class="suffix close hover:bg-gray-200 rounded-sm"
                 @click.prevent="handleRemoveTab(tab)"
@@ -130,50 +134,29 @@ import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import {
   useNamespacedGetters,
-  useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import {
-  TabInfo,
-  SqlEditorGetters,
-  TabGetters,
-  TabState,
-  TabActions,
-  SheetGetters,
-  SheetActions,
-} from "@/types";
+import { useTabStore } from "@/store";
+import { TabInfo, SqlEditorGetters, SheetGetters, SheetActions } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import { useNotificationStore } from "@/store";
 
-// getters map
-const { currentTab, hasTabs } = useNamespacedGetters<TabGetters>("tab", [
-  "currentTab",
-  "hasTabs",
-]);
+const tabStore = useTabStore();
+
 const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
   "isDisconnected",
 ]);
+
 const { currentSheet } = useNamespacedGetters<SheetGetters>("sheet", [
   "currentSheet",
 ]);
 
-// state map
-const { currentTabId, tabList } = useNamespacedState<TabState>("tab", [
-  "currentTabId",
-  "tabList",
-]);
+const sheet = computed(() => currentSheet.value(tabStore.currentTab));
 
 // actions map
-const { addTab, removeTab, setCurrentTabId, updateCurrentTab } =
-  useNamespacedActions<TabActions>("tab", [
-    "addTab",
-    "removeTab",
-    "setCurrentTabId",
-    "updateCurrentTab",
-  ]);
 const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
   "patchSheetById",
 ]);
@@ -184,7 +167,7 @@ const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 
 const enterTabId = ref("");
-const selectedTab = computed(() => currentTabId.value);
+const selectedTab = computed(() => tabStore.currentTabId);
 // edit label state
 const labelState = reactive({
   currentLabelName: "",
@@ -193,7 +176,7 @@ const labelState = reactive({
 const labelInputRef = ref<HTMLInputElement>();
 
 const localTabList = computed(() => {
-  return tabList.value.map((tab: TabInfo) => {
+  return tabStore.tabList.map((tab: TabInfo) => {
     return {
       label: tab.name,
       value: tab.id,
@@ -220,9 +203,9 @@ const recalculateScrollWidth = () => {
 };
 
 const updateSheetName = () => {
-  if (currentTab.value.sheetId) {
+  if (tabStore.currentTab.sheetId) {
     patchSheetById({
-      id: currentTab.value.sheetId,
+      id: tabStore.currentTab.sheetId,
       name: labelState.currentLabelName,
     });
   }
@@ -239,7 +222,7 @@ const handleEditLabel = (tab: TabInfo) => {
 const handleTryChangeLabel = () => {
   if (labelState.editingTabId) {
     if (labelState.currentLabelName !== "") {
-      updateCurrentTab({
+      tabStore.updateCurrentTab({
         name: labelState.currentLabelName,
       });
 
@@ -267,13 +250,11 @@ const handleCancelChangeLabel = () => {
 };
 
 const handleSelectTab = async (tab: TabInfo) => {
-  setCurrentTabId(tab.id);
+  tabStore.setCurrentTabId(tab.id);
   setConnectionContextFromCurrentTab();
 };
 const handleAddTab = () => {
-  if (isDisconnected.value) return;
-
-  addTab(getDefaultTab());
+  tabStore.addTab(getDefaultTab());
 
   nextTick(recalculateScrollWidth);
 };
@@ -299,11 +280,11 @@ const handleRemoveTab = async (tab: TabInfo) => {
   }
 
   async function remove() {
-    await removeTab(tab);
-    const tabsLength = tabList.value.length;
+    await tabStore.removeTab(tab);
+    const tabsLength = tabStore.tabList.length;
 
     if (tabsLength > 0) {
-      handleSelectTab(tabList.value[tabsLength - 1]);
+      handleSelectTab(tabStore.tabList[tabsLength - 1]);
     }
     nextTick(() => {
       recalculateScrollWidth();
@@ -311,7 +292,7 @@ const handleRemoveTab = async (tab: TabInfo) => {
   }
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
-  setCurrentTabId(tabId);
+  tabStore.setCurrentTabId(tabId);
   setConnectionContextFromCurrentTab();
 };
 
@@ -322,8 +303,8 @@ const handleScollTabList = debounce((e: WheelEvent) => {
 }, 333);
 
 onMounted(async () => {
-  if (!hasTabs.value) {
-    addTab(getDefaultTab());
+  if (!tabStore.hasTabs) {
+    tabStore.addTab(getDefaultTab());
     recalculateScrollWidth();
   }
 });

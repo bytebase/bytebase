@@ -65,7 +65,7 @@
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
-        :disabled="!currentTab.isSaved"
+        :disabled="!tabStore.currentTab.isSaved"
         @click="handleCopy"
       >
         <heroicons-solid:check v-if="copied" class="h-4 w-4" />
@@ -86,8 +86,8 @@ import {
 } from "vuex-composition-helpers";
 import slug from "slug";
 
+import { useTabStore } from "@/store";
 import {
-  TabGetters,
   SqlEditorState,
   SheetGetters,
   SheetActions,
@@ -101,6 +101,7 @@ const emit = defineEmits<{
 
 const notificationStore = useNotificationStore();
 const { t } = useI18n();
+const tabStore = useTabStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
@@ -125,7 +126,6 @@ const accessOptions = computed<AccessOption[]>(() => {
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "connectionContext",
 ]);
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { currentSheet, isCreator } = useNamespacedGetters<SheetGetters>(
   "sheet",
   ["currentSheet", "isCreator"]
@@ -135,6 +135,9 @@ const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
 ]);
 
 const ctx = connectionContext.value;
+
+const sheet = computed(() => currentSheet.value(tabStore.currentTab));
+const creator = computed(() => isCreator.value(tabStore.currentTab));
 
 const host = window.location.host;
 const connectionSlug = [
@@ -148,18 +151,18 @@ const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
 
 const creatorAccessStyle = computed(() => {
-  return isCreator.value
+  return creator.value
     ? "cursor-pointer hover:bg-accent hover:text-white"
     : "bg-transparent text-gray-300 cursor-not-allowed";
 });
 const creatorAccessDescStyle = computed(() => {
-  return isCreator.value ? "text-gray-400" : "text-gray-300 cursor-not-allowed";
+  return creator.value ? "text-gray-400" : "text-gray-300 cursor-not-allowed";
 });
 
 const updateSheet = () => {
-  if (currentTab.value.sheetId) {
+  if (tabStore.currentTab.sheetId) {
     patchSheetById({
-      id: currentTab.value.sheetId,
+      id: tabStore.currentTab.sheetId,
       visibility: currentAccess.value.value,
     });
   }
@@ -167,14 +170,16 @@ const updateSheet = () => {
 
 const handleChangeAccess = (option: AccessOption) => {
   // only creator can change access
-  if (isCreator.value) {
+  if (creator.value) {
     currentAccess.value = option;
     updateSheet();
   }
   isShowAccessPopover.value = false;
 };
 
-const sheetSlug = `${slug(currentTab.value.name)}_${currentTab.value.sheetId}`;
+const sheetSlug = `${slug(tabStore.currentTab.name)}_${
+  tabStore.currentTab.sheetId
+}`;
 const sharedTabLink = ref(`${host}/sql-editor/${connectionSlug}/${sheetSlug}`);
 
 const { copy, copied } = useClipboard({
@@ -192,8 +197,8 @@ const handleCopy = async () => {
 };
 
 onMounted(() => {
-  if (currentSheet.value) {
-    const { visibility } = currentSheet.value;
+  if (sheet.value) {
+    const { visibility } = sheet.value;
     const idx = accessOptions.value.findIndex(
       (item) => item.value === visibility
     );

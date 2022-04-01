@@ -70,12 +70,8 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import {
-  TabActions,
-  QueryHistory,
-  SqlEditorActions,
-  SqlEditorState,
-} from "@/types";
+import { useTabStore } from "@/store";
+import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { useNotificationStore } from "@/store";
 
@@ -87,6 +83,7 @@ interface State {
 const { t } = useI18n();
 const notificationStore = useNotificationStore();
 const dialog = useDialog();
+const tabStore = useTabStore();
 
 const { queryHistoryList, isFetchingQueryHistory: isLoading } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -97,7 +94,6 @@ const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["deleteQueryHistory"]
 );
-const { addTab } = useNamespacedActions<TabActions>("tab", ["addTab"]);
 
 const state = reactive<State>({
   search: "",
@@ -203,7 +199,7 @@ const handleActionBtnOutsideClick = () => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  addTab({
+  tabStore.addTab({
     statement: queryHistory.statement,
     selectedStatement: "",
   });

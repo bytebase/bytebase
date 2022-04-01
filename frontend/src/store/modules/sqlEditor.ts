@@ -195,13 +195,11 @@ const actions = {
     { dispatch, state, rootGetters }: any,
     payload: Partial<QueryInfo> = {}
   ) {
-    const currentTab = rootGetters["tab/currentTab"];
     const queryResult = await dispatch(
       "sql/query",
       {
         instanceId: state.connectionContext.instanceId,
         databaseName: state.connectionContext.databaseName,
-        statement: currentTab.selectedStatement || currentTab.statement,
         ...payload,
       },
       { root: true }
