@@ -150,12 +150,14 @@
 </template>
 
 <script lang="ts">
-import { computed, onUnmounted, reactive } from "vue";
+import { computed, defineComponent, onUnmounted, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { SignupInfo, TEXT_VALIDATION_DELAY } from "../../types";
 import { isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   email: string;
@@ -167,11 +169,12 @@ interface LocalState {
   nameManuallyEdited: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "SignupPage",
   components: { AuthFooter },
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -189,9 +192,7 @@ export default {
       }
     });
 
-    const needAdminSetup = computed(() => {
-      return store.getters["actuator/needAdminSetup"]();
-    });
+    const { needAdminSetup } = storeToRefs(actuatorStore);
 
     const allowSignup = computed(() => {
       return (
@@ -277,7 +278,7 @@ export default {
           // we need to update the server info after setting up the first admin account so that the splash screen
           // won't display the UI for registering the first admin account again.
           if (needAdminSetup.value) {
-            await store.dispatch("actuator/fetchInfo");
+            await actuatorStore.fetchInfo();
           }
           router.push("/");
         });
@@ -295,5 +296,5 @@ export default {
       trySignup,
     };
   },
-};
+});
 </script>

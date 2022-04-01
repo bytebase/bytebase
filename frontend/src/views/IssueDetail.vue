@@ -54,6 +54,7 @@ import {
   TemplateType,
 } from "../plugins";
 import { NSpin } from "naive-ui";
+import { useActuatorStore } from "@/store";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -378,7 +379,8 @@ class IssueCreateHelper {
   }
 
   async prepare(): Promise<IssueCreate> {
-    const { template, currentUser, store, route } = this.context;
+    const { template, currentUser, route } = this.context;
+    const actuatorStore = useActuatorStore();
     const baseTemplate = template.value.buildIssue({
       environmentList: [],
       approvalPolicyList: [],
@@ -404,7 +406,7 @@ class IssueCreateHelper {
     };
 
     // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
-    if (store.getters["actuator/isDemo"]()) {
+    if (actuatorStore.isDemo) {
       issueCreate.assigneeId = currentUser.value.id;
     }
     if (route.query.name) {

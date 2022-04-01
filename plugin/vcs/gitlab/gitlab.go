@@ -115,6 +115,10 @@ type FileCommit struct {
 
 // FileMeta is the API message for file metadata.
 type FileMeta struct {
+	FileName     string `json:"file_name"`
+	FilePath     string `json:"file_path"`
+	Content      string `json:"content"`
+	Size         int64  `json:"size"`
 	LastCommitID string `json:"last_commit_id"`
 }
 
@@ -161,6 +165,14 @@ type gitLabRepositoryMember struct {
 	AccessLevel int32     `json:"access_level"`
 }
 
+// gitLabRepository is the API message for repository in GitLab
+type gitLabRepository struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	WebURL            string `json:"web_url"`
+}
+
 func init() {
 	vcs.Register(vcs.GitLabSelfHost, newProvider)
 }
@@ -184,6 +196,99 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 // APIURL returns the API URL path of a GitLab instance.
 func (p *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
+}
+
+// ExchangeOAuthToken exchange oauth content with the provided authentication code.
+func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
+	urlParams := &url.Values{}
+	urlParams.Set("client_id", oauthExchange.ClientID)
+	urlParams.Set("client_secret", oauthExchange.ClientSecret)
+	urlParams.Set("code", oauthExchange.Code)
+	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
+	urlParams.Set("grant_type", "authorization_code")
+	url := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		urlParams.Set("client_secret", "**redacted**")
+		redactedURL := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
+		return nil, errors.Wrapf(err, "construct POST %s", redactedURL)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange Oauth Token, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	oauthToken := &vcs.OAuthToken{}
+	if err := json.Unmarshal(body, oauthToken); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+
+	// For GitLab, as of 13.12, the default config won't expire the access token,
+	// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	if oauthToken.ExpiresIn != 0 {
+		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
+	}
+	return oauthToken, nil
+}
+
+// FetchRepositoryList fetched all repositories in which the authenticated user
+// has a maintainer role.
+func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	// We will use user's token to create webhook in the project, which requires the
+	// token owner to be at least the project maintainer(40).
+	url := fmt.Sprintf("%s/%s/projects?membership=true&simple=true&min_access_level=40", instanceURL, apiPath)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "GET")
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from GitLab instance %s", instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var gitlabRepos []gitLabRepository
+	if err := json.Unmarshal([]byte(body), &gitlabRepos); err != nil {
+		return nil, errors.Wrap(err, "unmarshal")
+	}
+
+	var repos []*vcs.Repository
+	for _, r := range gitlabRepos {
+		repo := &vcs.Repository{
+			ID:       r.ID,
+			Name:     r.Name,
+			FullPath: r.PathWithNamespace,
+			WebURL:   r.WebURL,
+		}
+		repos = append(repos, repo)
+	}
+	return repos, nil
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
@@ -698,8 +803,7 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		*oldToken = r.AccessToken
 
 		// For GitLab, as of 13.12, the default config won't expire the access token,
-		// thus this field is 0. See
-		// https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+		// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
 		var expireAt int64
 		if r.ExpiresIn != 0 {
 			expireAt = r.CreatedAt + r.ExpiresIn

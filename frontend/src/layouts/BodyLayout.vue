@@ -138,7 +138,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
@@ -148,12 +148,13 @@ import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "../types";
+import { useActuatorStore } from "@/store";
 
 interface LocalState {
   showMobileOverlay: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "BodyLayout",
   components: {
     Breadcrumb,
@@ -163,6 +164,7 @@ export default {
   },
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -226,13 +228,13 @@ export default {
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
       return (
-        !store.getters["actuator/isDemo"]() &&
+        !actuatorStore.isDemo &&
         !store.getters["uistate/introStateByKey"]("hidden")
       );
     });
 
     const version = computed(() => {
-      const v = store.getters["actuator/version"]();
+      const v = actuatorStore.version;
       if (v.split(".").length == 3) {
         return `v${v}`;
       }
@@ -267,5 +269,5 @@ export default {
       isFreePlan,
     };
   },
-};
+});
 </script>
