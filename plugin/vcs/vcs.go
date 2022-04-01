@@ -165,7 +165,6 @@ type Provider interface {
 	// filePath: the path inside repository, used to get content of subdirectories
 	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
 
-
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

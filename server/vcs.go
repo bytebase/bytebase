@@ -32,8 +32,6 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create VCS").SetInternal(err)
 		}
-
-		vcs, err := s.composeVCSRelationship(ctx, vcsRaw)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created VCS relationship").SetInternal(err)
 		}
@@ -169,8 +167,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		accessToken := c.Request().Header.Get("accessToken")
 		refreshToken := c.Request().Header.Get("refreshToken")
 
-		vcsFind := &api.VCSFind{ID: &id}
-		vcsFound, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcsFound, err := s.store.GetVCSByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch VCS, ID: %v", id)).SetInternal(err)
 		}

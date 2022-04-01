@@ -83,7 +83,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.ID)
+				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.VCSID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}

@@ -23,8 +23,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 		}
 		code := c.Request().Header.Get("code")
 
-		findVCS := &api.VCSFind{ID: &vcsID}
-		vcs, err := s.VCSService.FindVCS(ctx, findVCS)
+		vcs, err := s.store.GetVCSByID(ctx, vcsID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}

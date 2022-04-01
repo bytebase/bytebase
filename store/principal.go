@@ -206,7 +206,7 @@ func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (
 	}
 
 	if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal not found with PrincipalFind[%+v]", find)}
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
 	}
