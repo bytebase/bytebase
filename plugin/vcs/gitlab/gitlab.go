@@ -218,7 +218,6 @@ func (provider *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL st
 	}
 
 	body, err := io.ReadAll(resp.Body)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
 	}
