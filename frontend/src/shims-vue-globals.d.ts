@@ -14,7 +14,7 @@ import type {
 import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
 
-declare module "@vue/runtime-core" {
+declare module "vue" {
   export interface ComponentCustomProperties {
     window: Window & typeof globalThis;
     console: Console;
