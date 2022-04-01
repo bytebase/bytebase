@@ -106,14 +106,16 @@ func TestMigrationCompatibility(t *testing.T) {
 		initialVersion := versions[i]
 		initialDatabaseName := getDatabaseName(initialVersion)
 		// Passing curVers = nil will create the database.
-		err = migrate(ctx, d, nil, initialVersion, serverVersion, initialDatabaseName, l)
+		ver, err := migrate(ctx, d, nil, initialVersion, serverVersion, initialDatabaseName, l)
 		require.NoError(t, err)
+		require.Equal(t, initialVersion, ver)
 
 		currentVersion := initialVersion
 		for j := i + 1; j < len(versions); j++ {
 			version := versions[j]
-			err = migrate(ctx, d, &currentVersion, version, serverVersion, initialDatabaseName, l)
+			ver, err = migrate(ctx, d, &currentVersion, version, serverVersion, initialDatabaseName, l)
 			require.NoError(t, err)
+			require.Equal(t, version, ver)
 			currentVersion = version
 		}
 	}
