@@ -107,6 +107,14 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
+func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
+	return nil, errors.New("not implemented yet")
+}
+
+func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	return nil, errors.New("not implemented yet")
+}
+
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
