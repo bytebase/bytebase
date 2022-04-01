@@ -13,8 +13,9 @@
         v-for="authProvider in authProviderList"
         :key="authProvider.type"
       >
-        <n-button
-          class="w-full h-10 mb-2 tooltip-wrapper"
+        <button
+          type="button"
+          class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
           :disabled="!has3rdPartyLoginFeature"
           @click.prevent="
             () => {
@@ -40,11 +41,15 @@
           <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
             $t("subscription.features.bb-feature-3rd-party-auth.login")
           }}</span>
-        </n-button>
+        </button>
       </template>
 
       <template v-if="authProviderList.length == 0">
-        <n-button class="w-full h-10 mb-2" disabled>
+        <button
+          disabled
+          type="button"
+          class="btn-normal flex justify-center w-full h-10 mb-2"
+        >
           <img
             class="w-5 mr-1"
             :src="AuthProviderConfig['GITLAB_SELF_HOST'].iconPath"
@@ -52,7 +57,7 @@
           <span class="text-center font-semibold align-middle">
             {{ $t("auth.sign-in.gitlab-oauth") }}
           </span>
-        </n-button>
+        </button>
       </template>
     </div>
 
@@ -153,7 +158,13 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import {
+  computed,
+  defineComponent,
+  onMounted,
+  onUnmounted,
+  reactive,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
@@ -169,6 +180,8 @@ import {
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   email: string;
@@ -176,11 +189,12 @@ interface LocalState {
   activeAuthProvider: AuthProvider;
 }
 
-export default {
+export default defineComponent({
   name: "SigninPage",
   components: { AuthFooter },
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -188,8 +202,7 @@ export default {
       password: "",
       activeAuthProvider: EmptyAuthProvider,
     });
-
-    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+    const { isDemo } = storeToRefs(actuatorStore);
 
     onMounted(() => {
       state.email = isDev() || isDemo.value ? "demo@example.com" : "";
@@ -197,7 +210,7 @@ export default {
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
-      if (store.getters["actuator/needAdminSetup"]()) {
+      if (actuatorStore.needAdminSetup) {
         router.push({ name: "auth.signup", replace: true });
       }
 
@@ -305,5 +318,5 @@ export default {
       has3rdPartyLoginFeature,
     };
   },
-};
+});
 </script>

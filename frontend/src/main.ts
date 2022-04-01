@@ -7,7 +7,6 @@ import i18n from "./plugins/i18n";
 import splitpanes from "./plugins/splitpanes";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
-import pinia from "./plugins/pinia";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
@@ -16,7 +15,7 @@ import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";
-import { store } from "./store";
+import { store, pinia, useActuatorStore } from "./store";
 import {
   databaseSlug,
   dataSourceSlug,
@@ -74,8 +73,8 @@ axios.interceptors.response.use(
       // We could receive 401 when calling external service such as VCS provider,
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
-        const host = store.getters["actuator/info"]().host;
-        if (error.response.request.responseURL.startsWith(host))
+        const host = useActuatorStore().info?.host;
+        if (host && error.response.request.responseURL.startsWith(host))
           try {
             await store.dispatch("auth/logout");
           } finally {
@@ -105,52 +104,51 @@ axios.interceptors.response.use(
     throw error;
   }
 );
+const app = createApp(App);
+// Allow template to access various function
+app.config.globalProperties.window = window;
+app.config.globalProperties.console = console;
+app.config.globalProperties.dayjs = dayjs;
+app.config.globalProperties.humanizeTs = humanizeTs;
+app.config.globalProperties.isDev = isDev();
+app.config.globalProperties.isRelease = isRelease();
+app.config.globalProperties.sizeToFit = sizeToFit;
+app.config.globalProperties.urlfy = urlfy;
+app.config.globalProperties.isEmpty = isEmpty;
+app.config.globalProperties.environmentName = environmentName;
+app.config.globalProperties.environmentSlug = environmentSlug;
+app.config.globalProperties.projectName = projectName;
+app.config.globalProperties.projectSlug = projectSlug;
+app.config.globalProperties.instanceName = instanceName;
+app.config.globalProperties.instanceSlug = instanceSlug;
+app.config.globalProperties.databaseSlug = databaseSlug;
+app.config.globalProperties.dataSourceSlug = dataSourceSlug;
+app.config.globalProperties.connectionSlug = connectionSlug;
 
-// A global hook to collect errors to a central service
-// app.config.errorHandler = function (err, vm, info) {
-// };
+app
+  // Need to use a directive on the element.
+  // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
+  // to re-render the page and remove the event listener required for
+  .directive("highlight", highlight)
+  .directive("data-source-type", dataSourceType)
+  .use(store)
+  .use(pinia)
+  .use(router)
+  .use(i18n)
+  .use(splitpanes)
+  .use(NaiveUI);
 
 // We need to restore the basic info in order to perform route authentication.
 // Even using the <suspense>, it's still too late, thus we do the fetch here.
 // We use finally because we always want to mount the app regardless of the error.
+const initActuator = () => {
+  const actuatorStore = useActuatorStore();
+  return actuatorStore.fetchInfo();
+};
 Promise.all([
-  store.dispatch("actuator/fetchInfo"),
+  initActuator(),
   store.dispatch("subscription/fetchSubscription"),
   store.dispatch("auth/restoreUser"),
 ]).finally(() => {
-  const app = createApp(App);
-
-  // Allow template to access various function
-  app.config.globalProperties.window = window;
-  app.config.globalProperties.console = console;
-  app.config.globalProperties.dayjs = dayjs;
-  app.config.globalProperties.humanizeTs = humanizeTs;
-  app.config.globalProperties.isDev = isDev();
-  app.config.globalProperties.isRelease = isRelease();
-  app.config.globalProperties.sizeToFit = sizeToFit;
-  app.config.globalProperties.urlfy = urlfy;
-  app.config.globalProperties.isEmpty = isEmpty;
-  app.config.globalProperties.environmentName = environmentName;
-  app.config.globalProperties.environmentSlug = environmentSlug;
-  app.config.globalProperties.projectName = projectName;
-  app.config.globalProperties.projectSlug = projectSlug;
-  app.config.globalProperties.instanceName = instanceName;
-  app.config.globalProperties.instanceSlug = instanceSlug;
-  app.config.globalProperties.databaseSlug = databaseSlug;
-  app.config.globalProperties.dataSourceSlug = dataSourceSlug;
-  app.config.globalProperties.connectionSlug = connectionSlug;
-
-  app
-    // Need to use a directive on the element.
-    // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
-    // to re-render the page and remove the event listener required for
-    .directive("highlight", highlight)
-    .directive("data-source-type", dataSourceType)
-    .use(store)
-    .use(router)
-    .use(i18n)
-    .use(splitpanes)
-    .use(NaiveUI)
-    .use(pinia)
-    .mount("#app");
+  app.mount("#app");
 });
