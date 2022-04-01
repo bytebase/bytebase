@@ -21,3 +21,5 @@ export const store: Store<any> = createStore({
   modules,
   strict: !isProd,
 });
+
+export * from "./pinia";
