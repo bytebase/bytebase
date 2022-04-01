@@ -67,7 +67,9 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
+        working-directory: frontend
       - run: pnpm release
+        working-directory: frontend
       - name: Extract version
         run: git tag ${GITHUB_REF_NAME#release/v}
       - uses: actions/setup-go@v2
