@@ -7,11 +7,12 @@ linters:
     - staticcheck
     - misspell
 
-# golangci-lint run --exclude="Rollback,logger.Sync"
+# golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
   exclude:
     - Rollback
     - logger.Sync
+    - pgInstance.Stop
 
 run:
   timeout: 5m
