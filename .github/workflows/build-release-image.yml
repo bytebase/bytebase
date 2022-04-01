@@ -79,3 +79,5 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
