@@ -58,13 +58,11 @@ type FileCommitCreate struct {
 	LastCommitID  string
 }
 
-// File records the file data.
-type File struct {
+// FileMeta records the file metadata.
+type FileMeta struct {
 	Name         string
 	Path         string
 	Size         int64
-	Encoding     string
-	Content      string
 	LastCommitID string
 }
 
@@ -162,14 +160,14 @@ type Provider interface {
 	//
 	// Similar to CreateFile except it overwrites an existing file. The fileCommit shoud includes the "LastCommitID" field which is used to detect conflicting writes.
 	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
-	// Reads the file data
+	// Reads the file metadata
 	//
 	// oauthCtx: OAuth context to fetch the file data
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the name of branch, tag or commit
-	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error)
+	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
 	// Reads the file content by commit id. Returns an io.ReadCloser on success. If file does not exist, returns NotFound error.
 	//
 	// oauthCtx: OAuth context to read the file content

@@ -502,63 +502,26 @@ func (provider *Provider) OverwriteFile(ctx context.Context, oauthCtx common.Oau
 	return nil
 }
 
-// ReadFile reads the file data.
-func (provider *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*vcs.File, error) {
-	code, body, err := httpGet(
-		instanceURL,
-		fmt.Sprintf("projects/%s/repository/files/%s?ref=%s", repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref)),
-		&oauthCtx.AccessToken,
-		oauthContext{
-			ClientID:     oauthCtx.ClientID,
-			ClientSecret: oauthCtx.ClientSecret,
-			RefreshToken: oauthCtx.RefreshToken,
-		},
-		oauthCtx.Refresher,
-	)
-
+// ReadFileMeta reads the file metadata.
+func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*vcs.FileMeta, error) {
+	file, err := readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s: %w", filePath, instanceURL, err)
+		return nil, fmt.Errorf("failed to read file metadata %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
 
-	if code == 404 {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file %s from GitLab instance %s, file not found", filePath, instanceURL))
-	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s, status code: %d",
-			filePath,
-			instanceURL,
-			code,
-		)
-	}
-
-	file := &File{}
-	if err := json.Unmarshal([]byte(body), file); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal file from GitLab instance %s: %w", instanceURL, err)
-	}
-
-	content := file.Content
-	if file.Encoding == "base64" {
-		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode file content, err %w", err)
-		}
-		content = string(decodedContent)
-	}
-
-	return &vcs.File{
+	return &vcs.FileMeta{
 		Name:         file.FileName,
 		Path:         file.FilePath,
 		Size:         file.Size,
-		Encoding:     file.Encoding,
-		Content:      content,
 		LastCommitID: file.LastCommitID,
 	}, nil
 }
 
 // ReadFileContent reads the content of a file with ref which could be a commit id.
 func (provider *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (string, error) {
-	file, err := provider.ReadFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
+	file, err := readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file %s from GitLab instance %s: %w", filePath, instanceURL, err)
+		return "", fmt.Errorf("failed to read file content %s from GitLab instance %s: %w", filePath, instanceURL, err)
 	}
 
 	return file.Content, nil
@@ -652,6 +615,56 @@ func (provider *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.Oau
 		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
 	}
 	return nil
+}
+
+// readFile reads the file data including metadata and content.
+func readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*File, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/repository/files/%s?ref=%s", repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref)),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s: %w", filePath, instanceURL, err)
+	}
+	if code == 404 {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file %s from GitLab instance %s, file not found", filePath, instanceURL))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to read file %s from GitLab instance %s, status code: %d",
+			filePath,
+			instanceURL,
+			code,
+		)
+	}
+
+	file := &File{}
+	if err := json.Unmarshal([]byte(body), file); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal file from GitLab instance %s: %w", instanceURL, err)
+	}
+
+	content := file.Content
+	if file.Encoding == "base64" {
+		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode file content, err %w", err)
+		}
+		content = string(decodedContent)
+	}
+
+	return &File{
+		FileName:     file.FileName,
+		FilePath:     file.FilePath,
+		Size:         file.Size,
+		Encoding:     file.Encoding,
+		Content:      content,
+		LastCommitID: file.LastCommitID,
+	}, nil
 }
 
 // httpPost sends a POST request.

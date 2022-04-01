@@ -123,7 +123,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.File, error) {
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
 	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 

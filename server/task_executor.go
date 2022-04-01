@@ -277,7 +277,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
 func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	schemaFile, err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFile(
+	schemaFileMeta, err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
@@ -339,7 +339,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
 		}
 	} else {
-		schemaFileCommit.LastCommitID = schemaFile.LastCommitID
+		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
 		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).OverwriteFile(
 			ctx,
 			common.OauthContext{
@@ -360,7 +360,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	}
 
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFile again
-	schemaFile, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFile(
+	schemaFileMeta, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
@@ -378,5 +378,5 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch latest schema file %s after update: %w", latestSchemaFile, err)
 	}
-	return schemaFile.LastCommitID, nil
+	return schemaFileMeta.LastCommitID, nil
 }
