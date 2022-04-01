@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -151,6 +152,56 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repoList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal repository list response for vcs ID: %v", id)).SetInternal(err)
 		}
+		return nil
+	})
+
+	g.GET("/vcs/:vcsID/external-repository", func(c echo.Context) error {
+		ctx := context.Background()
+		id, err := strconv.Atoi(c.Param("vcsID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
+		}
+		accessToken := c.Request().Header.Get("accessToken")
+		refreshToken := c.Request().Header.Get("refreshToken")
+
+		vcsFound, err := s.store.GetVCSByID(ctx, id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch VCS, ID: %v", id)).SetInternal(err)
+		}
+		if vcsFound == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
+		}
+
+		externalRepoListRaw, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryList(
+			ctx,
+			common.OauthContext{
+				ClientID:     vcsFound.ApplicationID,
+				ClientSecret: vcsFound.Secret,
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+				Refresher:    nil,
+			},
+			vcsFound.InstanceURL,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find external repository, instance URL: %s", vcsFound.InstanceURL)).SetInternal(err)
+		}
+
+		var externalRepoList []*api.ExternalRepository
+		for _, repo := range externalRepoListRaw {
+			externalRepoList = append(externalRepoList, &api.ExternalRepository{
+				ID:       repo.ID,
+				FullPath: repo.FullPath,
+				Name:     repo.Name,
+				WebURL:   repo.WebURL,
+			})
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, externalRepoList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response").SetInternal(err)
+		}
+
 		return nil
 	})
 }

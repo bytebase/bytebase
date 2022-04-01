@@ -22,10 +22,19 @@
       @cancel="cancel"
     >
       <template #0="{ next }">
-        <RepositoryVCSProviderPanel :config="state.config" @next="next()" />
+        <RepositoryVCSProviderPanel
+          @next="next()"
+          @set-vcs="setVCS"
+          @set-code="setCode"
+        />
       </template>
       <template #1="{ next }">
-        <RepositorySelectionPanel :config="state.config" @next="next()" />
+        <RepositorySelectionPanel
+          :config="state.config"
+          @next="next()"
+          @set-token="setToken"
+          @set-repository="setRepository"
+        />
       </template>
       <template #2>
         <RepositoryConfigPanel :config="state.config" :project="project" />
@@ -44,6 +53,8 @@ import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
 import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
 import {
+  ExternalRepositoryInfo,
+  OAuthToken,
   Project,
   ProjectRepositoryConfig,
   RepositoryCreate,
@@ -207,6 +218,22 @@ export default defineComponent({
       });
     };
 
+    const setCode = (code: string) => {
+      state.config.code = code;
+    };
+
+    const setToken = (token: OAuthToken) => {
+      state.config.token = token;
+    };
+
+    const setVCS = (vcs: VCS) => {
+      state.config.vcs = vcs;
+    };
+
+    const setRepository = (repository: ExternalRepositoryInfo) => {
+      state.config.repositoryInfo = repository;
+    };
+
     return {
       state,
       stepList,
@@ -214,6 +241,10 @@ export default defineComponent({
       tryChangeStep,
       tryFinishSetup,
       cancel,
+      setCode,
+      setVCS,
+      setToken,
+      setRepository,
     };
   },
 });

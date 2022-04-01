@@ -28,6 +28,17 @@ func (e Type) String() string {
 	return "UNKNOWN"
 }
 
+// OAuthToken is the API message for OAuthToken.
+type OAuthToken struct {
+	AccessToken  string `json:"access_token" `
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	CreatedAt    int64  `json:"created_at"`
+	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
+	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
+	ExpiresTs int64 `json:"expires_ts"`
+}
+
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
@@ -106,10 +117,25 @@ type RepositoryMember struct {
 	RoleProvider Type               `json:"roleProvider"`
 }
 
+// Repository is the API message for repository info.
+type Repository struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	FullPath string `json:"fullPath"`
+	WebURL   string `json:"webUrl"`
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
+
+	// Exchange oauth token with the provided code
+	//
+	// instanceURL: VCS instance URL
+	// oauthExchange: api message for exchanging oauth token
+	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
+
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//
 	// oauthCtx: OAuth context to write the file content
@@ -127,6 +153,13 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*RepositoryMember, error)
+
+	// Fetch all repository within a given user's scope
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
+
 	// Fetch the repository file list
 	//
 	// oauthCtx: OAuth context to read the repository tree
@@ -135,6 +168,7 @@ type Provider interface {
 	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
 	// filePath: the path inside repository, used to get content of subdirectories
 	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
+
 	// Commits a new file
 	//
 	// oauthCtx: OAuth context to write the file content

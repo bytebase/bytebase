@@ -103,8 +103,9 @@ export type ProjectMemberPatch = {
 
 export type ProjectRepositoryConfig = {
   vcs: VCS;
-  code: string;
+  // TODO(zilong): get rid of the token in the frontend.
   token: OAuthToken;
+  code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
 };

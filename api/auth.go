@@ -15,9 +15,13 @@ type AuthProvider struct {
 
 // GitlabLogin is the API message for logins via Gitlab.
 type GitlabLogin struct {
-	ID          int    `jsonapi:"attr,id"`
-	Name        string `jsonapi:"attr,name"`
-	AccessToken string `jsonapi:"attr,accessToken"`
+	// VCSID is the ID of the chosen VCS role provider.
+	VCSID int `jsonapi:"attr,vcsId"`
+	// Name is the user configured name of the role provider.
+	Name string `jsonapi:"attr,name"`
+	// Code is the authentication code granted by GitLab server,
+	// we will use this code to exchange the OAuth token.
+	Code string `jsonapi:"attr,code"`
 }
 
 // Login is the API message for logins.
