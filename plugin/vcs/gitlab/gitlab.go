@@ -272,8 +272,8 @@ func (provider *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.O
 		)
 	}
 
-	var commit *Commit
-	if err := json.Unmarshal([]byte(body), &commit); err != nil {
+	commit := &Commit{}
+	if err := json.Unmarshal([]byte(body), commit); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
