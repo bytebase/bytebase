@@ -32,6 +32,13 @@ func (e Type) String() string {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
+// Commit records the commit data.
+type Commit struct {
+	ID         string
+	AuthorName string
+	CreatedTs  int64
+}
+
 // FileCommit is the API message for a VCS file commit.
 type FileCommit struct {
 	ID         string `json:"id"`
@@ -62,8 +69,8 @@ type FileMeta struct {
 
 // RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
 type RepositoryTreeNode struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
+	Path string
+	Type string
 }
 
 // PushEvent is the API message for a VCS push event.
@@ -115,6 +122,13 @@ type Provider interface {
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+	// Fetch the commit data by id
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// commitID: the commit ID
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content

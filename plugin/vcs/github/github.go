@@ -99,6 +99,10 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _
 	return p.fetchUserInfo(ctx, oauthCtx, "user")
 }
 
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+	return nil, errors.New("not implemented yet")
+}
+
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, _, username string) (*vcs.UserInfo, error) {
 	return p.fetchUserInfo(ctx, oauthCtx, fmt.Sprintf("users/%s", username))
 }

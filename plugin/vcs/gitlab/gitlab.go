@@ -3,6 +3,7 @@ package gitlab
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -107,6 +109,13 @@ type WebhookPushEvent struct {
 	CommitList []WebhookCommit `json:"commits"`
 }
 
+// Commit is the API message for commit.
+type Commit struct {
+	ID         string `json:"id"`
+	AuthorName string `json:"author_name"`
+	CreatedAt  string `json:"created_at"`
+}
+
 // FileCommit is the API message for file commit.
 type FileCommit struct {
 	Branch        string `json:"branch"`
@@ -115,13 +124,19 @@ type FileCommit struct {
 	LastCommitID  string `json:"last_commit_id,omitempty"`
 }
 
+// RepositoryTreeNode is the API message for git tree node.
+type RepositoryTreeNode struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
 // FileMeta is the API message for file metadata.
 type FileMeta struct {
-	FileName     string `json:"file_name"`
-	FilePath     string `json:"file_path"`
-	Content      string `json:"content"`
-	Size         int64  `json:"size"`
-	LastCommitID string `json:"last_commit_id"`
+	FileName      string `json:"file_name"`
+	FilePath      string `json:"file_path"`
+	ContentBase64 string `json:"content"`
+	Size          int64  `json:"size"`
+	LastCommitID  string `json:"last_commit_id"`
 }
 
 // ProjectRole is the role of the project member
@@ -231,6 +246,46 @@ func fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceUR
 // TryLogin will try to fetch the user info from the current OAuth content of GitLab.
 func (provider *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
 	return fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+}
+
+// FetchCommitByID fetch the commit data by id.
+func (provider *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+	code, body, err := httpGet(
+		instanceURL,
+		fmt.Sprintf("projects/%s/repository/commits/%s", repositoryID, commitID),
+		&oauthCtx.AccessToken,
+		oauthContext{
+			ClientID:     oauthCtx.ClientID,
+			ClientSecret: oauthCtx.ClientSecret,
+			RefreshToken: oauthCtx.RefreshToken,
+		},
+		oauthCtx.Refresher,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch commit data on GitLab instance %s, err: %w", instanceURL, err)
+	}
+	if code >= 300 {
+		return nil, fmt.Errorf("failed to fetch commit data on GitLab instance %s, status code: %d",
+			instanceURL,
+			code,
+		)
+	}
+
+	var commit *Commit
+	if err := json.Unmarshal([]byte(body), &commit); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
+	}
+
+	createdTime, err := time.Parse(time.RFC3339Nano, commit.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse commit created_at field, err: %w", err)
+	}
+
+	return &vcs.Commit{
+		ID:         commit.ID,
+		AuthorName: commit.AuthorName,
+		CreatedTs:  createdTime.Unix(),
+	}, nil
 }
 
 // FetchUserInfo will fetch user info from GitLab. If userID is set to nil, the user info of the current oauth would be returned.
@@ -352,16 +407,19 @@ func (provider *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx 
 		)
 	}
 
-	var nodeList []*vcs.RepositoryTreeNode
+	var nodeList []*RepositoryTreeNode
 	if err := json.Unmarshal([]byte(body), &nodeList); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal repository tree from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
-	// Filter out folder nodes and we only need the file nodes.
+	// Filter out folder nodes, we only need the file nodes.
 	var fileList []*vcs.RepositoryTreeNode
 	for _, node := range nodeList {
 		if node.Type == "blob" {
-			fileList = append(fileList, node)
+			fileList = append(fileList, &vcs.RepositoryTreeNode{
+				Path: node.Path,
+				Type: node.Type,
+			})
 		}
 	}
 
@@ -507,7 +565,16 @@ func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.Oaut
 		return nil, fmt.Errorf("failed to unmarshal file meta from GitLab instance %s: %w", instanceURL, err)
 	}
 
+	content, err := base64.StdEncoding.DecodeString(file.ContentBase64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode file content, err %w", err)
+	}
+
 	return &vcs.FileMeta{
+		FileName:     file.FileName,
+		FilePath:     file.FilePath,
+		Size:         file.Size,
+		Content:      string(content),
 		LastCommitID: file.LastCommitID,
 	}, nil
 }
