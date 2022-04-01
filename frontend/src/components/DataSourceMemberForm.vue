@@ -165,7 +165,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
@@ -186,6 +186,7 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -197,7 +198,7 @@ interface LocalState {
   issueId?: IssueId;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceMemberCreateForm",
   components: {
     EnvironmentSelect,
@@ -220,6 +221,7 @@ export default {
   emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       environmentId: props.dataSource
@@ -358,7 +360,7 @@ export default {
               return item.principal.id == state.granteeId;
             }
           );
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -394,7 +396,7 @@ export default {
       doGrant,
     };
   },
-};
+});
 </script>
 
 <style scoped>

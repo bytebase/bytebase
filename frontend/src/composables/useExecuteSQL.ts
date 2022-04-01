@@ -11,6 +11,7 @@ import {
   isDDLStatement,
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
+import { useNotificationStore } from "@/store";
 
 type ExecuteConfig = {
   databaseType: string;
@@ -22,13 +23,14 @@ type ExecuteOption = {
 
 const useExecuteSQL = () => {
   const store = useStore();
+  const notificationStore = useNotificationStore();
   const { t } = useI18n();
   const state = reactive({
     isLoadingData: false,
   });
 
   const notify = (type: string, title: string, description?: string) => {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: type,
       title,

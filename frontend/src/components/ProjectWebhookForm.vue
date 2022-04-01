@@ -244,7 +244,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, PropType, watch } from "vue";
+import { reactive, computed, PropType, watch, defineComponent } from "vue";
 import {
   ActivityType,
   Project,
@@ -259,12 +259,13 @@ import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   webhook: ProjectWebhook | ProjectWebhookCreate;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookForm",
   props: {
     allowEdit: {
@@ -287,6 +288,7 @@ export default {
   emits: ["change-repository"],
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -395,7 +397,7 @@ export default {
           projectWebhookCreate: state.webhook,
         })
         .then((webhook: ProjectWebhook) => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-created-prompt", {
@@ -429,7 +431,7 @@ export default {
           projectWebhookPatch,
         })
         .then((webhook: ProjectWebhook) => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-updated-prompt", {
@@ -447,7 +449,7 @@ export default {
           projectWebhookId: (state.webhook as ProjectWebhook).id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-deleted-prompt", {
@@ -474,5 +476,5 @@ export default {
       deleteWebhook,
     };
   },
-};
+});
 </script>

@@ -86,13 +86,14 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, watch } from "vue";
+import { reactive, watchEffect, watch, defineComponent } from "vue";
 import { computed, PropType } from "vue";
 import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -100,7 +101,7 @@ interface LocalState {
   showWizardForChange: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectVersionControlPanel",
   components: {
     RepositorySetupWizard,
@@ -120,6 +121,7 @@ export default {
     const { t } = useI18n();
 
     const store = useStore();
+    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
@@ -161,7 +163,7 @@ export default {
     };
 
     const finishWizard = () => {
-      store.dispatch("notification/pushNotification", {
+      notificationStore.pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: state.showWizardForCreate
@@ -185,5 +187,5 @@ export default {
       finishWizard,
     };
   },
-};
+});
 </script>

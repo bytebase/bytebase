@@ -305,6 +305,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
@@ -341,6 +342,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -541,7 +543,7 @@ export default defineComponent({
           labels,
         })
         .then((updatedDatabase) => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(

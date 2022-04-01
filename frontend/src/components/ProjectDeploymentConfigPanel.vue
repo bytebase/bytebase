@@ -144,6 +144,7 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
+import { useNotificationStore } from "@/store";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
@@ -167,6 +168,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const { t } = useI18n();
     const dialog = useDialog();
 
@@ -305,7 +307,7 @@ export default defineComponent({
         projectId: props.project.id,
         deploymentConfigPatch,
       });
-      store.dispatch("notification/pushNotification", {
+      notificationStore.pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("deployment-config.update-success"),

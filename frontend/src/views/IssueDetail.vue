@@ -54,7 +54,7 @@ import {
   TemplateType,
 } from "../plugins";
 import { NSpin } from "naive-ui";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useNotificationStore } from "@/store";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -87,6 +87,7 @@ export default defineComponent({
 
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const route = useRoute();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -100,7 +101,7 @@ export default defineComponent({
         if (template) {
           newIssueTemplate.value = template;
         } else {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "WARN",
             title: `Unknown template '${issueType}'.`,

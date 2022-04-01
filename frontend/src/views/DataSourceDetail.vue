@@ -153,7 +153,7 @@
 </template>
 
 <script lang="ts">
-import { computed, nextTick, reactive, ref } from "vue";
+import { computed, defineComponent, nextTick, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
@@ -163,6 +163,7 @@ import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, DataSourcePatch, Principal } from "../types";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -170,7 +171,7 @@ interface LocalState {
   editingDataSource?: DataSource;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceDetail",
   components: { DataSourceConnectionPanel, DataSourceMemberTable },
   props: {
@@ -187,6 +188,7 @@ export default {
     const editNameTextField = ref();
 
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
 
     const { t } = useI18n();
@@ -259,7 +261,7 @@ export default {
           dataSourceId,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("datasource.successfully-deleted-data-source-name", [
@@ -283,5 +285,5 @@ export default {
       doDelete,
     };
   },
-};
+});
 </script>

@@ -45,7 +45,9 @@
                   stroke-linejoin="round"
                 />
               </svg>
-              <div class="text-sm text-gray-600 inline-flex pointer-events-none">
+              <div
+                class="text-sm text-gray-600 inline-flex pointer-events-none"
+              >
                 <span
                   class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                 >
@@ -59,7 +61,7 @@
                 {{
                   $t("settings.general.workspace.logo-upload-tip", {
                     extension: supportImageExtensions.join(", "),
-                    size: maxFileSizeInMiB
+                    size: maxFileSizeInMiB,
                   })
                 }}
               </p>
@@ -73,7 +75,10 @@
             :disabled="!allowSave"
             @click.prevent="uploadLogo"
           >
-            <FeatureBadge feature="bb.feature.branding" class="text-white pointer-events-none" />
+            <FeatureBadge
+              feature="bb.feature.branding"
+              class="text-white pointer-events-none"
+            />
             {{ $t("common.update") }}
           </button>
         </div>
@@ -93,6 +98,7 @@ import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { Setting, brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -103,23 +109,19 @@ interface LocalState {
 }
 
 const maxFileSizeInMiB = 2;
-const supportImageExtensions = [
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".svg",
-];
+const supportImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
 
 // convertFileToBase64 will convert a file into base64 string.
-const convertFileToBase64 = (file: File) => new Promise((resolve, reject) => {
+const convertFileToBase64 = (file: File) =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-});
+    reader.onerror = (error) => reject(error);
+  });
 
 const store = useStore();
+const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -130,11 +132,12 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-store.dispatch("setting/fetchSetting")
-  .then(() => {
-    const brandingLogoSetting: Setting = store.getters["setting/settingByName"](brandingLogoSettingName);
-    state.logoUrl = brandingLogoSetting.value;
-  });
+store.dispatch("setting/fetchSetting").then(() => {
+  const brandingLogoSetting: Setting = store.getters["setting/settingByName"](
+    brandingLogoSettingName
+  );
+  state.logoUrl = brandingLogoSetting.value;
+});
 
 const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -143,11 +146,13 @@ const allowEdit = computed((): boolean => {
 });
 
 const valid = computed((): boolean => {
-  return !!state.displayName || !!state.logoFile
+  return !!state.displayName || !!state.logoFile;
 });
 
 const allowSave = computed((): boolean => {
-  return allowEdit.value && state.logoFile !== null && valid.value && !state.loading;
+  return (
+    allowEdit.value && state.logoFile !== null && valid.value && !state.loading
+  );
 });
 
 const hasBrandingFeature = computed((): boolean => {
@@ -170,20 +175,22 @@ const uploadLogo = async () => {
 
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
-    const setting: Setting = await store.dispatch("setting/updateSettingByName", {
-      name: brandingLogoSettingName,
-      value: fileInBase64,
-    });
+    const setting: Setting = await store.dispatch(
+      "setting/updateSettingByName",
+      {
+        name: brandingLogoSettingName,
+        value: fileInBase64,
+      }
+    );
 
     state.logoFile = null;
     state.logoUrl = setting.value;
 
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("settings.general.workspace.logo-upload-succeed"),
     });
-
   } finally {
     state.loading = false;
   }

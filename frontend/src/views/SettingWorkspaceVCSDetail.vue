@@ -137,7 +137,14 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
+import {
+  reactive,
+  computed,
+  watchEffect,
+  onMounted,
+  onUnmounted,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
@@ -152,6 +159,7 @@ import {
   redirectUrl,
   OAuthToken,
 } from "../types";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -160,7 +168,7 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceVCSDetail",
   components: { RepositoryTable },
   props: {
@@ -171,6 +179,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
@@ -272,7 +281,7 @@ export default {
                   vcsPatch,
                 })
                 .then((vcs: VCS) => {
-                  store.dispatch("notification/pushNotification", {
+                  notificationStore.pushNotification({
                     module: "bytebase",
                     style: "SUCCESS",
                     title: `Successfully updated '${vcs.name}'`,
@@ -287,7 +296,7 @@ export default {
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
               }
-              store.dispatch("notification/pushNotification", {
+              notificationStore.pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: `Failed to update '${vcs.value.name}'`,
@@ -306,7 +315,7 @@ export default {
             vcsPatch,
           })
           .then((updatedVCS: VCS) => {
-            store.dispatch("notification/pushNotification", {
+            notificationStore.pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: `Successfully updated '${updatedVCS.name}'`,
@@ -324,7 +333,7 @@ export default {
     const deleteVCS = () => {
       const name = vcs.value.name;
       store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: `Successfully deleted '${name}'`,
@@ -346,5 +355,5 @@ export default {
       deleteVCS,
     };
   },
-};
+});
 </script>

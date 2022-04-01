@@ -31,6 +31,7 @@ import {
   SqlDialect,
 } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
+import { useNotificationStore } from "@/store";
 
 const props = defineProps({
   value: {
@@ -62,6 +63,7 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 const store = useStore();
+const notificationStore = useNotificationStore();
 const { t } = useI18n();
 const { shouldSetContent, shouldFormatContent } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -158,7 +160,7 @@ const init = async () => {
     contextMenuOrder: 1,
     run: () => {
       if (isReadOnly.value) {
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("sql-editor.notify.sheet-is-read-only"),

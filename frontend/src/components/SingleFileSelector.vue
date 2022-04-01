@@ -20,30 +20,31 @@
   </div>
 </template>
 
-
 <script lang="ts" setup>
 import { ref, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   dropAreaActive: boolean;
 }
 
 const props = defineProps({
-    maxFileSizeInMiB: {
-      required: true,
-      type: Number,
-    },
-    supportFileExtensions: {
-      required: true,
-      type: Object as PropType<string[]>,
-    },
+  maxFileSizeInMiB: {
+    required: true,
+    type: Number,
+  },
+  supportFileExtensions: {
+    required: true,
+    type: Object as PropType<string[]>,
+  },
 });
 
 const emit = defineEmits(["on-select"]);
 
 const store = useStore();
+const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -54,7 +55,7 @@ const uploader = ref<HTMLInputElement | null>(null);
 
 const onUploaderClick = () => {
   uploader.value?.click();
-}
+};
 
 const onFileChange = () => {
   const files: File[] = (uploader.value as any).files;
@@ -84,7 +85,7 @@ const selectFile = (files: File[]) => {
 const validFile = (file: File): boolean => {
   const extension = file.name.toLowerCase().split(".").slice(-1)[0];
   if (!props.supportFileExtensions.includes(`.${extension}`)) {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.file-selector.type-limit", {
@@ -95,12 +96,12 @@ const validFile = (file: File): boolean => {
   }
 
   if (file.size > props.maxFileSizeInMiB * 1024 * 1024) {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.file-selector.size-limit", {
         size: props.maxFileSizeInMiB,
-      })
+      }),
     });
     return false;
   }

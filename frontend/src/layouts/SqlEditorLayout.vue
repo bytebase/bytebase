@@ -43,15 +43,16 @@ import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useNotificationStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 const store = useStore();
 const actuatorStore = useActuatorStore();
+const notificationStore = useNotificationStore();
 
 const ping = () => {
   actuatorStore.fetchInfo().then((info: ServerInfo) => {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: info,

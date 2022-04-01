@@ -91,7 +91,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
@@ -100,6 +100,7 @@ import { BBTableColumn } from "../bbkit/types";
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -107,7 +108,7 @@ interface LocalState {
   showCreateModal: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceTable",
   components: { DataSourceCreateForm },
   props: {
@@ -122,6 +123,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -209,7 +211,7 @@ export default {
       store
         .dispatch("dataSource/createDataSource", newDataSource)
         .then((dataSource) => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -247,5 +249,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

@@ -51,7 +51,6 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import {
   useNamespacedGetters,
   useNamespacedState,
@@ -65,13 +64,14 @@ import {
   transformSQL,
   isDDLStatement,
 } from "@/components/MonacoEditor/sqlParser";
+import { useNotificationStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
 const router = useRouter();
-const store = useStore();
+const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const { findProjectIdByDatabaseId } = useNamespacedGetters<SqlEditorGetters>(
@@ -110,7 +110,7 @@ const handleColse = () => {
 
 const gotoAlterSchema = () => {
   if (ctx.databaseId === UNKNOWN_ID) {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("sql-editor.goto-alter-schema-hint"),

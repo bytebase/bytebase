@@ -106,19 +106,20 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   searchText: string;
   showCreateModal: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceMemberTable",
   components: { DataSourceMemberForm, PrincipalAvatar },
   props: {
@@ -133,6 +134,7 @@ export default {
   },
   setup(props) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       searchText: "",
@@ -164,7 +166,7 @@ export default {
           memberId: member.principal.id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          notificationStore.pushNotification({
             module: "bytebase",
             style: "INFO",
             title: t(
@@ -187,5 +189,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

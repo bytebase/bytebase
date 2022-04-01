@@ -26,7 +26,13 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, onUnmounted, onMounted } from "vue";
+import {
+  reactive,
+  computed,
+  onUnmounted,
+  onMounted,
+  defineComponent,
+} from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
@@ -47,6 +53,7 @@ import {
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useNotificationStore } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -58,7 +65,7 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default {
+export default defineComponent({
   name: "VCSSetupWizard",
   components: {
     VCSProviderBasicInfoPanel,
@@ -68,6 +75,7 @@ export default {
   setup() {
     const { t } = useI18n();
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const router = useRouter();
 
     const stepList: BBStepTabItem[] = [
@@ -167,7 +175,7 @@ export default {
             if (token) {
               state.currentStep = newStep;
               allowChangeCallback();
-              store.dispatch("notification/pushNotification", {
+              notificationStore.pushNotification({
                 module: "bytebase",
                 style: "SUCCESS",
                 title: t(
@@ -184,7 +192,7 @@ export default {
                   "version-control.setting.add-git-provider.check-oauth-info-match"
                 );
               }
-              store.dispatch("notification/pushNotification", {
+              notificationStore.pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: "Failed to setup OAuth",
@@ -208,7 +216,7 @@ export default {
         router.push({
           name: "setting.workspace.version-control",
         });
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("version-control.setting.add-git-provider.add-success", {
@@ -235,5 +243,5 @@ export default {
       cancelSetup,
     };
   },
-};
+});
 </script>

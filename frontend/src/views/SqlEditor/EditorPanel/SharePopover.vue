@@ -78,7 +78,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import {
   useNamespacedGetters,
@@ -94,12 +93,13 @@ import {
   SheetActions,
   AccessOption,
 } from "@/types";
+import { useNotificationStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const store = useStore();
+const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -183,7 +183,7 @@ const { copy, copied } = useClipboard({
 
 const handleCopy = async () => {
   await copy();
-  store.dispatch("notification/pushNotification", {
+  notificationStore.pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-editor.notify.copy-share-link"),

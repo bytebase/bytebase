@@ -127,7 +127,7 @@ import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { useLanguage } from "../composables/useLanguage";
-import { useActuatorStore, useDebugStore } from "@/store";
+import { useActuatorStore, useDebugStore, useNotificationStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -137,6 +137,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const notificationStore = useNotificationStore();
     const debugStore = useDebugStore();
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
@@ -250,7 +251,7 @@ export default defineComponent({
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,

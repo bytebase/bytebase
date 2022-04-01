@@ -15,7 +15,7 @@ import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";
-import { store, pinia, useActuatorStore } from "./store";
+import { store, pinia, useActuatorStore, useNotificationStore } from "./store";
 import {
   databaseSlug,
   dataSourceSlug,
@@ -83,7 +83,8 @@ axios.interceptors.response.use(
       }
 
       if (error.response.data.message) {
-        store.dispatch("notification/pushNotification", {
+        const notificationStore = useNotificationStore();
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: error.response.data.message,
@@ -94,7 +95,8 @@ axios.interceptors.response.use(
         });
       }
     } else if (error.code == "ECONNABORTED") {
-      store.dispatch("notification/pushNotification", {
+      const notificationStore = useNotificationStore();
+      notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: "Connecting server timeout. Make sure the server is running.",

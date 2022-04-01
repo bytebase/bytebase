@@ -42,6 +42,7 @@ import {
   watchEffect,
   onUnmounted,
   onMounted,
+  defineComponent,
 } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import {
@@ -54,12 +55,13 @@ import {
   VCS,
 } from "../types";
 import { isOwner } from "../utils";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   selectedVCS?: VCS;
 }
 
-export default {
+export default defineComponent({
   name: "RepositoryVCSProviderPanel",
   props: {
     config: {
@@ -70,6 +72,7 @@ export default {
   emits: ["next"],
   setup(props, { emit }) {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const state = reactive<LocalState>({});
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -116,7 +119,7 @@ export default {
             emit("next");
           });
       } else {
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: payload.error,
@@ -145,5 +148,5 @@ export default {
       selectVCS,
     };
   },
-};
+});
 </script>

@@ -71,25 +71,27 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
 import { PlanType, Subscription } from "../types";
+import { useNotificationStore } from "@/store";
 
 interface LocalState {
   loading: boolean;
   license: string;
 }
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceSubscription",
   components: {
     PricingTable,
   },
   setup() {
     const store = useStore();
+    const notificationStore = useNotificationStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -107,14 +109,14 @@ export default {
 
       try {
         await store.dispatch("subscription/patchSubscription", state.license);
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("subscription.update.success.title"),
           description: t("subscription.update.success.description"),
         });
       } catch {
-        store.dispatch("notification/pushNotification", {
+        notificationStore.pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("subscription.update.failure.title"),
@@ -164,5 +166,5 @@ export default {
       uploadLicense,
     };
   },
-};
+});
 </script>
