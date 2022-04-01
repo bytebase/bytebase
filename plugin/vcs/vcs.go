@@ -166,15 +166,15 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
-	// ref: the name of branch, tag or commit
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
-	// Reads the file content by commit id. Returns an io.ReadCloser on success. If file does not exist, returns NotFound error.
+	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
-	// ref: the specific version to be read, could be a name of branch, tag or commit
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
 	// Creates a webhook. Returns the created webhook ID on succeess.
 	//

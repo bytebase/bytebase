@@ -277,7 +277,7 @@ func (provider *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.O
 		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
-	createdTime, err := time.Parse(time.RFC3339Nano, commit.CreatedAt)
+	createdTime, err := time.Parse(time.RFC3339, commit.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse commit created_at field, err: %w", err)
 	}
