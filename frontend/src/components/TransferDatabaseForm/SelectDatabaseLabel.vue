@@ -83,6 +83,8 @@ import {
   hidePrefix,
 } from "../../utils";
 import { useI18n } from "vue-i18n";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 const props = defineProps<{
   database: Database;
@@ -98,6 +100,7 @@ const state = reactive({
 });
 
 const store = useStore();
+const labelStore = useLabelStore();
 
 const { t } = useI18n();
 
@@ -105,9 +108,7 @@ const targetProject = computed(() => {
   return store.getters["project/projectById"](props.targetProjectId) as Project;
 });
 
-const labelList = computed(() => {
-  return store.getters["label/labelList"]() as Label[];
-});
+const { labelList } = storeToRefs(labelStore);
 
 const availableLabelList = computed(() => {
   return labelList.value.filter((label) => !isReservedLabel(label));
@@ -115,7 +116,7 @@ const availableLabelList = computed(() => {
 
 const prepare = () => {
   store.dispatch("project/fetchProjectById", props.targetProjectId);
-  store.dispatch("label/fetchLabelList");
+  labelStore.fetchLabelList();
 };
 
 watchEffect(prepare);

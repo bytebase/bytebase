@@ -315,6 +315,8 @@ import {
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -385,6 +387,7 @@ export default defineComponent({
   ],
   setup(props, { emit }) {
     const store = useStore();
+    const labelStore = useLabelStore();
     const router = useRouter();
 
     const now = new Date();
@@ -449,14 +452,12 @@ export default defineComponent({
     });
 
     const prepareLabelList = () => {
-      store.dispatch("label/fetchLabelList");
+      labelStore.fetchLabelList();
     };
 
     watchEffect(prepareLabelList);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
+    const { labelList } = storeToRefs(labelStore);
 
     const visibleLabelList = computed((): DatabaseLabel[] => {
       // transform non-reserved labels to db properties

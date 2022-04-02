@@ -104,6 +104,8 @@ import { groupBy } from "lodash-es";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { parseDatabaseNameByTemplate } from "../../utils";
 import { getPipelineFromDeploymentSchedule } from "../../utils";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 export type State = {
   selectedDatabaseName: string | undefined;
@@ -122,9 +124,10 @@ defineEmits<{
 }>();
 
 const store = useStore();
+const labelStore = useLabelStore();
 
 const fetchData = () => {
-  store.dispatch("label/fetchLabelList");
+  labelStore.fetchLabelList();
   if (props.project) {
     store.dispatch(
       "deployment/fetchDeploymentConfigByProjectId",
@@ -136,7 +139,7 @@ const fetchData = () => {
 watchEffect(fetchData);
 
 const label = ref<LabelKeyType>("bb.environment");
-const labelList = computed(() => store.getters["label/labelList"]() as Label[]);
+const { labelList } = storeToRefs(labelStore);
 
 const deployment = computed(() => {
   if (props.project) {

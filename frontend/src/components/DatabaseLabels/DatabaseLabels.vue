@@ -36,10 +36,11 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { computed, defineComponent, PropType, watchEffect } from "vue";
-import { useStore } from "vuex";
-import { DatabaseLabel, Label } from "../../types";
+import { DatabaseLabel } from "../../types";
 import { NPopover } from "naive-ui";
 import { isReservedLabel, isReservedDatabaseLabel } from "../../utils";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 const MAX_DATABASE_LABEL_COUNT = 4;
 
@@ -57,7 +58,7 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
+    const labelStore = useLabelStore();
 
     const allowAdd = computed(
       () => props.labelList.length < MAX_DATABASE_LABEL_COUNT
@@ -66,13 +67,11 @@ export default defineComponent({
     const prepareLabelList = () => {
       // need not to fetchLabelList if not editable
       if (!props.editable) return;
-      store.dispatch("label/fetchLabelList");
+      labelStore.fetchLabelList();
     };
     watchEffect(prepareLabelList);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
+    const { labelList } = storeToRefs(labelStore);
 
     const availableLabelList = computed(() =>
       labelList.value.filter((label) => !isReservedLabel(label))
