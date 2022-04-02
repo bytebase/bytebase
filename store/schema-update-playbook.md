@@ -6,7 +6,7 @@ All schemas are located at [store/migration](https://github.com/bytebase/bytebas
 We use different schema versions for [dev](https://github.com/bytebase/bytebase/blob/main/bin/server/cmd/profile_dev.go) and [release](https://github.com/bytebase/bytebase/blob/main/bin/server/cmd/profile_release.go). 
 
 If version numbers are the same,
-1. Create a new directory under [migration directory](https://github.com/bytebase/bytebase/tree/main/store/migration) with the new version, e.g. 1.3.0.
+1. Create a new directory under [migration directory](https://github.com/bytebase/bytebase/tree/main/store/migration) with the new version, e.g. 1.2.0.
 2. Copy over the [latest.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest.sql) schema file and [latest_data.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest_data.sql) data filefrom the previous version. And make a PR for changes above.
 3. Bump up the MINOR version in the [dev schema version](https://github.com/bytebase/bytebase/blob/main/bin/server/cmd/profile_dev.go), e.g. 1.2.0 will be 1.3.0.
 4. Add a new SQL file with DDL statements with a descriptive name, e.g. [sheet_vcs.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/sheet_vcs.sql).
