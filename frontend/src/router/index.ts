@@ -93,9 +93,10 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = hasFeature(
+                const hasDBAWorkflowFeature = hasFeature(
                   "bb.feature.dba-workflow"
-                )
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -113,9 +114,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                       "quickaction.bb.user.manage",
                     ];
-                const dbaList: QuickActionType[] = hasFeature(
-                  "bb.feature.dba-workflow"
-                )
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -131,9 +130,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                     ];
-                const developerList: QuickActionType[] = hasFeature(
-                  "bb.feature.dba-workflow"
-                )
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -563,9 +560,10 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.database"),
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = hasFeature(
+                const hasDBAWorkflowFeature = hasFeature(
                   "bb.feature.dba-workflow"
-                )
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -577,9 +575,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const dbaList: QuickActionType[] = hasFeature(
-                  "bb.feature.dba-workflow"
-                )
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -591,9 +587,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const developerList: QuickActionType[] = hasFeature(
-                  "bb.feature.dba-workflow"
-                )
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
