@@ -337,7 +337,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			if err != nil {
 				return semver.Version{}, err
 			}
-			patchVersions, err := getPatchVersions(minorVersion, *curVer, names)
+			patchVersions, err := getPatchVersions(minorVersion, cutoffSchemaVersion, *curVer, names)
 			if err != nil {
 				return semver.Version{}, err
 			}
@@ -348,6 +348,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 				if err != nil {
 					return semver.Version{}, fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
 				}
+				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				if _, _, err := d.ExecuteMigration(
 					ctx,
 					&dbdriver.MigrationInfo{
@@ -382,7 +383,7 @@ type patchVersion struct {
 }
 
 // getPatchVersions gets the patch versions above the current version in a minor version directory.
-func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version, names []string) ([]patchVersion, error) {
+func getPatchVersions(minorVersion semver.Version, releaseCutSchemaVersion, currentVersion semver.Version, names []string) ([]patchVersion, error) {
 	var patchVersions []patchVersion
 	for _, name := range names {
 		baseName := filepath.Base(name)
@@ -392,6 +393,9 @@ func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version
 		}
 		version := minorVersion
 		version.Patch = uint64(patch)
+		if version.GT(releaseCutSchemaVersion) {
+			continue
+		}
 		if version.LE(currentVersion) {
 			continue
 		}
