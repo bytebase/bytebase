@@ -260,7 +260,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/%s/projects?membership=true&simple=true&min_access_level=40", instanceURL, apiPath)
+	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40", p.APIURL(instanceURL))
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -310,7 +310,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.Oaut
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{userID}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s/%s", instanceURL, apiPath, resourceURI)
+	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -358,7 +358,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 
 // FetchCommitByID fetch the commit data by id.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
-	url := fmt.Sprintf("projects/%s/repository/commits/%s", repositoryID, commitID)
+	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -433,7 +433,7 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 // FetchRepositoryActiveMemberList fetch all active members of a repository
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	// Official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
-	url := fmt.Sprintf("%s/%s/projects/%s/members/all", instanceURL, apiPath, repositoryID)
+	url := fmt.Sprintf("%s/projects/%s/members/all", p.APIURL(instanceURL), repositoryID)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -506,7 +506,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 
 // FetchRepositoryFileList fetch the files from repository tree
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	url := fmt.Sprintf("%s/%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", instanceURL, apiPath, repositoryID, ref, filePath)
+	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", p.APIURL(instanceURL), repositoryID, ref, filePath)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -562,7 +562,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		return fmt.Errorf("failed to marshal file commit: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath))
+	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
 	code, _, err := oauth.Post(
 		ctx,
 		p.client,
@@ -605,7 +605,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 		return fmt.Errorf("failed to marshal file commit: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/projects/%s/repository/files/%s", instanceURL, apiPath, repositoryID, url.QueryEscape(filePath))
+	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
 	code, _, err := oauth.Put(
 		ctx,
 		p.client,
@@ -663,7 +663,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 
 // CreateWebhook creates a webhook in a GitLab project.
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	url := fmt.Sprintf("%s/%s/projects/%s/hooks", instanceURL, apiPath, repositoryID)
+	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(instanceURL), repositoryID)
 	code, body, err := oauth.Post(
 		ctx,
 		p.client,
@@ -708,7 +708,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 // PatchWebhook patches a webhook in a GitLab project.
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
-	url := fmt.Sprintf("%s/%s/projects/%s/hooks/%s", instanceURL, apiPath, repositoryID, webhookID)
+	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, err := oauth.Put(
 		ctx,
 		p.client,
@@ -737,7 +737,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 
 // DeleteWebhook deletes a webhook in a GitLab project.
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	url := fmt.Sprintf("%s/%s/projects/%s/hooks/%s", instanceURL, apiPath, repositoryID, webhookID)
+	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, err := oauth.Delete(
 		ctx,
 		p.client,
@@ -765,7 +765,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 // readFile reads the file data including metadata and content.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*File, error) {
-	url := fmt.Sprintf("projects/%s/repository/files/%s?ref=%s", repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
+	url := fmt.Sprintf("%s/projects/%s/repository/files/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
