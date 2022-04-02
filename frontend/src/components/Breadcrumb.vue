@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef } from "vue";
+import { computed, ComputedRef, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -60,13 +60,14 @@ import {
   BookmarkCreate,
 } from "../types";
 import { idFromSlug } from "../utils";
+import { useUIStateStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
   path?: string;
 }
 
-export default {
+export default defineComponent({
   name: "Breadcrumb",
   components: {},
   setup() {
@@ -181,7 +182,7 @@ export default {
           link: currentRoute.value.path,
         };
         store.dispatch("bookmark/createBookmark", newBookmark).then(() => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "bookmark.create",
             newState: true,
           });
@@ -197,5 +198,5 @@ export default {
       toggleBookmark,
     };
   },
-};
+});
 </script>
