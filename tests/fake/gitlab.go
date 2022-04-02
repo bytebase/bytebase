@@ -175,7 +175,7 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	fileName := filepath.Base(filePath)
 	content := pd.files[filePath]
 
-	buf, err := json.Marshal(&gitlab.FileMeta{
+	buf, err := json.Marshal(&gitlab.File{
 		FileName: fileName,
 		FilePath: filePath,
 		Content:  content,

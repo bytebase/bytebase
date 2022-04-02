@@ -76,14 +76,7 @@
 </template>
 
 <script lang="ts">
-import {
-  onMounted,
-  onUnmounted,
-  computed,
-  reactive,
-  watch,
-  defineComponent,
-} from "vue";
+import { onMounted, computed, reactive, watch, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
@@ -98,7 +91,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
-import { useUIStateStore } from "@/store";
+import { useRegisterCommand, useUIStateStore } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -168,21 +161,6 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-        run: () => {
-          createEnvironment();
-        },
-      });
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-        run: () => {
-          startReorder();
-        },
-      });
-
       selectEnvironmentOnHash();
 
       if (!uiStateStore.getIntroStateByKey("guide.environment")) {
@@ -196,15 +174,19 @@ export default defineComponent({
       }
     });
 
-    onUnmounted(() => {
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-      });
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-      });
+    useRegisterCommand({
+      id: "bb.environment.create",
+      registerId: "environment.dashboard",
+      run: () => {
+        createEnvironment();
+      },
+    });
+    useRegisterCommand({
+      id: "bb.environment.reorder",
+      registerId: "environment.dashboard",
+      run: () => {
+        startReorder();
+      },
     });
 
     watch(

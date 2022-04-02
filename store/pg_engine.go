@@ -15,6 +15,9 @@ import (
 	"github.com/blang/semver/v4"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 
+	// Register postgres driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
+
 	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
