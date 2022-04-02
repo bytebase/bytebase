@@ -127,7 +127,7 @@ import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { useLanguage } from "../composables/useLanguage";
-import { useActuatorStore, useDebugStore } from "@/store";
+import { useActuatorStore, useDebugStore, useUIStateStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -138,6 +138,7 @@ export default defineComponent({
     const store = useStore();
     const actuatorStore = useActuatorStore();
     const debugStore = useDebugStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
     const languageMenu = ref();
@@ -153,63 +154,27 @@ export default defineComponent({
     };
 
     const resetQuickstart = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "general.overview",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "bookmark.create",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "comment.create",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "project.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "environment.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "instance.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "database.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "member.addOrInvite",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "hidden",
-        newState: false,
-      });
-
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.project",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.environment",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.instance",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.database",
-        newState: false,
-      });
-
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "kbar.open",
-        newState: false,
+      const keys = [
+        "general.overview",
+        "bookmark.create",
+        "comment.create",
+        "project.visit",
+        "environment.visit",
+        "instance.visit",
+        "database.visit",
+        "member.addOrInvite",
+        "hidden",
+        "guide.project",
+        "guide.environment",
+        "guide.instance",
+        "guide.database",
+        "kbar.open",
+      ];
+      keys.forEach((key) => {
+        uiStateStore.saveIntroStateByKey({
+          key,
+          newState: false,
+        });
       });
     };
 

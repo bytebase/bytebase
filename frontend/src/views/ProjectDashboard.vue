@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts">
+import { useUIStateStore } from "@/store";
 import {
   watchEffect,
   computed,
@@ -55,6 +56,7 @@ export default defineComponent({
     const searchField = ref();
 
     const store = useStore();
+    const uiStateStore = useUIStateStore();
 
     const state = reactive<LocalState>({
       projectList: [],
@@ -68,10 +70,10 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.project")) {
+      if (!uiStateStore.getIntroStateByKey("guide.project")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,
           });
@@ -99,7 +101,7 @@ export default defineComponent({
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.project",
         newState: true,
       });
