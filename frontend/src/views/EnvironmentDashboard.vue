@@ -91,7 +91,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
-import { useRegisterCommand, hasFeature } from "@/store";
+import { useRegisterCommand, useUIStateStore, hasFeature } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -131,6 +131,7 @@ export default defineComponent({
   props: {},
   setup() {
     const store = useStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -162,10 +163,10 @@ export default defineComponent({
     onMounted(() => {
       selectEnvironmentOnHash();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
+      if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
           });
@@ -263,7 +264,7 @@ export default defineComponent({
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.environment",
         newState: true,
       });

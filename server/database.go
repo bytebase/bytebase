@@ -782,6 +782,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found with ID %d", dataSourceID))
+		}
 		if dataSource.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
@@ -861,11 +864,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ID:         &dataSourceID,
 			DatabaseID: &databaseID,
 		}
-		dataSourceRaw, err := s.store.GetDataSource(ctx, dataSourceFind)
+		dataSourceOld, err := s.store.GetDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
+		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -882,13 +885,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dataSourcePatch.Password = &password
 		}
 
-		dataSource, err := s.store.PatchDataSource(ctx, dataSourcePatch)
+		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
 		return nil

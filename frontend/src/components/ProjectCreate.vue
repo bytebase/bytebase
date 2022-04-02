@@ -132,7 +132,7 @@ import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature } from "@/store";
+import { useUIStateStore, hasFeature } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -206,7 +206,7 @@ export default defineComponent({
       store
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "project.visit",
             newState: true,
           });

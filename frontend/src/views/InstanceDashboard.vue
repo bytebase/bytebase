@@ -55,7 +55,7 @@ import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore } from "@/store";
+import { useUIStateStore, useSubscriptionStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -74,6 +74,7 @@ export default defineComponent({
 
     const store = useStore();
     const subscriptionStore = useSubscriptionStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -95,10 +96,10 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.instance")) {
+      if (!uiStateStore.getIntroStateByKey("guide.instance")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,
           });
@@ -129,7 +130,7 @@ export default defineComponent({
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.instance",
         newState: true,
       });
