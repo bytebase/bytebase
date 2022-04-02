@@ -130,11 +130,12 @@ import {
   Issue,
   Project,
   DEFAULT_PROJECT_ID,
-  Label,
   LabelKeyType,
 } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import { NSpin } from "naive-ui";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -170,6 +171,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const labelStore = useLabelStore();
 
     const state = reactive<LocalState>({
       activityList: [],
@@ -218,7 +220,7 @@ export default defineComponent({
 
     const prepareLabelList = () => {
       if (!isTenantProject.value) return;
-      store.dispatch("label/fetchLabelList");
+      labelStore.fetchLabelList();
     };
 
     const prepare = () => {
@@ -229,9 +231,7 @@ export default defineComponent({
 
     watchEffect(prepare);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
+    const { labelList } = storeToRefs(labelStore);
 
     const filteredDatabaseList = computed(() => {
       const filter = state.databaseNameFilter.toLocaleLowerCase();
