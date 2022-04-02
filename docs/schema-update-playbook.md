@@ -13,7 +13,7 @@ If schema versions in dev/release profiles are the same (e.g. 1.1.0),
 5. Update latest.sql and latest_data.sql data file w.r.t. DDL changes.
 6. Update the demo data in the test directory.
 
-If schema versions in dev/release profiles are different,
+If schema versions in dev/release profiles are different, which means we are in the middle of a MINOR version cycle and only need to advance the PATCH version.
 1. Continue from step 4 above. Add DDL file and update latest.sql and latest_data.sql, e.g. [0001_sheet_vcs.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/0001_sheet_vcs.sql).
 
 Since we use the same code for both dev and release schemas, we should add if-else branching to read storage differently based on schema version.
