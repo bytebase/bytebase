@@ -162,7 +162,7 @@ type Provider interface {
 	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Reads the file metadata
 	//
-	// oauthCtx: OAuth context to fetch the file data
+	// oauthCtx: OAuth context to fetch the file metadata
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read

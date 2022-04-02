@@ -517,7 +517,7 @@ func (provider *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.Oaut
 	}, nil
 }
 
-// ReadFileContent reads the content of a file with ref which could be a commit id.
+// ReadFileContent reads the file content.
 func (provider *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (string, error) {
 	file, err := readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
