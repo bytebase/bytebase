@@ -22,5 +22,5 @@ Since we use the same code for both dev and release schemas, we should add if-el
 ## Release
 We will take the following steps for the release with schema update, at most once a month. Every feature, a DDL file, should stage at least two weeks just in case any plan changes before moving to the release.
 1. Bump up the MINOR version in the release schema version.
-1. Copy over the demo data in the test directory to release directory.
+1. Copy over the demo data under demo/test directory to demo/release directory.
 1. Move the DDL files and update latest.sql to the next version (unreleased) if they are not ready yet.
