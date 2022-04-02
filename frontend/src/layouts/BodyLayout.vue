@@ -148,7 +148,7 @@ import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "../types";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useUIStateStore } from "@/store";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -165,6 +165,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -221,15 +222,14 @@ export default defineComponent({
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
-    const showIntro = computed(() => {
-      return !store.getters["uistate/introStateByKey"]("general.overview");
-    });
+    const showIntro = computed(
+      () => !uiStateStore.getIntroStateByKey("general.overview")
+    );
 
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
       return (
-        !actuatorStore.isDemo &&
-        !store.getters["uistate/introStateByKey"]("hidden")
+        !actuatorStore.isDemo && !uiStateStore.getIntroStateByKey("hidden")
       );
     });
 
