@@ -75,6 +75,9 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get data source with DataSourceFind[%+v], error[%w]", find, err)
 	}
+	if dataSourceRaw == nil {
+		return nil, nil
+	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose data source with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
@@ -195,7 +198,7 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 	}
 
 	if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("data source not found with DataSourceFind[%+v]", find)}
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
