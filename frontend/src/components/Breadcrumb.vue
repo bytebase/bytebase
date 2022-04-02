@@ -60,6 +60,7 @@ import {
   BookmarkCreate,
 } from "../types";
 import { idFromSlug } from "../utils";
+import { useRouterStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
@@ -71,6 +72,7 @@ export default {
   components: {},
   setup() {
     const store = useStore();
+    const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
 
@@ -92,9 +94,7 @@ export default {
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const breadcrumbList = computed(() => {
-      const routeSlug: RouterSlug = store.getters["router/routeSlug"](
-        currentRoute.value
-      );
+      const routeSlug: RouterSlug = routerStore.routeSlug(currentRoute.value);
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
       const projectWebhookSlug = routeSlug.projectWebhookSlug;
