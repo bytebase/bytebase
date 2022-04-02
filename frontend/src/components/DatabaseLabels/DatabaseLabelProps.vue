@@ -16,13 +16,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useLabelStore } from "@/store";
 import { cloneDeep } from "lodash-es";
 import { computed, withDefaults, watch, watchEffect, reactive } from "vue";
-import { useStore } from "vuex";
 import {
   Database,
   DatabaseLabel,
-  Label,
   LabelKeyType,
   LabelValueType,
 } from "../../types";
@@ -48,10 +47,10 @@ const state = reactive({
   labelList: cloneDeep(props.labelList),
 });
 
-const store = useStore();
+const labelStore = useLabelStore();
 
 const prepareLabelList = () => {
-  store.dispatch("label/fetchLabelList");
+  labelStore.fetchLabelList();
 };
 watchEffect(prepareLabelList);
 
@@ -61,7 +60,7 @@ watch(
 );
 
 const availableLabelList = computed(() => {
-  const allList = store.getters["label/labelList"]() as Label[];
+  const allList = labelStore.labelList;
   return allList.filter((label) => !isReservedLabel(label));
 });
 
