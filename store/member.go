@@ -83,7 +83,10 @@ func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member
 	find := &api.MemberFind{PrincipalID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("Failed to get Member with PrincipalID[%d], error[%w]", id, err)
+	}
+	if memberRaw == nil {
+		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
@@ -97,7 +100,10 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 	find := &api.MemberFind{ID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Member with MemberFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("Failed to get Member with ID[%d], error[%w]", id, err)
+	}
+	if memberRaw == nil {
+		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
@@ -195,7 +201,7 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 	}
 
 	if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member not found with MemberFind[%+v]", find)}
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}

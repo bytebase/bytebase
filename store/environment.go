@@ -93,6 +93,9 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get environment with ID[%d], error[%w]", id, err)
 	}
+	if envRaw == nil {
+		return nil, nil
+	}
 
 	env, err := s.composeEnvironment(ctx, envRaw)
 	if err != nil {
@@ -197,7 +200,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 	}
 
 	if len(envRawList) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment not found with EnvironmentFind[%+v]", find)}
+		return nil, nil
 	} else if len(envRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
