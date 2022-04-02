@@ -7,7 +7,7 @@ We use different schema versions for [dev](https://github.com/bytebase/bytebase/
 
 If schema versions in dev/release profiles are the same (e.g. 1.1.0),
 1. Create a new directory under [migration directory](https://github.com/bytebase/bytebase/tree/main/store/migration) with the new version, e.g. 1.2.0.
-2. Copy over the [latest.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest.sql) schema file and [latest_data.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest_data.sql) data file from the previous version. And make a PR for changes above.
+2. Copy over the schema and data file from the previous version. e.g. [1.1.0/latest.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest.sql) and [1.1.0/latest_data.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/latest_data.sql). And make a PR for the changes above.
 3. Bump up the MINOR version in the [dev schema version](https://github.com/bytebase/bytebase/blob/main/bin/server/cmd/profile_dev.go), e.g. 1.1.0 will be 1.2.0.
 4. Add a new SQL file with DDL statements with a descriptive name, e.g. [0000_github_com.sql](https://github.com/bytebase/bytebase/blob/main/store/migration/1.1.0/0000_github_com.sql).
 5. Update latest.sql and latest_data.sql data file w.r.t. DDL changes.
