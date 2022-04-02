@@ -329,10 +329,12 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			l.Info(message)
 		}
 		if len(minorVersions) == 0 {
+			l.Info(fmt.Sprintf("There is no minor migration in mode %s.", releaseMode))
 			continue
 		}
 
 		for _, minorVersion := range minorVersions {
+			l.Info(fmt.Sprintf("Starting minor version migrating cycle %s.", minorVersion))
 			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%s/*.sql", releaseMode, minorVersion))
 			if err != nil {
 				return semver.Version{}, err
@@ -343,12 +345,11 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			}
 
 			for _, pv := range patchVersions {
-				l.Debug(fmt.Sprintf("Reading migration file %q.", pv.filename))
+				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				buf, err := fs.ReadFile(migrationFS, pv.filename)
 				if err != nil {
 					return semver.Version{}, fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
 				}
-				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				if _, _, err := d.ExecuteMigration(
 					ctx,
 					&dbdriver.MigrationInfo{
@@ -371,9 +372,12 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			}
 		}
 	}
-	if !retVersion.EQ(semver.Version{}) {
-		l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
+	if retVersion.EQ(semver.Version{}) {
+		l.Info(fmt.Sprintf("Database is at version %s; nothing to migrate.", *curVer))
+		return *curVer, nil
 	}
+
+	l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
 	return retVersion, nil
 }
 
@@ -447,7 +451,8 @@ func getMinorMigrationVersions(names []string, releaseCutSchemaVersion, currentV
 			messages = append(messages, fmt.Sprintf("Skip migration %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, releaseCutSchemaVersion))
 			continue
 		}
-		// If the migration version is less than or equal to the current version, we will skip the migration since it's already applied.
+		// If the migration version is less than to the current version, we will skip the migration since it's already applied.
+		// We should still double check the current version in case there's any patch needed.
 		if version.LT(currentVersion) {
 			messages = append(messages, fmt.Sprintf("Skip migration %s; the current schema version %s is higher.", version, currentVersion))
 			continue

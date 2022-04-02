@@ -86,6 +86,7 @@ func TestGetPatchVersions(t *testing.T) {
 		releaseCutSchemaVersion semver.Version
 		currentVersion          semver.Version
 		want                    []patchVersion
+		errPart                 string
 	}{
 		{
 			names:                   []string{"0000__hello.sql", "0001__world.sql"},
@@ -93,6 +94,7 @@ func TestGetPatchVersions(t *testing.T) {
 			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
 			currentVersion:          semver.MustParse("1.2.3"),
 			want:                    nil,
+			errPart:                 "",
 		},
 		{
 			names:                   []string{"0000__hello.sql", "0001__world.sql"},
@@ -100,6 +102,7 @@ func TestGetPatchVersions(t *testing.T) {
 			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
 			currentVersion:          semver.MustParse("1.0.0"),
 			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:                 "",
 		},
 		{
 			names:                   []string{"0000__hello.sql", "0001__world.sql"},
@@ -107,6 +110,15 @@ func TestGetPatchVersions(t *testing.T) {
 			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
 			currentVersion:          semver.MustParse("1.0.0"),
 			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}},
+			errPart:                 "",
+		},
+		{
+			names:                   []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
+			currentVersion:          semver.MustParse("1.1.0"),
+			want:                    []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:                 "",
 		},
 		{
 			names:                   []string{},
@@ -114,11 +126,33 @@ func TestGetPatchVersions(t *testing.T) {
 			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
 			currentVersion:          semver.MustParse("1.0.0"),
 			want:                    nil,
+			errPart:                 "",
+		},
+		{
+			names:                   []string{"0000_hello.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
+			currentVersion:          semver.MustParse("1.0.0"),
+			want:                    nil,
+			errPart:                 "should include '__'",
+		},
+		{
+			names:                   []string{"00a0__hello.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
+			currentVersion:          semver.MustParse("1.0.0"),
+			want:                    nil,
+			errPart:                 "should be four digits integer",
 		},
 	}
 
 	for _, test := range tests {
-		got, _ := getPatchVersions(test.minorVersion, test.releaseCutSchemaVersion, test.currentVersion, test.names)
+		got, err := getPatchVersions(test.minorVersion, test.releaseCutSchemaVersion, test.currentVersion, test.names)
+		if test.errPart == "" {
+			require.NoError(t, err)
+		} else {
+			require.Contains(t, err.Error(), test.errPart)
+		}
 		require.Equal(t, test.want, got)
 	}
 }
