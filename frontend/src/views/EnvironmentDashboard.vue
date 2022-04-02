@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
+import { onMounted, computed, reactive, watch, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
@@ -91,6 +91,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
+import { useRegisterCommand } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -121,7 +122,7 @@ interface LocalState {
     | "bb.feature.backup-policy";
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentDashboard",
   components: {
     EnvironmentDetail,
@@ -159,21 +160,6 @@ export default {
     };
 
     onMounted(() => {
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-        run: () => {
-          createEnvironment();
-        },
-      });
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-        run: () => {
-          startReorder();
-        },
-      });
-
       selectEnvironmentOnHash();
 
       if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
@@ -187,15 +173,19 @@ export default {
       }
     });
 
-    onUnmounted(() => {
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-      });
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-      });
+    useRegisterCommand({
+      id: "bb.environment.create",
+      registerId: "environment.dashboard",
+      run: () => {
+        createEnvironment();
+      },
+    });
+    useRegisterCommand({
+      id: "bb.environment.reorder",
+      registerId: "environment.dashboard",
+      run: () => {
+        startReorder();
+      },
     });
 
     watch(
@@ -356,5 +346,5 @@ export default {
       tabClass,
     };
   },
-};
+});
 </script>
