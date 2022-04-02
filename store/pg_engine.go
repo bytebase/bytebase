@@ -431,7 +431,7 @@ func getPatchVersion(name string) (int64, error) {
 
 // getMinorMigrationVersions gets all the versions between currentVersion (included) and releaseCutVersion(included).
 func getMinorMigrationVersions(names []string, releaseCutSchemaVersion, currentVersion semver.Version) ([]semver.Version, []string, error) {
-	versions, err := getMiorVersions(names)
+	versions, err := getMinorVersions(names)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -457,8 +457,8 @@ func getMinorMigrationVersions(names []string, releaseCutSchemaVersion, currentV
 	return migrateVersions, messages, nil
 }
 
-// getMiorVersions returns the minor release versions based on file names in the release or dev directory.
-func getMiorVersions(names []string) ([]semver.Version, error) {
+// getMinorVersions returns the minor release versions based on file names in the release or dev directory.
+func getMinorVersions(names []string) ([]semver.Version, error) {
 	var versions []semver.Version
 	for _, name := range names {
 		baseName := filepath.Base(name)

@@ -58,7 +58,7 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 	}
 }
 
-func TestGetMiorVersions(t *testing.T) {
+func TestGetMinorVersions(t *testing.T) {
 	tests := []struct {
 		names []string
 		want  []semver.Version
@@ -74,40 +74,51 @@ func TestGetMiorVersions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, _ := getMiorVersions(test.names)
+		got, _ := getMinorVersions(test.names)
 		require.Equal(t, test.want, got)
 	}
 }
 
 func TestGetPatchVersions(t *testing.T) {
 	tests := []struct {
-		names          []string
-		minorVersion   semver.Version
-		currentVersion semver.Version
-		want           []patchVersion
+		names                   []string
+		minorVersion            semver.Version
+		releaseCutSchemaVersion semver.Version
+		currentVersion          semver.Version
+		want                    []patchVersion
 	}{
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:   semver.MustParse("1.1.0"),
-			currentVersion: semver.MustParse("1.2.3"),
-			want:           nil,
+			names:                   []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
+			currentVersion:          semver.MustParse("1.2.3"),
+			want:                    nil,
 		},
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:   semver.MustParse("1.1.0"),
-			currentVersion: semver.MustParse("1.0.0"),
-			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			names:                   []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
+			currentVersion:          semver.MustParse("1.0.0"),
+			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
 		},
 		{
-			names:          []string{},
-			minorVersion:   semver.MustParse("1.1.0"),
-			currentVersion: semver.MustParse("1.0.0"),
-			want:           nil,
+			names:                   []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
+			currentVersion:          semver.MustParse("1.0.0"),
+			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}},
+		},
+		{
+			names:                   []string{},
+			minorVersion:            semver.MustParse("1.1.0"),
+			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
+			currentVersion:          semver.MustParse("1.0.0"),
+			want:                    nil,
 		},
 	}
 
 	for _, test := range tests {
-		got, _ := getPatchVersions(test.minorVersion, test.currentVersion, test.names)
+		got, _ := getPatchVersions(test.minorVersion, test.releaseCutSchemaVersion, test.currentVersion, test.names)
 		require.Equal(t, test.want, got)
 	}
 }
@@ -148,7 +159,7 @@ func TestMigrationCompatibility(t *testing.T) {
 
 	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease))
 	require.NoError(t, err)
-	versions, err := getMiorVersions(names)
+	versions, err := getMinorVersions(names)
 	require.NoError(t, err)
 
 	// For every version, we create a database with the schema of that version and apply migrations till the latest version in the migration directory.
