@@ -71,7 +71,6 @@ import {
   useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { isEmpty } from "lodash-es";
 
 import type {
   SqlEditorState,
@@ -128,19 +127,20 @@ const handleClosePane = () => {
 };
 
 watch(
-  () => connectionContext.value.tableName,
-  async (newVal, oldVal) => {
-    if (!isEmpty(newVal)) {
+  () => connectionContext.value.option,
+  async (option) => {
+    if (option && option.type === "table") {
       const res = await fetchTableByDatabaseIdAndTableName({
-        databaseId: ctx.databaseId,
-        tableName: ctx.tableName,
+        databaseId: option.parentId,
+        tableName: option.label,
       });
 
       tableInfo.value = res;
     } else {
-      tableInfo.value = "";
+      tableInfo.value = null;
     }
-  }
+  },
+  { deep: true }
 );
 </script>
 

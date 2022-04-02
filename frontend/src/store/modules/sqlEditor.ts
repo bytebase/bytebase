@@ -27,9 +27,11 @@ export const getDefaultConnectionContext = () => ({
   instanceName: "",
   databaseId: UNKNOWN_ID,
   databaseName: "",
+  databaseType: "",
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
+  option: {},
 });
 
 const state: () => SqlEditorState = () => ({
@@ -118,11 +120,18 @@ const getters = {
     const connectionContext = state.connectionContext;
     return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
   },
-  // in case of the connection is not set, miss the instance id, we can not create the sheet
+  /**
+   * check the connection whether actived
+   * 1、If the context is not set the instanceId, return true
+   * 2、If the context is set the instanceId, but not set the database and database type is not MYSQL, return true
+   * @param state
+   * @returns boolean
+   */
   isDisconnected(state: SqlEditorState) {
+    const ctx = state.connectionContext;
     return (
-      state.connectionContext.instanceId === UNKNOWN_ID ||
-      state.connectionContext.databaseId === UNKNOWN_ID
+      ctx.instanceId === UNKNOWN_ID ||
+      (ctx.databaseId === UNKNOWN_ID && ctx.databaseType !== "MYSQL")
     );
   },
 };
@@ -226,6 +235,7 @@ const actions = {
       instanceName: instance.name,
       databaseId,
       databaseName: database.name,
+      databaseType: instance.engine,
     });
   },
   async fetchQueryHistoryList({ commit, dispatch }: any) {
