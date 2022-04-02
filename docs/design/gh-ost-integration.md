@@ -2,13 +2,13 @@
 
 ## Overview
 
-Currently, bytebase runs DDL statements directly on databases. With this feature, user can choose to use gh-ost to do the migration for MySQL versions 5.6 or greater.
+Currently, bytebase runs DDL statements directly on databases. With this feature, users can choose to use gh-ost to migrate MySQL versions 5.6 or greater.
 
 ### gh-ost: a brief introduction (quoted from gh-ost docs)
 
 > gh-ost is a triggerless online schema migration solution for MySQL. It is testable and provides pausability, dynamic control/reconfiguration, auditing, and many operational perks.
 
-gh-ost has 3 operation modes. It's recommended to connect to replica, migrate on primary (master). See picture below.
+gh-ost has three operation modes. It's recommended to connect to replica and migrate on primary (master). See the picture below.
 
 ![gh-ost-operation-modes](./gh-ost-operation-modes.png)
 
@@ -43,9 +43,9 @@ gh-ost \
 [--execute]
 ```
 
-gh-ost uses the same user and password all the way up climbing the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
+gh-ost uses the same user and password up climbing the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
 
-If gh-ost crashes halfway, we just drop the two tables created by gh-ost.
+If gh-ost crashes halfway, we drop the two tables created by gh-ost.
 
 - `_yourtablename_gho`
 - `_yourtablename_ghc`
@@ -160,32 +160,34 @@ Copy: 2/2 100.0%; Applied: 0; Backlog: 0/1000; Time: 2s(total), 1s(copy); stream
 
 In the output, you can see the main components of gh-ost.
 
-**Migrator** is the main schema migration flow manager.
+**Migrator** is the schema migration manager.
 
-**Inspector** reads data from the read-MySQL-server (typically a replica, but can be the master). It is used for gaining initial status and structure, and later also followup on progress and changelog.
+**Inspector** reads data from the read-MySQL-server (typically a replica but can be the master). It gets initial status and structure and later follows up on progress and changelog.
 
 **Streamer** reads data from binary logs and streams it on.
 
-**Applier** connects and writes the applier-server, which is the server where migration happens. Applier is the one to actually write row data and apply binlog events onto ghost table.
+**Applier** connects and writes the applier-server where migration happens. Applier is the one to write row data and apply binlog events onto the ghost table.
 
-**Throttler** collects metrics related to throttling and makes informed decision whether throttling should take place. Here throttling means to pause.
+**Throttler** collects metrics related to throttling and makes the informed decision whether throttling should take place. Here throttling means to pause.
 
 #### Requirements and limitations
 
-- `gh-ost` currently requires MySQL versions 5.6 and greater.
-- You will need to have one server serving Row Based Replication (RBR) format binary logs. Right now `FULL` row image is supported. `MINIMAL` to be supported in the near future. `gh-ost` prefers to work with replicas. You may still have your primary configured with Statement Based Replication (SBR).
+- `gh-ost` currently requires MySQL versions 5.6 or greater.
+- You will need to have one server serving Row Based Replication (RBR) format binary logs. Right now `FULL` row image is supported. `MINIMAL` to be supported soon. `gh-ost` prefers to work with replicas. You may still have your primary configured with Statement Based Replication (SBR).
 - If you are using a replica, the table must have an identical schema between the primary and replica.
+- Foreign key constraints are not supported.
+- Triggers are not supported.
 - `gh-ost` requires an account with these privileges:
-  - `ALTER, CREATE, DELETE, DROP, INDEX, INSERT, LOCK TABLES, SELECT, TRIGGER, UPDATE` on the database (schema) where your migrated table is, or of course on `*.*`
+  - `ALTER, CREATE, DELETE, DROP, INDEX, INSERT, LOCK TABLES, SELECT, TRIGGER, UPDATE` on the database (schema) where your migrated table is, or of course, on `*.*`
   - either:
     - `SUPER, REPLICATION SLAVE` on *.*, or:
     - `REPLICATION CLIENT, REPLICATION SLAVE` on *.*
-The `SUPER` privilege is required for `STOP SLAVE, START SLAVE` operations. These are used on:
-- Switching your `binlog_format` to `ROW`, in the case where it is not ROW and you explicitly specified `--switch-to-rbr`
-  - If your replication is already in RBR (binlog_format=ROW) you can specify --assume-rbr to avoid the STOP SLAVE/START SLAVE operations, hence no need for SUPER.
+
+The `SUPER` privilege is required for `STOP SLAVE, START SLAVE` operations. These are used to:
+- Switch your `binlog_format` to `ROW` if it is not ROW, and you explicitly specified `--switch-to-rbr`.
+  - If your replication is already in RBR (binlog_format=ROW), you can specify --assume-rbr to avoid the STOP SLAVE/START SLAVE operations, and no need for SUPER.
 - Running --test-on-replica: before the cut-over phase, gh-ost stops replication so that you can compare the two tables and satisfy that the migration is sound.
-- Foreign key constraints are not supported.
-- Triggers are not supported.
+
 Different cloud providers require different flags.
 - Google Cloud SQL works, `--gcp` flag required.
 - Aliyun RDS works, `--aliyun-rds` flag required.
@@ -196,7 +198,7 @@ Different cloud providers require different flags.
 We will enhance this feature gradually following the plan listed below in Milestone.
 For the first iteration, we will implement
 
-- Use gh-ost to execute migration
+- Use gh-ost to execute the migration
   - Support "connect to primary, migrate on primary" only
 
 ### Milestone
@@ -206,9 +208,9 @@ For the first iteration, we will implement
     - Support non-tenant mode.
     - Support on-premises MySQL databases.
     - Divide gh-ost execution into stages. Proceed upon user's approval.
-    - Support gh-ost status feedback(ETA, configurations etc.)
+    - Support gh-ost status feedback(ETA, configurations, etc.)
 1.
-    - Improve migration logic to support rerun task.
+    - Improve migration logic to support rerun tasks.
     - Support workspace-level settings for gh-ost
     - Support to reconfigure gh-ost on the go.
 1. Support cloud MySQL databases.
@@ -217,15 +219,15 @@ For the first iteration, we will implement
 
 ## User workflow
 
-User can set a workspace-level gh-ost configuration, which will be the default.
+Users can set a workspace-level gh-ost configuration, which will be the default.
 
-In UI workflow, user can select to use gh-ost, supply statements.
+The user can select to use gh-ost and supply statements in the UI workflow.
 
-In VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use suffix to tell if it is gh-ost. The content is vanilla SQL statement.
+In VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use the suffix to tell if it is a gh-ost migration. The content is a vanilla SQL statement.
 
-User can change gh-ost configuration in the related issue tab.
+Users can change the gh-ost configuration in the related issue tab.
 
-## High level design
+## High-level design
 
 We will only support "connect to primary and migrate on primary" for now.
 
@@ -233,13 +235,13 @@ In the future, bytebase will support detecting primary and replicas. We may supp
 
 ### Privileges
 
-We will use the account `bytebase@%` in gh-ost, so `bytebase@%` will require 2 more privileges, `REPLICATION CLIENT, REPLICATION SLAVE`. We will ask user to grant these privileges in documentation.
+We will use the account `bytebase@%` in gh-ost, so `bytebase@%` will require two more privileges, `REPLICATION CLIENT, REPLICATION SLAVE`. We will ask the user to grant these privileges in the documentation.
 
 ### Reconfigure gh-ost on the go
 
 We will support [reconfigure](https://github.com/github/gh-ost/blob/master/doc/interactive-commands.md) gh-ost settings on the go.
 
-We will support the following parameters
+We will support the following parameters.
 
 - `chunk-size`
 - `dml-batch-size`
@@ -247,7 +249,7 @@ We will support the following parameters
 
 ### Vendor
 
-gh-ost needs to know who the cloud provider is to run properly. We will add a new field in `Instance` to store cloud provider type. User should set this field.
+gh-ost needs to know who the cloud provider is to run correctly. We will add a new field in `Instance` to store cloud provider type. The user should set this field.
 
 ```Go
 type Vendor string
@@ -267,35 +269,35 @@ type Instance struct {
 
 #### Or we speculate
 
-Another approach is to infer cloud providers by inspecting usernames because cloud providers typically will have some default accounts to manage databases. References below.
+Another approach is to infer cloud providers by inspecting usernames because cloud providers typically will have some default accounts to manage databases. References are below.
 
 - [GCP](https://cloud.google.com/sql/docs/mysql/users)
 - [aliyunrds](https://help.aliyun.com/document_detail/161152.html)
 - [azure](https://docs.microsoft.com/en-us/azure/mysql/howto-create-users)
 - [aws](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.MySQL.CommonDBATasks.html) (Stored procedures)
 
-We will take the first approach, this section is left here for information.
+We will take the first approach, and this section is left here for information.
 
 ### gh-ost execution stages
 
-We will divide gh-ost execution into different tasks. Each task needs to be approved by user to proceed. These tasks are described in detail in the following sections.
+We will divide gh-ost execution into different tasks. Each task needs to be approved by the user to proceed. These tasks are described in detail in the following sections.
 
-1. Pre-migration check. We run gh-ost with noop flag to check user's input.
+1. Pre-migration check. We run gh-ost with a no-op flag to check the user's input.
 2. In-migration,
-    1. After approval, gh-ost performs the migration, syncs the ghost table with the original table.
-    2. After the ghost table is synced with the original table, there is a cut-over phase. We will only allow gh-ost to do the cut-over if user approved.
-3. After migration, the final task is to delete the original table if user approved.
+    1. After approval, gh-ost performs the migration and syncs the ghost table with the original table.
+    2. There is a cut-over phase when the ghost table is in sync with the original table. We will only allow gh-ost to do the cut-over if user-approved.
+3. After migration, the final task is to delete the original table if the user approves.
 
 ### Pre-migration validation
 
-gh-ost has many requirements and limitations, we want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with noop flag. We will return the error, if any, to user and let user handle it. The error includes but not limited to the followings
+gh-ost has many requirements and limitations. We want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with a no-op flag. If any, we will return the error to the user and let the user handle it. The error includes but is not limited to the following.
 
 - SQL statement not legal
 - `_tablename_ghc` present
 - `_tablename_gho` present
 - binlog format is not row based.
 
-This will be a new task check run type.
+The following will be a new task check run type.
 
 ```Go
 const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema.update.ghost"
@@ -309,17 +311,17 @@ type TaskCheckDatabaseSchemaUpdateGhostPayload struct {
 
 ### In-migration progress
 
-gh-ost can report its migration progress. It's important to show user the progress, because typically it will take hours or even days to complete when migrating on large tables. We periodically update the progress in `TaskRunResultPayload.Detail`.
+gh-ost can report its migration progress. It's essential to show the user the progress because, typically, it will take hours or even days to complete when migrating on large tables. We periodically update the progress in `TaskRunResultPayload.Detail`.
 
 ### Approve, run, approve, cut-over
 
-We will have two tasks for the actual migration. The first task runs gh-ost, syncs the ghost table with the original table. Once synced, the first task will be `DONE` and the second task will be `PENDING_APPROVAL`. The second task does the cut-over, which locks the tables and atomically switch table names. The second task is blocked by the first task.
+We will have two tasks for the actual migration. The first task runs gh-ost and syncs the ghost table with the original table. Once synced, the first task will be `DONE`, and the second task will be `PENDING_APPROVAL`. The second task is the cut-over, which locks the tables and atomically switches table names. The first task blocks the second task.
 
-These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Fortunately, we can leverage the unix socket file that gh-ost migrator listens on. When the ghost table catches up with the original table , the "run" task will switch to `DONE`, and the "cut over" task will be `PENDING_APPROVAL`. The "cut over" task sends `"cut-over"` to the socket file to execute cut over.
+These two tasks need to access the same `Migrator`. Unfortunately, the way we schedule tasks now is not capable of it. Fortunately, we can leverage the Unix socket file that the gh-ost migrator listens on. When the ghost table catches up with the original table, the "run" task will switch to `DONE`, and the "cut-over" task will be `PENDING_APPROVAL`. The "cut-over" task sends `"cut-over"` to the socket file to execute cut-over.
 
 The socket file is in `/tmp` directory, so the operating system will clean it up and we won't bother removing it. The socket file name will be `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`.
 
-We will have task checks for both tasks. For the "run" task, we have `TaskCheckDatabaseSchemaUpdateGhost` mentioned above. For the "cut-over" task, we will have a task check to check whether it is good to cut-over now (in sync, network lags good etc.)
+We will have task checks for both tasks. For the "run" task, we have `TaskCheckDatabaseSchemaUpdateGhost` mentioned above. For the "cut-over" task, we will have a task check to check whether it is good to cut-over now (in sync, network lags good, etc.)
 
 ```Go
 const TaskCheckDatabaseSchemaUpdateGhostCutover = "bb.task-check.database.schema.update.ghost.cutover"
@@ -329,9 +331,9 @@ type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload struct {
 
 ### Crash recovery
 
-If it crashes halfway when migrating on `tablename`, we will end up with the original `tablename`, and `_tablename_gho`, `_tablename_ghc`. Our task check for gh-ost pre-migration validation will fail if `_tablename_gho` or `_tablename_ghc` is present. But if the user insists to run, we just drop `_tablename_gho` and `_tablename_ghc` for the user, rerun gh-ost.
+If it crashes halfway when migrating on `tablename`, we will end up with the original `tablename`, and `_tablename_gho`, `_tablename_ghc`. Our task check for gh-ost pre-migration validation will fail if `_tablename_gho` or `_tablename_ghc` is present. But if the user insists on running, we would drop `_tablename_gho` and `_tablename_ghc` for the user, rerun gh-ost.
 
-However, we need to refactor pre-migration validation and migration status, because the current logic doesn't allow migration to have the same version, rerun will lead to failure. We can refactor to reuse version to keep it idempotent.
+However, we need to refactor pre-migration validation and migration status because the current logic doesn't allow migration to have the same version, and a rerun will lead to failure. We can refactor to reuse the same version to keep it idempotent.
 
 Another approach is to abandon the previous version and start a new issue with a new version. The benefit is that we don't have to support rerun, so it's less complex.
 
@@ -339,11 +341,11 @@ For the first iteration, we just let it fail.
 
 ### After Migration
 
-After migration is finished, we will have `tablename` and `_tablename_del`, the latter is the original table. We are too scared to delete the original table for the user, so we'll generate a task to delete the table if approved by user.
+After the migration is finished, we will have `tablename` and `_tablename_del`. The latter is the original table. We are too scared to delete the original table for the user, so we'll generate a task to delete the table if approved by the user.
 
 ### Task dependency
 
-Tasks under the same stage run one by one by now. With gh-ost integration, we introduce task dependency. As mentioned above, the "cut-over" task depends on the "run" task. A task can only be running if all of its dependencies are done. Tasks that are not blocked by dependencies can run in parallel.
+Tasks in the same stage run one by one for now. With gh-ost integration, we introduce task dependency. As mentioned above, the "cut-over" task depends on the "run" task. A task can only be running if all of its dependencies are finished. Tasks with no common dependencies can run in parallel.
 
 To store the dependency relationship, we can add a field in Task.
 
@@ -355,11 +357,11 @@ type Task struct {
 }
 ```
 
-However, we can only know the `TaskID` of a `Task` after insertion, so we have to update `Task` after all tasks in the same stage are inserted into the database.
+However, we can only know the `TaskID` of a `Task` after insertion, so we must update `Task` after all tasks in the same stage are inserted into the database.
 
 ### MigrationContext
 
-We will introduce a new issue type for gh-ost. This is how we tell the difference between gh-ost and direct DDL.
+We will introduce a new issue type for gh-ost. It is how we tell the difference between gh-ost and direct DDL.
 
 And a new task payload type and task executor for each execution task.
 
@@ -431,9 +433,9 @@ func ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string
 
 #### Use gh-ost to execute migration
 
-Since `Execute(statement)` merely just executes the DDL statement, it should be interchangeable with gh-ost executing the migration.
+Since `Execute(statement)` merely executes the DDL statement, it should be interchangeable with gh-ost performing the migration.
 
-We will refactor `ExecuteMigration` and export `beginMigration` and `endMigration`, so with gh-ost tasks it will be the following.
+We will refactor `ExecuteMigration` and export `beginMigration` and `endMigration`, so with gh-ost tasks, it will be the following.
 
 ```Go
 // task_executor_schema_update_ghost.go
