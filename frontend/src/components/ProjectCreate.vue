@@ -132,6 +132,7 @@ import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
+import { hasFeature } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -196,7 +197,7 @@ export default defineComponent({
       }
       if (
         state.project.tenantMode == "TENANT" &&
-        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+        !hasFeature("bb.feature.multi-tenancy")
       ) {
         state.showFeatureModal = true;
         return;

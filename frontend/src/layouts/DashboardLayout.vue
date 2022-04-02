@@ -48,8 +48,8 @@ import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import BannerTrial from "../views/BannerTrial.vue";
 import { ServerInfo } from "../types";
-import { computed, defineComponent } from "vue";
-import { useActuatorStore } from "@/store";
+import { defineComponent } from "vue";
+import { useActuatorStore, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -63,6 +63,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const subscriptionStore = useSubscriptionStore();
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
@@ -75,9 +76,7 @@ export default defineComponent({
     };
 
     const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-    const isNearTrialExpireTime = computed(() =>
-      store.getters["subscription/isNearTrialExpireTime"]()
-    );
+    const { isNearTrialExpireTime } = storeToRefs(subscriptionStore);
 
     return {
       ping,

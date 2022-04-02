@@ -63,6 +63,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
+import { hasFeature } from "@/store";
 
 type IntroItem = {
   name: string;
@@ -123,9 +124,7 @@ export default defineComponent({
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
-        allowDeveloper: !store.getters["subscription/feature"](
-          "bb.feature.dba-workflow"
-        ),
+        allowDeveloper: !hasFeature("bb.feature.dba-workflow"),
         done: computed(() => {
           return store.getters["uistate/introStateByKey"]("instance.visit");
         }),

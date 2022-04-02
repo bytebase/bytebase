@@ -39,15 +39,23 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  watchEffect,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+} from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
-import { Environment, Subscription, Instance } from "../types";
+import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useSubscriptionStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -55,7 +63,7 @@ interface LocalState {
   showGuide: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceDashboard",
   components: {
     EnvironmentTabFilter,
@@ -65,6 +73,7 @@ export default {
     const searchField = ref();
 
     const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -150,8 +159,7 @@ export default {
     };
 
     const instanceQuota = computed((): number => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
+      const { subscription } = subscriptionStore;
       return subscription?.instanceCount ?? 5;
     });
 
@@ -196,5 +204,5 @@ export default {
       instanceCountAttention,
     };
   },
-};
+});
 </script>

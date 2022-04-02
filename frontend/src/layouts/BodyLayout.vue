@@ -148,7 +148,7 @@ import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "../types";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useSubscriptionStore } from "@/store";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -165,6 +165,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -242,7 +243,7 @@ export default defineComponent({
     });
 
     const currentPlan = computed((): string => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       switch (plan) {
         case PlanType.TEAM:
           return "subscription.plan.team.title";
@@ -254,7 +255,7 @@ export default defineComponent({
     });
 
     const isFreePlan = computed((): boolean => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       return plan === PlanType.FREE;
     });
 

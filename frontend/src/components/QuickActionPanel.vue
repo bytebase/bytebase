@@ -268,8 +268,7 @@ import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
-import { Subscription } from "../types";
-import { useCommandStore } from "@/store";
+import { useCommandStore, useSubscriptionStore } from "@/store";
 
 interface LocalState {
   showModal: boolean;
@@ -300,6 +299,7 @@ export default defineComponent({
     const router = useRouter();
     const store = useStore();
     const commandStore = useCommandStore();
+    const subscriptionStore = useSubscriptionStore();
 
     const state = reactive<LocalState>({
       showModal: false,
@@ -341,8 +341,7 @@ export default defineComponent({
     };
 
     const createInstance = () => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
+      const { subscription } = subscriptionStore;
       const instanceList = store.getters["instance/instanceList"]();
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
         state.showFeatureModal = true;

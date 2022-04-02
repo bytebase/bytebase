@@ -116,6 +116,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isValidEmail } from "../utils";
+import { featureToRef } from "@/store";
 
 type User = {
   email: string;
@@ -140,9 +141,7 @@ export default {
       return isOwner(currentUser.value.role);
     });
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({
       userList: [],

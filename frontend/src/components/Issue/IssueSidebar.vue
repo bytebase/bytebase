@@ -303,7 +303,6 @@ import {
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
-  Label,
 } from "../../types";
 import {
   allTaskList,
@@ -315,7 +314,7 @@ import {
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { useLabelStore } from "@/store";
+import { hasFeature, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
 
@@ -572,9 +571,7 @@ export default defineComponent({
     const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
     const updateEarliestAllowedTs = (newTimestampMiliSec: number) => {
-      if (
-        !store.getters["subscription/feature"]("bb.feature.task-schedule-time")
-      ) {
+      if (!hasFeature("bb.feature.task-schedule-time")) {
         state.showFeatureModal = true;
         return;
       }
