@@ -34,26 +34,14 @@
 </template>
 
 <script lang="ts">
+export default { name: "RepositoryVCSProviderPanel" };
+</script>
+
+<script setup lang="ts">
 import { useStore } from "vuex";
-import {
-  reactive,
-  computed,
-  PropType,
-  watchEffect,
-  onUnmounted,
-  onMounted,
-  defineComponent,
-} from "vue";
+import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import {
-  OAuthConfig,
-  OAuthToken,
-  OAuthWindowEventPayload,
-  openWindowForOAuth,
-  ProjectRepositoryConfig,
-  redirectUrl,
-  VCS,
-} from "../types";
+import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
 import { isOwner } from "../utils";
 import { useNotificationStore } from "@/store";
 
@@ -61,92 +49,60 @@ interface LocalState {
   selectedVCS?: VCS;
 }
 
-export default defineComponent({
-  name: "RepositoryVCSProviderPanel",
-  props: {
-    config: {
-      required: true,
-      type: Object as PropType<ProjectRepositoryConfig>,
-    },
-  },
-  emits: ["next"],
-  setup(props, { emit }) {
-    const store = useStore();
-    const notificationStore = useNotificationStore();
-    const state = reactive<LocalState>({});
+const emit = defineEmits<{
+  (event: "next"): void;
+  (event: "set-vcs", payload: VCS): void;
+  (event: "set-code", payload: string): void;
+}>();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+const store = useStore();
+const notificationStore = useNotificationStore();
+const state = reactive<LocalState>({});
 
-    const prepareVCSList = () => {
-      store.dispatch("vcs/fetchVCSList");
-    };
+const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    watchEffect(prepareVCSList);
+const prepareVCSList = () => {
+  store.dispatch("vcs/fetchVCSList");
+};
 
-    onMounted(() => {
-      window.addEventListener(
-        "bb.oauth.link-vcs-repository",
-        eventListener,
-        false
-      );
-    });
-    onUnmounted(() => {
-      window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
-    });
+watchEffect(prepareVCSList);
 
-    const vcsList = computed(() => {
-      return store.getters["vcs/vcsList"]();
-    });
-
-    const eventListener = (event: Event) => {
-      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-      if (isEmpty(payload.error)) {
-        props.config.code = payload.code;
-        const oAuthConfig: OAuthConfig = {
-          endpoint: `${state.selectedVCS!.instanceUrl}/oauth/token`,
-          applicationId: state.selectedVCS!.applicationId,
-          secret: state.selectedVCS!.secret,
-          redirectUrl: redirectUrl(),
-        };
-        store
-          .dispatch("gitlab/exchangeToken", {
-            oAuthConfig,
-            code: payload.code,
-          })
-          .then((token: OAuthToken) => {
-            props.config.vcs = state.selectedVCS!;
-            props.config.token = token;
-            emit("next");
-          });
-      } else {
-        notificationStore.pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: payload.error,
-        });
-      }
-    };
-
-    const isCurrentUserOwner = computed(() => {
-      return isOwner(currentUser.value.role);
-    });
-
-    const selectVCS = (vcs: VCS) => {
-      state.selectedVCS = vcs;
-      openWindowForOAuth(
-        `${vcs.instanceUrl}/oauth/authorize`,
-        vcs.applicationId,
-        "bb.oauth.link-vcs-repository"
-      );
-    };
-
-    return {
-      state,
-      currentUser,
-      vcsList,
-      isCurrentUserOwner,
-      selectVCS,
-    };
-  },
+onMounted(() => {
+  window.addEventListener("bb.oauth.link-vcs-repository", eventListener, false);
 });
+onUnmounted(() => {
+  window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
+});
+
+const vcsList = computed(() => {
+  return store.getters["vcs/vcsList"]();
+});
+
+const eventListener = (event: Event) => {
+  const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+  if (isEmpty(payload.error)) {
+    emit("set-code", payload.code);
+    emit("next");
+  } else {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: payload.error,
+    });
+  }
+};
+
+const isCurrentUserOwner = computed(() => {
+  return isOwner(currentUser.value.role);
+});
+
+const selectVCS = (vcs: VCS) => {
+  state.selectedVCS = vcs;
+  emit("set-vcs", vcs);
+  openWindowForOAuth(
+    `${vcs.instanceUrl}/oauth/authorize`,
+    vcs.applicationId,
+    "bb.oauth.link-vcs-repository"
+  );
+};
 </script>

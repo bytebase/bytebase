@@ -155,8 +155,6 @@ import {
   VCSPatch,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthConfig,
-  redirectUrl,
   OAuthToken,
 } from "../types";
 import { useNotificationStore } from "@/store";
@@ -204,15 +202,9 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `${vcs.value.instanceUrl}/oauth/token`,
-            applicationId: state.applicationId,
-            secret: state.secret,
-            redirectUrl: redirectUrl(),
-          };
           store
-            .dispatch("gitlab/exchangeToken", {
-              oAuthConfig,
+            .dispatch("oauth/exchangeVCSToken", {
+              vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })
             .then((token: OAuthToken) => {

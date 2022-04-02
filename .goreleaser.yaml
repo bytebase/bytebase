@@ -1,0 +1,67 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: server
+    main: ./bin/server
+    binary: bytebase
+    ldflags:
+      - -w -s
+      - -X github.com/bytebase/bytebase/bin/server/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
+    tags:
+      - release
+    env:
+      - VERSION="development"
+      - GO_VERSION="1.16.5"
+      - GIT_COMMIT="unknown"
+      - BUILD_TIME="unknown"
+      - BUILD_USER="unknown"
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - id: cli
+    main: ./bin/bb
+    binary: bb
+    ldflags:
+      - -w -s
+      - -X github.com/bytebase/bytebase/bin/bb/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/bin/bb/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/bin/bb/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/bin/bb/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/bin/bb/cmd.builduser=goreleaser
+    tags:
+      - release
+    env:
+      - VERSION="development"
+      - GO_VERSION="1.16.5"
+      - GIT_COMMIT="unknown"
+      - BUILD_TIME="unknown"
+      - BUILD_USER="unknown"
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      amd64: x86_64
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

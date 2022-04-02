@@ -33,7 +33,14 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  watchEffect,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
@@ -41,6 +48,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
+import { useUIStateStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -49,7 +57,7 @@ interface LocalState {
   showGuide: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceDashboard",
   components: {
     EnvironmentTabFilter,
@@ -59,6 +67,7 @@ export default {
     const searchField = ref();
 
     const store = useStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -82,10 +91,10 @@ export default {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.database")) {
+      if (!uiStateStore.getIntroStateByKey("guide.database")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,
           });
@@ -108,7 +117,7 @@ export default {
     watchEffect(prepareDatabaseList);
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.database",
         newState: true,
       });
@@ -157,5 +166,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

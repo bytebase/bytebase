@@ -124,7 +124,7 @@ const actions = {
     const data = (
       await axios.patch(`/api/vcs/${vcsId}`, {
         data: {
-          type: "VCSCreate",
+          type: "VCSPatch",
           attributes: vcsPatch,
         },
       })
