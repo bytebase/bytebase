@@ -4,7 +4,14 @@
       <template v-if="config.type == 'GITLAB_SELF_HOST'">
         {{
           $t(
-            "version-control.setting.add-git-provider.oauth-info.register-oauth-application"
+            "version-control.setting.add-git-provider.oauth-info.gitlab-register-oauth-application"
+          )
+        }}
+      </template>
+      <template v-if="config.type == 'GITHUB_COM'">
+        {{
+          $t(
+            "version-control.setting.add-git-provider.oauth-info.github-register-oauth-application"
           )
         }}
       </template>
@@ -15,7 +22,7 @@
           1.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.login-as-admin"
+              "version-control.setting.add-git-provider.oauth-info.gitlab-login-as-admin"
             )
           }}
           <img class="w-auto" src="../assets/gitlab_admin_area.png" />
@@ -24,7 +31,7 @@
           2.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.visit-admin-page"
+              "version-control.setting.add-git-provider.oauth-info.gitlab-visit-admin-page"
             )
           }}
           <a
@@ -95,7 +102,69 @@
           4.
           {{
             $t(
-              "version-control.setting.add-git-provider.oauth-info.paste-oauth-info"
+              "version-control.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
+            )
+          }}
+        </li>
+      </template>
+      <template v-if="config.type == 'GITHUB_COM'">
+        <li>
+          1.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.github-login-as-admin"
+            )
+          }}
+          <img class="w-auto" src="../assets/github_admin_settings.png" />
+        </li>
+        <li>
+          2.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.github-visit-admin-page"
+            )
+          }}
+        </li>
+        <li>
+          3.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.create-oauth-app"
+            )
+          }}
+          <div class="m-4 flex justify-center">
+            <dl
+              class="divide-y divide-block-border border border-block-border shadow rounded-lg"
+            >
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Application name
+                </dt>
+                <dd class="text-sm text-main">Bytebase</dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Authorization callback URL
+                </dt>
+                <dd class="text-sm text-main items-center flex">
+                  {{ redirectUrl() }}
+                  <button
+                    tabindex="-1"
+                    class="ml-1 text-sm font-medium text-control-light hover:bg-gray-100"
+                    @click.prevent="copyRedirectURI"
+                  >
+                    <heroicons-outline:clipboard class="w-6 h-6" />
+                  </button>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </li>
+        <li>
+          4.
+          {{
+            $t(
+              "version-control.setting.add-git-provider.oauth-info.github-paste-oauth-info"
             )
           }}
         </li>
@@ -112,11 +181,7 @@
         @input="(e: any) => changeApplicationId(e.target.value)"
       />
       <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
-        {{
-          $t(
-            "version-control.setting.add-git-provider.oauth-info.application-id-error"
-          )
-        }}
+        {{ applicationIdErrorDescription }}
       </p>
       <div class="mt-4 textlabel">
         Secret <span class="text-red-600">*</span>
@@ -128,9 +193,7 @@
         @input="(e: any) => changeSecret(e.target.value)"
       />
       <p v-if="state.showSecretError" class="mt-2 text-sm text-error">
-        {{
-          $t("version-control.setting.add-git-provider.oauth-info.secret-error")
-        }}
+        {{ secretErrorDescription }}
       </p>
     </div>
   </div>
@@ -153,6 +216,7 @@ import {
   redirectUrl,
 } from "../types";
 import { useStore } from "vuex";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
@@ -170,14 +234,21 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const { t } = useI18n();
     const store = useStore();
     const state = reactive<LocalState>({
       showApplicationIdError:
         !isEmpty(props.config.applicationId) &&
-        !isValidVCSApplicationIdOrSecret(props.config.applicationId),
+        !isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.applicationId
+        ),
       showSecretError:
         !isEmpty(props.config.secret) &&
-        !isValidVCSApplicationIdOrSecret(props.config.secret),
+        !isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.secret
+        ),
     });
 
     onUnmounted(() => {
@@ -192,6 +263,8 @@ export default defineComponent({
     const createAdminApplicationUrl = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return `${props.config.instanceUrl}/admin/applications/new`;
+      } else if (props.config.type == "GITHUB_COM") {
+        return `https://github.com/settings/applications/new`;
       }
       return "";
     });
@@ -215,7 +288,12 @@ export default defineComponent({
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.applicationId)) {
+      if (
+        isValidVCSApplicationIdOrSecret(
+          props.config.type,
+          props.config.applicationId
+        )
+      ) {
         state.showApplicationIdError = false;
       } else {
         state.applicationIdValidationTimer = setTimeout(() => {
@@ -223,12 +301,19 @@ export default defineComponent({
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showApplicationIdError) {
             state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
+              props.config.type,
               props.config.applicationId
             );
           } else {
             state.showApplicationIdError =
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId) &&
-              !isValidVCSApplicationIdOrSecret(props.config.applicationId);
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.applicationId
+              ) &&
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.applicationId
+              );
           }
         }, TEXT_VALIDATION_DELAY);
       }
@@ -243,7 +328,9 @@ export default defineComponent({
       }
       // If text becomes valid, we immediately clear the error.
       // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (isValidVCSApplicationIdOrSecret(props.config.secret)) {
+      if (
+        isValidVCSApplicationIdOrSecret(props.config.type, props.config.secret)
+      ) {
         state.showSecretError = false;
       } else {
         state.secretValidationTimer = setTimeout(() => {
@@ -251,16 +338,46 @@ export default defineComponent({
           // Otherwise, we hide the error if input is either empty or valid.
           if (state.showSecretError) {
             state.showSecretError = !isValidVCSApplicationIdOrSecret(
+              props.config.type,
               props.config.secret
             );
           } else {
             state.showSecretError =
               !isEmpty(props.config.secret) &&
-              !isValidVCSApplicationIdOrSecret(props.config.secret);
+              !isValidVCSApplicationIdOrSecret(
+                props.config.type,
+                props.config.secret
+              );
           }
         }, TEXT_VALIDATION_DELAY);
       }
     };
+
+    const applicationIdErrorDescription = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return t(
+          "version-control.setting.add-git-provider.oauth-info.gitlab-application-id-error"
+        );
+      } else if (props.config.type == "GITHUB_COM") {
+        return t(
+          "version-control.setting.add-git-provider.oauth-info.github-application-id-error"
+        );
+      }
+      return "";
+    });
+
+    const secretErrorDescription = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return t(
+          "version-control.setting.add-git-provider.oauth-info.gitlab-secret-error"
+        );
+      } else if (props.config.type == "GITHUB_COM") {
+        return t(
+          "version-control.setting.add-git-provider.oauth-info.github-secret-error"
+        );
+      }
+      return "";
+    });
 
     return {
       redirectUrl,
@@ -269,6 +386,8 @@ export default defineComponent({
       copyRedirectURI,
       changeApplicationId,
       changeSecret,
+      applicationIdErrorDescription,
+      secretErrorDescription,
     };
   },
 });

@@ -14,6 +14,15 @@
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
+      <div
+        v-if="vcs.type == 'GITHUB_COM'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">
+          {{ $t("version-control.setting.add-git-provider.github-com") }}
+        </div>
+        <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      </div>
     </div>
 
     <div>
