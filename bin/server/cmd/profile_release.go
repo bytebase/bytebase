@@ -4,18 +4,15 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/blang/semver/v4"
 )
 
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
-	dsn := fmt.Sprintf("file:%s/bytebase.db", dataDir)
-	seedDir := "seed/release"
-	forceResetSeed := false
+	demoDataDir := ""
 	if isDemo {
-		dsn = fmt.Sprintf("file:%s/bytebase_demo.db", dataDir)
-		seedDir = "seed/test"
-		forceResetSeed = true
+		demoDataDir = "demo/release"
 	}
 	return Profile{
 		mode:                 "release",
@@ -23,10 +20,8 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		datastorePort:        datastorePort,
 		pgUser:               "bb",
 		dataDir:              dataDir,
-		dsn:                  dsn,
-		seedDir:              seedDir,
-		forceResetSeed:       forceResetSeed,
+		demoDataDir:          demoDataDir,
 		backupRunnerInterval: 10 * time.Minute,
-		schemaVersion:        10001,
+		schemaVersion:        semver.MustParse("1.0.0"),
 	}
 }

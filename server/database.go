@@ -778,17 +778,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceFind := &api.DataSourceFind{
 			ID: &dataSourceID,
 		}
-		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
-		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found with ID %d", dataSourceID))
+		}
+		if dataSource.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
 		}
@@ -821,14 +822,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSourceRaw, err := s.DataSourceService.CreateDataSource(ctx, dataSourceCreate)
+		dataSource, err := s.store.CreateDataSource(ctx, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
 		}
@@ -865,11 +864,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ID:         &dataSourceID,
 			DatabaseID: &databaseID,
 		}
-		dataSourceRaw, err := s.DataSourceService.FindDataSource(ctx, dataSourceFind)
+		dataSourceOld, err := s.store.GetDataSource(ctx, dataSourceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceRaw == nil || dataSourceRaw.DatabaseID != databaseID {
+		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -886,15 +885,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dataSourcePatch.Password = &password
 		}
 
-		dataSourceRaw, err = s.DataSourceService.PatchDataSource(ctx, dataSourcePatch)
+		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		// TODO(dragonly): compose DataSource
-		dataSource := dataSourceRaw.ToDataSource()
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
 		return nil
@@ -992,13 +989,13 @@ func (s *Server) composeDatabaseListByFind(ctx context.Context, find *api.Databa
 func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.DatabaseRaw) (*api.Database, error) {
 	db := raw.ToDatabase()
 
-	creator, err := s.composePrincipalByID(ctx, db.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, db.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	db.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, db.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, db.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1029,29 +1026,14 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.store.FindAnomaly(ctx, &api.AnomalyFind{
 		RowStatus:  &rowStatus,
 		DatabaseID: &db.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	var anomalyList []*api.Anomaly
-	for _, anomalyRaw := range anomalyListRaw {
-		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
-	}
-	// TODO(dragonly): implement composeAnomalyRelationship
 	db.AnomalyList = anomalyList
-	for _, anomaly := range db.AnomalyList {
-		anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	rowStatus = api.Normal
 	labelRawList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
@@ -1092,13 +1074,13 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw) (*api.Table, error) {
 	table := raw.ToTable()
 
-	creator, err := s.composePrincipalByID(ctx, table.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, table.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	table.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, table.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, table.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1110,13 +1092,13 @@ func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw
 func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) (*api.View, error) {
 	view := raw.ToView()
 
-	creator, err := s.composePrincipalByID(ctx, view.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, view.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	view.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, view.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, view.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1148,13 +1130,13 @@ func (s *Server) composeBackupByID(ctx context.Context, id int) (*api.Backup, er
 // composeBackupRelationship will compose the relationship of a backup.
 func (s *Server) composeBackupRelationship(ctx context.Context, raw *api.BackupRaw) (*api.Backup, error) {
 	backup := raw.ToBackup()
-	creator, err := s.composePrincipalByID(ctx, backup.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, backup.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	backup.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, backup.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, backup.UpdaterID)
 	if err != nil {
 		return nil, err
 	}

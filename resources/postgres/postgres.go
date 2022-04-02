@@ -38,7 +38,7 @@ func (i Instance) Port() int { return i.port }
 //
 // If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
 // Otherwise, returns immediately.
-func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err error) {
+func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 
 	i.port = port
@@ -64,11 +64,6 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer, waitSec int) (err e
 
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
-	}
-
-	// TODO
-	for retry := 0; waitSec > 0; retry++ {
-		break
 	}
 
 	return nil

@@ -2,31 +2,53 @@ package vcs
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
-	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Type is the type of a VCS.
 type Type string
 
 const (
-	// GitLabSelfHost is the VCS type for gitlab self host.
+	// GitLabSelfHost is the VCS type for GitLab self host.
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
+	// GitHubCom is the VCS type for GitHub.com.
+	GitHubCom Type = "GITHUB_COM"
 )
 
 func (e Type) String() string {
 	switch e {
-	case GitLabSelfHost:
-		return "GITLAB_SELF_HOST"
+	case GitLabSelfHost, GitHubCom:
+		return string(e)
 	}
 	return "UNKNOWN"
+}
+
+// OAuthToken is the API message for OAuthToken.
+type OAuthToken struct {
+	AccessToken  string `json:"access_token" `
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	CreatedAt    int64  `json:"created_at"`
+	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
+	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
+	ExpiresTs int64 `json:"expires_ts"`
 }
 
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
+
+// Commit records the commit data.
+type Commit struct {
+	ID         string
+	AuthorName string
+	CreatedTs  int64
+}
 
 // FileCommit is the API message for a VCS file commit.
 type FileCommit struct {
@@ -49,7 +71,16 @@ type FileCommitCreate struct {
 
 // FileMeta records the file metadata.
 type FileMeta struct {
+	Name         string
+	Path         string
+	Size         int64
 	LastCommitID string
+}
+
+// RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
+type RepositoryTreeNode struct {
+	Path string
+	Type string
 }
 
 // PushEvent is the API message for a VCS push event.
@@ -92,30 +123,64 @@ type RepositoryMember struct {
 	RoleProvider Type               `json:"roleProvider"`
 }
 
+// Repository is the API message for repository info.
+type Repository struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	FullPath string `json:"fullPath"`
+	WebURL   string `json:"webUrl"`
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
+
+	// Exchange oauth token with the provided code
+	//
+	// instanceURL: VCS instance URL
+	// oauthExchange: api message for exchanging oauth token
+	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
 	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
-
+	// Fetch the commit data by id
+	//
+	// oauthCtx: OAuth context to fetch commit
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// commitID: the commit ID
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	// userID: the ID of the desired user
-	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, userID int) (*UserInfo, error)
-
+	// user: the ID or username of the desired user
+	FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, user string) (*UserInfo, error)
 	// Fetch all active members of a given repository
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string) ([]*RepositoryMember, error)
+	FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*RepositoryMember, error)
+
+	// Fetch all repository within a given user's scope
+	//
+	// oauthCtx: OAuth context to write the file content
+	// instanceURL: VCS instance URL
+	FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
+
+	// Fetch the repository file list
+	//
+	// oauthCtx: OAuth context to read the repository tree
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
+	// filePath: the path inside repository, used to get content of subdirectories
+	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
 
 	// Commits a new file
 	//
@@ -124,36 +189,40 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be written
 	// fileCommit: the new file commit info
-	CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommit FileCommitCreate) error
+	CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Overwrites an existing file
 	//
 	// Similar to CreateFile except it overwrites an existing file. The fileCommit shoud includes the "LastCommitID" field which is used to detect conflicting writes.
-	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, fileCommit FileCommitCreate) error
-	// Reads the file content. Returns an io.ReadCloser on success. If file does not exist, returns NotFound error.
+	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
+	// Reads the file metadata
+	//
+	// oauthCtx: OAuth context to fetch the file metadata
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// filePath: file path to be read
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
+	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
+	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
-	// commitID: the specific version to be read
-	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, commitID string) (string, error)
-	// Reads the file metadata. Returns the file meta on success.
-	//
-	// Similar to ReadFile except it specifies a branch instead of a commitID.
-	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, branch string) (*FileMeta, error)
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
+	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
 	// Creates a webhook. Returns the created webhook ID on succeess.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// payload: the webhook payload
-	CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, payload []byte) (string, error)
+	CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error)
 	// Patches a webhook.
 	//
 	// The payload stores the patched field(s).
-	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string, payload []byte) error
+	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, webhookID string) error
+	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error
 }
 
 var (
@@ -164,6 +233,7 @@ var (
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
 	Logger *zap.Logger
+	Client *http.Client
 }
 
 type providerFunc func(ProviderConfig) Provider

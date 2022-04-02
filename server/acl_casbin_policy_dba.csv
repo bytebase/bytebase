@@ -80,6 +80,7 @@ p, DBA, /vcs/{id}, GET
 p, DBA, /vcs/{id}, PATCH
 p, DBA, /vcs/{id}, DELETE
 p, DBA, /vcs/{id}/repository, GET
+p, DBA, /vcs/{id}/external-repository, GET
 p, DBA, /plan, GET
 p, DBA, /plan, PATCH
 p, DBA, /setting, GET

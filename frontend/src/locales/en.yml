@@ -227,7 +227,8 @@ task:
     warn: Warning
     error: Error
   earliest-allowed-time-no-modify: >-
-    You can not modify this field because you are not the issue assignee or it's not pending to run.
+    You can not modify this field because you are not the issue assignee or it's
+    not pending to run.
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
@@ -305,11 +306,14 @@ settings:
       title: Are you sure?
     change-role-provider-to-vcs:
       content: >-
-        Turning on VCS sync will replace all existing members with the
-        members from the corresponding VCS project.
+        Turning on VCS sync will replace all existing members with the members
+        from the corresponding VCS project.
 
-        The existing members will become inactive. You can turn off VCS sync to restore those members.
-      emphasize: Please be noticed that this function requires all project members from the VCS have a public email set.
+        The existing members will become inactive. You can turn off VCS sync to
+        restore those members.
+      emphasize: >-
+        Please be noticed that this function requires all project members from
+        the VCS have a public email set.
     change-role-provider-to-bytebase:
       content: >-
         You are about to restore the following members. All existing members
@@ -323,6 +327,7 @@ settings:
       select-logo: Upload a file
       drag-logo: or drag here
       logo-upload-tip: "{extension} up to {size} MiB"
+      logo-upload-succeed: Successfully updated the logo
 activity:
   name: Name
   comment: Comment
@@ -415,7 +420,7 @@ issue:
     assignee: Assignee
   stage-select:
     active: "{name} (active)"
-  not-allowed-to-single-database-in-tenant-mode: "Can't {operation} to single database in tenant mode"
+  not-allowed-to-single-database-in-tenant-mode: Can't {operation} to single database in tenant mode
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
@@ -530,10 +535,11 @@ instance:
         The external console URL managing this instance (e.g. AWS RDS console,
         your in-house DB instance console)
     create-admin-user: >-
-      This is the connection user used by Bytebase to perform DDL and DML (non-SELECT)
-      operations.
+      This is the connection user used by Bytebase to perform DDL and DML
+      (non-SELECT) operations.
     create-readonly-user: >-
-      This is the connection user used by Bytebase to perform read-only operations such as SELECT query.
+      This is the connection user used by Bytebase to perform read-only
+      operations such as SELECT query.
     create-user-example:
       snowflake:
         user: bytebase{'@'}%
@@ -778,7 +784,9 @@ database:
   columns: Columns
   indexes: Indexes
   row-count-est: Row count est.
-  incorrect-project-warning: SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.
+  incorrect-project-warning: >-
+    SQL editor can only query databases in projects available to the user. You
+    should first transfer this database into a project.
   go-to-transfer: Go to transfer
 repository:
   branch-observe-file-change: The branch where Bytebase observes the file change.
@@ -1296,8 +1304,8 @@ subscription:
     bb-feature-3rd-party-auth:
       title: 3rd party authentication & authorization
       desc: >-
-        Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.
-        @:{'subscription.upgrade'} to unlock this feature.
+        Bytebase supports 3rd-party authentication & authorization based on your
+        VCS configuration. @:{'subscription.upgrade'} to unlock this feature.
       login: "@:{'subscription.upgrade'} to unlock this feature"
     bb-feature-branding:
       title: Branding
@@ -1343,6 +1351,10 @@ subscription:
         rbac: RBAC (Owner, DBA, Developer role)
         3rd-party-auth: Login with GitLab account
         sync-members-from-vcs: Sync project membership from the linked GitLab project
+    branding:
+      title: Branding
+      features:
+        branding-logo: Customize the logo
   plan:
     title: Plan
     try: Try Team

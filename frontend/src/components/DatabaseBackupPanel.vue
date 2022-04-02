@@ -50,7 +50,7 @@
               )
             }}
             <a
-              href="https://docs.bytebase.com/use-bytebase/webhook-integration/database-webhook"
+              href="https://bytebase.com/docs/use-bytebase/webhook-integration/database-webhook"
               class="normal-link inline-flex flex-row items-center"
             >
               {{ $t("common.learn-more") }}

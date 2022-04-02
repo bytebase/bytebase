@@ -326,24 +326,26 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &api.MigrationHistory{
-			ID:                  entry.ID,
-			Creator:             entry.Creator,
-			CreatedTs:           entry.CreatedTs,
-			Updater:             entry.Updater,
-			UpdatedTs:           entry.UpdatedTs,
-			ReleaseVersion:      entry.ReleaseVersion,
-			Database:            entry.Namespace,
-			Source:              entry.Source,
-			Type:                entry.Type,
-			Status:              entry.Status,
-			Version:             entry.Version,
-			Description:         entry.Description,
-			Statement:           entry.Statement,
-			Schema:              entry.Schema,
-			SchemaPrev:          entry.SchemaPrev,
-			ExecutionDurationNs: entry.ExecutionDurationNs,
-			IssueID:             entry.IssueID,
-			Payload:             entry.Payload,
+			ID:                    entry.ID,
+			Creator:               entry.Creator,
+			CreatedTs:             entry.CreatedTs,
+			Updater:               entry.Updater,
+			UpdatedTs:             entry.UpdatedTs,
+			ReleaseVersion:        entry.ReleaseVersion,
+			Database:              entry.Namespace,
+			Source:                entry.Source,
+			Type:                  entry.Type,
+			Status:                entry.Status,
+			Version:               entry.Version,
+			UseSemanticVersion:    entry.UseSemanticVersion,
+			SemanticVersionSuffix: entry.SemanticVersionSuffix,
+			Description:           entry.Description,
+			Statement:             entry.Statement,
+			Schema:                entry.Schema,
+			SchemaPrev:            entry.SchemaPrev,
+			ExecutionDurationNs:   entry.ExecutionDurationNs,
+			IssueID:               entry.IssueID,
+			Payload:               entry.Payload,
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Name)).SetInternal(err)
 		}
@@ -395,24 +397,26 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		for _, entry := range list {
 			historyList = append(historyList, &api.MigrationHistory{
-				ID:                  entry.ID,
-				Creator:             entry.Creator,
-				CreatedTs:           entry.CreatedTs,
-				Updater:             entry.Updater,
-				UpdatedTs:           entry.UpdatedTs,
-				ReleaseVersion:      entry.ReleaseVersion,
-				Database:            entry.Namespace,
-				Source:              entry.Source,
-				Type:                entry.Type,
-				Status:              entry.Status,
-				Version:             entry.Version,
-				Description:         entry.Description,
-				Statement:           entry.Statement,
-				Schema:              entry.Schema,
-				SchemaPrev:          entry.SchemaPrev,
-				ExecutionDurationNs: entry.ExecutionDurationNs,
-				IssueID:             entry.IssueID,
-				Payload:             entry.Payload,
+				ID:                    entry.ID,
+				Creator:               entry.Creator,
+				CreatedTs:             entry.CreatedTs,
+				Updater:               entry.Updater,
+				UpdatedTs:             entry.UpdatedTs,
+				ReleaseVersion:        entry.ReleaseVersion,
+				Database:              entry.Namespace,
+				Source:                entry.Source,
+				Type:                  entry.Type,
+				Status:                entry.Status,
+				Version:               entry.Version,
+				UseSemanticVersion:    entry.UseSemanticVersion,
+				SemanticVersionSuffix: entry.SemanticVersionSuffix,
+				Description:           entry.Description,
+				Statement:             entry.Statement,
+				Schema:                entry.Schema,
+				SchemaPrev:            entry.SchemaPrev,
+				ExecutionDurationNs:   entry.ExecutionDurationNs,
+				IssueID:               entry.IssueID,
+				Payload:               entry.Payload,
 			})
 		}
 
@@ -447,26 +451,26 @@ func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance
 func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.InstanceRaw) (*api.Instance, error) {
 	instance := raw.ToInstance()
 
-	creator, err := s.composePrincipalByID(ctx, instance.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, instance.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	instance.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, instance.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, instance.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	instance.Updater = updater
 
-	env, err := s.composeEnvironmentByID(ctx, instance.EnvironmentID)
+	env, err := s.store.GetEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 	instance.Environment = env
 
 	rowStatus := api.Normal
-	anomalyListRaw, err := s.AnomalyService.FindAnomalyList(ctx, &api.AnomalyFind{
+	anomalyList, err := s.store.FindAnomaly(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
 		InstanceID:   &instance.ID,
 		InstanceOnly: true,
@@ -474,38 +478,20 @@ func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.Insta
 	if err != nil {
 		return nil, err
 	}
-	var anomalyList []*api.Anomaly
-	for _, anomalyRaw := range anomalyListRaw {
-		anomalyList = append(anomalyList, anomalyRaw.ToAnomaly())
-	}
-	// TODO(dragonly): implement composeAnomalyRelationship
 	instance.AnomalyList = anomalyList
-	for _, anomaly := range instance.AnomalyList {
-		if anomaly.Creator, err = s.composePrincipalByID(ctx, anomaly.CreatorID); err != nil {
-			return nil, err
-		}
-		if anomaly.Updater, err = s.composePrincipalByID(ctx, anomaly.UpdaterID); err != nil {
-			return nil, err
-		}
-	}
 
-	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, &api.DataSourceFind{
+	dataSourceList, err := s.store.FindDataSource(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	// TODO(dragonly): implement composeDataSourceRelationship
-	var dataSourceList []*api.DataSource
-	for _, dataSourceRaw := range dataSourceRawList {
-		dataSourceList = append(dataSourceList, dataSourceRaw.ToDataSource())
-	}
 	instance.DataSourceList = dataSourceList
 	for _, dataSource := range instance.DataSourceList {
-		if dataSource.Creator, err = s.composePrincipalByID(ctx, dataSource.CreatorID); err != nil {
+		if dataSource.Creator, err = s.store.GetPrincipalByID(ctx, dataSource.CreatorID); err != nil {
 			return nil, err
 		}
-		if dataSource.Updater, err = s.composePrincipalByID(ctx, dataSource.UpdaterID); err != nil {
+		if dataSource.Updater, err = s.store.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return nil, err
 		}
 	}
@@ -517,7 +503,7 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceRawList, err := s.DataSourceService.FindDataSourceList(ctx, dataSourceFind)
+	dataSourceRawList, err := s.store.FindDataSource(ctx, dataSourceFind)
 	if err != nil {
 		return "", err
 	}

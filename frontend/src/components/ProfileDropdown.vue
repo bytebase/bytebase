@@ -99,7 +99,7 @@
           @click.prevent="resetQuickstart"
           >{{ $t("common.quickstart") }}</a
         >
-        <a href="https://docs.bytebase.com" target="_blank" class="menu-item">
+        <a href="https://bytebase.com/docs" target="_blank" class="menu-item">
           {{ $t("common.help") }}
         </a>
       </div>
@@ -121,28 +121,31 @@
 </template>
 
 <script lang="ts">
-import { computed, ref } from "vue";
+import { computed, defineComponent, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { useLanguage } from "../composables/useLanguage";
+import { useActuatorStore, useDebugStore, useUIStateStore } from "@/store";
+import { storeToRefs } from "pinia";
 
-export default {
+export default defineComponent({
   name: "ProfileDropdown",
   components: { PrincipalAvatar },
   props: {},
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
+    const debugStore = useDebugStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
     const languageMenu = ref();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const showQuickstart = computed(() => {
-      return !store.getters["actuator/isDemo"]();
-    });
+    const showQuickstart = computed(() => !actuatorStore.isDemo);
 
     const logout = () => {
       store.dispatch("auth/logout").then(() => {
@@ -151,63 +154,27 @@ export default {
     };
 
     const resetQuickstart = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "general.overview",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "bookmark.create",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "comment.create",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "project.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "environment.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "instance.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "database.visit",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "member.addOrInvite",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "hidden",
-        newState: false,
-      });
-
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.project",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.environment",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.instance",
-        newState: false,
-      });
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "guide.database",
-        newState: false,
-      });
-
-      store.dispatch("uistate/saveIntroStateByKey", {
-        key: "kbar.open",
-        newState: false,
+      const keys = [
+        "general.overview",
+        "bookmark.create",
+        "comment.create",
+        "project.visit",
+        "environment.visit",
+        "instance.visit",
+        "database.visit",
+        "member.addOrInvite",
+        "hidden",
+        "guide.project",
+        "guide.environment",
+        "guide.instance",
+        "guide.database",
+        "kbar.open",
+      ];
+      keys.forEach((key) => {
+        uiStateStore.saveIntroStateByKey({
+          key,
+          newState: false,
+        });
       });
     };
 
@@ -238,14 +205,16 @@ export default {
       });
     };
 
-    const isDebug = computed(() => store.getters["debug/isDebug"]());
+    const { isDebug } = storeToRefs(debugStore);
 
     const switchDebug = () => {
-      store.dispatch("debug/patchDebug", { isDebug: !isDebug.value });
+      debugStore.patchDebug({
+        isDebug: !isDebug.value,
+      });
     };
 
     const ping = () => {
-      store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
+      actuatorStore.fetchInfo().then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
@@ -275,5 +244,5 @@ export default {
       locale,
     };
   },
-};
+});
 </script>

@@ -43,15 +43,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		vcsFind := &api.VCSFind{
-			ID: &repo.VCSID,
-		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
 		}
 		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repo.VCSID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryActiveMemberList(ctx,
 			common.OauthContext{
@@ -79,7 +76,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 
 			findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
-			principal, err := s.PrincipalService.FindPrincipal(ctx, findPrincipal)
+			principal, err := s.store.FindPrincipal(ctx, findPrincipal)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
@@ -163,7 +160,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
 					continue
 				}
-				principal, err := s.composePrincipalByID(ctx, createdMember.PrincipalID)
+				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
 				}
@@ -187,7 +184,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			} else {
 				// elsewise, we will create a MEMBER CREATE activity
 				principalFind := &api.PrincipalFind{ID: &createdMember.PrincipalID}
-				principal, err := s.PrincipalService.FindPrincipal(ctx, principalFind)
+				principal, err := s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", principal.ID)).SetInternal(err)
 				}
@@ -216,7 +213,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				// if the member does exist in createdMemberList, meaning we need to update this member(already done above).
 				continue
 			}
-			principal, err := s.composePrincipalByID(ctx, deletedMember.PrincipalID)
+			principal, err := s.store.GetPrincipalByID(ctx, deletedMember.PrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", deletedMember.PrincipalID)).SetInternal(err)
 			}
@@ -399,7 +396,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.composePrincipalByID(ctx, projectMember.PrincipalID)
+			projectMember.Principal, err = s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -450,19 +447,19 @@ func (s *Server) composeProjectMemberListByProjectID(ctx context.Context, projec
 func (s *Server) composeProjectMemberRelationship(ctx context.Context, raw *api.ProjectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.ToProjectMember()
 
-	creator, err := s.composePrincipalByID(ctx, projectMember.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, projectMember.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	projectMember.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, projectMember.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, projectMember.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	projectMember.Updater = updater
 
-	principal, err := s.composePrincipalByID(ctx, projectMember.PrincipalID)
+	principal, err := s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
 	if err != nil {
 		return nil, err
 	}

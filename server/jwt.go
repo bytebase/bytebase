@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -164,7 +165,7 @@ func removeUserCookie(c echo.Context) {
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
+func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth, actuator, plan
 		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
@@ -228,7 +229,7 @@ func JWTMiddleware(l *zap.Logger, p api.PrincipalService, next echo.HandlerFunc,
 			principalFind := &api.PrincipalFind{
 				ID: &principalID,
 			}
-			user, err := p.FindPrincipal(ctx, principalFind)
+			user, err := principalStore.FindPrincipal(ctx, principalFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalID)).SetInternal(err)
 			}

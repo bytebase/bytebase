@@ -1,51 +1,10 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
-
-// VCSRaw is the store model for a VCS (Version Control System).
-// Fields have exactly the same meanings as VCS.
-type VCSRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name          string
-	Type          vcs.Type
-	InstanceURL   string
-	APIURL        string
-	ApplicationID string
-	Secret        string
-}
-
-// ToVCS creates an instance of VCS based on the VCSRaw.
-// This is intended to be called when we need to compose a VCS relationship.
-func (raw *VCSRaw) ToVCS() *VCS {
-	return &VCS{
-		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		Name:          raw.Name,
-		Type:          raw.Type,
-		InstanceURL:   raw.InstanceURL,
-		APIURL:        raw.APIURL,
-		ApplicationID: raw.ApplicationID,
-		Secret:        raw.Secret,
-	}
-}
 
 // VCS is the API message for a VCS (Version Control System).
 type VCS struct {
@@ -65,9 +24,8 @@ type VCS struct {
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
 	APIURL        string   `jsonapi:"attr,apiUrl"`
 	ApplicationID string   `jsonapi:"attr,applicationId"`
-	// Secret will be used for OAuth on the client side when setting up project GitOps workflow.
-	// So it should be returned to the response.
-	Secret string `jsonapi:"attr,secret"`
+	// For safety concerns, we will not return the secret, and all relevant logic is dealt in the backend.
+	Secret string
 }
 
 // VCSCreate is the API message for creating a VCS.
@@ -122,11 +80,10 @@ type VCSDelete struct {
 	DeleterID int
 }
 
-// VCSService is the service for VCSs.
-type VCSService interface {
-	CreateVCS(ctx context.Context, create *VCSCreate) (*VCSRaw, error)
-	FindVCSList(ctx context.Context, find *VCSFind) ([]*VCSRaw, error)
-	FindVCS(ctx context.Context, find *VCSFind) (*VCSRaw, error)
-	PatchVCS(ctx context.Context, patch *VCSPatch) (*VCSRaw, error)
-	DeleteVCS(ctx context.Context, delete *VCSDelete) error
+// ExternalRepository is the API message for external repository
+type ExternalRepository struct {
+	ID       int64  `jsonapi:"primary,id"`
+	Name     string `jsonapi:"attr,name"`
+	FullPath string `jsonapi:"attr,fullPath"`
+	WebURL   string `jsonapi:"attr,webUrl"`
 }

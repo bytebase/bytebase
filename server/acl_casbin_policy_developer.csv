@@ -70,6 +70,7 @@ p, DEVELOPER, /sql/ping, POST
 p, DEVELOPER, /sql/execute, POST
 p, DEVELOPER, /vcs, GET
 p, DEVELOPER, /vcs/{id}, GET
+p, DEVELOPER, /vcs/{id}/external-repository, GET
 p, DEVELOPER, /plan, GET
 p, DEVELOPER, /plan, PATCH
 p, DEVELOPER, /setting, GET

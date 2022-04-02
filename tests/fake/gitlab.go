@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -26,7 +28,8 @@ type GitLab struct {
 
 type projectData struct {
 	webhooks []*gitlab.WebhookPost
-	files    map[string]string
+	// files is a map that the full file path is the key and the file content is the value.
+	files map[string]string
 }
 
 // NewGitLab creates a fake GitLab.
@@ -47,10 +50,11 @@ func NewGitLab(port int) *GitLab {
 	// Routes
 	projectGroup := e.Group("/api/v4")
 	projectGroup.POST("/projects/:id/hooks", gl.createProjectHook)
-	projectGroup.GET("/projects/:id/repository/files/:file/raw", gl.readProjectFile)
-	projectGroup.GET("/projects/:id/repository/files/:file", gl.readProjectFileMetadata)
-	projectGroup.POST("/projects/:id/repository/files/:file", gl.createProjectFile)
-	projectGroup.PUT("/projects/:id/repository/files/:file", gl.createProjectFile)
+	projectGroup.GET("/projects/:id/repository/tree", gl.readProjectTree)
+	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
+	projectGroup.GET("/projects/:id/repository/files/:filePath", gl.readProjectFileMetadata)
+	projectGroup.POST("/projects/:id/repository/files/:filePath", gl.createProjectFile)
+	projectGroup.PUT("/projects/:id/repository/files/:filePath", gl.createProjectFile)
 
 	return gl
 }
@@ -100,13 +104,41 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	return nil
 }
 
-// createProjectHook creates a project webhook.
+// readProjectTree reads a project file nodes
+func (gl *GitLab) readProjectTree(c echo.Context) error {
+	gitlabProjectID := c.Param("id")
+	path := c.QueryParam("path")
+	pd, ok := gl.projects[gitlabProjectID]
+	if !ok {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+	}
+
+	fileNodes := []*vcs.RepositoryTreeNode{}
+
+	for filePath := range pd.files {
+		if strings.HasPrefix(filePath, path) {
+			fileNodes = append(fileNodes, &vcs.RepositoryTreeNode{
+				Path: filePath,
+				Type: "blob",
+			})
+		}
+	}
+
+	buf, err := json.Marshal(&fileNodes)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal fileNodes, error %v", err))
+	}
+
+	return c.String(http.StatusOK, string(buf))
+}
+
+// readProjectFile reads a project file
 func (gl *GitLab) readProjectFile(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
-	fileNameEscaped := c.Param("file")
-	fileName, err := url.QueryUnescape(fileNameEscaped)
+	filePathEscaped := c.Param("filePath")
+	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", fileNameEscaped, err))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
 	}
 
 	pd, ok := gl.projects[gitlabProjectID]
@@ -114,21 +146,21 @@ func (gl *GitLab) readProjectFile(c echo.Context) error {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
 	}
 
-	content, ok := pd.files[fileName]
+	content, ok := pd.files[filePath]
 	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", fileName))
+		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
 	}
 
 	return c.String(http.StatusOK, content)
 }
 
-// createProjectHook creates a project webhook.
+// readProjectFileMetadata reads a project file metadata
 func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
-	fileNameEscaped := c.Param("file")
-	fileName, err := url.QueryUnescape(fileNameEscaped)
+	filePathEscaped := c.Param("filePath")
+	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", fileNameEscaped, err))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
 	}
 
 	pd, ok := gl.projects[gitlabProjectID]
@@ -136,11 +168,18 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
 	}
 
-	if _, ok := pd.files[fileName]; !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", fileName))
+	if _, ok := pd.files[filePath]; !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
 	}
 
-	buf, err := json.Marshal(&gitlab.FileMeta{})
+	fileName := filepath.Base(filePath)
+	content := pd.files[filePath]
+
+	buf, err := json.Marshal(&gitlab.File{
+		FileName: fileName,
+		FilePath: filePath,
+		Content:  content,
+	})
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal FileMeta, error %v", err))
 	}
@@ -148,13 +187,13 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-// createProjectHook creates a project file.
+// createProjectFile creates a project file.
 func (gl *GitLab) createProjectFile(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
-	fileNameEscaped := c.Param("file")
-	fileName, err := url.QueryUnescape(fileNameEscaped)
+	filePathEscaped := c.Param("filePath")
+	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", fileNameEscaped, err))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
 	}
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
@@ -171,7 +210,7 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 	}
 
 	// Save file.
-	pd.files[fileName] = fileCommit.Content
+	pd.files[filePath] = fileCommit.Content
 
 	return c.String(http.StatusOK, "")
 }
@@ -221,8 +260,8 @@ func (gl *GitLab) AddFiles(gitlabProjectID string, files map[string]string) erro
 	}
 
 	// Save files
-	for name, content := range files {
-		pd.files[name] = content
+	for path, content := range files {
+		pd.files[path] = content
 	}
 	return nil
 }

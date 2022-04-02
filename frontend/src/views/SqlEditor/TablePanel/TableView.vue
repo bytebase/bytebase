@@ -66,28 +66,27 @@
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useResizeObserver } from "@vueuse/core";
-import {
-  useNamespacedGetters,
-  useNamespacedState,
-} from "vuex-composition-helpers";
+import { useNamespacedState } from "vuex-composition-helpers";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
+import dayjs from "dayjs";
 
-import { TabGetters, SqlEditorState } from "@/types";
+import { useTabStore } from "@/store";
+
+import { SqlEditorState } from "@/types";
 
 interface State {
   search: string;
 }
 
 const { t } = useI18n();
+const tabStore = useTabStore();
 
 const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
   "isExecuting",
 ]);
 
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
-
-const queryResult = computed(() => currentTab.value.queryResult || null);
+const queryResult = computed(() => tabStore.currentTab.queryResult || null);
 
 const state = reactive<State>({
   search: "",
@@ -185,9 +184,12 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   }
 
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
+  const formatedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
+  // Example filename: `mysheet-2022-03-23T09-54-21.json`
+  const filename = `${currentTab.value.name}-${formatedDateString}`;
   const link = document.createElement("a");
 
-  link.download = `${currentTab.value.name}.${format}`;
+  link.download = `${filename}.${format}`;
   link.href = encodedUri;
   link.click();
 };

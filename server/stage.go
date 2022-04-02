@@ -30,19 +30,19 @@ func (s *Server) composeStageListByPipelineID(ctx context.Context, pipelineID in
 func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw) (*api.Stage, error) {
 	stage := raw.ToStage()
 
-	creator, err := s.composePrincipalByID(ctx, stage.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	stage.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, stage.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
 	stage.Updater = updater
 
-	env, err := s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	env, err := s.store.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,17 +60,17 @@ func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw
 // TODO(dragonly): remove this hack
 func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
 	var err error
-	stage.Creator, err = s.composePrincipalByID(ctx, stage.CreatorID)
+	stage.Creator, err = s.store.GetPrincipalByID(ctx, stage.CreatorID)
 	if err != nil {
 		return err
 	}
 
-	stage.Updater, err = s.composePrincipalByID(ctx, stage.UpdaterID)
+	stage.Updater, err = s.store.GetPrincipalByID(ctx, stage.UpdaterID)
 	if err != nil {
 		return err
 	}
 
-	stage.Environment, err = s.composeEnvironmentByID(ctx, stage.EnvironmentID)
+	stage.Environment, err = s.store.GetEnvironmentByID(ctx, stage.EnvironmentID)
 	if err != nil {
 		return err
 	}

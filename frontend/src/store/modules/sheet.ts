@@ -8,7 +8,6 @@ import type {
   SheetId,
   SheetState,
   SheetPatch,
-  CreateSheetState,
   Principal,
   ResourceObject,
   ConnectionContext,
@@ -64,33 +63,25 @@ const state: () => SheetState = () => {
 };
 
 const getters = {
-  currentSheet: (
-    state: SheetState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ): Sheet => {
-    const currentTab = rootGetters["tab/currentTab"];
+  currentSheet:
+    (state: SheetState) =>
+    (currentTab: TabInfo): Sheet => {
+      if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
 
-    if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
+      const sheetId = currentTab.sheetId || UNKNOWN_ID;
 
-    const sheetId = currentTab.sheetId;
+      return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
+    },
+  isCreator:
+    (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
+    (currentTab: TabInfo): boolean => {
+      const currentUser = rootGetters["auth/currentUser"]();
+      const currentSheet = getters.currentSheet(currentTab);
 
-    return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
-  },
-  isCreator: (
-    state: SheetState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => {
-    const currentUser = rootGetters["auth/currentUser"]();
-    const currentSheet = getters.currentSheet;
+      if (!currentSheet) return false;
 
-    if (!currentSheet) return false;
-
-    return currentUser.id === currentSheet!.creator.id;
-  },
+      return currentUser.id === currentSheet!.creator.id;
+    },
   /**
    * Check the sheet whether is read-only.
    * 1、If the sheet is not created yet, it can not be edited.
@@ -99,47 +90,46 @@ const getters = {
    *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
    *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
    */
-  isReadOnly: (
-    state: SheetState,
-    getters: any,
-    rootState: any,
-    rootGetters: any
-  ) => {
-    const currentUser = rootGetters["auth/currentUser"]();
-    const sharedSheet = rootState.sqlEditor.sharedSheet;
-    const currentSheet = getters.currentSheet;
-    const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
+  isReadOnly:
+    (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
+    (currentTab: TabInfo): boolean => {
+      const currentUser = rootGetters["auth/currentUser"]();
+      const sharedSheet = rootState.sqlEditor.sharedSheet;
+      const currentSheet = getters.currentSheet(currentTab);
+      const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
-    if (!currentSheet) return true;
-    // normal sheet can be edit by anyone
-    if (!isSharedByOthers) return false;
+      if (!currentSheet) return true;
+      // normal sheet can be edit by anyone
+      if (!isSharedByOthers) return false;
 
-    // if the sheet is shared by others, will be checked the visibility of the sheet.
-    // creator always can edit
-    if (getters.isCreator) return false;
-    const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
-    const isProject = currentSheet?.visibility === "PROJECT" ?? false;
-    const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
+      // if the sheet is shared by others, will be checked the visibility of the sheet.
+      // creator always can edit
+      if (getters.isCreator(currentTab)) return false;
+      const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
+      const isProject = currentSheet?.visibility === "PROJECT" ?? false;
+      const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
 
-    const isCurrentUserProjectOwner = () => {
-      const projectMemberList = currentSheet?.project.memberList;
+      const isCurrentUserProjectOwner = () => {
+        const projectMemberList = currentSheet?.project.memberList;
 
-      if (projectMemberList && projectMemberList.length > 0) {
-        const currentMemberByProjectMember = projectMemberList?.find(
-          (member: ProjectMember) => {
-            return member.principal.id === currentUser.id;
-          }
-        );
+        if (projectMemberList && projectMemberList.length > 0) {
+          const currentMemberByProjectMember = projectMemberList?.find(
+            (member: ProjectMember) => {
+              return member.principal.id === currentUser.id;
+            }
+          );
 
-        return currentMemberByProjectMember.role !== "OWNER";
-      }
+          return currentMemberByProjectMember.role !== "OWNER";
+        }
 
-      return false;
-    };
+        return false;
+      };
 
-    // if current user is not creator, check the link access level by project relationship
-    return isPrivate || isPublic || (isProject && isCurrentUserProjectOwner());
-  },
+      // if current user is not creator, check the link access level by project relationship
+      return (
+        isPrivate || isPublic || (isProject && isCurrentUserProjectOwner())
+      );
+    },
 };
 
 const mutations = {
@@ -182,10 +172,9 @@ const actions = {
   // create
   async createSheet(
     { commit, state, rootState, rootGetters }: any,
-    sheetRecord?: CreateSheetState
+    currentTab: TabInfo
   ): Promise<Sheet> {
     const ctx = rootState.sqlEditor.connectionContext as ConnectionContext;
-    const tab = rootGetters["tab/currentTab"] as TabInfo;
 
     const result = (
       await axios.post(`/api/sheet`, {
@@ -194,8 +183,8 @@ const actions = {
           attributes: {
             projectId: ctx.projectId,
             databaseId: ctx.databaseId,
-            name: tab.name,
-            statement: tab.statement,
+            name: currentTab.name,
+            statement: currentTab.statement,
             visibility: "PRIVATE",
           },
         },
@@ -300,14 +289,15 @@ const actions = {
   // upsert
   async upsertSheet(
     { commit, dispatch, state }: any,
-    payload: Partial<Sheet>
+    payload: { sheet: Partial<Sheet>; currentTab: TabInfo }
   ): Promise<Sheet> {
-    const hasSheet = state.sheetById.has(payload.id);
+    const { sheet, currentTab } = payload;
+    const hasSheet = state.sheetById.has(sheet.id);
 
     if (hasSheet) {
-      return dispatch("patchSheetById", payload);
+      return dispatch("patchSheetById", sheet);
     } else {
-      return dispatch("createSheet");
+      return dispatch("createSheet", currentTab);
     }
   },
 };

@@ -137,7 +137,14 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
+import {
+  reactive,
+  computed,
+  watchEffect,
+  onMounted,
+  onUnmounted,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
@@ -148,8 +155,6 @@ import {
   VCSPatch,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthConfig,
-  redirectUrl,
   OAuthToken,
 } from "../types";
 
@@ -160,7 +165,7 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceVCSDetail",
   components: { RepositoryTable },
   props: {
@@ -195,15 +200,9 @@ export default {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `${vcs.value.instanceUrl}/oauth/token`,
-            applicationId: state.applicationId,
-            secret: state.secret,
-            redirectUrl: redirectUrl(),
-          };
           store
-            .dispatch("gitlab/exchangeToken", {
-              oAuthConfig,
+            .dispatch("oauth/exchangeVCSToken", {
+              vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })
             .then((token: OAuthToken) => {
@@ -346,5 +345,5 @@ export default {
       deleteVCS,
     };
   },
-};
+});
 </script>

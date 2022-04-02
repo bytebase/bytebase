@@ -21,20 +21,20 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	g.GET("/auth/provider", func(c echo.Context) error {
 		ctx := context.Background()
 		vcsFind := &api.VCSFind{}
-		list, err := s.VCSService.FindVCSList(ctx, vcsFind)
+		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch vcs list").SetInternal(err)
 		}
 
 		var authProviderList []*api.AuthProvider
-		for _, vcs := range list {
+		for _, vcs := range vcsList {
 			newProvider := &api.AuthProvider{
 				ID:            vcs.ID,
 				Type:          vcs.Type,
 				Name:          vcs.Name,
 				InstanceURL:   vcs.InstanceURL,
 				ApplicationID: vcs.ApplicationID,
-				Secret:        vcs.Secret,
+				// we do not return secret to the frontend for safety concern
 			}
 			authProviderList = append(authProviderList, newProvider)
 		}
@@ -63,7 +63,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					Email: &login.Email,
 				}
 				var err error
-				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -83,8 +83,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
 				}
-				findVCS := &api.VCSFind{ID: &gitlabLogin.ID}
-				vcsFound, err := s.VCSService.FindVCS(ctx, findVCS)
+				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.VCSID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
@@ -92,11 +91,26 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
+				// exchange OAuth Token
+				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
+					ctx,
+					vcsFound.InstanceURL,
+					&common.OAuthExchange{
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
+						Code:         gitlabLogin.Code,
+						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
+					},
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+				}
+
 				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
-						AccessToken:  gitlabLogin.AccessToken,
+						AccessToken:  oauthToken.AccessToken,
 						RefreshToken: "",
 						Refresher:    nil,
 					},
@@ -114,7 +128,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				principalFind := &api.PrincipalFind{
 					Email: &gitlabUserInfo.PublicEmail,
 				}
-				user, err = s.PrincipalService.FindPrincipal(ctx, principalFind)
+				user, err = s.store.FindPrincipal(ctx, principalFind)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -142,10 +156,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// test the status of this user
-		memberFind := &api.MemberFind{
-			PrincipalID: &user.ID,
-		}
-		member, err := s.MemberService.FindMember(ctx, memberFind)
+		member, err := s.store.GetMemberByPrincipalID(ctx, user.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 		}
@@ -215,7 +226,8 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		Email:        signUp.Email,
 		PasswordHash: string(passwordHash),
 	}
-	user, err := s.PrincipalService.CreatePrincipal(ctx, principalCreate)
+	// The user has an empty field of Role, which corresponds to the Member object created later.
+	user, err := s.store.CreatePrincipal(ctx, principalCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signUp.Email))
@@ -227,7 +239,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 	find := &api.MemberFind{
 		Role: &findRole,
 	}
-	memberList, err := s.MemberService.FindMemberList(ctx, find)
+	memberList, err := s.store.FindMember(ctx, find)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
@@ -244,13 +256,14 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		PrincipalID: user.ID,
 	}
 
-	member, err := s.MemberService.CreateMember(ctx, memberCreate)
+	member, err := s.store.CreateMember(ctx, memberCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signUp.Email))
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
+	// From now on, the Principal we just created could be composed with a valid Role field.
 
 	{
 		bytes, err := json.Marshal(api.ActivityMemberCreatePayload{

@@ -10,7 +10,7 @@
           <template #doc>
             <a
               class="normal-link"
-              href="https://docs.bytebase.com"
+              href="https://bytebase.com/docs"
               target="__blank"
             >
               {{ $t("intro.doc") }}
@@ -37,15 +37,15 @@
 </template>
 
 <script lang="ts">
-import { useStore } from "vuex";
+import { useUIStateStore } from "@/store";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   name: "IntroBanner",
   components: {},
   setup() {
-    const store = useStore();
     const dismiss = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      useUIStateStore().saveIntroStateByKey({
         key: "general.overview",
         newState: true,
       });
@@ -54,5 +54,5 @@ export default {
       dismiss,
     };
   },
-};
+});
 </script>

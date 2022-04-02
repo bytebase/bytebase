@@ -88,25 +88,25 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 ## Installation
 
-[Detailed installation guide](https://docs.bytebase.com/install/docker)
+[Detailed installation guide](https://bytebase.com/docs/install/install-with-docker)
 
 ### Run on localhost:8080
 
 ```bash
-docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.1 --data /var/opt/bytebase --host http://localhost --port 8080
+docker run --init --name bytebase --restart always --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.2 --data /var/opt/bytebase --host http://localhost --port 8080
 ```
 
 ### Run on ht<span>tps://bytebase.example.com
 
 ```bash
-docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.1 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
+docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase:1.0.2 --data /var/opt/bytebase --host https://bytebase.example.com --port 80
 ```
 
 ## 📕 Docs
 
-### User doc https://docs.bytebase.com
+### User doc https://bytebase.com/docs
 
-In particular, get familar with various product concept such as [data model](https://docs.bytebase.com/concepts/data-model), [roles and permissions](https://docs.bytebase.com/concepts/roles-and-permissions) and etc.
+In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions) and etc.
 
 ### Design doc
 

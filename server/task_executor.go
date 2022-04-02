@@ -51,7 +51,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := server.composePrincipalByID(ctx, task.CreatorID)
+		creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -62,6 +62,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		} else {
 			mi.Creator = creator.Name
 		}
+		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Database = databaseName
 		mi.Namespace = databaseName
@@ -189,7 +190,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
 		repo := repoRawOutter.ToRepository()
-		vcs, err := server.composeVCSByID(ctx, repoRawOutter.VCSID)
+		vcs, err := server.store.GetVCSByID(ctx, repoRawOutter.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}

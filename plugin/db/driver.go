@@ -233,6 +233,14 @@ type MigrationInfo struct {
 	IssueID        string
 	Payload        string
 	CreateDatabase bool
+	// UseSemanticVersion is whether version is a semantic version.
+	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
+	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
+	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405".
+	UseSemanticVersion bool
+	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
+	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
+	SemanticVersionSuffix string
 }
 
 // ParseMigrationInfo matches filePath against filePathTemplate
@@ -326,20 +334,22 @@ type MigrationHistory struct {
 	Updater   string
 	UpdatedTs int64
 
-	ReleaseVersion      string
-	Namespace           string
-	Sequence            int
-	Source              MigrationSource
-	Type                MigrationType
-	Status              MigrationStatus
-	Version             string
-	Description         string
-	Statement           string
-	Schema              string
-	SchemaPrev          string
-	ExecutionDurationNs int64
-	IssueID             string
-	Payload             string
+	ReleaseVersion        string
+	Namespace             string
+	Sequence              int
+	Source                MigrationSource
+	Type                  MigrationType
+	Status                MigrationStatus
+	Version               string
+	Description           string
+	Statement             string
+	Schema                string
+	SchemaPrev            string
+	ExecutionDurationNs   int64
+	IssueID               string
+	Payload               string
+	UseSemanticVersion    bool
+	SemanticVersionSuffix string
 }
 
 // MigrationHistoryFind is the API message for finding migration histories.
@@ -383,7 +393,9 @@ type Driver interface {
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
-	Execute(ctx context.Context, statement string, useTransaction bool) error
+	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
+	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
+	Execute(ctx context.Context, statement string) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)

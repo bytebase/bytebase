@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 
 	// embed will embeds the acl policy.
 	_ "embed"
@@ -35,16 +36,10 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	CacheService api.CacheService
-
 	SettingService          api.SettingService
-	PrincipalService        api.PrincipalService
-	MemberService           api.MemberService
-	PolicyService           api.PolicyService
 	ProjectService          api.ProjectService
 	ProjectMemberService    api.ProjectMemberService
 	ProjectWebhookService   api.ProjectWebhookService
-	EnvironmentService      api.EnvironmentService
 	InstanceService         api.InstanceService
 	InstanceUserService     api.InstanceUserService
 	DatabaseService         api.DatabaseService
@@ -52,7 +47,6 @@ type Server struct {
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
 	IndexService            api.IndexService
-	DataSourceService       api.DataSourceService
 	BackupService           api.BackupService
 	IssueService            api.IssueService
 	IssueSubscriberService  api.IssueSubscriberService
@@ -63,9 +57,7 @@ type Server struct {
 	ActivityService         api.ActivityService
 	InboxService            api.InboxService
 	BookmarkService         api.BookmarkService
-	VCSService              api.VCSService
 	RepositoryService       api.RepositoryService
-	AnomalyService          api.AnomalyService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
@@ -73,6 +65,7 @@ type Server struct {
 
 	e *echo.Echo
 
+	store         *store.Store
 	l             *zap.Logger
 	lvl           *zap.AtomicLevel
 	version       string
@@ -103,13 +96,13 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embedded in an iframe
+	// Disallow to be embedded in an iFrame
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
@@ -117,9 +110,9 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	embedFrontend(logger, e)
 
 	s := &Server{
+		store:         storeInstance,
 		l:             logger,
 		lvl:           loggerLevel,
-		CacheService:  NewCacheService(logger),
 		e:             e,
 		version:       version,
 		mode:          mode,
@@ -209,7 +202,7 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.PrincipalService, next, mode, secret)
+		return JWTMiddleware(logger, s.store, next, mode, secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -228,6 +221,7 @@ func NewServer(logger *zap.Logger, loggerLevel *zap.AtomicLevel, version string,
 	s.registerSettingRoutes(apiGroup)
 	s.registerActuatorRoutes(apiGroup)
 	s.registerAuthRoutes(apiGroup)
+	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
 	s.registerMemberRoutes(apiGroup)
 	s.registerPolicyRoutes(apiGroup)

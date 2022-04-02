@@ -210,15 +210,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
 		}
 
-		vcsFind := &api.VCSFind{
-			ID: &repositoryCreate.VCSID,
-		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		vcs, err := s.store.GetVCSByID(ctx, repositoryCreate.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
 		}
 		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS ID not found: %d", repositoryCreate.VCSID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
@@ -382,16 +379,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if repoPatch.BranchFilter != nil {
-			vcsFind := &api.VCSFind{
-				ID: &repo.VCSID,
-			}
-			vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+			vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
 			if vcs == nil {
-				err := fmt.Errorf("failed to find VCS configuration for ID: %d", repo.VCSID)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 			}
 			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
@@ -465,17 +458,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found for project ID: %d", projectID))
 		}
 
-		repository := repoRawList[0]
-		vcsFind := &api.VCSFind{
-			ID: &repository.VCSID,
-		}
-		vcs, err := s.VCSService.FindVCS(ctx, vcsFind)
+		repo := repoRawList[0]
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 		if vcs == nil {
-			err := fmt.Errorf("VCS not found for ID: %d", repository.VCSID)
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
@@ -495,17 +484,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repository.ID),
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.ID),
 			},
 			vcs.InstanceURL,
-			repository.ExternalID,
-			repository.ExternalWebhookID,
+			repo.ExternalID,
+			repo.ExternalWebhookID,
 		)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repository.ExternalWebhookID, projectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -611,13 +600,13 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.ProjectRaw) (*api.Project, error) {
 	project := raw.ToProject()
 
-	creator, err := s.composePrincipalByID(ctx, project.CreatorID)
+	creator, err := s.store.GetPrincipalByID(ctx, project.CreatorID)
 	if err != nil {
 		return nil, err
 	}
 	project.Creator = creator
 
-	updater, err := s.composePrincipalByID(ctx, project.UpdaterID)
+	updater, err := s.store.GetPrincipalByID(ctx, project.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -634,11 +623,11 @@ func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.Projec
 
 func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploymentConfig *api.DeploymentConfig) error {
 	var err error
-	deploymentConfig.Creator, err = s.composePrincipalByID(ctx, deploymentConfig.CreatorID)
+	deploymentConfig.Creator, err = s.store.GetPrincipalByID(ctx, deploymentConfig.CreatorID)
 	if err != nil {
 		return err
 	}
-	deploymentConfig.Updater, err = s.composePrincipalByID(ctx, deploymentConfig.UpdaterID)
+	deploymentConfig.Updater, err = s.store.GetPrincipalByID(ctx, deploymentConfig.UpdaterID)
 	if err != nil {
 		return err
 	}

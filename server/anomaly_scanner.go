@@ -58,29 +58,15 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				envFind := &api.EnvironmentFind{}
-				envRawList, err := s.server.EnvironmentService.FindEnvironmentList(ctx, envFind)
+				envList, err := s.server.store.FindEnvironment(ctx, &api.EnvironmentFind{})
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
-				// compose environments
-				var envList []*api.Environment
-				for _, envRaw := range envRawList {
-					env, err := s.server.composeEnvironmentRelationship(ctx, envRaw)
-					if err != nil {
-						s.l.Error("Failed to compose environment relationship",
-							zap.String("environment", envRaw.Name),
-							zap.Error(err))
-						return
-					}
-					envList = append(envList, env)
-				}
-
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
 				for _, env := range envList {
-					policy, err := s.server.PolicyService.GetBackupPlanPolicy(ctx, env.ID)
+					policy, err := s.server.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
 					if err != nil {
 						s.l.Error("Failed to retrieve backup policy",
 							zap.String("environment", env.Name),
@@ -184,7 +170,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
@@ -200,7 +186,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 	}
 
 	defer driver.Close(ctx)
-	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		InstanceID: &instance.ID,
 		Type:       api.AnomalyInstanceConnection,
 	})
@@ -221,7 +207,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			if setup {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
@@ -232,7 +218,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				}
 			} else {
-				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					InstanceID: &instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
@@ -263,7 +249,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
@@ -280,7 +266,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 		return
 	}
 	defer driver.Close(ctx)
-	err = s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: &database.ID,
 		Type:       api.AnomalyDatabaseConnection,
 	})
@@ -352,7 +338,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
@@ -367,7 +353,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 					}
 				}
 			} else {
-				err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseConnection,
 				})
@@ -436,7 +422,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -451,7 +437,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
@@ -519,7 +505,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.AnomalyService.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -534,7 +520,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.AnomalyService.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})

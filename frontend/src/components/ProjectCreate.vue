@@ -79,7 +79,7 @@
             <template #link>
               <a
                 class="normal-link inline-flex items-center"
-                href="https://docs.bytebase.com/features/tenant-database-management#database-name-template"
+                href="https://bytebase.com/docs/features/tenant-database-management#database-name-template"
                 target="__BLANK"
               >
                 {{ $t("common.learn-more") }}
@@ -132,6 +132,7 @@ import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
+import { useUIStateStore } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -205,7 +206,7 @@ export default defineComponent({
       store
         .dispatch("project/createProject", state.project)
         .then((createdProject: Project) => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "project.visit",
             newState: true,
           });

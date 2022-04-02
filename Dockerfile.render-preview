@@ -1,0 +1,73 @@
+# *****************************************************
+# * This script is for preview purpose on Render ONLY *
+# *****************************************************
+
+FROM node:14 as frontend
+
+RUN npm i -g pnpm
+
+WORKDIR /frontend-build
+
+# Install build dependency (e.g. vite)
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY ./frontend/ .
+
+# Build frontend
+RUN pnpm release-docker
+
+FROM golang:1.16.5-alpine3.13 as backend
+
+ARG VERSION="development"
+ARG GO_VERSION="unknown"
+ARG RENDER_GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
+
+# Need gcc musl-dev for CGO_ENABLED=1
+RUN apk --no-cache add gcc musl-dev
+
+WORKDIR /backend-build
+
+COPY . .
+
+# Copy frontend asset
+COPY --from=frontend /frontend-build/dist ./server/dist
+
+# For VERSION info
+COPY ./scripts .
+
+# -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
+# go-sqlite3 requires CGO_ENABLED
+RUN STAGING_VERSION=`cat ./VERSION`-${RENDER_GIT_COMMIT:0:5} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+        --tags "alpine" \
+        -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${STAGING_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
+        -o bytebase \
+        ./bin/server/main.go;
+
+# Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
+FROM alpine:3.14.3 as monolithic
+
+ARG VERSION="development"
+ARG RENDER_GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
+
+# See https://github.com/opencontainers/image-spec/blob/master/annotations.md
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.revision=${RENDER_GIT_COMMIT}
+LABEL org.opencontainers.image.created=${BUILD_TIME}
+LABEL org.opencontainers.image.authors=${BUILD_USER}
+
+COPY --from=backend /backend-build/bytebase /usr/local/bin/
+
+# Copy utility scripts, we have
+# - Demo script to launch Bytebase in readonly demo mode
+COPY ./scripts /usr/local/bin/
+
+# Create bb user for running Postgres database and server.
+RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase
+
+# Directory to store the data, which can be referenced as the mounting point.
+RUN mkdir -p /var/opt/bytebase

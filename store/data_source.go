@@ -8,35 +8,154 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.DataSourceService = (*DataSourceService)(nil)
-)
+// dataSourceRaw is the store model for an DataSource.
+// Fields have exactly the same meanings as DataSource.
+type dataSourceRaw struct {
+	ID int
 
-// DataSourceService represents a service for managing dataSource.
-type DataSourceService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
 
-	cache api.CacheService
+	// Related fields
+	InstanceID int
+	DatabaseID int
+
+	// Domain specific fields
+	Name     string
+	Type     api.DataSourceType
+	Username string
+	Password string
 }
 
-// NewDataSourceService returns a new instance of DataSourceService.
-func NewDataSourceService(logger *zap.Logger, db *DB, cache api.CacheService) *DataSourceService {
-	return &DataSourceService{l: logger, db: db, cache: cache}
+// toDataSource creates an instance of DataSource based on the dataSourceRaw.
+// This is intended to be called when we need to compose an DataSource relationship.
+func (raw *dataSourceRaw) toDataSource() *api.DataSource {
+	return &api.DataSource{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		InstanceID: raw.InstanceID,
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:     raw.Name,
+		Type:     raw.Type,
+		Username: raw.Username,
+		Password: raw.Password,
+	}
 }
 
-// CreateDataSource creates a new dataSource.
-func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
+// CreateDataSource creates an instance of DataSource.
+func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
+	dataSourceRaw, err := s.createDataSourceRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create data source with DataSourceCreate[%+v], error[%w]", create, err)
+	}
+	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose data source with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+	}
+	return dataSource, nil
+}
+
+// GetDataSource gets an instance of DataSource
+func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
+	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get data source with DataSourceFind[%+v], error[%w]", find, err)
+	}
+	if dataSourceRaw == nil {
+		return nil, nil
+	}
+	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose data source with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+	}
+	return dataSource, nil
+}
+
+// FindDataSource finds a list of DataSource instances
+func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
+	DataSourceRawList, err := s.findDataSourceRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find DataSource list, error[%w]", err)
+	}
+	var DataSourceList []*api.DataSource
+	for _, raw := range DataSourceRawList {
+		DataSource, err := s.composeDataSource(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose DataSource role with dataSourceRaw[%+v], error[%w]", raw, err)
+		}
+		DataSourceList = append(DataSourceList, DataSource)
+	}
+	return DataSourceList, nil
+}
+
+// PatchDataSource patches an instance of DataSource
+func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
+	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to patch DataSource with DataSourcePatch[%+v], error[%w]", patch, err)
+	}
+	DataSource, err := s.composeDataSource(ctx, dataSourceRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose DataSource role with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+	}
+	return DataSource, nil
+}
+
+//
+// private functions
+//
+
+// createDataSourceRawTx creates an instance of DataSource.
+// This uses an existing transaction object.
+func (s *Store) createDataSourceRawTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) error {
+	_, err := s.createDataSourceImpl(ctx, tx, create)
+	if err != nil {
+		return fmt.Errorf("Failed to create data source with DataSourceCreate[%+v], error[%w]", create, err)
+	}
+	return nil
+}
+
+func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api.DataSource, error) {
+	dataSource := raw.toDataSource()
+
+	creator, err := s.GetPrincipalByID(ctx, dataSource.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	dataSource.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, dataSource.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	dataSource.Updater = updater
+
+	return dataSource, nil
+}
+
+// createDataSourceRaw creates a new dataSource.
+func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.createDataSource(ctx, tx.PTx, create)
+	dataSource, err := s.createDataSourceImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -48,20 +167,15 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, create *api.Da
 	return dataSource, nil
 }
 
-// CreateDataSourceTx creates a data source with a transaction.
-func (s *DataSourceService) CreateDataSourceTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
-	return s.createDataSource(ctx, tx, create)
-}
-
-// FindDataSourceList retrieves a list of data sources based on find.
-func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSourceRaw, error) {
+// findDataSourceRaw retrieves a list of data sources based on find.
+func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDataSourceList(ctx, tx.PTx, find)
+	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -69,16 +183,16 @@ func (s *DataSourceService) FindDataSourceList(ctx context.Context, find *api.Da
 	return list, nil
 }
 
-// FindDataSource retrieves a single dataSource based on find.
+// getDataSourceRaw retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSourceRaw, error) {
+func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) (*dataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDataSourceList(ctx, tx.PTx, find)
+	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -91,16 +205,16 @@ func (s *DataSourceService) FindDataSource(ctx context.Context, find *api.DataSo
 	return list[0], nil
 }
 
-// PatchDataSource updates an existing dataSource by ID.
+// patchDataSourceRaw updates an existing dataSource by ID.
 // Returns ENOTFOUND if dataSource does not exist.
-func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSourceRaw, error) {
+func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := s.patchDataSource(ctx, tx.PTx, patch)
+	dataSource, err := s.patchDataSourceImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -112,8 +226,8 @@ func (s *DataSourceService) PatchDataSource(ctx context.Context, patch *api.Data
 	return dataSource, nil
 }
 
-// createDataSource creates a new dataSource.
-func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*api.DataSourceRaw, error) {
+// createDataSourceImpl creates a new dataSource.
+func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	// Insert row into dataSource.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO data_source (
@@ -145,7 +259,7 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 	defer row.Close()
 
 	row.Next()
-	var dataSourceRaw api.DataSourceRaw
+	var dataSourceRaw dataSourceRaw
 	if err := row.Scan(
 		&dataSourceRaw.ID,
 		&dataSourceRaw.CreatorID,
@@ -165,7 +279,7 @@ func (s *DataSourceService) createDataSource(ctx context.Context, tx *sql.Tx, cr
 	return &dataSourceRaw, nil
 }
 
-func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*api.DataSourceRaw, error) {
+func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -204,9 +318,9 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into dataSourceRawList.
-	var dataSourceRawList []*api.DataSourceRaw
+	var dataSourceRawList []*dataSourceRaw
 	for rows.Next() {
-		var dataSourceRaw api.DataSourceRaw
+		var dataSourceRaw dataSourceRaw
 		if err := rows.Scan(
 			&dataSourceRaw.ID,
 			&dataSourceRaw.CreatorID,
@@ -232,8 +346,8 @@ func (s *DataSourceService) findDataSourceList(ctx context.Context, tx *sql.Tx, 
 	return dataSourceRawList, nil
 }
 
-// patchDataSource updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*api.DataSourceRaw, error) {
+// patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
+func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
@@ -260,7 +374,7 @@ func (s *DataSourceService) patchDataSource(ctx context.Context, tx *sql.Tx, pat
 	defer row.Close()
 
 	if row.Next() {
-		var dataSourceRaw api.DataSourceRaw
+		var dataSourceRaw dataSourceRaw
 		if err := row.Scan(
 			&dataSourceRaw.ID,
 			&dataSourceRaw.CreatorID,

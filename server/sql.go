@@ -629,6 +629,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 }
 
 func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
+	// TODO(d): support semantic versioning.
 	limit := 1
 	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &databaseName,
