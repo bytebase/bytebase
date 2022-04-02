@@ -14,9 +14,6 @@ import (
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	// Register postgres driver
-	_ "github.com/bytebase/bytebase/plugin/db/pg"
 )
 
 func TestGetMigrationVersions(t *testing.T) {
