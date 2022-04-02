@@ -215,7 +215,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repositoryCreate.VCSID)).SetInternal(err)
 		}
 		if vcs == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
@@ -464,7 +464,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 		if vcs == nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
