@@ -250,17 +250,16 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	} else {
-		memberRaw, err := s.GetMemberByPrincipalID(ctx, principal.ID)
+		find := &api.MemberFind{PrincipalID: &principal.ID}
+		memberRaw, err := s.getMemberRaw(ctx, find)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				s.l.Error("Principal has not been assigned a role.",
-					zap.Int("id", principal.ID),
-					zap.String("name", principal.Name),
-				)
-			}
 			return nil, err
 		}
 		if memberRaw == nil {
+			s.l.Error("Principal has not been assigned a role.",
+				zap.Int("id", principal.ID),
+				zap.String("name", principal.Name),
+			)
 			return nil, fmt.Errorf("Member with PrincipalID[%d] not exist, error[%w]", principal.ID, err)
 		}
 		principal.Role = memberRaw.Role
