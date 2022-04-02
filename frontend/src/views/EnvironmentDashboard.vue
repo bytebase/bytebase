@@ -76,7 +76,14 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
+import {
+  onMounted,
+  onUnmounted,
+  computed,
+  reactive,
+  watch,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
@@ -91,6 +98,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
+import { useUIStateStore } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -121,7 +129,7 @@ interface LocalState {
     | "bb.feature.backup-policy";
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentDashboard",
   components: {
     EnvironmentDetail,
@@ -130,6 +138,7 @@ export default {
   props: {},
   setup() {
     const store = useStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -176,10 +185,10 @@ export default {
 
       selectEnvironmentOnHash();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
+      if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
           });
@@ -273,7 +282,7 @@ export default {
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.environment",
         newState: true,
       });
@@ -356,5 +365,5 @@ export default {
       tabClass,
     };
   },
-};
+});
 </script>

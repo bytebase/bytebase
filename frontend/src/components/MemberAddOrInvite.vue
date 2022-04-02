@@ -105,7 +105,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
+import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import RoleSelect from "./RoleSelect.vue";
 import {
@@ -116,6 +116,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isValidEmail } from "../utils";
+import { useUIStateStore } from "@/store";
 
 type User = {
   email: string;
@@ -127,7 +128,7 @@ interface LocalState {
   errorList: string[];
 }
 
-export default {
+export default defineComponent({
   name: "MemberAddOrInvite",
   components: { RoleSelect },
   props: {},
@@ -233,7 +234,7 @@ export default {
               store.dispatch("member/createdMember", newMember);
             });
 
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "member.addOrInvite",
             newState: true,
           });
@@ -257,5 +258,5 @@ export default {
       addOrInvite,
     };
   },
-};
+});
 </script>

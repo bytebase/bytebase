@@ -354,6 +354,7 @@ import {
 import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
+import { useUIStateStore } from "@/store";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -489,7 +490,7 @@ export default defineComponent({
         comment: newComment.value,
       };
       store.dispatch("activity/createActivity", createActivity).then(() => {
-        store.dispatch("uistate/saveIntroStateByKey", {
+        useUIStateStore().saveIntroStateByKey({
           key: "comment.create",
           newState: true,
         });
