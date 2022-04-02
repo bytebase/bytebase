@@ -2,12 +2,17 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -64,6 +69,206 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create sheet response").SetInternal(err)
 		}
+		return nil
+	})
+
+	g.POST("/project/:projectID/syncsheet", func(c echo.Context) error {
+		ctx := context.Background()
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
+		}
+
+		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{ID: &projectID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Project not found: %d", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found by ID: %d", projectID))
+		}
+		if project.WorkflowType != api.VCSWorkflow {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+		}
+
+		repo, err := s.RepositoryService.FindRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find relevant VCS repo, Project ID: %d", projectID)).SetInternal(err)
+		}
+		if repo == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found by project ID: %d", projectID))
+		}
+
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSID))
+		}
+
+		basePath := parseBasePathFromTemplate(repo.SheetPathTemplate)
+		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
+		// Maybe we should pass a certain branch by query param from frontend.
+		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryFileList(ctx,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.ID),
+			},
+			vcs.InstanceURL,
+			repo.ExternalID,
+			repo.BranchFilter,
+			basePath,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository file list from VCS, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
+		}
+
+		for _, file := range fileList {
+			sheetInfo, err := parseSheetInfo(file.Path, repo.SheetPathTemplate)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to parse sheet info from template").SetInternal(err)
+			}
+
+			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileMeta(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				file.Path,
+				repo.BranchFilter,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repoId: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
+			}
+
+			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileContent(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				file.Path,
+				repo.BranchFilter,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repoId: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
+			}
+
+			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchCommitByID(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				fileMeta.LastCommitID,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch commit data from VCS, instance URL: %s, repoId: %s, last commit ID: %s", vcs.InstanceURL, repo.ExternalID, fileMeta.LastCommitID)).SetInternal(err)
+			}
+
+			sheetVCSPayload := &api.SheetVCSPayload{
+				FileName:     fileMeta.Name,
+				FilePath:     fileMeta.Path,
+				Size:         fileMeta.Size,
+				Author:       lastCommit.AuthorName,
+				LastCommitID: lastCommit.ID,
+				LastSyncTs:   time.Now().Unix(),
+			}
+			payload, err := json.Marshal(sheetVCSPayload)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheetVCSPayload").SetInternal(err)
+			}
+
+			payloadString := string(payload)
+			vscSheetType := api.SheetForSQL
+			sheet, err := s.SheetService.FindSheet(ctx, &api.SheetFind{
+				Name:      &sheetInfo.SheetName,
+				ProjectID: &project.ID,
+				Source:    (*api.SheetSource)(&vcs.Type),
+				Type:      (*api.SheetType)(&vscSheetType),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, projectID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
+			}
+
+			if sheet == nil {
+				sheetCreate := api.SheetCreate{
+					ProjectID:  projectID,
+					CreatorID:  c.Get(getPrincipalIDContextKey()).(int),
+					Name:       sheetInfo.SheetName,
+					Statement:  fileContent,
+					Visibility: api.PublicSheet,
+					Source:     api.SheetFromBytebase,
+					Type:       api.SheetForSQL,
+					Payload:    payloadString,
+				}
+
+				// In non-tenant mode, we can set a databaseId for sheet.
+				if project.TenantMode != api.TenantModeDisabled {
+					if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
+						databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
+							Name:      &sheetInfo.DatabaseName,
+							ProjectID: &projectID,
+						})
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, projectID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
+						}
+
+						for _, database := range databaseList {
+							if sheetCreate.DatabaseID != nil {
+								break
+							}
+
+							labelList := []*api.DatabaseLabel{}
+							err := json.Unmarshal([]byte(database.Labels), &labelList)
+							if err != nil {
+								return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal database labels").SetInternal(err)
+							}
+
+							for _, label := range labelList {
+								if label != nil && label.Key == api.EnvironmentKeyName && label.Value == sheetInfo.EnvironmentName {
+									sheetCreate.DatabaseID = &database.ID
+									break
+								}
+							}
+						}
+					}
+				}
+
+				_, err := s.SheetService.CreateSheet(ctx, &sheetCreate)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
+				}
+			} else {
+				_, err := s.SheetService.PatchSheet(ctx, &api.SheetPatch{
+					ID:        sheet.ID,
+					UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+					Statement: &fileContent,
+					Payload:   &payloadString,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet").SetInternal(err)
+				}
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		return nil
 	})
 
@@ -238,4 +443,81 @@ func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw
 	}
 
 	return sheet, nil
+}
+
+// SheetInfo represents the sheet related information from sheetPathTemplate.
+type SheetInfo struct {
+	EnvironmentName string
+	DatabaseName    string
+	SheetName       string
+}
+
+// parseSheetInfo matches sheetPath against sheetPathTemplate. If sheetPath matches, then it will derive SheetInfo from the sheetPath.
+// Both sheetPath and sheetPathTemplate are the full file path(including the base directory) of the repository.
+func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, error) {
+	placeholderList := []string{
+		"ENV_NAME",
+		"DB_NAME",
+		"NAME",
+	}
+	sheetPathRegex := sheetPathTemplate
+	for _, placeholder := range placeholderList {
+		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+	}
+	myRegex, err := regexp.Compile(sheetPathRegex)
+	if err != nil {
+		return nil, fmt.Errorf("invalid sheet path template: %q", sheetPathTemplate)
+	}
+	if !myRegex.MatchString(sheetPath) {
+		return nil, fmt.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
+	}
+
+	sheetInfo := &SheetInfo{}
+	matchList := myRegex.FindStringSubmatch(sheetPath)
+	for _, placeholder := range placeholderList {
+		index := myRegex.SubexpIndex(placeholder)
+		if index >= 0 {
+			switch placeholder {
+			case "ENV_NAME":
+				sheetInfo.EnvironmentName = matchList[index]
+			case "DB_NAME":
+				sheetInfo.DatabaseName = matchList[index]
+			case "NAME":
+				sheetInfo.SheetName = matchList[index]
+			}
+		}
+	}
+
+	if sheetInfo.SheetName == "" {
+		return nil, fmt.Errorf("sheet name cannot be empty from sheet path %q and template %q", sheetPath, sheetPathTemplate)
+	}
+
+	return sheetInfo, nil
+}
+
+// parseBasePathFromTemplate gets the base path from template.
+func parseBasePathFromTemplate(sheetPathTemplate string) string {
+	pathList := strings.Split(sheetPathTemplate, "/")
+	placeholderList := []string{
+		"ENV_NAME",
+		"DB_NAME",
+		"NAME",
+	}
+	basePath := ""
+	for _, subpath := range pathList {
+		hasPlaceholder := false
+		for _, placeholder := range placeholderList {
+			if strings.Contains(subpath, fmt.Sprintf("{{%s}}", placeholder)) {
+				hasPlaceholder = true
+				break
+			}
+		}
+		if hasPlaceholder {
+			break
+		} else {
+			basePath += subpath + "/"
+		}
+	}
+
+	return basePath
 }
