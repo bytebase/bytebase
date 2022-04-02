@@ -28,10 +28,10 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
+import { useLabelStore } from "@/store";
 import { capitalize } from "lodash-es";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useStore } from "vuex";
 import {
   DatabaseLabel,
   Label,
@@ -52,11 +52,11 @@ const props = defineProps<{
   filter: "required" | "optional";
 }>();
 
-const store = useStore();
+const labelStore = useLabelStore();
 const { t } = useI18n();
 
 const prepare = () => {
-  store.dispatch("label/fetchLabelList");
+  labelStore.fetchLabelList();
 };
 watchEffect(prepare);
 
@@ -65,7 +65,7 @@ const isDbNameTemplateMode = computed((): boolean => {
 });
 
 const availableLabelList = computed(() => {
-  const allLabelList = store.getters["label/labelList"]() as Label[];
+  const allLabelList = labelStore.labelList;
   // ignore reserved labels (e.g. bb.environment)
   return allLabelList.filter((label) => !isReservedLabel(label));
 });

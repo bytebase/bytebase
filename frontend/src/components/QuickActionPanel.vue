@@ -269,6 +269,7 @@ import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
 import { Subscription } from "../types";
+import { useCommandStore } from "@/store";
 
 interface LocalState {
   showModal: boolean;
@@ -298,6 +299,7 @@ export default defineComponent({
     const { t } = useI18n();
     const router = useRouter();
     const store = useStore();
+    const commandStore = useCommandStore();
 
     const state = reactive<LocalState>({
       showModal: false,
@@ -381,11 +383,11 @@ export default defineComponent({
     };
 
     const createEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bb.environment.create");
+      commandStore.dispatchCommand("bb.environment.create");
     };
 
     const reorderEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bb.environment.reorder");
+      commandStore.dispatchCommand("bb.environment.reorder");
     };
 
     const QuickActionMap: Record<string, Partial<Action>> = {

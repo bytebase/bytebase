@@ -142,7 +142,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Retrieve sql by reading the file content
-				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFile(
+				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFileContent(
 					ctx,
 					common.OauthContext{
 						ClientID:     repo.VCS.ApplicationID,
