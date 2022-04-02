@@ -2,13 +2,10 @@ import { defineStore } from "pinia";
 import { RouteLocationNormalized } from "vue-router";
 import { RouterSlug } from "../../types";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RouterState {
-  // empty since we store everything into localStorage
-}
-
 export const useRouterStore = defineStore("router", {
-  state: (): RouterState => ({}),
+  // need not to initialize a state since we store everything into localStorage
+  // state: () => ({}),
+
   getters: {
     backPath: () => () => {
       return localStorage.getItem("ui.backPath") || "/";
