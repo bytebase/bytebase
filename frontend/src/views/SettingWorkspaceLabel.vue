@@ -73,6 +73,8 @@ import { BBTableColumn } from "../bbkit/types";
 import { BBTable, BBTableCell } from "../bbkit";
 import { useI18n } from "vue-i18n";
 import AddLabelValue from "../components/AddLabelValue.vue";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 export default defineComponent({
   name: "SettingWorkspaceLabels",
@@ -84,19 +86,18 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const store = useStore();
+    const labelStore = useLabelStore();
     const currentUser = computed(
       () => store.getters["auth/currentUser"]() as Principal
     );
 
     const prepareLabelList = () => {
-      store.dispatch("label/fetchLabelList");
+      labelStore.fetchLabelList();
     };
 
     watchEffect(prepareLabelList);
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
+    const { labelList } = storeToRefs(labelStore);
 
     const allowEdit = computed(() => {
       return isDBAOrOwner(currentUser.value.role);
@@ -112,7 +113,7 @@ export default defineComponent({
       const labelPatch: LabelPatch = {
         valueList: [...label.valueList, value],
       };
-      store.dispatch("label/patchLabel", {
+      labelStore.patchLabel({
         id: label.id,
         labelPatch,
       });
@@ -126,7 +127,7 @@ export default defineComponent({
       const labelPatch: LabelPatch = {
         valueList,
       };
-      store.dispatch("label/patchLabel", {
+      labelStore.patchLabel({
         id: label.id,
         labelPatch,
       });
