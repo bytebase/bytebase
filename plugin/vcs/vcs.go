@@ -43,6 +43,13 @@ type OAuthToken struct {
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
+// Commit records the commit data.
+type Commit struct {
+	ID         string
+	AuthorName string
+	CreatedTs  int64
+}
+
 // FileCommit is the API message for a VCS file commit.
 type FileCommit struct {
 	ID         string `json:"id"`
@@ -64,17 +71,16 @@ type FileCommitCreate struct {
 
 // FileMeta records the file metadata.
 type FileMeta struct {
-	FileName     string
-	FilePath     string
+	Name         string
+	Path         string
 	Size         int64
-	Content      string
 	LastCommitID string
 }
 
 // RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
 type RepositoryTreeNode struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
+	Path string
+	Type string
 }
 
 // PushEvent is the API message for a VCS push event.
@@ -141,6 +147,13 @@ type Provider interface {
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
 	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
+	// Fetch the commit data by id
+	//
+	// oauthCtx: OAuth context to fetch commit
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// commitID: the commit ID
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content
@@ -181,18 +194,22 @@ type Provider interface {
 	//
 	// Similar to CreateFile except it overwrites an existing file. The fileCommit shoud includes the "LastCommitID" field which is used to detect conflicting writes.
 	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
-	// Reads the file content. Returns an io.ReadCloser on success. If file does not exist, returns NotFound error.
+	// Reads the file metadata
+	//
+	// oauthCtx: OAuth context to fetch the file metadata
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// filePath: file path to be read
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
+	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
+	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
-	// commitID: the specific version to be read
-	ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, commitID string) (string, error)
-	// Reads the file metadata. Returns the file meta on success.
-	//
-	// Similar to ReadFile except it specifies a branch instead of a commitID.
-	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, branch string) (*FileMeta, error)
+	// ref: the specific file version to be read, could be a name of branch, tag or commit
+	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
 	// Creates a webhook. Returns the created webhook ID on succeess.
 	//
 	// oauthCtx: OAuth context to create the webhook
