@@ -384,7 +384,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
 			}
 			if vcs == nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 			}
 			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.

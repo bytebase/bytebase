@@ -783,7 +783,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
 		}
 		if dataSource == nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Data source not found with ID %d", dataSourceID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found with ID %d", dataSourceID))
 		}
 		if dataSource.DatabaseID != databaseID {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
