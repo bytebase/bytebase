@@ -107,11 +107,12 @@ const dropdownOptions = computed(() => {
         key: "alter-table",
         item: sheetContext.value,
       },
-      {
-        label: "Copy name",
-        key: "copy-name",
-        item: sheetContext.value,
-      },
+      // TODO Just a thought
+      // {
+      //   label: "Copy name",
+      //   key: "copy-name",
+      //   item: sheetContext.value,
+      // },
     ];
   }
   return [
