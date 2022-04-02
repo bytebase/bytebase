@@ -3,10 +3,12 @@
 </template>
 
 <script lang="ts">
+import { useUIStateStore } from "@/store";
+import { defineComponent } from "vue";
 import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID } from "../types";
 
-export default {
+export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
     const store = useStore();
@@ -23,8 +25,8 @@ export default {
       store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
-      store.dispatch("uistate/restoreState"),
+      useUIStateStore().restoreState(),
     ]);
   },
-};
+});
 </script>
