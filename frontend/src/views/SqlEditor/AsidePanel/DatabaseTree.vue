@@ -20,6 +20,7 @@
         :pattern="searchPattern"
         :default-expanded-keys="defaultExpanedKeys"
         :default-selected-keys="defaultSelectedKeys"
+        :selected-keys="selectedKeys"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
@@ -93,6 +94,7 @@ const searchPattern = ref();
 const showDropdown = ref(false);
 const x = ref(0);
 const y = ref(0);
+const selectedKeys = ref<string[] | number[]>([]);
 const sheetContext = ref<DropdownOption>();
 const dropdownOptions = computed(() => {
   if (!sheetContext.value) {
@@ -374,6 +376,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       showDropdown.value = true;
       x.value = e.clientX;
       y.value = e.clientY;
+      if (option && option.key) {
+        selectedKeys.value = [option.key as string];
+      }
       e.preventDefault();
     },
   };
