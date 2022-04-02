@@ -24,9 +24,8 @@ type VCS struct {
 	InstanceURL   string   `jsonapi:"attr,instanceUrl"`
 	APIURL        string   `jsonapi:"attr,apiUrl"`
 	ApplicationID string   `jsonapi:"attr,applicationId"`
-	// Secret will be used for OAuth on the client side when setting up project GitOps workflow.
-	// So it should be returned to the response.
-	Secret string `jsonapi:"attr,secret"`
+	// For safety concerns, we will not return the secret, and all relevant logic is dealt in the backend.
+	Secret string
 }
 
 // VCSCreate is the API message for creating a VCS.
@@ -79,4 +78,12 @@ type VCSDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
+}
+
+// ExternalRepository is the API message for external repository
+type ExternalRepository struct {
+	ID       int64  `jsonapi:"primary,id"`
+	Name     string `jsonapi:"attr,name"`
+	FullPath string `jsonapi:"attr,fullPath"`
+	WebURL   string `jsonapi:"attr,webUrl"`
 }

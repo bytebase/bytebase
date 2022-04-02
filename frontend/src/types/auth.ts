@@ -47,7 +47,7 @@ export const EmptyAuthProvider: AuthProvider = {
 };
 
 export type VCSLoginInfo = {
-  id: VCSId;
+  vcsId: VCSId;
   name: string;
-  accessToken: string;
+  code: string;
 };

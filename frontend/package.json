@@ -25,6 +25,7 @@
     "naive-ui": "^2.26.4",
     "node-sql-parser": "^4.0.8",
     "papaparse": "^5.3.1",
+    "pinia": "^2.0.12",
     "slug": "^4.0.2",
     "splitpanes": "^3.0.6",
     "sql-formatter": "^4.0.2",

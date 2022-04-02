@@ -11,6 +11,7 @@ import {
   nextTick,
   onUnmounted,
   watch,
+  computed,
 } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
@@ -23,8 +24,8 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
+import { useTabStore } from "@/store";
 import {
-  TabGetters,
   SqlEditorActions,
   SqlEditorState,
   SheetGetters,
@@ -61,6 +62,7 @@ const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
+const tabStore = useTabStore();
 const store = useStore();
 const { t } = useI18n();
 const { shouldSetContent, shouldFormatContent } =
@@ -68,7 +70,6 @@ const { shouldSetContent, shouldFormatContent } =
     "shouldSetContent",
     "shouldFormatContent",
   ]);
-const { currentTab } = useNamespacedGetters<TabGetters>("tab", ["currentTab"]);
 const { isReadOnly } = useNamespacedGetters<SheetGetters>("sheet", [
   "isReadOnly",
 ]);
@@ -77,6 +78,8 @@ const { setShouldSetContent, setShouldFormatContent } =
     "setShouldSetContent",
     "setShouldFormatContent",
   ]);
+
+const readonly = computed(() => isReadOnly.value(tabStore.currentTab));
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
@@ -157,7 +160,7 @@ const init = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
-      if (isReadOnly.value) {
+      if (readonly.value) {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "INFO",
@@ -203,14 +206,14 @@ const init = async () => {
   });
 
   // set the editor focus when the tab is selected
-  if (!isReadOnly.value) {
+  if (!readonly.value) {
     editorInstance.focus();
 
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
 
   watch(
-    () => isReadOnly.value,
+    () => readonly.value,
     (readOnly) => {
       if (editorInstance) {
         editorInstance.updateOptions({ readOnly });
@@ -235,7 +238,7 @@ watch(
   () => {
     if (shouldSetContent.value) {
       setShouldSetContent(false);
-      setContent(editorInstance, currentTab.value.statement);
+      setContent(editorInstance, tabStore.currentTab.statement);
     }
   }
 );

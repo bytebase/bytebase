@@ -158,7 +158,13 @@
 </template>
 
 <script lang="ts">
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import {
+  computed,
+  defineComponent,
+  onMounted,
+  onUnmounted,
+  reactive,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
@@ -166,14 +172,14 @@ import {
   EmptyAuthProvider,
   VCSLoginInfo,
   LoginInfo,
-  OAuthConfig,
-  OAuthToken,
   OAuthWindowEventPayload,
   openWindowForOAuth,
   redirectUrl,
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   email: string;
@@ -181,11 +187,12 @@ interface LocalState {
   activeAuthProvider: AuthProvider;
 }
 
-export default {
+export default defineComponent({
   name: "SigninPage",
   components: { AuthFooter },
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -193,8 +200,7 @@ export default {
       password: "",
       activeAuthProvider: EmptyAuthProvider,
     });
-
-    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+    const { isDemo } = storeToRefs(actuatorStore);
 
     onMounted(() => {
       state.email = isDev() || isDemo.value ? "demo@example.com" : "";
@@ -202,7 +208,7 @@ export default {
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
-      if (store.getters["actuator/needAdminSetup"]()) {
+      if (actuatorStore.needAdminSetup) {
         router.push({ name: "auth.signup", replace: true });
       }
 
@@ -228,32 +234,18 @@ export default {
       if (payload.error) {
         return;
       }
-      const oAuthConfig: OAuthConfig = {
-        endpoint: `${state.activeAuthProvider.instanceUrl}/oauth/token`,
-        applicationId: state.activeAuthProvider.applicationId,
-        secret: state.activeAuthProvider.secret,
-        redirectUrl: redirectUrl(),
+      const gitlabLoginInfo: VCSLoginInfo = {
+        vcsId: state.activeAuthProvider.id,
+        name: state.activeAuthProvider.name,
+        code: payload.code,
       };
       store
-        .dispatch("gitlab/exchangeToken", {
-          oAuthConfig,
-          code: payload.code,
+        .dispatch("auth/login", {
+          authProvider: "GITLAB_SELF_HOST",
+          payload: gitlabLoginInfo,
         })
-        .then((token: OAuthToken) => {
-          const gitlabLoginInfo: VCSLoginInfo = {
-            id: state.activeAuthProvider.id,
-            name: state.activeAuthProvider.name,
-            accessToken: token.accessToken,
-          };
-
-          store
-            .dispatch("auth/login", {
-              authProvider: "GITLAB_SELF_HOST",
-              payload: gitlabLoginInfo,
-            })
-            .then(() => {
-              router.push("/");
-            });
+        .then(() => {
+          router.push("/");
         });
     };
 
@@ -310,5 +302,5 @@ export default {
       has3rdPartyLoginFeature,
     };
   },
-};
+});
 </script>

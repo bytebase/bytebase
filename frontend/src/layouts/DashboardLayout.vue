@@ -48,9 +48,11 @@ import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import BannerTrial from "../views/BannerTrial.vue";
 import { ServerInfo } from "../types";
-import { computed } from "vue";
+import { computed, defineComponent } from "vue";
+import { useActuatorStore } from "@/store";
+import { storeToRefs } from "pinia";
 
-export default {
+export default defineComponent({
   name: "DashboardLayout",
   components: {
     ProvideDashboardContext,
@@ -60,9 +62,10 @@ export default {
   },
   setup() {
     const store = useStore();
+    const actuatorStore = useActuatorStore();
 
     const ping = () => {
-      store.dispatch("actuator/fetchInfo").then((info: ServerInfo) => {
+      actuatorStore.fetchInfo().then((info: ServerInfo) => {
         store.dispatch("notification/pushNotification", {
           module: "bytebase",
           style: "SUCCESS",
@@ -71,12 +74,10 @@ export default {
       });
     };
 
-    const isDemo = computed(() => store.getters["actuator/isDemo"]());
+    const { isDemo, isReadonly } = storeToRefs(actuatorStore);
     const isNearTrialExpireTime = computed(() =>
       store.getters["subscription/isNearTrialExpireTime"]()
     );
-
-    const isReadonly = computed(() => store.getters["actuator/isReadonly"]());
 
     return {
       ping,
@@ -85,5 +86,5 @@ export default {
       isNearTrialExpireTime,
     };
   },
-};
+});
 </script>

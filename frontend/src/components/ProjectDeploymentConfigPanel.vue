@@ -129,7 +129,6 @@ import { useStore } from "vuex";
 import {
   Project,
   Environment,
-  Label,
   Database,
   AvailableLabel,
   DeploymentConfig,
@@ -144,6 +143,8 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
+import { useLabelStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
@@ -167,6 +168,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const labelStore = useLabelStore();
     const { t } = useI18n();
     const dialog = useDialog();
 
@@ -189,7 +191,7 @@ export default defineComponent({
 
     const prepareList = () => {
       store.dispatch("environment/fetchEnvironmentList");
-      store.dispatch("label/fetchLabelList");
+      labelStore.fetchLabelList();
       store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
     };
 
@@ -197,9 +199,7 @@ export default defineComponent({
       () => store.getters["environment/environmentList"]() as Environment[]
     );
 
-    const labelList = computed(
-      () => store.getters["label/labelList"]() as Label[]
-    );
+    const { labelList } = storeToRefs(labelStore);
 
     const databaseList = computed(
       () =>

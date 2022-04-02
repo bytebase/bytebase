@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -13,25 +12,19 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
-
-type mockRoundTripper struct {
-	roundTrip func(r *http.Request) (*http.Response, error)
-}
-
-func (m *mockRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	return m.roundTrip(r)
-}
 
 func TestProvider_FetchUserInfo(t *testing.T) {
 	p := newProvider(
 		vcs.ProviderConfig{
 			Client: &http.Client{
-				Transport: &mockRoundTripper{
-					roundTrip: func(r *http.Request) (*http.Response, error) {
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
 						assert.Equal(t, "/users/octocat", r.URL.Path)
 						return &http.Response{
 							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
 							Body: io.NopCloser(strings.NewReader(`
 {
   "login": "octocat",
@@ -80,7 +73,6 @@ func TestProvider_FetchUserInfo(t *testing.T) {
   }
 }
 `)),
-							Request: r,
 						}, nil
 					},
 				},
@@ -102,11 +94,21 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
-		Transport: &mockRoundTripper{
-			roundTrip: func(r *http.Request) (*http.Response, error) {
-				assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+				if token == "expired" {
+					return &http.Response{
+						StatusCode: http.StatusBadRequest,
+						Body: io.NopCloser(strings.NewReader(`
+					{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
+					`)),
+					}, nil
+				}
+
 				return &http.Response{
 					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens#renewing-a-user-token-with-a-refresh-token
 					Body: io.NopCloser(strings.NewReader(`
 {
   "access_token": "ghu_16C7e42F292c6912E7710c838347Ae178B4a",
@@ -117,12 +119,11 @@ func TestOAuth_RefreshToken(t *testing.T) {
   "token_type": "bearer"
 }
 `)),
-					Request: r,
 				}, nil
 			},
 		},
 	}
-	token := "old"
+	token := "expired"
 
 	calledRefresher := false
 	refresher := func(_, _ string, _ int64) error {
@@ -130,57 +131,17 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		return nil
 	}
 
-	called := 0
-	_, _, err := retry(ctx, client, &token, oauthContext{}, refresher,
-		func() (*http.Response, error) {
-			called++
-			if called == 1 {
-				return &http.Response{
-					StatusCode: http.StatusBadRequest,
-					Body: io.NopCloser(strings.NewReader(`
-{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-`)),
-				}, nil
-			}
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader(`{}`)),
-			}, nil
-		},
+	_, _, err := oauth.Get(
+		ctx,
+		client,
+		"https://api.github.com/users/octocat",
+		&token,
+		tokenRefresher(
+			oauthContext{},
+			refresher,
+		),
 	)
 	require.NoError(t, err)
 	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
 	assert.True(t, calledRefresher)
-}
-
-func TestRetry_Exceeded(t *testing.T) {
-	ctx := context.Background()
-	client := &http.Client{
-		Transport: &mockRoundTripper{
-			roundTrip: func(r *http.Request) (*http.Response, error) {
-				assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(strings.NewReader(`{}`)),
-					Request:    r,
-				}, nil
-			},
-		},
-	}
-	_ = client
-	token := "old"
-	_, _, err := retry(ctx, client, &token, oauthContext{},
-		func(_, _ string, _ int64) error { return nil },
-		func() (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusBadRequest,
-				Body: io.NopCloser(strings.NewReader(`
-{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-`)),
-			}, nil
-		},
-	)
-	wantErr := `retries exceeded for oauth refresher with status code 400 and body ""`
-	gotErr := fmt.Sprintf("%v", err)
-	assert.Equal(t, wantErr, gotErr)
 }
