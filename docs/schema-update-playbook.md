@@ -1,4 +1,4 @@
-# Schema Update Playbook
+# Schema Update Guide
 
 All schemas are located at [store/migration](https://github.com/bytebase/bytebase/tree/main/store/migration). Bytebase schema release follows semantic versioning. This document goes over the scheme update process during development and release.
 
