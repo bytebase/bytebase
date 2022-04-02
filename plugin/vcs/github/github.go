@@ -99,6 +99,10 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _
 	return p.fetchUserInfo(ctx, oauthCtx, "user")
 }
 
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+	return nil, errors.New("not implemented yet")
+}
+
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, _, username string) (*vcs.UserInfo, error) {
 	return p.fetchUserInfo(ctx, oauthCtx, fmt.Sprintf("users/%s", username))
 }
@@ -127,12 +131,12 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-func (p *Provider) ReadFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, commitID string) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, branch string) (*vcs.FileMeta, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
+	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
