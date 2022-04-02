@@ -325,6 +325,9 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		}
 
 		minorVersions, messages, err := getMinorMigrationVersions(names, cutoffSchemaVersion, *curVer)
+		if err != nil {
+			return semver.Version{}, err
+		}
 		for _, message := range messages {
 			l.Info(message)
 		}
@@ -335,7 +338,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 
 		for _, minorVersion := range minorVersions {
 			l.Info(fmt.Sprintf("Starting minor version migrating cycle %s.", minorVersion))
-			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%s/*.sql", releaseMode, minorVersion))
+			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", releaseMode, minorVersion.Major, minorVersion.Minor))
 			if err != nil {
 				return semver.Version{}, err
 			}
@@ -470,7 +473,9 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 		if baseName == latestSchemaFile || baseName == latestDataFile {
 			continue
 		}
-		v, err := semver.Make(baseName)
+		// Convert minor version to semantic version format, e.g. "1.12" will be "1.12.0".
+		s := fmt.Sprintf("%s.0", baseName)
+		v, err := semver.Make(s)
 		if err != nil {
 			return nil, fmt.Errorf("invalid migration file path %q, error %w", name, err)
 		}

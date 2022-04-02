@@ -191,32 +191,46 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
 
-	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease))
+	// Create a database with dev latest schema.
+	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
 	require.NoError(t, err)
 	versions, err := getMinorVersions(names)
 	require.NoError(t, err)
+	require.Len(t, versions, 1)
+	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeDev, versions[0].Major, versions[0].Minor))
+	require.NoError(t, err)
+	devVersion := versions[0]
+	devPatches := len(names)
+	if devPatches > 0 {
+		devVersion.Patch = uint64(devPatches - 1)
+	}
+	devDatabaseName := getDatabaseName(devVersion)
+	// Passing curVers = nil will create the database.
+	ver, err := migrate(ctx, d, nil, devVersion, common.ReleaseModeDev, serverVersion, devDatabaseName, l)
+	require.NoError(t, err)
+	require.Equal(t, devVersion, ver)
 
-	// For every version, we create a database with the schema of that version and apply migrations till the latest version in the migration directory.
-	// For example, we can 3 versions, 1.0.0, 1.1.0, 1.2.0.
-	// Create a database with 1.0.0 schema, apply 1.1.0 migration, and apply 1.2.0 migration.
-	// Create a database with 1.1.0 schema, and apply 1.2.0 migration.
-	// Create a database with 1.2.0 schema. But there is no migration since it's the latest.
-	for i := range versions {
-		initialVersion := versions[i]
-		initialDatabaseName := getDatabaseName(initialVersion)
-		// Passing curVers = nil will create the database.
-		ver, err := migrate(ctx, d, nil, initialVersion, common.ReleaseModeRelease, serverVersion, initialDatabaseName, l)
+	// Create a database with release latest schema, and apply migration to dev latest.
+	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
+	require.NoError(t, err)
+	versions, err = getMinorVersions(names)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(versions), 1)
+	minorVersion := versions[len(versions)-1]
+	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor))
+	require.NoError(t, err)
+	prodVersion := minorVersion
+	prodVersion.Patch = uint64(len(names))
+	prodDatabaseName := getDatabaseName(prodVersion)
+	// Passing curVers = nil will create the database.
+	ver, err = migrate(ctx, d, nil, prodVersion, common.ReleaseModeRelease, serverVersion, prodDatabaseName, l)
+	require.NoError(t, err)
+	require.Equal(t, prodVersion, ver)
+	// Apply migration to dev latest if there are patches.
+	if devPatches > 0 {
+		ver, err = migrate(ctx, d, &prodVersion, devVersion, common.ReleaseModeDev, serverVersion, prodDatabaseName, l)
 		require.NoError(t, err)
-		require.Equal(t, initialVersion, ver)
-
-		currentVersion := initialVersion
-		for j := i + 1; j < len(versions); j++ {
-			version := versions[j]
-			ver, err = migrate(ctx, d, &currentVersion, version, common.ReleaseModeRelease, serverVersion, initialDatabaseName, l)
-			require.NoError(t, err)
-			require.Equal(t, version, ver)
-			currentVersion = version
-		}
+		require.Equal(t, devVersion, ver)
 	}
 }
 
