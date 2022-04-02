@@ -24,17 +24,12 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	// Import sqlite3 driver.
-	_ "github.com/mattn/go-sqlite3"
-
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
 	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	// Register postgres driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
-	_ "github.com/lib/pq"
-
 	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
 	// Register sqlite driver.

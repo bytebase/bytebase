@@ -13,6 +13,9 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	// Import sqlite3 driver.
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
