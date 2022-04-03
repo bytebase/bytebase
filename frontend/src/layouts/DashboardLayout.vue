@@ -3,6 +3,9 @@
     <template v-if="isDemo">
       <BannerDemo />
     </template>
+    <template v-if="showDebugBanner">
+      <BannerDebug />
+    </template>
     <template v-else-if="isNearTrialExpireTime">
       <BannerTrial />
     </template>
@@ -47,9 +50,11 @@ import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
 import BannerTrial from "../views/BannerTrial.vue";
+import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
+import { isDBAOrOwner } from "../utils";
 import { computed, defineComponent } from "vue";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useDebugStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -59,10 +64,12 @@ export default defineComponent({
     DashboardHeader,
     BannerDemo,
     BannerTrial,
+    BannerDebug,
   },
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const debugStore = useDebugStore();
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
@@ -79,11 +86,23 @@ export default defineComponent({
       store.getters["subscription/isNearTrialExpireTime"]()
     );
 
+    const { isDebug } = storeToRefs(debugStore);
+
+    const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    // For now, debug mode is a global setting and will affect all users.
+    // So we only allow DBA and Owner to toggle it and thus show a banner
+    // reminding them to turn off
+    const showDebugBanner = computed(() => {
+      return isDebug.value && isDBAOrOwner(currentUser.value.role);
+    });
+
     return {
       ping,
       isDemo,
       isReadonly,
       isNearTrialExpireTime,
+      showDebugBanner,
     };
   },
 });
