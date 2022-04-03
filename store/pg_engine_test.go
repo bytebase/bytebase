@@ -3,10 +3,8 @@ package store
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -192,48 +190,36 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a database with dev latest schema.
-	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
+	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
 	require.NoError(t, err)
-	versions, err := getMinorVersions(names)
-	require.NoError(t, err)
-	require.Len(t, versions, 1)
-	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeDev, versions[0].Major, versions[0].Minor))
-	require.NoError(t, err)
-	devVersion := versions[0]
-	devPatches := len(names)
-	if devPatches > 0 {
-		devVersion.Patch = uint64(devPatches - 1)
-	}
-	devDatabaseName := getDatabaseName(devVersion)
+
+	devDatabaseName := "dev"
 	// Passing curVers = nil will create the database.
-	ver, err := migrate(ctx, d, nil, devVersion, common.ReleaseModeDev, serverVersion, devDatabaseName, l)
+	ver, err := migrate(ctx, d, nil, common.ReleaseModeDev, serverVersion, devDatabaseName, l)
 	require.NoError(t, err)
 	require.Equal(t, devVersion, ver)
 
 	// Create a database with release latest schema, and apply migration to dev latest.
-	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
+	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
 	require.NoError(t, err)
-	versions, err = getMinorVersions(names)
-	require.NoError(t, err)
-	require.GreaterOrEqual(t, len(versions), 1)
-	minorVersion := versions[len(versions)-1]
-	names, err = fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor))
-	require.NoError(t, err)
-	prodVersion := minorVersion
-	prodVersion.Patch = uint64(len(names))
-	prodDatabaseName := getDatabaseName(prodVersion)
+	releaseDatabaseName := "release"
 	// Passing curVers = nil will create the database.
-	ver, err = migrate(ctx, d, nil, prodVersion, common.ReleaseModeRelease, serverVersion, prodDatabaseName, l)
+	ver, err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, releaseDatabaseName, l)
 	require.NoError(t, err)
-	require.Equal(t, prodVersion, ver)
+	require.Equal(t, releaseVersion, ver)
 	// Apply migration to dev latest if there are patches.
-	if devPatches > 0 {
-		ver, err = migrate(ctx, d, &prodVersion, devVersion, common.ReleaseModeDev, serverVersion, prodDatabaseName, l)
-		require.NoError(t, err)
-		require.Equal(t, devVersion, ver)
-	}
+	ver, err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, serverVersion, releaseDatabaseName, l)
+	require.NoError(t, err)
+	require.Equal(t, devVersion, ver)
 }
 
-func getDatabaseName(version semver.Version) string {
-	return fmt.Sprintf("db%s", strings.ReplaceAll(version.String(), ".", "v"))
+func TestGetCutoffVersion(t *testing.T) {
+	// The wanted devVersion and releaseVersion will change if there are any development or release changes in the migration directory.
+	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
+	require.NoError(t, err)
+	require.Equal(t, semver.MustParse("1.1.2"), devVersion)
+
+	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
+	require.NoError(t, err)
+	require.Equal(t, semver.MustParse("1.0.1"), releaseVersion)
 }

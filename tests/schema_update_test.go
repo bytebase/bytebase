@@ -143,7 +143,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	require.NoError(t, err)
 	wantHistories := []api.MigrationHistory{
 		{
-			ID:         3,
 			Database:   databaseName,
 			Source:     db.UI,
 			Type:       db.Data,
@@ -152,7 +151,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: dumpedSchema,
 		},
 		{
-			ID:         2,
 			Database:   databaseName,
 			Source:     db.UI,
 			Type:       db.Migrate,
@@ -161,7 +159,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: "",
 		},
 		{
-			ID:         1,
 			Database:   databaseName,
 			Source:     db.UI,
 			Type:       db.Baseline,
@@ -173,7 +170,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	require.Equal(t, len(histories), len(wantHistories))
 	for i, history := range histories {
 		got := api.MigrationHistory{
-			ID:         history.ID,
 			Database:   history.Database,
 			Source:     history.Source,
 			Type:       history.Type,
@@ -216,7 +212,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	require.NoError(t, err)
 	wantCloneHistories := []api.MigrationHistory{
 		{
-			ID:         5,
 			Database:   cloneDatabaseName,
 			Source:     db.UI,
 			Type:       db.Branch,
@@ -225,7 +220,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: dumpedSchema,
 		},
 		{
-			ID:         4,
 			Database:   cloneDatabaseName,
 			Source:     db.UI,
 			Type:       db.Baseline,
@@ -237,7 +231,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	require.Equal(t, len(histories), len(wantCloneHistories))
 	for i, history := range histories {
 		got := api.MigrationHistory{
-			ID:         history.ID,
 			Database:   history.Database,
 			Source:     history.Source,
 			Type:       history.Type,
@@ -445,7 +438,6 @@ func TestVCS(t *testing.T) {
 	require.NoError(t, err)
 	wantHistories := []api.MigrationHistory{
 		{
-			ID:         3,
 			Database:   databaseName,
 			Source:     db.VCS,
 			Type:       db.Data,
@@ -454,7 +446,6 @@ func TestVCS(t *testing.T) {
 			SchemaPrev: dumpedSchema,
 		},
 		{
-			ID:         2,
 			Database:   databaseName,
 			Source:     db.VCS,
 			Type:       db.Migrate,
@@ -463,7 +454,6 @@ func TestVCS(t *testing.T) {
 			SchemaPrev: "",
 		},
 		{
-			ID:         1,
 			Database:   databaseName,
 			Source:     db.UI,
 			Type:       db.Baseline,
@@ -476,7 +466,6 @@ func TestVCS(t *testing.T) {
 
 	for i, history := range histories {
 		got := api.MigrationHistory{
-			ID:         history.ID,
 			Database:   history.Database,
 			Source:     history.Source,
 			Type:       history.Type,
