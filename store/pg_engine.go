@@ -337,7 +337,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 		}
 
 		for _, minorVersion := range minorVersions {
-			l.Info(fmt.Sprintf("Starting minor version migrating cycle %s.", minorVersion))
+			l.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
 			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", releaseMode, minorVersion.Major, minorVersion.Minor))
 			if err != nil {
 				return semver.Version{}, err
