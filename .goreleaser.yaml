@@ -65,3 +65,18 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+release:
+  draft: true
+  name_template: "Release {{.Tag}}"
+  header: |
+    # What's Changed
+
+    ## 🚀 Features
+
+    ## 🎄 Enhancements
+
+    ## 🎠 Community
+
+    ## New Contributors
+
+    **Full Changelog**:
