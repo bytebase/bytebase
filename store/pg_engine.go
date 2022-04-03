@@ -332,7 +332,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			l.Info(message)
 		}
 		if len(minorVersions) == 0 {
-			l.Info(fmt.Sprintf("There is no minor migration in mode %s.", releaseMode))
+			l.Info(fmt.Sprintf("Skip minor version migration in mode %s. No new version.", releaseMode))
 			continue
 		}
 
