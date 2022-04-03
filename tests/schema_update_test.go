@@ -262,7 +262,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	_, err = ctl.listSheets(database.ID)
 	require.NoError(t, err)
 
-	// Test if POST /api/database/:id/datasource api is working right.
+	// Test if POST /api/database/:id/data-source api is working right.
 	// TODO(steven): I will add read-only data source testing to a separate test later.
 	err = ctl.createDataSource(api.DataSourceCreate{
 		InstanceID: instance.ID,
