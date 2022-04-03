@@ -75,7 +75,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/sql/syncschema", func(c echo.Context) error {
+	g.POST("/sql/sync-schema", func(c echo.Context) error {
 		ctx := context.Background()
 		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {

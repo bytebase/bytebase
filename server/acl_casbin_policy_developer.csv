@@ -12,7 +12,7 @@ p, DEVELOPER, /project/{id}/repository, PATCH
 p, DEVELOPER, /project/{id}/repository, DELETE
 p, DEVELOPER, /project/{id}/deployment, GET
 p, DEVELOPER, /project/{id}/deployment, PATCH
-p, DEVELOPER, /project/{projectID}/syncmember, POST
+p, DEVELOPER, /project/{projectID}/sync-member, POST
 p, DEVELOPER, /project/{projectID}/member, POST
 p, DEVELOPER, /project/{projectID}/member/{memberID}, PATCH
 p, DEVELOPER, /project/{projectID}/member/{memberID}, DELETE
@@ -40,11 +40,11 @@ p, DEVELOPER, /database/{id}/table/{tableName}, GET
 p, DEVELOPER, /database/{id}/view, GET
 p, DEVELOPER, /database/{id}/backup, GET
 p, DEVELOPER, /database/{id}/backup, POST
-p, DEVELOPER, /database/{id}/backupsetting, GET
-p, DEVELOPER, /database/{id}/backupsetting, PATCH
-p, DEVELOPER, /database/{id}/datasource, POST
-p, DEVELOPER, /database/{id}/datasource/{dataSourceID}, GET
-p, DEVELOPER, /database/{id}/datasource/{dataSourceID}, PATCH
+p, DEVELOPER, /database/{id}/backup-setting, GET
+p, DEVELOPER, /database/{id}/backup-setting, PATCH
+p, DEVELOPER, /database/{id}/data-source, POST
+p, DEVELOPER, /database/{id}/data-source/{dataSourceID}, GET
+p, DEVELOPER, /database/{id}/data-source/{dataSourceID}, PATCH
 p, DEVELOPER, /issue, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
