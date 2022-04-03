@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -20,7 +19,6 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		dataDir:              dataDir,
 		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		backupRunnerInterval: 10 * time.Second,
-		schemaVersion:        semver.MustParse("1.1.2"),
 	}
 }
 
@@ -34,6 +32,5 @@ func GetTestProfile(dataDir string, port, datastorePort int) Profile {
 		dataDir:              dataDir,
 		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		backupRunnerInterval: 10 * time.Second,
-		schemaVersion:        semver.MustParse("1.1.2"),
 	}
 }

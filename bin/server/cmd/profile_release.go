@@ -24,6 +24,5 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		dataDir:              dataDir,
 		demoDataDir:          demoDataDir,
 		backupRunnerInterval: 10 * time.Minute,
-		schemaVersion:        semver.MustParse("1.0.1"),
 	}
 }
