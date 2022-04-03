@@ -311,7 +311,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 	}
 
 	// Apply migrations
-	retVersion := semver.Version{}
+	retVersion := *curVer
 
 	releaseModes := []common.ReleaseMode{common.ReleaseModeRelease}
 	if mode == common.ReleaseModeDev {
@@ -375,12 +375,12 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			}
 		}
 	}
-	if retVersion.EQ(semver.Version{}) {
+	if retVersion.EQ(*curVer) {
 		l.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
-		return *curVer, nil
+	} else {
+		l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
 	}
 
-	l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
 	return retVersion, nil
 }
 
