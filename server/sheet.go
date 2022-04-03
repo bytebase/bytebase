@@ -108,7 +108,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		basePath := parseBasePathFromTemplate(repo.SheetPathTemplate)
 		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
-		// Maybe we should pass a certain branch by query param from frontend.
 		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryFileList(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
@@ -196,12 +195,13 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 
 			payloadString := string(payload)
-			vscSheetType := api.SheetForSQL
+			sheetSource := (api.SheetSource)(vcs.Type)
+			vscSheetType := (api.SheetType)(api.SheetForSQL)
 			sheet, err := s.SheetService.FindSheet(ctx, &api.SheetFind{
 				Name:      &sheetInfo.SheetName,
 				ProjectID: &project.ID,
-				Source:    (*api.SheetSource)(&vcs.Type),
-				Type:      (*api.SheetType)(&vscSheetType),
+				Source:    &sheetSource,
+				Type:      &vscSheetType,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, projectID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
@@ -213,8 +213,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					CreatorID:  c.Get(getPrincipalIDContextKey()).(int),
 					Name:       sheetInfo.SheetName,
 					Statement:  fileContent,
-					Visibility: api.PublicSheet,
-					Source:     api.SheetFromBytebase,
+					Visibility: api.ProjectSheet,
+					Source:     sheetSource,
 					Type:       api.SheetForSQL,
 					Payload:    payloadString,
 				}
@@ -231,21 +231,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 						}
 
 						for _, database := range databaseList {
-							if sheetCreate.DatabaseID != nil {
+							if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
+								sheetCreate.DatabaseID = &database.ID
 								break
-							}
-
-							labelList := []*api.DatabaseLabel{}
-							err := json.Unmarshal([]byte(database.Labels), &labelList)
-							if err != nil {
-								return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal database labels").SetInternal(err)
-							}
-
-							for _, label := range labelList {
-								if label != nil && label.Key == api.EnvironmentKeyName && label.Value == sheetInfo.EnvironmentName {
-									sheetCreate.DatabaseID = &database.ID
-									break
-								}
 							}
 						}
 					}
@@ -462,9 +450,9 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 	}
 	sheetPathRegex := sheetPathTemplate
 	for _, placeholder := range placeholderList {
-		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9\\+\\-\\=\\_\\#\\!\\$\\. ]+)", placeholder))
 	}
-	myRegex, err := regexp.Compile(sheetPathRegex)
+	myRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
 	if err != nil {
 		return nil, fmt.Errorf("invalid sheet path template: %q", sheetPathTemplate)
 	}
@@ -514,7 +502,9 @@ func parseBasePathFromTemplate(sheetPathTemplate string) string {
 		}
 		if hasPlaceholder {
 			break
-		} else {
+		}
+
+		if subpath != "" {
 			basePath += subpath + "/"
 		}
 	}
