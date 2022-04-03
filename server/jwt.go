@@ -58,7 +58,7 @@ func getPrincipalIDContextKey() string {
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode string, secret string) error {
+func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
 	accessToken, err := generateAccessToken(user, mode, secret)
 	if err != nil {
 		return fmt.Errorf("failed to generate access token: %w", err)
@@ -78,12 +78,12 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode strin
 	return nil
 }
 
-func generateAccessToken(user *api.Principal, mode string, secret string) (string, error) {
+func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
 	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
-func generateRefreshToken(user *api.Principal, mode string, secret string) (string, error) {
+func generateRefreshToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
 	return generateToken(user, fmt.Sprintf(refreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
@@ -165,7 +165,7 @@ func removeUserCookie(c echo.Context) {
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.HandlerFunc, mode string, secret string) echo.HandlerFunc {
+func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth, actuator, plan
 		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
