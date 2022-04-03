@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -24,6 +23,5 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile
 		dataDir:              dataDir,
 		demoDataDir:          demoDataDir,
 		backupRunnerInterval: 10 * time.Minute,
-		schemaVersion:        semver.MustParse("1.0.1"),
 	}
 }
