@@ -18,7 +18,7 @@ import (
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
-	names := []string{latestDataFile, latestSchemaFile, "1.0.0", "1.1.0", "1.2.0", "1.3.0", "1.4.0"}
+	names := []string{latestDataFile, latestSchemaFile, "1.0", "1.1", "1.2", "1.3", "1.4"}
 
 	tests := []struct {
 		names                   []string
@@ -64,8 +64,8 @@ func TestGetMinorVersions(t *testing.T) {
 		want  []semver.Version
 	}{
 		{
-			names: []string{fmt.Sprintf("migration/dev/%s", latestDataFile), fmt.Sprintf("migration/dev/%s", latestSchemaFile), "migration/dev/1.1.2", "migration/dev/1.0.0"},
-			want:  []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.2")},
+			names: []string{fmt.Sprintf("migration/dev/%s", latestDataFile), fmt.Sprintf("migration/dev/%s", latestSchemaFile), "migration/dev/1.1", "migration/dev/1.0"},
+			want:  []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0")},
 		},
 		{
 			names: []string{fmt.Sprintf("migration/release/%s", latestDataFile), fmt.Sprintf("migration/dev/%s", latestSchemaFile)},
