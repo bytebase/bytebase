@@ -697,7 +697,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
-	if err != nil {
+	isBytebaseDatabase := strings.Contains(driver.baseDSN, "user=bb") && strings.Contains(driver.baseDSN, "sslmode=disable host=/tmp port=")
+	if err != nil && !isBytebaseDatabase {
 		if !strings.Contains(err.Error(), "invalid stored version") {
 			return nil, err
 		}
