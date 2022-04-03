@@ -1,5 +1,6 @@
-# This script is for preview and demo.bytebase.com on Render ONLY.
-# This is exactly the same as Dockerfile except that we do NOT use release tag.
+# *****************************************************
+# * This script is for preview purpose on Render ONLY *
+# *****************************************************
 
 FROM node:14 as frontend
 
@@ -19,7 +20,7 @@ RUN pnpm release-docker
 FROM golang:1.16.5-alpine3.13 as backend
 
 ARG VERSION="development"
-ARG GO_VERSION="1.16.5"
+ARG GO_VERSION="unknown"
 ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -70,7 +71,3 @@ RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase
 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
-
-CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
-
-ENTRYPOINT ["bytebase"]
