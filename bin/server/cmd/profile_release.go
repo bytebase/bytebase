@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 )
 
