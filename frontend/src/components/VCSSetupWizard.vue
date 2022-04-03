@@ -112,9 +112,9 @@ export default defineComponent({
             redirectUrl: redirectUrl(),
           };
           store
-            .dispatch("gitlab/exchangeToken", {
-              oAuthConfig,
+            .dispatch("oauth/exchangeVCSToken", {
               code: payload.code,
+              oAuthConfig,
             })
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);

@@ -13,6 +13,13 @@ export type OAuthToken = {
   refreshToken: string;
 };
 
+export type ExchangeToken = {
+  vcsId: number;
+  code: string;
+  instanceUrl: string;
+  config: OAuthConfig;
+};
+
 export const OAuthStateSessionKey = "oauthstate";
 
 export type OAuthWindowEventPayload = {

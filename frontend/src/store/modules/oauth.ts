@@ -1,5 +1,5 @@
 import axios from "axios";
-import { VCSId, OAuthToken, ResourceObject } from "../../types";
+import { VCSId, OAuthConfig, OAuthToken, ResourceObject } from "../../types";
 
 const convert = (raw: ResourceObject): OAuthToken => {
   const attr = raw.attributes;
@@ -16,14 +16,23 @@ const actions = {
     {
       vcsId,
       code,
+      oauthConfig,
     }: {
       vcsId: VCSId;
       code: string;
+      oauthConfig: OAuthConfig;
     }
   ): Promise<OAuthToken> {
     const data = (
-      await axios.post(`/api/oauth/vcs/${vcsId}/exchange-token`, null, {
-        headers: { code },
+      await axios.post(`/api/oauth/vcs/exchange-token`, {
+        data: {
+          type: "exchangeToken",
+          attributes: {
+            vcsId,
+            code,
+            config: oauthConfig,
+          },
+        },
       })
     ).data.data;
 
