@@ -132,12 +132,14 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		}
 		// This migrates the CREATE DATABSAE record to semantic version format.
 		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L251
+		// This 1.0.0 should correspond to 1.0/0000__initial_schema.sql.
 		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000000' WHERE id = 1 AND version = '10000';"); err != nil {
 			return err
 		}
 		// This migrates the initial schema migration to semantic version format.
 		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L295
-		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
+		// This 1.0.1 should correspond to 1.0/0001__initial_data.sql.
+		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0001-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
 			return err
 		}
 	}
