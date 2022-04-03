@@ -137,7 +137,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		}
 		// This migrates the initial schema migration to semantic version format.
 		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L295
-		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
+		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0001-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
 			return err
 		}
 	}
