@@ -71,9 +71,6 @@ type DB struct {
 	// Bytebase server release version
 	serverVersion string
 
-	// schemaVersion is the version of Bytebase schema.
-	schemaVersion semver.Version
-
 	// mode is the mode of the release such as release or dev.
 	mode common.ReleaseMode
 
@@ -83,7 +80,7 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir string, readonly bool, serverVersion string, schemaVersion semver.Version, mode common.ReleaseMode) *DB {
+func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
 	db := &DB{
 		l:             logger,
 		connCfg:       connCfg,
@@ -91,7 +88,6 @@ func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir st
 		readonly:      readonly,
 		Now:           time.Now,
 		serverVersion: serverVersion,
-		schemaVersion: schemaVersion,
 		mode:          mode,
 	}
 	return db
@@ -154,7 +150,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	if _, err := migrate(ctx, d, verBefore, db.schemaVersion, db.mode, db.serverVersion, databaseName, db.l); err != nil {
+	if _, err := migrate(ctx, d, verBefore, db.mode, db.serverVersion, databaseName, db.l); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
@@ -262,9 +258,8 @@ const (
 //
 // We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
-func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cutoffSchemaVersion semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) (semver.Version, error) {
+func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) (semver.Version, error) {
 	l.Info("Apply database migration if needed...")
-	l.Info(fmt.Sprintf("The release cutoff schema version: %s", cutoffSchemaVersion))
 	if curVer == nil {
 		l.Info("The database schema has not been setup.")
 	} else {
@@ -274,6 +269,13 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 			return semver.Version{}, fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, serverVersion)
 		}
 	}
+
+	// Calculate cutoffSchemaVersion based on release mode.
+	cutoffSchemaVersion, err := getCutoffVersion(mode)
+	if err != nil {
+		return semver.Version{}, errors.Wrapf(err, "failed to get cutoff version")
+	}
+	l.Info(fmt.Sprintf("The release cutoff schema version: %s", cutoffSchemaVersion))
 
 	// Initial schema setup.
 	if curVer == nil {
@@ -384,6 +386,43 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 	}
 
 	return retVersion, nil
+}
+
+func getCutoffVersion(releaseMode common.ReleaseMode) (semver.Version, error) {
+	minorPathPrefix := fmt.Sprintf("migration/%s/*", releaseMode)
+	names, err := fs.Glob(migrationFS, minorPathPrefix)
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	versions, err := getMinorVersions(names)
+	if err != nil {
+		return semver.Version{}, err
+	}
+	if len(versions) == 0 {
+		return semver.Version{}, fmt.Errorf("Migration path %s has no minor version", minorPathPrefix)
+	}
+	minorVersion := versions[len(versions)-1]
+	upperMinorVersion := minorVersion
+	upperMinorVersion.Minor = upperMinorVersion.Minor + 1
+
+	patchPathPrefix := fmt.Sprintf("migration/%s/%d.%d", releaseMode, minorVersion.Major, minorVersion.Minor)
+	names, err = fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", patchPathPrefix))
+	if err != nil {
+		return semver.Version{}, err
+	}
+	patchVersions, err := getPatchVersions(minorVersion, upperMinorVersion, semver.Version{} /* currentVersion */, names)
+	if err != nil {
+		return semver.Version{}, err
+	}
+	// This should only happen in the dev environment
+	if len(patchVersions) == 0 {
+		if releaseMode == common.ReleaseModeDev {
+			return minorVersion, nil
+		}
+		return semver.Version{}, fmt.Errorf("Migration path %s has no patch version", patchPathPrefix)
+	}
+	return patchVersions[len(patchVersions)-1].version, nil
 }
 
 type patchVersion struct {
