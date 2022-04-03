@@ -28,7 +28,7 @@ type Claims struct {
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(l *zap.Logger, dataDir string, mode string) (*LicenseService, error) {
+func NewLicenseService(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*LicenseService, error) {
 	config, err := config.NewConfig(l, dataDir, mode)
 	if err != nil {
 		return nil, err
