@@ -4,9 +4,11 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/bytebase/bytebase/common"
 )
 
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
