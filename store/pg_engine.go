@@ -378,7 +378,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, cut
 	if retVersion.EQ(*curVer) {
 		l.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
 	} else {
-		l.Info(fmt.Sprintf("Completed database migration with version %s.", retVersion))
+		l.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
 	}
 
 	return retVersion, nil
