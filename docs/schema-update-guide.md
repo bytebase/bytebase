@@ -10,7 +10,7 @@ Let's take an example that our release is at version `1.5` and dev at version `1
 
 If there is `1.6/0000__placeholder.sql` file in the dev version directory,
 
-1. rename the placeholder file to something meaningful related to feature such as `1.6/0000__roofshot.sql` and fill in the DDL.
+1. Rename the placeholder file to something meaningful related to feature such as `1.6/0000__roofshot.sql` and fill in the DDL.
 
 Otherwise,
 
