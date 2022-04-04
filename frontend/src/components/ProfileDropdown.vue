@@ -104,7 +104,7 @@
         </a>
       </div>
       <div class="border-t border-gray-100"></div>
-      <div v-if="!isRelease" class="py-1 menu-item">
+      <div v-if="allowToggleDebug" class="py-1 menu-item">
         <div class="flex flex-row items-center space-x-2 justify-between">
           <span> Debug </span>
           <BBSwitch :value="isDebug" @toggle="switchDebug" />
@@ -126,6 +126,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
+import { isDBAOrOwner } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import { useActuatorStore, useDebugStore, useUIStateStore } from "@/store";
 import { storeToRefs } from "pinia";
@@ -144,6 +145,12 @@ export default defineComponent({
     const languageMenu = ref();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
+
+    // For now, debug mode is a global setting and will affect all users.
+    // So we only allow DBA and Owner to toggle it.
+    const allowToggleDebug = computed(() => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
 
     const showQuickstart = computed(() => !actuatorStore.isDemo);
 
@@ -230,6 +237,7 @@ export default defineComponent({
 
     return {
       currentUser,
+      allowToggleDebug,
       showQuickstart,
       resetQuickstart,
       logout,

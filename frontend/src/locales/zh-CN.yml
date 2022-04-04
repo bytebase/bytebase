@@ -230,6 +230,7 @@ banner:
   trial-expires: 您的{plan}试用仅剩 {days} 天
   extend-trial: 申请延长试用
   action: 5 秒部署您自己的服务
+  debug: Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。
 intro:
   content: >-
     Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流
