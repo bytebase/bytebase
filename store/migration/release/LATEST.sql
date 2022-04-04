@@ -168,7 +168,7 @@ CREATE TABLE project (
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE'
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -217,7 +217,7 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE',
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -636,6 +636,29 @@ UPDATE
     ON task FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
+-- task_dag describes task dependency relationship
+-- from_task_id is blocked by to_task_id
+CREATE TABLE task_dag (
+    id SERIAL PRIMARY KEY,
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    from_task_id INTEGER NOT NULL REFERENCES task (id),
+    to_task_id INTEGER NOT NULL REFERENCES task (id),
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON task_dag(to_task_id);
+
+ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_task_dag_updated_ts
+BEFORE
+UPDATE
+    ON task_dag FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
 -- task run table stores the task run
 CREATE TABLE task_run (
     id SERIAL PRIMARY KEY,
@@ -818,7 +841,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST', 'GITHUB_COM')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -879,7 +902,8 @@ CREATE TABLE repository (
     -- access_token, expires_ts, refresh_token belongs to the user linking the project to the VCS repository.
     access_token TEXT NOT NULL,
     expires_ts BIGINT NOT NULL,
-    refresh_token TEXT NOT NULL
+    refresh_token TEXT NOT NULL,
+    sheet_path_template TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
@@ -1029,7 +1053,10 @@ CREATE TABLE sheet (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE'
+    visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
+    source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
+    type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
@@ -1037,6 +1064,10 @@ CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
 CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
 
 CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
+
+CREATE INDEX idx_sheet_project_id ON sheet(project_id);
+
+CREATE INDEX idx_sheet_name ON sheet(name);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
