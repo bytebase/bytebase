@@ -235,6 +235,7 @@ banner:
   trial-expires: Your trial for {plan} plan will expires in {days} days.
   extend-trial: Extend trialing time
   action: Deploy yours in 5 seconds
+  debug: Debug mode is active, you can disable Debug mode via the top-right profile dropdown.
 intro:
   content: >-
     Bytebase is for DBAs and Developers to collaborate on database schemas
