@@ -41,8 +41,6 @@ export const useLabelStore = defineStore("label", {
     },
 
     async fetchLabelList() {
-      if (!useAuthStore().isLoggedIn()) return;
-
       const data = (await axios.get(`/api/label`)).data;
 
       const labelList: Label[] = data.data.map((label: ResourceObject) => {
