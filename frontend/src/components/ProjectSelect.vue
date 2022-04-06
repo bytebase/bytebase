@@ -69,6 +69,7 @@ import {
   ProjectRoleType,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
+import { featureToRef } from "@/store";
 
 interface LocalState {
   selectedId: number;
@@ -123,9 +124,7 @@ export default defineComponent({
 
     watchEffect(prepareProjectList);
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const projectList = computed((): Project[] => {
       let list = store.getters["project/projectListByUser"](

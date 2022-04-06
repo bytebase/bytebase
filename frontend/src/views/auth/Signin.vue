@@ -178,7 +178,7 @@ import {
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
-import { useActuatorStore } from "@/store";
+import { featureToRef, useActuatorStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -287,9 +287,7 @@ export default defineComponent({
       );
     };
 
-    const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
-    });
+    const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
       state,
