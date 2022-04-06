@@ -54,11 +54,10 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
-export type TaskDatabaseSchemaUpdateGhostSyncPayload =
-  TaskDatabaseSchemaUpdatePayload & {
-    // empty by now
-    // more input and output parameters in the future
-  };
+export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
+  statement: string;
+  pushEvent?: VCSPushEvent;
+};
 
 export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   // empty by now
