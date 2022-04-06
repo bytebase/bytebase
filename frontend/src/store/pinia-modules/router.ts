@@ -1,17 +1,22 @@
+import { defineStore } from "pinia";
 import { RouteLocationNormalized } from "vue-router";
 import { RouterSlug } from "../../types";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RouterState {}
+export const useRouterStore = defineStore("router", {
+  // need not to initialize a state since we store everything into localStorage
+  // state: () => ({}),
 
-const getters = {
-  backPath: (state: RouterState) => (): string => {
-    return localStorage.getItem("ui.backPath") || "/";
+  getters: {
+    backPath: () => () => {
+      return localStorage.getItem("ui.backPath") || "/";
+    },
   },
-
-  routeSlug:
-    (state: RouterState) =>
-    (currentRoute: RouteLocationNormalized): RouterSlug => {
+  actions: {
+    setBackPath(backPath: string) {
+      localStorage.setItem("ui.backPath", backPath);
+      return backPath;
+    },
+    routeSlug(currentRoute: RouteLocationNormalized): RouterSlug {
       {
         // /u/:principalId
         // Total 2 elements, 2nd element is the principal id
@@ -192,17 +197,5 @@ const getters = {
 
       return {};
     },
-};
-
-const actions = {
-  setBackPath({ commit }: any, backPath: string) {
-    localStorage.setItem("ui.backPath", backPath);
-    return backPath;
   },
-};
-
-export default {
-  namespaced: true,
-  getters,
-  actions,
-};
+});
