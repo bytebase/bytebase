@@ -128,7 +128,7 @@
                 </div>
                 <div class="relative flex justify-start">
                   <router-link
-                    :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(ds)}`"
+                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(ds)}`"
                     class="pr-3 bg-white font-medium normal-link"
                     >{{ ds.name }}</router-link
                   >
