@@ -87,6 +87,9 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	if err != nil {
 		return nil, err
 	}
+	if vcsRaw == nil {
+		return nil, nil
+	}
 
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
@@ -192,7 +195,7 @@ func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 	}
 
 	if len(list) == 0 {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("VCS not found with VCSFind[%+v]", find)}
+		return nil, nil
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d VCSs with filter %+v, expect 1", len(list), find)}
 	}

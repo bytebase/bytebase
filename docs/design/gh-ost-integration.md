@@ -179,7 +179,7 @@ In the output, you can see the main components of gh-ost.
 - Triggers are not supported.
 - `gh-ost` requires an account with these privileges:
   - `ALTER, CREATE, DELETE, DROP, INDEX, INSERT, LOCK TABLES, SELECT, TRIGGER, UPDATE` on the database (schema) where your migrated table is, or of course, on `*.*`
-  - either:
+  - either of:
     - `SUPER, REPLICATION SLAVE` on *.*, or:
     - `REPLICATION CLIENT, REPLICATION SLAVE` on *.*
 
@@ -378,7 +378,6 @@ type UpdateSchemaGhostDetail struct {
 }
 
 type UpdateSchemaGhostContext struct {
-    MigrationType db.MigrationType `json:"migrationType"`
     UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList`
     VCSPushEvent *vcs.PushEvent
 }

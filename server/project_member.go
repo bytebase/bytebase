@@ -18,7 +18,7 @@ import (
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	// for now we only support sync project member from privately deployed GitLab
-	g.POST("/project/:projectID/syncmember", func(c echo.Context) error {
+	g.POST("/project/:projectID/sync-member", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
@@ -46,6 +46,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync project member: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryActiveMemberList(ctx,
 			common.OauthContext{
