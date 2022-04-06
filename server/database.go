@@ -1198,6 +1198,7 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
+			ReadOnly: true,
 		},
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,
