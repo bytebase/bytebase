@@ -385,7 +385,7 @@ type UpdateSchemaGhostContext struct {
 // task related
 
 const TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
-type TaskDatabaseSchemaUpdateGhostPayload struct {
+type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
     Statement      string           `json:"statement,omitempty"`
     SchemaVersion  string           `json:"schemaVersion,omitempty"`
     VCSPushEvent   *vcs.PushEvent   `json:"pushEvent,omitempty"`
