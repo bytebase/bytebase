@@ -180,6 +180,7 @@ import isEqual from "lodash-es/isEqual";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { Principal, PrincipalPatch } from "../types";
 import { isOwner } from "../utils";
+import { featureToRef } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -229,9 +230,7 @@ export default defineComponent({
       (): Principal => store.getters["auth/currentUser"]()
     );
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const principal = computed(() => {
       if (props.principalId) {

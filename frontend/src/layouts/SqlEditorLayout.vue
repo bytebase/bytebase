@@ -35,19 +35,20 @@
 </template>
 
 <script lang="ts" setup>
-import { useStore } from "vuex";
-import { computed } from "vue";
-
 import ProvideSqlEditorContext from "@/components/ProvideSqlEditorContext.vue";
 import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";
-import { pushNotification, useActuatorStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
-const store = useStore();
 const actuatorStore = useActuatorStore();
+const subscriptionStore = useSubscriptionStore();
 
 const ping = () => {
   actuatorStore.fetchInfo().then((info: ServerInfo) => {
@@ -60,8 +61,5 @@ const ping = () => {
 };
 
 const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-
-const isNearTrialExpireTime = computed(() =>
-  store.getters["subscription/isNearTrialExpireTime"]()
-);
+const { isNearTrialExpireTime } = storeToRefs(subscriptionStore);
 </script>

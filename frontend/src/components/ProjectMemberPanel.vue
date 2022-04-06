@@ -173,7 +173,7 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -210,13 +210,9 @@ export default defineComponent({
       showFeatureModal: false,
     });
 
-    const has3rdPartyAuthFeature = computed(() => {
-      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
-    });
+    const has3rdPartyAuthFeature = featureToRef("bb.feature.3rd-party-auth");
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const allowAddMember = computed(() => {
       if (props.project.id == DEFAULT_PROJECT_ID) {

@@ -72,12 +72,12 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
-import { PlanType, Subscription } from "../types";
-import { pushNotification } from "@/store";
+import { PlanType } from "../types";
+import { pushNotification, useSubscriptionStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   loading: boolean;
@@ -90,7 +90,7 @@ export default defineComponent({
     PricingTable,
   },
   setup() {
-    const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -107,7 +107,7 @@ export default defineComponent({
       state.loading = true;
 
       try {
-        await store.dispatch("subscription/patchSubscription", state.license);
+        await subscriptionStore.patchSubscription(state.license);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -127,9 +127,7 @@ export default defineComponent({
       }
     };
 
-    const subscription = computed((): Subscription | undefined => {
-      return store.getters["subscription/subscription"]();
-    });
+    const { subscription } = storeToRefs(subscriptionStore);
 
     const instanceCount = computed((): number => {
       return subscription.value?.instanceCount ?? 5;
@@ -144,7 +142,7 @@ export default defineComponent({
     });
 
     const currentPlan = computed((): string => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       switch (plan) {
         case PlanType.TEAM:
           return t("subscription.plan.team.title");

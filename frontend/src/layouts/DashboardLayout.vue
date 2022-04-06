@@ -54,7 +54,12 @@ import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { computed, defineComponent } from "vue";
-import { pushNotification, useActuatorStore, useDebugStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useDebugStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -69,6 +74,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
+    const subscriptionStore = useSubscriptionStore();
     const debugStore = useDebugStore();
 
     const ping = () => {
@@ -82,9 +88,7 @@ export default defineComponent({
     };
 
     const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-    const isNearTrialExpireTime = computed(() =>
-      store.getters["subscription/isNearTrialExpireTime"]()
-    );
+    const { isNearTrialExpireTime } = storeToRefs(subscriptionStore);
 
     const { isDebug } = storeToRefs(debugStore);
 

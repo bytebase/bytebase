@@ -54,7 +54,7 @@ import {
   TemplateType,
 } from "../plugins";
 import { NSpin } from "naive-ui";
-import { pushNotification, useActuatorStore } from "@/store";
+import { hasFeature, pushNotification, useActuatorStore } from "@/store";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -339,7 +339,7 @@ export default defineComponent({
           const project = await findProject();
           if (
             project.tenantMode === "TENANT" &&
-            !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+            !hasFeature("bb.feature.multi-tenancy")
           ) {
             state.showFeatureModal = true;
           }

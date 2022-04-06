@@ -15,7 +15,13 @@ import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";
-import { store, pinia, useActuatorStore, pushNotification } from "./store";
+import {
+  store,
+  pinia,
+  pushNotification,
+  useActuatorStore,
+  useSubscriptionStore,
+} from "./store";
 import {
   databaseSlug,
   dataSourceSlug,
@@ -143,9 +149,13 @@ const initActuator = () => {
   const actuatorStore = useActuatorStore();
   return actuatorStore.fetchInfo();
 };
+const initSubscription = () => {
+  const subscriptionStore = useSubscriptionStore();
+  return subscriptionStore.fetchSubscription();
+};
 Promise.all([
   initActuator(),
-  store.dispatch("subscription/fetchSubscription"),
+  initSubscription(),
   store.dispatch("auth/restoreUser"),
 ]).finally(() => {
   app.mount("#app");

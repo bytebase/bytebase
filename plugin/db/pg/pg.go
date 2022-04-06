@@ -234,7 +234,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
 		}
-		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+		txn, err := sqldb.BeginTx(ctx, nil)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -831,7 +831,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return err
 	}
 
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

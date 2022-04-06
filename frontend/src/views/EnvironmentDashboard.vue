@@ -91,7 +91,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
-import { useRegisterCommand, useUIStateStore } from "@/store";
+import { useRegisterCommand, useUIStateStore, hasFeature } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -229,14 +229,14 @@ export default defineComponent({
     ) => {
       if (
         approvalPolicy.payload.value !== DefaultApporvalPolicy &&
-        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+        !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
       if (
         backupPolicy.payload.schedule !== DefaultSchedulePolicy &&
-        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+        !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;

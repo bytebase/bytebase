@@ -134,7 +134,7 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -159,9 +159,7 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({});
 

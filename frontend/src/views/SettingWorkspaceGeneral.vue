@@ -98,7 +98,7 @@ import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { Setting, brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -154,9 +154,7 @@ const allowSave = computed((): boolean => {
   );
 });
 
-const hasBrandingFeature = computed((): boolean => {
-  return store.getters["subscription/feature"]("bb.feature.branding");
-});
+const hasBrandingFeature = featureToRef("bb.feature.branding");
 
 const uploadLogo = async () => {
   if (!allowSave.value) {

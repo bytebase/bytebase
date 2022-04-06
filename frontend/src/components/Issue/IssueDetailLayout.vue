@@ -274,7 +274,7 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { isEmpty } from "lodash-es";
+import { featureToRef } from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -938,11 +938,9 @@ export default defineComponent({
       document.getElementById("issue-detail-top")!.scrollIntoView();
     });
 
-    const hasBackwardCompatibilityFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.backward-compatibility"
-      );
-    });
+    const hasBackwardCompatibilityFeature = featureToRef(
+      "bb.feature.backward-compatibility"
+    );
 
     const supportBackwardCompatibilityFeature = computed((): boolean => {
       const engine = database.value?.instance.engine;
