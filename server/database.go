@@ -674,7 +674,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id/backupsetting", func(c echo.Context) error {
+	g.PATCH("/database/:id/backup-setting", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -711,7 +711,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/backupsetting", func(c echo.Context) error {
+	g.GET("/database/:id/backup-setting", func(c echo.Context) error {
 		ctx := context.Background()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -752,7 +752,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
+	g.GET("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
 		ctx := context.Background()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -796,7 +796,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/database/:id/datasource", func(c echo.Context) error {
+	g.POST("/database/:id/data-source", func(c echo.Context) error {
 		ctx := context.Background()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -834,7 +834,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id/datasource/:dataSourceID", func(c echo.Context) error {
+	g.PATCH("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
 		ctx := context.Background()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {

@@ -175,17 +175,19 @@ In the output, you can see the main components of gh-ost.
 - `gh-ost` currently requires MySQL versions 5.6 and greater.
 - You will need to have one server serving Row Based Replication (RBR) format binary logs. Right now `FULL` row image is supported. `MINIMAL` to be supported in the near future. `gh-ost` prefers to work with replicas. You may still have your primary configured with Statement Based Replication (SBR).
 - If you are using a replica, the table must have an identical schema between the primary and replica.
+- Foreign key constraints are not supported.
+- Triggers are not supported.
 - `gh-ost` requires an account with these privileges:
   - `ALTER, CREATE, DELETE, DROP, INDEX, INSERT, LOCK TABLES, SELECT, TRIGGER, UPDATE` on the database (schema) where your migrated table is, or of course on `*.*`
-  - either:
+  - either of:
     - `SUPER, REPLICATION SLAVE` on *.*, or:
     - `REPLICATION CLIENT, REPLICATION SLAVE` on *.*
+
 The `SUPER` privilege is required for `STOP SLAVE, START SLAVE` operations. These are used on:
 - Switching your `binlog_format` to `ROW`, in the case where it is not ROW and you explicitly specified `--switch-to-rbr`
   - If your replication is already in RBR (binlog_format=ROW) you can specify --assume-rbr to avoid the STOP SLAVE/START SLAVE operations, hence no need for SUPER.
 - Running --test-on-replica: before the cut-over phase, gh-ost stops replication so that you can compare the two tables and satisfy that the migration is sound.
-- Foreign key constraints are not supported.
-- Triggers are not supported.
+
 Different cloud providers require different flags.
 - Google Cloud SQL works, `--gcp` flag required.
 - Aliyun RDS works, `--aliyun-rds` flag required.

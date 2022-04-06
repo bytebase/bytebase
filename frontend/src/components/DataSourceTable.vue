@@ -222,7 +222,7 @@ export default defineComponent({
           router.push(
             `/db/${databaseSlug(
               dataSource.database
-            )}/datasource/${dataSourceSlug(dataSource)}`
+            )}/data-source/${dataSourceSlug(dataSource)}`
           );
         });
     };
@@ -230,7 +230,7 @@ export default defineComponent({
     const clickDataSource = function (section: number, row: number) {
       const dataSource = dataSourceSectionList.value[section].list![row];
       router.push(
-        `/db/${databaseSlug(dataSource.database)}/datasource/${dataSourceSlug(
+        `/db/${databaseSlug(dataSource.database)}/data-source/${dataSourceSlug(
           dataSource
         )}`
       );

@@ -75,7 +75,7 @@ export function fullDatabasePath(database: Database): string {
 }
 
 export function fullDataSourcePath(dataSource: DataSource): string {
-  return `/db/${databaseSlug(dataSource.database)}/datasource/${dataSourceSlug(
+  return `/db/${databaseSlug(dataSource.database)}/data-source/${dataSourceSlug(
     dataSource
   )}`;
 }
