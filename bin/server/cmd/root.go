@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
@@ -24,17 +23,12 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	// Import sqlite3 driver.
-	_ "github.com/mattn/go-sqlite3"
-
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
 	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	// Register postgres driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
-	_ "github.com/lib/pq"
-
 	// Register snowflake driver.
 	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
 	// Register sqlite driver.
@@ -139,7 +133,7 @@ func init() {
 // Profile is the configuration to start main server.
 type Profile struct {
 	// mode can be "release" or "dev"
-	mode string
+	mode common.ReleaseMode
 	// port is the binding port for server.
 	port int
 	// datastorePort is the binding port for database instance for storing Bytebase data.
@@ -153,8 +147,6 @@ type Profile struct {
 	demoDataDir string
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
-	// schemaVersion is the version of schema applied to.
-	schemaVersion semver.Version
 }
 
 // retrieved via the SettingService upon startup
@@ -352,7 +344,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.schemaVersion)
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}

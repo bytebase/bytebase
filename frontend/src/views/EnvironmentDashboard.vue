@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { onMounted, onUnmounted, computed, reactive, watch } from "vue";
+import { onMounted, computed, reactive, watch, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
@@ -91,6 +91,7 @@ import {
   DefaultSchedulePolicy,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
+import { useRegisterCommand, useUIStateStore, hasFeature } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -121,7 +122,7 @@ interface LocalState {
     | "bb.feature.backup-policy";
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentDashboard",
   components: {
     EnvironmentDetail,
@@ -130,6 +131,7 @@ export default {
   props: {},
   setup() {
     const store = useStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -159,27 +161,12 @@ export default {
     };
 
     onMounted(() => {
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-        run: () => {
-          createEnvironment();
-        },
-      });
-      store.dispatch("command/registerCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-        run: () => {
-          startReorder();
-        },
-      });
-
       selectEnvironmentOnHash();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.environment")) {
+      if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
           });
@@ -187,15 +174,19 @@ export default {
       }
     });
 
-    onUnmounted(() => {
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.create",
-        registerId: "environment.dashboard",
-      });
-      store.dispatch("command/unregisterCommand", {
-        id: "bb.environment.reorder",
-        registerId: "environment.dashboard",
-      });
+    useRegisterCommand({
+      id: "bb.environment.create",
+      registerId: "environment.dashboard",
+      run: () => {
+        createEnvironment();
+      },
+    });
+    useRegisterCommand({
+      id: "bb.environment.reorder",
+      registerId: "environment.dashboard",
+      run: () => {
+        startReorder();
+      },
     });
 
     watch(
@@ -238,14 +229,14 @@ export default {
     ) => {
       if (
         approvalPolicy.payload.value !== DefaultApporvalPolicy &&
-        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+        !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
       if (
         backupPolicy.payload.schedule !== DefaultSchedulePolicy &&
-        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+        !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
@@ -273,7 +264,7 @@ export default {
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.environment",
         newState: true,
       });
@@ -356,5 +347,5 @@ export default {
       tabClass,
     };
   },
-};
+});
 </script>

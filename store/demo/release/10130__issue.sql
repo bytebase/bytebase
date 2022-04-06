@@ -22,7 +22,7 @@ VALUES
         'Hello world!',
         'OPEN',
         'bb.issue.general',
-        'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: \n - Creating a new database\n - Creating a table\n - Creating an index\n - Adding/Altering a column\n - Troubleshooting performance issue\nLet''s try some simple tasks:\n1. Bookmark this issue by clicking the star icon on the top of this page\n2. Leave a comment below to greet future comers',
+        'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: '||chr(10)||' - Creating a new database'||chr(10)||' - Creating a table'||chr(10)||' - Creating an index'||chr(10)||' - Adding/Altering a column'||chr(10)||' - Troubleshooting performance issue'||chr(10)||'Let''s try some simple tasks:'||chr(10)||'1. Bookmark this issue by clicking the star icon on the top of this page'||chr(10)||'2. Leave a comment below to greet future customers.',
         101
     );
 

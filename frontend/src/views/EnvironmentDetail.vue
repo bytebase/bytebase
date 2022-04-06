@@ -20,7 +20,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect } from "vue";
+import { defineComponent, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
@@ -30,11 +30,11 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  FeatureType,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
 } from "../types";
 import { idFromSlug } from "../utils";
+import { hasFeature } from "@/store";
 
 interface LocalState {
   environment: Environment;
@@ -46,7 +46,7 @@ interface LocalState {
     | "bb.feature.backup-policy";
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentDetail",
   components: {
     ArchiveBanner,
@@ -141,7 +141,7 @@ export default {
       if (
         type === "bb.policy.pipeline-approval" &&
         policy.payload.value !== DefaultApporvalPolicy &&
-        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+        !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
@@ -149,7 +149,7 @@ export default {
       if (
         type === "bb.policy.backup-plan" &&
         policy.payload.schedule !== DefaultSchedulePolicy &&
-        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+        !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
@@ -175,5 +175,5 @@ export default {
       updatePolicy,
     };
   },
-};
+});
 </script>

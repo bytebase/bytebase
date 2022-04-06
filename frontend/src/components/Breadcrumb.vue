@@ -54,7 +54,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Bookmark, UNKNOWN_ID, Principal, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
-import { useRouterStore } from "@/store";
+import { useRouterStore, useUIStateStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
@@ -175,7 +175,7 @@ export default defineComponent({
           link: currentRoute.value.path,
         };
         store.dispatch("bookmark/createBookmark", newBookmark).then(() => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "bookmark.create",
             newState: true,
           });
