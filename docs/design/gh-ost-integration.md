@@ -297,7 +297,7 @@ gh-ost has many requirements and limitations. We want to check whether gh-ost is
 - `_tablename_gho` present
 - binlog format is not row based.
 
-The following will be a new task check run type.
+The above discussion entails a new task check run type below.
 
 ```Go
 const TaskCheckDatabaseSchemaUpdateGhost = "bb.task-check.database.schema.update.ghost"
