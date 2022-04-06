@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -646,7 +648,21 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 }
 
 func validateSQLSelectStatement(sqlStatement string) bool {
-	whiteListRegs := []string{`^SELECT$`, `^EXPLAIN\s+?SELECT$`, `^(EXPLAIN\s+?)?SELECT\s`}
+	// Check if the query has only one statement.
+	count := 0
+	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
+	if err := util.ApplyMultiStatements(sc, func(stmt string) error {
+		count++
+		return nil
+	}); err != nil {
+		return false
+	}
+	if count != 1 {
+		return false
+	}
+
+	// Allow SELECT and EXPLAIN queries only.
+	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`}
 	formatedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
 	for _, reg := range whiteListRegs {
 		matchResult, _ := regexp.MatchString(reg, formatedStr)

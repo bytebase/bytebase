@@ -31,11 +31,11 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 		},
 		{
 			sqlStatement: "select ",
-			want:         true,
+			want:         false,
 		},
 		{
 			sqlStatement: "select",
-			want:         true,
+			want:         false,
 		},
 		{
 			sqlStatement: "explain select",
@@ -79,6 +79,10 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 		},
 		{
 			sqlStatement: "",
+			want:         false,
+		},
+		{
+			sqlStatement: "SETEST 1; INSERT INTO tbl(num) VALUES(113);",
 			want:         false,
 		},
 	}
