@@ -116,7 +116,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isValidEmail } from "../utils";
-import { useUIStateStore } from "@/store";
+import { useUIStateStore, featureToRef } from "@/store";
 
 type User = {
   email: string;
@@ -141,9 +141,7 @@ export default defineComponent({
       return isOwner(currentUser.value.role);
     });
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({
       userList: [],
