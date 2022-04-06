@@ -198,7 +198,7 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef, useCurrentUser } from "@/store";
+import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -305,9 +305,7 @@ export default defineComponent({
         role: hasRBACFeature.value ? state.role : "OWNER",
         roleProvider: "BYTEBASE",
       };
-      const member = store.getters["member/memberByPrincipalId"](
-        state.principalId
-      );
+      const member = useMemberStore().memberByPrincipalId(state.principalId);
       store
         .dispatch("project/createdMember", {
           projectId: props.project.id,

@@ -39,7 +39,6 @@
 
 <script lang="ts">
 import { reactive, computed, watch, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
   Member,
@@ -50,7 +49,7 @@ import {
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { BBComboBox } from "../bbkit";
-import { usePrincipalStore } from "@/store";
+import { useMemberStore, usePrincipalStore } from "@/store";
 
 interface LocalState {
   selectedId: PrincipalId | undefined;
@@ -88,11 +87,11 @@ export default defineComponent({
       selectedId: props.selectedId,
       showMenu: false,
     });
-    const store = useStore();
+    const memberStore = useMemberStore();
     const principalStore = usePrincipalStore();
 
     const principalList = computed((): Principal[] => {
-      const list = store.getters["member/memberList"]()
+      const list = memberStore.memberList
         .filter((member: Member) => {
           return member.status == "ACTIVE";
         })

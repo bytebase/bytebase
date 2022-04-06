@@ -106,7 +106,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import RoleSelect from "./RoleSelect.vue";
 import {
   Principal,
@@ -121,6 +120,7 @@ import {
   featureToRef,
   useCurrentUser,
   usePrincipalStore,
+  useMemberStore,
 } from "@/store";
 
 type User = {
@@ -138,7 +138,7 @@ export default defineComponent({
   components: { RoleSelect },
   props: {},
   setup() {
-    const store = useStore();
+    const memberStore = useMemberStore();
 
     const currentUser = useCurrentUser();
 
@@ -166,7 +166,7 @@ export default defineComponent({
         if (!isValidEmail(user.email)) {
           return "Invalid email address";
         } else {
-          const member = store.getters["member/memberByEmail"](user.email);
+          const member = memberStore.memberByEmail(user.email);
           if (member.id != UNKNOWN_ID) {
             return "Already a member";
           }
@@ -234,7 +234,7 @@ export default defineComponent({
               // Note "principal/createdMember" would return the existing role mapping.
               // This could happen if another client has just created the role mapping with
               // this principal.
-              store.dispatch("member/createdMember", newMember);
+              memberStore.createdMember(newMember);
             });
 
           useUIStateStore().saveIntroStateByKey({

@@ -118,7 +118,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
-import { featureToRef, useCurrentUser } from "@/store";
+import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -150,6 +150,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const store = useStore();
+    const memberStore = useMemberStore();
 
     const currentUser = useCurrentUser();
 
@@ -239,7 +240,7 @@ export default defineComponent({
       const memberPatch: MemberPatch = {
         role,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });
@@ -249,7 +250,7 @@ export default defineComponent({
       const memberPatch: MemberPatch = {
         rowStatus,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });
