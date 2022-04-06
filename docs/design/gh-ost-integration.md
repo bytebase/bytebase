@@ -385,13 +385,13 @@ type UpdateSchemaGhostContext struct {
 // task related
 
 const TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
-type TaskDatabaseSchemaUpdateGhostPayload struct {
+type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
     Statement      string           `json:"statement,omitempty"`
     SchemaVersion  string           `json:"schemaVersion,omitempty"`
     VCSPushEvent   *vcs.PushEvent   `json:"pushEvent,omitempty"`
     // SocketFileName is the socket file that gh-ost listens on.
     // The name follows this template,
-    // `./tmp/gh-ost.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`
+    // `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`
     SocketFileName string           `json:"socketFileName,omitempty"`
     // more to come
 }
