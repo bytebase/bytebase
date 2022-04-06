@@ -104,13 +104,13 @@ const dropdownOptions = computed(() => {
     return [
       {
         label: "Alter table",
-        key: "alter-table",
+        key: "editor.sheet.alter-table",
         item: sheetContext.value,
       },
       // TODO Just a thought
       // {
       //   label: "Copy name",
-      //   key: "copy-name",
+      //   key: "editor.sheet.copy-name",
       //   item: sheetContext.value,
       // },
     ];
@@ -118,12 +118,12 @@ const dropdownOptions = computed(() => {
   return [
     {
       label: "Open in new tab",
-      key: "open-in-new-tab",
+      key: "editor.sheet.new",
       item: sheetContext.value,
     },
     {
       label: "Set as context",
-      key: "set-as-context",
+      key: "editor.sheet.set-context",
       item: sheetContext.value,
     },
   ];
@@ -343,13 +343,13 @@ const handleSelect = (key: string) => {
   const option = dropdownOptions.value.find(
     (item) => item.key === key
   ) as DropdownOption;
-  if (key === "alter-table") {
+  if (key === "editor.sheet.alter-table") {
     gotoAlterSchema(option.item);
   }
-  if (key === "set-as-context") {
+  if (key === "editor.sheet.set-context") {
     setSheetContext(option.item);
   }
-  if (key === "open-in-new-tab") {
+  if (key === "editor.sheet.new") {
     // set the sheet context first
     setSheetContext(option.item);
     // and then create a new tab
