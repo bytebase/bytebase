@@ -31,23 +31,22 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed, defineComponent, watchEffect } from "vue";
 import { useStore } from "vuex";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { isOwner } from "../utils";
 import { Member } from "../types";
+import { featureToRef } from "@/store";
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceMember",
   components: { MemberAddOrInvite, MemberTable },
   setup() {
     const store = useStore();
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const prepareMemberList = () => {
       store.dispatch("member/fetchMemberList");
@@ -87,5 +86,5 @@ export default {
       hasRBACFeature,
     };
   },
-};
+});
 </script>
