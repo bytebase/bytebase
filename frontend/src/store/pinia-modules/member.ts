@@ -147,8 +147,7 @@ export const useMemberStore = defineStore("member", {
 
 export const useMemberList = () => {
   const store = useMemberStore();
-  const { memberList } = storeToRefs(store);
   watchEffect(() => store.fetchMemberList());
 
-  return memberList;
+  return storeToRefs(store).memberList;
 };
