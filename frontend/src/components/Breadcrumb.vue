@@ -48,29 +48,25 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef } from "vue";
+import { computed, ComputedRef, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  RouterSlug,
-  Bookmark,
-  UNKNOWN_ID,
-  Principal,
-  BookmarkCreate,
-} from "../types";
+import { Bookmark, UNKNOWN_ID, Principal, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
+import { useRouterStore, useUIStateStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
   path?: string;
 }
 
-export default {
+export default defineComponent({
   name: "Breadcrumb",
   components: {},
   setup() {
     const store = useStore();
+    const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
 
@@ -92,9 +88,7 @@ export default {
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const breadcrumbList = computed(() => {
-      const routeSlug: RouterSlug = store.getters["router/routeSlug"](
-        currentRoute.value
-      );
+      const routeSlug = routerStore.routeSlug(currentRoute.value);
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
       const projectWebhookSlug = routeSlug.projectWebhookSlug;
@@ -181,7 +175,7 @@ export default {
           link: currentRoute.value.path,
         };
         store.dispatch("bookmark/createBookmark", newBookmark).then(() => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "bookmark.create",
             newState: true,
           });
@@ -197,5 +191,5 @@ export default {
       toggleBookmark,
     };
   },
-};
+});
 </script>

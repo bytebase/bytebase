@@ -268,7 +268,7 @@ import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
-import { Subscription } from "../types";
+import { useCommandStore, useSubscriptionStore } from "@/store";
 
 interface LocalState {
   showModal: boolean;
@@ -298,6 +298,8 @@ export default defineComponent({
     const { t } = useI18n();
     const router = useRouter();
     const store = useStore();
+    const commandStore = useCommandStore();
+    const subscriptionStore = useSubscriptionStore();
 
     const state = reactive<LocalState>({
       showModal: false,
@@ -339,8 +341,7 @@ export default defineComponent({
     };
 
     const createInstance = () => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
+      const { subscription } = subscriptionStore;
       const instanceList = store.getters["instance/instanceList"]();
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
         state.showFeatureModal = true;
@@ -381,11 +382,11 @@ export default defineComponent({
     };
 
     const createEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bb.environment.create");
+      commandStore.dispatchCommand("bb.environment.create");
     };
 
     const reorderEnvironment = () => {
-      store.dispatch("command/dispatchCommand", "bb.environment.reorder");
+      commandStore.dispatchCommand("bb.environment.reorder");
     };
 
     const QuickActionMap: Record<string, Partial<Action>> = {

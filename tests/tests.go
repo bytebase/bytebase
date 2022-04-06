@@ -1107,7 +1107,7 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 		return fmt.Errorf("failed to marshal dataSourceCreate, error: %w", err)
 	}
 
-	body, err := ctl.post(fmt.Sprintf("/database/%d/datasource", dataSourceCreate.DatabaseID), buf)
+	body, err := ctl.post(fmt.Sprintf("/database/%d/data-source", dataSourceCreate.DatabaseID), buf)
 	if err != nil {
 		return err
 	}

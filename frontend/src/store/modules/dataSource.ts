@@ -77,7 +77,7 @@ const actions = {
     }: { dataSourceId: DataSourceId; databaseId: DatabaseId }
   ) {
     const data = (
-      await axios.get(`/api/database/${databaseId}/datasource/${dataSourceId}`)
+      await axios.get(`/api/database/${databaseId}/data-source/${dataSourceId}`)
     ).data;
     const dataSource = convert(data.data, data.included, rootGetters);
 
@@ -94,7 +94,7 @@ const actions = {
     newDataSource: DataSourceCreate
   ) {
     const data = (
-      await axios.post(`/api/database/${newDataSource.databaseId}/datasource`, {
+      await axios.post(`/api/database/${newDataSource.databaseId}/data-source`, {
         data: {
           type: "DataSourceCreate",
           attributes: newDataSource,
@@ -125,7 +125,7 @@ const actions = {
   ) {
     const data = (
       await axios.patch(
-        `/api/database/${databaseId}/datasource/${dataSourceId}`,
+        `/api/database/${databaseId}/data-source/${dataSourceId}`,
         {
           data: {
             type: "dataSourcePatch",
@@ -152,7 +152,7 @@ const actions = {
     }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
   ) {
     await axios.delete(
-      `/api/database/${databaseId}/datasource/${dataSourceId}`
+      `/api/database/${databaseId}/data-source/${dataSourceId}`
     );
 
     commit("deleteDataSourceById", dataSourceId);
