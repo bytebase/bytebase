@@ -52,15 +52,9 @@ import { computed, ComputedRef, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  RouterSlug,
-  Bookmark,
-  UNKNOWN_ID,
-  Principal,
-  BookmarkCreate,
-} from "../types";
+import { Bookmark, UNKNOWN_ID, Principal, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
-import { useUIStateStore } from "@/store";
+import { useRouterStore, useUIStateStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
@@ -72,6 +66,7 @@ export default defineComponent({
   components: {},
   setup() {
     const store = useStore();
+    const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
 
@@ -93,9 +88,7 @@ export default defineComponent({
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const breadcrumbList = computed(() => {
-      const routeSlug: RouterSlug = store.getters["router/routeSlug"](
-        currentRoute.value
-      );
+      const routeSlug = routerStore.routeSlug(currentRoute.value);
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
       const projectWebhookSlug = routeSlug.projectWebhookSlug;

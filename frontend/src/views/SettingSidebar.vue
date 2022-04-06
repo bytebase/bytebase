@@ -92,6 +92,7 @@ import { computed, defineComponent, reactive } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isOwner, isDev } from "../utils";
+import { useRouterStore } from "@/store";
 
 interface LocalState {
   collapseState: boolean;
@@ -107,6 +108,7 @@ export default defineComponent({
   },
   setup() {
     const store = useStore();
+    const routerStore = useRouterStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -120,7 +122,7 @@ export default defineComponent({
     });
 
     const goBack = () => {
-      router.push(store.getters["router/backPath"]());
+      router.push(routerStore.backPath());
     };
 
     const toggleCollapse = () => {
