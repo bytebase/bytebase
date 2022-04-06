@@ -53,6 +53,7 @@ import {
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useGitlabStore } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -75,6 +76,7 @@ export default defineComponent({
     const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
+    const gitlabStore = useGitlabStore();
 
     const stepList: BBStepTabItem[] = [
       { title: t("version-control.setting.add-git-provider.basic-info.self") },
@@ -111,8 +113,8 @@ export default defineComponent({
             secret: state.config.secret,
             redirectUrl: redirectUrl(),
           };
-          store
-            .dispatch("gitlab/exchangeToken", {
+          gitlabStore
+            .exchangeToken({
               oAuthConfig,
               code: payload.code,
             })

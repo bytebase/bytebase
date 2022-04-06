@@ -47,6 +47,7 @@ import {
   OAuthToken,
   ProjectRepositoryConfig,
 } from "../types";
+import { useGitlabStore } from "@/store";
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
@@ -62,6 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useStore();
+const gitlabStore = useGitlabStore();
 const state = reactive<LocalState>({
   repositoryList: [],
   searchText: "",
@@ -80,8 +82,8 @@ const prepareRepositoryList = () => {
       })
       .then((token: OAuthToken) => {
         emit("set-token", token);
-        store
-          .dispatch("gitlab/fetchProjectList", {
+        gitlabStore
+          .fetchProjectList({
             vcs: props.config.vcs,
             token: token,
           })
@@ -94,8 +96,8 @@ const prepareRepositoryList = () => {
 
 const refreshRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    store
-      .dispatch("gitlab/fetchProjectList", {
+    gitlabStore
+      .fetchProjectList({
         vcs: props.config.vcs,
         token: props.config.token,
       })
