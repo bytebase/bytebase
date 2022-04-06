@@ -43,7 +43,7 @@ gh-ost \
 [--execute]
 ```
 
-gh-ost uses the same user and password up climbing the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
+gh-ost uses the same user and password discovering the replication topology if `master-user` and `master-password` are not provided. It's the user's responsibility to set up a dedicated user with the necessary privileges for replication and gh-ost.
 
 If gh-ost crashes halfway, we drop the two tables created by gh-ost.
 
@@ -221,9 +221,9 @@ For the first iteration, we will implement
 
 Users can set a workspace-level gh-ost configuration, which will be the default.
 
-The user can select to use gh-ost and supply statements in the UI workflow.
+In the UI workflow, the user can select to use gh-ost and supply statements.
 
-In VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use the suffix to tell if it is a gh-ost migration. The content is a vanilla SQL statement.
+In the VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use the suffix to tell if it is a gh-ost migration. The content is a vanilla SQL statement.
 
 Users can change the gh-ost configuration in the related issue tab.
 
@@ -290,7 +290,7 @@ We will divide gh-ost execution into different tasks. Each task needs to be appr
 
 ### Pre-migration validation
 
-gh-ost has many requirements and limitations. We want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with a no-op flag. If any, we will return the error to the user and let the user handle it. The error includes but is not limited to the following.
+gh-ost has many requirements and limitations. We want to check whether gh-ost is good to go before the actual migration. To validate it, we run gh-ost with a no-op flag. If there is any error, we will return the error to the user and let the user handle it. The error includes but is not limited to the following.
 
 - SQL statement not legal
 - `_tablename_ghc` present
@@ -345,7 +345,7 @@ After the migration is finished, we will have `tablename` and `_tablename_del`. 
 
 ### Task dependency
 
-Tasks in the same stage run one by one for now. With gh-ost integration, we introduce task dependency. As mentioned above, the "cut-over" task depends on the "run" task. A task can only be running if all of its dependencies are finished. Tasks with no common dependencies can run in parallel.
+Tasks in the same stage run one by one for now. With gh-ost integration, we introduce task dependency. As mentioned above, the "cut-over" task depends on the "run" task. A task can only be running if all of its dependencies are finished. Tasks that are not blocked by dependencies can run in parallel.
 
 To store the dependency relationship, we can add a field in Task.
 
