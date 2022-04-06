@@ -50,6 +50,7 @@ import {
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { BBComboBox } from "../bbkit";
+import { usePrincipalStore } from "@/store";
 
 interface LocalState {
   selectedId: PrincipalId | undefined;
@@ -88,6 +89,7 @@ export default defineComponent({
       showMenu: false,
     });
     const store = useStore();
+    const principalStore = usePrincipalStore();
 
     const principalList = computed((): Principal[] => {
       const list = store.getters["member/memberList"]()
@@ -100,7 +102,7 @@ export default defineComponent({
       // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
       // Then we add system bot to the list so it can display properly.
       if (props.selectedId == SYSTEM_BOT_ID) {
-        list.unshift(store.getters["principal/principalById"](SYSTEM_BOT_ID));
+        list.unshift(principalStore.principalById(SYSTEM_BOT_ID));
       }
       return list.filter((item: Principal) => {
         // The previously selected item might no longer be applicable.

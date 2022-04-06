@@ -10,7 +10,7 @@ import {
   UNKNOWN_ID,
   DeploymentConfigPatch,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   deployment: ResourceObject,

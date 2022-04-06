@@ -52,15 +52,9 @@ import { computed, ComputedRef, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  RouterSlug,
-  Bookmark,
-  UNKNOWN_ID,
-  Principal,
-  BookmarkCreate,
-} from "../types";
+import { RouterSlug, Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
-import { useUIStateStore } from "@/store";
+import { useCurrentUser, useUIStateStore } from "@/store";
 
 interface BreadcrumbItem {
   name: string;
@@ -75,9 +69,7 @@ export default defineComponent({
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       store.getters["bookmark/bookmarkByUserAndLink"](

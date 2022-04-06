@@ -199,7 +199,7 @@ import { InboxSummary, UNKNOWN_ID } from "../types";
 import { Setting, brandingLogoSettingName } from "../types/setting";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
-import { useSubscriptionStore } from "@/store";
+import { useCurrentUser, useAuthStore, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -212,6 +212,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales } = useI18n();
     const store = useStore();
+    const authStore = useAuthStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const { setLocale, toggleLocales } = useLanguage();
@@ -220,7 +221,7 @@ export default defineComponent({
       showMobileMenu: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const { currentPlan } = storeToRefs(subscriptionStore);
 
@@ -259,7 +260,7 @@ export default defineComponent({
     });
 
     const switchToOwner = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "demo@example.com",
@@ -269,7 +270,7 @@ export default defineComponent({
     };
 
     const switchToDBA = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "jerry@example.com",
@@ -279,7 +280,7 @@ export default defineComponent({
     };
 
     const switchToDeveloper = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "tom@example.com",

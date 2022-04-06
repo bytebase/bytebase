@@ -22,7 +22,7 @@ import {
   unknown,
 } from "../../types";
 import { InstanceUser } from "../../types/InstanceUser";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   instance: ResourceObject,

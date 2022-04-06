@@ -96,7 +96,6 @@ import {
   baseDirectoryWebUrl,
   Database,
   DatabaseId,
-  Principal,
   Project,
   ProjectId,
   Repository,
@@ -116,7 +115,7 @@ import CommonTenantView, {
 } from "./CommonTenantView.vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature } from "@/store";
+import { hasFeature, useCurrentUser } from "@/store";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -154,9 +153,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(
-      () => store.getters["auth/currentUser"]() as Principal
-    );
+    const currentUser = useCurrentUser();
 
     useEventListener(window, "keydown", (e) => {
       if (e.code === "Escape") {

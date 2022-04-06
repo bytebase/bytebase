@@ -12,7 +12,7 @@ import {
   EMPTY_ID,
   RoleType,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   member: ResourceObject,

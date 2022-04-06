@@ -8,6 +8,7 @@ import {
   LabelPatch,
   LabelValueType,
 } from "../../types";
+import { useAuthStore } from "./auth";
 
 function convert(label: ResourceObject): Label {
   const valueList = (label.attributes.valueList || []) as LabelValueType[];
@@ -40,6 +41,8 @@ export const useLabelStore = defineStore("label", {
     },
 
     async fetchLabelList() {
+      if (!useAuthStore().isLoggedIn()) return;
+
       const data = (await axios.get(`/api/label`)).data;
 
       const labelList: Label[] = data.data.map((label: ResourceObject) => {

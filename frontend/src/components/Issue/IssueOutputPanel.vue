@@ -98,6 +98,7 @@ import DatabaseSelect from "../DatabaseSelect.vue";
 import { activeEnvironment } from "../../utils";
 import { OutputField, IssueContext } from "../../plugins";
 import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../../types";
+import { useCurrentUser } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -126,7 +127,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({});
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentId = computed((): EnvironmentId => {
       return activeEnvironment(props.issue.pipeline).id;

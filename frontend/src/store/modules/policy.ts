@@ -8,7 +8,7 @@ import {
   unknown,
 } from "../../types";
 import { Policy, PolicyType, PolicyUpsert } from "../../types/policy";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   policy: ResourceObject,

@@ -10,7 +10,7 @@ import {
   ProjectId,
   ResourceObject,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { useAuthStore, getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   activity: ResourceObject,
@@ -117,7 +117,7 @@ const actions = {
       limit: number;
     }
   ) {
-    const currentUser = rootGetters["auth/currentUser"]();
+    const { currentUser } = useAuthStore();
     const queryList = [
       "type=bb.sql-editor.query",
       `user=${currentUser.id}`,

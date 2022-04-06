@@ -118,7 +118,7 @@ import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -151,7 +151,7 @@ export default defineComponent({
     const { t } = useI18n();
     const store = useStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 

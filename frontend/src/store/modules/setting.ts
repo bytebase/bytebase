@@ -1,7 +1,7 @@
 import axios from "axios";
 import { ResourceObject, SettingState } from "../../types";
 import { Setting, SettingName } from "../../types/setting";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   setting: ResourceObject,

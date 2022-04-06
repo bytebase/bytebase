@@ -49,7 +49,10 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.approval.auto") }}
-                <FeatureBadge feature="bb.feature.approval-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.approval-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.approval.auto-info") }}
@@ -91,7 +94,10 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.backup.daily") }}
-                <FeatureBadge feature="bb.feature.backup-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.backup-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.daily-info") }}
@@ -110,7 +116,10 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.backup.weekly") }}
-                <FeatureBadge feature="bb.feature.backup-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.backup-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.weekly-info") }}
@@ -192,7 +201,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch } from "vue";
+import { computed, reactive, PropType, watch, defineComponent } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -204,6 +213,7 @@ import {
   Policy,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
+import { useCurrentUser } from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -211,7 +221,7 @@ interface LocalState {
   backupPolicy: Policy;
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentForm",
   props: {
     create: {
@@ -261,7 +271,7 @@ export default {
       }
     );
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"]();
@@ -357,5 +367,5 @@ export default {
       restoreEnvironment,
     };
   },
-};
+});
 </script>

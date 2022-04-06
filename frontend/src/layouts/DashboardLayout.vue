@@ -54,7 +54,12 @@ import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { computed, defineComponent } from "vue";
-import { useActuatorStore, useDebugStore, useSubscriptionStore } from "@/store";
+import {
+  useActuatorStore,
+  useCurrentUser,
+  useDebugStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -87,7 +92,7 @@ export default defineComponent({
 
     const { isDebug } = storeToRefs(debugStore);
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     // For now, debug mode is a global setting and will affect all users.
     // So we only allow DBA and Owner to toggle it and thus show a banner

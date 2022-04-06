@@ -8,7 +8,7 @@ import {
   View,
   ViewState,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   view: ResourceObject,

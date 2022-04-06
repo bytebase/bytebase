@@ -198,7 +198,7 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -223,7 +223,7 @@ export default defineComponent({
     const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       principalId: UNKNOWN_ID,

@@ -37,14 +37,14 @@ import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { isOwner } from "../utils";
 import { Member } from "../types";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 export default defineComponent({
   name: "SettingWorkspaceMember",
   components: { MemberAddOrInvite, MemberTable },
   setup() {
     const store = useStore();
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 

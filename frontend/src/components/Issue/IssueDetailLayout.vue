@@ -274,7 +274,7 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -310,7 +310,7 @@ export default defineComponent({
     const router = useRouter();
     const route = useRoute();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     watchEffect(function prepare() {
       if (props.create) {

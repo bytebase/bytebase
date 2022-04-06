@@ -116,7 +116,12 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isValidEmail } from "../utils";
-import { useUIStateStore, featureToRef } from "@/store";
+import {
+  useUIStateStore,
+  featureToRef,
+  useCurrentUser,
+  usePrincipalStore,
+} from "@/store";
 
 type User = {
   email: string;
@@ -135,7 +140,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const isAdd = computed(() => {
       return isOwner(currentUser.value.role);
@@ -218,8 +223,8 @@ export default defineComponent({
             name: user.email.split("@")[0],
             email: user.email,
           };
-          store
-            .dispatch("principal/createPrincipal", newPrincipal)
+          usePrincipalStore()
+            .createPrincipal(newPrincipal)
             .then((principal: Principal) => {
               const newMember: MemberCreate = {
                 principalId: principal.id,

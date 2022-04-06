@@ -48,7 +48,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
-import { useUIStateStore } from "@/store";
+import { useCurrentUser, useUIStateStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -81,7 +81,7 @@ export default defineComponent({
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentList = computed(() => {
       return store.getters["environment/environmentList"](["NORMAL"]);

@@ -22,7 +22,7 @@ import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useLabelStore } from "@/store";
+import { useCurrentUser, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -33,7 +33,7 @@ export default defineComponent({
     const labelStore = useLabelStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentList = computed(() => {
       return cloneDeep(

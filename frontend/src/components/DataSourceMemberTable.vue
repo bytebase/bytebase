@@ -106,19 +106,20 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
+import { useCurrentUser } from "@/store";
 
 interface LocalState {
   searchText: string;
   showCreateModal: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceMemberTable",
   components: { DataSourceMemberForm, PrincipalAvatar },
   props: {
@@ -141,7 +142,7 @@ export default {
 
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const columnList = [
       {
@@ -187,5 +188,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

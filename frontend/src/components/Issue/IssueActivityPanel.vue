@@ -354,7 +354,7 @@ import {
 import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
-import { useUIStateStore } from "@/store";
+import { useCurrentUser, useUIStateStore } from "@/store";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -435,7 +435,7 @@ export default defineComponent({
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareActivityList = () => {
       store.dispatch("activity/fetchActivityListForIssue", props.issue.id);

@@ -63,7 +63,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { useUIStateStore, hasFeature } from "@/store";
+import { useUIStateStore, hasFeature, useCurrentUser } from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -82,7 +82,7 @@ export default defineComponent({
     const { t } = useI18n();
     const kbarHandler = useKBarHandler();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const introList = reactive<IntroItem[]>([
       {

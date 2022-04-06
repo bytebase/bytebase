@@ -48,13 +48,14 @@
 </template>
 
 <script lang="ts">
-import { watchEffect, computed, onMounted, reactive, ref } from "vue";
+import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import { activeEnvironment, activeTask } from "../utils";
 import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
+import { useCurrentUser } from "@/store";
 
 // Show at most 10 recently closed issues
 const MAX_CLOSED_ISSUE_COUNT = 10;
@@ -68,7 +69,7 @@ interface LocalState {
   selectedEnvironment?: Environment;
 }
 
-export default {
+export default defineComponent({
   name: "HomePage",
   components: {
     EnvironmentTabFilter,
@@ -93,7 +94,7 @@ export default {
         : undefined,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -220,5 +221,5 @@ export default {
       openIssueSorter,
     };
   },
-};
+});
 </script>

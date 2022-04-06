@@ -6,7 +6,7 @@ import {
   ResourceObject,
   IssueId,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   issueSubscriber: ResourceObject,

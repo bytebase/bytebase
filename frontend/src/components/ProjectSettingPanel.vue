@@ -38,14 +38,15 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { useStore } from "vuex";
 import { isProjectOwner } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import { ProjectPatch, Project } from "../types";
+import { useCurrentUser } from "@/store";
 
-export default {
+export default defineComponent({
   name: "ProjectSettingPanel",
   components: {
     ProjectGeneralSettingPanel,
@@ -64,7 +65,7 @@ export default {
   setup(props) {
     const store = useStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     // Only the project owner can archive/restore the project info.
     // This means even the workspace owner won't be able to edit it.
@@ -95,5 +96,5 @@ export default {
       archiveOrRestoreProject,
     };
   },
-};
+});
 </script>

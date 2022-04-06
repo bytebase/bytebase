@@ -98,7 +98,7 @@ import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { Setting, brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -138,7 +138,7 @@ store.dispatch("setting/fetchSetting").then(() => {
   state.logoUrl = brandingLogoSetting.value;
 });
 
-const currentUser = computed(() => store.getters["auth/currentUser"]());
+const currentUser = useCurrentUser();
 
 const allowEdit = computed((): boolean => {
   return isOwner(currentUser.value.role);

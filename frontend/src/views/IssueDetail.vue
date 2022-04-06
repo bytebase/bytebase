@@ -54,7 +54,7 @@ import {
   TemplateType,
 } from "../plugins";
 import { NSpin } from "naive-ui";
-import { useActuatorStore, hasFeature } from "@/store";
+import { useActuatorStore, hasFeature, useCurrentUser } from "@/store";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -89,7 +89,7 @@ export default defineComponent({
     const store = useStore();
     const route = useRoute();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     let newIssueTemplate = ref<IssueTemplate>(defaultTemplate());
 

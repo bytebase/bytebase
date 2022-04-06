@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { useUIStateStore } from "@/store";
+import { usePrincipalStore, useUIStateStore } from "@/store";
 import { defineComponent } from "vue";
 import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -21,7 +21,7 @@ export default defineComponent({
       // since all record types have creator, updater which are associated with principal, so we need to fetch
       // the principal list as well.
       // We also need this to render the proper inbox and activity entry.
-      store.dispatch("principal/fetchPrincipalList"),
+      usePrincipalStore().fetchPrincipalList(),
       store.dispatch("environment/fetchEnvironmentList"),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
