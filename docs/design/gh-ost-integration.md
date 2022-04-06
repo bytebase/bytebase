@@ -378,7 +378,6 @@ type UpdateSchemaGhostDetail struct {
 }
 
 type UpdateSchemaGhostContext struct {
-    MigrationType db.MigrationType `json:"migrationType"`
     UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList`
     VCSPushEvent *vcs.PushEvent
 }
