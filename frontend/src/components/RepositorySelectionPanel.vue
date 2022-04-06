@@ -63,7 +63,6 @@ const emit = defineEmits<{
 }>();
 
 const store = useStore();
-const oAuthStore = useOAuthStore();
 const state = reactive<LocalState>({
   repositoryList: [],
   searchText: "",
@@ -75,7 +74,7 @@ onMounted(() => {
 
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    oAuthStore
+    useOAuthStore()
       .exchangeVCSToken({
         vcsId: props.config.vcs.id,
         code: props.config.code,

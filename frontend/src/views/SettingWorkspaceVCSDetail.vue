@@ -177,7 +177,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const oAuthStore = useOAuthStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
@@ -202,7 +201,7 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
-          oAuthStore
+          useOAuthStore()
             .exchangeVCSToken({
               vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
