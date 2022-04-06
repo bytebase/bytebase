@@ -12,7 +12,7 @@ import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
-import { store } from "../store";
+import { store, useRouterStore } from "../store";
 import { Database, QuickActionType, Sheet } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
@@ -20,7 +20,7 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore } from "@/store";
+import { useTabStore, hasFeature } from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -93,9 +93,10 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -113,9 +114,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                       "quickaction.bb.user.manage",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -131,9 +130,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -563,9 +560,10 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.database"),
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -577,9 +575,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -591,9 +587,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -802,6 +796,7 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const tabStore = useTabStore();
+  const routerStore = useRouterStore();
 
   const isLoggedIn = store.getters["auth/isLoggedIn"]();
 
@@ -811,7 +806,7 @@ router.beforeEach((to, from, next) => {
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
   if (toModule != fromModule) {
-    store.dispatch("router/setBackPath", from.fullPath);
+    routerStore.setBackPath(from.fullPath);
   }
 
   // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
@@ -868,7 +863,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
+      !hasFeature("bb.feature.dba-workflow") ||
       isDBAOrOwner(currentUser.role)
     ) {
       next();
@@ -883,7 +878,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
-      !store.getters["subscription/feature"]("bb.feature.data-source") ||
+      !hasFeature("bb.feature.data-source") ||
       !isDBAOrOwner(currentUser.role)
     ) {
       next({
@@ -921,7 +916,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const routerSlug = store.getters["router/routeSlug"](to);
+  const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
