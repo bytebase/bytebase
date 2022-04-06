@@ -125,11 +125,10 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import { TabInfo, SheetGetters, SheetActions } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
-import { useNotificationStore } from "@/store";
 
 const tabStore = useTabStore();
 
@@ -144,7 +143,6 @@ const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
   "patchSheetById",
 ]);
 
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
@@ -217,7 +215,7 @@ const handleTryChangeLabel = () => {
         };
       });
     } else {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("sql-editor.please-input-the-tab-label"),

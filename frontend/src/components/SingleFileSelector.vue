@@ -22,9 +22,8 @@
 
 <script lang="ts" setup>
 import { ref, reactive, PropType } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   dropAreaActive: boolean;
@@ -43,8 +42,6 @@ const props = defineProps({
 
 const emit = defineEmits(["on-select"]);
 
-const store = useStore();
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -85,7 +82,7 @@ const selectFile = (files: File[]) => {
 const validFile = (file: File): boolean => {
   const extension = file.name.toLowerCase().split(".").slice(-1)[0];
   if (!props.supportFileExtensions.includes(`.${extension}`)) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.file-selector.type-limit", {
@@ -96,7 +93,7 @@ const validFile = (file: File): boolean => {
   }
 
   if (file.size > props.maxFileSizeInMiB * 1024 * 1024) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.file-selector.size-limit", {

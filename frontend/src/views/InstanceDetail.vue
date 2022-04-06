@@ -157,7 +157,7 @@ import {
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Subscription } from "../types";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -180,7 +180,6 @@ const props = defineProps({
 });
 
 const store = useStore();
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -321,7 +320,7 @@ const doArchive = () => {
       },
     })
     .then((updatedInstance) => {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -348,7 +347,7 @@ const doRestore = () => {
       },
     })
     .then((updatedInstance) => {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -366,7 +365,7 @@ const doCreateMigrationSchema = () => {
     .then((resultSet: SqlResultSet) => {
       state.creatingMigrationSchema = false;
       if (resultSet.error) {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t(
@@ -377,7 +376,7 @@ const doCreateMigrationSchema = () => {
         });
       } else {
         checkMigrationSetup();
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t(
@@ -397,7 +396,7 @@ const syncSchema = () => {
     .then((resultSet: SqlResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t(
@@ -407,7 +406,7 @@ const syncSchema = () => {
           description: resultSet.error,
         });
       } else {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t(

@@ -120,7 +120,7 @@ import { reactive, PropType } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
 import { DataSourceType, EngineType } from "../types";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   showCreateUserExample: boolean;
@@ -145,7 +145,6 @@ const props = defineProps({
   },
 });
 
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -190,7 +189,7 @@ const toggleCreateUserExample = () => {
 const copyGrantStatement = () => {
   toClipboard(grantStatement(props.engineType, props.dataSourceType)).then(
     () => {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "INFO",
         title: t("instance.copy-grant-statement"),

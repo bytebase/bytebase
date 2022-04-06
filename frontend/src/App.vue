@@ -28,7 +28,6 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 import { isDev } from "./utils";
-import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";

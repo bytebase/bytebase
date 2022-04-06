@@ -58,7 +58,7 @@ import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   name: string;
@@ -79,7 +79,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -115,7 +114,7 @@ export default defineComponent({
           projectPatch,
         })
         .then((updatedProject: Project) => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-updated-prompt", {

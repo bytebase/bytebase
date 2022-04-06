@@ -93,7 +93,7 @@ import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -121,7 +121,6 @@ export default defineComponent({
     const { t } = useI18n();
 
     const store = useStore();
-    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
@@ -163,7 +162,7 @@ export default defineComponent({
     };
 
     const finishWizard = () => {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: state.showWizardForCreate

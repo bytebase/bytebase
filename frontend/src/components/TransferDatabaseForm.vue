@@ -111,7 +111,7 @@ import {
   DatabaseLabel,
 } from "../types";
 import { sortDatabaseList } from "../utils";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 type TransferSource = "DEFAULT" | "OTHER";
 
@@ -135,7 +135,6 @@ export default defineComponent({
   emits: ["submit", "dismiss"],
   setup(props, { emit }) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       transferSource:
@@ -190,7 +189,7 @@ export default defineComponent({
           labels,
         })
         .then((updatedDatabase) => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,

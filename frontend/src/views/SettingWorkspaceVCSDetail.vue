@@ -157,7 +157,7 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   name: string;
@@ -177,7 +177,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
@@ -273,7 +272,7 @@ export default defineComponent({
                   vcsPatch,
                 })
                 .then((vcs: VCS) => {
-                  notificationStore.pushNotification({
+                  pushNotification({
                     module: "bytebase",
                     style: "SUCCESS",
                     title: `Successfully updated '${vcs.name}'`,
@@ -288,7 +287,7 @@ export default defineComponent({
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
               }
-              notificationStore.pushNotification({
+              pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: `Failed to update '${vcs.value.name}'`,
@@ -307,7 +306,7 @@ export default defineComponent({
             vcsPatch,
           })
           .then((updatedVCS: VCS) => {
-            notificationStore.pushNotification({
+            pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: `Successfully updated '${updatedVCS.name}'`,
@@ -325,7 +324,7 @@ export default defineComponent({
     const deleteVCS = () => {
       const name = vcs.value.name;
       store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: `Successfully deleted '${name}'`,

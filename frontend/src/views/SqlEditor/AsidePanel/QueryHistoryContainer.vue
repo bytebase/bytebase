@@ -70,10 +70,10 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import { useNotificationStore } from "@/store";
+import {} from "@/store";
 
 interface State {
   search: string;
@@ -81,7 +81,6 @@ interface State {
 }
 
 const { t } = useI18n();
-const notificationStore = useNotificationStore();
 const dialog = useDialog();
 const tabStore = useTabStore();
 
@@ -186,7 +185,7 @@ const handleActionBtnClick = (key: string, history: QueryHistory) => {
     });
   } else if (key === "copy") {
     copyTextToClipboard(history.statement);
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("sql-editor.notify.copy-code-succeed"),

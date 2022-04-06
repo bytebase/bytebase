@@ -15,7 +15,7 @@ import dataSourceType from "./directives/data-source-type";
 // @ts-ignore
 import highlight from "./directives/highlight";
 import { router } from "./router";
-import { store, pinia, useActuatorStore, useNotificationStore } from "./store";
+import { store, pinia, useActuatorStore, pushNotification } from "./store";
 import {
   databaseSlug,
   dataSourceSlug,
@@ -30,12 +30,10 @@ import {
   projectName,
   projectSlug,
   registerStoreWithActivityUtil,
-  registerStoreWithRoleUtil,
   sizeToFit,
   urlfy,
 } from "./utils";
 
-registerStoreWithRoleUtil(store);
 registerStoreWithActivityUtil(store);
 
 console.debug("dev:", isDev());
@@ -83,8 +81,7 @@ axios.interceptors.response.use(
       }
 
       if (error.response.data.message) {
-        const notificationStore = useNotificationStore();
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: error.response.data.message,
@@ -95,8 +92,7 @@ axios.interceptors.response.use(
         });
       }
     } else if (error.code == "ECONNABORTED") {
-      const notificationStore = useNotificationStore();
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: "Connecting server timeout. Make sure the server is running.",

@@ -93,7 +93,7 @@ import {
 } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -120,7 +120,6 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -169,7 +168,7 @@ export default defineComponent({
       store
         .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
         .then(() => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("repository.restore-ui-workflow-success"),
@@ -209,7 +208,7 @@ export default defineComponent({
           repositoryPatch,
         })
         .then(() => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("repository.update-version-control-config-success"),

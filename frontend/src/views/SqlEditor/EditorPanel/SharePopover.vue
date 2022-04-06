@@ -86,20 +86,19 @@ import {
 } from "vuex-composition-helpers";
 import slug from "slug";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import {
   SqlEditorState,
   SheetGetters,
   SheetActions,
   AccessOption,
 } from "@/types";
-import { useNotificationStore } from "@/store";
+import {} from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 const tabStore = useTabStore();
 
@@ -188,7 +187,7 @@ const { copy, copied } = useClipboard({
 
 const handleCopy = async () => {
   await copy();
-  notificationStore.pushNotification({
+  pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-editor.notify.copy-share-link"),

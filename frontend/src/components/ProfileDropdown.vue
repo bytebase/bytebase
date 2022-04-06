@@ -129,10 +129,10 @@ import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
+  pushNotification,
   useActuatorStore,
   useDebugStore,
   useUIStateStore,
-  useNotificationStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
 
@@ -143,7 +143,6 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const actuatorStore = useActuatorStore();
-    const notificationStore = useNotificationStore();
     const debugStore = useDebugStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
@@ -228,7 +227,7 @@ export default defineComponent({
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,

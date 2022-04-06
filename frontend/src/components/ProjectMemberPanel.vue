@@ -173,7 +173,7 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -196,7 +196,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const { t } = useI18n();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -294,7 +293,7 @@ export default defineComponent({
           projectMember,
         })
         .then(() => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-added-prompt", {
@@ -330,7 +329,7 @@ export default defineComponent({
           projectId: props.project.id,
         })
         .then(() => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-sync-prompt"),
@@ -383,19 +382,19 @@ export default defineComponent({
             }); // mute error at browser
         } else if (props.project.roleProvider === "GITLAB_SELF_HOST") {
           // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
-          patchProjectRoleProvider("BYTEBASE").then(() => {
-            notificationStore
-              .pushNotification({
+          patchProjectRoleProvider("BYTEBASE")
+            .then(() => {
+              pushNotification({
                 module: "bytebase",
                 style: "SUCCESS",
                 title: t(
                   "project.settings.switch-role-provider-to-bytebase-success-prompt"
                 ),
-              })
-              .catch(() => {
-                // nothing todo
-              }); // mute error at browser
-          });
+              });
+            })
+            .catch(() => {
+              // nothing todo
+            }); // mute error at browser;
         }
       };
     };

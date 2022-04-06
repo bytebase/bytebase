@@ -98,7 +98,7 @@ import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { Setting, brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -121,7 +121,6 @@ const convertFileToBase64 = (file: File) =>
   });
 
 const store = useStore();
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -186,7 +185,7 @@ const uploadLogo = async () => {
     state.logoFile = null;
     state.logoUrl = setting.value;
 
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("settings.general.workspace.logo-upload-succeed"),

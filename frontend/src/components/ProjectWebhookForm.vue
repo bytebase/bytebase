@@ -259,7 +259,7 @@ import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   webhook: ProjectWebhook | ProjectWebhookCreate;
@@ -288,7 +288,6 @@ export default defineComponent({
   emits: ["change-repository"],
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -397,7 +396,7 @@ export default defineComponent({
           projectWebhookCreate: state.webhook,
         })
         .then((webhook: ProjectWebhook) => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-created-prompt", {
@@ -431,7 +430,7 @@ export default defineComponent({
           projectWebhookPatch,
         })
         .then((webhook: ProjectWebhook) => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-updated-prompt", {
@@ -449,7 +448,7 @@ export default defineComponent({
           projectWebhookId: (state.webhook as ProjectWebhook).id,
         })
         .then(() => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-deleted-prompt", {

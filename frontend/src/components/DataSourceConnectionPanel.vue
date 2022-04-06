@@ -113,7 +113,7 @@ import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 type Connection = {
   name: string;
@@ -139,7 +139,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       showPassword: false,
@@ -213,7 +212,7 @@ export default defineComponent({
 
     const copyText = (connection: Connection) => {
       toClipboard(connection.value).then(() => {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("datasource.connection-name-string-copied-to-clipboard", [

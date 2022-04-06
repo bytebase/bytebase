@@ -186,7 +186,7 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -221,7 +221,6 @@ export default defineComponent({
   emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
 
     const state = reactive<LocalState>({
       environmentId: props.dataSource
@@ -360,7 +359,7 @@ export default defineComponent({
               return item.principal.id == state.granteeId;
             }
           );
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(

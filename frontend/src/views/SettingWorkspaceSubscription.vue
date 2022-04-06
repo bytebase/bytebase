@@ -77,7 +77,7 @@ import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
 import { PlanType, Subscription } from "../types";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   loading: boolean;
@@ -91,7 +91,6 @@ export default defineComponent({
   },
   setup() {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -109,14 +108,14 @@ export default defineComponent({
 
       try {
         await store.dispatch("subscription/patchSubscription", state.license);
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("subscription.update.success.title"),
           description: t("subscription.update.success.description"),
         });
       } catch {
-        notificationStore.pushNotification({
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("subscription.update.failure.title"),

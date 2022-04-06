@@ -5,7 +5,7 @@ import {
   NotificationCreate,
   NotificationFilter,
   NotificationState,
-} from "../../types";
+} from "@/types";
 
 export const useNotificationStore = defineStore("notification", {
   state: (): NotificationState => ({
@@ -60,3 +60,8 @@ function findNotification(
   }
   return undefined;
 }
+
+export const pushNotification = (notificationCreate: NotificationCreate) => {
+  const store = useNotificationStore();
+  store.pushNotification(notificationCreate);
+};

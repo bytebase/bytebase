@@ -243,7 +243,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -255,7 +255,6 @@ interface LocalState {
 const emit = defineEmits(["dismiss"]);
 
 const store = useStore();
-const notificationStore = useNotificationStore();
 const router = useRouter();
 const { t } = useI18n();
 
@@ -419,7 +418,7 @@ const doCreate = () => {
 
       router.push(`/instance/${instanceSlug(createdInstance)}`);
 
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -442,13 +441,13 @@ const testConnection = () => {
   };
   store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("instance.successfully-connected-instance"),
       });
     } else {
-      notificationStore.pushNotification({
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("instance.failed-to-connect-instance"),

@@ -100,7 +100,7 @@ import { BBTableColumn } from "../bbkit/types";
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -123,7 +123,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -211,7 +210,7 @@ export default defineComponent({
       store
         .dispatch("dataSource/createDataSource", newDataSource)
         .then((dataSource) => {
-          notificationStore.pushNotification({
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(

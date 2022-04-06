@@ -55,7 +55,7 @@ import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { pushNotification } from "@/store";
 
 export default defineComponent({
   name: "ProjectWebhookDetail",
@@ -76,7 +76,6 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const notificationStore = useNotificationStore();
     const { t } = useI18n();
 
     const project = computed(() => {
@@ -100,7 +99,7 @@ export default defineComponent({
         })
         .then((testResult: ProjectWebhookTestResult) => {
           if (testResult.error) {
-            notificationStore.pushNotification({
+            pushNotification({
               module: "bytebase",
               style: "CRITICAL",
               title: t("project.webhook.fail-tested-title"),
@@ -108,7 +107,7 @@ export default defineComponent({
               manualHide: true,
             });
           } else {
-            notificationStore.pushNotification({
+            pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: t("project.webhook.success-tested-prompt"),

@@ -56,7 +56,7 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 
 import type { SqlEditorState, SqlEditorGetters } from "@/types";
@@ -65,14 +65,13 @@ import {
   transformSQL,
   isDDLStatement,
 } from "@/components/MonacoEditor/sqlParser";
-import { useNotificationStore } from "@/store";
+import {} from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
 const router = useRouter();
-const notificationStore = useNotificationStore();
 const { t } = useI18n();
 const tabStore = useTabStore();
 
@@ -111,7 +110,7 @@ const handleColse = () => {
 
 const gotoAlterSchema = () => {
   if (ctx.databaseId === UNKNOWN_ID) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("sql-editor.goto-alter-schema-hint"),
