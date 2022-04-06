@@ -245,6 +245,7 @@ import {
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
+import { hasFeature } from "@/store";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -478,9 +479,7 @@ export default defineComponent({
         };
       }
       if (isTenantProject.value) {
-        if (
-          !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
-        ) {
+        if (!hasFeature("bb.feature.multi-tenancy")) {
           state.showFeatureModal = true;
           return;
         }

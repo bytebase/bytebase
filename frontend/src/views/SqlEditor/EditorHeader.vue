@@ -102,6 +102,8 @@ import { useStore } from "vuex";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { InboxSummary, UNKNOWN_ID } from "@/types";
 import { isDBAOrOwner, isDev } from "@/utils";
+import { hasFeature, useSubscriptionStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -113,6 +115,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -121,13 +124,11 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const currentPlan = computed(() =>
-      store.getters["subscription/currentPlan"]()
-    );
+    const { currentPlan } = storeToRefs(subscriptionStore);
 
     const showDBAItem = computed((): boolean => {
       return (
-        !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
+        !hasFeature("bb.feature.dba-workflow") ||
         isDBAOrOwner(currentUser.value.role)
       );
     });

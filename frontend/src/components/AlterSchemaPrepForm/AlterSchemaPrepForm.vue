@@ -116,6 +116,7 @@ import CommonTenantView, {
 } from "./CommonTenantView.vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
+import { hasFeature } from "@/store";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -260,7 +261,7 @@ export default defineComponent({
     });
 
     const generateTenant = async () => {
-      if (!store.getters["subscription/feature"]("bb.feature.multi-tenancy")) {
+      if (!hasFeature("bb.feature.multi-tenancy")) {
         state.showFeatureModal = true;
         return;
       }
