@@ -20,8 +20,20 @@
         :pattern="searchPattern"
         :default-expanded-keys="defaultExpanedKeys"
         :default-selected-keys="defaultSelectedKeys"
-        :on-update:selected-keys="handleSelectedKeysChange"
+        :selected-keys="selectedKeys"
         :render-label="renderLabel"
+        :render-suffix="renderSuffix"
+        :node-props="nodeProps"
+      />
+      <n-dropdown
+        trigger="manual"
+        placement="bottom-start"
+        :show="showDropdown"
+        :options="(dropdownOptions as any)"
+        :x="x"
+        :y="y"
+        @select="handleSelect"
+        @clickoutside="handleClickoutside"
       />
     </div>
   </div>
@@ -34,29 +46,40 @@
 import { ref, computed, h } from "vue";
 import {
   useNamespacedState,
+  useNamespacedGetters,
   useNamespacedActions,
 } from "vuex-composition-helpers";
 import { cloneDeep, omit, escape } from "lodash-es";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
-import { TreeOption } from "naive-ui";
+import { TreeOption, DropdownOption } from "naive-ui";
 
 import {
-  SqlEditorState,
   ConnectionAtom,
+  SqlEditorState,
+  SqlEditorGetters,
   SqlEditorActions,
   ConnectionContext,
+  Database,
   UNKNOWN_ID,
+  Instance,
 } from "@/types";
 import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
 import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
+import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
+import { useTabStore } from "@/store";
 
 const store = useStore();
 const router = useRouter();
+const tabStore = useTabStore();
 
-const searchPattern = ref();
+const { findProjectIdByDatabaseId, connectionInfo } =
+  useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
+    "findProjectIdByDatabaseId",
+    "connectionInfo",
+  ]);
 const { connectionTree, connectionContext } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
     "connectionTree",
@@ -66,6 +89,45 @@ const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
   "sqlEditor",
   ["setConnectionContext"]
 );
+
+const searchPattern = ref();
+const showDropdown = ref(false);
+const x = ref(0);
+const y = ref(0);
+const selectedKeys = ref<string[] | number[]>([]);
+const sheetContext = ref<DropdownOption>();
+const dropdownOptions = computed(() => {
+  if (!sheetContext.value) {
+    return [];
+  }
+  if (sheetContext.value.type === "table") {
+    return [
+      {
+        label: "Alter table",
+        key: "editor.sheet.alter-table",
+        item: sheetContext.value,
+      },
+      // TODO Just a thought
+      // {
+      //   label: "Copy name",
+      //   key: "editor.sheet.copy-name",
+      //   item: sheetContext.value,
+      // },
+    ];
+  }
+  return [
+    {
+      label: "Open in new tab",
+      key: "editor.sheet.new",
+      item: sheetContext.value,
+    },
+    {
+      label: "Set as context",
+      key: "editor.sheet.set-context",
+      item: sheetContext.value,
+    },
+  ];
+});
 
 const treeData = computed(() => {
   const tree = cloneDeep(connectionTree.value);
@@ -147,13 +209,8 @@ const getFlattenConnectionTree = () => {
   };
 };
 
-const handleSelectedKeysChange = (
-  keys: number[],
-  options: Array<ConnectionAtom>
-) => {
-  const [selectedItem] = options;
-
-  if (selectedItem) {
+const setSheetContext = (option: any) => {
+  if (option) {
     let ctx: ConnectionContext = cloneDeep(connectionContext.value);
     const { instanceList, databaseList } = getFlattenConnectionTree();
 
@@ -161,31 +218,39 @@ const handleSelectedKeysChange = (
       const instance = instanceList?.find((item) => item.id === id);
       return instance ? instance.label : "";
     };
+    const getInstanceEngineByInstanceId = (id: number) => {
+      const selectedInstance = store.getters["instance/instanceById"](
+        id
+      ) as Instance;
+      return selectedInstance ? selectedInstance.engine : "MYSQL";
+    };
 
     // If selected item is instance node
-    if (selectedItem.type === "instance") {
-      ctx.instanceId = selectedItem.id;
-      ctx.instanceName = selectedItem.label;
+    if (option.type === "instance") {
+      ctx.instanceId = option.id;
+      ctx.instanceName = option.label;
       ctx.databaseId = UNKNOWN_ID;
       ctx.databaseName = "";
+      ctx.databaseType = getInstanceEngineByInstanceId(option.id);
       ctx.tableId = UNKNOWN_ID;
       ctx.tableName = "";
     }
 
     // If selected item is database node
-    if (selectedItem.type === "database") {
-      const instanceId = selectedItem.parentId;
+    if (option.type === "database") {
+      const instanceId = option.parentId;
       ctx.instanceId = instanceId;
       ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-      ctx.databaseId = selectedItem.id;
-      ctx.databaseName = selectedItem.label;
+      ctx.databaseId = option.id;
+      ctx.databaseName = option.label;
+      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
       ctx.tableId = UNKNOWN_ID;
       ctx.tableName = "";
     }
 
     // If selected item is table node
-    if (selectedItem.type === "table") {
-      const databaseId = selectedItem.parentId;
+    if (option.type === "table") {
+      const databaseId = option.parentId;
       const databaseInfo = databaseList?.find((item) => item.id === databaseId);
       const databaseName = databaseInfo?.label || "";
       const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
@@ -193,8 +258,9 @@ const handleSelectedKeysChange = (
       ctx.instanceName = getInstanceNameByInstanceId(instanceId);
       ctx.databaseId = databaseId;
       ctx.databaseName = databaseName;
-      ctx.tableId = selectedItem.id;
-      ctx.tableName = selectedItem.label;
+      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
+      ctx.tableId = option.id;
+      ctx.tableName = option.label;
     }
 
     ctx.hasSlug = true;
@@ -215,6 +281,7 @@ const handleSelectedKeysChange = (
   }
 };
 
+// dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const renderLabelHTML = searchPattern.value
     ? h("span", {
@@ -222,10 +289,100 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
           escape(option.label),
           escape(searchPattern.value)
         ),
+        class: "truncate",
       })
     : escape(option.label);
 
   return renderLabelHTML;
+};
+
+// render the suffix icon
+const renderSuffix = ({ option }: { option: TreeOption }) => {
+  const renderSuffixHTML = h(HeroiconsSolidDotsHorizontal, {
+    id: "tree-node-suffix",
+    class:
+      "n-tree-node-content__suffix-icon h-4 w-4 absolute right-0 top-0 hidden",
+    onClick: (e: MouseEvent) => {
+      sheetContext.value = option;
+      showDropdown.value = true;
+      x.value = e.clientX;
+      y.value = e.clientY;
+      e.preventDefault();
+    },
+  });
+
+  return renderSuffixHTML;
+};
+
+const gotoAlterSchema = (option: any) => {
+  console.log(option);
+  const databaseId = option.parentId;
+  const projectId = findProjectIdByDatabaseId.value(databaseId);
+  const databaseList =
+    connectionInfo.value.databaseListByProjectId.get(projectId);
+  const databaseName = databaseList.find(
+    (database: Database) => database.id === databaseId
+  ).name;
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.database.schema.update",
+      name: `[${databaseName}] Alter schema`,
+      project: projectId,
+      databaseList: databaseId,
+      sql: `ALTER TABLE ${option.label}`,
+    },
+  });
+};
+
+const handleSelect = (key: string) => {
+  const option = dropdownOptions.value.find(
+    (item) => item.key === key
+  ) as DropdownOption;
+  if (key === "editor.sheet.alter-table") {
+    gotoAlterSchema(option.item);
+  }
+  if (key === "editor.sheet.set-context") {
+    setSheetContext(option.item);
+  }
+  if (key === "editor.sheet.new") {
+    // set the sheet context first
+    setSheetContext(option.item);
+    // and then create a new tab
+    tabStore.addTab();
+  }
+  showDropdown.value = false;
+};
+
+const handleClickoutside = () => {
+  showDropdown.value = false;
+};
+
+const nodeProps = ({ option }: { option: TreeOption }) => {
+  return {
+    onClick: (e: any) => {
+      if (e?.target?.id === "tree-node-suffix") return;
+      if (option) {
+        let ctx: ConnectionContext = cloneDeep(connectionContext.value);
+        ctx.option = option;
+        setConnectionContext(ctx);
+      }
+    },
+    onContextmenu(e: MouseEvent) {
+      sheetContext.value = option;
+      showDropdown.value = true;
+      x.value = e.clientX;
+      y.value = e.clientY;
+      if (option && option.key) {
+        selectedKeys.value = [option.key as string];
+      }
+      e.preventDefault();
+    },
+  };
 };
 </script>
 
@@ -236,6 +393,21 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   .n-tree-node-content__text {
   border-bottom: none;
   border-bottom-color: transparent;
+}
+
+.n-tree .n-tree-node-content .n-tree-node-content__text {
+  @apply truncate;
+}
+
+.n-tree .n-tree-node .n-tree-node-content__suffix {
+  @apply w-4 h-4 flex items-center relative ml-1;
+}
+
+.n-tree
+  .n-tree-node:hover
+  .n-tree-node-content__suffix
+  .n-tree-node-content__suffix-icon {
+  @apply block;
 }
 </style>
 

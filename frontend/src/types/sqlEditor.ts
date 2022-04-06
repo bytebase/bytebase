@@ -1,4 +1,5 @@
 import * as monaco from "monaco-editor";
+import { DropdownOption } from "naive-ui";
 
 import {
   ProjectId,
@@ -39,11 +40,13 @@ export type ConnectionContext = {
   projectName: string;
   instanceId: InstanceId;
   instanceName: string;
-  databaseId?: DatabaseId;
-  databaseName?: string;
+  databaseId: DatabaseId;
+  databaseName: string;
+  databaseType: string;
   tableId?: TableId;
   tableName?: string;
   isLoadingTree: boolean;
+  option: DropdownOption;
 };
 
 export interface QueryHistory {
