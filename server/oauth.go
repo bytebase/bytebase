@@ -56,6 +56,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		}
 
+		oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort)
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{Logger: s.l}).
 			ExchangeOAuthToken(
 				c.Request().Context(),
@@ -66,8 +67,13 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
 		}
 
+		resp := &api.OAuthToken{
+			AccessToken:  oauthToken.AccessToken,
+			RefreshToken: oauthToken.RefreshToken,
+			ExpiresTs:    oauthToken.ExpiresTs,
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, oauthToken); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, resp); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal oauth token response").SetInternal(err)
 		}
 		return nil

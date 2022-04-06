@@ -20,14 +20,14 @@ const actions = {
       code,
       vcsId,
       vcsType,
-      instanceURL,
+      instanceUrl,
       clientId,
       clientSecret,
     }: {
       code: string;
       vcsId?: VCSId;
       vcsType?: VCSType;
-      instanceURL?: string;
+      instanceUrl?: string;
       clientId?: string;
       clientSecret?: string;
     }
@@ -40,7 +40,7 @@ const actions = {
             code,
             vcsId,
             vcsType,
-            instanceURL,
+            instanceUrl,
             clientId,
             clientSecret,
           },
