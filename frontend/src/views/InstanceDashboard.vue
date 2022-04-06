@@ -51,11 +51,11 @@ import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { useStore } from "vuex";
-import { Environment, Subscription, Instance } from "../types";
+import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useUIStateStore } from "@/store";
+import { useUIStateStore, useSubscriptionStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -73,6 +73,7 @@ export default defineComponent({
     const searchField = ref();
 
     const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { t } = useI18n();
@@ -159,8 +160,7 @@ export default defineComponent({
     };
 
     const instanceQuota = computed((): number => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
+      const { subscription } = subscriptionStore;
       return subscription?.instanceCount ?? 5;
     });
 

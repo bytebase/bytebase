@@ -128,7 +128,7 @@
                 </div>
                 <div class="relative flex justify-start">
                   <router-link
-                    :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(ds)}`"
+                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(ds)}`"
                     class="pr-3 bg-white font-medium normal-link"
                     >{{ ds.name }}</router-link
                   >
@@ -188,7 +188,13 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect, PropType } from "vue";
+import {
+  computed,
+  reactive,
+  watchEffect,
+  PropType,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import AnomalyTable from "../components/AnomalyTable.vue";
@@ -200,12 +206,13 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
+import { featureToRef } from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseOverviewPanel",
   components: {
     AnomalyTable,
@@ -253,9 +260,7 @@ export default {
       }
     );
 
-    const hasDataSourceFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.data-source")
-    );
+    const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
     const tableList = computed(() => {
       return store.getters["table/tableListByDatabaseId"](props.database.id);
@@ -370,5 +375,5 @@ export default {
       configInstance,
     };
   },
-};
+});
 </script>

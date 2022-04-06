@@ -126,7 +126,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 
@@ -141,6 +141,7 @@ import {
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
+import { featureToRef } from "@/store";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -157,7 +158,7 @@ interface LocalState {
   searchText: string;
 }
 
-export default {
+export default defineComponent({
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
   setup() {
@@ -377,9 +378,7 @@ export default {
       state.searchText = searchText;
     };
 
-    const hasSchemaDriftFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.schema-drift");
-    });
+    const hasSchemaDriftFeature = featureToRef("bb.feature.schema-drift");
 
     return {
       DATABASE_TAB,
@@ -394,5 +393,5 @@ export default {
       hasSchemaDriftFeature,
     };
   },
-};
+});
 </script>

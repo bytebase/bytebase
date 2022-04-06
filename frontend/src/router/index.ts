@@ -20,7 +20,7 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore } from "@/store";
+import { useTabStore, hasFeature } from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -93,9 +93,10 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -113,9 +114,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                       "quickaction.bb.user.manage",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -131,9 +130,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -563,9 +560,10 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.database"),
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -577,9 +575,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -591,9 +587,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -868,7 +862,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
+      !hasFeature("bb.feature.dba-workflow") ||
       isDBAOrOwner(currentUser.role)
     ) {
       next();
@@ -883,7 +877,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
-      !store.getters["subscription/feature"]("bb.feature.data-source") ||
+      !hasFeature("bb.feature.data-source") ||
       !isDBAOrOwner(currentUser.role)
     ) {
       next({

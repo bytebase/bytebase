@@ -18,7 +18,7 @@ import (
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	// for now we only support sync project member from privately deployed GitLab
-	g.POST("/project/:projectID/syncmember", func(c echo.Context) error {
+	g.POST("/project/:projectID/sync-member", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
