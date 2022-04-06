@@ -13,6 +13,10 @@ import (
 )
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
+	// This is a generic endpoint of exchanging access token for VCS providers. It
+	// requires either the "vcsId" to infer the details from an existing VCS
+	// provider or "vcsType", "instanceURL", "clientId" and "clientSecret" to
+	// directly compose the request to the code host.
 	g.POST("/oauth/vcs/exchange-token", func(c echo.Context) error {
 		req := &api.VCSExchangeToken{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, req); err != nil {
@@ -39,7 +43,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				Code:         req.Code,
 			}
 		} else {
-			vcsType = vcsPlugin.Type(c.QueryParam("type"))
+			vcsType = req.Type
 			if vcsType != vcsPlugin.GitLabSelfHost && vcsType != vcsPlugin.GitHubCom {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
 			}

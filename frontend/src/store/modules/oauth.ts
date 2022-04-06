@@ -11,9 +11,9 @@ const convert = (raw: ResourceObject): OAuthToken => {
 };
 
 const actions = {
-  // Either pass the "vcsId" to let the backend infer the details from an exsiting VCS provider
-  // or pass "vcsType", "instanceURL", "clientId", "clientSecret" to make the backend only to
-  // pass on the request to the code host.
+  // Either pass the "vcsId" to let the backend infer the details from an existing VCS provider
+  // or pass "vcsType", "instanceURL", "clientId" and "clientSecret" to allow the backend directly
+  // compose the request to the code host.
   async exchangeVCSToken(
     {}: any,
     {
