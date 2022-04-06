@@ -57,7 +57,6 @@ export type UpdateSchemaContext = {
 };
 
 export type UpdateSchemaGhostContext = {
-  migrationType: MigrationType;
   updateSchemaDetailList: UpdateSchemaGhostDetail[];
 };
 
