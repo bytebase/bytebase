@@ -13,8 +13,8 @@ import {
   empty,
   EMPTY_ID,
   RoleType,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   member: ResourceObject,
