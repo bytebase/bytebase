@@ -14,9 +14,9 @@ import (
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
 	g.POST("/oauth/vcs/exchange-token", func(c echo.Context) error {
-		req := &api.ExchangeToken{}
+		req := &api.VCSExchangeToken{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, req); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed exchange token request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed VCS exchange token request").SetInternal(err)
 		}
 
 		var vcsType vcsPlugin.Type
@@ -28,7 +28,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			}
 			if vcs == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", req.ID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", req.ID))
 			}
 
 			vcsType = vcs.Type
@@ -37,7 +37,6 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
 				Code:         req.Code,
-				RedirectURL:  req.Config.RedirectURL,
 			}
 		} else {
 			vcsType = vcsPlugin.Type(c.QueryParam("type"))
@@ -45,17 +44,12 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
 			}
 
-			instanceURL = req.Config.Endpoint
+			instanceURL = req.InstanceURL
 			oauthExchange = &common.OAuthExchange{
-				ClientID:     req.Config.ApplicationID,
-				ClientSecret: req.Config.Secret,
+				ClientID:     req.ClientID,
+				ClientSecret: req.ClientSecret,
 				Code:         req.Code,
-				RedirectURL:  req.Config.RedirectURL,
 			}
-		}
-
-		if oauthExchange.RedirectURL == "" {
-			oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort)
 		}
 
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{Logger: s.l}).

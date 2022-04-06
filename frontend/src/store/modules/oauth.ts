@@ -1,5 +1,5 @@
 import axios from "axios";
-import { VCSId, OAuthConfig, OAuthToken, ResourceObject } from "../../types";
+import { VCSId, OAuthToken, ResourceObject, VCSType } from "../../types";
 
 const convert = (raw: ResourceObject): OAuthToken => {
   const attr = raw.attributes;
@@ -11,16 +11,25 @@ const convert = (raw: ResourceObject): OAuthToken => {
 };
 
 const actions = {
+  // Either pass the "vcsId" to let the backend infer the details from an exsiting VCS provider
+  // or pass "vcsType", "instanceURL", "clientId", "clientSecret" to make the backend only to
+  // pass on the request to the code host.
   async exchangeVCSToken(
     {}: any,
     {
-      vcsId,
       code,
-      oauthConfig,
+      vcsId,
+      vcsType,
+      instanceURL,
+      clientId,
+      clientSecret,
     }: {
-      vcsId: VCSId;
       code: string;
-      oauthConfig: OAuthConfig;
+      vcsId?: VCSId;
+      vcsType?: VCSType;
+      instanceURL?: string;
+      clientId?: string;
+      clientSecret?: string;
     }
   ): Promise<OAuthToken> {
     const data = (
@@ -28,9 +37,12 @@ const actions = {
         data: {
           type: "exchangeToken",
           attributes: {
-            vcsId,
             code,
-            config: oauthConfig,
+            vcsId,
+            vcsType,
+            instanceURL,
+            clientId,
+            clientSecret,
           },
         },
       })

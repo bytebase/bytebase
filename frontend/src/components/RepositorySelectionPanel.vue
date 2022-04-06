@@ -75,8 +75,8 @@ const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
     store
       .dispatch("oauth/exchangeVCSToken", {
-        vcsId: props.config.vcs.id,
         code: props.config.code,
+        vcsId: props.config.vcs.id,
       })
       .then((token: OAuthToken) => {
         emit("set-token", token);

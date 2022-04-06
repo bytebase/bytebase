@@ -105,16 +105,13 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `${state.config.instanceUrl}/oauth/token`,
-            applicationId: state.config.applicationId,
-            secret: state.config.secret,
-            redirectUrl: redirectUrl(),
-          };
           store
             .dispatch("oauth/exchangeVCSToken", {
               code: payload.code,
-              oAuthConfig,
+              vcsType: state.config.type,
+              instanceUrl: state.config.instanceUrl,
+              clientId: state.config.applicationId,
+              clientSecret: state.config.secret,
             })
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
