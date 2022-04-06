@@ -217,7 +217,7 @@ func TestGetCutoffVersion(t *testing.T) {
 	// The wanted devVersion and releaseVersion will change if there are any development or release changes in the migration directory.
 	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.1.2"), devVersion)
+	require.Equal(t, semver.MustParse("1.1.4"), devVersion)
 
 	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
 	require.NoError(t, err)
