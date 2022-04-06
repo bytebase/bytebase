@@ -43,14 +43,15 @@
 
 <script lang="ts">
 import { computed, ref } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { PlanType } from "../types";
+import { useSubscriptionStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 export default {
   name: "BannerTrial",
   setup() {
-    const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const { t } = useI18n();
     const show = ref(true);
 
@@ -63,7 +64,7 @@ export default {
     ].join("\n");
 
     const currentPlan = computed((): string => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       switch (plan) {
         case PlanType.TEAM:
           return t("subscription.plan.team.title");
@@ -74,12 +75,12 @@ export default {
       }
     });
 
+    const { nextPaymentDays } = storeToRefs(subscriptionStore);
+
     return {
       show,
       currentPlan,
-      nextPaymentDays: computed((): number =>
-        store.getters["subscription/nextPaymentDays"]()
-      ),
+      nextPaymentDays,
       extendTrialingEmail: `mailto:support@bytebase.com?subject=Request to extend trial&body=${encodeURIComponent(
         emailBody
       )}`,
