@@ -8,7 +8,6 @@ import {
   LabelPatch,
   LabelValueType,
 } from "../../types";
-import { useAuthStore } from "./auth";
 
 function convert(label: ResourceObject): Label {
   const valueList = (label.attributes.valueList || []) as LabelValueType[];
