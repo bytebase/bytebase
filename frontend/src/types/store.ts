@@ -48,7 +48,6 @@ import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
 import instanceStore from "../store/modules/instance";
 import sqlEditorStore from "../store/modules/sqlEditor";
-import tabStore from "../store/modules/tab";
 import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
@@ -77,7 +76,7 @@ export interface PrincipalState {
 }
 
 export interface BookmarkState {
-  bookmarkListByUser: Map<PrincipalId, Bookmark[]>;
+  bookmarkList: Map<PrincipalId, Bookmark[]>;
 }
 
 export interface ActivityState {
@@ -212,9 +211,6 @@ export interface TabState {
   tabList: TabInfo[];
   currentTabId: string;
 }
-export type TabGetters = typeof tabStore.getters;
-export type TabActions = typeof tabStore.actions;
-export type TabMutations = typeof tabStore.mutations;
 
 export interface DeploymentState {
   deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;

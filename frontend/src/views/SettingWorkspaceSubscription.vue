@@ -72,12 +72,11 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
 import { PlanType } from "../types";
-import { useSubscriptionStore } from "@/store";
+import { pushNotification, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -91,7 +90,6 @@ export default defineComponent({
     PricingTable,
   },
   setup() {
-    const store = useStore();
     const subscriptionStore = useSubscriptionStore();
     const { t } = useI18n();
 
@@ -110,14 +108,14 @@ export default defineComponent({
 
       try {
         await subscriptionStore.patchSubscription(state.license);
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("subscription.update.success.title"),
           description: t("subscription.update.success.description"),
         });
       } catch {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("subscription.update.failure.title"),

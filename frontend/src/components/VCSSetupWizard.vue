@@ -29,9 +29,9 @@
 import {
   reactive,
   computed,
-  defineComponent,
   onUnmounted,
   onMounted,
+  defineComponent,
 } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
@@ -53,6 +53,7 @@ import {
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -170,7 +171,7 @@ export default defineComponent({
             if (token) {
               state.currentStep = newStep;
               allowChangeCallback();
-              store.dispatch("notification/pushNotification", {
+              pushNotification({
                 module: "bytebase",
                 style: "SUCCESS",
                 title: t(
@@ -187,7 +188,7 @@ export default defineComponent({
                   "version-control.setting.add-git-provider.check-oauth-info-match"
                 );
               }
-              store.dispatch("notification/pushNotification", {
+              pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: "Failed to setup OAuth",
@@ -211,7 +212,7 @@ export default defineComponent({
         router.push({
           name: "setting.workspace.version-control",
         });
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("version-control.setting.add-git-provider.add-success", {

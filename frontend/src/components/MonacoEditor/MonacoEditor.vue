@@ -13,7 +13,6 @@ import {
   watch,
   computed,
 } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
 
@@ -24,7 +23,7 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import {
   SqlEditorActions,
   SqlEditorState,
@@ -63,7 +62,6 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 const tabStore = useTabStore();
-const store = useStore();
 const { t } = useI18n();
 const { shouldSetContent, shouldFormatContent } =
   useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -161,7 +159,7 @@ const init = async () => {
     contextMenuOrder: 1,
     run: () => {
       if (readonly.value) {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("sql-editor.notify.sheet-is-read-only"),

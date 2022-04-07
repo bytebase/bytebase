@@ -51,13 +51,12 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import {
   useNamespacedGetters,
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 
 import type { SqlEditorState, SqlEditorGetters } from "@/types";
@@ -72,7 +71,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const store = useStore();
 const { t } = useI18n();
 const tabStore = useTabStore();
 
@@ -111,7 +109,7 @@ const handleColse = () => {
 
 const gotoAlterSchema = () => {
   if (ctx.databaseId === UNKNOWN_ID) {
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("sql-editor.goto-alter-schema-hint"),

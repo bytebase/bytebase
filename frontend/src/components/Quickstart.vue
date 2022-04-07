@@ -63,7 +63,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { useUIStateStore, hasFeature } from "@/store";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -182,11 +182,11 @@ export default defineComponent({
           newState: true,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "INFO",
-            title: computed(() => t("quick-start.notice.title")),
-            description: computed(() => t("quick-start.notice.desc")),
+            title: t("quick-start.notice.title"),
+            description: t("quick-start.notice.desc"),
             manualHide: true,
           });
         });
