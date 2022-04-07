@@ -118,9 +118,9 @@ type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
 
 // TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload is the task type for dropping the original table
 type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
-	// DatabaseName is like `_tablename_del`.
 	DatabaseName string `json:"databaseName,omitempty"`
-	TableName    string `json:"tableName,omitempty"`
+	// TableName is like `_tablename_del`.
+	TableName string `json:"tableName,omitempty"`
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
