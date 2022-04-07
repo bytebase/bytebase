@@ -111,6 +111,7 @@ import {
   DatabaseLabel,
 } from "../types";
 import { sortDatabaseList } from "../utils";
+import { pushNotification } from "@/store";
 
 type TransferSource = "DEFAULT" | "OTHER";
 
@@ -188,7 +189,7 @@ export default defineComponent({
           labels,
         })
         .then((updatedDatabase) => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,
