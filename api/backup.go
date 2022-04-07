@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 )
 
@@ -76,56 +74,6 @@ func (e BackupStorageBackend) String() string {
 		return "OSS"
 	}
 	return "UNKNOWN"
-}
-
-// BackupRaw is the store model for an Backup.
-// Fields have exactly the same meanings as Backup.
-type BackupRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Name                    string
-	Status                  BackupStatus
-	Type                    BackupType
-	StorageBackend          BackupStorageBackend
-	MigrationHistoryVersion string
-	Path                    string
-	Comment                 string
-}
-
-// ToBackup creates an instance of Backup based on the BackupRaw.
-// This is intended to be called when we need to compose an Backup relationship.
-func (raw *BackupRaw) ToBackup() *Backup {
-	return &Backup{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:                    raw.Name,
-		Status:                  raw.Status,
-		Type:                    raw.Type,
-		StorageBackend:          raw.StorageBackend,
-		MigrationHistoryVersion: raw.MigrationHistoryVersion,
-		Path:                    raw.Path,
-		Comment:                 raw.Comment,
-	}
 }
 
 // Backup is the API message for a backup.
@@ -205,52 +153,6 @@ type BackupPatch struct {
 	Comment string
 }
 
-// BackupSettingRaw is the store model for an BackupSetting.
-// Fields have exactly the same meanings as BackupSetting.
-type BackupSettingRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Enabled   bool
-	Hour      int
-	DayOfWeek int
-	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
-	HookURL string
-}
-
-// ToBackupSetting creates an instance of BackupSetting based on the BackupSettingRaw.
-// This is intended to be called when we need to compose an BackupSetting relationship.
-func (raw *BackupSettingRaw) ToBackupSetting() *BackupSetting {
-	return &BackupSetting{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Enabled:   raw.Enabled,
-		Hour:      raw.Hour,
-		DayOfWeek: raw.DayOfWeek,
-		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
-		HookURL: raw.HookURL,
-	}
-}
-
 // BackupSetting is the backup setting for a database.
 type BackupSetting struct {
 	ID int `jsonapi:"primary,backupSetting"`
@@ -311,17 +213,4 @@ type BackupSettingUpsert struct {
 type BackupSettingsMatch struct {
 	Hour      int
 	DayOfWeek int
-}
-
-// BackupService is the service for backups.
-type BackupService interface {
-	CreateBackup(ctx context.Context, create *BackupCreate) (*BackupRaw, error)
-	FindBackup(ctx context.Context, find *BackupFind) (*BackupRaw, error)
-	// Returns backup list in updated_ts descending order.
-	FindBackupList(ctx context.Context, find *BackupFind) ([]*BackupRaw, error)
-	PatchBackup(ctx context.Context, patch *BackupPatch) (*BackupRaw, error)
-	FindBackupSetting(ctx context.Context, find *BackupSettingFind) (*BackupSettingRaw, error)
-	UpsertBackupSetting(ctx context.Context, upsert *BackupSettingUpsert) (*BackupSettingRaw, error)
-	UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *BackupSettingUpsert) (*BackupSettingRaw, error)
-	FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatch) ([]*BackupSettingRaw, error)
 }
