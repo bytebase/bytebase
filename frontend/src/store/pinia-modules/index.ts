@@ -3,6 +3,7 @@ export * from "./command";
 export * from "./debug";
 export * from "./label";
 export * from "./notification";
+export * from "./oauth";
 export * from "./router";
 export * from "./subscription";
 export * from "./tab";

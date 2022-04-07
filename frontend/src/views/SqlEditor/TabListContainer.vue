@@ -127,7 +127,6 @@ import { useDialog } from "naive-ui";
 
 import { pushNotification, useTabStore } from "@/store";
 import { TabInfo, SheetGetters, SheetActions } from "@/types";
-import { getDefaultTab } from "@/utils/tab";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 const tabStore = useTabStore();
@@ -235,8 +234,7 @@ const handleSelectTab = async (tab: TabInfo) => {
   setConnectionContextFromCurrentTab();
 };
 const handleAddTab = () => {
-  tabStore.addTab(getDefaultTab());
-
+  tabStore.addTab();
   nextTick(recalculateScrollWidth);
 };
 
@@ -285,8 +283,7 @@ const handleScollTabList = debounce((e: WheelEvent) => {
 
 onMounted(async () => {
   if (!tabStore.hasTabs) {
-    tabStore.addTab(getDefaultTab());
-    recalculateScrollWidth();
+    handleAddTab();
   }
 });
 
