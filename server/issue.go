@@ -677,6 +677,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if err != nil {
 				return nil, fmt.Errorf("failed to find backup %v", m.BackupID)
 			}
+			if backup == nil {
+				return nil, fmt.Errorf("backup not found with ID[%d]", m.BackupID)
+			}
 			restorePayload := api.TaskDatabaseRestorePayload{}
 			restorePayload.DatabaseName = m.DatabaseName
 			restorePayload.BackupID = m.BackupID

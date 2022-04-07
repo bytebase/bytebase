@@ -47,10 +47,10 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find backup: %w", err)
+		return true, nil, fmt.Errorf("Failed to find backup with ID[%d], error[%w]", payload.BackupID, err)
 	}
 	if backup == nil {
-		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+		return true, nil, fmt.Errorf("backup with ID[%d] not found", payload.BackupID)
 	}
 
 	sourceDatabaseFind := &api.DatabaseFind{

@@ -125,6 +125,9 @@ func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get backup setting by ID[%d], error[%w]", id, err)
 	}
+	if backupRaw == nil {
+		return nil, nil
+	}
 	backupSetting, err := s.composeBackup(ctx, backupRaw)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
@@ -162,24 +165,14 @@ func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.B
 	return backup, nil
 }
 
-// GetBackupSettingByID gets an instance of BackupSetting by ID
-func (s *Store) GetBackupSettingByID(ctx context.Context, id int) (*api.BackupSetting, error) {
-	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{ID: &id})
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get backup setting by ID[%d], error[%w]", id, err)
-	}
-	backupSetting, err := s.composeBackupSetting(ctx, backupSettingRaw)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to compose BackupSetting with backupSettingRaw[%+v], error[%w]", backupSettingRaw, err)
-	}
-	return backupSetting, nil
-}
-
 // GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID
 func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get backup setting by ID[%d], error[%w]", id, err)
+	}
+	if backupSettingRaw == nil {
+		return nil, nil
 	}
 	backupSetting, err := s.composeBackupSetting(ctx, backupSettingRaw)
 	if err != nil {
