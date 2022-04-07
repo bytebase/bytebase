@@ -127,7 +127,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external postgresql instance url")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance url")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -277,23 +277,33 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgDataDir)
+	if isUseLocalDB() {
+		fmt.Printf("resourceDir=%s\n", resourceDir)
+		fmt.Printf("pgdataDir=%s\n", pgDataDir)
+	}
 	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
-	if err != nil {
-		return nil, err
+	if isUseLocalDB() {
+		logger.Info("Detecting and initializing local PostgreSQL instance...")
+		pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &Main{
+			profile: &activeProfile,
+			l:       logger,
+			pg:      pgInstance,
+		}, nil
 	}
 
 	return &Main{
 		profile: &activeProfile,
 		l:       logger,
-		pg:      pgInstance,
 	}, nil
 }
 
@@ -331,15 +341,20 @@ func initBranding(ctx context.Context, settingService api.SettingService) error 
 	return nil
 }
 
-func (m *Main) newDB() (*store.DB, error) {
-	if len(pgURL) > 0 {
-		return m.newExternalDB()
-	}
+func isUseLocalDB() bool {
+	return len(pgURL) == 0
+}
 
-	return m.newLocalDB()
+func (m *Main) newDB() (*store.DB, error) {
+	if isUseLocalDB() {
+		return m.newLocalDB()
+	}
+	return m.newExternalDB()
 }
 
 func (m *Main) newExternalDB() (*store.DB, error) {
+	m.l.Info("Initializing external PostgreSQL connection...", zap.String("pgURL", pgURL))
+
 	u, err := url.Parse(pgURL)
 	if err != nil {
 		return nil, err
