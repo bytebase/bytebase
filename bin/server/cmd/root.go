@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -91,6 +93,7 @@ var (
 	readonly bool
 	demo     bool
 	debug    bool
+	pgUrl    string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -124,6 +127,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
+	rootCmd.PersistentFlags().StringVar(&pgUrl, "pg", "", "optional external postgresql instance url")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -327,13 +331,64 @@ func initBranding(ctx context.Context, settingService api.SettingService) error 
 	return nil
 }
 
-// Run will run the main server.
-func (m *Main) Run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	m.serverCancel = cancel
+func (m *Main) newDB() (*store.DB, error) {
+	if len(pgUrl) > 0 {
+		return m.newExternalDB(pgUrl)
+	}
 
+	return m.newLocalDB()
+}
+
+func (m *Main) newExternalDB(pgUrl string) (*store.DB, error) {
+	u, err := url.Parse(pgUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
+	}
+
+	connCfg := dbdriver.ConnectionConfig{}
+
+	if u.User != nil {
+		connCfg.Username = u.User.Username()
+		connCfg.Password, _ = u.User.Password()
+	}
+
+	if host, port, err := net.SplitHostPort(u.Host); err != nil {
+		connCfg.Host = u.Host
+	} else {
+		connCfg.Host = host
+		connCfg.Port = port
+	}
+
+	if u.Path != "" {
+		connCfg.Database = u.Path[1:]
+	}
+
+	tlsCfg := dbdriver.TLSConfig{}
+
+	q := u.Query()
+	if sslCA := q.Get("sslrootcert"); len(sslCA) > 0 {
+		tlsCfg.SslCA = sslCA
+	}
+	if sslKey := q.Get("sslkey"); len(sslKey) > 0 {
+		tlsCfg.SslKey = sslKey
+	}
+	if sslCert := q.Get("sslcert"); len(sslCert) > 0 {
+		tlsCfg.SslCert = sslCert
+	}
+
+	connCfg.TLSConfig = tlsCfg
+
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	return db, nil
+}
+
+func (m *Main) newLocalDB() (*store.DB, error) {
 	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
-		return err
+		return nil, err
 	}
 	m.pgStarted = true
 
@@ -345,6 +400,19 @@ func (m *Main) Run(ctx context.Context) error {
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
 	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	return db, nil
+}
+
+// Run will run the main server.
+func (m *Main) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.serverCancel = cancel
+
+	db, err := m.newDB()
+	if err != nil {
+		return fmt.Errorf("cannot new db: %w", err)
+	}
+
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
