@@ -157,6 +157,7 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
+import { useOAuthStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -200,8 +201,8 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
-          store
-            .dispatch("oauth/exchangeVCSToken", {
+          useOAuthStore()
+            .exchangeVCSToken({
               vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })
