@@ -7,9 +7,10 @@ import (
 
 // Store provides database access to all raw objects
 type Store struct {
-	l     *zap.Logger
-	db    *DB
-	cache api.CacheService
+	l               *zap.Logger
+	db              *DB
+	cache           api.CacheService
+	DatabaseService api.DatabaseService
 }
 
 // New creates a new instance of Store

@@ -370,8 +370,9 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.BackupService = store.NewBackupService(m.l, db, storeInstance)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance, s.BackupService)
+	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
+	// TODO(dragonly): remove this hack
+	storeInstance.DatabaseService = s.DatabaseService
 	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
