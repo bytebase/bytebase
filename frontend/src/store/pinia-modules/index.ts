@@ -4,6 +4,7 @@ export * from "./debug";
 export * from "./label";
 export * from "./oauth";
 export * from "./router";
+export * from "./setting";
 export * from "./subscription";
 export * from "./tab";
 export * from "./uistate";
