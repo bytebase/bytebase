@@ -158,7 +158,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { useBackupStore } from "@/store";
+import { pushNotification, useBackupStore } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -390,7 +390,7 @@ export default defineComponent({
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
           const action = on ? t("database.enabled") : t("database.disabled");
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -415,7 +415,7 @@ export default defineComponent({
         })
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(

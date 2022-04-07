@@ -71,7 +71,7 @@ func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Me
 	for _, raw := range memberRawList {
 		member, err := s.composeMember(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("Failed to compose Member with memberRaw[%+v], error[%w]", raw, err)
 		}
 		memberList = append(memberList, member)
 	}
@@ -90,7 +90,7 @@ func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("Failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
 	}
 	return member, nil
 }
@@ -107,7 +107,7 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("Failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
 	}
 	return member, nil
 }
@@ -120,7 +120,7 @@ func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.M
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Member role with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("Failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
 	}
 	return member, nil
 }

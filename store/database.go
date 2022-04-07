@@ -21,19 +21,17 @@ type DatabaseService struct {
 	l  *zap.Logger
 	db *DB
 
-	cache         api.CacheService
-	store         *Store
-	backupService api.BackupService
+	cache api.CacheService
+	store *Store
 }
 
 // NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, store *Store, backupService api.BackupService) *DatabaseService {
+func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, store *Store) *DatabaseService {
 	return &DatabaseService{
-		l:             logger,
-		db:            db,
-		cache:         cache,
-		store:         store,
-		backupService: backupService,
+		l:     logger,
+		db:    db,
+		cache: cache,
+		store: store,
 	}
 }
 
@@ -64,7 +62,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 		return nil, err
 	}
 
-	database, err := s.createDatabase(ctx, tx, create)
+	databaseRaw, err := s.createDatabase(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +71,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
 			UpdaterID:  api.SystemBotID,
-			DatabaseID: database.ID,
+			DatabaseID: databaseRaw.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
 			HookURL:    "",
@@ -84,16 +82,16 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 		case api.BackupPlanPolicyScheduleWeekly:
 			backupSettingUpsert.DayOfWeek = rand.Intn(7)
 		}
-		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
+		if _, err := s.store.upsertBackupSettingImpl(ctx, tx, backupSettingUpsert); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+	if err := s.cache.UpsertCache(api.DatabaseCache, databaseRaw.ID, databaseRaw); err != nil {
 		return nil, err
 	}
 
-	return database, nil
+	return databaseRaw, nil
 }
 
 // FindDatabaseList retrieves a list of databases based on find.
