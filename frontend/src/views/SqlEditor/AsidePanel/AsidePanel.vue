@@ -48,7 +48,7 @@ const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
 const databasePaneSzie = ref(FULL_HEIGHT);
 
 const handleResized = (data: any) => {
-  const [top, bottom] = data;
+  const [top] = data;
   databasePaneSzie.value = top.size;
 };
 
@@ -57,9 +57,11 @@ const handleCloseTableSchemaPane = () => {
 };
 
 watch(
-  () => connectionContext.value.tableName,
-  () => {
-    databasePaneSzie.value = DATABASE_PANE_SIZE;
+  () => connectionContext.value.option,
+  (option) => {
+    if (option && option.type === "table") {
+      databasePaneSzie.value = DATABASE_PANE_SIZE;
+    }
   }
 );
 </script>

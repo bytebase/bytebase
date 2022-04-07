@@ -12,7 +12,12 @@ import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
-import { store, useAuthStore, usePrincipalStore } from "../store";
+import {
+  store,
+  useAuthStore,
+  usePrincipalStore,
+  useRouterStore,
+} from "../store";
 import { Database, QuickActionType, Sheet } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
@@ -799,6 +804,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const authStore = useAuthStore();
   const tabStore = useTabStore();
+  const routerStore = useRouterStore();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -808,7 +814,7 @@ router.beforeEach((to, from, next) => {
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
   if (toModule != fromModule) {
-    store.dispatch("router/setBackPath", from.fullPath);
+    routerStore.setBackPath(from.fullPath);
   }
 
   // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
@@ -918,7 +924,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const routerSlug = store.getters["router/routeSlug"](to);
+  const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;

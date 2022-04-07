@@ -3,7 +3,12 @@
 </template>
 
 <script lang="ts">
-import { useMemberStore, usePrincipalStore, useUIStateStore } from "@/store";
+import {
+  useMemberStore,
+  usePrincipalStore,
+  useSettingStore,
+  useUIStateStore,
+} from "@/store";
 import { defineComponent } from "vue";
 import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -14,7 +19,7 @@ export default defineComponent({
     const store = useStore();
 
     await Promise.all([
-      store.dispatch("setting/fetchSetting"),
+      useSettingStore().fetchSetting(),
       // Fetch so MemberSelect can have the data.
       useMemberStore().fetchMemberList(),
       // Though fetchMemberList also return the principal info, it's possible that a principal is no longer a member.

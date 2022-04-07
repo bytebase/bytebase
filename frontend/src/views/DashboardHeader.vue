@@ -196,10 +196,15 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, UNKNOWN_ID } from "../types";
-import { Setting, brandingLogoSettingName } from "../types/setting";
+import { brandingLogoSettingName } from "../types/setting";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
-import { useCurrentUser, useAuthStore, useSubscriptionStore } from "@/store";
+import {
+  useCurrentUser,
+  useAuthStore,
+  useSettingStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -213,6 +218,7 @@ export default defineComponent({
     const { t, availableLocales } = useI18n();
     const store = useStore();
     const authStore = useAuthStore();
+    const settingStore = useSettingStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const { setLocale, toggleLocales } = useLanguage();
@@ -234,13 +240,13 @@ export default defineComponent({
     });
 
     const prepareBranding = () => {
-      store.dispatch("setting/fetchSetting");
+      settingStore.fetchSetting();
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting: Setting = store.getters[
-        "setting/settingByName"
-      ](brandingLogoSettingName);
+      const brandingLogoSetting = settingStore.getSettingByName(
+        brandingLogoSettingName
+      );
       return brandingLogoSetting?.value;
     });
 
