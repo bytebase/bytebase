@@ -133,7 +133,14 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, reactive, onUnmounted, PropType } from "vue";
+import {
+  computed,
+  watchEffect,
+  reactive,
+  onUnmounted,
+  PropType,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import {
   Backup,
@@ -151,6 +158,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { useBackupStore } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -162,7 +170,7 @@ interface LocalState {
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseBackupPanel",
   components: {
     BackupTable,
@@ -185,6 +193,7 @@ export default {
   setup(props) {
     const store = useStore();
     const { t } = useI18n();
+    const backupStore = useBackupStore();
 
     const state = reactive<LocalState>({
       showCreateBackupModal: false,
@@ -202,7 +211,7 @@ export default {
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
+      backupStore.fetchBackupListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareBackupList);
@@ -227,7 +236,7 @@ export default {
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseId"](props.database.id)
+        backupStore.backupListByDatabaseId(props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -310,7 +319,7 @@ export default {
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
-      store.dispatch("backup/createBackup", {
+      backupStore.createBackup({
         databaseId: props.database.id,
         newBackup: newBackup,
       });
@@ -323,8 +332,8 @@ export default {
         clearInterval(state.pollBackupsTimer);
       }
       state.pollBackupsTimer = setTimeout(() => {
-        store
-          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
+        backupStore
+          .fetchBackupListByDatabaseId(props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -341,8 +350,8 @@ export default {
     };
 
     const prepareBackupSetting = () => {
-      store
-        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+      backupStore
+        .fetchBackupSettingByDatabaseId(props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -374,8 +383,8 @@ export default {
           : state.autoBackupDayOfWeek,
         hookUrl: "",
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
@@ -400,8 +409,8 @@ export default {
         dayOfWeek: state.autoBackupDayOfWeek,
         hookUrl: state.autoBackupUpdatedHookUrl,
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
@@ -457,5 +466,5 @@ export default {
       updateBackupHookUrl,
     };
   },
-};
+});
 </script>

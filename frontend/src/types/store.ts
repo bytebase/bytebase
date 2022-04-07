@@ -157,11 +157,11 @@ export interface ViewState {
 }
 
 export interface BackupState {
-  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
+  backupList: Map<DatabaseId, Backup[]>;
 }
 
 export interface BackupSettingState {
-  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
+  backupSetting: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
