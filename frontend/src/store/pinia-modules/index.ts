@@ -4,6 +4,7 @@ export * from "./command";
 export * from "./debug";
 export * from "./deployment";
 export * from "./label";
+export * from "./notification";
 export * from "./oauth";
 export * from "./router";
 export * from "./setting";

@@ -98,6 +98,7 @@ import DatabaseSelect from "../DatabaseSelect.vue";
 import { activeEnvironment } from "../../utils";
 import { OutputField, IssueContext } from "../../plugins";
 import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../../types";
+import { pushNotification } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -161,7 +162,7 @@ export default defineComponent({
 
     const copyText = (field: OutputField) => {
       toClipboard(props.issue.payload[field.id]).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `${field.name} copied to clipboard.`,
