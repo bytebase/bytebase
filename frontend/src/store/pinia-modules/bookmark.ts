@@ -45,7 +45,7 @@ export const useBookmarkStore = defineStore("bookmark", {
       return bookmarkList;
     },
 
-    async createBookmrk(newBookmark: BookmarkCreate) {
+    async createBookmark(newBookmark: BookmarkCreate) {
       const data = (
         await axios.post(`/api/bookmark`, {
           data: {
