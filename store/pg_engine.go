@@ -150,7 +150,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	if _, err := migrate(ctx, d, verBefore, db.mode, db.serverVersion, databaseName, db.l); err != nil {
+	if err := migrate(ctx, d, verBefore, db.mode, db.serverVersion, databaseName, db.l); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
@@ -258,7 +258,7 @@ const (
 //
 // We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
-func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) (semver.Version, error) {
+func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) error {
 	l.Info("Apply database migration if needed...")
 	if curVer == nil {
 		l.Info("The database schema has not been setup.")
@@ -266,28 +266,39 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 		major := (*curVer).Major
 		if major != majorSchemaVervion {
-			return semver.Version{}, fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, serverVersion)
+			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, serverVersion)
 		}
 	}
 
-	// Calculate cutoffSchemaVersion based on release mode.
-	cutoffSchemaVersion, err := getCutoffVersion(mode)
+	// Calculate release cutoffSchemaVersion.
+	cutoffSchemaVersion, err := getReleaseCutoffVersion()
 	if err != nil {
-		return semver.Version{}, errors.Wrapf(err, "failed to get cutoff version")
+		return errors.Wrapf(err, "failed to get cutoff version")
 	}
 	l.Info(fmt.Sprintf("The release cutoff schema version: %s", cutoffSchemaVersion))
 
-	// Initial schema setup.
+	var histories []*dbdriver.MigrationHistory
+	if mode == common.ReleaseModeDev {
+		h, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+			Database: &databaseName,
+		})
+		if err != nil {
+			return err
+		}
+		histories = h
+	}
+
 	if curVer == nil {
-		latestSchemaPath := fmt.Sprintf("migration/%s/%s", mode, latestSchemaFile)
+		// Initial schema setup if not yet setup.
+		latestSchemaPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeRelease, latestSchemaFile)
 		buf, err := migrationFS.ReadFile(latestSchemaPath)
 		if err != nil {
-			return semver.Version{}, fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
+			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
 		}
-		latestDataPath := fmt.Sprintf("migration/%s/%s", mode, latestDataFile)
+		latestDataPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeRelease, latestDataFile)
 		dataBuf, err := migrationFS.ReadFile(latestDataPath)
 		if err != nil {
-			return semver.Version{}, fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
+			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
 		}
 		// We will create the database together with initial schema and data migration.
 		stmt := fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
@@ -308,55 +319,47 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			},
 			stmt,
 		); err != nil {
-			return semver.Version{}, fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
+			return fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
 		}
 		l.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
-		return cutoffSchemaVersion, nil
-	}
-
-	// Apply migrations
-	retVersion := *curVer
-
-	releaseModes := []common.ReleaseMode{common.ReleaseModeRelease}
-	if mode == common.ReleaseModeDev {
-		releaseModes = append(releaseModes, common.ReleaseModeDev)
-	}
-
-	for _, releaseMode := range releaseModes {
-		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", releaseMode))
+	} else {
+		// Apply migrations if needed.
+		retVersion := *curVer
+		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease))
 		if err != nil {
-			return semver.Version{}, err
+			return err
 		}
 
 		minorVersions, messages, err := getMinorMigrationVersions(names, cutoffSchemaVersion, *curVer)
 		if err != nil {
-			return semver.Version{}, err
+			return err
 		}
 		for _, message := range messages {
 			l.Info(message)
 		}
-		if len(minorVersions) == 0 {
-			l.Info(fmt.Sprintf("Skip minor version migration in mode %s. No new version.", releaseMode))
-			continue
-		}
 
 		for _, minorVersion := range minorVersions {
 			l.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
-			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", releaseMode, minorVersion.Major, minorVersion.Minor))
+			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor))
 			if err != nil {
-				return semver.Version{}, err
+				return err
 			}
 			patchVersions, err := getPatchVersions(minorVersion, cutoffSchemaVersion, *curVer, names)
 			if err != nil {
-				return semver.Version{}, err
+				return err
 			}
 
 			for _, pv := range patchVersions {
-				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				buf, err := fs.ReadFile(migrationFS, pv.filename)
 				if err != nil {
-					return semver.Version{}, fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
+					return fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
 				}
+				// This happens when a migration file is moved from dev to release and we should not reapply the migration.
+				if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
+					l.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
+					continue
+				}
+				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				if _, _, err := d.ExecuteMigration(
 					ctx,
 					&dbdriver.MigrationInfo{
@@ -373,23 +376,143 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 					},
 					string(buf),
 				); err != nil {
-					return semver.Version{}, fmt.Errorf("failed to migrate schema version %q, error: %v", pv.version, err)
+					return fmt.Errorf("failed to migrate schema version %q, error: %v", pv.version, err)
 				}
 				retVersion = pv.version
 			}
 		}
-	}
-	if retVersion.EQ(*curVer) {
-		l.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
-	} else {
-		l.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
+		if retVersion.EQ(*curVer) {
+			l.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
+		} else {
+			l.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
+		}
 	}
 
-	return retVersion, nil
+	if mode == common.ReleaseModeDev {
+		if err := migrateDev(ctx, d, serverVersion, databaseName, cutoffSchemaVersion, histories, l); err != nil {
+			return errors.Wrapf(err, "failed to migrate dev schema")
+		}
+	}
+	return nil
 }
 
-func getCutoffVersion(releaseMode common.ReleaseMode) (semver.Version, error) {
-	minorPathPrefix := fmt.Sprintf("migration/%s/*", releaseMode)
+func migrationExists(statement string, histories []*dbdriver.MigrationHistory) bool {
+	for _, history := range histories {
+		if history.Statement == statement {
+			return true
+		}
+	}
+	return false
+}
+
+type devMigration struct {
+	filename  string
+	version   string
+	statement string
+}
+
+func getDevMigrations() ([]devMigration, error) {
+	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
+	if err != nil {
+		return nil, err
+	}
+
+	var devMigrations []devMigration
+	for _, name := range names {
+		baseName := filepath.Base(name)
+		if baseName == latestSchemaFile || baseName == latestDataFile {
+			continue
+		}
+
+		parts := strings.Split(filepath.Base(name), "__")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid migration file name %q", name)
+		}
+		buf, err := fs.ReadFile(migrationFS, name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read dev migration file %q, error %w", name, err)
+		}
+
+		devMigrations = append(devMigrations, devMigration{
+			filename:  name,
+			version:   parts[0],
+			statement: string(buf),
+		})
+	}
+	sort.Slice(devMigrations, func(i, j int) bool {
+		return devMigrations[i].version < devMigrations[j].version
+	})
+	return devMigrations, nil
+}
+
+func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory, l *zap.Logger) error {
+	devMigrations, err := getDevMigrations()
+	if err != nil {
+		return err
+	}
+
+	// Skip migrations that are already applied.
+	var migrations []devMigration
+	for _, m := range devMigrations {
+		if migrationExists(m.statement, histories) {
+			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
+		} else {
+			migrations = append(migrations, m)
+		}
+	}
+	if len(migrations) == 0 {
+		l.Info("Skip dev mode migration; no new version.")
+		return nil
+	}
+
+	for _, m := range migrations {
+		if migrationExists(m.statement, histories) {
+			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
+			continue
+		}
+		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
+		if _, _, err := d.ExecuteMigration(
+			ctx,
+			&dbdriver.MigrationInfo{
+				ReleaseVersion: serverVersion,
+				Version:        m.version,
+				Namespace:      databaseName,
+				Database:       databaseName,
+				Environment:    "", /* unused in execute migration */
+				Source:         dbdriver.LIBRARY,
+				Type:           dbdriver.Migrate,
+				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+			},
+			m.statement,
+		); err != nil {
+			return fmt.Errorf("failed to migrate schema version %q, error: %v", m.version, err)
+		}
+	}
+	// Establish a baseline to restart the migration with semantic version.
+	if _, _, err := d.ExecuteMigration(
+		ctx,
+		&dbdriver.MigrationInfo{
+			ReleaseVersion:        serverVersion,
+			UseSemanticVersion:    true,
+			Version:               cutoffSchemaVersion.String(),
+			SemanticVersionSuffix: time.Now().Format("20060102150405"),
+			Namespace:             databaseName,
+			Database:              databaseName,
+			Environment:           "", /* unused in execute migration */
+			Source:                dbdriver.LIBRARY,
+			Type:                  dbdriver.Baseline,
+			Description:           fmt.Sprintf("Establish baseline migration %s at server version %s after applying dev migration.", cutoffSchemaVersion.String(), serverVersion),
+		},
+		"",
+	); err != nil {
+		return fmt.Errorf("failed to establish baseline schema version %s, error: %v", cutoffSchemaVersion, err)
+	}
+
+	return nil
+}
+
+func getReleaseCutoffVersion() (semver.Version, error) {
+	minorPathPrefix := fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease)
 	names, err := fs.Glob(migrationFS, minorPathPrefix)
 	if err != nil {
 		return semver.Version{}, err
@@ -406,7 +529,7 @@ func getCutoffVersion(releaseMode common.ReleaseMode) (semver.Version, error) {
 	upperMinorVersion := minorVersion
 	upperMinorVersion.Minor = upperMinorVersion.Minor + 1
 
-	patchPathPrefix := fmt.Sprintf("migration/%s/%d.%d", releaseMode, minorVersion.Major, minorVersion.Minor)
+	patchPathPrefix := fmt.Sprintf("migration/%s/%d.%d", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor)
 	names, err = fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", patchPathPrefix))
 	if err != nil {
 		return semver.Version{}, err
@@ -415,11 +538,7 @@ func getCutoffVersion(releaseMode common.ReleaseMode) (semver.Version, error) {
 	if err != nil {
 		return semver.Version{}, err
 	}
-	// This should only happen in the dev environment
 	if len(patchVersions) == 0 {
-		if releaseMode == common.ReleaseModeDev {
-			return minorVersion, nil
-		}
 		return semver.Version{}, fmt.Errorf("Migration path %s has no patch version", patchPathPrefix)
 	}
 	return patchVersions[len(patchVersions)-1].version, nil

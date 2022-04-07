@@ -189,37 +189,54 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
 
-	// Create a database with dev latest schema.
-	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
+	releaseVersion, err := getReleaseCutoffVersion()
 	require.NoError(t, err)
 
-	devDatabaseName := "dev"
+	// Create a database with release latest schema.
+	databaseName := "hidb"
 	// Passing curVers = nil will create the database.
-	ver, err := migrate(ctx, d, nil, common.ReleaseModeDev, serverVersion, devDatabaseName, l)
+	err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	require.Equal(t, devVersion, ver)
+	// Check migration history.
+	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
+	require.NoError(t, err)
+	require.Len(t, histories, 1)
+	require.Equal(t, histories[0].Version, releaseVersion.String())
 
-	// Create a database with release latest schema, and apply migration to dev latest.
-	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
+	// Check no migration after passing current version as the release cutoff version.
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeRelease, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	releaseDatabaseName := "release"
-	// Passing curVers = nil will create the database.
-	ver, err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, releaseDatabaseName, l)
+	// Check migration history.
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
 	require.NoError(t, err)
-	require.Equal(t, releaseVersion, ver)
+	require.Len(t, histories, 1)
+
 	// Apply migration to dev latest if there are patches.
-	ver, err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, serverVersion, releaseDatabaseName, l)
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	require.Equal(t, devVersion, ver)
+
+	// Check migration history.
+	devMigrations, err := getDevMigrations()
+	require.NoError(t, err)
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
+	require.NoError(t, err)
+	var wantLen int
+	if len(devMigrations) > 0 {
+		wantLen = len(devMigrations) + 2 // one for initial migration, the other for baseline.
+	} else {
+		wantLen = 1
+	}
+	require.Len(t, histories, wantLen)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
-	// The wanted devVersion and releaseVersion will change if there are any development or release changes in the migration directory.
-	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
-	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.1.2"), devVersion)
-
-	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
+	releaseVersion, err := getReleaseCutoffVersion()
 	require.NoError(t, err)
 	require.Equal(t, semver.MustParse("1.0.1"), releaseVersion)
 }
