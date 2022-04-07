@@ -1,4 +1,5 @@
 export * from "./actuator";
+export * from "./bookmark";
 export * from "./command";
 export * from "./debug";
 export * from "./deployment";
