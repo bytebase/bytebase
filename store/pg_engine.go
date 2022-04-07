@@ -258,6 +258,8 @@ const (
 //
 // We prepend each migration file with version = xxx; Each migration
 // file run in a transaction to prevent partial migrations.
+//
+// The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
 func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) error {
 	l.Info("Apply database migration if needed...")
 	if curVer == nil {
@@ -278,6 +280,8 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 	l.Info(fmt.Sprintf("The release cutoff schema version: %s", cutoffSchemaVersion))
 
 	var histories []*dbdriver.MigrationHistory
+	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
+	// figure out whether the migration statement has already been applied.
 	if mode == common.ReleaseModeDev {
 		h, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 			Database: &databaseName,
@@ -355,6 +359,10 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 					return fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
 				}
 				// This happens when a migration file is moved from dev to release and we should not reapply the migration.
+				// For example,
+				//   before - release: 1.2; dev: 123.sql, something else.
+				//   after - release 1.3 with 123.sql; dev: something else.
+				// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-apply and most likely to fail.
 				if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
 					l.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
 					continue
@@ -451,8 +459,8 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 		return err
 	}
 
-	// Skip migrations that are already applied.
 	var migrations []devMigration
+	// Skip migrations that are already applied, otherwise the migration reattempt will most likely to fail wil already exists error.
 	for _, m := range devMigrations {
 		if migrationExists(m.statement, histories) {
 			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
@@ -466,11 +474,8 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 	}
 
 	for _, m := range migrations {
-		if migrationExists(m.statement, histories) {
-			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
-			continue
-		}
 		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
+		// We don't use semantic versioning for dev migrations because they are not versioned yet.
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
