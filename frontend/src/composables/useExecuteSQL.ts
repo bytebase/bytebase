@@ -11,7 +11,7 @@ import {
   isDDLStatement,
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 
 type ExecuteConfig = {
   databaseType: string;
@@ -30,7 +30,7 @@ const useExecuteSQL = () => {
   });
 
   const notify = (type: string, title: string, description?: string) => {
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: type,
       title,
