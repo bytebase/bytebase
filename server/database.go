@@ -572,16 +572,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupCreate.MigrationHistoryVersion = version
 
-		backupRaw, err := s.BackupService.CreateBackup(ctx, backupCreate)
+		backup, err := s.store.CreateBackup(ctx, backupCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
-		}
-		backup, err := s.composeBackupRelationship(ctx, backupRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
 		}
 
 		payload := api.TaskDatabaseBackupPayload{
@@ -653,18 +649,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		backupFind := &api.BackupFind{
 			DatabaseID: &id,
 		}
-		backupRawList, err := s.BackupService.FindBackupList(ctx, backupFind)
+		backupList, err := s.store.FindBackup(ctx, backupFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to backup list for database id: %d", id)).SetInternal(err)
-		}
-
-		var backupList []*api.Backup
-		for _, backupRaw := range backupRawList {
-			backup, err := s.composeBackupRelationship(ctx, backupRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose backup relationship").SetInternal(err)
-			}
-			backupList = append(backupList, backup)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -699,7 +686,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSettingUpsert.EnvironmentID = db.Instance.Environment.ID
 
-		backupSetting, err := s.BackupService.UpsertBackupSetting(ctx, backupSettingUpsert)
+		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
@@ -729,21 +716,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backupSettingFind := &api.BackupSettingFind{
-			DatabaseID: &id,
-		}
-		backupSettingRaw, err := s.BackupService.FindBackupSetting(ctx, backupSettingFind)
+		backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
 		}
-		if backupSettingRaw == nil {
+		if backupSetting == nil {
 			// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-			backupSettingRaw = &api.BackupSettingRaw{
+			backupSetting = &api.BackupSetting{
 				ID: api.UnknownID,
 			}
 		}
-		// TODO(dragonly): compose this
-		backupSetting := backupSettingRaw.ToBackupSetting()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
@@ -1014,7 +996,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	db.Instance = instance
 
 	if db.SourceBackupID != 0 {
-		sourceBackup, err := s.composeBackupByID(ctx, db.SourceBackupID)
+		sourceBackup, err := s.store.GetBackupByID(ctx, db.SourceBackupID)
 		if err != nil {
 			return nil, err
 		}
@@ -1104,45 +1086,6 @@ func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) 
 	}
 	view.Updater = updater
 	return view, nil
-}
-
-// composeBackupByID will compose the backup by backup ID.
-func (s *Server) composeBackupByID(ctx context.Context, id int) (*api.Backup, error) {
-	backupFind := &api.BackupFind{
-		ID: &id,
-	}
-	backupRaw, err := s.BackupService.FindBackup(ctx, backupFind)
-	if err != nil {
-		return nil, err
-	}
-	if backupRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup not found with ID %d", id)}
-	}
-
-	backup, err := s.composeBackupRelationship(ctx, backupRaw)
-	if err != nil {
-		return nil, err
-	}
-
-	return backup, nil
-}
-
-// composeBackupRelationship will compose the relationship of a backup.
-func (s *Server) composeBackupRelationship(ctx context.Context, raw *api.BackupRaw) (*api.Backup, error) {
-	backup := raw.ToBackup()
-	creator, err := s.store.GetPrincipalByID(ctx, backup.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	backup.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, backup.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	backup.Updater = updater
-
-	return backup, nil
 }
 
 // Try to get database driver using the instance's admin data source.

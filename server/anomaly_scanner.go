@@ -372,10 +372,7 @@ SchemaDriftEnd:
 
 func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
-	backupSettingFind := &api.BackupSettingFind{
-		DatabaseID: &database.ID,
-	}
-	backupSetting, err := s.server.BackupService.FindBackupSetting(ctx, backupSettingFind)
+	backupSetting, err := s.server.store.GetBackupSettingByDatabaseID(ctx, database.ID)
 	if err != nil {
 		s.l.Error("Failed to retrieve backup setting",
 			zap.String("instance", instance.Name),
@@ -470,7 +467,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					DatabaseID: &database.ID,
 					Status:     &status,
 				}
-				backupRawList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
+				backupList, err := s.server.store.FindBackup(ctx, backupFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
@@ -479,8 +476,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 
 				hasValidBackup := false
-				if len(backupRawList) > 0 {
-					if backupRawList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+				if len(backupList) > 0 {
+					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
 						hasValidBackup = true
 					}
 				}
@@ -489,8 +486,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
 						ExpectedBackupSchedule: expectedSchedule,
 					}
-					if len(backupRawList) > 0 {
-						backupMissingAnomalyPayload.LastBackupTs = backupRawList[0].UpdatedTs
+					if len(backupList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
 					}
 				}
 			}
