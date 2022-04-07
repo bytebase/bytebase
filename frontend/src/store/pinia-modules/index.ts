@@ -1,6 +1,7 @@
 export * from "./actuator";
 export * from "./command";
 export * from "./debug";
+export * from "./deployment";
 export * from "./label";
 export * from "./oauth";
 export * from "./router";
