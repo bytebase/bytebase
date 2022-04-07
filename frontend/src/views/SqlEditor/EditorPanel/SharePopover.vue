@@ -93,7 +93,6 @@ import {
   SheetActions,
   AccessOption,
 } from "@/types";
-import {} from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;

@@ -31,7 +31,6 @@ import {
   SqlDialect,
 } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
-import {} from "@/store";
 
 const props = defineProps({
   value: {

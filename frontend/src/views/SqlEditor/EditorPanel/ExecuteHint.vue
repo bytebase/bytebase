@@ -65,7 +65,6 @@ import {
   transformSQL,
   isDDLStatement,
 } from "@/components/MonacoEditor/sqlParser";
-import {} from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;

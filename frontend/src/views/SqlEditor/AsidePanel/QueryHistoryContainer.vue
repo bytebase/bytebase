@@ -73,7 +73,6 @@ import { useDialog } from "naive-ui";
 import { pushNotification, useTabStore } from "@/store";
 import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import {} from "@/store";
 
 interface State {
   search: string;
