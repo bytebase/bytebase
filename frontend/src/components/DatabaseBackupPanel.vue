@@ -133,7 +133,14 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, reactive, onUnmounted, PropType } from "vue";
+import {
+  computed,
+  watchEffect,
+  reactive,
+  onUnmounted,
+  PropType,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import {
   Backup,
@@ -151,6 +158,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -162,7 +170,7 @@ interface LocalState {
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseBackupPanel",
   components: {
     BackupTable,
@@ -381,7 +389,7 @@ export default {
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
           const action = on ? t("database.enabled") : t("database.disabled");
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -406,7 +414,7 @@ export default {
         })
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -457,5 +465,5 @@ export default {
       updateBackupHookUrl,
     };
   },
-};
+});
 </script>
