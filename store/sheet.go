@@ -192,6 +192,9 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*api
 // patchSheet updates a sheet's name/statement/visibility.
 func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*api.SheetRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.DatabaseID; v != nil {
+		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, api.RowStatus(*v))
 	}

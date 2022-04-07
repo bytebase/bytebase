@@ -196,7 +196,6 @@ type SheetPatch struct {
 	UpdaterID int
 
 	// Related fields
-	ProjectID  int  `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields

@@ -94,20 +94,20 @@ func TestParseBasePathFromTemplate(t *testing.T) {
 			want:              "sheet/",
 		},
 		{
-			sheetPathTemplate: "sheets/dir/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql",
-			want:              "sheets/dir/",
+			sheetPathTemplate: "sheet/dir/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql",
+			want:              "sheet/dir/",
 		},
 		{
-			sheetPathTemplate: "sheets/dir__{{NAME}}.sql",
-			want:              "sheets/",
+			sheetPathTemplate: "sheet/dir__{{NAME}}.sql",
+			want:              "sheet/",
 		},
 		{
 			sheetPathTemplate: "{{NAME}}.sql",
 			want:              "",
 		},
 		{
-			sheetPathTemplate: "sheets/dir/",
-			want:              "sheets/dir/",
+			sheetPathTemplate: "sheet/dir/",
+			want:              "sheet/dir/",
 		},
 	}
 

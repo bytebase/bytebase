@@ -72,7 +72,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/project/:projectID/syncsheet", func(c echo.Context) error {
+	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
@@ -195,8 +195,15 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 
 			payloadString := string(payload)
-			sheetSource := (api.SheetSource)(vcs.Type)
-			vscSheetType := (api.SheetType)(api.SheetForSQL)
+
+			var sheetSource api.SheetSource
+			switch vcs.Type {
+			case vcsPlugin.GitLabSelfHost:
+				sheetSource = api.SheetFromGitLabSelfHost
+			case vcsPlugin.GitHubCom:
+				sheetSource = api.SheetFromGitHubCom
+			}
+			vscSheetType := api.SheetForSQL
 			sheet, err := s.SheetService.FindSheet(ctx, &api.SheetFind{
 				Name:      &sheetInfo.SheetName,
 				ProjectID: &project.ID,
@@ -241,17 +248,38 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 				_, err := s.SheetService.CreateSheet(ctx, &sheetCreate)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
 				}
 			} else {
-				_, err := s.SheetService.PatchSheet(ctx, &api.SheetPatch{
+				sheetPatch := api.SheetPatch{
 					ID:        sheet.ID,
 					UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 					Statement: &fileContent,
 					Payload:   &payloadString,
-				})
+				}
+
+				if project.TenantMode != api.TenantModeDisabled {
+					if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
+						databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
+							Name:      &sheetInfo.DatabaseName,
+							ProjectID: &projectID,
+						})
+						if err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, projectID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
+						}
+
+						for _, database := range databaseList {
+							if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
+								sheetPatch.DatabaseID = &database.ID
+								break
+							}
+						}
+					}
+				}
+
+				_, err := s.SheetService.PatchSheet(ctx, &sheetPatch)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet from VCS").SetInternal(err)
 				}
 			}
 		}
