@@ -251,6 +251,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 		principal.Role = api.Owner
 	} else {
 		find := &api.MemberFind{PrincipalID: &principal.ID}
+		// NOTE: watch out for recursion here, because Member also contains pointers to Principal
 		memberRaw, err := s.getMemberRaw(ctx, find)
 		if err != nil {
 			return nil, err
