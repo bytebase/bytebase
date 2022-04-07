@@ -63,6 +63,12 @@ const (
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
+	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
+	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
+	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
+	// TaskDatabaseSchemaUpdateGhostDropOriginalTable is the task type for dropping the original table.
+	TaskDatabaseSchemaUpdateGhostDropOriginalTable TaskType = "bb.task.database.schema.update.ghost.drop-original-table"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
@@ -93,6 +99,28 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	Statement     string           `json:"statement,omitempty"`
 	SchemaVersion string           `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
+}
+
+// TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
+type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	// SocketFileName is the socket file that gh-ost listens on.
+	// The name follows this template,
+	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`
+	SocketFileName string
+}
+
+// TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
+}
+
+// TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload is the task type for dropping the original table
+type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
+	DatabaseName string `json:"databaseName,omitempty"`
+	// TableName is like `_tablename_del`.
+	TableName string `json:"tableName,omitempty"`
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
