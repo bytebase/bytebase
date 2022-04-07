@@ -93,7 +93,7 @@ var (
 	readonly bool
 	demo     bool
 	debug    bool
-	pgUrl    string
+	pgURL    string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -127,7 +127,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgUrl, "pg", "", "optional external postgresql instance url")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external postgresql instance url")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -332,15 +332,15 @@ func initBranding(ctx context.Context, settingService api.SettingService) error 
 }
 
 func (m *Main) newDB() (*store.DB, error) {
-	if len(pgUrl) > 0 {
-		return m.newExternalDB(pgUrl)
+	if len(pgURL) > 0 {
+		return m.newExternalDB()
 	}
 
 	return m.newLocalDB()
 }
 
-func (m *Main) newExternalDB(pgUrl string) (*store.DB, error) {
-	u, err := url.Parse(pgUrl)
+func (m *Main) newExternalDB() (*store.DB, error) {
+	u, err := url.Parse(pgURL)
 	if err != nil {
 		return nil, err
 	}
