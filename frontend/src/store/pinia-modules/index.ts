@@ -3,6 +3,7 @@ export * from "./auth";
 export * from "./bookmark";
 export * from "./command";
 export * from "./debug";
+export * from "./deployment";
 export * from "./label";
 export * from "./member";
 export * from "./principal";
