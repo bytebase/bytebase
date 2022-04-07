@@ -54,7 +54,7 @@ import {
   TemplateType,
 } from "../plugins";
 import { NSpin } from "naive-ui";
-import { useActuatorStore, hasFeature } from "@/store";
+import { hasFeature, pushNotification, useActuatorStore } from "@/store";
 
 interface LocalState {
   // Needs to maintain this state and set it to false manually after creating the issue.
@@ -100,7 +100,7 @@ export default defineComponent({
         if (template) {
           newIssueTemplate.value = template;
         } else {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "WARN",
             title: `Unknown template '${issueType}'.`,
