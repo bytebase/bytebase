@@ -1,63 +1,81 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"strconv"
+
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
-	g.POST("/oauth/vcs/:vcsID/exchange-token", func(c echo.Context) error {
-		ctx := context.Background()
-
-		vcsID, err := strconv.Atoi(c.Param("vcsID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to marshal oauth provider's ID: %v", c.Param("id"))).SetInternal(err)
-		}
-		code := c.Request().Header.Get("code")
-
-		vcs, err := s.store.GetVCSByID(ctx, vcsID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
-		}
-		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", vcsID)).SetInternal(err)
+	// This is a generic endpoint of exchanging access token for VCS providers. It
+	// requires either the "vcsId" to infer the details from an existing VCS
+	// provider or "vcsType", "instanceURL", "clientId" and "clientSecret" to
+	// directly compose the request to the VCS host.
+	g.POST("/oauth/vcs/exchange-token", func(c echo.Context) error {
+		req := &api.VCSExchangeToken{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed VCS exchange token request").SetInternal(err)
 		}
 
-		oauthToken := &api.OAuthToken{}
-		switch vcs.Type {
-		case vcsPlugin.GitLabSelfHost:
-			oauthTokenRaw, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
-				ctx,
-				vcs.InstanceURL,
-				&common.OAuthExchange{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					Code:         code,
-					RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
-				},
-			)
+		var vcsType vcsPlugin.Type
+		var instanceURL string
+		var oauthExchange *common.OAuthExchange
+		if req.ID > 0 {
+			vcs, err := s.store.GetVCSByID(c.Request().Context(), req.ID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			}
-			oauthToken.AccessToken = oauthTokenRaw.AccessToken
-			oauthToken.RefreshToken = oauthTokenRaw.RefreshToken
-			oauthToken.ExpiresTs = oauthTokenRaw.ExpiresTs
+			if vcs == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", req.ID))
+			}
+
+			vcsType = vcs.Type
+			instanceURL = vcs.InstanceURL
+			oauthExchange = &common.OAuthExchange{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				Code:         req.Code,
+			}
+		} else {
+			vcsType = req.Type
+			if vcsType != vcsPlugin.GitLabSelfHost && vcsType != vcsPlugin.GitHubCom {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unexpected VCS type: %s", vcsType))
+			}
+
+			instanceURL = req.InstanceURL
+			oauthExchange = &common.OAuthExchange{
+				ClientID:     req.ClientID,
+				ClientSecret: req.ClientSecret,
+				Code:         req.Code,
+			}
 		}
 
+		oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort)
+		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{Logger: s.l}).
+			ExchangeOAuthToken(
+				c.Request().Context(),
+				instanceURL,
+				oauthExchange,
+			)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+		}
+
+		resp := &api.OAuthToken{
+			AccessToken:  oauthToken.AccessToken,
+			RefreshToken: oauthToken.RefreshToken,
+			ExpiresTs:    oauthToken.ExpiresTs,
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, oauthToken); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, resp); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal oauth token response").SetInternal(err)
 		}
-
 		return nil
 	})
-
 }
