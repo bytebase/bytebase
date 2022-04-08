@@ -93,7 +93,9 @@ var (
 	readonly bool
 	demo     bool
 	debug    bool
-	pgURL    string
+	// pgURL must follow PostgreSQL connection URIs pattern.
+	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+	pgURL string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -127,7 +129,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance url")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5433/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -277,7 +279,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	if isUseLocalDB() {
+	if useEmbeddedDB() {
 		fmt.Printf("resourceDir=%s\n", resourceDir)
 		fmt.Printf("pgdataDir=%s\n", pgDataDir)
 	}
@@ -287,7 +289,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	if isUseLocalDB() {
+	if useEmbeddedDB() {
 		logger.Info("Detecting and initializing local PostgreSQL instance...")
 		pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
@@ -341,12 +343,12 @@ func initBranding(ctx context.Context, settingService api.SettingService) error 
 	return nil
 }
 
-func isUseLocalDB() bool {
+func useEmbeddedDB() bool {
 	return len(pgURL) == 0
 }
 
 func (m *Main) newDB() (*store.DB, error) {
-	if isUseLocalDB() {
+	if useEmbeddedDB() {
 		return m.newLocalDB()
 	}
 	return m.newExternalDB()
