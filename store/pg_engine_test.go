@@ -169,7 +169,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
 
-	releaseVersion, err := getReleaseCutoffVersion()
+	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
 	// Create a database with release latest schema.
@@ -211,7 +211,7 @@ func TestMigrationCompatibility(t *testing.T) {
 }
 
 func TestGetCutoffVersion(t *testing.T) {
-	releaseVersion, err := getReleaseCutoffVersion()
+	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 	require.Equal(t, semver.MustParse("1.0.1"), releaseVersion)
 }
