@@ -75,9 +75,9 @@ onMounted(() => {
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
     useOAuthStore()
-      .exchangeVCSToken({
-        code: props.config.code,
+      .exchangeVCSTokenWithID({
         vcsId: props.config.vcs.id,
+        code: props.config.code,
       })
       .then((token: OAuthToken) => {
         emit("set-token", token);

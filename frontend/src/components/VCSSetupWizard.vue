@@ -105,12 +105,12 @@ export default defineComponent({
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
           useOAuthStore()
-            .exchangeVCSToken({
-              code: payload.code,
+            .exchangeVCSTokenWith({
               vcsType: state.config.type,
               instanceUrl: state.config.instanceUrl,
               clientId: state.config.applicationId,
               clientSecret: state.config.secret,
+              code: payload.code,
             })
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);

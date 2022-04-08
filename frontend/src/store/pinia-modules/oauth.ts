@@ -13,23 +13,13 @@ const convert = (raw: ResourceObject): OAuthToken => {
 
 export const useOAuthStore = defineStore("oauth", {
   actions: {
-    // Either pass the "vcsId" to let the backend infer the details from an existing VCS provider
-    // or pass "vcsType", "instanceURL", "clientId" and "clientSecret" to allow the backend directly
-    // compose the request to the VCS host.
-    async exchangeVCSToken({
-      code,
+    // exchangeVCSTokenWithID uses "vcsId" to let the backend infer the details from an existing VCS provider.
+    async exchangeVCSTokenWithID({
       vcsId,
-      vcsType,
-      instanceUrl,
-      clientId,
-      clientSecret,
+      code,
     }: {
+      vcsId: VCSId;
       code: string;
-      vcsId?: VCSId;
-      vcsType?: VCSType;
-      instanceUrl?: string;
-      clientId?: string;
-      clientSecret?: string;
     }): Promise<OAuthToken> {
       const data = (
         await axios.post(`/api/oauth/vcs/exchange-token`, {
@@ -38,10 +28,40 @@ export const useOAuthStore = defineStore("oauth", {
             attributes: {
               code,
               vcsId,
+            },
+          },
+        })
+      ).data.data;
+
+      const token = convert(data);
+      return token;
+    },
+
+    // exchangeVCSTokenWith passes client details to the backend to allow the backend directly
+    // compose the request to the VCS host. This should only be used in the initial VCS set up.
+    async exchangeVCSTokenWith({
+      vcsType,
+      instanceUrl,
+      clientId,
+      clientSecret,
+      code,
+    }: {
+      vcsType: VCSType;
+      instanceUrl: string;
+      clientId: string;
+      clientSecret: string;
+      code: string;
+    }): Promise<OAuthToken> {
+      const data = (
+        await axios.post(`/api/oauth/vcs/exchange-token`, {
+          data: {
+            type: "exchangeToken",
+            attributes: {
               vcsType,
               instanceUrl,
               clientId,
               clientSecret,
+              code,
             },
           },
         })
