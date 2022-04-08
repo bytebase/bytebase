@@ -5,6 +5,7 @@ export * from "./debug";
 export * from "./deployment";
 export * from "./label";
 export * from "./oauth";
+export * from "./policy";
 export * from "./router";
 export * from "./setting";
 export * from "./subscription";
