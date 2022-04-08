@@ -37,9 +37,9 @@ export const useOAuthStore = defineStore("oauth", {
       return token;
     },
 
-    // exchangeVCSTokenWith passes client details to the backend to allow the backend directly
+    // exchangeVCSToken passes client details to the backend to allow the backend directly
     // compose the request to the VCS host. This should only be used in the initial VCS set up.
-    async exchangeVCSTokenWith({
+    async exchangeVCSToken({
       vcsType,
       instanceUrl,
       clientId,
