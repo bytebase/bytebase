@@ -92,8 +92,9 @@ const actions = {
 
     commit("upsertEnvironmentList", environmentList);
 
+    const policyStore = usePolicyStore();
     for (const environment of environmentList) {
-      await usePolicyStore().fetchPolicyByEnvironmentAndType({
+      await policyStore.fetchPolicyByEnvironmentAndType({
         environmentId: environment.id,
         type: "bb.policy.pipeline-approval",
       });
